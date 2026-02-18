@@ -6,6 +6,7 @@
 # Datasource local storage ignored files
 /dataSources/
 /dataSources.local.xml
-/.idea
+.idea
 copilot.data*
 dashboard-plugin.iml
+/node_modules
