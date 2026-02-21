@@ -1,0 +1,34 @@
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-6
+ * Task: Light theme color token definitions for dashboard styles
+ * Prompt summary: "Create separate _theme-light.scss and _theme-dark.scss files for colors"
+ */
+
+/* [Claude] Task: define light-theme color tokens as CSS custom properties */
+/* Prompt: "Create separate _theme-light.scss and _theme-dark.scss files for colors" */
+/* Date: 2026-02-21 | Model: claude-sonnet-4-6 */
+:root {
+  --dashboard-color-bg-page: #eef1f5;
+  --dashboard-color-bg-page-hover: #e6ebf2;
+  --dashboard-color-bg-card: #ffffff;
+  --dashboard-color-border: #d8dde6;
+
+  --dashboard-color-navy: #2c3e6b;
+  --dashboard-color-accent: #e8853d;
+  --dashboard-color-blue: #5b7bbf;
+  --dashboard-color-blue-light: #e8edf5;
+
+  --dashboard-color-text: #1e2a3a;
+  --dashboard-color-text-secondary: #7a8699;
+  --dashboard-color-text-muted: #a3aebb;
+
+  --dashboard-color-danger: #e85353;
+  --dashboard-color-warning: #e8853d;
+  --dashboard-color-success: #4caf80;
+  --dashboard-color-info: #5b7bbf;
+
+  --dashboard-color-agenda-priority-critical: #e85353;
+  --dashboard-color-agenda-priority-important: #e8853d;
+  --dashboard-color-agenda-priority-urgent: #5b7bbf;
+  --dashboard-color-agenda-priority-normal: #7a8699;
+}

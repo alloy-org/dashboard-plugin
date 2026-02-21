@@ -4,7 +4,6 @@
  * Prompt summary: "styles for quick-action shortcut button grid"
  */
 
-@use 'sass:color';
 @use 'theme' as *;
 
 /* [Claude] Task: quick-action 2x2 button grid with icon and label */
@@ -29,7 +28,7 @@
   transition: background 0.15s;
 
   &:hover {
-    background: color.adjust($color-bg-page, $lightness: -3%);
+    background: $color-bg-page-hover;
   }
 
   .qa-icon {

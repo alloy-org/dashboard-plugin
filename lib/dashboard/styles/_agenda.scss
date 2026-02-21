@@ -26,6 +26,22 @@
     height: 36px;
     border-radius: 2px;
     flex-shrink: 0;
+
+    &.priority-critical {
+      background-color: $color-agenda-priority-critical;
+    }
+
+    &.priority-important {
+      background-color: $color-agenda-priority-important;
+    }
+
+    &.priority-urgent {
+      background-color: $color-agenda-priority-urgent;
+    }
+
+    &.priority-normal {
+      background-color: $color-agenda-priority-normal;
+    }
   }
 
   .agenda-content {

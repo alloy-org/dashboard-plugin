@@ -4,26 +4,35 @@
  * Prompt summary: "define SCSS design tokens matching the dashboard mockup"
  */
 
-// Design tokens from dashboard mockup
+@use 'theme-light';
+@use 'theme-dark';
 
-// Colors
-$color-bg-page: #eef1f5;
-$color-bg-card: #ffffff;
-$color-border: #d8dde6;
+// [Claude] Task: expose shared SCSS color tokens backed by light/dark CSS variables
+// Prompt: "Create separate _theme-light.scss _theme-dark.scss with separate colors"
+// Date: 2026-02-21 | Model: claude-sonnet-4-6
+$color-bg-page: var(--dashboard-color-bg-page);
+$color-bg-page-hover: var(--dashboard-color-bg-page-hover);
+$color-bg-card: var(--dashboard-color-bg-card);
+$color-border: var(--dashboard-color-border);
 
-$color-navy: #2c3e6b;
-$color-accent: #e8853d;
-$color-blue: #5b7bbf;
-$color-blue-light: #e8edf5;
+$color-navy: var(--dashboard-color-navy);
+$color-accent: var(--dashboard-color-accent);
+$color-blue: var(--dashboard-color-blue);
+$color-blue-light: var(--dashboard-color-blue-light);
 
-$color-text: #1e2a3a;
-$color-text-secondary: #7a8699;
-$color-text-muted: #a3aebb;
+$color-text: var(--dashboard-color-text);
+$color-text-secondary: var(--dashboard-color-text-secondary);
+$color-text-muted: var(--dashboard-color-text-muted);
 
-$color-danger: #e85353;
-$color-warning: #e8853d;
-$color-success: #4caf80;
-$color-info: #5b7bbf;
+$color-danger: var(--dashboard-color-danger);
+$color-warning: var(--dashboard-color-warning);
+$color-success: var(--dashboard-color-success);
+$color-info: var(--dashboard-color-info);
+
+$color-agenda-priority-critical: var(--dashboard-color-agenda-priority-critical);
+$color-agenda-priority-important: var(--dashboard-color-agenda-priority-important);
+$color-agenda-priority-urgent: var(--dashboard-color-agenda-priority-urgent);
+$color-agenda-priority-normal: var(--dashboard-color-agenda-priority-normal);
 
 // Spacing
 $sp-xs: 4px;
