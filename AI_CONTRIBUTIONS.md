@@ -87,6 +87,26 @@ repository, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-02-21 — Task Domain selector with caching and domain-filtered tasks
+
+**Model:** claude-opus-4-6
+**Files created/modified:**
+- `lib/constants/settings.js` (modified) — Added `TASK_DOMAIN_SETTING` and `TASK_DOMAIN_STALE_MS` constants
+- `lib/data-service.js` (modified) — Added task domain resolution with 24h caching, `switchTaskDomain()`, `refreshTaskDomains()`, domain-filtered task fetching; replaced all-domain fetch with single-domain fetch
+- `lib/plugin.js` (modified) — Added `setActiveTaskDomain` and `refreshTaskDomains` actions to onEmbedCall dispatch
+- `lib/dashboard/task-domains.js` (created) — React component listing available domains as pills, with selection state, settings link to task_calendar, and refresh button
+- `lib/dashboard/app.js` (modified) — Added `handleDomainChange` callback, integrated `TaskDomains` component, passes domain-dependent data to child widgets
+- `lib/dashboard/styles/_task-domains.scss` (created) — Pill-style domain selector bar with active state, settings icon, and refresh link
+- `lib/dashboard/styles/dashboard.scss` (modified) — Added `@use 'task-domains'` import
+- `dev/mock-data.js` (modified) — Added mock task domains array and handlers for `setActiveTaskDomain`/`refreshTaskDomains`
+
+**Task:** Allow user to choose which Task Domain their dashboard focuses on
+**Prompt summary:** "add a Task Domain selector that caches domains in settings, refreshes when stale (>24h), defaults to Work, and filters all task-dependent widgets to the selected domain"
+**Scope:** ~200 lines of new logic across 8 files
+**Notes:** Domains cached via `app.setSetting` as JSON with `{domains, selectedDomainUuid, lastRetrieved}`. Auto-defaults to "Work" domain. Each domain pill has a gear icon linking to amplenote.com/task_calendar for domain configuration.
+
+---
+
 ## 2026-02-21 — AI authorship documentation (this entry)
 
 **Model:** claude-opus-4-6

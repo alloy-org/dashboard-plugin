@@ -38,7 +38,13 @@ async function callPlugin(action, ...args) {
           }
         },
         currentDate: now.toISOString(),
-        settings: {}
+        settings: {},
+        taskDomains: [
+          { name: "Work", uuid: "domain-work-uuid" },
+          { name: "Personal", uuid: "domain-personal-uuid" },
+          { name: "Side Projects", uuid: "domain-side-uuid" }
+        ],
+        activeTaskDomain: "domain-work-uuid"
       };
     }
 
@@ -58,6 +64,32 @@ async function callPlugin(action, ...args) {
     case "quickAction":
       console.log("[mock] quickAction", ...args);
       return null;
+
+    case "setActiveTaskDomain": {
+      const domainUuid = args[0];
+      console.log("[mock] setActiveTaskDomain", domainUuid);
+      const now = new Date();
+      const weekStart = _getWeekStart(now);
+      return {
+        tasks: _generateTasks(weekStart),
+        todayTasks: _generateTodayTasks(now),
+        completedThisWeek: _generateCompletedTasks(weekStart),
+        weeklyVictoryValue: Math.floor(Math.random() * 300) + 100,
+        dailyVictoryValues: _generateDailyValues(weekStart),
+        activeTaskDomain: domainUuid
+      };
+    }
+
+    case "refreshTaskDomains":
+      console.log("[mock] refreshTaskDomains");
+      return {
+        domains: [
+          { name: "Work", uuid: "domain-work-uuid" },
+          { name: "Personal", uuid: "domain-personal-uuid" },
+          { name: "Side Projects", uuid: "domain-side-uuid" }
+        ],
+        activeTaskDomain: "domain-work-uuid"
+      };
 
     default:
       console.warn("[mock] unhandled callPlugin action:", action, args);
