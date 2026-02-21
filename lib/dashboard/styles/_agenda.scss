@@ -12,7 +12,31 @@
 .agenda-list {
   display: flex;
   flex-direction: column;
-  gap: $sp-sm;
+  gap: $sp-md;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: $sp-xs;
+}
+
+.agenda-day {
+  display: flex;
+  flex-direction: column;
+  gap: $sp-xs;
+}
+
+.agenda-date-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: $color-text-secondary;
+  text-transform: uppercase;
+}
+
+.agenda-empty-day {
+  font-size: 0.8rem;
+  color: $color-text-muted;
+  font-style: italic;
+  padding: $sp-xs 0;
 }
 
 .agenda-item {
@@ -48,7 +72,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: $sp-xs;
 
     .agenda-time {
       font-size: 0.75rem;
@@ -59,12 +83,38 @@
     .agenda-text {
       font-size: 0.85rem;
       color: $color-text;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .agenda-note-link {
+      border: 0;
+      background: transparent;
+      color: $color-blue;
+      font-size: 0.72rem;
+      text-align: left;
+      padding: 0;
+      margin: 0;
+      cursor: pointer;
+      text-decoration: underline;
     }
   }
 
   .agenda-duration {
     font-size: 0.7rem;
     color: $color-text-muted;
+  }
+}
+
+.agenda-task-row {
+  border-radius: $radius-sm;
+  padding: $sp-sm;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+
+  &:hover {
+    background: $color-bg-page;
   }
 }
 

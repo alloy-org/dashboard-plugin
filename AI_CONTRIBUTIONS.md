@@ -5,6 +5,41 @@ repository, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-02-21 — Standardize navigation through app.navigate actions
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/data-service.js` (modified) — Updated task deep-link URL to `highlightTaskUUID`; added `navigateToUrl()` and `runQuickAction()` wrappers that route through `app.navigate`
+- `lib/plugin.js` (modified) — Added `navigateToUrl` and `quickAction` action handlers backed by `app.navigate`
+- `lib/dashboard/task-domains.js` (modified) — Replaced direct anchor navigation with plugin-driven `navigateToUrl` action for task-domain settings
+- `lib/dashboard/styles/_task-domains.scss` (modified) — Updated settings control styles to support button semantics
+- `dev/mock-data.js` (modified) — Replaced navigation logging stubs with an `app.navigate`-style mock that validates Amplenote note URLs
+
+**Task:** Ensure note/section links and task deep-links use `app.navigate`
+**Prompt summary:** "replace navigateToTask mock with app.navigate behavior and ensure other note/section links (like quick links) use app.navigate"
+**Scope:** ~90 lines changed across 5 files
+**Notes:** Task deep-links now use `https://www.amplenote.com/notes/NOTE_UUID?highlightTaskUUID=TASK_UUID`
+
+---
+
+## 2026-02-21 — Agenda grouped task navigation and rendering updates
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dashboard/app.js` (modified) — Alphabetized `renderActiveComponents` switch cases and passed agenda `tasks` grouped by `YYYY-MM-DD` keys (up to 3 days)
+- `lib/dashboard/agenda.js` (modified) — Reworked rendering to date-labeled sections, scrollable task list, clickable task deep-link behavior, note links, and explicit no-tasks-today state
+- `lib/dashboard/styles/_agenda.scss` (modified) — Added date section styles, scroll container, clickable row styles, note link styles, and italic lighter empty-today text
+- `lib/data-service.js` (modified) — Added `navigateToTask(app, noteUUID, taskUUID)` helper for task-level navigation
+- `lib/plugin.js` (modified) — Added `navigateToTask` embed action dispatch
+- `dev/mock-data.js` (modified) — Added `navigateToTask` mock action and note metadata on generated mock tasks
+
+**Task:** Improve Agenda widget task grouping, navigation, and list usability
+**Prompt summary:** "alphabetize renderActiveComponents cases; pass agenda tasks keyed by date; support task/note click navigation; support >4 tasks; show explicit no-tasks-today messaging"
+**Scope:** ~170 lines changed across 6 files
+**Notes:** Agenda now receives grouped tasks from domain task data rather than `todayTasks`; task links deep-link into notes via `highlightTaskUUID`
+
+---
+
 ## 2026-02-21 — Split light/dark theme token files
 
 **Model:** claude-sonnet-4-6

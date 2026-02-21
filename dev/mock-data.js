@@ -8,6 +8,18 @@
 // Mock callPlugin for local dev — mirrors the actions dispatched by the dashboard app
 // eslint-disable-next-line no-unused-vars
 async function callPlugin(action, ...args) {
+  const app = {
+    navigate(url) {
+      const isValidAmplenoteNotesUrl = /^https:\/\/www\.amplenote\.com\/notes(?:$|[/?].*)/.test(url);
+      if (isValidAmplenoteNotesUrl) {
+        console.log("[mock] app.navigate", url);
+      } else {
+        console.warn("[mock] app.navigate rejected invalid URL", url);
+      }
+      return isValidAmplenoteNotesUrl;
+    }
+  };
+
   switch (action) {
 
     case "init": {
@@ -58,12 +70,16 @@ async function callPlugin(action, ...args) {
       return null;
 
     case "navigateToNote":
-      console.log("[mock] navigateToNote", ...args);
-      return null;
+      return app.navigate(`https://www.amplenote.com/notes/${args[0]}`);
+
+    case "navigateToTask":
+      return app.navigate(`https://www.amplenote.com/notes/${args[0]}?highlightTaskUUID=${args[1]}`);
+
+    case "navigateToUrl":
+      return app.navigate(args[0]);
 
     case "quickAction":
-      console.log("[mock] quickAction", ...args);
-      return null;
+      return app.navigate(_quickActionToUrl(args[0]));
 
     case "setActiveTaskDomain": {
       const domainUuid = args[0];
@@ -121,10 +137,10 @@ function _generateDailyValues(weekStart) {
 function _generateTodayTasks(now) {
   const base = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0).getTime();
   return [
-    { uuid: "t1", content: "Review quarterly goals", startAt: base, endAt: base + 3600000, important: true, urgent: false },
-    { uuid: "t2", content: "Stand-up meeting", startAt: base + 3600000, endAt: base + 5400000, important: false, urgent: false },
-    { uuid: "t3", content: "Deep work: feature implementation", startAt: base + 7200000, endAt: base + 14400000, important: true, urgent: true },
-    { uuid: "t4", content: "Reply to design feedback", startAt: base + 18000000, endAt: base + 19800000, important: false, urgent: true },
+    { uuid: "t1", content: "Review quarterly goals", startAt: base, endAt: base + 3600000, important: true, urgent: false, noteUUID: "note-work-1", noteName: "Work Dashboard Notes" },
+    { uuid: "t2", content: "Stand-up meeting", startAt: base + 3600000, endAt: base + 5400000, important: false, urgent: false, noteUUID: "note-work-2", noteName: "Team Meetings" },
+    { uuid: "t3", content: "Deep work: feature implementation", startAt: base + 7200000, endAt: base + 14400000, important: true, urgent: true, noteUUID: "note-work-3", noteName: "Feature Backlog" },
+    { uuid: "t4", content: "Reply to design feedback", startAt: base + 18000000, endAt: base + 19800000, important: false, urgent: true, noteUUID: "note-work-4", noteName: "Design Review Notes" },
   ];
 }
 
@@ -145,6 +161,8 @@ function _generateTasks(weekStart) {
         victoryValue: Math.floor(Math.random() * 50) + 10,
         important: Math.random() > 0.5,
         urgent: Math.random() > 0.7,
+        noteUUID: `note-${i}-${j}`,
+        noteName: `Project Notes ${i + 1}`,
       });
     }
   }
@@ -153,4 +171,14 @@ function _generateTasks(weekStart) {
 
 function _generateCompletedTasks(weekStart) {
   return _generateTasks(weekStart).filter(t => t.completedAt);
+}
+
+function _quickActionToUrl(action) {
+  const actionToUrl = {
+    dailyJot: "https://www.amplenote.com/notes/jots",
+    journal: "https://www.amplenote.com/notes/jots",
+    addPerson: "https://www.amplenote.com/notes?tag=people",
+    browseCRM: "https://www.amplenote.com/notes?tag=crm"
+  };
+  return actionToUrl[action] || "https://www.amplenote.com/notes";
 }
