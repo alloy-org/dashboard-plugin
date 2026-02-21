@@ -1,18 +1,41 @@
 import esbuild from "esbuild";
 import path from "path";
 import { fileURLToPath } from "url";
+import { existsSync } from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Plugin to resolve absolute imports from root
+// Plugin to resolve absolute imports from project root and lib directory
 const absoluteImportPlugin = {
   name: "absolute-import",
   setup(build) {
-    build.onResolve({ filter: /^lib\// }, (args) => {
-      return {
-        path: path.resolve(__dirname, args.path)
-      };
+    // Resolve imports that aren't relative (don't start with . or /) and aren't node_modules
+    build.onResolve({ filter: /^[^./]/ }, (args) => {
+      // Skip if it's a node package or external dependency
+      if (args.path === 'react' || args.path === 'react-dom') {
+        return null; // Let esbuild handle externals
+      }
+
+      // Try resolving from lib directory first, then project root
+      const tryPaths = [
+        path.resolve(__dirname, 'lib', args.path),
+        path.resolve(__dirname, 'lib', `${args.path}.js`),
+        path.resolve(__dirname, 'lib', args.path, 'index.js'),
+        path.resolve(__dirname, args.path),
+        path.resolve(__dirname, `${args.path}.js`),
+        path.resolve(__dirname, args.path, 'index.js')
+      ];
+
+      // Check which path exists
+      for (const tryPath of tryPaths) {
+        if (existsSync(tryPath)) {
+          return { path: tryPath };
+        }
+      }
+
+      // If nothing found, return null to let esbuild handle it
+      return null;
     });
   }
 };
