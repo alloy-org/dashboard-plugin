@@ -1,5 +1,14 @@
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Mood widget styles — emoji buttons, summary, sparkline
+ * Prompt summary: "styles for mood selector buttons, average display, and sparkline dots"
+ */
+
 @use 'theme' as *;
 
+/* [Claude] Task: mood selector buttons, summary text, and sparkline visualization */
+/* Prompt: "styles for mood selector buttons, average display, and sparkline dots" */
+/* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .mood-selector {
   display: flex;
   justify-content: center;

@@ -1,5 +1,14 @@
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Victory value widget styles — header total and chart canvas
+ * Prompt summary: "styles for victory value header and bar chart area"
+ */
+
 @use 'theme' as *;
 
+/* [Claude] Task: victory value header and chart layout */
+/* Prompt: "styles for victory value header and bar chart area" */
+/* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .vv-header {
   display: flex;
   align-items: baseline;

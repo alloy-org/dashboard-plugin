@@ -1,5 +1,14 @@
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Quotes widget styles — image tile grid with text overlay
+ * Prompt summary: "styles for quote tiles with background images and serif text"
+ */
+
 @use 'theme' as *;
 
+/* [Claude] Task: quote tile grid with background images and overlaid text */
+/* Prompt: "styles for quote tiles with background images and serif text" */
+/* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .quotes-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

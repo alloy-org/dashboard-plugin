@@ -1,3 +1,9 @@
+/**
+ * [Claude-authored file]
+ * Created: 2026-02-20 | Model: claude-sonnet-4-5-20250929
+ * Task: Production build script — SCSS + client bundle + plugin bundle
+ * Prompt summary: "esbuild config that compiles SCSS, bundles React client as base64, and produces compiled.js"
+ */
 import dotenv from "dotenv"
 import esbuild from "esbuild"
 import path from "path"

@@ -1,3 +1,9 @@
+/**
+ * [Claude-authored file]
+ * Created: 2026-02-20 | Model: claude-sonnet-4-5-20250929
+ * Task: Plugin integration tests — renderEmbed, onEmbedCall, appOption
+ * Prompt summary: "jest tests for the Amplenote dashboard plugin API surface"
+ */
 import plugin from '../lib/plugin.js';
 
 // Mock Amplenote app object
@@ -73,6 +79,8 @@ const mockApp = {
   }
 };
 
+// [Claude] Generated tests for: Amplenote dashboard plugin (renderEmbed, onEmbedCall, appOption)
+// Date: 2026-02-20 | Model: claude-sonnet-4-5-20250929
 describe('Dashboard Plugin', () => {
   describe('renderEmbed', () => {
     it('should return HTML string', async () => {

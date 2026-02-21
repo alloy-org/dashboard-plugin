@@ -1,6 +1,15 @@
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Quick actions widget styles — 2x2 button grid
+ * Prompt summary: "styles for quick-action shortcut button grid"
+ */
+
 @use 'sass:color';
 @use 'theme' as *;
 
+/* [Claude] Task: quick-action 2x2 button grid with icon and label */
+/* Prompt: "styles for quick-action shortcut button grid" */
+/* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .qa-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

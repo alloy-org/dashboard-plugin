@@ -1,5 +1,14 @@
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Calendar widget styles — navigation, grid, cells with task-density dots
+ * Prompt summary: "styles for monthly calendar grid with nav arrows and colored indicator dots"
+ */
+
 @use 'theme' as *;
 
+/* [Claude] Task: calendar navigation bar, day grid, and task-density dot indicators */
+/* Prompt: "styles for monthly calendar grid with nav arrows and colored indicator dots" */
+/* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .cal-nav {
   display: flex;
   align-items: center;

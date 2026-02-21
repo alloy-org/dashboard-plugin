@@ -1,5 +1,14 @@
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Agenda widget styles — task list items, time, priority indicators
+ * Prompt summary: "styles for today's agenda task list with priority color bars and durations"
+ */
+
 @use 'theme' as *;
 
+/* [Claude] Task: agenda task list layout with priority indicators and duration labels */
+/* Prompt: "styles for today's agenda task list with priority color bars and durations" */
+/* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .agenda-list {
   display: flex;
   flex-direction: column;

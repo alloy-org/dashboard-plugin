@@ -1,3 +1,9 @@
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Main dashboard stylesheet — imports partials, global resets, grid layout, responsive breakpoints
+ * Prompt summary: "master SCSS that composes all widget partials and defines the 4-column dashboard grid"
+ */
+
 @use 'theme' as *;
 
 // Component partials

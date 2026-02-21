@@ -1,3 +1,10 @@
+/**
+ * [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-opus-4-6
+ * Task: Mock callPlugin for local dev — provides sample data for all dashboard actions
+ * Prompt summary: "global callPlugin mock returning realistic data for init, fetchQuotes, configure, etc."
+ */
+
 // Mock callPlugin for local dev — mirrors the actions dispatched by the dashboard app
 // eslint-disable-next-line no-unused-vars
 async function callPlugin(action, ...args) {

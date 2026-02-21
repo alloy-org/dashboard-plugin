@@ -1,5 +1,14 @@
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Base widget wrapper styles — header, icon, title, body, configure button
+ * Prompt summary: "styles for the shared widget chrome component"
+ */
+
 @use 'theme' as *;
 
+/* [Claude] Task: base widget card styling with header bar and configure action */
+/* Prompt: "styles for the shared widget chrome component" */
+/* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .widget {
   @include card;
   display: flex;

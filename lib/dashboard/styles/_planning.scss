@@ -1,5 +1,14 @@
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Planning widget styles — quarter cards and month tabs
+ * Prompt summary: "styles for quarterly plan cards and month tab navigation"
+ */
+
 @use 'theme' as *;
 
+/* [Claude] Task: planning widget layout — quarter cards and month tab bar */
+/* Prompt: "styles for quarterly plan cards and month tab navigation" */
+/* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .planning-quarters {
   display: flex;
   gap: $sp-lg;

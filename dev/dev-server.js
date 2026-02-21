@@ -1,3 +1,9 @@
+/**
+ * [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-opus-4-6
+ * Task: Local dev server with esbuild watch + serve and SCSS compilation
+ * Prompt summary: "dev server that bundles client-entry.js, compiles SCSS on rebuild, and serves on port 3000"
+ */
 import esbuild from "esbuild";
 import path from "path";
 import fs from "fs";
