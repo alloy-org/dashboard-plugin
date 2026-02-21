@@ -1,0 +1,62 @@
+@use 'theme' as *;
+
+.planning-quarters {
+  display: flex;
+  gap: $sp-lg;
+  margin-bottom: $sp-lg;
+}
+
+.quarter-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: $sp-xs;
+  padding: $sp-md $sp-lg;
+  border: 2px dashed $color-border;
+  border-radius: $radius-md;
+  cursor: pointer;
+  transition: border-color 0.15s;
+
+  &:hover {
+    border-color: $color-blue;
+  }
+
+  .quarter-label {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: $color-navy;
+  }
+
+  .quarter-status {
+    font-size: 0.75rem;
+    color: $color-text-secondary;
+  }
+}
+
+.month-tabs {
+  display: flex;
+  gap: $sp-xs;
+}
+
+.month-tab {
+  flex: 1;
+  padding: $sp-sm $sp-md;
+  background: none;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  font-size: 0.8rem;
+  color: $color-text-secondary;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover {
+    background: $color-blue-light;
+  }
+
+  &.active {
+    background: $color-accent;
+    border-color: $color-accent;
+    color: #fff;
+    font-weight: 600;
+  }
+}

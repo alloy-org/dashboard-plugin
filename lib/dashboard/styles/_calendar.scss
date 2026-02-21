@@ -1,0 +1,78 @@
+@use 'theme' as *;
+
+.cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: $sp-md;
+}
+
+.cal-arrow {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  color: $color-text-secondary;
+  cursor: pointer;
+  padding: $sp-xs;
+
+  &:hover {
+    color: $color-navy;
+  }
+}
+
+.cal-month {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: $color-navy;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+}
+
+.cal-header {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: $color-text-muted;
+  padding: $sp-xs 0;
+}
+
+.cal-cell {
+  position: relative;
+  padding: $sp-xs 0;
+  border-radius: 50%;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  &.empty {
+    visibility: hidden;
+  }
+
+  &.today {
+    background: $color-blue;
+
+    .cal-day {
+      color: #fff;
+      font-weight: 700;
+    }
+  }
+
+  .cal-day {
+    font-size: 0.8rem;
+    color: $color-text;
+  }
+
+  .cal-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    position: absolute;
+    bottom: 2px;
+  }
+}

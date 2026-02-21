@@ -1,0 +1,38 @@
+@use 'theme' as *;
+
+.aip-list {
+  display: flex;
+  flex-direction: column;
+  gap: $sp-sm;
+}
+
+.aip-item {
+  display: flex;
+  align-items: center;
+  gap: $sp-md;
+  padding: $sp-sm;
+  border-radius: $radius-sm;
+
+  .aip-icon {
+    font-size: 1.2rem;
+  }
+
+  .aip-label {
+    flex: 1;
+    font-size: 0.85rem;
+    color: $color-text;
+  }
+
+  .aip-badge {
+    background: $color-blue;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}

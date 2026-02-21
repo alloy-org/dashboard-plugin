@@ -1,0 +1,35 @@
+@use 'sass:color';
+@use 'theme' as *;
+
+.qa-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $sp-sm;
+}
+
+.qa-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $sp-sm;
+  padding: $sp-lg $sp-sm;
+  background: $color-bg-page;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: color.adjust($color-bg-page, $lightness: -3%);
+  }
+
+  .qa-icon {
+    font-size: 1.4rem;
+  }
+
+  .qa-label {
+    font-size: 0.75rem;
+    color: $color-text;
+    font-weight: 500;
+  }
+}

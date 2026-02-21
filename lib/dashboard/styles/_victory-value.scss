@@ -1,0 +1,25 @@
+@use 'theme' as *;
+
+.vv-header {
+  display: flex;
+  align-items: baseline;
+  gap: $sp-sm;
+  margin-bottom: $sp-sm;
+
+  .vv-total {
+    font-size: 2rem;
+    font-weight: 700;
+    color: $color-navy;
+  }
+
+  .vv-label {
+    font-size: 0.8rem;
+    color: $color-text-secondary;
+  }
+}
+
+.vv-chart {
+  display: block;
+  width: 100%;
+  border-radius: $radius-sm;
+}

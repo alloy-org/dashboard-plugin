@@ -1,0 +1,104 @@
+@use 'theme' as *;
+
+// Component partials
+@use 'widget-wrapper';
+@use 'planning';
+@use 'victory-value';
+@use 'mood';
+@use 'calendar';
+@use 'agenda';
+@use 'quotes';
+@use 'quick-actions';
+@use 'ai-plugins';
+
+// Global resets
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: $font-sans;
+  background: $color-bg-page;
+  color: $color-text;
+  -webkit-font-smoothing: antialiased;
+}
+
+// Dashboard layout
+.dashboard {
+  padding: $sp-xl;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: $sp-lg;
+}
+
+.grid-cell {
+  min-width: 0;
+
+  &.span-2 {
+    grid-column: span 2;
+  }
+}
+
+// Loading state
+.dashboard-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: $sp-lg;
+  color: $color-text-secondary;
+
+  .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid $color-border;
+    border-top-color: $color-blue;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// Error state
+.dashboard-error {
+  padding: 40px;
+  text-align: center;
+  color: $color-danger;
+
+  p {
+    color: $color-text-secondary;
+    margin-top: $sp-sm;
+  }
+}
+
+// Responsive
+@media (max-width: 800px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .grid-cell.span-2 {
+    grid-column: span 1;
+  }
+
+  .quotes-grid {
+    grid-template-columns: 1fr;
+  }
+}

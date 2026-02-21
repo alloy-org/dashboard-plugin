@@ -1,11 +1,18 @@
 import dotenv from "dotenv"
 import esbuild from "esbuild"
 import path from "path"
+import * as sass from "sass"
 import { fileURLToPath } from "url"
 
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Step 0: Compile SCSS to CSS string
+const scssResult = sass.compile(path.join(__dirname, 'lib/dashboard/styles/dashboard.scss'), {
+  style: 'compressed',
+});
+const compiledCSS = scssResult.css;
 
 // Plugin to resolve absolute imports from lib directory
 const absoluteImportsPlugin = {
@@ -17,7 +24,8 @@ const absoluteImportsPlugin = {
         args.path.startsWith('esbuild') ||
         args.path.startsWith('isomorphic-fetch') ||
         args.path.startsWith('react') ||
-        args.path === 'client-bundle') {
+        args.path === 'client-bundle' ||
+        args.path === 'css-content') {
         return null;
       }
 
@@ -56,6 +64,21 @@ const clientBundlePlugin = {
   }
 };
 
+// Plugin to provide compiled CSS as a virtual module
+const cssContentPlugin = {
+  name: 'css-content',
+  setup(build) {
+    build.onResolve({ filter: /^css-content$/ }, () => ({
+      path: 'css-content',
+      namespace: 'css-content',
+    }));
+    build.onLoad({ filter: /.*/, namespace: 'css-content' }, () => ({
+      contents: `export const compiledCSS = ${JSON.stringify(compiledCSS)};`,
+      loader: 'js',
+    }));
+  }
+};
+
 // Step 2: Bundle the plugin (with client code injected via virtual module)
 const result = await esbuild.build({
   entryPoints: [`lib/plugin.js`],
@@ -65,7 +88,7 @@ const result = await esbuild.build({
   outfile: "build/compiled.js",
   packages: "external",
   platform: "node",
-  plugins: [clientBundlePlugin, absoluteImportsPlugin],
+  plugins: [clientBundlePlugin, cssContentPlugin, absoluteImportsPlugin],
   write: true,
 });
 console.log("Result was", result)

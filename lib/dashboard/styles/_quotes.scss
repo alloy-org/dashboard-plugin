@@ -1,0 +1,39 @@
+@use 'theme' as *;
+
+.quotes-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $sp-lg;
+}
+
+.quote-tile {
+  border-radius: $radius-md;
+  padding: $sp-xl $sp-lg;
+  background-size: cover;
+  background-position: center;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: 150px;
+
+  .quote-text {
+    font-family: $font-serif;
+    font-size: 0.95rem;
+    font-style: italic;
+    line-height: 1.5;
+    margin: 0 0 $sp-sm 0;
+  }
+
+  .quote-author {
+    font-size: 0.75rem;
+    opacity: 0.85;
+  }
+}
+
+.quotes-loading {
+  text-align: center;
+  color: $color-text-secondary;
+  padding: $sp-xl 0;
+  font-size: 0.85rem;
+}

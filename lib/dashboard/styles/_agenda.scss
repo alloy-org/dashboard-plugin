@@ -1,0 +1,51 @@
+@use 'theme' as *;
+
+.agenda-list {
+  display: flex;
+  flex-direction: column;
+  gap: $sp-sm;
+}
+
+.agenda-item {
+  display: flex;
+  align-items: center;
+  gap: $sp-md;
+  padding: $sp-sm 0;
+
+  .agenda-indicator {
+    width: 4px;
+    height: 36px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .agenda-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .agenda-time {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: $color-text-secondary;
+    }
+
+    .agenda-text {
+      font-size: 0.85rem;
+      color: $color-text;
+    }
+  }
+
+  .agenda-duration {
+    font-size: 0.7rem;
+    color: $color-text-muted;
+  }
+}
+
+.agenda-empty {
+  text-align: center;
+  color: $color-text-secondary;
+  padding: $sp-xl 0;
+  font-size: 0.85rem;
+}
