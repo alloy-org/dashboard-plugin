@@ -1,3 +1,27 @@
+@charset "UTF-8";
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Main dashboard stylesheet — imports partials, global resets, grid layout, responsive breakpoints
+ * Prompt summary: "master SCSS that composes all widget partials and defines the 4-column dashboard grid"
+ */
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Design tokens — colors, spacing, radii, fonts, card mixin
+ * Prompt summary: "define SCSS design tokens matching the dashboard mockup"
+ */
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Main dashboard stylesheet — imports partials, global resets, grid layout, responsive breakpoints
+ * Prompt summary: "master SCSS that composes all widget partials and defines the 4-column dashboard grid"
+ */
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Base widget wrapper styles — header, icon, title, body, configure button
+ * Prompt summary: "styles for the shared widget chrome component"
+ */
+/* [Claude] Task: base widget card styling with header bar and configure action */
+/* Prompt: "styles for the shared widget chrome component" */
+/* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .widget {
   background: #ffffff;
   border: 1px solid #d8dde6;
@@ -41,6 +65,116 @@
   padding: 16px;
 }
 
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Main dashboard stylesheet — imports partials, global resets, grid layout, responsive breakpoints
+ * Prompt summary: "master SCSS that composes all widget partials and defines the 4-column dashboard grid"
+ */
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-opus-4-6
+ * Task: Task Domains component styles — horizontal domain pills with selection state
+ * Prompt summary: "style the task domain selector bar above the dashboard grid"
+ */
+/* [Claude] Task: task domain selector bar with pills, settings icon, and refresh link */
+/* Prompt: "style the task domain selector bar above the dashboard grid" */
+/* Date: 2026-02-21 | Model: claude-opus-4-6 */
+.task-domains {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #d8dde6;
+  border-radius: 10px;
+}
+
+.task-domains-list {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.task-domain-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #7a8699;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+.task-domain-item:hover {
+  color: #2c3e6b;
+  background: #e8edf5;
+}
+.task-domain-item.active {
+  color: #ffffff;
+  background: #2c3e6b;
+  border-color: #2c3e6b;
+}
+.task-domain-item.active .task-domain-settings {
+  color: rgba(255, 255, 255, 0.6);
+}
+.task-domain-item.active .task-domain-settings:hover {
+  color: #ffffff;
+}
+
+.task-domain-name {
+  user-select: none;
+}
+
+.task-domain-settings {
+  font-size: 0.85rem;
+  color: #a3aebb;
+  text-decoration: none;
+  line-height: 1;
+}
+.task-domain-settings:hover {
+  color: #2c3e6b;
+}
+
+.task-domains-refresh {
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  font-size: 0.75rem;
+  color: #7a8699;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.task-domains-refresh:hover {
+  color: #2c3e6b;
+}
+.task-domains-refresh:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.task-domains-empty {
+  font-size: 0.8rem;
+  color: #a3aebb;
+}
+
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Main dashboard stylesheet — imports partials, global resets, grid layout, responsive breakpoints
+ * Prompt summary: "master SCSS that composes all widget partials and defines the 4-column dashboard grid"
+ */
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Planning widget styles — quarter cards and month tabs
+ * Prompt summary: "styles for quarterly plan cards and month tab navigation"
+ */
+/* [Claude] Task: planning widget layout — quarter cards and month tab bar */
+/* Prompt: "styles for quarterly plan cards and month tab navigation" */
+/* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .planning-quarters {
   display: flex;
   gap: 16px;
@@ -97,6 +231,19 @@
   font-weight: 600;
 }
 
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Main dashboard stylesheet — imports partials, global resets, grid layout, responsive breakpoints
+ * Prompt summary: "master SCSS that composes all widget partials and defines the 4-column dashboard grid"
+ */
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Victory value widget styles — header total and chart canvas
+ * Prompt summary: "styles for victory value header and bar chart area"
+ */
+/* [Claude] Task: victory value header and chart layout */
+/* Prompt: "styles for victory value header and bar chart area" */
+/* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .vv-header {
   display: flex;
   align-items: baseline;
@@ -119,6 +266,19 @@
   border-radius: 6px;
 }
 
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Main dashboard stylesheet — imports partials, global resets, grid layout, responsive breakpoints
+ * Prompt summary: "master SCSS that composes all widget partials and defines the 4-column dashboard grid"
+ */
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Mood widget styles — emoji buttons, summary, sparkline
+ * Prompt summary: "styles for mood selector buttons, average display, and sparkline dots"
+ */
+/* [Claude] Task: mood selector buttons, summary text, and sparkline visualization */
+/* Prompt: "styles for mood selector buttons, average display, and sparkline dots" */
+/* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .mood-selector {
   display: flex;
   justify-content: center;
@@ -169,6 +329,19 @@
   min-height: 4px;
 }
 
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Main dashboard stylesheet — imports partials, global resets, grid layout, responsive breakpoints
+ * Prompt summary: "master SCSS that composes all widget partials and defines the 4-column dashboard grid"
+ */
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Calendar widget styles — navigation, grid, cells with task-density dots
+ * Prompt summary: "styles for monthly calendar grid with nav arrows and colored indicator dots"
+ */
+/* [Claude] Task: calendar navigation bar, day grid, and task-density dot indicators */
+/* Prompt: "styles for monthly calendar grid with nav arrows and colored indicator dots" */
+/* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .cal-nav {
   display: flex;
   align-items: center;
@@ -240,6 +413,19 @@
   bottom: 2px;
 }
 
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Main dashboard stylesheet — imports partials, global resets, grid layout, responsive breakpoints
+ * Prompt summary: "master SCSS that composes all widget partials and defines the 4-column dashboard grid"
+ */
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Agenda widget styles — task list items, time, priority indicators
+ * Prompt summary: "styles for today's agenda task list with priority color bars and durations"
+ */
+/* [Claude] Task: agenda task list layout with priority indicators and duration labels */
+/* Prompt: "styles for today's agenda task list with priority color bars and durations" */
+/* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .agenda-list {
   display: flex;
   flex-direction: column;
@@ -285,6 +471,19 @@
   font-size: 0.85rem;
 }
 
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Main dashboard stylesheet — imports partials, global resets, grid layout, responsive breakpoints
+ * Prompt summary: "master SCSS that composes all widget partials and defines the 4-column dashboard grid"
+ */
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Quotes widget styles — image tile grid with text overlay
+ * Prompt summary: "styles for quote tiles with background images and serif text"
+ */
+/* [Claude] Task: quote tile grid with background images and overlaid text */
+/* Prompt: "styles for quote tiles with background images and serif text" */
+/* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .quotes-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -321,6 +520,19 @@
   font-size: 0.85rem;
 }
 
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Main dashboard stylesheet — imports partials, global resets, grid layout, responsive breakpoints
+ * Prompt summary: "master SCSS that composes all widget partials and defines the 4-column dashboard grid"
+ */
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Quick actions widget styles — 2x2 button grid
+ * Prompt summary: "styles for quick-action shortcut button grid"
+ */
+/* [Claude] Task: quick-action 2x2 button grid with icon and label */
+/* Prompt: "styles for quick-action shortcut button grid" */
+/* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .qa-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -351,6 +563,19 @@
   font-weight: 500;
 }
 
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: Main dashboard stylesheet — imports partials, global resets, grid layout, responsive breakpoints
+ * Prompt summary: "master SCSS that composes all widget partials and defines the 4-column dashboard grid"
+ */
+/* [Claude-authored file]
+ * Created: 2026-02-21 | Model: claude-sonnet-4-5-20250929
+ * Task: AI plugins widget styles — list items with icons and badges
+ * Prompt summary: "styles for AI/plugin action list with icon, label, and count badge"
+ */
+/* [Claude] Task: AI plugin list items with icon, label, and circular badge */
+/* Prompt: "styles for AI/plugin action list with icon, label, and count badge" */
+/* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .aip-list {
   display: flex;
   flex-direction: column;

@@ -1,4 +1,4 @@
-# Default ignored files
+/dev/bundle*
 /shelf/
 /workspace.xml
 # Editor-based HTTP Client requests

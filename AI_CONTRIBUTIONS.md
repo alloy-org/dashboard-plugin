@@ -119,3 +119,13 @@ repository, per the standards defined in `CLAUDE.md`.
 **Prompt summary:** "add file headers, inline annotations, and AI_CONTRIBUTIONS.md covering all Claude-authored code"
 **Scope:** Annotation headers and comments added to 28 files
 **Notes:** Covers sections 1, 2, 4, and 5 of CLAUDE.md; commit messages (section 3) and PR descriptions (section 6) applied at commit/PR time
+
+## 2026-02-21 — JSDoc parameter documentation for WidgetWrapper
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dashboard/widget-wrapper.js` (modified — added full JSDoc block for all parameters)
+
+**Task:** Add full JSDoc documentation for each parameter of the `WidgetWrapper` component
+**Prompt summary:** "Update WidgetWrapper with full JSDoc for each of its parameters"
+**Scope:** ~15 lines of documentation added; no logic changes
