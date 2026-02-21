@@ -129,3 +129,18 @@ repository, per the standards defined in `CLAUDE.md`.
 **Task:** Add full JSDoc documentation for each parameter of the `WidgetWrapper` component
 **Prompt summary:** "Update WidgetWrapper with full JSDoc for each of its parameters"
 **Scope:** ~15 lines of documentation added; no logic changes
+
+---
+
+## 2026-02-21 — Config-driven dashboard component rendering
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/constants/settings.js` (modified) — Added `DASHBOARD_COMPONENTS` key and `DEFAULT_DASHBOARD_COMPONENTS` layout definition
+- `lib/data-service.js` (modified) — Added initialization/persistence logic for `DASHBOARD_COMPONENTS` when missing and included it in returned dashboard settings
+- `lib/dashboard/app.js` (modified) — Added `renderActiveComponents()` method that renders widgets from persisted layout using a `switch` and dynamic grid spans
+
+**Task:** Move widget rendering to a dedicated function driven by persisted component layout settings
+**Prompt summary:** "break out rendering into renderActiveComponents; read which widgets and grid sizes from app.settings; initialize default DASHBOARD_COMPONENTS; use switch for component props"
+**Scope:** ~80 lines of logic changed across 3 files
+**Notes:** Default component order and sizing matches prior hardcoded dashboard grid; per-widget configuration payload is now available on each component entry under `settings`
