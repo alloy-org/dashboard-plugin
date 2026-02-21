@@ -7,31 +7,6 @@ dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Plugin to resolve react/react-dom imports to browser globals
-const reactGlobalsPlugin = {
-  name: 'react-globals',
-  setup(build) {
-    build.onResolve({ filter: /^react(-dom(\/client)?)?$/ }, args => ({
-      path: args.path,
-      namespace: 'react-global',
-    }));
-    build.onLoad({ filter: /.*/, namespace: 'react-global' }, args => {
-      if (args.path === 'react') {
-        return {
-          contents: `var R = globalThis.React; export default R; export var createElement = R.createElement; export var useState = R.useState; export var useEffect = R.useEffect; export var useRef = R.useRef; export var useCallback = R.useCallback; export var useMemo = R.useMemo;`,
-          loader: 'js',
-        };
-      }
-      if (args.path === 'react-dom' || args.path === 'react-dom/client') {
-        return {
-          contents: `var RD = globalThis.ReactDOM; export default RD; export var createRoot = RD.createRoot;`,
-          loader: 'js',
-        };
-      }
-    });
-  }
-};
-
 // Plugin to resolve absolute imports from lib directory
 const absoluteImportsPlugin = {
   name: 'absolute-imports',
@@ -53,15 +28,18 @@ const absoluteImportsPlugin = {
   },
 };
 
-// Step 1: Bundle client-side dashboard code into a string
+// Step 1: Bundle client-side dashboard code (with React included)
 const clientBuild = await esbuild.build({
   entryPoints: [path.join(__dirname, 'lib/dashboard/client-entry.js')],
   bundle: true,
   format: 'iife',
   write: false,
-  plugins: [reactGlobalsPlugin],
+  define: {
+    "process.env.NODE_ENV": '"production"',
+  },
+  target: ["chrome91", "firefox90", "safari15", "edge91"],
 });
-const clientCode = clientBuild.outputFiles[0].text;
+const clientBase64 = Buffer.from(clientBuild.outputFiles[0].text).toString("base64");
 
 // Plugin to provide the client bundle as a virtual module
 const clientBundlePlugin = {
@@ -72,7 +50,7 @@ const clientBundlePlugin = {
       namespace: 'client-bundle',
     }));
     build.onLoad({ filter: /.*/, namespace: 'client-bundle' }, () => ({
-      contents: `export const clientBundle = ${JSON.stringify(clientCode)};`,
+      contents: `export const clientBase64 = ${JSON.stringify(clientBase64)};`,
       loader: 'js',
     }));
   }
