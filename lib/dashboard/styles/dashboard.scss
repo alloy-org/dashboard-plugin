@@ -26,11 +26,15 @@
   padding: 0;
 }
 
-body {
-  font-family: $font-sans;
-  background: $color-bg-page;
-  color: $color-text;
-  -webkit-font-smoothing: antialiased;
+html {
+  overflow-y: scroll;
+
+  body {
+    font-family: $font-sans;
+    background: $color-bg-page;
+    color: $color-text;
+    -webkit-font-smoothing: antialiased;
+  }
 }
 
 // Dashboard layout

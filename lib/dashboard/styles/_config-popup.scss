@@ -9,18 +9,17 @@
 /* [Claude] Task: modal overlay and popup card styles with submit/cancel actions */
 /* Prompt: "popup component that pops up setting options upon clicking Configure" */
 /* Date: 2026-02-22 | Model: claude-opus-4-6 */
-.dashboard {
-  .config-popup-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-  }
+.config-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
 
-  .config-popup {
+.config-popup-container {
     background: $color-bg-card;
     border: 1px solid $color-border;
     border-radius: $radius-lg;
@@ -28,7 +27,6 @@
     max-width: 440px;
     width: 90%;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-  }
 
   .config-popup-header {
     padding: $sp-lg;
