@@ -8,8 +8,8 @@ import dotenv from "dotenv"
 import esbuild from "esbuild"
 import path from "path"
 import * as sass from "sass"
-import fs from "fs"
 import { fileURLToPath } from "url"
+import { createLibImportsPlugin } from "./lib-imports-plugin.js"
 
 dotenv.config();
 
@@ -21,33 +21,7 @@ const scssResult = sass.compile(path.join(__dirname, 'lib/dashboard/styles/dashb
 });
 const compiledCSS = scssResult.css;
 
-// Plugin to resolve bare imports by searching the importer's directory first, then lib/
-const absoluteImportsPlugin = {
-  name: 'absolute-imports',
-  setup(build) {
-    build.onResolve({ filter: /^[^.\/]/ }, args => {
-      // Skip virtual modules
-      if (args.path === 'client-bundle' || args.path === 'css-content') {
-        return null;
-      }
-
-      // Try the importer's directory first, then lib/ root; skip if neither exists
-      const candidates = [];
-      if (args.resolveDir) {
-        candidates.push(path.join(args.resolveDir, args.path + '.js'));
-      }
-      candidates.push(path.join(__dirname, 'lib', args.path + '.js'));
-
-      for (const candidate of candidates) {
-        try {
-          fs.accessSync(candidate);
-          return { path: candidate };
-        } catch {}
-      }
-      return null;
-    });
-  },
-};
+const absoluteImportsPlugin = createLibImportsPlugin(path.join(__dirname, 'lib'));
 
 // Step 1: Bundle client-side dashboard code (with React included)
 const clientBuild = await esbuild.build({

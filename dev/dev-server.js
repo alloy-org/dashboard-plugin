@@ -9,6 +9,7 @@ import path from "path";
 import fs from "fs";
 import * as sass from "sass";
 import { fileURLToPath } from "url";
+import { createLibImportsPlugin } from "../lib-imports-plugin.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
@@ -45,7 +46,7 @@ async function main() {
     },
     target: ["chrome91", "firefox90", "safari15", "edge91"],
     sourcemap: true,
-    plugins: [scssPlugin],
+    plugins: [createLibImportsPlugin(path.join(rootDir, "lib")), scssPlugin],
   });
 
   await ctx.watch();
