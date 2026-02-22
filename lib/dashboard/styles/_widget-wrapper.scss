@@ -9,49 +9,51 @@
 /* [Claude] Task: base widget card styling with header bar and configure action */
 /* Prompt: "styles for the shared widget chrome component" */
 /* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
-.widget {
-  @include card;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-
-  &-header {
+.dashboard {
+  .widget {
+    @include card;
     display: flex;
-    align-items: center;
-    gap: $sp-sm;
-    padding: $sp-md $sp-lg;
-    border-bottom: 1px solid $color-border;
-  }
+    flex-direction: column;
+    height: 100%;
 
-  &-icon {
-    font-size: 1rem;
-  }
-
-  &-title {
-    flex: 1;
-    margin: 0;
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: $color-navy;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-  }
-
-  &-configure {
-    background: none;
-    border: none;
-    padding: $sp-xs $sp-sm;
-    font-size: 0.75rem;
-    color: $color-text-secondary;
-    cursor: pointer;
-
-    &:hover {
-      color: $color-navy;
+    &-header {
+      display: flex;
+      align-items: center;
+      gap: $sp-sm;
+      padding: $sp-md $sp-lg;
+      border-bottom: 1px solid $color-border;
     }
-  }
 
-  &-body {
-    flex: 1;
-    padding: $sp-lg;
+    &-icon {
+      font-size: 1rem;
+    }
+
+    &-title {
+      flex: 1;
+      margin: 0;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: $color-navy;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    &-configure {
+      background: none;
+      border: none;
+      padding: $sp-xs $sp-sm;
+      font-size: 0.75rem;
+      color: $color-text-secondary;
+      cursor: pointer;
+
+      &:hover {
+        color: $color-navy;
+      }
+    }
+
+    &-body {
+      flex: 1;
+      padding: $sp-lg;
+    }
   }
 }

@@ -9,54 +9,56 @@
 /* [Claude] Task: mood selector buttons, summary text, and sparkline visualization */
 /* Prompt: "styles for mood selector buttons, average display, and sparkline dots" */
 /* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
-.mood-selector {
-  display: flex;
-  justify-content: center;
-  gap: $sp-sm;
-  margin-bottom: $sp-lg;
-}
-
-.mood-btn {
-  background: none;
-  border: 2px solid transparent;
-  border-radius: 50%;
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: border-color 0.15s, transform 0.15s;
-
-  &:hover {
-    border-color: $color-blue;
-    transform: scale(1.15);
+.widget-mood {
+  .mood-selector {
+    display: flex;
+    justify-content: center;
+    gap: $sp-sm;
+    margin-bottom: $sp-lg;
   }
 
-  .mood-emoji {
-    font-size: 1.5rem;
+  .mood-btn {
+    background: none;
+    border: 2px solid transparent;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.15s;
+
+    &:hover {
+      border-color: $color-blue;
+      transform: scale(1.15);
+    }
+
+    .mood-emoji {
+      font-size: 1.5rem;
+    }
   }
-}
 
-.mood-summary {
-  font-size: 0.8rem;
-  color: $color-text-secondary;
-  text-align: center;
-}
+  .mood-summary {
+    font-size: 0.8rem;
+    color: $color-text-secondary;
+    text-align: center;
+  }
 
-.mood-sparkline {
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
-  height: 24px;
-  margin-top: $sp-sm;
-  justify-content: center;
-}
+  .mood-sparkline {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 24px;
+    margin-top: $sp-sm;
+    justify-content: center;
+  }
 
-.mood-dot {
-  width: 4px;
-  background: $color-blue;
-  border-radius: 2px;
-  position: relative;
-  min-height: 4px;
+  .mood-dot {
+    width: 4px;
+    background: $color-blue;
+    border-radius: 2px;
+    position: relative;
+    min-height: 4px;
+  }
 }

@@ -9,104 +9,106 @@
 /* [Claude] Task: calendar navigation bar, day grid, and task-density dot indicators */
 /* Prompt: "styles for monthly calendar grid with nav arrows and colored indicator dots" */
 /* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
-.cal-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: $sp-md;
-}
-
-.cal-arrow {
-  background: none;
-  border: none;
-  font-size: 0.75rem;
-  color: $color-text-secondary;
-  cursor: pointer;
-  padding: $sp-xs;
-
-  &:hover {
-    color: $color-navy;
-  }
-}
-
-.cal-month {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: $color-navy;
-}
-
-.cal-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
-  text-align: center;
-}
-
-.cal-header {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: $color-text-muted;
-  padding: $sp-xs 0;
-}
-
-/* [Claude] Task: clickable day cells with selected state for calendar-agenda interaction */
-/* Prompt: "clicking a date on calendar changes the date shown by the Agenda widget" */
-/* Date: 2026-02-21 | Model: claude-opus-4-6 */
-.cal-cell {
-  aspect-ratio: 1;
-  border-radius: 50%;
-  cursor: pointer;
-  position: relative;
-  padding: $sp-xs 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.12s ease;
-
-  &:not(.empty):hover {
-    background: $color-blue-light;
+.widget-calendar {
+  .cal-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: $sp-md;
   }
 
-  &.empty {
-    visibility: hidden;
-    cursor: default;
-  }
-
-  &.today {
-    background: $color-blue;
-
-    .cal-day {
-      color: #fff;
-      font-weight: 700;
-    }
+  .cal-arrow {
+    background: none;
+    border: none;
+    font-size: 0.75rem;
+    color: $color-text-secondary;
+    cursor: pointer;
+    padding: $sp-xs;
 
     &:hover {
-      background: $color-navy;
+      color: $color-navy;
     }
   }
 
-  &.selected {
-    outline: 2px solid $color-accent;
-    outline-offset: 0;
+  .cal-month {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: $color-navy;
   }
 
-  &.today.selected {
-    outline-color: $color-accent;
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    text-align: center;
   }
 
-  .cal-day {
-    color: $color-text;
-    font-size: 0.8rem;
-    position: relative;
-    top: -2px;
+  .cal-header {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: $color-text-muted;
+    padding: $sp-xs 0;
   }
 
-  .cal-dot {
+  /* [Claude] Task: clickable day cells with selected state for calendar-agenda interaction */
+  /* Prompt: "clicking a date on calendar changes the date shown by the Agenda widget" */
+  /* Date: 2026-02-21 | Model: claude-opus-4-6 */
+  .cal-cell {
+    aspect-ratio: 1;
     border-radius: 50%;
-    bottom: 6px;
-    height: 4px;
-    position: absolute;
-    width: 4px;
+    cursor: pointer;
+    position: relative;
+    padding: $sp-xs 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.12s ease;
+
+    &:not(.empty):hover {
+      background: $color-blue-light;
+    }
+
+    &.empty {
+      visibility: hidden;
+      cursor: default;
+    }
+
+    &.today {
+      background: $color-blue;
+
+      .cal-day {
+        color: #fff;
+        font-weight: 700;
+      }
+
+      &:hover {
+        background: $color-navy;
+      }
+    }
+
+    &.selected {
+      outline: 2px solid $color-accent;
+      outline-offset: 0;
+    }
+
+    &.today.selected {
+      outline-color: $color-accent;
+    }
+
+    .cal-day {
+      color: $color-text;
+      font-size: 0.8rem;
+      position: relative;
+      top: -2px;
+    }
+
+    .cal-dot {
+      border-radius: 50%;
+      bottom: 6px;
+      height: 4px;
+      position: absolute;
+      width: 4px;
+    }
   }
 }

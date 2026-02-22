@@ -17,6 +17,7 @@
 @use 'quotes';
 @use 'quick-actions';
 @use 'ai-plugins';
+@use 'config-popup';
 
 // Global resets
 *, *::before, *::after {
@@ -37,19 +38,19 @@ body {
   padding: $sp-xl;
   max-width: 1200px;
   margin: 0 auto;
-}
 
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: $sp-lg;
-}
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: $sp-lg;
+  }
 
-.grid-cell {
-  min-width: 0;
+  .grid-cell {
+    min-width: 0;
 
-  &.span-2 {
-    grid-column: span 2;
+    &.span-2 {
+      grid-column: span 2;
+    }
   }
 }
 
@@ -91,21 +92,21 @@ body {
 
 // Responsive
 @media (max-width: 800px) {
-  .dashboard-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .dashboard {
+    .dashboard-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
   }
 }
 
 @media (max-width: 480px) {
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
+  .dashboard {
+    .dashboard-grid {
+      grid-template-columns: 1fr;
+    }
 
-  .grid-cell.span-2 {
-    grid-column: span 1;
-  }
-
-  .quotes-grid {
-    grid-template-columns: 1fr;
+    .grid-cell.span-2 {
+      grid-column: span 1;
+    }
   }
 }

@@ -9,152 +9,154 @@
 /* [Claude] Task: agenda task list layout with priority indicators and duration labels */
 /* Prompt: "styles for today's agenda task list with priority color bars and durations" */
 /* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
-.agenda-list {
-  display: flex;
-  flex-direction: column;
-  gap: $sp-md;
-  max-height: 280px;
-  overflow-y: auto;
-  padding-right: $sp-xs;
-}
-
-.agenda-day {
-  display: flex;
-  flex-direction: column;
-  gap: $sp-xs;
-}
-
-.agenda-date-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: $color-text-secondary;
-  text-transform: uppercase;
-}
-
-.agenda-empty-day {
-  font-size: 0.8rem;
-  color: $color-text-muted;
-  font-style: italic;
-  padding: $sp-xs 0;
-}
-
-.agenda-item {
-  display: flex;
-  align-items: center;
-  gap: $sp-md;
-  padding: $sp-sm 0;
-
-  .agenda-indicator {
-    width: 4px;
-    height: 36px;
-    border-radius: 2px;
-    flex-shrink: 0;
-
-    &.priority-critical {
-      background-color: $color-agenda-priority-critical;
-    }
-
-    &.priority-important {
-      background-color: $color-agenda-priority-important;
-    }
-
-    &.priority-urgent {
-      background-color: $color-agenda-priority-urgent;
-    }
-
-    &.priority-normal {
-      background-color: $color-agenda-priority-normal;
-    }
+.widget-agenda {
+  .agenda-list {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-md;
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: $sp-xs;
   }
 
-  .agenda-content {
-    flex: 1;
+  .agenda-day {
     display: flex;
     flex-direction: column;
     gap: $sp-xs;
+  }
 
-    .agenda-time {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: $color-text-secondary;
+  .agenda-date-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: $color-text-secondary;
+    text-transform: uppercase;
+  }
+
+  .agenda-empty-day {
+    font-size: 0.8rem;
+    color: $color-text-muted;
+    font-style: italic;
+    padding: $sp-xs 0;
+  }
+
+  .agenda-item {
+    display: flex;
+    align-items: center;
+    gap: $sp-md;
+    padding: $sp-sm 0;
+
+    .agenda-indicator {
+      width: 4px;
+      height: 36px;
+      border-radius: 2px;
+      flex-shrink: 0;
+
+      &.priority-critical {
+        background-color: $color-agenda-priority-critical;
+      }
+
+      &.priority-important {
+        background-color: $color-agenda-priority-important;
+      }
+
+      &.priority-urgent {
+        background-color: $color-agenda-priority-urgent;
+      }
+
+      &.priority-normal {
+        background-color: $color-agenda-priority-normal;
+      }
     }
 
-    .agenda-text {
-      font-size: 0.85rem;
-      color: $color-text;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+    .agenda-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: $sp-xs;
+
+      .agenda-time {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: $color-text-secondary;
+      }
+
+      .agenda-text {
+        font-size: 0.85rem;
+        color: $color-text;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .agenda-note-link {
+        border: 0;
+        background: transparent;
+        color: $color-blue;
+        font-size: 0.72rem;
+        text-align: left;
+        padding: 0;
+        margin: 0;
+        cursor: pointer;
+        text-decoration: underline;
+      }
     }
 
-    .agenda-note-link {
-      border: 0;
-      background: transparent;
-      color: $color-blue;
-      font-size: 0.72rem;
-      text-align: left;
-      padding: 0;
-      margin: 0;
-      cursor: pointer;
-      text-decoration: underline;
+    .agenda-duration {
+      font-size: 0.7rem;
+      color: $color-text-muted;
     }
   }
 
-  .agenda-duration {
+  .agenda-task-row {
+    border-radius: $radius-sm;
+    padding: $sp-sm;
+    cursor: pointer;
+    transition: background-color 0.12s ease;
+
+    &:hover {
+      background: $color-bg-page;
+    }
+  }
+
+  .agenda-empty {
+    text-align: center;
+    color: $color-text-secondary;
+    padding: $sp-xl 0;
+    font-size: 0.85rem;
+  }
+
+  /* [Claude] Task: pagination arrow controls in agenda widget header */
+  /* Prompt: "implement Agenda pagination, with arrows in header" */
+  /* Date: 2026-02-21 | Model: claude-opus-4-6 */
+  .agenda-pagination {
+    display: flex;
+    align-items: center;
+    gap: $sp-xs;
+  }
+
+  .agenda-page-arrow {
+    background: none;
+    border: none;
+    padding: 2px $sp-xs;
+    font-size: 0.65rem;
+    color: $color-text-secondary;
+    cursor: pointer;
+    line-height: 1;
+
+    &:hover:not(:disabled) {
+      color: $color-navy;
+    }
+
+    &:disabled {
+      opacity: 0.3;
+      cursor: default;
+    }
+  }
+
+  .agenda-page-indicator {
     font-size: 0.7rem;
     color: $color-text-muted;
+    white-space: nowrap;
   }
-}
-
-.agenda-task-row {
-  border-radius: $radius-sm;
-  padding: $sp-sm;
-  cursor: pointer;
-  transition: background-color 0.12s ease;
-
-  &:hover {
-    background: $color-bg-page;
-  }
-}
-
-.agenda-empty {
-  text-align: center;
-  color: $color-text-secondary;
-  padding: $sp-xl 0;
-  font-size: 0.85rem;
-}
-
-/* [Claude] Task: pagination arrow controls in agenda widget header */
-/* Prompt: "implement Agenda pagination, with arrows in header" */
-/* Date: 2026-02-21 | Model: claude-opus-4-6 */
-.agenda-pagination {
-  display: flex;
-  align-items: center;
-  gap: $sp-xs;
-}
-
-.agenda-page-arrow {
-  background: none;
-  border: none;
-  padding: 2px $sp-xs;
-  font-size: 0.65rem;
-  color: $color-text-secondary;
-  cursor: pointer;
-  line-height: 1;
-
-  &:hover:not(:disabled) {
-    color: $color-navy;
-  }
-
-  &:disabled {
-    opacity: 0.3;
-    cursor: default;
-  }
-}
-
-.agenda-page-indicator {
-  font-size: 0.7rem;
-  color: $color-text-muted;
-  white-space: nowrap;
 }

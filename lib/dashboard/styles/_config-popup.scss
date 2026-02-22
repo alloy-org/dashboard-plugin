@@ -1,0 +1,116 @@
+/* [Claude-authored file]
+ * Created: 2026-02-22 | Model: claude-opus-4-6
+ * Task: Styles for the settings popup overlay and modal
+ * Prompt summary: "popup component styles for widget configuration"
+ */
+
+@use 'theme' as *;
+
+/* [Claude] Task: modal overlay and popup card styles with submit/cancel actions */
+/* Prompt: "popup component that pops up setting options upon clicking Configure" */
+/* Date: 2026-02-22 | Model: claude-opus-4-6 */
+.dashboard {
+  .config-popup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .config-popup {
+    background: $color-bg-card;
+    border: 1px solid $color-border;
+    border-radius: $radius-lg;
+    min-width: 320px;
+    max-width: 440px;
+    width: 90%;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  }
+
+  .config-popup-header {
+    padding: $sp-lg;
+    border-bottom: 1px solid $color-border;
+  }
+
+  .config-popup-title {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: $color-navy;
+  }
+
+  .config-popup-body {
+    padding: $sp-lg;
+
+    label {
+      display: flex;
+      align-items: center;
+      gap: $sp-sm;
+      padding: $sp-xs 0;
+      font-size: 0.85rem;
+      color: $color-text;
+      cursor: pointer;
+    }
+
+    input[type="radio"],
+    input[type="checkbox"] {
+      accent-color: $color-accent;
+    }
+
+    .config-field {
+      margin-bottom: $sp-md;
+
+      &:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    .config-field-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: $color-text-secondary;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-bottom: $sp-xs;
+    }
+  }
+
+  .config-popup-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: $sp-sm;
+    padding: $sp-md $sp-lg;
+    border-top: 1px solid $color-border;
+  }
+
+  .config-popup-btn {
+    padding: $sp-sm $sp-lg;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    border: 1px solid $color-border;
+
+    &--cancel {
+      background: transparent;
+      color: $color-text-secondary;
+
+      &:hover {
+        background: $color-bg-page-hover;
+      }
+    }
+
+    &--submit {
+      background: $color-accent;
+      color: #fff;
+      border-color: $color-accent;
+
+      &:hover {
+        opacity: 0.9;
+      }
+    }
+  }
+}

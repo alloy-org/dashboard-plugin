@@ -9,26 +9,28 @@
 /* [Claude] Task: victory value header and chart layout */
 /* Prompt: "styles for victory value header and bar chart area" */
 /* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
-.vv-header {
-  display: flex;
-  align-items: baseline;
-  gap: $sp-sm;
-  margin-bottom: $sp-sm;
+.widget-victory-value {
+  .vv-header {
+    display: flex;
+    align-items: baseline;
+    gap: $sp-sm;
+    margin-bottom: $sp-sm;
 
-  .vv-total {
-    font-size: 2rem;
-    font-weight: 700;
-    color: $color-navy;
+    .vv-total {
+      font-size: 2rem;
+      font-weight: 700;
+      color: $color-navy;
+    }
+
+    .vv-label {
+      font-size: 0.8rem;
+      color: $color-text-secondary;
+    }
   }
 
-  .vv-label {
-    font-size: 0.8rem;
-    color: $color-text-secondary;
+  .vv-chart {
+    display: block;
+    width: 100%;
+    border-radius: $radius-sm;
   }
-}
-
-.vv-chart {
-  display: block;
-  width: 100%;
-  border-radius: $radius-sm;
 }

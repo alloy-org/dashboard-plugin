@@ -9,63 +9,65 @@
 /* [Claude] Task: planning widget layout — quarter cards and month tab bar */
 /* Prompt: "styles for quarterly plan cards and month tab navigation" */
 /* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
-.planning-quarters {
-  display: flex;
-  gap: $sp-lg;
-  margin-bottom: $sp-lg;
-}
-
-.quarter-card {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: $sp-xs;
-  padding: $sp-md $sp-lg;
-  border: 2px dashed $color-border;
-  border-radius: $radius-md;
-  cursor: pointer;
-  transition: border-color 0.15s;
-
-  &:hover {
-    border-color: $color-blue;
+.widget-planning {
+  .planning-quarters {
+    display: flex;
+    gap: $sp-lg;
+    margin-bottom: $sp-lg;
   }
 
-  .quarter-label {
-    font-size: 0.95rem;
-    font-weight: 700;
-    color: $color-navy;
+  .quarter-card {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+    padding: $sp-md $sp-lg;
+    border: 2px dashed $color-border;
+    border-radius: $radius-md;
+    cursor: pointer;
+    transition: border-color 0.15s;
+
+    &:hover {
+      border-color: $color-blue;
+    }
+
+    .quarter-label {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: $color-navy;
+    }
+
+    .quarter-status {
+      font-size: 0.75rem;
+      color: $color-text-secondary;
+    }
   }
 
-  .quarter-status {
-    font-size: 0.75rem;
+  .month-tabs {
+    display: flex;
+    gap: $sp-xs;
+  }
+
+  .month-tab {
+    flex: 1;
+    padding: $sp-sm $sp-md;
+    background: none;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    font-size: 0.8rem;
     color: $color-text-secondary;
-  }
-}
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
 
-.month-tabs {
-  display: flex;
-  gap: $sp-xs;
-}
+    &:hover {
+      background: $color-blue-light;
+    }
 
-.month-tab {
-  flex: 1;
-  padding: $sp-sm $sp-md;
-  background: none;
-  border: 1px solid $color-border;
-  border-radius: $radius-sm;
-  font-size: 0.8rem;
-  color: $color-text-secondary;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-
-  &:hover {
-    background: $color-blue-light;
-  }
-
-  &.active {
-    background: $color-accent;
-    border-color: $color-accent;
-    color: #fff;
-    font-weight: 600;
+    &.active {
+      background: $color-accent;
+      border-color: $color-accent;
+      color: #fff;
+      font-weight: 600;
+    }
   }
 }

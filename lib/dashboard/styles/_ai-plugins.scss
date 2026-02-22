@@ -9,39 +9,41 @@
 /* [Claude] Task: AI plugin list items with icon, label, and circular badge */
 /* Prompt: "styles for AI/plugin action list with icon, label, and count badge" */
 /* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
-.aip-list {
-  display: flex;
-  flex-direction: column;
-  gap: $sp-sm;
-}
-
-.aip-item {
-  display: flex;
-  align-items: center;
-  gap: $sp-md;
-  padding: $sp-sm;
-  border-radius: $radius-sm;
-
-  .aip-icon {
-    font-size: 1.2rem;
+.widget-ai-plugins {
+  .aip-list {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
   }
 
-  .aip-label {
-    flex: 1;
-    font-size: 0.85rem;
-    color: $color-text;
-  }
-
-  .aip-badge {
-    background: $color-blue;
-    color: #fff;
-    font-size: 0.7rem;
-    font-weight: 700;
-    width: 22px;
-    height: 22px;
-    border-radius: 50%;
+  .aip-item {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: $sp-md;
+    padding: $sp-sm;
+    border-radius: $radius-sm;
+
+    .aip-icon {
+      font-size: 1.2rem;
+    }
+
+    .aip-label {
+      flex: 1;
+      font-size: 0.85rem;
+      color: $color-text;
+    }
+
+    .aip-badge {
+      background: $color-blue;
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
   }
 }

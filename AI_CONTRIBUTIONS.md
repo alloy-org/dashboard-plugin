@@ -150,6 +150,51 @@ repository, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-02-22 — Inline ConfigPopup component for widget settings
+
+**Model:** claude-opus-4-6
+**Files created/modified:**
+- `lib/dashboard/config-popup.js` (created) — Reusable popup component with `onSubmit`, `onCancel`, and `children` props
+- `lib/dashboard/styles/_config-popup.scss` (created) — Overlay, modal card, form field, and action button styles
+- `lib/dashboard/styles/dashboard.scss` (modified) — Added `@use 'config-popup'` import
+- `lib/dashboard/widget-wrapper.js` (modified) — Added `onConfigure` callback prop to override default plugin-based configure
+- `lib/dashboard/victory-value.js` (modified) — Integrated ConfigPopup with time range and mood overlay settings
+- `lib/dashboard/calendar.js` (modified) — Integrated ConfigPopup with week-start-day setting
+- `lib/plugin.js` (modified) — Added `saveSetting` action to persist config from inline popup
+
+**Task:** Implement inline settings popup for Victory Value and Calendar widgets
+**Prompt summary:** "popup component that pops up setting options upon clicking Configure, with onSubmit/onCancel and content props"
+**Scope:** ~120 lines of new logic across 7 files
+**Notes:** ConfigPopup renders as a fixed overlay modal; widgets manage their own config state and render the popup conditionally when Configure is clicked
+
+---
+
+## 2026-02-22 — Scope dashboard SCSS under component parents
+
+**Model:** gpt-5.3-codex
+**Files created/modified:**
+- `lib/dashboard/styles/_agenda.scss` (modified) — wrapped agenda selectors under `.widget-agenda`
+- `lib/dashboard/styles/_calendar.scss` (modified) — wrapped calendar selectors under `.widget-calendar`
+- `lib/dashboard/styles/_task-domains.scss` (modified) — wrapped task-domain selectors under `.dashboard`
+- `lib/dashboard/styles/_quick-actions.scss` (modified) — wrapped quick-action selectors under `.widget-quick-actions`
+- `lib/dashboard/styles/_planning.scss` (modified) — wrapped planning selectors under `.widget-planning`
+- `lib/dashboard/styles/_mood.scss` (modified) — wrapped mood selectors under `.widget-mood`
+- `lib/dashboard/styles/_quotes.scss` (modified) — wrapped quotes selectors under `.widget-quotes`
+- `lib/dashboard/styles/_victory-value.scss` (modified) — wrapped victory-value selectors under `.widget-victory-value`
+- `lib/dashboard/styles/_ai-plugins.scss` (modified) — wrapped AI plugin selectors under `.widget-ai-plugins`
+- `lib/dashboard/styles/_config-popup.scss` (modified) — wrapped popup selectors under `.dashboard`
+- `lib/dashboard/styles/_widget-wrapper.scss` (modified) — wrapped shared widget chrome selectors under `.dashboard`
+- `lib/dashboard/styles/dashboard.scss` (modified) — scoped layout/reset selectors to `.dashboard` and updated responsive nesting
+- `lib/dashboard/styles/_theme-light.scss` (modified) — scoped light theme variables under `.dashboard`
+- `lib/dashboard/styles/_theme-dark.scss` (modified) — scoped dark theme variables under `.dashboard`
+
+**Task:** Scope dashboard stylesheets to parent component wrappers to avoid global style bleed
+**Prompt summary:** "Update all of the files in the dashboard/styles directory so that they are wrapped by a parent class for the component that is including the stylesheet"
+**Scope:** ~14 SCSS files updated with parent wrappers and scoped theme variables
+**Notes:** Widget partials now key off `WidgetWrapper` classes (`.widget-<id>`), while shared and dashboard-level styles are scoped to `.dashboard`
+
+---
+
 ## 2026-02-21 — SCSS design system and widget styles
 
 **Model:** claude-sonnet-4-5-20250929

@@ -9,96 +9,98 @@
 /* [Claude] Task: task domain selector bar with pills, settings icon, and refresh link */
 /* Prompt: "style the task domain selector bar above the dashboard grid" */
 /* Date: 2026-02-21 | Model: claude-opus-4-6 */
-.task-domains {
-  display: flex;
-  align-items: center;
-  gap: $sp-md;
-  margin-bottom: $sp-lg;
-  padding: $sp-sm $sp-md;
-  background: $color-bg-card;
-  border: 1px solid $color-border;
-  border-radius: $radius-md;
-}
-
-.task-domains-list {
-  display: flex;
-  align-items: center;
-  gap: $sp-sm;
-  flex-wrap: wrap;
-  flex: 1;
-}
-
-.task-domain-item {
-  display: inline-flex;
-  align-items: center;
-  gap: $sp-xs;
-  padding: $sp-xs $sp-md;
-  border-radius: $radius-sm;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: $color-text-secondary;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.15s ease;
-
-  &:hover {
-    color: $color-navy;
-    background: $color-blue-light;
+.dashboard {
+  .task-domains {
+    display: flex;
+    align-items: center;
+    gap: $sp-md;
+    margin-bottom: $sp-lg;
+    padding: $sp-sm $sp-md;
+    background: $color-bg-card;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
   }
 
-  &.active {
-    color: $color-bg-card;
-    background: $color-navy;
-    border-color: $color-navy;
+  .task-domains-list {
+    display: flex;
+    align-items: center;
+    gap: $sp-sm;
+    flex-wrap: wrap;
+    flex: 1;
+  }
 
-    .task-domain-settings {
-      color: rgba(255, 255, 255, 0.6);
+  .task-domain-item {
+    display: inline-flex;
+    align-items: center;
+    gap: $sp-xs;
+    padding: $sp-xs $sp-md;
+    border-radius: $radius-sm;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: $color-text-secondary;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
 
-      &:hover {
-        color: #ffffff;
+    &:hover {
+      color: $color-navy;
+      background: $color-blue-light;
+    }
+
+    &.active {
+      color: $color-bg-card;
+      background: $color-navy;
+      border-color: $color-navy;
+
+      .task-domain-settings {
+        color: rgba(255, 255, 255, 0.6);
+
+        &:hover {
+          color: #ffffff;
+        }
       }
     }
   }
-}
 
-.task-domain-name {
-  user-select: none;
-}
-
-.task-domain-settings {
-  background: none;
-  border: none;
-  padding: 0;
-  font-size: 0.85rem;
-  color: $color-text-muted;
-  line-height: 1;
-  cursor: pointer;
-
-  &:hover {
-    color: $color-navy;
-  }
-}
-
-.task-domains-refresh {
-  background: none;
-  border: none;
-  padding: $sp-xs $sp-sm;
-  font-size: 0.75rem;
-  color: $color-text-secondary;
-  cursor: pointer;
-  white-space: nowrap;
-
-  &:hover {
-    color: $color-navy;
+  .task-domain-name {
+    user-select: none;
   }
 
-  &:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
-}
+  .task-domain-settings {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 0.85rem;
+    color: $color-text-muted;
+    line-height: 1;
+    cursor: pointer;
 
-.task-domains-empty {
-  font-size: 0.8rem;
-  color: $color-text-muted;
+    &:hover {
+      color: $color-navy;
+    }
+  }
+
+  .task-domains-refresh {
+    background: none;
+    border: none;
+    padding: $sp-xs $sp-sm;
+    font-size: 0.75rem;
+    color: $color-text-secondary;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover {
+      color: $color-navy;
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+  }
+
+  .task-domains-empty {
+    font-size: 0.8rem;
+    color: $color-text-muted;
+  }
 }
