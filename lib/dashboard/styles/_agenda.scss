@@ -124,3 +124,37 @@
   padding: $sp-xl 0;
   font-size: 0.85rem;
 }
+
+/* [Claude] Task: pagination arrow controls in agenda widget header */
+/* Prompt: "implement Agenda pagination, with arrows in header" */
+/* Date: 2026-02-21 | Model: claude-opus-4-6 */
+.agenda-pagination {
+  display: flex;
+  align-items: center;
+  gap: $sp-xs;
+}
+
+.agenda-page-arrow {
+  background: none;
+  border: none;
+  padding: 2px $sp-xs;
+  font-size: 0.65rem;
+  color: $color-text-secondary;
+  cursor: pointer;
+  line-height: 1;
+
+  &:hover:not(:disabled) {
+    color: $color-navy;
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+}
+
+.agenda-page-indicator {
+  font-size: 0.7rem;
+  color: $color-text-muted;
+  white-space: nowrap;
+}
