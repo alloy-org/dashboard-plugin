@@ -8,6 +8,7 @@ import dotenv from "dotenv"
 import esbuild from "esbuild"
 import path from "path"
 import * as sass from "sass"
+import fs from "fs"
 import { fileURLToPath } from "url"
 
 dotenv.config();
@@ -20,24 +21,30 @@ const scssResult = sass.compile(path.join(__dirname, 'lib/dashboard/styles/dashb
 });
 const compiledCSS = scssResult.css;
 
-// Plugin to resolve absolute imports from lib directory
+// Plugin to resolve bare imports by searching the importer's directory first, then lib/
 const absoluteImportsPlugin = {
   name: 'absolute-imports',
   setup(build) {
     build.onResolve({ filter: /^[^.\/]/ }, args => {
-      // Skip node_modules packages and virtual modules
-      if (args.path.startsWith('dotenv') ||
-        args.path.startsWith('esbuild') ||
-        args.path.startsWith('isomorphic-fetch') ||
-        args.path.startsWith('react') ||
-        args.path === 'client-bundle' ||
-        args.path === 'css-content') {
+      // Skip virtual modules
+      if (args.path === 'client-bundle' || args.path === 'css-content') {
         return null;
       }
 
-      // Resolve from lib directory and add .js extension
-      const libPath = path.join(__dirname, 'lib', args.path + '.js');
-      return { path: libPath };
+      // Try the importer's directory first, then lib/ root; skip if neither exists
+      const candidates = [];
+      if (args.resolveDir) {
+        candidates.push(path.join(args.resolveDir, args.path + '.js'));
+      }
+      candidates.push(path.join(__dirname, 'lib', args.path + '.js'));
+
+      for (const candidate of candidates) {
+        try {
+          fs.accessSync(candidate);
+          return { path: candidate };
+        } catch {}
+      }
+      return null;
     });
   },
 };
@@ -52,6 +59,7 @@ const clientBuild = await esbuild.build({
     "process.env.NODE_ENV": '"production"',
   },
   target: ["chrome91", "firefox90", "safari15", "edge91"],
+  plugins: [absoluteImportsPlugin],
 });
 const clientBase64 = Buffer.from(clientBuild.outputFiles[0].text).toString("base64");
 
