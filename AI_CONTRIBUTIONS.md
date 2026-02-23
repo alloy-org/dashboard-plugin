@@ -150,6 +150,24 @@ repository, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-02-22 — DashboardTooltip component and Victory Value hover tooltips
+
+**Model:** claude-opus-4-6
+**Files created/modified:**
+- `lib/dashboard/tooltip.js` (created) — Self-contained `DashboardTooltip` component accepting `left`, `visible`, and `children` props; renders a dark positioned popup with arrow inside a `position: relative` parent
+- `lib/dashboard/styles/_tooltip.scss` (created) — Full tooltip stylesheet: shell positioning, dark background, arrow, and all content slot classes (`dashboard-tooltip-header`, `dashboard-tooltip-section`, `dashboard-tooltip-row` with `-label`/`-value`, `dashboard-tooltip-empty`)
+- `lib/dashboard/styles/dashboard.scss` (modified) — Added `@use 'tooltip'` import
+- `lib/dashboard/victory-value.js` (modified) — Added `completedTasks` prop, canvas mousemove/mouseleave hover detection, and tooltip rendering showing date header, mood rating, and completed tasks sorted by victoryValue descending
+- `lib/dashboard/styles/_victory-value.scss` (modified) — Added `.vv-chart-container` with `position: relative` for tooltip anchoring
+- `lib/dashboard/app.js` (modified) — Passed `completedTasks` from `widgetData` to VictoryValueWidget props
+
+**Task:** Add hover tooltips to Victory Value chart bars showing completed tasks and mood for each day
+**Prompt summary:** "show a tooltip listing tasks finished sorted by victoryValue, with mood rating, when hovering on a date in VictoryValue; extract tooltip into standalone reusable component"
+**Scope:** ~120 lines of new logic across 6 files
+**Notes:** Tooltip is fully self-contained — all styling lives in the tooltip's own stylesheet. Canvas hover detection maps mouse position to bar zones using the same geometry as the canvas drawing code. Mood uses the same -2..2 emoji mapping as the Mood widget.
+
+---
+
 ## 2026-02-22 — Inline ConfigPopup component for widget settings
 
 **Model:** claude-opus-4-6

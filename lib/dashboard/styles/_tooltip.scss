@@ -1,0 +1,83 @@
+/* [Claude-authored file]
+ * Created: 2026-02-22 | Model: claude-opus-4-6
+ * Task: DashboardTooltip styles — dark floating popup with arrow and content layout
+ * Prompt summary: "self-contained tooltip stylesheet covering shell, arrow, and all content slots"
+ */
+
+@use 'theme' as *;
+
+/* [Claude] Task: self-contained tooltip shell, arrow, and content slot styles */
+/* Prompt: "make DashboardTooltip fully self-contained with all styling included" */
+/* Date: 2026-02-22 | Model: claude-opus-4-6 */
+.dashboard-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%);
+  z-index: 10;
+  min-width: 180px;
+  max-width: 260px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: #1f2937;
+  color: #f9fafb;
+  border-radius: $radius-sm;
+  padding: $sp-sm $sp-md;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+
+  &-arrow {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid #1f2937;
+  }
+
+  &-content {
+    display: flex;
+    flex-direction: column;
+  }
+
+  &-header {
+    font-weight: 600;
+    margin-bottom: $sp-xs;
+    padding-bottom: $sp-xs;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  &-section {
+    margin-bottom: $sp-xs;
+    padding-bottom: $sp-xs;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  &-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: $sp-sm;
+    padding: 2px 0;
+
+    &-label {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    &-value {
+      flex-shrink: 0;
+      font-weight: 600;
+      color: #a5b4fc;
+    }
+  }
+
+  &-empty {
+    color: rgba(255, 255, 255, 0.5);
+    font-style: italic;
+  }
+}
