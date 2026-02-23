@@ -146,17 +146,25 @@ function _generateTodayTasks(now) {
 
 function _generateTasks(weekStart) {
   const tasks = [];
+  const sampleTasks = [
+    `Update the woebegone [Software Velocity page](https://en.wikipedia.org/wiki/Velocity_(software_development)), pt 2`,
+    `📫  Message one luminary or press [Luminary List of Amplenote and GitClear Contacts](https://www.amplenote.com/notes/90959c22-d3e0-11ec-ba30-9abeb6de1996). `,
+    `Look up and schedule [interesting Kexp performances](https://www.kexp.org/events/kexp-events/)`,
+    `What does it all mean ![Image](https://images.amplenote.com/ed7cca81-bb1d-48d0-87a3-cfd263228188.png)`,
+  ];
   for (let i = 0; i < 7; i++) {
     const dayStart = new Date(weekStart);
     dayStart.setDate(dayStart.getDate() + i);
     for (let j = 0; j < 3; j++) {
       const startAt = dayStart.getTime() + (9 + j * 2) * 3600000;
+      const deadline = Math.random() > 0.5 ? startAt + 10000 : null;
       tasks.push({
         uuid: `task-${i}-${j}`,
-        content: `Task ${j + 1} for ${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][i]}`,
-        startAt,
+        content: j === 0 && sampleTasks[i] ? sampleTasks[i] : `Task ${ j + 1 } for ${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][i]}`,
+        startAt: deadline ? null : startAt,
         endAt: startAt + 3600000,
         completedAt: Math.random() > 0.3 ? startAt + 1800000 : null,
+        deadline,
         dismissedAt: null,
         victoryValue: Math.floor(Math.random() * 50) + 10,
         important: Math.random() > 0.5,

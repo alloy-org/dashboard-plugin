@@ -17,11 +17,25 @@ $agenda-transition-duration: 0.12s;
 /* Prompt: "styles for today's agenda task list with priority color bars and durations" */
 /* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .widget-agenda {
+  a {
+    color: $color-text-secondary;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  img {
+    max-width: 100%;
+  }
+
   .agenda-list {
     display: flex;
     flex-direction: column;
     gap: $sp-md;
     max-height: $agenda-list-max-height;
+    overflow-x: hidden;
     overflow-y: auto;
     padding-right: $sp-xs;
   }
