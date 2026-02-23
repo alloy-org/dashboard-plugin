@@ -6,13 +6,20 @@
 
 @use 'theme' as *;
 
+$cal-cell-gap: 2px;
+$cal-dot-size: 4px;
+$cal-dot-bottom: 6px;
+$cal-day-offset: -2px;
+$cal-outline-width: 2px;
+$cal-transition-duration: 0.12s;
+
 /* [Claude] Task: calendar navigation bar, day grid, and task-density dot indicators */
 /* Prompt: "styles for monthly calendar grid with nav arrows and colored indicator dots" */
 /* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .widget-calendar {
   .cal-nav {
-    display: flex;
     align-items: center;
+    display: flex;
     justify-content: space-between;
     margin-bottom: $sp-md;
   }
@@ -20,9 +27,9 @@
   .cal-arrow {
     background: none;
     border: none;
-    font-size: 0.75rem;
     color: $color-text-secondary;
     cursor: pointer;
+    font-size: 0.75rem;
     padding: $sp-xs;
 
     &:hover {
@@ -31,22 +38,22 @@
   }
 
   .cal-month {
+    color: $color-navy;
     font-size: 0.85rem;
     font-weight: 700;
-    color: $color-navy;
   }
 
   .cal-grid {
     display: grid;
+    gap: $cal-cell-gap;
     grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
     text-align: center;
   }
 
   .cal-header {
+    color: $color-text-muted;
     font-size: 0.7rem;
     font-weight: 600;
-    color: $color-text-muted;
     padding: $sp-xs 0;
   }
 
@@ -54,31 +61,31 @@
   /* Prompt: "clicking a date on calendar changes the date shown by the Agenda widget" */
   /* Date: 2026-02-21 | Model: claude-opus-4-6 */
   .cal-cell {
+    align-items: center;
     aspect-ratio: 1;
     border-radius: 50%;
     cursor: pointer;
-    position: relative;
-    padding: $sp-xs 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
     justify-content: center;
-    transition: background-color 0.12s ease;
+    padding: $sp-xs 0;
+    position: relative;
+    transition: background-color $cal-transition-duration ease;
 
     &:not(.empty):hover {
       background: $color-blue-light;
     }
 
     &.empty {
-      visibility: hidden;
       cursor: default;
+      visibility: hidden;
     }
 
     &.today {
       background: $color-blue;
 
       .cal-day {
-        color: #fff;
+        color: $color-text-on-accent;
         font-weight: 700;
       }
 
@@ -88,7 +95,7 @@
     }
 
     &.selected {
-      outline: 2px solid $color-accent;
+      outline: $cal-outline-width solid $color-accent;
       outline-offset: 0;
     }
 
@@ -100,15 +107,15 @@
       color: $color-text;
       font-size: 0.8rem;
       position: relative;
-      top: -2px;
+      top: $cal-day-offset;
     }
 
     .cal-dot {
       border-radius: 50%;
-      bottom: 6px;
-      height: 4px;
+      bottom: $cal-dot-bottom;
+      height: $cal-dot-size;
       position: absolute;
-      width: 4px;
+      width: $cal-dot-size;
     }
   }
 }

@@ -6,6 +6,8 @@
 
 @use 'theme' as *;
 
+$aip-badge-size: 22px;
+
 /* [Claude] Task: AI plugin list items with icon, label, and circular badge */
 /* Prompt: "styles for AI/plugin action list with icon, label, and count badge" */
 /* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
@@ -17,8 +19,8 @@
   }
 
   .aip-item {
-    display: flex;
     align-items: center;
+    display: flex;
     gap: $sp-md;
     padding: $sp-sm;
     border-radius: $radius-sm;
@@ -28,22 +30,22 @@
     }
 
     .aip-label {
+      color: $color-text;
       flex: 1;
       font-size: 0.85rem;
-      color: $color-text;
     }
 
     .aip-badge {
+      align-items: center;
       background: $color-blue;
-      color: #fff;
+      border-radius: 50%;
+      color: $color-text-on-accent;
+      display: flex;
       font-size: 0.7rem;
       font-weight: 700;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
+      height: $aip-badge-size;
       justify-content: center;
+      width: $aip-badge-size;
     }
   }
 }

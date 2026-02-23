@@ -5,6 +5,34 @@ repository, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-02-22 — SCSS styles refactor: alphabetize, constants, themed colors
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dashboard/styles/dashboard.scss` (modified) — Added layout constants; alphabetized declarations; replaced magic numbers
+- `lib/dashboard/styles/_config-popup.scss` (modified) — Constants for dimensions/shadow; themed overlay colors; alphabetized
+- `lib/dashboard/styles/_widget-wrapper.scss` (modified) — Alphabetized declarations
+- `lib/dashboard/styles/_ai-plugins.scss` (modified) — Badge size constant; $color-text-on-accent; alphabetized
+- `lib/dashboard/styles/_victory-value.scss` (modified) — Alphabetized declarations
+- `lib/dashboard/styles/_quotes.scss` (modified) — Quote tile min-height constant; $color-text-on-accent; alphabetized
+- `lib/dashboard/styles/_mood.scss` (modified) — Constants for button size, dot size/gap/radius, sparkline height, transition; alphabetized
+- `lib/dashboard/styles/_planning.scss` (modified) — Border/transition constants; $color-text-on-accent; alphabetized
+- `lib/dashboard/styles/_quick-actions.scss` (modified) — Transition constant; alphabetized
+- `lib/dashboard/styles/_task-domains.scss` (modified) — Transition constant; $color-text-on-accent-muted; alphabetized
+- `lib/dashboard/styles/_calendar.scss` (modified) — Constants for gap, dot size, outline, transition; $color-text-on-accent; alphabetized
+- `lib/dashboard/styles/_agenda.scss` (modified) — Constants for indicator, list height, transition; alphabetized
+- `lib/dashboard/styles/_tooltip.scss` (modified) — Constants for dimensions, shadow, arrow; themed tooltip colors; alphabetized
+- `lib/dashboard/styles/_theme.scss` (modified) — Added overlay, text-on-accent, tooltip color tokens
+- `lib/dashboard/styles/_theme-light.scss` (modified) — Added new tokens; alphabetized :root declarations
+- `lib/dashboard/styles/_theme-dark.scss` (modified) — Added new tokens; alphabetized :root declarations
+
+**Task:** Refactor all SCSS: alphabetize declarations, replace magic numbers with constants, use themed colors instead of hex
+**Prompt summary:** "Visit the /styles/ directory and update every style declaration: alphabetize within rules, declare SCSS constants for magic numbers, remove unnecessary defaults, replace hex colors with themed colors"
+**Scope:** ~16 SCSS files modified
+**Notes:** New theme tokens: $color-text-on-accent, $color-text-on-accent-muted, $color-overlay-backdrop, $color-overlay-shadow, $color-tooltip-* (bg, text, border, accent, shadow, text-muted)
+
+---
+
 ## 2026-02-21 — Standardize navigation through app.navigate actions
 
 **Model:** claude-sonnet-4-6

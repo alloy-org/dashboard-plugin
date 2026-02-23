@@ -6,51 +6,58 @@
 
 @use 'theme' as *;
 
+$config-popup-max-width: 440px;
+$config-popup-min-width: 320px;
+$config-popup-shadow-blur: 32px;
+$config-popup-shadow-y: 8px;
+$config-popup-width-pct: 90%;
+$config-popup-z-index: 1000;
+
 /* [Claude] Task: modal overlay and popup card styles with submit/cancel actions */
 /* Prompt: "popup component that pops up setting options upon clicking Configure" */
 /* Date: 2026-02-22 | Model: claude-opus-4-6 */
 .config-popup-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  display: flex;
   align-items: center;
+  background: $color-overlay-backdrop;
+  display: flex;
+  inset: 0;
   justify-content: center;
-  z-index: 1000;
+  position: fixed;
+  z-index: $config-popup-z-index;
 }
 
 .config-popup-container {
-    background: $color-bg-card;
-    border: 1px solid $color-border;
-    border-radius: $radius-lg;
-    min-width: 320px;
-    max-width: 440px;
-    width: 90%;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  background: $color-bg-card;
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
+  box-shadow: 0 $config-popup-shadow-y $config-popup-shadow-blur $color-overlay-shadow;
+  max-width: $config-popup-max-width;
+  min-width: $config-popup-min-width;
+  width: $config-popup-width-pct;
 
   .config-popup-header {
-    padding: $sp-lg;
     border-bottom: 1px solid $color-border;
+    padding: $sp-lg;
   }
 
   .config-popup-title {
-    margin: 0;
+    color: $color-navy;
     font-size: 0.95rem;
     font-weight: 700;
-    color: $color-navy;
+    margin: 0;
   }
 
   .config-popup-body {
     padding: $sp-lg;
 
     label {
-      display: flex;
       align-items: center;
-      gap: $sp-sm;
-      padding: $sp-xs 0;
-      font-size: 0.85rem;
       color: $color-text;
       cursor: pointer;
+      display: flex;
+      font-size: 0.85rem;
+      gap: $sp-sm;
+      padding: $sp-xs 0;
     }
 
     input[type="radio"],
@@ -67,30 +74,30 @@
     }
 
     .config-field-label {
+      color: $color-text-secondary;
       font-size: 0.75rem;
       font-weight: 600;
-      color: $color-text-secondary;
-      text-transform: uppercase;
       letter-spacing: 0.03em;
       margin-bottom: $sp-xs;
+      text-transform: uppercase;
     }
   }
 
   .config-popup-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: $sp-sm;
-    padding: $sp-md $sp-lg;
     border-top: 1px solid $color-border;
+    display: flex;
+    gap: $sp-sm;
+    justify-content: flex-end;
+    padding: $sp-md $sp-lg;
   }
 
   .config-popup-btn {
-    padding: $sp-sm $sp-lg;
-    font-size: 0.8rem;
-    font-weight: 600;
+    border: 1px solid $color-border;
     border-radius: $radius-sm;
     cursor: pointer;
-    border: 1px solid $color-border;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: $sp-sm $sp-lg;
 
     &--cancel {
       background: transparent;
@@ -103,8 +110,8 @@
 
     &--submit {
       background: $color-accent;
-      color: #fff;
       border-color: $color-accent;
+      color: $color-text-on-accent;
 
       &:hover {
         opacity: 0.9;

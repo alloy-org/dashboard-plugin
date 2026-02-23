@@ -9,28 +9,34 @@
 /* Date: 2026-02-21 | Model: claude-sonnet-4-6 */
 @media (prefers-color-scheme: dark) {
   :root {
-    --dashboard-color-bg-page: #111827;
-    --dashboard-color-bg-page-hover: #1a2436;
-    --dashboard-color-bg-card: #1f2937;
-    --dashboard-color-border: #374151;
-
-    --dashboard-color-navy: #c5d8ff;
     --dashboard-color-accent: #ffb36b;
-    --dashboard-color-blue: #8fb2ff;
-    --dashboard-color-blue-light: #253553;
-
-    --dashboard-color-text: #e5ecf5;
-    --dashboard-color-text-secondary: #b6c0cf;
-    --dashboard-color-text-muted: #95a3b8;
-
-    --dashboard-color-danger: #ff7a7a;
-    --dashboard-color-warning: #ffb36b;
-    --dashboard-color-success: #73d4a3;
-    --dashboard-color-info: #8fb2ff;
-
     --dashboard-color-agenda-priority-critical: #ff7a7a;
     --dashboard-color-agenda-priority-important: #ffb36b;
-    --dashboard-color-agenda-priority-urgent: #8fb2ff;
     --dashboard-color-agenda-priority-normal: #a3b0c4;
+    --dashboard-color-agenda-priority-urgent: #8fb2ff;
+    --dashboard-color-bg-card: #1f2937;
+    --dashboard-color-bg-page: #111827;
+    --dashboard-color-bg-page-hover: #1a2436;
+    --dashboard-color-blue: #8fb2ff;
+    --dashboard-color-blue-light: #253553;
+    --dashboard-color-border: #374151;
+    --dashboard-color-danger: #ff7a7a;
+    --dashboard-color-info: #8fb2ff;
+    --dashboard-color-navy: #c5d8ff;
+    --dashboard-color-overlay-backdrop: rgba(0, 0, 0, 0.5);
+    --dashboard-color-overlay-shadow: rgba(0, 0, 0, 0.4);
+    --dashboard-color-success: #73d4a3;
+    --dashboard-color-text: #e5ecf5;
+    --dashboard-color-text-muted: #95a3b8;
+    --dashboard-color-text-on-accent: #ffffff;
+    --dashboard-color-text-on-accent-muted: rgba(255, 255, 255, 0.6);
+    --dashboard-color-text-secondary: #b6c0cf;
+    --dashboard-color-tooltip-accent: #a5b4fc;
+    --dashboard-color-tooltip-bg: #1f2937;
+    --dashboard-color-tooltip-border: rgba(255, 255, 255, 0.15);
+    --dashboard-color-tooltip-shadow: rgba(0, 0, 0, 0.5);
+    --dashboard-color-tooltip-text: #f9fafb;
+    --dashboard-color-tooltip-text-muted: rgba(255, 255, 255, 0.5);
+    --dashboard-color-warning: #ffb36b;
   }
 }

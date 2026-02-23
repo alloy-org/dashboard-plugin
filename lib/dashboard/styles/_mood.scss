@@ -6,28 +6,35 @@
 
 @use 'theme' as *;
 
+$mood-btn-size: 44px;
+$mood-dot-gap: 3px;
+$mood-dot-radius: 2px;
+$mood-dot-size: 4px;
+$mood-sparkline-height: 24px;
+$mood-transition-duration: 0.15s;
+
 /* [Claude] Task: mood selector buttons, summary text, and sparkline visualization */
 /* Prompt: "styles for mood selector buttons, average display, and sparkline dots" */
 /* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .widget-mood {
   .mood-selector {
     display: flex;
-    justify-content: center;
     gap: $sp-sm;
+    justify-content: center;
     margin-bottom: $sp-lg;
   }
 
   .mood-btn {
+    align-items: center;
     background: none;
     border: 2px solid transparent;
     border-radius: 50%;
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     cursor: pointer;
-    transition: border-color 0.15s, transform 0.15s;
+    display: flex;
+    height: $mood-btn-size;
+    justify-content: center;
+    transition: border-color $mood-transition-duration, transform $mood-transition-duration;
+    width: $mood-btn-size;
 
     &:hover {
       border-color: $color-blue;
@@ -40,25 +47,25 @@
   }
 
   .mood-summary {
-    font-size: 0.8rem;
     color: $color-text-secondary;
+    font-size: 0.8rem;
     text-align: center;
   }
 
   .mood-sparkline {
-    display: flex;
     align-items: flex-end;
-    gap: 3px;
-    height: 24px;
-    margin-top: $sp-sm;
+    display: flex;
+    gap: $mood-dot-gap;
+    height: $mood-sparkline-height;
     justify-content: center;
+    margin-top: $sp-sm;
   }
 
   .mood-dot {
-    width: 4px;
     background: $color-blue;
-    border-radius: 2px;
+    border-radius: $mood-dot-radius;
+    min-height: $mood-dot-size;
     position: relative;
-    min-height: 4px;
+    width: $mood-dot-size;
   }
 }

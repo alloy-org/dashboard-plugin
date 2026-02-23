@@ -17,11 +17,11 @@
     height: 100%;
 
     &-header {
-      display: flex;
       align-items: center;
+      border-bottom: 1px solid $color-border;
+      display: flex;
       gap: $sp-sm;
       padding: $sp-md $sp-lg;
-      border-bottom: 1px solid $color-border;
     }
 
     &-icon {
@@ -29,22 +29,22 @@
     }
 
     &-title {
+      color: $color-navy;
       flex: 1;
-      margin: 0;
       font-size: 0.85rem;
       font-weight: 700;
-      color: $color-navy;
-      text-transform: uppercase;
       letter-spacing: 0.03em;
+      margin: 0;
+      text-transform: uppercase;
     }
 
     &-configure {
       background: none;
       border: none;
-      padding: $sp-xs $sp-sm;
-      font-size: 0.75rem;
       color: $color-text-secondary;
       cursor: pointer;
+      font-size: 0.75rem;
+      padding: $sp-xs $sp-sm;
 
       &:hover {
         color: $color-navy;

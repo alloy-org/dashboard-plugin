@@ -6,6 +6,15 @@
 
 @use 'theme' as *;
 
+// Layout & component constants
+$dashboard-max-width: 1200px;
+$spinner-size: 32px;
+$spinner-border-width: 3px;
+$spinner-duration: 0.8s;
+$error-padding: 40px;
+$breakpoint-md: 800px;
+$breakpoint-sm: 480px;
+
 // Component partials
 @use 'widget-wrapper';
 @use 'task-domains';
@@ -31,23 +40,23 @@ html {
   overflow-y: scroll;
 
   body {
-    font-family: $font-sans;
+    -webkit-font-smoothing: antialiased;
     background: $color-bg-page;
     color: $color-text;
-    -webkit-font-smoothing: antialiased;
+    font-family: $font-sans;
   }
 }
 
 // Dashboard layout
 .dashboard {
-  padding: $sp-xl;
-  max-width: 1200px;
   margin: 0 auto;
+  max-width: $dashboard-max-width;
+  padding: $sp-xl;
 
   .dashboard-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
     gap: $sp-lg;
+    grid-template-columns: repeat(4, 1fr);
   }
 
   .grid-cell {
@@ -61,21 +70,21 @@ html {
 
 // Loading state
 .dashboard-loading {
+  align-items: center;
+  color: $color-text-secondary;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
   gap: $sp-lg;
-  color: $color-text-secondary;
+  height: 100vh;
+  justify-content: center;
 
   .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid $color-border;
-    border-top-color: $color-blue;
+    animation: spin $spinner-duration linear infinite;
+    border: $spinner-border-width solid $color-border;
     border-radius: 50%;
-    animation: spin 0.8s linear infinite;
+    border-top-color: $color-blue;
+    height: $spinner-size;
+    width: $spinner-size;
   }
 }
 
@@ -85,9 +94,9 @@ html {
 
 // Error state
 .dashboard-error {
-  padding: 40px;
-  text-align: center;
   color: $color-danger;
+  padding: $error-padding;
+  text-align: center;
 
   p {
     color: $color-text-secondary;
@@ -96,7 +105,7 @@ html {
 }
 
 // Responsive
-@media (max-width: 800px) {
+@media (max-width: $breakpoint-md) {
   .dashboard {
     .dashboard-grid {
       grid-template-columns: repeat(2, 1fr);
@@ -104,7 +113,7 @@ html {
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: $breakpoint-sm) {
   .dashboard {
     .dashboard-grid {
       grid-template-columns: 1fr;
