@@ -5,6 +5,20 @@ repository, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-02-28 — Recompute Victory Value chart from completed tasks
+
+**Model:** gpt-5.3-codex
+**Files created/modified:**
+- `lib/dashboard/victory-value.js` (modified) — Added derived daily chart values from `completedTasksByDate` and switched chart/tooltip/total to use them
+- `AI_CONTRIBUTIONS.md` (modified) — Added authorship log for this fix
+
+**Task:** Fix Victory Value chart staying blank despite completed tasks being fetched
+**Prompt summary:** "VictoryValue widget is receiving completedTasksByDate but never renders graph"
+**Scope:** ~25 lines of new logic and prop flow updates in 1 widget file
+**Notes:** The chart previously rendered from `dailyValues` only; it now derives rendered bars from `completedTasksByDate` keyed by each day in `dailyValues`, so the canvas updates when completed-task fetches complete.
+
+---
+
 ## 2026-02-28 — DashboardApp component unit tests
 
 **Model:** claude-sonnet-4-6
