@@ -5,6 +5,36 @@ repository, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-02-28 — DashboardApp component unit tests
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `test/app.test.js` (created)
+- `test/stubs/client-bundle.js` (created — Jest stub for esbuild virtual module)
+- `test/stubs/css-content.js` (created — Jest stub for esbuild virtual module)
+- `jest.config.js` (modified — added `hooks/*`, bare widget name, and virtual module mappings)
+
+**Task:** Write integration tests for the DashboardApp React component — real hooks, real widgets, app object mocked with sample tasks
+**Prompt summary:** "mock the app object so hooks receive real sample task data, with dates relative to current date"
+**Scope:** 18 test cases across 5 describe blocks; ~290 lines of new test logic; ~20 lines of config/stub changes
+**Notes:** No module mocks at all — both hooks and all widgets run for real; a `SAMPLE_TASKS` const of 17 tasks (matching real Amplenote console output) drives `app.getTaskDomainTasks` and `app.getCompletedTasks` with all timestamps relative to `Date.now()`; `callPlugin` routes through the real `mockPlugin().onEmbedCall(mockApp, ...)` so the full plugin data path is exercised; two task domains enable a real domain-switch click test; canvas 2d context stubbed for jsdom; `client-bundle` / `css-content` esbuild virtual modules stubbed via jest.config moduleNameMapper
+
+---
+
+## 2026-02-28 — Inline one-line Victory Value helpers
+
+**Model:** gpt-5.3-codex
+**Files created/modified:**
+- `lib/dashboard/victory-value.js` (modified) — Inlined one-line helper logic into call sites and removed tiny helper wrappers
+- `AI_CONTRIBUTIONS.md` (modified) — Added authorship log for this refactor pass
+
+**Task:** Inline as many one-line local functions as practical without changing behavior
+**Prompt summary:** "Inline as many one-line local functions as possible"
+**Scope:** ~30 lines changed in 1 widget file
+**Notes:** Preserved larger extracted helpers and retained existing debug task logging behavior
+
+---
+
 ## 2026-02-28 — Fix task start date epoch misinterpretation
 
 **Model:** claude-sonnet-4-6

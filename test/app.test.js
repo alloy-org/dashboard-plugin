@@ -1,0 +1,268 @@
+/**
+ * [Claude-authored file]
+ * Created: 2026-02-28 | Model: claude-sonnet-4-6
+ * Task: DashboardApp integration tests — real hooks + real widgets, app object mocked
+ * Prompt summary: "mock the app object so hooks receive real sample task data"
+ */
+import { jest } from "@jest/globals";
+import { createElement } from "react";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+// No jest.unstable_mockModule calls — hooks AND widgets both run for real.
+// The Amplenote app object is mocked instead; callPlugin routes through the real plugin.
+import DashboardApp from '../lib/dashboard/app.js';
+import { mockPlugin } from "./test-helpers.js";
+import {
+  SAMPLE_TASKS, COMPLETED_TASKS, DOMAINS, nowSec, daysAgo,
+} from "./fixtures/tasks.js";
+
+// --------------------------------------------------
+// Factory: fresh mock app for each test so call counts start at zero.
+// --------------------------------------------------
+// [Claude] Task: build Amplenote app mock that routes task/mood queries to sample data
+// Date: 2026-02-28 | Model: claude-sonnet-4-6
+function buildMockApp() {
+  const app = { settings: {} };
+
+  app.getTaskDomains = jest.fn().mockResolvedValue(DOMAINS);
+
+  // Return all sample tasks for the Work domain; fewer for Personal.
+  app.getTaskDomainTasks = jest.fn().mockImplementation(async (domainUuid) => {
+    if (domainUuid === 'dom-work') return SAMPLE_TASKS;
+    return SAMPLE_TASKS.filter(t => !t.important);
+  });
+
+  // Filter completed tasks to those whose completedAt falls in [fromSec, toSec).
+  app.getCompletedTasks = jest.fn().mockImplementation(async (fromSec, toSec) =>
+    COMPLETED_TASKS.filter(t => t.completedAt >= fromSec && t.completedAt < toSec)
+  );
+
+  // Mood ratings — a week of sample ratings
+  app.getMoodRatings = jest.fn().mockResolvedValue([
+    { timestamp: daysAgo(6), rating:  1 },
+    { timestamp: daysAgo(5), rating:  0 },
+    { timestamp: daysAgo(4), rating:  2 },
+    { timestamp: daysAgo(3), rating:  1 },
+    { timestamp: daysAgo(2), rating:  2 },
+    { timestamp: daysAgo(1), rating:  1 },
+    { timestamp: nowSec,     rating:  2 },
+  ]);
+
+  // No LLM key → fetchQuotes returns static fallback (no HTTP call).
+  app.filterNotes = jest.fn().mockResolvedValue([]);
+  app.setSetting  = jest.fn().mockImplementation((k, v) => { app.settings[k] = v; });
+
+  return app;
+}
+
+// --------------------------------------------------
+// Shared test helpers
+// --------------------------------------------------
+const flushAsync = () =>
+  act(async () => { await new Promise(r => setTimeout(r, 0)); });
+
+// Mount DashboardApp into container and flush all async work.
+async function mountDashboard(container, root, callPluginImpl) {
+  global.callPlugin = jest.fn().mockImplementation(callPluginImpl);
+  await act(async () => { root.render(createElement(DashboardApp)); });
+  await flushAsync();
+}
+
+// --------------------------------------------------
+// Tests
+// --------------------------------------------------
+
+// [Claude] Generated tests for: DashboardApp with real hooks, real widgets, mocked app object
+// Date: 2026-02-28 | Model: claude-sonnet-4-6
+describe('DashboardApp', () => {
+  let container;
+  let root;
+  let plugin;
+  let mockApp;
+
+  beforeAll(() => {
+    // VictoryValueWidget draws on <canvas>; stub the 2d context so jsdom doesn't throw.
+    const mockCtx = {
+      scale: jest.fn(), clearRect: jest.fn(), fillRect: jest.fn(),
+      beginPath: jest.fn(), roundRect: jest.fn(), fill: jest.fn(),
+      stroke: jest.fn(), moveTo: jest.fn(), lineTo: jest.fn(),
+      arc: jest.fn(), fillText: jest.fn(), setLineDash: jest.fn(),
+      measureText: jest.fn().mockReturnValue({ width: 0 }),
+      fillStyle: '', strokeStyle: '', font: '', textAlign: '',
+      globalAlpha: 1, lineWidth: 1,
+    };
+    HTMLCanvasElement.prototype.getContext = jest.fn().mockReturnValue(mockCtx);
+
+    plugin = mockPlugin();
+  });
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    root = createRoot(container);
+
+    mockApp = buildMockApp();
+    // Default: route every callPlugin action through the real plugin with the mock app.
+    global.callPlugin = jest.fn().mockImplementation(
+      (action, ...args) => plugin.onEmbedCall(mockApp, action, ...args)
+    );
+  });
+
+  afterEach(async () => {
+    if (root) {
+      await act(async () => { root.unmount(); });
+      root = null;
+    }
+    container.remove();
+  });
+
+  // ------------------------------------------------
+  describe('loading state', () => {
+    it('renders a loading spinner before init resolves', async () => {
+      global.callPlugin = jest.fn().mockReturnValue(new Promise(() => {}));
+
+      await act(async () => { root.render(createElement(DashboardApp)); });
+
+      expect(container.querySelector('.dashboard-loading')).not.toBeNull();
+      expect(container.querySelector('.spinner')).not.toBeNull();
+      expect(container.textContent).toContain('Loading dashboard');
+    });
+  });
+
+  // ------------------------------------------------
+  describe('error state', () => {
+    it('shows an error banner when init returns an error object', async () => {
+      global.callPlugin = jest.fn().mockResolvedValue({ error: 'Something went wrong' });
+
+      await act(async () => { root.render(createElement(DashboardApp)); });
+      await flushAsync();
+
+      expect(container.querySelector('.dashboard-error')).not.toBeNull();
+      expect(container.textContent).toContain('Dashboard Error');
+      expect(container.textContent).toContain('Something went wrong');
+    });
+
+    it('shows an error banner when the init promise rejects', async () => {
+      global.callPlugin = jest.fn().mockRejectedValue(new Error('Network timeout'));
+
+      await act(async () => { root.render(createElement(DashboardApp)); });
+      await flushAsync();
+
+      expect(container.querySelector('.dashboard-error')).not.toBeNull();
+      expect(container.textContent).toContain('Network timeout');
+    });
+  });
+
+  // ------------------------------------------------
+  describe('app object calls during init', () => {
+    beforeEach(async () => {
+      await act(async () => { root.render(createElement(DashboardApp)); });
+      await flushAsync();
+    });
+
+    it('calls callPlugin("init") as the first action', () => {
+      expect(global.callPlugin.mock.calls[0]).toEqual(['init']);
+    });
+
+    it('queries app.getTaskDomains to resolve the active domain', () => {
+      expect(mockApp.getTaskDomains).toHaveBeenCalled();
+    });
+
+    it('fetches open tasks for the Work domain via app.getTaskDomainTasks', () => {
+      expect(mockApp.getTaskDomainTasks).toHaveBeenCalledWith('dom-work');
+    });
+
+    it('fetches mood ratings via app.getMoodRatings', () => {
+      expect(mockApp.getMoodRatings).toHaveBeenCalled();
+    });
+
+    it('fetches completed tasks for each of the past 7 days via app.getCompletedTasks', () => {
+      // useCompletedTasks fires one getCompletedTasks call per day for the last 7 days.
+      // fetchCompletedTasks is invoked twice: once after init resolves and once when
+      // activeTaskDomain changes from null → 'dom-work', so the total is a multiple of 7.
+      expect(mockApp.getCompletedTasks.mock.calls.length % 7).toBe(0);
+      expect(mockApp.getCompletedTasks).toHaveBeenCalled();
+    });
+  });
+
+  // ------------------------------------------------
+  describe('widget rendering with real task data', () => {
+    beforeEach(async () => {
+      await act(async () => { root.render(createElement(DashboardApp)); });
+      await flushAsync();
+    });
+
+    it('renders the outer dashboard shell without errors', () => {
+      expect(container.querySelector('.dashboard')).not.toBeNull();
+      expect(container.querySelector('.dashboard-grid')).not.toBeNull();
+      expect(container.querySelector('.dashboard-loading')).toBeNull();
+      expect(container.querySelector('.dashboard-error')).toBeNull();
+    });
+
+    it('renders the Planning widget showing the current and next quarters', () => {
+      const widget = container.querySelector('.widget-planning');
+      expect(widget).not.toBeNull();
+      // Both quarter cards should be present (current Q and next Q).
+      expect(widget.querySelectorAll('.quarter-card').length).toBe(2);
+    });
+
+    it('renders the Mood widget with 5 emoji selector buttons', () => {
+      const widget = container.querySelector('.widget-mood');
+      expect(widget).not.toBeNull();
+      expect(widget.querySelectorAll('.mood-btn').length).toBe(5);
+    });
+
+    it('renders the Victory Value widget with a canvas chart', () => {
+      expect(container.querySelector('.widget-victory-value')).not.toBeNull();
+      expect(container.querySelector('canvas')).not.toBeNull();
+    });
+
+    it('renders the Calendar widget with day cells for the current month', () => {
+      expect(container.querySelector('.widget-calendar')).not.toBeNull();
+      expect(container.querySelectorAll('.cal-day').length).toBeGreaterThan(0);
+    });
+
+    it('renders the Agenda widget', () => {
+      expect(container.querySelector('.widget-agenda')).not.toBeNull();
+    });
+
+    it('renders the Quick Actions widget with its shortcut buttons', () => {
+      const widget = container.querySelector('.widget-quick-actions');
+      expect(widget).not.toBeNull();
+      expect(widget.textContent).toContain('Daily Jot');
+      expect(widget.textContent).toContain('Journal');
+    });
+
+    it('renders the TaskDomains selector showing both configured domains', () => {
+      const domainList = container.querySelector('.task-domains-list');
+      expect(domainList).not.toBeNull();
+      expect(domainList.textContent).toContain('Work');
+      expect(domainList.textContent).toContain('Personal');
+    });
+
+    it('shows the upcoming task "💼 Update budget" in the Agenda widget', () => {
+      // task-7 has startAt = tomorrow, so it should appear in the agenda.
+      const agendaWidget = container.querySelector('.widget-agenda');
+      expect(agendaWidget.textContent).toContain('Update budget');
+    });
+  });
+
+  // ------------------------------------------------
+  describe('domain switching', () => {
+    it('calls app.getTaskDomainTasks for the new domain when a domain button is clicked', async () => {
+      await act(async () => { root.render(createElement(DashboardApp)); });
+      await flushAsync();
+
+      // Find the Personal domain button and click it.
+      const domainItems = container.querySelectorAll('.task-domain-item');
+      const personalBtn = Array.from(domainItems).find(el => el.textContent.includes('Personal'));
+      expect(personalBtn).not.toBeNull();
+
+      await act(async () => { personalBtn.click(); });
+      await flushAsync();
+
+      // switchTaskDomain → _fetchTasksForDomain → app.getTaskDomainTasks('dom-personal')
+      expect(mockApp.getTaskDomainTasks).toHaveBeenCalledWith('dom-personal');
+    });
+  });
+});
