@@ -5,6 +5,45 @@ repository, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-02-28 — Fix task start date epoch misinterpretation
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/hooks/use-domain-tasks.js` (modified — fixed `formatDateKey` to convert Unix seconds to milliseconds)
+
+**Task:** Fix agenda widget grouping all tasks under January 1970 dates
+**Prompt summary:** "tasks' start dates are not being properly interpreted — all showing 1970-01-20/21"
+**Scope:** 3-line fix in `formatDateKey`
+**Notes:** Task `startAt`/`deadline` values are Unix timestamps in seconds; `new Date(n)` treats numbers as milliseconds. Fix applies the conventional `< 1e10` heuristic to detect seconds vs milliseconds before constructing the Date.
+
+---
+
+## 2026-02-28 — Add useCompletedTasks hook for per-day completed task fetching
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/hooks/use-completed-tasks.js` (created)
+
+**Task:** Fetch completed tasks for each of the past 7 days in parallel and group them by ISO date key for the VictoryValue component
+**Prompt summary:** "add use-completed-tasks hook that fetches completed tasks in parallel for each of the past 7 days and groups them by date for VictoryValue"
+**Scope:** ~120 lines across 1 new file
+**Notes:** Calls `app.getCompletedTasks(from, to)` once per day (7 parallel calls via `Promise.all`). Day boundaries are computed as Unix timestamps in seconds. The resulting `{ 'YYYY-MM-DD': [task, ...] }` shape matches the `completedTasks` prop expected by `VictoryValueWidget`.
+
+---
+
+## 2026-02-28 — Fix getMoodRatings timestamp unit and extend range to two weeks
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/data-service.js` (modified — fixed timestamp unit passed to `getMoodRatings` and widened range to 14 days)
+
+**Task:** Fix mood ratings returning empty results and extend query window to two weeks
+**Prompt summary:** "Is our current mood rating lookup going to retrieve all ratings from the past two weeks? Currently it does not show any ratings"
+**Scope:** ~5 lines changed in `fetchDashboardData` and `_safeMoodRatings`
+**Notes:** `Date.getTime()` returns milliseconds; `getMoodRatings` expects Unix timestamps in seconds. The old code passed ms values ~1000× too large, causing the API to see future dates and return nothing. Also changed the window from "current week only" to "last 14 days → now" using `Math.floor(Date.now() / 1000)`.
+
+---
+
 ## 2026-02-22 — SCSS styles refactor: alphabetize, constants, themed colors
 
 **Model:** claude-sonnet-4-6
@@ -31,6 +70,83 @@ repository, per the standards defined in `CLAUDE.md`.
 **Scope:** ~16 SCSS files modified
 **Notes:** New theme tokens: $color-text-on-accent, $color-text-on-accent-muted, $color-overlay-backdrop, $color-overlay-shadow, $color-tooltip-* (bg, text, border, accent, shadow, text-muted)
 
+---
+
+## 2026-02-22 — DashboardTooltip component and Victory Value hover tooltips
+
+**Model:** claude-opus-4-6
+**Files created/modified:**
+- `lib/dashboard/tooltip.js` (created) — Self-contained `DashboardTooltip` component accepting `left`, `visible`, and `children` props; renders a dark positioned popup with arrow inside a `position: relative` parent
+- `lib/dashboard/styles/_tooltip.scss` (created) — Full tooltip stylesheet: shell positioning, dark background, arrow, and all content slot classes (`dashboard-tooltip-header`, `dashboard-tooltip-section`, `dashboard-tooltip-row` with `-label`/`-value`, `dashboard-tooltip-empty`)
+- `lib/dashboard/styles/dashboard.scss` (modified) — Added `@use 'tooltip'` import
+- `lib/dashboard/victory-value.js` (modified) — Added `completedTasks` prop, canvas mousemove/mouseleave hover detection, and tooltip rendering showing date header, mood rating, and completed tasks sorted by victoryValue descending
+- `lib/dashboard/styles/_victory-value.scss` (modified) — Added `.vv-chart-container` with `position: relative` for tooltip anchoring
+- `lib/dashboard/app.js` (modified) — Passed `completedTasks` from `widgetData` to VictoryValueWidget props
+
+**Task:** Add hover tooltips to Victory Value chart bars showing completed tasks and mood for each day
+**Prompt summary:** "show a tooltip listing tasks finished sorted by victoryValue, with mood rating, when hovering on a date in VictoryValue; extract tooltip into standalone reusable component"
+**Scope:** ~120 lines of new logic across 6 files
+**Notes:** Tooltip is fully self-contained — all styling lives in the tooltip's own stylesheet. Canvas hover detection maps mouse position to bar zones using the same geometry as the canvas drawing code. Mood uses the same -2..2 emoji mapping as the Mood widget.
+
+---
+
+## 2026-02-22 — Inline ConfigPopup component for widget settings
+
+**Model:** claude-opus-4-6
+**Files created/modified:**
+- `lib/dashboard/config-popup.js` (created) — Reusable popup component with `onSubmit`, `onCancel`, and `children` props
+- `lib/dashboard/styles/_config-popup.scss` (created) — Overlay, modal card, form field, and action button styles
+- `lib/dashboard/styles/dashboard.scss` (modified) — Added `@use 'config-popup'` import
+- `lib/dashboard/widget-wrapper.js` (modified) — Added `onConfigure` callback prop to override default plugin-based configure
+- `lib/dashboard/victory-value.js` (modified) — Integrated ConfigPopup with time range and mood overlay settings
+- `lib/dashboard/calendar.js` (modified) — Integrated ConfigPopup with week-start-day setting
+- `lib/plugin.js` (modified) — Added `saveSetting` action to persist config from inline popup
+
+**Task:** Implement inline settings popup for Victory Value and Calendar widgets
+**Prompt summary:** "popup component that pops up setting options upon clicking Configure, with onSubmit/onCancel and content props"
+**Scope:** ~120 lines of new logic across 7 files
+**Notes:** ConfigPopup renders as a fixed overlay modal; widgets manage their own config state and render the popup conditionally when Configure is clicked
+
+---
+
+## 2026-02-22 — Scope dashboard SCSS under component parents
+
+**Model:** gpt-5.3-codex
+**Files created/modified:**
+- `lib/dashboard/styles/_agenda.scss` (modified) — wrapped agenda selectors under `.widget-agenda`
+- `lib/dashboard/styles/_calendar.scss` (modified) — wrapped calendar selectors under `.widget-calendar`
+- `lib/dashboard/styles/_task-domains.scss` (modified) — wrapped task-domain selectors under `.dashboard`
+- `lib/dashboard/styles/_quick-actions.scss` (modified) — wrapped quick-action selectors under `.widget-quick-actions`
+- `lib/dashboard/styles/_planning.scss` (modified) — wrapped planning selectors under `.widget-planning`
+- `lib/dashboard/styles/_mood.scss` (modified) — wrapped mood selectors under `.widget-mood`
+- `lib/dashboard/styles/_quotes.scss` (modified) — wrapped quotes selectors under `.widget-quotes`
+- `lib/dashboard/styles/_victory-value.scss` (modified) — wrapped victory-value selectors under `.widget-victory-value`
+- `lib/dashboard/styles/_ai-plugins.scss` (modified) — wrapped AI plugin selectors under `.widget-ai-plugins`
+- `lib/dashboard/styles/_config-popup.scss` (modified) — wrapped popup selectors under `.dashboard`
+- `lib/dashboard/styles/_widget-wrapper.scss` (modified) — wrapped shared widget chrome selectors under `.dashboard`
+- `lib/dashboard/styles/dashboard.scss` (modified) — scoped layout/reset selectors to `.dashboard` and updated responsive nesting
+- `lib/dashboard/styles/_theme-light.scss` (modified) — scoped light theme variables under `.dashboard`
+- `lib/dashboard/styles/_theme-dark.scss` (modified) — scoped dark theme variables under `.dashboard`
+
+**Task:** Scope dashboard stylesheets to parent component wrappers to avoid global style bleed
+**Prompt summary:** "Update all of the files in the dashboard/styles directory so that they are wrapped by a parent class for the component that is including the stylesheet"
+**Scope:** ~14 SCSS files updated with parent wrappers and scoped theme variables
+**Notes:** Widget partials now key off `WidgetWrapper` classes (`.widget-<id>`), while shared and dashboard-level styles are scoped to `.dashboard`
+
+---
+
+## 2026-02-22 — Split DashboardApp state + useDomainTasks hook
+
+**Model:** claude-opus-4-6
+**Files created/modified:**
+- `lib/hooks/use-domain-tasks.js` (created) — Custom hook managing taskDomains, activeTaskDomain, tasksFetchedAt, openTasks, completedTasks state; contains formatDateKey, groupOpenTasksByDate, groupCompletedTasksByDate internal helpers; exposes initializeDomainTasks, handleDomainChange, buildAgendaTasksByDate
+- `lib/dashboard/app.js` (modified) — Replaced monolithic `data` state with individual state variables (moodRatings, quarterlyPlans, settings, dailyVictoryValues, weeklyVictoryValue, currentDate); integrated useDomainTasks hook; removed formatDateKey and buildAgendaTasksByDate; updated renderActiveComponents to accept widgetData object; loading check uses `!settings` instead of `!data`
+- `lib/dashboard/calendar.js` (modified) — Replaced flat `tasks` prop with `openTasks` + `completedTasks` grouped objects; updated task-counting loop to iterate date-keyed groups by month prefix
+
+**Task:** Extract task domain state and grouping logic into a custom hook; split monolithic data state into individual variables
+**Prompt summary:** "Replace monolithic data state in DashboardApp with individual state variables; extract task parsing/grouping into useDomainTasks hook; split tasks into openTasks and completedTasks grouped by date"
+**Scope:** ~110 lines of new logic in hook, ~40 lines changed in app.js, ~10 lines changed in calendar.js
+**Notes:** Tasks are now grouped at the React layer: openTasks keyed by startAt/deadline date, completedTasks keyed by completedAt date. data-service.js continues returning flat arrays unchanged.
 ---
 
 ## 2026-02-21 — Standardize navigation through app.navigate actions
@@ -178,69 +294,6 @@ repository, per the standards defined in `CLAUDE.md`.
 
 ---
 
-## 2026-02-22 — DashboardTooltip component and Victory Value hover tooltips
-
-**Model:** claude-opus-4-6
-**Files created/modified:**
-- `lib/dashboard/tooltip.js` (created) — Self-contained `DashboardTooltip` component accepting `left`, `visible`, and `children` props; renders a dark positioned popup with arrow inside a `position: relative` parent
-- `lib/dashboard/styles/_tooltip.scss` (created) — Full tooltip stylesheet: shell positioning, dark background, arrow, and all content slot classes (`dashboard-tooltip-header`, `dashboard-tooltip-section`, `dashboard-tooltip-row` with `-label`/`-value`, `dashboard-tooltip-empty`)
-- `lib/dashboard/styles/dashboard.scss` (modified) — Added `@use 'tooltip'` import
-- `lib/dashboard/victory-value.js` (modified) — Added `completedTasks` prop, canvas mousemove/mouseleave hover detection, and tooltip rendering showing date header, mood rating, and completed tasks sorted by victoryValue descending
-- `lib/dashboard/styles/_victory-value.scss` (modified) — Added `.vv-chart-container` with `position: relative` for tooltip anchoring
-- `lib/dashboard/app.js` (modified) — Passed `completedTasks` from `widgetData` to VictoryValueWidget props
-
-**Task:** Add hover tooltips to Victory Value chart bars showing completed tasks and mood for each day
-**Prompt summary:** "show a tooltip listing tasks finished sorted by victoryValue, with mood rating, when hovering on a date in VictoryValue; extract tooltip into standalone reusable component"
-**Scope:** ~120 lines of new logic across 6 files
-**Notes:** Tooltip is fully self-contained — all styling lives in the tooltip's own stylesheet. Canvas hover detection maps mouse position to bar zones using the same geometry as the canvas drawing code. Mood uses the same -2..2 emoji mapping as the Mood widget.
-
----
-
-## 2026-02-22 — Inline ConfigPopup component for widget settings
-
-**Model:** claude-opus-4-6
-**Files created/modified:**
-- `lib/dashboard/config-popup.js` (created) — Reusable popup component with `onSubmit`, `onCancel`, and `children` props
-- `lib/dashboard/styles/_config-popup.scss` (created) — Overlay, modal card, form field, and action button styles
-- `lib/dashboard/styles/dashboard.scss` (modified) — Added `@use 'config-popup'` import
-- `lib/dashboard/widget-wrapper.js` (modified) — Added `onConfigure` callback prop to override default plugin-based configure
-- `lib/dashboard/victory-value.js` (modified) — Integrated ConfigPopup with time range and mood overlay settings
-- `lib/dashboard/calendar.js` (modified) — Integrated ConfigPopup with week-start-day setting
-- `lib/plugin.js` (modified) — Added `saveSetting` action to persist config from inline popup
-
-**Task:** Implement inline settings popup for Victory Value and Calendar widgets
-**Prompt summary:** "popup component that pops up setting options upon clicking Configure, with onSubmit/onCancel and content props"
-**Scope:** ~120 lines of new logic across 7 files
-**Notes:** ConfigPopup renders as a fixed overlay modal; widgets manage their own config state and render the popup conditionally when Configure is clicked
-
----
-
-## 2026-02-22 — Scope dashboard SCSS under component parents
-
-**Model:** gpt-5.3-codex
-**Files created/modified:**
-- `lib/dashboard/styles/_agenda.scss` (modified) — wrapped agenda selectors under `.widget-agenda`
-- `lib/dashboard/styles/_calendar.scss` (modified) — wrapped calendar selectors under `.widget-calendar`
-- `lib/dashboard/styles/_task-domains.scss` (modified) — wrapped task-domain selectors under `.dashboard`
-- `lib/dashboard/styles/_quick-actions.scss` (modified) — wrapped quick-action selectors under `.widget-quick-actions`
-- `lib/dashboard/styles/_planning.scss` (modified) — wrapped planning selectors under `.widget-planning`
-- `lib/dashboard/styles/_mood.scss` (modified) — wrapped mood selectors under `.widget-mood`
-- `lib/dashboard/styles/_quotes.scss` (modified) — wrapped quotes selectors under `.widget-quotes`
-- `lib/dashboard/styles/_victory-value.scss` (modified) — wrapped victory-value selectors under `.widget-victory-value`
-- `lib/dashboard/styles/_ai-plugins.scss` (modified) — wrapped AI plugin selectors under `.widget-ai-plugins`
-- `lib/dashboard/styles/_config-popup.scss` (modified) — wrapped popup selectors under `.dashboard`
-- `lib/dashboard/styles/_widget-wrapper.scss` (modified) — wrapped shared widget chrome selectors under `.dashboard`
-- `lib/dashboard/styles/dashboard.scss` (modified) — scoped layout/reset selectors to `.dashboard` and updated responsive nesting
-- `lib/dashboard/styles/_theme-light.scss` (modified) — scoped light theme variables under `.dashboard`
-- `lib/dashboard/styles/_theme-dark.scss` (modified) — scoped dark theme variables under `.dashboard`
-
-**Task:** Scope dashboard stylesheets to parent component wrappers to avoid global style bleed
-**Prompt summary:** "Update all of the files in the dashboard/styles directory so that they are wrapped by a parent class for the component that is including the stylesheet"
-**Scope:** ~14 SCSS files updated with parent wrappers and scoped theme variables
-**Notes:** Widget partials now key off `WidgetWrapper` classes (`.widget-<id>`), while shared and dashboard-level styles are scoped to `.dashboard`
-
----
-
 ## 2026-02-21 — SCSS design system and widget styles
 
 **Model:** claude-sonnet-4-5-20250929
@@ -281,21 +334,6 @@ repository, per the standards defined in `CLAUDE.md`.
 
 ---
 
-## 2026-02-22 — Split DashboardApp state + useDomainTasks hook
-
-**Model:** claude-opus-4-6
-**Files created/modified:**
-- `lib/hooks/use-domain-tasks.js` (created) — Custom hook managing taskDomains, activeTaskDomain, tasksFetchedAt, openTasks, completedTasks state; contains formatDateKey, groupOpenTasksByDate, groupCompletedTasksByDate internal helpers; exposes initializeDomainTasks, handleDomainChange, buildAgendaTasksByDate
-- `lib/dashboard/app.js` (modified) — Replaced monolithic `data` state with individual state variables (moodRatings, quarterlyPlans, settings, dailyVictoryValues, weeklyVictoryValue, currentDate); integrated useDomainTasks hook; removed formatDateKey and buildAgendaTasksByDate; updated renderActiveComponents to accept widgetData object; loading check uses `!settings` instead of `!data`
-- `lib/dashboard/calendar.js` (modified) — Replaced flat `tasks` prop with `openTasks` + `completedTasks` grouped objects; updated task-counting loop to iterate date-keyed groups by month prefix
-
-**Task:** Extract task domain state and grouping logic into a custom hook; split monolithic data state into individual variables
-**Prompt summary:** "Replace monolithic data state in DashboardApp with individual state variables; extract task parsing/grouping into useDomainTasks hook; split tasks into openTasks and completedTasks grouped by date"
-**Scope:** ~110 lines of new logic in hook, ~40 lines changed in app.js, ~10 lines changed in calendar.js
-**Notes:** Tasks are now grouped at the React layer: openTasks keyed by startAt/deadline date, completedTasks keyed by completedAt date. data-service.js continues returning flat arrays unchanged.
-
----
-
 ## 2026-02-17 — Initial dashboard plugin architecture and widget components
 
 **Model:** claude-sonnet-4-5-20250929
@@ -319,27 +357,3 @@ repository, per the standards defined in `CLAUDE.md`.
 **Prompt summary:** "build an Amplenote dashboard plugin with planning, victory value, mood, calendar, agenda, quotes, AI plugins, and quick action widgets"
 **Scope:** ~700 lines of new logic across 14 files
 **Notes:** Uses React createElement (no JSX), communicates with Amplenote via callPlugin/onEmbedCall bridge
-
-## 2026-02-28 — Fix task start date epoch misinterpretation
-
-**Model:** claude-sonnet-4-6
-**Files created/modified:**
-- `lib/hooks/use-domain-tasks.js` (modified — fixed `formatDateKey` to convert Unix seconds to milliseconds)
-
-**Task:** Fix agenda widget grouping all tasks under January 1970 dates
-**Prompt summary:** "tasks' start dates are not being properly interpreted — all showing 1970-01-20/21"
-**Scope:** 3-line fix in `formatDateKey`
-**Notes:** Task `startAt`/`deadline` values are Unix timestamps in seconds; `new Date(n)` treats numbers as milliseconds. Fix applies the conventional `< 1e10` heuristic to detect seconds vs milliseconds before constructing the Date.
-
----
-
-## 2026-02-28 — Fix getMoodRatings timestamp unit and extend range to two weeks
-
-**Model:** claude-sonnet-4-6
-**Files created/modified:**
-- `lib/data-service.js` (modified — fixed timestamp unit passed to `getMoodRatings` and widened range to 14 days)
-
-**Task:** Fix mood ratings returning empty results and extend query window to two weeks
-**Prompt summary:** "Is our current mood rating lookup going to retrieve all ratings from the past two weeks? Currently it does not show any ratings"
-**Scope:** ~5 lines changed in `fetchDashboardData` and `_safeMoodRatings`
-**Notes:** `Date.getTime()` returns milliseconds; `getMoodRatings` expects Unix timestamps in seconds. The old code passed ms values ~1000× too large, causing the API to see future dates and return nothing. Also changed the window from "current week only" to "last 14 days → now" using `Math.floor(Date.now() / 1000)`.
