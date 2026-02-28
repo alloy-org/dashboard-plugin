@@ -319,3 +319,27 @@ repository, per the standards defined in `CLAUDE.md`.
 **Prompt summary:** "build an Amplenote dashboard plugin with planning, victory value, mood, calendar, agenda, quotes, AI plugins, and quick action widgets"
 **Scope:** ~700 lines of new logic across 14 files
 **Notes:** Uses React createElement (no JSX), communicates with Amplenote via callPlugin/onEmbedCall bridge
+
+## 2026-02-28 — Fix task start date epoch misinterpretation
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/hooks/use-domain-tasks.js` (modified — fixed `formatDateKey` to convert Unix seconds to milliseconds)
+
+**Task:** Fix agenda widget grouping all tasks under January 1970 dates
+**Prompt summary:** "tasks' start dates are not being properly interpreted — all showing 1970-01-20/21"
+**Scope:** 3-line fix in `formatDateKey`
+**Notes:** Task `startAt`/`deadline` values are Unix timestamps in seconds; `new Date(n)` treats numbers as milliseconds. Fix applies the conventional `< 1e10` heuristic to detect seconds vs milliseconds before constructing the Date.
+
+---
+
+## 2026-02-28 — Fix getMoodRatings timestamp unit and extend range to two weeks
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/data-service.js` (modified — fixed timestamp unit passed to `getMoodRatings` and widened range to 14 days)
+
+**Task:** Fix mood ratings returning empty results and extend query window to two weeks
+**Prompt summary:** "Is our current mood rating lookup going to retrieve all ratings from the past two weeks? Currently it does not show any ratings"
+**Scope:** ~5 lines changed in `fetchDashboardData` and `_safeMoodRatings`
+**Notes:** `Date.getTime()` returns milliseconds; `getMoodRatings` expects Unix timestamps in seconds. The old code passed ms values ~1000× too large, causing the API to see future dates and return nothing. Also changed the window from "current week only" to "last 14 days → now" using `Math.floor(Date.now() / 1000)`.
