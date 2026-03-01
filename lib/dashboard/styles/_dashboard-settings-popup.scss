@@ -1,0 +1,124 @@
+/* [Claude-authored file]
+ * Created: 2026-03-01 | Model: claude-sonnet-4-6
+ * Task: Styles for the Dashboard Settings popup — AI settings section with provider dropdown and API key input
+ * Prompt summary: "create a dashboard settings popup with LLM provider dropdown and API key input"
+ */
+
+@use 'theme' as *;
+
+.dashboard-settings-container {
+
+  // ── AI Settings section ──────────────────────────────────────────────────────────────
+
+  .dashboard-settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-lg;
+  }
+
+  .dashboard-settings-section-header {
+    border-bottom: 1px solid $color-border;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+    padding-bottom: $sp-md;
+  }
+
+  .dashboard-settings-section-title {
+    color: $color-navy;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin: 0;
+  }
+
+  .dashboard-settings-section-desc {
+    color: $color-text-secondary;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  // ── Provider dropdown ────────────────────────────────────────────────────────────────
+
+  .dashboard-settings-select {
+    appearance: none;
+    background: $color-bg-page;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-position: right #{$sp-sm} center;
+    background-repeat: no-repeat;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    color: $color-text;
+    cursor: pointer;
+    font-size: 0.85rem;
+    padding: $sp-sm $sp-xl $sp-sm $sp-sm;
+    transition: border-color 0.15s ease;
+    width: 100%;
+
+    &:focus {
+      border-color: $color-accent;
+      outline: none;
+    }
+  }
+
+  // ── API key field ────────────────────────────────────────────────────────────────────
+
+  .dashboard-settings-api-key-link {
+    color: $color-accent;
+    display: inline-block;
+    font-size: 0.8rem;
+    margin-bottom: $sp-xs;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .dashboard-settings-api-key-input-row {
+    align-items: center;
+    display: flex;
+    gap: $sp-xs;
+  }
+
+  .dashboard-settings-api-key-input {
+    background: $color-bg-page;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    color: $color-text;
+    flex: 1;
+    font-family: monospace;
+    font-size: 0.82rem;
+    min-width: 0;
+    padding: $sp-sm;
+    transition: border-color 0.15s ease;
+
+    &::placeholder {
+      color: $color-text-muted;
+    }
+
+    &:focus {
+      border-color: $color-accent;
+      outline: none;
+    }
+  }
+
+  .dashboard-settings-api-key-toggle {
+    background: $color-bg-page;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    color: $color-text-secondary;
+    cursor: pointer;
+    flex-shrink: 0;
+    font-size: 0.9rem;
+    line-height: 1;
+    padding: $sp-sm;
+    transition: background 0.1s ease, color 0.1s ease;
+
+    &:hover {
+      background: $color-bg-card;
+      color: $color-text;
+    }
+  }
+}

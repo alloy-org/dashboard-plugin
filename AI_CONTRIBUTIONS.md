@@ -5,6 +5,23 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-01 — Dashboard Settings popup with LLM provider and API key
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dashboard/dashboard-settings-popup.js` (created)
+- `lib/dashboard/styles/_dashboard-settings-popup.scss` (created)
+- `lib/dashboard/config-popup.js` (modified — added optional `submitLabel` prop)
+- `lib/dashboard/app.js` (modified — added `showSettingsConfig` state, `handleSettingsSave` callback, Settings toolbar button, `DashboardSettingsPopup` render)
+- `lib/dashboard/styles/dashboard.scss` (modified — added `@use 'dashboard-settings-popup'`)
+
+**Task:** Add a "Dashboard Settings" popup accessible from the toolbar, featuring an AI Settings section with an LLM provider dropdown and an API key input with show/hide toggle. Selections are persisted to `app.settings` via `SETTING_KEYS.LLM_PROVIDER` and `SETTING_KEYS.LLM_API_KEY` and pre-populated on subsequent visits.
+**Prompt summary:** "create a dashboard settings popup linked next to the Layout button, with LLM provider dropdown and API key input persisted to app.settings"
+**Scope:** ~120 lines of new logic across 5 files
+**Notes:** `DashboardSettingsPopup` uses the shared `ConfigPopup` component as its modal frame (DRY with the widget config popups). The five provider options are: OpenAI ChatGPT (Default), Anthropic Claude, Anthropic Sonnet, Google Gemini, Grok. `anthropic-sonnet` reuses the Anthropic API key URL since it is a model variant rather than a separate provider.
+
+---
+
 ## 2026-03-01 — Fix mood overlay defaulting to hidden in VictoryValue widget
 
 **Model:** claude-sonnet-4-6

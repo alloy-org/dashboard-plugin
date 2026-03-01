@@ -6,7 +6,7 @@
 
 // Override base config-popup-container sizing for the larger dashboard layout popup.
 // On desktop/tablet: constrained to 800×800px. On mobile: fills available space minus margin.
-.config-popup-container.dashboard-config-container {
+.dashboard-config-container {
   display: flex;
   flex-direction: column;
   margin: $sp-lg;
