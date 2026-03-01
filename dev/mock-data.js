@@ -199,6 +199,17 @@ async function callPlugin(action, ...args) {
     case "quickAction":
       return app.navigate(_quickActionToUrl(args[0]));
 
+    case "getMoodRatings": {
+      // Return 7 deterministic pseudo-random mood ratings (Mon–Sun) for the requested week.
+      // The same fromUnixSec always produces the same 7 ratings; different weeks differ.
+      // In production this is app.getMoodRatings(fromUnixSec, toUnixSec).
+      const fromSec = args[0] || 0;
+      return Array.from({ length: 7 }, (_, i) => ({
+        rating: _seededMoodRating(fromSec, i),
+        score_time: fromSec + i * 86400,
+      }));
+    }
+
     case "getCompletedTasks":
       return await _fetchCompletedTasksInRange(args[0], args[1]);
 
@@ -254,4 +265,13 @@ function _quickActionToUrl(action) {
     browseCRM: "https://www.amplenote.com/notes?tag=crm"
   };
   return actionToUrl[action] || "https://www.amplenote.com/notes";
+}
+
+// Returns a deterministic mood rating in [-2, 2] for (weekStartSec, dayIndex).
+// Uses a fast integer hash so the same week always yields the same sequence.
+function _seededMoodRating(weekStartSec, dayIndex) {
+  let h = (weekStartSec ^ (weekStartSec >>> 16)) * 0x45d9f3b | 0;
+  h = (h ^ dayIndex * 0x9e3779b9) * 0x119de1f3 | 0;
+  h = h ^ (h >>> 16);
+  return (((h >>> 0) % 5) | 0) - 2; // maps 0-4 → -2…2
 }

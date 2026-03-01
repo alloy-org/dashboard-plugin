@@ -5,6 +5,20 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-01 — Refetch mood ratings when calendar date changes
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dashboard/app.js` (modified — added `fetchMoodRatings` callback and wired it into the `selectedDate`/`currentDate` effect)
+- `dev/mock-data.js` (modified — added `getMoodRatings` case to mock `callPlugin`)
+
+**Task:** Ensure VictoryValue and Mood widgets receive fresh mood ratings whenever the user clicks a new week in the calendar
+**Prompt summary:** "Ensure that when calendar click changes date, that new mood ratings are retrieved for the week that is now being shown in the VictoryValue component and the Mood component"
+**Scope:** ~20 lines of new logic across 2 files
+**Notes:** `fetchMoodRatings` computes the selected week's Mon/Sun Unix-second boundaries and calls `callPlugin('getMoodRatings', from, to)`, then updates `moodRatings` state so both VictoryValue (indexed 0–6) and Mood (`slice(-7)`) always display the correct week's data. The dev mock returns 7 deterministic ratings seeded from the week-start timestamp.
+
+---
+
 ## 2026-03-01 — Consolidate dev task data: dev-app.js as single source of truth
 
 **Model:** claude-sonnet-4-6
