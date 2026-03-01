@@ -5,6 +5,46 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-01 — Consolidate dev task data: dev-app.js as single source of truth
+
+**Model:** claude-sonnet-4-6
+**Files modified:**
+- `dev/dev-server.js` (modified — added `handleTasksApi` and `/api/tasks` route)
+- `dev/mock-data.js` (modified — removed all hardcoded/generated task helpers; replaced with `/api/tasks` fetches)
+
+**Task:** Eliminate duplicated task data between `dev-app.js` and `mock-data.js` by exposing a `/api/tasks` REST endpoint from the dev server and having the browser-side mock fetch from it
+**Prompt summary:** "consolidate mock-data.js and dev-app.js so dev-app is the single source of task truth"
+**Scope:** ~80 lines removed from `mock-data.js`, ~30 lines added; ~30 lines added to `dev-server.js`
+**Notes:** `/api/tasks` accepts optional `?from=X&to=Y` unix-second query params for per-day completed-task filtering; derived values (weeklyVictoryValue, dailyVictoryValues, etc.) are now computed from the live task set rather than random generators
+
+---
+
+## 2026-03-01 — Fix missing getCompletedTasks handler in mock-data.js
+
+**Model:** claude-sonnet-4-6
+**Files modified:**
+- `dev/mock-data.js` (modified — added `case "getCompletedTasks"` handler and `_getCompletedTasksInRange` helper)
+
+**Task:** VictoryValue widget showed no completed tasks because `callPlugin('getCompletedTasks')` fell through to the default no-op case in the browser-side mock
+**Prompt summary:** "no completed tasks shown in Victory Value component"
+**Scope:** ~30 lines added to `mock-data.js`
+**Notes:** `_getCompletedTasksInRange` mirrors the same completed task set as `dev-app.js` and filters by the unix-second `from`/`to` window that `use-completed-tasks` passes per day
+
+---
+
+## 2026-03-01 — Update dev sample tasks with completed history and new open tasks
+
+**Model:** claude-opus-4-6
+**Files modified:**
+- `dev/dev-app.js` (modified — rewrote `_buildSampleTasks`)
+
+**Task:** Mark existing 10 sample tasks as completed at varying dates over the past 2 weeks; add 20 new open tasks (~half unscheduled, ~half with start times in the next 5 days)
+**Prompt summary:** "existing tasks completed over past 2 weeks, plus 20 new tasks with/without start times"
+**Scope:** ~140 lines rewritten in `_buildSampleTasks`
+**Notes:** All existing tests continue to pass unchanged
+
+---
+
 ## 2026-03-01 — Live reload for dev server
 
 **Model:** claude-opus-4-6

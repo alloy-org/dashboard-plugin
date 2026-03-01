@@ -11,7 +11,7 @@ import http from "http";
 import * as sass from "sass";
 import { fileURLToPath } from "url";
 import { createLibImportsPlugin } from "../lib-imports-plugin.js";
-import { readSettingsFile, writeSettingsFile, DEFAULT_SETTINGS_PATH } from "./dev-app.js";
+import { readSettingsFile, writeSettingsFile, DEFAULT_SETTINGS_PATH, createDevApp } from "./dev-app.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
@@ -102,6 +102,32 @@ function handleSettingsApi(req, res) {
   return false;
 }
 
+// [Claude] Task: serve all sample tasks from dev-app as a REST endpoint, with optional from/to filtering
+// Prompt: "consolidate mock-data.js and dev-app.js so dev-app is the single source of task truth"
+// Date: 2026-03-01 | Model: claude-sonnet-4-6
+function handleTasksApi(req, res) {
+  if (req.method !== "GET") return false;
+  const parsedUrl = new URL(req.url, "http://localhost");
+  const from = parsedUrl.searchParams.get("from");
+  const to = parsedUrl.searchParams.get("to");
+
+  const app = createDevApp();
+  app.getTaskDomainTasks(null).then(tasks => {
+    let result = tasks;
+    if (from != null && to != null) {
+      const fromSec = Number(from);
+      const toSec = Number(to);
+      result = tasks.filter(t => t.completedAt != null && t.completedAt >= fromSec && t.completedAt < toSec);
+    }
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(result));
+  }).catch(err => {
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: err.message }));
+  });
+  return true;
+}
+
 async function main() {
   const ctx = await esbuild.context({
     entryPoints: [path.join(rootDir, "lib/dashboard/client-entry.js")],
@@ -155,6 +181,10 @@ async function main() {
 
     if (req.url === "/api/settings") {
       if (handleSettingsApi(req, res)) return;
+    }
+
+    if (req.url === "/api/tasks" || req.url.startsWith("/api/tasks?")) {
+      if (handleTasksApi(req, res)) return;
     }
 
     const proxyReq = http.request(

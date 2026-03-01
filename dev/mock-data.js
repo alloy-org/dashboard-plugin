@@ -3,6 +3,9 @@
  * Created: 2026-02-21 | Model: claude-opus-4-6
  * Task: Mock callPlugin for local dev — provides sample data for all dashboard actions
  * Prompt summary: "global callPlugin mock returning realistic data for init, fetchQuotes, configure, etc."
+ * Modified: 2026-03-01 | Model: claude-sonnet-4-6
+ * Modification: replaced hardcoded/generated task data with fetches to /api/tasks so
+ *               dev-app.js is the single source of truth for all sample task data
  */
 
 // Persistent settings loaded from the dev server's JSON-backed API.
@@ -37,6 +40,79 @@ async function _saveSetting(key, value) {
   }
 }
 
+// [Claude] Task: fetch all sample tasks from the dev server, with optional unix-second range filter
+// Prompt: "consolidate mock-data.js and dev-app.js so dev-app is the single source of task truth"
+// Date: 2026-03-01 | Model: claude-sonnet-4-6
+async function _fetchAllTasks() {
+  try {
+    const res = await fetch("/api/tasks");
+    return await res.json();
+  } catch {
+    return [];
+  }
+}
+
+async function _fetchCompletedTasksInRange(fromSec, toSec) {
+  try {
+    const res = await fetch(`/api/tasks?from=${fromSec}&to=${toSec}`);
+    return await res.json();
+  } catch {
+    return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Derived-value helpers — mirror the logic in data-service.js so init and
+// setActiveTaskDomain return realistic computed fields from the same task set.
+// ---------------------------------------------------------------------------
+
+function _millisFromUnix(unixSec) {
+  if (unixSec == null) return null;
+  return unixSec < 1e10 ? unixSec * 1000 : unixSec;
+}
+
+function _filterTodayTasks(tasks, now) {
+  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const dayEnd = dayStart + 86400000;
+  return tasks.filter(t => {
+    const ms = _millisFromUnix(t.startAt);
+    return !t.completedAt && !t.dismissedAt && ms != null && ms >= dayStart && ms < dayEnd;
+  });
+}
+
+function _filterCompletedInWeek(tasks, weekStart) {
+  const start = weekStart.getTime();
+  const end = start + 7 * 86400000;
+  return tasks.filter(t => {
+    const ms = _millisFromUnix(t.completedAt);
+    return ms != null && ms >= start && ms < end;
+  });
+}
+
+function _calcWeeklyVictoryValue(tasks, weekStart) {
+  return _filterCompletedInWeek(tasks, weekStart).reduce((sum, t) => sum + (t.victoryValue || 0), 0);
+}
+
+function _calcDailyVictoryValues(tasks, weekStart) {
+  const names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  return names.map((day, i) => {
+    const dayStart = new Date(weekStart);
+    dayStart.setDate(dayStart.getDate() + i);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    const dayTasks = tasks.filter(t => {
+      const ms = _millisFromUnix(t.completedAt);
+      return ms != null && ms >= dayStart.getTime() && ms < dayEnd.getTime();
+    });
+    return {
+      day,
+      date: dayStart.toISOString(),
+      value: dayTasks.reduce((sum, t) => sum + (t.victoryValue || 0), 0),
+      taskCount: dayTasks.length,
+    };
+  });
+}
+
 // Mock callPlugin for local dev — mirrors the actions dispatched by the dashboard app
 // eslint-disable-next-line no-unused-vars
 async function callPlugin(action, ...args) {
@@ -58,12 +134,13 @@ async function callPlugin(action, ...args) {
       const settings = await _loadSettings();
       const now = new Date();
       const weekStart = _getWeekStart(now);
+      const tasks = await _fetchAllTasks();
       return {
-        tasks: _generateTasks(weekStart),
-        todayTasks: _generateTodayTasks(now),
-        completedThisWeek: _generateCompletedTasks(weekStart),
-        weeklyVictoryValue: 454,
-        dailyVictoryValues: _generateDailyValues(weekStart),
+        tasks,
+        todayTasks: _filterTodayTasks(tasks, now),
+        completedThisWeek: _filterCompletedInWeek(tasks, weekStart),
+        weeklyVictoryValue: _calcWeeklyVictoryValue(tasks, weekStart),
+        dailyVictoryValues: _calcDailyVictoryValues(tasks, weekStart),
         moodRatings: [
           { rating: 1 }, { rating: 2 }, { rating: 0 },
           { rating: 1 }, { rating: -1 }, { rating: 2 }, { rating: 1 }
@@ -122,17 +199,21 @@ async function callPlugin(action, ...args) {
     case "quickAction":
       return app.navigate(_quickActionToUrl(args[0]));
 
+    case "getCompletedTasks":
+      return await _fetchCompletedTasksInRange(args[0], args[1]);
+
     case "setActiveTaskDomain": {
       const domainUuid = args[0];
       console.log("[mock] setActiveTaskDomain", domainUuid);
       const now = new Date();
       const weekStart = _getWeekStart(now);
+      const tasks = await _fetchAllTasks();
       return {
-        tasks: _generateTasks(weekStart),
-        todayTasks: _generateTodayTasks(now),
-        completedThisWeek: _generateCompletedTasks(weekStart),
-        weeklyVictoryValue: Math.floor(Math.random() * 300) + 100,
-        dailyVictoryValues: _generateDailyValues(weekStart),
+        tasks,
+        todayTasks: _filterTodayTasks(tasks, now),
+        completedThisWeek: _filterCompletedInWeek(tasks, weekStart),
+        weeklyVictoryValue: _calcWeeklyVictoryValue(tasks, weekStart),
+        dailyVictoryValues: _calcDailyVictoryValues(tasks, weekStart),
         activeTaskDomain: domainUuid
       };
     }
@@ -163,63 +244,6 @@ function _getWeekStart(date) {
   d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
   d.setHours(0, 0, 0, 0);
   return d;
-}
-
-function _generateDailyValues(weekStart) {
-  const names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  return names.map((day, i) => {
-    const d = new Date(weekStart);
-    d.setDate(d.getDate() + i);
-    const value = Math.floor(Math.random() * 120) + 20;
-    return { day, date: d.toISOString(), value, taskCount: Math.floor(value / 30) };
-  });
-}
-
-function _generateTodayTasks(now) {
-  const base = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0).getTime();
-  return [
-    { uuid: "t1", content: "Review quarterly goals", startAt: base, endAt: base + 3600000, important: true, urgent: false, noteUUID: "note-work-1", noteName: "Work Dashboard Notes" },
-    { uuid: "t2", content: "Stand-up meeting", startAt: base + 3600000, endAt: base + 5400000, important: false, urgent: false, noteUUID: "note-work-2", noteName: "Team Meetings" },
-    { uuid: "t3", content: "Deep work: feature implementation", startAt: base + 7200000, endAt: base + 14400000, important: true, urgent: true, noteUUID: "note-work-3", noteName: "Feature Backlog" },
-    { uuid: "t4", content: "Reply to design feedback", startAt: base + 18000000, endAt: base + 19800000, important: false, urgent: true, noteUUID: "note-work-4", noteName: "Design Review Notes" },
-  ];
-}
-
-function _generateTasks(weekStart) {
-  const tasks = [];
-  const sampleTasks = [
-    `Update the woebegone [Software Velocity page](https://en.wikipedia.org/wiki/Velocity_(software_development)), pt 2`,
-    `📫  Message one luminary or press [Luminary List of Amplenote and GitClear Contacts](https://www.amplenote.com/notes/90959c22-d3e0-11ec-ba30-9abeb6de1996). `,
-    `Look up and schedule [interesting Kexp performances](https://www.kexp.org/events/kexp-events/)`,
-    `What does it all mean ![Image](https://images.amplenote.com/ed7cca81-bb1d-48d0-87a3-cfd263228188.png)`,
-  ];
-  for (let i = 0; i < 7; i++) {
-    const dayStart = new Date(weekStart);
-    dayStart.setDate(dayStart.getDate() + i);
-    for (let j = 0; j < 3; j++) {
-      const startAt = dayStart.getTime() + (9 + j * 2) * 3600000;
-      const deadline = Math.random() > 0.5 ? startAt + 10000 : null;
-      tasks.push({
-        uuid: `task-${i}-${j}`,
-        content: j === 0 && sampleTasks[i] ? sampleTasks[i] : `Task ${ j + 1 } for ${["Mon","Tue","Wed","Thu","Fri","Sat","Sun"][i]}`,
-        startAt: deadline ? null : startAt,
-        endAt: startAt + 3600000,
-        completedAt: Math.random() > 0.3 ? startAt + 1800000 : null,
-        deadline,
-        dismissedAt: null,
-        victoryValue: Math.floor(Math.random() * 50) + 10,
-        important: Math.random() > 0.5,
-        urgent: Math.random() > 0.7,
-        noteUUID: `note-${i}-${j}`,
-        noteName: `Project Notes ${i + 1}`,
-      });
-    }
-  }
-  return tasks;
-}
-
-function _generateCompletedTasks(weekStart) {
-  return _generateTasks(weekStart).filter(t => t.completedAt);
 }
 
 function _quickActionToUrl(action) {
