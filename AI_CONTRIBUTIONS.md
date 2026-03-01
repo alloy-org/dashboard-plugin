@@ -5,6 +5,21 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-01 — Victory Value week navigation arrows
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dashboard/victory-value.js` (modified — added `shiftWeekDate` and `isCurrentWeekOrLater` helpers; imported `weekStartFromDateInput`; added `onReferenceDateChange` prop; restructured `vv-chart-container` to flex with `‹`/`›` arrow buttons flanking a new `vv-chart-wrap` div)
+- `lib/dashboard/styles/_victory-value.scss` (modified — updated `.vv-chart-container` to `display: flex`; added `.vv-chart-wrap` and `.vv-nav-arrow` styles)
+- `lib/dashboard/app.js` (modified — pass `onReferenceDateChange: options.onDateSelect` to `VictoryValueWidget`)
+
+**Task:** Add left arrow to navigate to the previous week and a right arrow (disabled when already on the current week) to advance the selected date by one week in the Victory Value chart
+**Prompt summary:** "add left arrow to choose the selected date minus one week; right arrow disabled unless currently selected date is earlier than the current week"
+**Scope:** ~30 lines of new logic across 3 files
+**Notes:** Arrows reuse the existing `onDateSelect` / `selectedDate` flow in `app.js`; right arrow disabled when `weekStart(referenceDate) >= weekStart(today)`
+
+---
+
 ## 2026-03-01 — Victory Value date range header and month/day bar labels
 
 **Model:** claude-sonnet-4-6

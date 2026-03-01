@@ -12,6 +12,9 @@
 /* [Claude] Task: date range label after Victory Value title */
 /* Prompt: "print the date range shown in a lighter shade after the Victory Value title" */
 /* Date: 2026-03-01 | Model: claude-sonnet-4-6 */
+/* [Claude] Task: week navigation arrows flanking the chart */
+/* Prompt: "add left/right week navigation arrows around the chart" */
+/* Date: 2026-03-01 | Model: claude-sonnet-4-6 */
 .widget-victory-value {
   .vv-header {
     align-items: baseline;
@@ -38,6 +41,14 @@
   }
 
   .vv-chart-container {
+    align-items: center;
+    display: flex;
+    gap: $sp-xs;
+  }
+
+  .vv-chart-wrap {
+    flex: 1;
+    min-width: 0;
     position: relative;
   }
 
@@ -45,5 +56,28 @@
     border-radius: $radius-sm;
     display: block;
     width: 100%;
+  }
+
+  .vv-nav-arrow {
+    background: none;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    color: $color-text-secondary;
+    cursor: pointer;
+    flex-shrink: 0;
+    font-size: 1.25rem;
+    line-height: 1;
+    padding: $sp-xs $sp-sm;
+    transition: background 0.15s, color 0.15s;
+
+    &:hover:not(:disabled) {
+      background: $color-bg-page-hover;
+      color: $color-navy;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.3;
+    }
   }
 }
