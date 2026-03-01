@@ -12,6 +12,31 @@
 </head>
 <body>
   <div id="dashboard-root"></div>
+  <!-- [Claude] Task: live-reload client that listens for SSE rebuild events -->
+  <!-- Prompt: "set up the dev version of the project to use hot reloading" -->
+  <!-- Date: 2026-03-01 | Model: claude-opus-4-6 -->
+  <script>
+    (function () {
+      var source = new EventSource("/esbuild-live-reload");
+      source.onmessage = function (event) {
+        var data = JSON.parse(event.data);
+        if (data.type === "css") {
+          var link = document.querySelector('link[rel="stylesheet"]');
+          if (link) {
+            var url = new URL(link.href);
+            url.searchParams.set("t", Date.now());
+            link.href = url.toString();
+          }
+        } else {
+          location.reload();
+        }
+      };
+      source.onerror = function () {
+        source.close();
+        setTimeout(function () { location.reload(); }, 2000);
+      };
+    })();
+  </script>
   <script src="/mock-data.js"></script>
   <script src="/bundle.js"></script>
 </body>

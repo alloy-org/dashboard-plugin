@@ -17,22 +17,54 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
 const devDir = __dirname;
 
+// ---------- SSE live-reload infrastructure ----------
+
+// [Claude] Task: add SSE-based live reload for the dev server
+// Prompt: "set up the dev version of the project to use hot reloading"
+// Date: 2026-03-01 | Model: claude-opus-4-6
+const sseClients = new Set();
+
+function sendSSE(data) {
+  const payload = `data: ${JSON.stringify(data)}\n\n`;
+  for (const client of sseClients) {
+    client.write(payload);
+  }
+}
+
+function compileSCSS() {
+  try {
+    const scssResult = sass.compile(
+      path.join(rootDir, "lib/dashboard/styles/dashboard.scss"),
+      { style: "expanded" }
+    );
+    fs.writeFileSync(path.join(devDir, "styles.css"), scssResult.css);
+    console.log("[scss] styles.css updated");
+    return true;
+  } catch (err) {
+    console.error("[scss] compilation error:", err.message);
+    return false;
+  }
+}
+
 // Plugin: compile SCSS after each rebuild
 const scssPlugin = {
   name: "scss-compile",
   setup(build) {
     build.onEnd((result) => {
       if (result.errors.length > 0) return;
-      try {
-        const scssResult = sass.compile(
-          path.join(rootDir, "lib/dashboard/styles/dashboard.scss"),
-          { style: "expanded" }
-        );
-        fs.writeFileSync(path.join(devDir, "styles.css"), scssResult.css);
-        console.log("[scss] styles.css updated");
-      } catch (err) {
-        console.error("[scss] compilation error:", err.message);
-      }
+      compileSCSS();
+    });
+  },
+};
+
+// Plugin: notify connected browsers after a successful rebuild
+const liveReloadPlugin = {
+  name: "live-reload",
+  setup(build) {
+    build.onEnd((result) => {
+      if (result.errors.length > 0) return;
+      sendSSE({ type: "reload" });
+      console.log("[reload] full reload sent");
     });
   },
 };
@@ -81,7 +113,7 @@ async function main() {
     },
     target: ["chrome91", "firefox90", "safari15", "edge91"],
     sourcemap: true,
-    plugins: [createLibImportsPlugin(path.join(rootDir, "lib")), scssPlugin],
+    plugins: [createLibImportsPlugin(path.join(rootDir, "lib")), scssPlugin, liveReloadPlugin],
   });
 
   await ctx.watch();
@@ -92,7 +124,35 @@ async function main() {
     port: 3001,
   });
 
+  // Watch SCSS files for CSS-only hot reload (changes that don't trigger esbuild)
+  const stylesDir = path.join(rootDir, "lib/dashboard/styles");
+  let scssDebounce = null;
+  fs.watch(stylesDir, { recursive: true }, (_eventType, filename) => {
+    if (!filename?.endsWith(".scss")) return;
+    clearTimeout(scssDebounce);
+    scssDebounce = setTimeout(() => {
+      console.log(`[scss] ${filename} changed`);
+      if (compileSCSS()) {
+        sendSSE({ type: "css" });
+        console.log("[reload] css-only reload sent");
+      }
+    }, 100);
+  });
+
   const proxyServer = http.createServer((req, res) => {
+    // SSE endpoint for live reload
+    if (req.url === "/esbuild-live-reload") {
+      res.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      });
+      res.write(":\n\n"); // SSE comment as keep-alive
+      sseClients.add(res);
+      req.on("close", () => sseClients.delete(res));
+      return;
+    }
+
     if (req.url === "/api/settings") {
       if (handleSettingsApi(req, res)) return;
     }
@@ -109,6 +169,7 @@ async function main() {
 
   proxyServer.listen(3000, () => {
     console.log("[dev] server running at http://localhost:3000");
+    console.log("[reload] live reload enabled");
   });
 }
 

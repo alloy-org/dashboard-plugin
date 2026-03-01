@@ -5,6 +5,20 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-01 — Live reload for dev server
+
+**Model:** claude-opus-4-6
+**Files created/modified:**
+- `dev/dev-server.js` (modified — added SSE live-reload infrastructure, SCSS file watcher, extracted compileSCSS helper)
+- `dev/index.html` (modified — added inline EventSource client script for live reload)
+
+**Task:** Add hot reloading to the dev server so the browser auto-refreshes on code changes
+**Prompt summary:** "set up the dev version of the project to use hot reloading"
+**Scope:** ~60 lines of new logic across 2 files
+**Notes:** Uses Server-Sent Events (SSE) on `/esbuild-live-reload`. JS changes trigger a full page reload; SCSS-only changes hot-swap the stylesheet without a full reload. SCSS files are watched separately via `fs.watch` since they aren't part of the esbuild dependency graph.
+
+---
+
 ## 2026-03-01 — Dev-mode persistent settings harness and sample task data
 
 **Model:** claude-opus-4-6
