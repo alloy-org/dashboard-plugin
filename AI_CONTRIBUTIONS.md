@@ -5,6 +5,19 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-01 — Victory Value canvas transition animation
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dashboard/victory-value.js` (modified — added `animateChart` function and updated `useEffect` to animate bar heights and mood-line ratings on data change)
+
+**Task:** Animate bar heights and mood-line y-positions from their previous values to new values whenever chart data changes
+**Prompt summary:** "When Victory Value canvas bar & line change, animate the transition from the old value to the new"
+**Scope:** ~35 lines added (new `animateChart` function + 3 refs + updated effect)
+**Notes:** Uses `requestAnimationFrame` with ease-in-out quadratic easing over 400 ms; cancels any in-progress animation on re-trigger or unmount; on first mount bars grow from zero
+
+---
+
 ## 2026-03-01 — Victory Value week navigation arrows
 
 **Model:** claude-sonnet-4-6
