@@ -3,6 +3,8 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+---
+
 ## 2026-03-01 — Consolidate DEFAULT_DASHBOARD_COMPONENTS into WIDGET_REGISTRY
 
 **Model:** claude-sonnet-4-6
@@ -15,8 +17,6 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 **Prompt summary:** "consolidate DEFAULT_DASHBOARD_COMPONENTS and WIDGET_REGISTRY by incorporating the default horizontal tile size for each widget into WIDGET_REGISTRY, and using that default widget size when the user resets their dashboard"
 **Scope:** ~20 lines changed across 3 files
 **Notes:** `DEFAULT_DASHBOARD_COMPONENTS` is kept as a derived export for backwards-compatible use in `data-service.js` and `renderActiveComponents`
-
----
 
 ---
 

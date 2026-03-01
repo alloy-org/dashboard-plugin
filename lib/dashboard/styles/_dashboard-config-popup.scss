@@ -1,8 +1,12 @@
+/* [Claude] Task: nest all styles under parent class, expand abbreviated class names, position reset button left */
+/* Prompt: "nest all styles under a parent class, expand abbreviated names, move reset button to left edge" */
+/* Date: 2026-03-01 | Model: claude-sonnet-4-6 */
+
 @use 'theme' as *;
 
-// Override the base config-popup-container sizing for the larger dashboard layout popup.
+// Override base config-popup-container sizing for the larger dashboard layout popup.
 // On desktop/tablet: constrained to 800×800px. On mobile: fills available space minus margin.
-.config-popup-container.dcf-container {
+.config-popup-container.dashboard-config-container {
   display: flex;
   flex-direction: column;
   margin: $sp-lg;
@@ -10,157 +14,177 @@
   max-width: min(800px, calc(100vw - #{$sp-lg * 2}));
   min-width: 0;
   width: 100%;
-}
 
-// Scrollable body area that fills remaining height inside the popup
-.dcf-body {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: $sp-lg;
-  overflow-y: auto;
-  padding: $sp-lg;
-}
-
-// ── Sections (rendered / hidden) ──────────────────────────────────────────────────────
-
-.dcf-section {
-  border: 2px dashed transparent;
-  border-radius: $radius-md;
-  padding: $sp-xs;
-  transition: border-color 0.15s ease, background 0.15s ease;
-
-  &--drag-over {
-    background: var(--dashboard-color-blue-light);
-    border-color: $color-accent;
-  }
-}
-
-.dcf-section-header {
-  align-items: center;
-  border-bottom: 1px solid $color-border;
-  display: flex;
-  gap: $sp-sm;
-  margin-bottom: $sp-sm;
-  padding-bottom: $sp-sm;
-}
-
-.dcf-section-icon {
-  flex-shrink: 0;
-  font-size: 0.9rem;
-  line-height: 1;
-}
-
-.dcf-section-title {
-  color: $color-text-secondary;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  margin: 0;
-  text-transform: uppercase;
-}
-
-// ── Item list ─────────────────────────────────────────────────────────────────────────
-
-.dcf-list {
-  display: flex;
-  flex-direction: column;
-  gap: $sp-xs;
-}
-
-.dcf-item {
-  align-items: center;
-  background: $color-bg-page;
-  border: 1px solid $color-border;
-  border-radius: $radius-sm;
-  cursor: grab;
-  display: flex;
-  gap: $sp-sm;
-  padding: $sp-sm $sp-md;
-  transition: opacity 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
-  user-select: none;
-
-  &:active {
-    cursor: grabbing;
+  // Scrollable body area that fills remaining height inside the popup
+  .dashboard-config-body {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: $sp-lg;
+    overflow-y: auto;
+    padding: $sp-lg;
   }
 
-  &--dragging {
-    opacity: 0.35;
+  // ── Sections (rendered / hidden) ──────────────────────────────────────────────────────
+
+  .dashboard-config-section {
+    border: 2px dashed transparent;
+    border-radius: $radius-md;
+    padding: $sp-xs;
+    transition: border-color 0.15s ease, background 0.15s ease;
+
+    &--drag-over {
+      background: var(--dashboard-color-blue-light);
+      border-color: $color-accent;
+    }
   }
 
-  &--drag-over {
-    background: $color-bg-card;
-    box-shadow: 0 -2px 0 $color-accent;
+  .dashboard-config-section-header {
+    align-items: center;
+    border-bottom: 1px solid $color-border;
+    display: flex;
+    gap: $sp-sm;
+    margin-bottom: $sp-sm;
+    padding-bottom: $sp-sm;
   }
-}
 
-.dcf-item-handle {
-  color: $color-text-muted;
-  cursor: grab;
-  flex-shrink: 0;
-  font-size: 1rem;
-  line-height: 1;
-
-  &:active {
-    cursor: grabbing;
+  .dashboard-config-section-icon {
+    flex-shrink: 0;
+    font-size: 0.9rem;
+    line-height: 1;
   }
-}
 
-.dcf-item-icon {
-  flex-shrink: 0;
-  font-size: 1rem;
-  line-height: 1;
-}
+  .dashboard-config-section-title {
+    color: $color-text-secondary;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    margin: 0;
+    text-transform: uppercase;
+  }
 
-.dcf-item-name {
-  color: $color-text;
-  flex: 1;
-  font-size: 0.875rem;
-  font-weight: 500;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+  // ── Item list ─────────────────────────────────────────────────────────────────────────
 
-// ── Arrow buttons ─────────────────────────────────────────────────────────────────────
+  .dashboard-config-list {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+  }
 
-.dcf-item-actions {
-  display: flex;
-  flex-shrink: 0;
-  gap: 2px;
-}
+  .dashboard-config-item {
+    align-items: center;
+    background: $color-bg-page;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    cursor: grab;
+    display: flex;
+    gap: $sp-sm;
+    padding: $sp-sm $sp-md;
+    transition: opacity 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    user-select: none;
 
-.dcf-arrow-btn {
-  background: none;
-  border: 1px solid $color-border;
-  border-radius: $radius-sm;
-  color: $color-text-secondary;
-  cursor: pointer;
-  font-size: 0.8rem;
-  line-height: 1;
-  padding: 3px 7px;
-  transition: background 0.1s ease, color 0.1s ease;
+    &:active {
+      cursor: grabbing;
+    }
 
-  &:hover:not(:disabled) {
-    background: $color-bg-card;
+    &--dragging {
+      opacity: 0.35;
+    }
+
+    &--drag-over {
+      background: $color-bg-card;
+      box-shadow: 0 -2px 0 $color-accent;
+    }
+  }
+
+  .dashboard-config-item-handle {
+    color: $color-text-muted;
+    cursor: grab;
+    flex-shrink: 0;
+    font-size: 1rem;
+    line-height: 1;
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+
+  .dashboard-config-item-icon {
+    flex-shrink: 0;
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .dashboard-config-item-name {
     color: $color-text;
+    flex: 1;
+    font-size: 0.875rem;
+    font-weight: 500;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.3;
+  // ── Arrow buttons ─────────────────────────────────────────────────────────────────────
+
+  .dashboard-config-item-actions {
+    display: flex;
+    flex-shrink: 0;
+    gap: 2px;
   }
-}
 
-// ── Empty state ───────────────────────────────────────────────────────────────────────
+  .dashboard-config-arrow-button {
+    background: none;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    color: $color-text-secondary;
+    cursor: pointer;
+    font-size: 0.8rem;
+    line-height: 1;
+    padding: 3px 7px;
+    transition: background 0.1s ease, color 0.1s ease;
 
-.dcf-empty {
-  color: $color-text-muted;
-  font-size: 0.8rem;
-  font-style: italic;
-  padding: $sp-md $sp-sm;
-  text-align: center;
+    &:hover:not(:disabled) {
+      background: $color-bg-card;
+      color: $color-text;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.3;
+    }
+  }
+
+  // ── Empty state ───────────────────────────────────────────────────────────────────────
+
+  .dashboard-config-empty {
+    color: $color-text-muted;
+    font-size: 0.8rem;
+    font-style: italic;
+    padding: $sp-md $sp-sm;
+    text-align: center;
+  }
+
+  // ── Actions footer: "reset" pinned to the left edge; "cancel" and "save" on the right ──
+
+  .config-popup-actions {
+    .config-popup-link {
+      background: none;
+      border: none;
+      color: $color-text-secondary;
+      cursor: pointer;
+      font-size: 0.8rem;
+      // Consumes all remaining space to push cancel/save to the right edge
+      margin-right: auto;
+      padding: 0;
+      text-decoration: underline;
+
+      &:hover {
+        color: $color-text;
+      }
+    }
+  }
 }
 
 // ── Dashboard toolbar (configure layout button) ───────────────────────────────────────
@@ -168,31 +192,31 @@
 .dashboard-toolbar {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
   gap: $sp-md;
   justify-content: space-between;
   margin-bottom: $sp-lg;
-  flex-wrap: wrap;
-}
 
-.dashboard-toolbar-actions {
-  flex-shrink: 0;
-}
+  .dashboard-toolbar-actions {
+    flex-shrink: 0;
+  }
 
-.dashboard-configure-btn {
-  background: $color-bg-card;
-  border: 1px solid $color-border;
-  border-radius: $radius-sm;
-  color: $color-text-secondary;
-  cursor: pointer;
-  font-size: 0.8rem;
-  font-weight: 600;
-  padding: $sp-sm $sp-md;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-  white-space: nowrap;
+  .dashboard-configure-button {
+    background: $color-bg-card;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    color: $color-text-secondary;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: $sp-sm $sp-md;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    white-space: nowrap;
 
-  &:hover {
-    background: $color-bg-page;
-    border-color: $color-accent;
-    color: $color-text;
+    &:hover {
+      background: $color-bg-page;
+      border-color: $color-accent;
+      color: $color-text;
+    }
   }
 }

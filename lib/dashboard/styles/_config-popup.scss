@@ -89,6 +89,11 @@ $config-popup-z-index: 1000;
     gap: $sp-sm;
     justify-content: flex-end;
     padding: $sp-md $sp-lg;
+
+    > button {
+      padding-left: 8px;
+      padding-right: 8px;
+    }
   }
 
   .config-popup-btn {
