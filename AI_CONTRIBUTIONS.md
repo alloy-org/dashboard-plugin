@@ -3,6 +3,21 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-03-01 — Consolidate DEFAULT_DASHBOARD_COMPONENTS into WIDGET_REGISTRY
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/constants/settings.js` (modified — added `defaultGridWidthSize` to each `WIDGET_REGISTRY` entry; replaced hardcoded `DEFAULT_DASHBOARD_COMPONENTS` with a derived version mapped from the registry)
+- `lib/dashboard/dashboard-config-popup.js` (modified — added `hasReset` state to `useLayoutState`; `onReset` now sets the flag; Save button passes `{ isReset }` to `onSave`)
+- `lib/dashboard/app.js` (modified — `handleLayoutSave` accepts `{ isReset }` option; when `isReset` is true, per-widget sizes are taken from `WIDGET_REGISTRY.defaultGridWidthSize` instead of the existing saved layout)
+
+**Task:** Remove the duplicate size data in `DEFAULT_DASHBOARD_COMPONENTS` by adding `defaultGridWidthSize` to `WIDGET_REGISTRY` and deriving the default layout from it; ensure "Reset to defaults" also restores default widget sizes
+**Prompt summary:** "consolidate DEFAULT_DASHBOARD_COMPONENTS and WIDGET_REGISTRY by incorporating the default horizontal tile size for each widget into WIDGET_REGISTRY, and using that default widget size when the user resets their dashboard"
+**Scope:** ~20 lines changed across 3 files
+**Notes:** `DEFAULT_DASHBOARD_COMPONENTS` is kept as a derived export for backwards-compatible use in `data-service.js` and `renderActiveComponents`
+
+---
+
 ---
 
 ## 2026-02-28 — Rename date utility API to *From* style
