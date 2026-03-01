@@ -12,6 +12,7 @@ import { createRoot } from "react-dom/client";
 // The Amplenote app object is mocked instead; callPlugin routes through the real plugin.
 import DashboardApp from '../lib/dashboard/app.js';
 import { mockPlugin } from "./test-helpers.js";
+import { dateKeyFromDateInput, weekStartFromDateInput } from "util/date-utility";
 import {
   SAMPLE_TASKS, COMPLETED_TASKS, DOMAINS, nowSec, daysAgo,
 } from "./fixtures/tasks.js";
@@ -60,6 +61,10 @@ function buildMockApp() {
 // --------------------------------------------------
 const flushAsync = () =>
   act(async () => { await new Promise(r => setTimeout(r, 0)); });
+
+function mondayWeekStartKey(date) {
+  return dateKeyFromDateInput(weekStartFromDateInput(date));
+}
 
 // Mount DashboardApp into container and flush all async work.
 async function mountDashboard(container, root, callPluginImpl) {
@@ -176,8 +181,8 @@ describe('DashboardApp', () => {
       expect(mockApp.getMoodRatings).toHaveBeenCalled();
     });
 
-    it('fetches completed tasks for each of the past 7 days via app.getCompletedTasks', () => {
-      // useCompletedTasks fires one getCompletedTasks call per day for the last 7 days.
+    it('fetches completed tasks for each day in a Monday-Sunday week via app.getCompletedTasks', () => {
+      // useCompletedTasks fires one getCompletedTasks call per day for the selected week.
       // fetchCompletedTasks is invoked twice: once after init resolves and once when
       // activeTaskDomain changes from null → 'dom-work', so the total is a multiple of 7.
       expect(mockApp.getCompletedTasks.mock.calls.length % 7).toBe(0);
@@ -263,6 +268,37 @@ describe('DashboardApp', () => {
 
       // switchTaskDomain → _fetchTasksForDomain → app.getTaskDomainTasks('dom-personal')
       expect(mockApp.getTaskDomainTasks).toHaveBeenCalledWith('dom-personal');
+    });
+  });
+
+  // ------------------------------------------------
+  describe('calendar-selected week propagation', () => {
+    it('re-fetches completed tasks when clicking a day in a different week', async () => {
+      await act(async () => { root.render(createElement(DashboardApp)); });
+      await flushAsync();
+
+      const callCountBeforeClick = mockApp.getCompletedTasks.mock.calls.length;
+      const monthLabel = container.querySelector('.cal-month');
+      const dayCells = Array.from(container.querySelectorAll('.cal-cell .cal-day'));
+      expect(monthLabel).not.toBeNull();
+      expect(dayCells.length).toBeGreaterThan(0);
+
+      const [monthName, yearString] = monthLabel.textContent.trim().split(' ');
+      const monthIndex = new Date(`${monthName} 1, ${yearString}`).getMonth();
+      const year = Number(yearString);
+      const currentWeek = mondayWeekStartKey(new Date());
+
+      const targetDayCell = dayCells.find((cell) => {
+        const day = Number(cell.textContent.trim());
+        const candidateDate = new Date(year, monthIndex, day);
+        return mondayWeekStartKey(candidateDate) !== currentWeek;
+      });
+      expect(targetDayCell).toBeDefined();
+
+      await act(async () => { targetDayCell.click(); });
+      await flushAsync();
+
+      expect(mockApp.getCompletedTasks.mock.calls.length).toBe(callCountBeforeClick + 7);
     });
   });
 });

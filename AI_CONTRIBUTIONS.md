@@ -1,7 +1,59 @@
 # AI Contributions Log
 
 This file tracks all code authored or substantially modified by AI models in this
-repository, per the standards defined in `CLAUDE.md`.
+repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
+
+---
+
+## 2026-02-28 — Rename date utility API to *From* style
+
+**Model:** gpt-5.3-codex
+**Files created/modified:**
+- `lib/util/date-utility.js` (modified) — Renamed helper exports from `fromDate*` to `<returnValue>FromDateInput` naming and updated examples/docs
+- `lib/hooks/use-completed-tasks.js` (modified) — Updated import/use of week boundaries helper
+- `lib/dashboard/victory-value.js` (modified) — Updated import/use of date key, tooltip label, and week slot helpers
+- `lib/data-service.js` (modified) — Updated import/use of week start/end helpers
+- `test/app.test.js` (modified) — Updated test helper imports to renamed date utility functions
+- `AI_CONTRIBUTIONS.md` (modified) — Added authorship log for this rename
+
+**Task:** Align date utility naming with convention “what is returned from what input” instead of starting names with `from`
+**Prompt summary:** "The function convention is not to begin methods with 'from', but rather describe what is returned from what arguments are provided"
+**Scope:** ~35 lines of API rename and callsite updates across 5 code files + tests
+**Notes:** Function behavior is unchanged; this is a naming convention alignment only
+
+---
+
+## 2026-02-28 — Consolidate shared date helpers
+
+**Model:** gpt-5.3-codex
+**Files created/modified:**
+- `lib/util/date-utility.js` (created) — Centralized date parsing, key formatting, week start/end, week boundaries, week date slots, and tooltip date label helpers
+- `lib/hooks/use-completed-tasks.js` (modified) — Replaced local week boundary logic with shared `date-utility` helper imports
+- `lib/dashboard/victory-value.js` (modified) — Replaced local date key/slot/tooltip format logic with shared `date-utility` helper imports
+- `lib/data-service.js` (modified) — Replaced local week start/end helpers with shared `date-utility` imports
+- `test/app.test.js` (modified) — Reused shared week-start/date-key helpers in calendar propagation test helper
+- `AI_CONTRIBUTIONS.md` (modified) — Added authorship log for this consolidation
+
+**Task:** Consolidate repeated date-interpreting logic into a shared utility module and standardize function names on `from*`
+**Prompt summary:** "Consolidate all date functions into lib/util/date-utility.js, ensuring each uses from instead of to in function names"
+**Scope:** ~110 lines of shared utility and callsite refactors across 5 code files + tests
+**Notes:** New helper names avoid `to*` prefixes and consistently use Monday-based week semantics used by existing dashboard flows
+
+---
+
+## 2026-02-28 — Calendar-driven VictoryValue week selection
+
+**Model:** gpt-5.3-codex
+**Files created/modified:**
+- `lib/dashboard/app.js` (modified) — Propagates calendar `selectedDate` into VictoryValue reference date and week-based completed-task refreshes
+- `lib/hooks/use-completed-tasks.js` (modified) — Fetches completed tasks for Monday-Sunday week of a reference date and skips redundant same-week/domain fetches
+- `lib/dashboard/victory-value.js` (modified) — Builds chart day slots from selected reference week and maps completed tasks to those dates
+- `test/app.test.js` (modified) — Updates week-fetch expectation and adds integration test asserting calendar click triggers week refetch
+
+**Task:** Ensure calendar date clicks control which week VictoryValue renders and fetches completed tasks for
+**Prompt summary:** "When the user clicks a date on the calendar, propagate that date to VictoryValue and refetch completed tasks for that week when week start changes"
+**Scope:** ~120 lines of logic and tests across 4 files
+**Notes:** Uses Monday as week start consistently in both data fetch and VictoryValue chart date slots
 
 ---
 
@@ -401,3 +453,7 @@ repository, per the standards defined in `CLAUDE.md`.
 **Prompt summary:** "build an Amplenote dashboard plugin with planning, victory value, mood, calendar, agenda, quotes, AI plugins, and quick action widgets"
 **Scope:** ~700 lines of new logic across 14 files
 **Notes:** Uses React createElement (no JSX), communicates with Amplenote via callPlugin/onEmbedCall bridge
+
+---
+
+STOP. Do not add summaries here. Add them to top of list.
