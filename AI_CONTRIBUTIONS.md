@@ -5,6 +5,34 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-01 — Fix mood overlay defaulting to hidden in VictoryValue widget
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dashboard/victory-value.js` (modified — added `parseShowMoodSetting` helper; defaulted `showMood` to `true` when no saved config exists; applied same helper in `handleConfigCancel`)
+
+**Task:** Ensure the daily mood line and dots are visible in the VictoryValue chart by default
+**Prompt summary:** "ensure that the daily mood line + dot is visible in VictoryValue component"
+**Scope:** ~8 lines changed across 1 file
+**Notes:** The root cause was `useState(currentConfig[1] === 'true' || ...)` evaluating to `false` when no config is saved (since `undefined === 'true'` is `false`). A new `parseShowMoodSetting(value)` helper treats a missing/null value as `true` (on by default), while still respecting an explicitly saved `'false'`.
+
+---
+
+## 2026-03-01 — Add descriptions to WIDGET_REGISTRY for DashboardConfig drag list
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/constants/settings.js` (modified — added `description` field to each WIDGET_REGISTRY entry)
+- `lib/dashboard/dashboard-config-popup.js` (modified — `renderItem` wraps name + description in an info column)
+- `lib/dashboard/styles/_dashboard-config-popup.scss` (modified — added `.dashboard-config-item-info` and `.dashboard-config-item-description` styles)
+
+**Task:** Show a one-line description for each widget in the DashboardConfig popup drag list
+**Prompt summary:** "Update WIDGET_REGISTRY to include a one line description for each component that is shown in the DashboardConfig list when dragging the components"
+**Scope:** ~20 lines changed across 3 files
+**Notes:** Description text is truncated with ellipsis when the popup is narrow; the info wrapper takes `flex: 1` so the actions column stays right-aligned
+
+---
+
 ## 2026-03-01 — Consolidate DEFAULT_DASHBOARD_COMPONENTS into WIDGET_REGISTRY
 
 **Model:** claude-sonnet-4-6

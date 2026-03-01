@@ -115,12 +115,30 @@
     line-height: 1;
   }
 
+  /* [Claude] Task: add info column wrapper and description styles for widget drag list
+     Prompt: "Update WIDGET_REGISTRY to include a one line description for each component that is shown in the DashboardConfig list when dragging the components"
+     Date: 2026-03-01 | Model: claude-sonnet-4-6 */
+  .dashboard-config-item-info {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    overflow: hidden;
+  }
+
   .dashboard-config-item-name {
     color: $color-text;
-    flex: 1;
     font-size: 0.875rem;
     font-weight: 500;
-    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-config-item-description {
+    color: $color-text-secondary;
+    font-size: 0.75rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
