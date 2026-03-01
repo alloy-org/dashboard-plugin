@@ -1,5 +1,6 @@
 /dev/bundle*
 /dev/styles.css
+/dev/settings.json
 /shelf/
 /workspace.xml
 # Editor-based HTTP Client requests

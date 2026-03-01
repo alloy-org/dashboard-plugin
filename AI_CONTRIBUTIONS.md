@@ -5,6 +5,23 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-01 — Dev-mode persistent settings harness and sample task data
+
+**Model:** claude-opus-4-6
+**Files created/modified:**
+- `dev/dev-app.js` (created) — Node.js module: createDevApp factory backed by JSON file for settings persistence, sample tasks for getTaskDomainTasks
+- `dev/dev-server.js` (modified) — Added HTTP proxy with `/api/settings` GET/POST endpoints for browser-side persistence
+- `dev/mock-data.js` (modified) — Wired init/saveSetting/saveLayout to persist via `/api/settings` API
+- `.gitignore` (modified) — Added `/dev/settings.json`
+- `test/dev-app.test.js` (created) — 10 tests covering settings persistence across instantiations, sample task shape, and domain retrieval
+
+**Task:** Make `npm run dev` persist plugin settings to a local JSON file, emulating the Amplenote `app.settings` / `app.setSetting` interface
+**Prompt summary:** "set up dev environment to persist state via JSON file, return sample tasks for getTaskDomainTasks, test setSetting persistence"
+**Scope:** ~300 lines of new logic across 5 files
+**Notes:** Settings stored in `dev/settings.json` (gitignored). Dev server proxies esbuild on port 3001 and serves on port 3000 with custom API routes.
+
+---
+
 ## 2026-03-01 — Dashboard Settings popup with LLM provider and API key
 
 **Model:** claude-sonnet-4-6

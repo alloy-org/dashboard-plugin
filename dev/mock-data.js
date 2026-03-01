@@ -5,6 +5,38 @@
  * Prompt summary: "global callPlugin mock returning realistic data for init, fetchQuotes, configure, etc."
  */
 
+// Persistent settings loaded from the dev server's JSON-backed API.
+// Populated asynchronously before the first callPlugin("init") resolves.
+let _persistedSettings = null;
+
+async function _loadSettings() {
+  if (_persistedSettings !== null) return _persistedSettings;
+  try {
+    const res = await fetch("/api/settings");
+    _persistedSettings = await res.json();
+  } catch {
+    _persistedSettings = {};
+  }
+  return _persistedSettings;
+}
+
+// [Claude] Task: persist a single setting to the dev server's JSON file
+// Prompt: "dev mode should persist settings to a JSON file"
+// Date: 2026-03-01 | Model: claude-opus-4-6
+async function _saveSetting(key, value) {
+  const settings = await _loadSettings();
+  settings[key] = value;
+  try {
+    await fetch("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, value }),
+    });
+  } catch (err) {
+    console.warn("[mock] failed to persist setting", key, err);
+  }
+}
+
 // Mock callPlugin for local dev — mirrors the actions dispatched by the dashboard app
 // eslint-disable-next-line no-unused-vars
 async function callPlugin(action, ...args) {
@@ -23,6 +55,7 @@ async function callPlugin(action, ...args) {
   switch (action) {
 
     case "init": {
+      const settings = await _loadSettings();
       const now = new Date();
       const weekStart = _getWeekStart(now);
       return {
@@ -50,7 +83,7 @@ async function callPlugin(action, ...args) {
           }
         },
         currentDate: now.toISOString(),
-        settings: {},
+        settings,
         taskDomains: [
           { name: "Work", uuid: "domain-work-uuid" },
           { name: "Personal", uuid: "domain-personal-uuid" },
@@ -68,6 +101,14 @@ async function callPlugin(action, ...args) {
 
     case "configure":
       return null;
+
+    case "saveSetting":
+      await _saveSetting(`dashboard_${args[0]}_config`, JSON.stringify(Array.isArray(args[1]) ? args[1] : [args[1]]));
+      return true;
+
+    case "saveLayout":
+      await _saveSetting("dashboard_elements", JSON.stringify(args[0]));
+      return true;
 
     case "navigateToNote":
       return app.navigate(`https://www.amplenote.com/notes/${args[0]}`);
