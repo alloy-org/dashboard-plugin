@@ -5,6 +5,20 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-01 — Victory Value date range header and month/day bar labels
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dashboard/victory-value.js` (modified — added `formatWeekDateRange` helper; pass `headerActions` with date range span to `WidgetWrapper`; updated `drawBars` to render month/day label beneath each day-of-week abbreviation on the canvas; added `dateFromDateInput` import)
+- `lib/dashboard/styles/_victory-value.scss` (modified — added `.vv-date-range` style)
+
+**Task:** Show the week date range in a lighter shade after the "Victory Value" title, and render a short-month + day-of-month label beneath each day-of-week abbreviation on the chart canvas
+**Prompt summary:** "print the date range shown in a lighter shade after the Victory Value title; underneath each day-of-week label, print [short month] [day of month]"
+**Scope:** ~15 lines of new logic across 2 files
+**Notes:** Date range (e.g. "Feb 23 – Mar 1") is passed via `headerActions` to `WidgetWrapper` and styled with `$color-text-secondary`; month/day labels (e.g. "Feb 24") are drawn at `ht - 3` in the canvas, with the day name shifted up to `ht - 15` to make room
+
+---
+
 ## 2026-03-01 — Refetch mood ratings when calendar date changes
 
 **Model:** claude-sonnet-4-6
