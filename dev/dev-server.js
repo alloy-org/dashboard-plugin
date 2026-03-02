@@ -232,13 +232,30 @@ async function main() {
       if (handleAttachMediaApi(req, res)) return;
     }
 
+    if (req.url.includes("background-image")) {
+      console.log(`[proxy] serving background image request: ${req.method} ${req.url}`);
+    }
+
+    // [Claude] Task: add error handling to proxy requests to prevent server crash on connection failures
+    // Prompt: "confirm that code to load a background image can not trigger multiple full-app reloads"
+    // Date: 2026-03-01 | Model: claude-4.6-opus-high-thinking
     const proxyReq = http.request(
       { hostname: host, port: esbuildPort, path: req.url, method: req.method, headers: req.headers },
       (proxyRes) => {
+        if (req.url.includes("background-image")) {
+          console.log(`[proxy] background image response: ${proxyRes.statusCode} for ${req.url}`);
+        }
         res.writeHead(proxyRes.statusCode, proxyRes.headers);
         proxyRes.pipe(res, { end: true });
       }
     );
+    proxyReq.on("error", (err) => {
+      console.error(`[proxy] error proxying ${req.method} ${req.url} to esbuild:`, err.message);
+      if (!res.headersSent) {
+        res.writeHead(502, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Proxy error", detail: err.message }));
+      }
+    });
     req.pipe(proxyReq, { end: true });
   });
 

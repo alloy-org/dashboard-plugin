@@ -116,6 +116,7 @@ function _calcDailyVictoryValues(tasks, weekStart) {
 // Mock callPlugin for local dev — mirrors the actions dispatched by the dashboard app
 // eslint-disable-next-line no-unused-vars
 async function callPlugin(action, ...args) {
+  console.log("[mock] callPlugin:", action, args.length > 0 ? "(+" + args.length + " args)" : "");
   const app = {
     navigate(url) {
       const isValidAmplenoteNotesUrl = /^https:\/\/www\.amplenote\.com\/notes(?:$|[/?].*)/.test(url);
@@ -245,26 +246,33 @@ async function callPlugin(action, ...args) {
     // Date: 2026-03-01 | Model: claude-4.6-opus-high-thinking
     case "uploadBackgroundImage": {
       const dataURL = args[0];
+      console.log("[mock] uploadBackgroundImage: sending", (dataURL?.length || 0), "chars to /api/attach-media");
       try {
         const res = await fetch("/api/attach-media", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ dataURL }),
         });
+        console.log("[mock] uploadBackgroundImage: server responded with status", res.status);
         const result = await res.json();
+        console.log("[mock] uploadBackgroundImage: result =", JSON.stringify(result));
         if (result.url) {
           await _saveSetting("Background Image URL", result.url);
+          console.log("[mock] uploadBackgroundImage: saved URL to settings:", result.url);
           return result.url;
         }
+        console.warn("[mock] uploadBackgroundImage: no URL in response");
       } catch (err) {
-        console.error("[mock] uploadBackgroundImage failed:", err);
+        console.error("[mock] uploadBackgroundImage FAILED:", err);
       }
       return null;
     }
 
     case "removeBackgroundImage":
+      console.log("[mock] removeBackgroundImage");
       await _saveSetting("Background Image URL", "");
       await _saveSetting("Background Image Mode", "");
+      console.log("[mock] removeBackgroundImage: settings cleared");
       return true;
 
     case "saveBackgroundMode":

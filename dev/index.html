@@ -12,29 +12,67 @@
 </head>
 <body>
   <div id="dashboard-root"></div>
-  <!-- [Claude] Task: live-reload client that listens for SSE rebuild events -->
-  <!-- Prompt: "set up the dev version of the project to use hot reloading" -->
-  <!-- Date: 2026-03-01 | Model: claude-opus-4-6 -->
+  <!-- [Claude] Task: live-reload client with reconnection backoff and global error diagnostics -->
+  <!-- Prompt: "confirm that code to load a background image can not trigger multiple full-app reloads" -->
+  <!-- Date: 2026-03-01 | Model: claude-4.6-opus-high-thinking -->
   <script>
     (function () {
-      var source = new EventSource("/esbuild-live-reload");
-      source.onmessage = function (event) {
-        var data = JSON.parse(event.data);
-        if (data.type === "css") {
-          var link = document.querySelector('link[rel="stylesheet"]');
-          if (link) {
-            var url = new URL(link.href);
-            url.searchParams.set("t", Date.now());
-            link.href = url.toString();
-          }
-        } else {
-          location.reload();
+      var MAX_RECONNECT_ATTEMPTS = 10;
+      var BASE_DELAY_MS = 1000;
+      var reconnectAttempts = 0;
+      var source = null;
+
+      function connectSSE() {
+        if (source) {
+          source.close();
+          source = null;
         }
-      };
-      source.onerror = function () {
-        source.close();
-        setTimeout(function () { location.reload(); }, 2000);
-      };
+        console.log("[live-reload] connecting to SSE (attempt " + (reconnectAttempts + 1) + ")...");
+        source = new EventSource("/esbuild-live-reload");
+
+        source.onopen = function () {
+          console.log("[live-reload] SSE connected");
+          reconnectAttempts = 0;
+        };
+
+        source.onmessage = function (event) {
+          var data = JSON.parse(event.data);
+          console.log("[live-reload] SSE message:", data.type);
+          if (data.type === "css") {
+            var link = document.querySelector('link[rel="stylesheet"]');
+            if (link) {
+              var url = new URL(link.href);
+              url.searchParams.set("t", Date.now());
+              link.href = url.toString();
+            }
+          } else {
+            console.log("[live-reload] triggering full reload from SSE rebuild event");
+            location.reload();
+          }
+        };
+
+        source.onerror = function () {
+          source.close();
+          source = null;
+          reconnectAttempts++;
+          if (reconnectAttempts > MAX_RECONNECT_ATTEMPTS) {
+            console.error("[live-reload] max reconnect attempts reached (" + MAX_RECONNECT_ATTEMPTS + "), giving up. Reload page manually.");
+            return;
+          }
+          var delay = Math.min(BASE_DELAY_MS * Math.pow(2, reconnectAttempts - 1), 30000);
+          console.warn("[live-reload] SSE connection lost, reconnecting in " + delay + "ms (attempt " + reconnectAttempts + "/" + MAX_RECONNECT_ATTEMPTS + ")");
+          setTimeout(connectSSE, delay);
+        };
+      }
+
+      connectSSE();
+
+      window.addEventListener("error", function (event) {
+        console.error("[global-error]", event.message, "at", event.filename + ":" + event.lineno + ":" + event.colno, event.error);
+      });
+      window.addEventListener("unhandledrejection", function (event) {
+        console.error("[unhandled-rejection]", event.reason);
+      });
     })();
   </script>
   <script src="/mock-data.js"></script>
