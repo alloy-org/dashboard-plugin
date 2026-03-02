@@ -5,6 +5,20 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-01 — Reduce redundant re-renders during initialization
+
+**Model:** claude-4.6-opus-high-thinking
+**Files modified:**
+- `lib/dashboard/app.js` (modified — skip redundant mood refetch on initial mount)
+- `lib/hooks/use-completed-tasks.js` (modified — convert loading/error from useState to useRef)
+
+**Task:** Eliminate 2 unnecessary React re-renders during the init→fetch cascade
+**Prompt summary:** "app re-renders 4 times on load; reduce cascading state updates"
+**Scope:** ~15 lines changed across 2 files
+**Notes:** Init already provides mood ratings, so the cascading useEffect no longer re-fetches them on first mount. The useCompletedTasks hook's loading/error states were triggering intermediate renders despite not being consumed by the render tree — converted to refs and exposed via getters for API compatibility.
+
+---
+
 ## 2026-03-01 — Dashboard background image upload
 
 **Model:** claude-4.6-opus-high-thinking
