@@ -128,6 +128,47 @@ function handleTasksApi(req, res) {
   return true;
 }
 
+// [Claude] Task: handle image upload from data URL and save to local file for dev background image
+// Prompt: "add background image upload option to DashboardSettings"
+// Date: 2026-03-01 | Model: claude-4.6-opus-high-thinking
+function handleAttachMediaApi(req, res) {
+  if (req.method !== "POST") return false;
+
+  let body = "";
+  req.on("data", chunk => { body += chunk; });
+  req.on("end", () => {
+    try {
+      const { dataURL } = JSON.parse(body);
+      if (!dataURL || !dataURL.startsWith("data:image/")) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Invalid data URL" }));
+        return;
+      }
+
+      const matches = dataURL.match(/^data:image\/(\w+);base64,(.+)$/);
+      if (!matches) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Could not parse data URL" }));
+        return;
+      }
+
+      const ext = matches[1] === "jpeg" ? "jpg" : matches[1];
+      const buffer = Buffer.from(matches[2], "base64");
+      const filename = `background-image.${ext}`;
+      const filePath = path.join(devDir, filename);
+      fs.writeFileSync(filePath, buffer);
+      console.log(`[attach-media] saved ${filename} (${buffer.length} bytes)`);
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ url: `/${filename}` }));
+    } catch (err) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+  });
+  return true;
+}
+
 async function main() {
   const ctx = await esbuild.context({
     entryPoints: [path.join(rootDir, "lib/dashboard/client-entry.js")],
@@ -185,6 +226,10 @@ async function main() {
 
     if (req.url === "/api/tasks" || req.url.startsWith("/api/tasks?")) {
       if (handleTasksApi(req, res)) return;
+    }
+
+    if (req.url === "/api/attach-media") {
+      if (handleAttachMediaApi(req, res)) return;
     }
 
     const proxyReq = http.request(

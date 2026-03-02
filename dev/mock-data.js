@@ -240,6 +240,37 @@ async function callPlugin(action, ...args) {
         activeTaskDomain: "domain-work-uuid"
       };
 
+    // [Claude] Task: mock uploadBackgroundImage via dev server endpoint
+    // Prompt: "add background image upload option to DashboardSettings"
+    // Date: 2026-03-01 | Model: claude-4.6-opus-high-thinking
+    case "uploadBackgroundImage": {
+      const dataURL = args[0];
+      try {
+        const res = await fetch("/api/attach-media", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dataURL }),
+        });
+        const result = await res.json();
+        if (result.url) {
+          await _saveSetting("Background Image URL", result.url);
+          return result.url;
+        }
+      } catch (err) {
+        console.error("[mock] uploadBackgroundImage failed:", err);
+      }
+      return null;
+    }
+
+    case "removeBackgroundImage":
+      await _saveSetting("Background Image URL", "");
+      await _saveSetting("Background Image Mode", "");
+      return true;
+
+    case "saveBackgroundMode":
+      await _saveSetting("Background Image Mode", args[0]);
+      return true;
+
     default:
       console.warn("[mock] unhandled callPlugin action:", action, args);
       return null;

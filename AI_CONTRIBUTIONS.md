@@ -5,6 +5,26 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-01 — Dashboard background image upload
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/constants/settings.js` (modified — added BACKGROUND_IMAGE_URL, BACKGROUND_IMAGE_MODE setting keys and BACKGROUND_MODE_OPTIONS array)
+- `lib/dashboard/dashboard-settings-popup.js` (modified — added background image drag-and-drop upload, display mode selector, and remove image link with confirmation)
+- `lib/dashboard/app.js` (modified — pass background settings to popup, apply background image inline styles to dashboard div, persist background mode on save)
+- `lib/plugin.js` (modified — added uploadBackgroundImage, removeBackgroundImage, and saveBackgroundMode onEmbedCall actions)
+- `lib/dashboard/styles/_dashboard-settings-popup.scss` (modified — added dropzone, preview, and remove-image styles)
+- `dev/mock-data.js` (modified — added uploadBackgroundImage, removeBackgroundImage, and saveBackgroundMode mock actions)
+- `dev/dev-server.js` (modified — added /api/attach-media endpoint that saves uploaded images to dev directory)
+- `dev/dev-app.js` (modified — added context.pluginUUID mock and attachNoteMedia method that writes image files locally)
+
+**Task:** Add background image upload to Dashboard Settings with display mode selector and remove option
+**Prompt summary:** "add background image upload option to DashboardSettings using app.attachNoteMedia with pluginUUID, display mode selector, remove link, and dev harness mocks"
+**Scope:** ~170 lines of new logic across 8 files
+**Notes:** Uses app.context.pluginUUID to get the plugin note UUID, then app.attachNoteMedia to upload the image. Background mode supports cover, contain, repeat, repeat-x, repeat-y, and no-repeat. Dev harness writes uploaded images to the dev/ directory as background-image.{ext}.
+
+---
+
 ## 2026-03-01 — Victory Value week navigation arrows
 
 **Model:** claude-sonnet-4-6

@@ -231,6 +231,10 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH) {
   const app = {
     settings,
 
+    context: {
+      pluginUUID: "dev-dashboard-plugin-uuid",
+    },
+
     async setSetting(key, value) {
       app.settings[key] = String(value);
       writeSettingsFile(app.settings, settingsPath);
@@ -279,6 +283,21 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH) {
         console.warn("[dev-app] navigate rejected invalid URL", url);
       }
       return isValid;
+    },
+
+    // [Claude] Task: mock attachNoteMedia — writes image to dev directory and returns local URL
+    // Prompt: "add background image upload option to DashboardSettings"
+    // Date: 2026-03-01 | Model: claude-4.6-opus-high-thinking
+    async attachNoteMedia(_noteHandle, dataURL) {
+      const matches = dataURL.match(/^data:image\/(\w+);base64,(.+)$/);
+      if (!matches) throw new Error("Invalid image data URL");
+      const ext = matches[1] === "jpeg" ? "jpg" : matches[1];
+      const buffer = Buffer.from(matches[2], "base64");
+      const filename = `background-image.${ext}`;
+      const filePath = path.join(__dirname, filename);
+      fs.writeFileSync(filePath, buffer);
+      console.log(`[dev-app] attachNoteMedia saved ${filename} (${buffer.length} bytes)`);
+      return `/${filename}`;
     },
 
     async openSidebarEmbed() { return true; },

@@ -62,6 +62,75 @@
     }
   }
 
+  // ── Background image upload ──────────────────────────────────────────────────────────
+
+  .dashboard-settings-dropzone {
+    align-items: center;
+    background: $color-bg-page;
+    border: 2px dashed $color-border;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+    justify-content: center;
+    min-height: 120px;
+    padding: $sp-lg;
+    text-align: center;
+    transition: border-color 0.15s ease, background 0.15s ease;
+
+    &:hover {
+      border-color: $color-accent;
+    }
+
+    &--active {
+      background: rgba(0, 0, 0, 0.03);
+      border-color: $color-accent;
+      border-style: solid;
+    }
+
+    &--uploading {
+      cursor: wait;
+      opacity: 0.7;
+    }
+  }
+
+  .dashboard-settings-dropzone-input {
+    display: none;
+  }
+
+  .dashboard-settings-dropzone-text {
+    color: $color-text-muted;
+    font-size: 0.8rem;
+  }
+
+  .dashboard-settings-dropzone-preview {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+  }
+
+  .dashboard-settings-dropzone-preview-img {
+    border-radius: $radius-sm;
+    max-height: 80px;
+    max-width: 100%;
+    object-fit: contain;
+  }
+
+  .dashboard-settings-remove-image {
+    color: $color-danger;
+    cursor: pointer;
+    display: inline-block;
+    font-size: 0.8rem;
+    margin-top: $sp-xs;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
   // ── API key field ────────────────────────────────────────────────────────────────────
 
   .dashboard-settings-api-key-link {
