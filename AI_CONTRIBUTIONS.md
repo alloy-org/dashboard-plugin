@@ -5,6 +5,19 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-01 — Memoized widget cells to prevent unnecessary re-renders
+
+**Model:** claude-4.6-opus-high-thinking
+**Files modified:**
+- `lib/dashboard/app.js` (modified — replaced renderActiveComponents with 8 module-level memo'd cell components; added useMemo for agendaTasks and activeComponents)
+
+**Task:** Replace the monolithic renderActiveComponents function with individually memoized cell components so only widgets whose data actually changed re-render
+**Prompt summary:** "re-render only components whose data changed; explicitly split props by component"
+**Scope:** ~120 lines added (8 memo components + gridCellStyle), ~90 lines removed (renderActiveComponents)
+**Notes:** Each *Cell component receives only the props it needs. PlanningCell/MoodCell/AIPluginsCell/QuickActionsCell now skip re-renders when tasks or completed data changes. AgendaCell skips re-renders when completedTasksByDate or moodRatings change. All widget cells skip re-renders when focusState changes (opening popups).
+
+---
+
 ## 2026-03-01 — Reduce redundant re-renders during initialization
 
 **Model:** claude-4.6-opus-high-thinking
