@@ -1,0 +1,73 @@
+/* [Claude-authored file]
+ * Created: 2026-03-04 | Model: claude-4.6-sonnet-medium-thinking
+ * Task: Recent Notes widget styles — list of notes with stale open tasks
+ * Prompt summary: "add recent-notes.scss stylesheet with a containing class"
+ */
+
+@use 'theme' as *;
+
+/* [Claude] Task: Recent Notes widget — clickable note rows with name and open-task count */
+/* Prompt: "avoid the rn abbreviation with a short unabbreviated word" */
+/* Date: 2026-03-04 | Model: claude-4.6-sonnet-medium-thinking */
+.widget-recent-notes {
+  .note-list {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+    list-style: none;
+  }
+
+  .note-item {
+    display: flex;
+
+    &:hover {
+      background-color: $color-bg-page;
+    }
+  }
+
+  .note-link {
+    align-items: center;
+    background: none;
+    border: none;
+    border-radius: $radius-sm;
+    color: inherit;
+    cursor: pointer;
+    display: flex;
+    font-family: inherit;
+    gap: $sp-sm;
+    justify-content: space-between;
+    padding: $sp-sm $sp-md;
+    text-align: left;
+    width: 100%;
+  }
+
+  .note-name {
+    color: $color-text;
+    flex: 1;
+    font-size: 0.85rem;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .note-count {
+    color: $color-text-muted;
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .note-loading,
+  .note-empty,
+  .note-error {
+    color: $color-text-secondary;
+    font-size: 0.85rem;
+    padding: $sp-md 0;
+    text-align: center;
+  }
+
+  .note-error {
+    color: $color-danger;
+  }
+}
