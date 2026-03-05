@@ -5,6 +5,21 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-05 — Built-in inspirational quote pool for Inspiration widget
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dashboard/quotes-data.js` (created — 100 curated quotes + `getRandomQuotes` helper)
+- `lib/dashboard/quotes.js` (modified — use local pool by default; LLM only when plan content present)
+- `lib/data-service.js` (modified — no-API-key fallback now draws from local pool)
+
+**Task:** Add 100 built-in inspirational quotes covering "getting things done", "taking a first step", and "treating today as a new opportunity"; widget randomly selects 2 each render without any network call unless plan content is available for LLM personalisation.
+**Prompt summary:** "add a set of 100 inspirational quotes randomly picked for the Inspiration component"
+**Scope:** ~120 lines of new logic + small modifications across 2 existing files
+**Notes:** LLM path is still used when `planContent` is provided (personalized quotes tied to goals); on LLM failure the widget gracefully falls back to the local pool.
+
+---
+
 ## 2026-03-05 — Seeded randomness and reseed action for Recent Notes widget
 
 **Model:** claude-4.6-sonnet-medium-thinking
