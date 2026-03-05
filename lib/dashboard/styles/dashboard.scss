@@ -52,7 +52,7 @@ html {
 // Dashboard layout
 .dashboard {
   margin: 0 auto;
-  max-width: $dashboard-max-width;
+  height: 100vh;
   padding: $sp-xl;
 
   .dashboard-grid {
