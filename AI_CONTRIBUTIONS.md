@@ -3,6 +3,19 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-03-05 — Fix mood overlay showing data for future dates
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dashboard/victory-value.js` (modified — `drawMoodOverlay`, `getHoveredDayMood`)
+
+**Task:** Prevent mood rating data from being rendered on the chart or shown in tooltips for dates that have not yet occurred
+**Prompt summary:** "showing mood rating data for dates that have not yet occurred"
+**Scope:** ~15 lines changed across 2 functions
+**Notes:** Both the canvas overlay and the hover tooltip now compare each day's date against end-of-today before rendering mood; the line segment also uses a `lineStarted` flag so it begins from the first non-future point rather than assuming index 0
+
+---
+
 ---
 
 ## 2026-03-04 — Replace AI Plugins widget with Recent Notes widget
