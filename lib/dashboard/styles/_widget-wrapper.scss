@@ -38,7 +38,11 @@
       text-transform: uppercase;
     }
 
-    &-configure {
+    /* [Claude] Task: shared header action button style; used by configure and reseed buttons */
+    /* Prompt: "component should have a link in the top bar to reseed" */
+    /* Date: 2026-03-05 | Model: claude-4.6-sonnet-medium-thinking */
+    &-configure,
+    &-header-action {
       background: none;
       border: none;
       color: $color-text-secondary;

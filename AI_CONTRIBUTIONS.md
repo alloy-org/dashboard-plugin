@@ -3,6 +3,22 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+---
+
+## 2026-03-05 — Seeded randomness and reseed action for Recent Notes widget
+
+**Model:** claude-4.6-sonnet-medium-thinking
+**Files created/modified:**
+- `lib/dashboard/recent-notes.js` (modified — added PRNG helpers, buildSeed, seed-based skipping in findStaleTaskNotes, reseedCount state, reseed button in header)
+- `lib/dashboard/styles/_widget-wrapper.scss` (modified — added `widget-header-action` selector alongside `widget-configure`)
+
+**Task:** Add a "↻ Reseed" button to the Recent Notes widget header that changes the seed on click (also changes daily), causing the note selection to vary deterministically via a seeded PRNG that randomly skips up to 5 qualifying notes per pass
+**Prompt summary:** "component should have a link in the top bar to reseed; seed changes daily or on reseed click; skip up to 5 notes; fall back to skipped notes if not enough found"
+**Scope:** ~50 lines of new logic across 2 files
+**Notes:** Uses FNV-1a hash + mulberry32 PRNG; skipped notes are kept as a fallback pool so the widget never shows fewer than MIN_NOTES entries
+
+---
+
 ## 2026-03-05 — Fix mood overlay showing data for future dates
 
 **Model:** claude-sonnet-4-6
@@ -13,8 +29,6 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 **Prompt summary:** "showing mood rating data for dates that have not yet occurred"
 **Scope:** ~15 lines changed across 2 functions
 **Notes:** Both the canvas overlay and the hover tooltip now compare each day's date against end-of-today before rendering mood; the line segment also uses a `lineStarted` flag so it begins from the first non-future point rather than assuming index 0
-
----
 
 ---
 
