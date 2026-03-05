@@ -257,8 +257,7 @@ async function callPlugin(action, ...args) {
         const result = await res.json();
         console.log("[mock] uploadBackgroundImage: result =", JSON.stringify(result));
         if (result.url) {
-          await _saveSetting("Background Image URL", result.url);
-          console.log("[mock] uploadBackgroundImage: saved URL to settings:", result.url);
+          console.log("[mock] uploadBackgroundImage: returning URL (persist on Save)");
           return result.url;
         }
         console.warn("[mock] uploadBackgroundImage: no URL in response");
@@ -266,6 +265,13 @@ async function callPlugin(action, ...args) {
         console.error("[mock] uploadBackgroundImage FAILED:", err);
       }
       return null;
+    }
+
+    case "saveBackgroundImageUrl": {
+      const url = args[0];
+      await _saveSetting("Background Image URL", url || "");
+      if (!url) await _saveSetting("Background Image Mode", "");
+      return true;
     }
 
     case "removeBackgroundImage":

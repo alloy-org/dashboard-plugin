@@ -540,8 +540,13 @@
             const dataURL = args[0];
             const pluginNoteUUID = app.context.pluginUUID;
             const fileURL = await app.attachNoteMedia({ uuid: pluginNoteUUID }, dataURL);
-            await app.setSetting(SETTING_KEYS.BACKGROUND_IMAGE_URL, fileURL);
             return fileURL;
+          }
+          case "saveBackgroundImageUrl": {
+            const url = args[0];
+            await app.setSetting(SETTING_KEYS.BACKGROUND_IMAGE_URL, url || "");
+            if (!url) await app.setSetting(SETTING_KEYS.BACKGROUND_IMAGE_MODE, "");
+            return true;
           }
           case "removeBackgroundImage":
             await app.setSetting(SETTING_KEYS.BACKGROUND_IMAGE_URL, "");

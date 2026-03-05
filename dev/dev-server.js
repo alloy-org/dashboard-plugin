@@ -63,8 +63,8 @@ const liveReloadPlugin = {
   setup(build) {
     build.onEnd((result) => {
       if (result.errors.length > 0) return;
-      sendSSE({ type: "reload" });
-      console.log("[reload] full reload sent");
+      // sendSSE({ type: "reload" });
+      console.trace("[reload] full reload sent");
     });
   },
 };
