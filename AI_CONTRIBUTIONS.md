@@ -5,6 +5,22 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-04 — Replace AI Plugins widget with Recent Notes widget
+
+**Model:** claude-4.6-sonnet-medium-thinking
+**Files created/modified:**
+- `lib/dashboard/recent-notes.js` (replaced — new RecentNotesWidget component)
+- `lib/plugin.js` (modified — added `getTaskDomains` and `getNoteTasks` onEmbedCall cases)
+- `lib/dashboard/app.js` (modified — renamed AIPluginsCell → RecentNotesCell, updated import)
+- `lib/constants/settings.js` (modified — updated WIDGET_REGISTRY entry name/description/icon)
+
+**Task:** Replace the AI & Plugins widget with a "Recent Notes" widget that lists 3–5 notes containing open tasks where no task has a startAt timestamp newer than one week ago
+**Prompt summary:** "replace AI & Plugins widget with Recent Notes showing notes whose tasks have gone stale"
+**Scope:** ~100 lines new logic in recent-notes.js; ~15 lines modified across 3 other files
+**Notes:** Widget self-fetches on mount via callPlugin; iterates task domains to gather all note handles, checks open tasks per note, filters by latestTaskTimestamp < one week ago; clicking a note navigates to it via navigateToNote
+
+---
+
 ## 2026-03-01 — Memoized widget cells to prevent unnecessary re-renders
 
 **Model:** claude-4.6-opus-high-thinking
@@ -667,7 +683,7 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 - `lib/dashboard/calendar.js` (created) — Calendar widget: month grid with task-density colored dots
 - `lib/dashboard/agenda.js` (created) — Agenda widget: today's tasks with priority colors and durations
 - `lib/dashboard/quotes.js` (created) — Quotes widget: LLM-generated quotes on Unsplash background tiles
-- `lib/dashboard/ai-plugins.js` (created) — AI & Plugins widget: action list with badge counts
+- `lib/dashboard/recent-notes.js` (created) — AI & Plugins widget: action list with badge counts
 - `lib/dashboard/quick-actions.js` (created) — Quick actions widget: 2x2 shortcut button grid
 
 **Task:** Build the full Amplenote dashboard plugin with React widget components and data layer
