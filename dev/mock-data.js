@@ -193,7 +193,7 @@ async function callPlugin(action, ...args) {
         try { settings.dashboard_elements = JSON.parse(settings.dashboard_elements); }
         catch { settings.dashboard_elements = null; }
       }
-      for (const key of ["dashboard_victory-value_config", "dashboard_calendar_config", "dashboard_quotes_config"]) {
+      for (const key of ["dashboard_victory-value_config", "dashboard_calendar_config", "dashboard_mood_config", "dashboard_quotes_config"]) {
         if (typeof settings[key] === "string") {
           try { settings[key] = JSON.parse(settings[key]); }
           catch { settings[key] = null; }

@@ -88,10 +88,12 @@ html {
     }
 
     &.vertical-1-cell {
+      max-height: 400px;
       min-height: 300px;
     }
 
     &.vertical-2-cell {
+      max-height: 800px;
       min-height: 600px;
     }
   }
