@@ -278,6 +278,98 @@ describe('DashboardApp', () => {
   });
 
   // ------------------------------------------------
+  // [Claude] Generated tests for: Layout popup opens without error
+  // Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking
+  describe('layout popup', () => {
+    it('opens the Layout popup without error when the Layout button is clicked', async () => {
+      await act(async () => { root.render(createElement(DashboardApp)); });
+      await flushAsync();
+
+      const layoutBtn = Array.from(container.querySelectorAll('.dashboard-configure-button'))
+        .find(btn => btn.textContent.includes('Layout'));
+      expect(layoutBtn).toBeDefined();
+
+      await act(async () => { layoutBtn.click(); });
+      await flushAsync();
+
+      const popup = container.querySelector('.dashboard-layout-popup');
+      expect(popup).not.toBeNull();
+      expect(popup.textContent).toContain('Dashboard Layout');
+      expect(popup.textContent).toContain('Components');
+      expect(popup.textContent).toContain('Sizing');
+    });
+
+    it('opens the Layout popup without error when settings has non-array dashboard_elements', async () => {
+      const origCallPlugin = global.callPlugin;
+      global.callPlugin = jest.fn().mockImplementation((action, ...args) => {
+        if (action === 'init') {
+          return origCallPlugin(action, ...args).then(result => ({
+            ...result,
+            settings: { ...result.settings, dashboard_elements: {} },
+          }));
+        }
+        return origCallPlugin(action, ...args);
+      });
+
+      await act(async () => { root.render(createElement(DashboardApp)); });
+      await flushAsync();
+
+      const layoutBtn = Array.from(container.querySelectorAll('.dashboard-configure-button'))
+        .find(btn => btn.textContent.includes('Layout'));
+      expect(layoutBtn).toBeDefined();
+
+      await act(async () => { layoutBtn.click(); });
+      await flushAsync();
+
+      const popup = container.querySelector('.dashboard-layout-popup');
+      expect(popup).not.toBeNull();
+      expect(popup.textContent).toContain('Dashboard Layout');
+    });
+
+    // [Claude] Generated test for: Save Layout from Sizing tab with non-array dashboard_elements
+    // Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking
+    it('saves layout from the Sizing tab without error when dashboard_elements is non-array', async () => {
+      const origCallPlugin = global.callPlugin;
+      global.callPlugin = jest.fn().mockImplementation((action, ...args) => {
+        if (action === 'init') {
+          return origCallPlugin(action, ...args).then(result => ({
+            ...result,
+            settings: { ...result.settings, dashboard_elements: {} },
+          }));
+        }
+        if (action === 'saveLayout') return Promise.resolve();
+        return origCallPlugin(action, ...args);
+      });
+
+      await act(async () => { root.render(createElement(DashboardApp)); });
+      await flushAsync();
+
+      // Open the Layout popup
+      const layoutBtn = Array.from(container.querySelectorAll('.dashboard-configure-button'))
+        .find(btn => btn.textContent.includes('Layout'));
+      await act(async () => { layoutBtn.click(); });
+      await flushAsync();
+
+      // Switch to the Sizing tab
+      const sizingTab = Array.from(container.querySelectorAll('.dashboard-layout-popup-tab'))
+        .find(btn => btn.textContent.includes('Sizing'));
+      expect(sizingTab).toBeDefined();
+      await act(async () => { sizingTab.click(); });
+      await flushAsync();
+
+      // Click "Save Layout" — this should not throw
+      const saveBtn = Array.from(container.querySelectorAll('.config-popup-btn--submit'))
+        .find(btn => btn.textContent.includes('Save Layout'));
+      expect(saveBtn).toBeDefined();
+      await act(async () => { saveBtn.click(); });
+      await flushAsync();
+
+      // Popup should close (no longer in DOM)
+      expect(container.querySelector('.dashboard-layout-popup')).toBeNull();
+    });
+  });
+
+  // ------------------------------------------------
   describe('calendar-selected week propagation', () => {
     it('re-fetches completed tasks when clicking a day in a different week', async () => {
       await act(async () => { root.render(createElement(DashboardApp)); });

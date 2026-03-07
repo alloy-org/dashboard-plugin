@@ -16,6 +16,8 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 - `lib/dashboard/styles/_recent-notes.scss` (modified — added flex column on `.widget-body` with overflow handling; `.note-list` now uses `flex: 1` with `overflow-y: auto`)
 - `lib/dashboard/recent-notes.js` (modified — `RecentNotesWidget` accepts `gridHeightSize`; fetches up to 10 candidates when 2 vertical cells instead of default 5)
 - `lib/dashboard/quotes.js` (modified — `QuotesWidget` accepts `gridHeightSize`; shows 4 quote tiles with 4 background images when 2 vertical cells instead of default 2)
+- `lib/dashboard/dashboard-layout-popup.js` (modified — `deriveInitialIds` and `deriveInitialSizing` use `Array.isArray` guard instead of `||` fallback)
+- `test/app.test.js` (modified — added two tests verifying Layout popup opens without error, including when `dashboard_elements` is non-array)
 
 **Task:** Apply CSS classes for user-assigned horizontal and vertical cell counts to each dashboard component, make widgets adapt their content to taller containers, and fix Layout popup crash on non-array currentLayout
 **Prompt summary:** "upgrade each component in lib/dashboard to apply a class for cell counts; add min-height styles; make agenda-list, recent-notes, and quotes adapt to vertical-2-cell; fix layout popup crash"

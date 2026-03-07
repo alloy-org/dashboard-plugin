@@ -181,8 +181,25 @@ async function callPlugin(action, ...args) {
 
   switch (action) {
 
+    // [Claude] Task: parse JSON-string settings values so they arrive as proper types
+    // Prompt: "layout size values are not persisted — mock init returns dashboard_elements as string"
+    // Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking
     case "init": {
       const settings = await _loadSettings();
+
+      // Amplenote's app.setSetting coerces values to strings, so the real plugin's
+      // _readDashboardSettings JSON.parses them back. Mirror that here for parity.
+      if (typeof settings.dashboard_elements === "string") {
+        try { settings.dashboard_elements = JSON.parse(settings.dashboard_elements); }
+        catch { settings.dashboard_elements = null; }
+      }
+      for (const key of ["dashboard_victory-value_config", "dashboard_calendar_config", "dashboard_quotes_config"]) {
+        if (typeof settings[key] === "string") {
+          try { settings[key] = JSON.parse(settings[key]); }
+          catch { settings[key] = null; }
+        }
+      }
+
       const now = new Date();
       const weekStart = _getWeekStart(now);
       const tasks = await _fetchAllTasks();
