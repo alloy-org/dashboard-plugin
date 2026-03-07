@@ -49,10 +49,20 @@ html {
   }
 }
 
-// Dashboard layout
+/* [Claude] Task: split dashboard into full-width background wrapper and max-width content area */
+/* Prompt: "background wrapper consumes 100% of window, widget area maxes out at 1200px" */
+/* Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking */
+
+// Full-width background wrapper
 .dashboard {
+  min-height: 100vh;
+  width: 100%;
+}
+
+// Constrained content area
+.dashboard-content {
   margin: 0 auto;
-  height: 100vh;
+  max-width: $dashboard-max-width;
   padding: $sp-xl;
 
   .dashboard-grid {
@@ -114,7 +124,7 @@ html {
 
 // Responsive
 @media (max-width: $breakpoint-md) {
-  .dashboard {
+  .dashboard-content {
     .dashboard-grid {
       grid-template-columns: repeat(2, 1fr);
     }
@@ -122,7 +132,7 @@ html {
 }
 
 @media (max-width: $breakpoint-sm) {
-  .dashboard {
+  .dashboard-content {
     .dashboard-grid {
       grid-template-columns: 1fr;
     }

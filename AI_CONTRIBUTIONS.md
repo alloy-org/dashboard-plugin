@@ -5,6 +5,25 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-07 — Rename app.js to dashboard.js and split layout into background wrapper + content area
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dashboard/app.js` → `lib/dashboard/dashboard.js` (renamed)
+- `lib/dashboard/dashboard.js` (modified — wrapped toolbar + grid in `.dashboard-content` div)
+- `lib/dashboard/styles/dashboard.scss` (modified — `.dashboard` is now full-width background; new `.dashboard-content` constrains widgets to 1200px)
+- `lib/dashboard/client-entry.js` (modified — updated import path)
+- `test/app.test.js` (modified — updated import path)
+- `jest.config.js` (modified — updated comment)
+- `README.md` (modified — updated file listing)
+
+**Task:** Rename main app file to `dashboard.js` to match the stylesheet name; restructure layout so background covers 100% of the viewport while the widget area maxes out at 1200px
+**Prompt summary:** "Update main app to be renamed dashboard.js so it matches name of stylesheet. Update background wrapper to consume 100% of window, while the area that contains the widgets maxes out at 1200px"
+**Scope:** ~15 lines of new/changed SCSS, ~5 lines changed in JSX, import path updates across 4 files
+**Notes:** `.dashboard` div is now the full-viewport background wrapper (carries background-image inline styles); `.dashboard-content` is a new inner div with `max-width: 1200px` and `margin: 0 auto`
+
+---
+
 ## 2026-03-05 — Built-in inspirational quote pool for Inspiration widget
 
 **Model:** claude-sonnet-4-6

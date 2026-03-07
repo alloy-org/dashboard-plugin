@@ -11,7 +11,7 @@ export default {
     '^hooks/(.*)$': '<rootDir>/lib/hooks/$1',
     '^util/(.*)$':  '<rootDir>/lib/util/$1',
     '^lib/(.*)$': '<rootDir>/lib/$1',
-    // Bare widget names used by app.js (resolved relative to lib/dashboard/ by esbuild)
+    // Bare widget names used by dashboard.js (resolved relative to lib/dashboard/ by esbuild)
     '^(planning|victory-value|mood|calendar|agenda|quotes|ai-plugins|quick-actions|task-domains)$':
       '<rootDir>/lib/dashboard/$1.js',
   },

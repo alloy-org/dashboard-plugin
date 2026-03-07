@@ -49,7 +49,7 @@ lib/
   constants/           Quarter helpers, etc.
   dashboard/
     client-entry.js    React entry point (mounts into #dashboard-root)
-    app.js             Root component — dispatches to widgets via callPlugin()
+    dashboard.js       Root component — dispatches to widgets via callPlugin()
     styles/            SCSS partials + dashboard.scss main file
     *.js               Individual widget components
 
