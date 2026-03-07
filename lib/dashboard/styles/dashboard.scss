@@ -71,6 +71,9 @@ html {
     grid-template-columns: repeat(4, 1fr);
   }
 
+  /* [Claude] Task: grid-cell sizing classes for vertical and horizontal cell counts */
+  /* Prompt: "apply a class for the number of horizontal and vertical cells assigned by user" */
+  /* Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking */
   .grid-cell {
     opacity: 0.95;
     min-width: 0;
@@ -82,6 +85,14 @@ html {
 
     &.span-2 {
       grid-column: span 2;
+    }
+
+    &.vertical-1-cell {
+      min-height: 300px;
+    }
+
+    &.vertical-2-cell {
+      min-height: 600px;
     }
   }
 }

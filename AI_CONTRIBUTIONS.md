@@ -5,6 +5,25 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-07 — Vertical/horizontal cell-size classes and adaptive widget content
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dashboard/dashboard.js` (modified — added `gridCellClassName` helper; all Cell components now apply `horizontal-N-cell` / `vertical-N-cell` classes to grid-cell divs; `QuotesCell` and `RecentNotesCell` pass `gridHeightSize` to their widgets)
+- `lib/dashboard/styles/dashboard.scss` (modified — added `vertical-1-cell` min-height 300px and `vertical-2-cell` min-height 600px rules on `.grid-cell`)
+- `lib/dashboard/styles/_agenda.scss` (modified — replaced fixed `max-height` on `.agenda-list` with `flex: 1` to fill available parent height; added flex column on `.widget-body`)
+- `lib/dashboard/styles/_quotes.scss` (modified — added flex column on `.widget-body` and `flex: 1` on `.quotes-grid` so tiles fill taller containers)
+- `lib/dashboard/styles/_recent-notes.scss` (modified — added flex column on `.widget-body` with overflow handling; `.note-list` now uses `flex: 1` with `overflow-y: auto`)
+- `lib/dashboard/recent-notes.js` (modified — `RecentNotesWidget` accepts `gridHeightSize`; fetches up to 10 candidates when 2 vertical cells instead of default 5)
+- `lib/dashboard/quotes.js` (modified — `QuotesWidget` accepts `gridHeightSize`; shows 4 quote tiles with 4 background images when 2 vertical cells instead of default 2)
+
+**Task:** Apply CSS classes for user-assigned horizontal and vertical cell counts to each dashboard component, make widgets adapt their content to taller containers, and fix Layout popup crash on non-array currentLayout
+**Prompt summary:** "upgrade each component in lib/dashboard to apply a class for cell counts; add min-height styles; make agenda-list, recent-notes, and quotes adapt to vertical-2-cell; fix layout popup crash"
+**Scope:** ~80 lines of new logic across 9 files
+**Notes:** The `vertical-N-cell` / `horizontal-N-cell` classes enable CSS-only height adaptation for all widgets. Agenda fills available height via flex. Recent Notes doubles its candidate pool. Quotes shows a 2x2 tile grid when tall. Fixed `deriveInitialIds` / `deriveInitialSizing` crash when `settings.dashboard_elements` was truthy but not an array — switched from `||` to `Array.isArray` guard in both helpers and the prop passed to `DashboardLayoutPopup`.
+
+---
+
 ## 2026-03-07 — Consistent "plugins/dashboard" tagging for notes created by dashboard
 
 **Model:** claude-4.6-opus-high-thinking

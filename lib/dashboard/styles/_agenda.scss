@@ -30,11 +30,21 @@ $agenda-transition-duration: 0.12s;
     max-width: 100%;
   }
 
-  .agenda-list {
+  /* [Claude] Task: make widget-body a flex column so agenda-list fills available height from vertical cell sizing */
+  /* Prompt: "agenda-list receives more height when its container is given 2 vertical cells" */
+  /* Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking */
+  .widget-body {
     display: flex;
     flex-direction: column;
+    overflow: hidden;
+  }
+
+  .agenda-list {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
     gap: $sp-md;
-    max-height: $agenda-list-max-height;
+    min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;
     padding-right: $sp-xs;

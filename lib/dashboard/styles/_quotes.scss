@@ -12,8 +12,14 @@ $quote-tile-min-height: 150px;
 /* Prompt: "styles for quote tiles with background images and serif text" */
 /* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .widget-quotes {
+  .widget-body {
+    display: flex;
+    flex-direction: column;
+  }
+
   .quotes-grid {
     display: grid;
+    flex: 1;
     gap: $sp-lg;
     grid-template-columns: 1fr 1fr;
   }

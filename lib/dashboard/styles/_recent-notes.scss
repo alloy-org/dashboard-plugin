@@ -10,11 +10,23 @@
 /* Prompt: "avoid the rn abbreviation with a short unabbreviated word" */
 /* Date: 2026-03-04 | Model: claude-4.6-sonnet-medium-thinking */
 .widget-recent-notes {
+  /* [Claude] Task: make widget-body flex column so note-list fills available height in taller cells */
+  /* Prompt: "ensure more note candidates are returned when component is two units tall" */
+  /* Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking */
+  .widget-body {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
   .note-list {
     display: flex;
+    flex: 1;
     flex-direction: column;
     gap: $sp-xs;
     list-style: none;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .note-item {
