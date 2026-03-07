@@ -92,21 +92,51 @@ $mood-transition-duration: 0.15s;
     }
   }
 
+  /* [Claude] Task: submit/cancel row for mood rating with Cancel alongside Submit */
+  /* Prompt: "add Cancel button alongside Submit; hide viz while details are open" */
+  /* Date: 2026-03-07 | Model: claude-4.6-sonnet-medium-thinking */
+  .mood-submit-row {
+    display: flex;
+    gap: $sp-sm;
+    margin-bottom: $sp-lg;
+  }
+
   .mood-submit-btn {
     background: $color-blue;
     border: none;
     border-radius: $radius-sm;
     color: $color-text-on-accent;
     cursor: pointer;
+    flex: 1;
     font-size: 0.85rem;
     font-weight: 600;
-    margin-bottom: $sp-lg;
     padding: $sp-sm $sp-lg;
     transition: opacity $mood-transition-duration;
-    width: 100%;
 
     &:hover:not(:disabled) {
       opacity: 0.9;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+  }
+
+  .mood-cancel-btn {
+    background: none;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    color: $color-text-secondary;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: $sp-sm $sp-lg;
+    transition: border-color $mood-transition-duration, color $mood-transition-duration;
+
+    &:hover:not(:disabled) {
+      border-color: $color-text-secondary;
+      color: $color-text;
     }
 
     &:disabled {
@@ -156,5 +186,57 @@ $mood-transition-duration: 0.15s;
     min-height: $mood-dot-size;
     position: relative;
     width: $mood-dot-size;
+  }
+
+  /* [Claude] Task: canvas viz section — ring/wave canvas wrapper and configure link */
+  /* Prompt: "implement radial ring and wave graph visualizations with a Configure link" */
+  /* Date: 2026-03-07 | Model: claude-4.6-sonnet-medium-thinking */
+  .mood-viz-section {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+    margin-top: $sp-sm;
+  }
+
+  .mood-viz-canvas-wrap {
+    border-radius: $radius-md;
+    line-height: 0;
+    overflow: hidden;
+  }
+
+  .mood-viz-canvas {
+    border-radius: $radius-md;
+    display: block;
+    height: 220px;
+    width: 220px;
+  }
+
+  .mood-viz-configure-link {
+    background: none;
+    border: none;
+    color: $color-text-muted;
+    cursor: pointer;
+    font-size: 0.75rem;
+    padding: $sp-xs $sp-sm;
+    transition: color $mood-transition-duration;
+
+    &:hover {
+      color: $color-text-secondary;
+    }
+  }
+
+  .mood-viz-config-option {
+    align-items: center;
+    cursor: pointer;
+    display: flex;
+    font-size: 0.9rem;
+    gap: $sp-sm;
+    padding: $sp-xs 0;
+
+    input[type='radio'] {
+      accent-color: $color-blue;
+      cursor: pointer;
+    }
   }
 }

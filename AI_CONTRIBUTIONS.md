@@ -5,6 +5,33 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-07 — Mood viz: theme-aware colors and sparse-data robustness
+
+**Model:** claude-4.6-sonnet-medium-thinking
+**Files created/modified:**
+- `lib/dashboard/mood.js` (modified — added `readThemeColors()` helper; replaced all hardcoded hex colors in `RadialRing` and `WaveGraph` with `--dashboard-color-*` CSS custom property reads; fixed WaveGraph division-by-zero with 1-point data; added guard for 0-point avg display; 2-point bezier placed at 25%/75% x positions)
+
+**Task:** Use standardized `_theme-dark.scss` / `_theme-light.scss` CSS custom properties for canvas backgrounds and text, and make both visualizations render correctly with 0–2 mood ratings
+**Prompt summary:** "utilize standardized theme-dark and theme-light colors; ensure visualizations render with 0-2 mood ratings"
+**Scope:** ~80 lines changed across 1 file
+**Notes:** Colors are read at draw-time via `getComputedStyle(document.documentElement)` so they respond to theme switches without re-mounting; `colorWithAlpha` appends hex alpha only for `#rrggbb` strings, falling through for `rgb()`/`rgba()` values
+
+---
+
+## 2026-03-07 — Mood widget: radial ring and wave graph visualizations
+
+**Model:** claude-4.6-sonnet-medium-thinking
+**Files created/modified:**
+- `lib/dashboard/mood.js` (modified — replaced `renderSparkline` with canvas-based `RadialRing` and `WaveGraph` components; added `Configure` popup to toggle between them)
+- `lib/dashboard/styles/_mood.scss` (modified — added `.mood-viz-section`, `.mood-viz-canvas-wrap`, `.mood-viz-canvas`, `.mood-viz-configure-link`, `.mood-viz-config-option`)
+
+**Task:** Replace the plain sparkline in the Mood widget with two animated canvas visualizations — a radial ring (segments per day, colored by mood) and a wave graph (smooth bezier curve with emoji dots) — switchable via a Configure popup
+**Prompt summary:** "implement separate functions to render moods as radial ring or wave graph, with a Configure link to switch between them"
+**Scope:** ~250 lines of new logic across 2 files
+**Notes:** Mood values are mapped from the plugin's -2..+2 scale to the 1..5 canvas scale; animations use `requestAnimationFrame` with cubic ease-out; canvas size is 220×220 CSS pixels with devicePixelRatio scaling
+
+---
+
 ## 2026-03-07 — Quick Actions: Calendar and Random Note buttons
 
 **Model:** claude-4.6-sonnet-medium-thinking
