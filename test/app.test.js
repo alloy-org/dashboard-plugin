@@ -49,6 +49,12 @@ function buildMockApp() {
     { timestamp: nowSec,     rating:  2 },
   ]);
 
+  // Mood recording
+  app.recordMoodRating = jest.fn().mockResolvedValue('mock-mood-uuid');
+  app.findNote = jest.fn().mockResolvedValue(null);
+  app.createNote = jest.fn().mockResolvedValue('mock-note-uuid');
+  app.insertNoteContent = jest.fn().mockResolvedValue();
+
   // No LLM key → fetchQuotes returns static fallback (no HTTP call).
   app.filterNotes = jest.fn().mockResolvedValue([]);
   app.setSetting  = jest.fn().mockImplementation((k, v) => { app.settings[k] = v; });

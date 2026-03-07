@@ -4,6 +4,7 @@
  * Task: Plugin integration tests — renderEmbed, onEmbedCall, appOption
  * Prompt summary: "jest tests for the Amplenote dashboard plugin API surface"
  */
+import { jest } from "@jest/globals";
 import plugin from '../lib/plugin.js';
 
 // Mock Amplenote app object
@@ -146,6 +147,42 @@ describe('Dashboard Plugin', () => {
 
       expect(result).toBeDefined();
       expect(Array.isArray(result)).toBe(true);
+    });
+
+    // [Claude] Generated tests for: saveMoodNote tags the history note with "plugins/dashboard"
+    // Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking
+    it('should create the mood history note with the plugins/dashboard tag', async () => {
+      const spyApp = {
+        ...mockApp,
+        findNote: jest.fn().mockResolvedValue(null),
+        createNote: jest.fn().mockResolvedValue('new-mood-uuid'),
+        insertNoteContent: jest.fn().mockResolvedValue(true),
+      };
+
+      await plugin.onEmbedCall(spyApp, 'saveMoodNote', 1, 'Good', 'feeling great');
+
+      expect(spyApp.createNote).toHaveBeenCalledWith(
+        'Mood rating history',
+        ['plugins/dashboard']
+      );
+    });
+
+    it('should not re-create the mood history note when it already exists', async () => {
+      const spyApp = {
+        ...mockApp,
+        findNote: jest.fn().mockResolvedValue({ uuid: 'existing-uuid' }),
+        createNote: jest.fn(),
+        insertNoteContent: jest.fn().mockResolvedValue(true),
+      };
+
+      await plugin.onEmbedCall(spyApp, 'saveMoodNote', 0, 'Okay', '');
+
+      expect(spyApp.createNote).not.toHaveBeenCalled();
+      expect(spyApp.insertNoteContent).toHaveBeenCalledWith(
+        { uuid: 'existing-uuid' },
+        expect.stringContaining('**Mood:** Okay (0)'),
+        { atEnd: true }
+      );
     });
 
     it('should return error for unknown action', async () => {

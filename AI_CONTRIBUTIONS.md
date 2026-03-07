@@ -5,6 +5,39 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-07 — Consistent "plugins/dashboard" tagging for notes created by dashboard
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/constants/settings.js` (modified — added `DASHBOARD_NOTE_TAG`, `DEFAULT_PLANNING_TAG` constants)
+- `lib/data-service.js` (modified — `createQuarterlyPlan` now tags with `plugins/dashboard` + configurable planning tag)
+- `lib/plugin.js` (modified — `saveMoodNote` now tags with `plugins/dashboard`)
+- `test/plugin.test.js` (modified — added tests for mood note tagging)
+
+**Task:** Ensure all dashboard-created notes share a `plugins/dashboard` tag; planning notes additionally receive a configurable planning tag (defaults to `planning/quarterly`, overridden by `app.settings[PLANNING_NOTE_TAG_LABEL]`)
+**Prompt summary:** "ensure both planning and mood notes get plugins/dashboard tag; planning note additionally gets planning/quarterly or whatever the setting instructs"
+**Scope:** ~10 lines changed across 4 files
+**Notes:** `DASHBOARD_NOTE_TAG` and `DEFAULT_PLANNING_TAG` extracted as shared constants so both call sites stay in sync
+
+---
+
+## 2026-03-07 — Interactive mood recording with notes and confirmation
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dashboard/mood.js` (modified — added mood selection state, textarea for notes, submit button, recording via `app.recordMoodRating`, history note via `app.createNote`/`app.insertNoteContent`, confirmation UI)
+- `lib/dashboard/styles/_mood.scss` (modified — added styles for selected button state, textarea, submit button, and confirmation view)
+- `lib/dashboard/dashboard.js` (modified — added `onMoodRecorded` callback, passed through `MoodCell` to `MoodWidget`)
+- `lib/plugin.js` (modified — added `recordMoodRating` and `saveMoodNote` `onEmbedCall` actions)
+- `test/app.test.js` (modified — added mock implementations for `recordMoodRating`, `findNote`, `createNote`, `insertNoteContent`)
+
+**Task:** Make mood widget interactive: clicking an emoji selects it, reveals a textarea with "More details (optional)" label and a Submit button. On submit, record mood via `app.recordMoodRating`, write an entry to a "Mood rating history" note, transition to confirmation view, and update the sparkline with the new rating.
+**Prompt summary:** "when a number is clicked, textarea opens with label, Submit button records mood via app.recordMoodRating, writes to 'Mood rating history' note, shows confirmation, new rating visible in layout"
+**Scope:** ~60 lines new JS in mood.js, ~50 lines new SCSS, ~25 lines new JS in plugin.js, ~10 lines in dashboard.js
+**Notes:** Uses `app.recordMoodRating` (integer -2 to +2) and `app.createNote`/`app.findNote`/`app.insertNoteContent` for the history note. Notes are optional — the entry is written even without them (just without a **Notes:** line).
+
+---
+
 ## 2026-03-07 — Rename dashboard-config-popup to dashboard-layout-popup with tabbed sizing interface
 
 **Model:** claude-4.6-opus-high-thinking
