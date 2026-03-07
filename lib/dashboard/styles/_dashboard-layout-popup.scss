@@ -1,12 +1,13 @@
-/* [Claude] Task: nest all styles under parent class, expand abbreviated class names, position reset button left */
-/* Prompt: "nest all styles under a parent class, expand abbreviated names, move reset button to left edge" */
-/* Date: 2026-03-01 | Model: claude-sonnet-4-6 */
+/* [Claude-authored file] */
+/* Created: 2026-03-07 | Model: claude-4.6-opus-high-thinking */
+/* Task: Styles for the dashboard layout popup with tabbed Components/Sizing interface */
+/* Prompt summary: "rename dashboard-config-popup to dashboard-layout-popup; add sizing tab styles" */
 
 @use 'theme' as *;
 
 // Override base config-popup-container sizing for the larger dashboard layout popup.
 // On desktop/tablet: constrained to 800×800px. On mobile: fills available space minus margin.
-.dashboard-config-container {
+.dashboard-layout-popup {
   display: flex;
   flex-direction: column;
   margin: $sp-lg;
@@ -15,8 +16,39 @@
   min-width: 0;
   width: 100%;
 
+  // ── Tab bar ─────────────────────────────────────────────────────────────────────────────
+
+  .dashboard-layout-popup-tabs {
+    display: flex;
+    gap: $sp-xs;
+    margin-top: $sp-md;
+  }
+
+  .dashboard-layout-popup-tab {
+    background: none;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    color: $color-text-secondary;
+    cursor: pointer;
+    flex: 1;
+    font-size: 0.8rem;
+    padding: $sp-sm $sp-md;
+    transition: background 0.15s ease, color 0.15s ease;
+
+    &:hover {
+      background: var(--dashboard-color-blue-light);
+    }
+
+    &.active {
+      background: $color-accent;
+      border-color: $color-accent;
+      color: $color-text-on-accent;
+      font-weight: 600;
+    }
+  }
+
   // Scrollable body area that fills remaining height inside the popup
-  .dashboard-config-body {
+  .dashboard-layout-popup-body {
     display: flex;
     flex: 1;
     flex-direction: column;
@@ -27,7 +59,7 @@
 
   // ── Sections (rendered / hidden) ──────────────────────────────────────────────────────
 
-  .dashboard-config-section {
+  .dashboard-layout-popup-section {
     border: 2px dashed transparent;
     border-radius: $radius-md;
     padding: $sp-xs;
@@ -39,7 +71,7 @@
     }
   }
 
-  .dashboard-config-section-header {
+  .dashboard-layout-popup-section-header {
     align-items: center;
     border-bottom: 1px solid $color-border;
     display: flex;
@@ -48,13 +80,13 @@
     padding-bottom: $sp-sm;
   }
 
-  .dashboard-config-section-icon {
+  .dashboard-layout-popup-section-icon {
     flex-shrink: 0;
     font-size: 0.9rem;
     line-height: 1;
   }
 
-  .dashboard-config-section-title {
+  .dashboard-layout-popup-section-title {
     color: $color-text-secondary;
     font-size: 0.72rem;
     font-weight: 700;
@@ -65,13 +97,13 @@
 
   // ── Item list ─────────────────────────────────────────────────────────────────────────
 
-  .dashboard-config-list {
+  .dashboard-layout-popup-list {
     display: flex;
     flex-direction: column;
     gap: $sp-xs;
   }
 
-  .dashboard-config-item {
+  .dashboard-layout-popup-item {
     align-items: center;
     background: $color-bg-page;
     border: 1px solid $color-border;
@@ -97,7 +129,7 @@
     }
   }
 
-  .dashboard-config-item-handle {
+  .dashboard-layout-popup-item-handle {
     color: $color-text-muted;
     cursor: grab;
     flex-shrink: 0;
@@ -109,16 +141,13 @@
     }
   }
 
-  .dashboard-config-item-icon {
+  .dashboard-layout-popup-item-icon {
     flex-shrink: 0;
     font-size: 1rem;
     line-height: 1;
   }
 
-  /* [Claude] Task: add info column wrapper and description styles for widget drag list
-     Prompt: "Update WIDGET_REGISTRY to include a one line description for each component that is shown in the DashboardConfig list when dragging the components"
-     Date: 2026-03-01 | Model: claude-sonnet-4-6 */
-  .dashboard-config-item-info {
+  .dashboard-layout-popup-item-info {
     display: flex;
     flex: 1;
     flex-direction: column;
@@ -127,7 +156,7 @@
     overflow: hidden;
   }
 
-  .dashboard-config-item-name {
+  .dashboard-layout-popup-item-name {
     color: $color-text;
     font-size: 0.875rem;
     font-weight: 500;
@@ -136,7 +165,7 @@
     white-space: nowrap;
   }
 
-  .dashboard-config-item-description {
+  .dashboard-layout-popup-item-description {
     color: $color-text-secondary;
     font-size: 0.75rem;
     overflow: hidden;
@@ -146,13 +175,13 @@
 
   // ── Arrow buttons ─────────────────────────────────────────────────────────────────────
 
-  .dashboard-config-item-actions {
+  .dashboard-layout-popup-item-actions {
     display: flex;
     flex-shrink: 0;
     gap: 2px;
   }
 
-  .dashboard-config-arrow-button {
+  .dashboard-layout-popup-arrow-button {
     background: none;
     border: 1px solid $color-border;
     border-radius: $radius-sm;
@@ -176,12 +205,69 @@
 
   // ── Empty state ───────────────────────────────────────────────────────────────────────
 
-  .dashboard-config-empty {
+  .dashboard-layout-popup-empty {
     color: $color-text-muted;
     font-size: 0.8rem;
     font-style: italic;
     padding: $sp-md $sp-sm;
     text-align: center;
+  }
+
+  // ── Sizing tab ────────────────────────────────────────────────────────────────────────
+
+  .dashboard-layout-popup-sizing {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+  }
+
+  .dashboard-layout-popup-sizing-item {
+    background: $color-bg-page;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    display: flex;
+    align-items: center;
+    gap: $sp-md;
+    padding: $sp-sm $sp-md;
+  }
+
+  .dashboard-layout-popup-sizing-item-header {
+    align-items: center;
+    display: flex;
+    gap: $sp-sm;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .dashboard-layout-popup-sizing-item-controls {
+    display: flex;
+    flex-shrink: 0;
+    gap: $sp-lg;
+  }
+
+  .dashboard-layout-popup-sizing-field {
+    align-items: center;
+    display: flex;
+    gap: $sp-xs;
+  }
+
+  .dashboard-layout-popup-sizing-label {
+    color: $color-text-secondary;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .dashboard-layout-popup-sizing-select {
+    background: $color-bg-card;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    color: $color-text;
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: $sp-xs $sp-sm;
   }
 
   // ── Actions footer: "reset" pinned to the left edge; "cancel" and "save" on the right ──
@@ -193,7 +279,6 @@
       color: $color-text-secondary;
       cursor: pointer;
       font-size: 0.8rem;
-      // Consumes all remaining space to push cancel/save to the right edge
       margin-right: auto;
       padding: 0;
       text-decoration: underline;

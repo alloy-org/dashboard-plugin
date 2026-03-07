@@ -5,6 +5,23 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-07 — Rename dashboard-config-popup to dashboard-layout-popup with tabbed sizing interface
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dashboard/dashboard-config-popup.js` → `lib/dashboard/dashboard-layout-popup.js` (renamed + rewritten)
+- `lib/dashboard/styles/_dashboard-config-popup.scss` → `lib/dashboard/styles/_dashboard-layout-popup.scss` (renamed + rewritten)
+- `lib/dashboard/dashboard.js` (modified — updated import, component reference, and `handleLayoutSave` to accept `sizing` data)
+- `lib/dashboard/styles/dashboard.scss` (modified — updated `@use` import)
+- `jest.config.js` (modified — added popup and missing widget bare-import mappings)
+
+**Task:** Rename `dashboard-config-container` class and all `dashboard-config-*` references to `dashboard-layout-popup`; add a tabbed interface with "Components" (existing drag-and-drop reordering) and "Sizing" (per-widget width and vertical tile count) tabs
+**Prompt summary:** "update dashboard-config.container to be dashboard-layout-popup; create a new tab for specifying width and vertical tile count per component"
+**Scope:** ~310 lines new JS + ~260 lines new SCSS; ~15 lines changed across 3 other files; 2 old files deleted
+**Notes:** Sizing tab reads `maxHorizontalTiles` and `maxVerticalTiles` from `WIDGET_REGISTRY` to constrain dropdowns; sizing state is initialized from `currentLayout` and passed to `handleLayoutSave` via `{ sizing }` option; reset restores registry-default sizes
+
+---
+
 ## 2026-03-07 — Rename app.js to dashboard.js and split layout into background wrapper + content area
 
 **Model:** claude-4.6-opus-high-thinking
