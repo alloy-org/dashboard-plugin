@@ -5,6 +5,27 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-07 — Add visibleTitle override and widgetTitleFromId helper
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/constants/settings.js` (modified — added `visibleTitle` key to mood entry in `WIDGET_REGISTRY`; exported `widgetTitleFromId` function that returns `visibleTitle` falling back to `name`)
+- `lib/dashboard/planning.js` (modified — replaced `WIDGET_META.name` with `widgetTitleFromId('planning')`)
+- `lib/dashboard/victory-value.js` (modified — replaced `WIDGET_META.name` with `widgetTitleFromId('victory-value')`)
+- `lib/dashboard/mood.js` (modified — replaced `WIDGET_META.name` with `widgetTitleFromId('mood')`; now displays "How are you feeling?" via `visibleTitle`)
+- `lib/dashboard/calendar.js` (modified — replaced `WIDGET_META.name` with `widgetTitleFromId('calendar')`)
+- `lib/dashboard/agenda.js` (modified — replaced `WIDGET_META.name` with `widgetTitleFromId('agenda')`)
+- `lib/dashboard/quotes.js` (modified — replaced `WIDGET_META.name` with `widgetTitleFromId('quotes')`)
+- `lib/dashboard/recent-notes.js` (modified — replaced `WIDGET_META.name` with `widgetTitleFromId('recent-notes')`)
+- `lib/dashboard/quick-actions.js` (modified — replaced `WIDGET_META.name` with `widgetTitleFromId('quick-actions')`)
+
+**Task:** Allow per-widget display title override via `visibleTitle` in `WIDGET_REGISTRY`, with a single `widgetTitleFromId` lookup function as the source of truth for all widget titles
+**Prompt summary:** "Update WIDGET_REGISTRY to include visibleTitle that can override name; export widgetTitleFromId"
+**Scope:** ~10 lines new logic in settings.js; mechanical import/reference updates across 8 widget files
+**Notes:** `visibleTitle` is initially set only on the mood widget ("How are you feeling?"); all other widgets fall back to their `name`
+
+---
+
 ## 2026-03-07 — Vertical/horizontal cell-size classes and adaptive widget content
 
 **Model:** claude-4.6-opus-high-thinking
