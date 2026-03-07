@@ -5,6 +5,22 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-07 — Quick Actions: Calendar and Random Note buttons
+
+**Model:** claude-4.6-sonnet-medium-thinking
+**Files created/modified:**
+- `lib/dashboard/quick-actions.js` (modified) — Replaced "Amplenote Blog" with "Calendar" (navigates to calendar via navigateToUrl) and "Dashboard Plugin" with "Random Note" (picks a random task-domain note updated within the last month)
+- `lib/data-service.js` (modified) — Added `randomNoteAction`: calls `app.filterNotes({ group: "task" })`, filters by `updated` within the past 30 days, navigates to a randomly selected note
+- `lib/plugin.js` (modified) — Added `randomNote` case to `onEmbedCall` dispatch; imported `randomNoteAction`
+- `dev/mock-data.js` (modified) — Added `randomNote` mock case that picks from sample task-domain note handles
+
+**Task:** Replace quick-action buttons: "Amplenote Blog" → Calendar (app.navigate to calendar URL), "Dashboard Plugin" → Random Note (task-domain note picker)
+**Prompt summary:** "Update Amplenote Blog to Calendar using app.navigate; update Dashboard Plugin to Random Note picking from task-domain notes updated within last month"
+**Scope:** ~30 lines changed/added across 4 files
+**Notes:** `randomNoteAction` falls back to the full note pool if none were updated in the last 30 days; mock picks uniformly from all sample domain notes
+
+---
+
 ## 2026-03-07 — Add visibleTitle override and widgetTitleFromId helper
 
 **Model:** claude-4.6-opus-high-thinking

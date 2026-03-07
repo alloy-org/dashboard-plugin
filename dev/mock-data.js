@@ -358,6 +358,18 @@ async function callPlugin(action, ...args) {
     case "getTaskDomains":
       return _SAMPLE_DOMAINS_WITH_NOTES;
 
+    // [Claude] Task: mock randomNote — pick a random note from all sample task-domain notes
+    // Prompt: "Random Note button: retrieve notes in task domain updated within last month, pick one randomly"
+    // Date: 2026-03-07 | Model: claude-4.6-sonnet-medium-thinking
+    case "randomNote": {
+      const allNotes = Object.values(_SAMPLE_NOTE_HANDLES).flat();
+      const pick = allNotes[Math.floor(Math.random() * allNotes.length)];
+      if (pick?.uuid) {
+        app.navigate(`https://www.amplenote.com/notes/${pick.uuid}`);
+      }
+      return null;
+    }
+
     case "getNoteTasks": {
       const noteUUID = args[0];
       const tasks = await _fetchAllTasks();
