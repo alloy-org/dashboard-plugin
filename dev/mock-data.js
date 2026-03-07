@@ -8,6 +8,8 @@
  *               dev-app.js is the single source of truth for all sample task data
  */
 
+const CONSOLE_LOGGING_KEY = "Console Logging";
+
 // Persistent settings loaded from the dev server's JSON-backed API.
 // Populated asynchronously before the first callPlugin("init") resolves.
 let _persistedSettings = null;
@@ -186,6 +188,7 @@ async function callPlugin(action, ...args) {
     // Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking
     case "init": {
       const settings = await _loadSettings();
+      if (!settings[CONSOLE_LOGGING_KEY]) settings[CONSOLE_LOGGING_KEY] = "true";
 
       // Amplenote's app.setSetting coerces values to strings, so the real plugin's
       // _readDashboardSettings JSON.parses them back. Mirror that here for parity.

@@ -5,6 +5,46 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-07 — Console logging setting, logIfEnabled utility, and widget load timing
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/util/log.js` (created)
+- `lib/constants/settings.js` (modified — added `CONSOLE_LOGGING` to `SETTING_KEYS`)
+- `lib/data-service.js` (modified — reads Console Logging setting, replaced `console.log`/`console.error` with `logIfEnabled`)
+- `lib/plugin.js` (modified — initializes logging flag per `onEmbedCall`, replaced `console.error`/`console.log` with `logIfEnabled`)
+- `lib/dashboard/dashboard.js` (modified — initializes logging from settings on init, replaced all `console.log`/`console.error` with `logIfEnabled`, added per-widget load timing with `performance.now()`)
+- `lib/dashboard/mood.js` (modified — replaced `console.error` with `logIfEnabled`)
+- `lib/dashboard/recent-notes.js` (modified — replaced `console.log`/`console.warn`/`console.error` with `logIfEnabled`)
+- `lib/dashboard/victory-value.js` (modified — replaced `console.log`/`console.debug` with `logIfEnabled`)
+- `lib/dashboard/dashboard-settings-popup.js` (modified — replaced `console.log`/`console.error` with `logIfEnabled`)
+- `lib/hooks/use-domain-tasks.js` (modified — replaced `console.log`/`console.debug` with `logIfEnabled`)
+- `lib/hooks/use-completed-tasks.js` (modified — replaced `console.error` with `logIfEnabled`)
+- `lib/hooks/use-background-upload-fields.js` (modified — replaced `console.warn`/`console.log`/`console.error` with `logIfEnabled`)
+- `lib/providers/fetch-ai-provider.js` (modified — replaced all `console.log`/`console.debug`/`console.error` with `logIfEnabled`)
+- `lib/providers/fetch-json.js` (modified — replaced all `console.log`/`console.debug`/`console.error` with `logIfEnabled`)
+- `lib/app-util.js` (modified — replaced all `console.error`/`console.debug` with `logIfEnabled`)
+
+**Task:** Add a "Console Logging" setting label, create a `logIfEnabled` utility function gated by that setting, and replace all console logging throughout the codebase. Each widget cell in `dashboard.js` now logs when it begins loading and when it finishes (with elapsed ms via `performance.now()`).
+**Prompt summary:** "add console logging setting, create logIfEnabled function, update widgets to log load start/finish with timing"
+**Scope:** ~1 new file (30 lines), ~15 modified files replacing ~70 console calls with `logIfEnabled`
+**Notes:** Logging is disabled by default. Setting the "Console Logging" plugin setting to "true", "yes", "1", "on", or "enabled" (case-insensitive) activates it. Client-side logging is initialized from settings returned by `init`; plugin-side logging is initialized at the start of each `onEmbedCall`. Widget timing uses `performance.now()` at render start and `useEffect` for completion.
+
+---
+
+## 2026-03-07 — mood.js cleanup: actual emojis, derived VIZ lookup, no abbreviations
+
+**Model:** claude-4.6-sonnet-medium-thinking
+**Files created/modified:**
+- `lib/dashboard/mood.js` (modified)
+
+**Task:** Three clean-up items: replace unicode escape sequences in MOODS with literal emoji characters; derive VISUALIZATION_MOOD_EMOJIS from MOODS via toVizScale instead of duplicating values; expand all abbreviated variable and function names throughout the file
+**Prompt summary:** "substitute actual emojis; source VIZ_MOOD_EMOJIS from MOODS; remove abbreviations from variable/function names"
+**Scope:** ~60 identifier renames and value substitutions across the file, no logic changes
+**Notes:** MOODS remains the single source of truth for both emoji characters and the viz-scale emoji map; CSS class names were left unchanged as they are not JS identifiers
+
+---
+
 ## 2026-03-07 — Mood viz: theme-aware colors and sparse-data robustness
 
 **Model:** claude-4.6-sonnet-medium-thinking
