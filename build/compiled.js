@@ -686,9 +686,9 @@
       4: ["October", "November", "December"]
     };
     const months = quarterMonths[quarter] || ["Month 1", "Month 2", "Month 3"];
-    return `# Quarterly Plan \u2014 ${label}
+    return `Quarterly Plan \u2014 ${label}
 
-## Quarter Theme
+# Quarter Theme
 [One sentence describing the main focus of this quarter.]
 
 ## Success Looks Like
@@ -696,9 +696,9 @@
 2. [ ] [Top outcome]
 3. [ ] [Top outcome]
 
-## Projects
+# Projects
 
-### [Project 1]
+## [Project 1]
 - Outcome:
 - Why now:
 - Weekly rhythm:
@@ -706,7 +706,7 @@
 - Constraints:
 - Done enough when:
 
-### [Project 2]
+## [Project 2]
 - Outcome:
 - Why now:
 - Weekly rhythm:
@@ -714,7 +714,7 @@
 - Constraints:
 - Done enough when:
 
-### [Project 3]
+## [Project 3]
 - Outcome:
 - Why now:
 - Weekly rhythm:
@@ -722,29 +722,29 @@
 - Constraints:
 - Done enough when:
 
-## Not This Quarter
+# Not This Quarter
 - [ ] [Lower-priority project]
 - [ ] [Commitment to decline]
 - [ ] [Area to intentionally ignore]
 
-## Month-by-Month
+# Month-by-Month Breakdown
 
-### ${months[0]}
+## ${months[0]}
 - Focus:
 - Key move:
 
-### ${months[1]}
+## ${months[1]}
 - Focus:
 - Key move:
 
-### ${months[2]}
+## ${months[2]}
 - Focus:
 - Key move:
 
-## Weekly Planning Prompt
+# Weekly Planning Prompt
 Which projects need time on my calendar this week?
 
-## Quarterly Review
+# Quarterly Review
 - Finished:
 - Progress made:
 - Lessons learned:
