@@ -272,7 +272,8 @@ $mood-transition-duration: 0.15s;
   .mood-viz-tooltip-entry {
     align-items: baseline;
     display: flex;
-    gap: 6px;
+    flex-wrap: wrap;
+    gap: 4px 6px;
     padding: 2px 0;
   }
 
@@ -288,10 +289,10 @@ $mood-transition-duration: 0.15s;
 
   .mood-viz-tooltip-note {
     color: $color-text-muted;
+    flex-basis: 100%;
     font-size: 0.7rem;
     font-style: italic;
     overflow: hidden;
-    padding-left: 58px;
     text-overflow: ellipsis;
     white-space: normal;
     word-break: break-word;

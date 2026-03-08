@@ -219,16 +219,14 @@ async function callPlugin(action, ...args) {
       const now = new Date();
       const weekStart = _getWeekStart(now);
       const tasks = await _fetchAllTasks();
+      const moodRatings = await _fetchMoodRatings();
       return {
         tasks,
         todayTasks: _filterTodayTasks(tasks, now),
         completedThisWeek: _filterCompletedInWeek(tasks, weekStart),
         weeklyVictoryValue: _calcWeeklyVictoryValue(tasks, weekStart),
         dailyVictoryValues: _calcDailyVictoryValues(tasks, weekStart),
-        moodRatings: [
-          { rating: 1 }, { rating: 2 }, { rating: 0 },
-          { rating: 1 }, { rating: -1 }, { rating: 2 }, { rating: 1 }
-        ],
+        moodRatings,
         quarterlyPlans: {
           current: {
             year: now.getFullYear(),

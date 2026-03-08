@@ -309,7 +309,7 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH) {
       const notes = [
         'Slept well, feeling rested and ready to go',
         'Stressful morning but afternoon was better',
-        'Productive day — knocked out the whole backlog',
+        'Productive day — knocked out the whole backlog. Managed to close out six tickets before lunch, then spent the afternoon pairing with Jamie on the auth refactor. We finally tracked down the session expiry bug that had been haunting us for weeks. Turns out the token refresh was racing with the logout handler. Documented the fix in the wiki and added a regression test. Feeling accomplished — this kind of deep focus day is exactly what I needed after a scattered start to the week.',
         'Bit tired, low energy after lunch',
         'Great coffee chat with a friend',
         'Overwhelmed with meetings all day',
