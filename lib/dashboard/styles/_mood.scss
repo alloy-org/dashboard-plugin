@@ -202,7 +202,8 @@ $mood-transition-duration: 0.15s;
   .mood-viz-canvas-wrap {
     border-radius: $radius-md;
     line-height: 0;
-    overflow: hidden;
+    overflow: visible;
+    position: relative;
   }
 
   .mood-viz-canvas {
@@ -238,5 +239,60 @@ $mood-transition-duration: 0.15s;
       accent-color: $color-blue;
       cursor: pointer;
     }
+  }
+
+  /* [Claude] Task: hover tooltip for mood viz canvas points/segments */
+  /* Prompt: "hovering on a date should show full date, ratings, times, and notes" */
+  /* Date: 2026-03-08 | Model: claude-4.6-opus-high-thinking */
+  .mood-viz-tooltip {
+    background: $color-bg-card;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    font-size: 0.75rem;
+    max-width: 220px;
+    min-width: 140px;
+    padding: $sp-sm;
+    pointer-events: none;
+    position: absolute;
+    transform: translate(-50%, calc(-100% - 8px));
+    white-space: nowrap;
+    z-index: 10;
+  }
+
+  .mood-viz-tooltip-date {
+    border-bottom: 1px solid $color-border;
+    color: $color-text;
+    font-weight: 600;
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+  }
+
+  .mood-viz-tooltip-entry {
+    align-items: baseline;
+    display: flex;
+    gap: 6px;
+    padding: 2px 0;
+  }
+
+  .mood-viz-tooltip-time {
+    color: $color-text-muted;
+    font-size: 0.7rem;
+    min-width: 52px;
+  }
+
+  .mood-viz-tooltip-mood {
+    color: $color-text-secondary;
+  }
+
+  .mood-viz-tooltip-note {
+    color: $color-text-muted;
+    font-size: 0.7rem;
+    font-style: italic;
+    overflow: hidden;
+    padding-left: 58px;
+    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-word;
   }
 }

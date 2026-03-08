@@ -16,9 +16,9 @@ $tooltip-shadow-blur: 12px;
 $tooltip-shadow-y: 4px;
 $tooltip-z-index: 10;
 
-/* [Claude] Task: self-contained tooltip shell, arrow, and content slot styles */
-/* Prompt: "make DashboardTooltip fully self-contained with all styling included" */
-/* Date: 2026-02-22 | Model: claude-opus-4-6 */
+/* [Claude] Task: self-contained tooltip shell, arrow, and content slot styles; direction-aware above/below */
+/* Prompt: "calculate whether more space above or below chart and pop tooltip on whichever side" */
+/* Date: 2026-03-08 | Model: claude-sonnet-4-6 */
 .dashboard-tooltip {
   background: $color-tooltip-bg;
   border-radius: $radius-sm;
@@ -44,6 +44,18 @@ $tooltip-z-index: 10;
     position: absolute;
     top: 100%;
     transform: translateX(-50%);
+  }
+
+  &--below {
+    bottom: auto;
+    top: calc(100% + $tooltip-bottom-offset);
+
+    .dashboard-tooltip-arrow {
+      border-bottom: $tooltip-arrow-size solid $color-tooltip-bg;
+      border-top: none;
+      bottom: 100%;
+      top: auto;
+    }
   }
 
   &-content {

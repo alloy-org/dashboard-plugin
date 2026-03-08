@@ -6,16 +6,13 @@
 
 @use 'theme' as *;
 
-/* [Claude] Task: victory value header and chart layout */
-/* Prompt: "styles for victory value header and bar chart area" */
-/* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
-/* [Claude] Task: date range label after Victory Value title */
-/* Prompt: "print the date range shown in a lighter shade after the Victory Value title" */
-/* Date: 2026-03-01 | Model: claude-sonnet-4-6 */
-/* [Claude] Task: week navigation arrows flanking the chart */
-/* Prompt: "add left/right week navigation arrows around the chart" */
-/* Date: 2026-03-01 | Model: claude-sonnet-4-6 */
 .widget-victory-value {
+  .widget-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
   .vv-header {
     align-items: baseline;
     display: flex;

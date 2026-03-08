@@ -3,6 +3,35 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-03-08 — VictoryValue tooltip direction-aware positioning
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dashboard/victory-value.js` (modified — added `getTooltipDirection`, updated `renderTooltip`)
+- `lib/dashboard/tooltip.js` (modified — added `direction` prop, applies `--below` modifier class)
+- `lib/dashboard/styles/_tooltip.scss` (modified — added `.dashboard-tooltip--below` variant)
+
+**Task:** Make the hover tooltip on VictoryValue bars pop above or below the chart depending on which side of the full dashboard window has more available pixels, preventing occlusion of the Victory Value graph
+**Prompt summary:** "calculate whether there is more space above or below the chart and pop the tooltip on whichever side has more available pixels"
+**Scope:** ~25 lines of new/changed logic across 3 files
+**Notes:** `getTooltipDirection` uses `canvas.getBoundingClientRect()` + `window.innerHeight` to compare `rect.top` (space above) against `window.innerHeight - rect.bottom` (space below). Direction is re-evaluated on every render while hovering. The `--below` SCSS modifier flips `bottom`/`top` and inverts the arrow border triangle.
+
+---
+
+## 2026-03-08 — Mood widget: Fix over-animating, add tooltips
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dashboard/mood.js` (modified — three feature changes)
+- `lib/dashboard/styles/_mood.scss` (modified — tooltip styles, overflow fix)
+
+**Task:** Fix animations re-triggering on Configure dialog open/close; add date labels below day-of-week on both viz types; add hover tooltip showing full date, individual ratings with times, and notes
+**Prompt summary:** "fix animation re-animate on configure dialog, show dates for each rating, add hover tooltip with full date/ratings/times/notes"
+**Scope:** ~120 lines of new/changed logic across 2 files
+**Notes:** Animation stability achieved by using JSON.stringify of moodData as effect dependency instead of reference equality. Tooltip uses HTML overlay with absolute positioning relative to canvas wrapper. Notes display depends on mood rating API returning notes on the rating object.
+
+---
+
 ---
 
 ## 2026-03-08 — Month plan display improvements (markdown, lists, overflow)
