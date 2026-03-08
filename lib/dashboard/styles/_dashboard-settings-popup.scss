@@ -17,11 +17,9 @@
   }
 
   .dashboard-settings-section-header {
-    border-bottom: 1px solid $color-border;
     display: flex;
     flex-direction: column;
     gap: $sp-xs;
-    padding-bottom: $sp-md;
   }
 
   .dashboard-settings-section-title {
