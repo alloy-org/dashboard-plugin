@@ -8,7 +8,7 @@
  *               dev-app.js is the single source of truth for all sample task data
  */
 
-const CONSOLE_LOGGING_KEY = "Console Logging";
+const CONSOLE_LOGGING_KEY = "Console logging";
 
 // Persistent settings loaded from the dev server's JSON-backed API.
 // Populated asynchronously before the first callPlugin("init") resolves.
