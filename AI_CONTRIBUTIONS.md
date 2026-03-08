@@ -5,6 +5,23 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-08 — Monthly plan content expansion in Quarterly Planning widget
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/constants/quarters.js` (modified — added `FULL_MONTH_NAMES`, `getQuarterMonths`, `extractMonthSectionContent`, `defaultMonthTemplate`)
+- `lib/data-service.js` (modified — added `getMonthlyPlanContent` and `createOrAppendMonthlyPlan` exports)
+- `lib/plugin.js` (modified — added `getMonthlyPlanContent`, `createOrAppendMonthlyPlan`, `getNoteSections` bridge actions)
+- `lib/dashboard/planning.js` (modified — month tabs now expand to show section content or "Create a plan" link)
+- `lib/dashboard/styles/_planning.scss` (modified — added month-content-area, loading, header, text, empty, and create-link styles)
+
+**Task:** When a month tab is clicked in the Planning widget, check the quarterly plan note for a matching section heading via `app.getNoteSections`. If found, extract and display the month's content using a regex on the full note markdown. If not found, show a "Create a plan for [Month] [Year]" link that either creates a new quarterly plan note with the full template or appends the month section to the existing note.
+**Prompt summary:** "when a month is clicked, check the quarterly plan note for a section that corresponds with the month"
+**Scope:** ~120 lines of new logic across 5 files
+**Notes:** Uses `app.getNoteSections` to detect month headings, `app.getNoteContent` + regex extraction for content, `app.insertNoteContent` with `atEnd: true` for appending month sections to existing notes
+
+---
+
 ## 2026-03-07 — Console logging setting, logIfEnabled utility, and widget load timing
 
 **Model:** claude-4.6-opus-high-thinking

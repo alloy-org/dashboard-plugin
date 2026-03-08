@@ -73,4 +73,62 @@ $planning-transition-duration: 0.15s;
       font-weight: 600;
     }
   }
+
+  /* [Claude] Task: expandable month content area below month tabs */
+  /* Prompt: "show the content for that month in the area below the clicked month" */
+  /* Date: 2026-03-08 | Model: claude-4.6-opus-high-thinking */
+  .month-content-area {
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    margin-top: $sp-md;
+    padding: $sp-md $sp-lg;
+  }
+
+  .month-content-loading {
+    color: $color-text-muted;
+    font-size: 0.8rem;
+    font-style: italic;
+  }
+
+  .month-content-header {
+    color: $color-navy;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: $sp-sm;
+  }
+
+  .month-content-text {
+    color: $color-text;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    white-space: pre-line;
+  }
+
+  .month-content-empty {
+    text-align: center;
+  }
+
+  .create-month-plan-link {
+    background: none;
+    border: $planning-border-width dashed $color-border;
+    border-radius: $radius-sm;
+    color: $color-blue;
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: $sp-sm $sp-lg;
+    transition: border-color $planning-transition-duration, color $planning-transition-duration;
+
+    &:hover {
+      border-color: $color-blue;
+      color: $color-navy;
+    }
+  }
+
+  .planning-empty {
+    color: $color-text-muted;
+    font-size: 0.85rem;
+    font-style: italic;
+    padding: $sp-lg 0;
+    text-align: center;
+  }
 }
