@@ -128,6 +128,25 @@ function handleTasksApi(req, res) {
   return true;
 }
 
+// [Claude] Task: serve mock mood ratings from dev-app as a REST endpoint
+// Prompt: "DRY up mock mood ratings — single source in dev-app.js, mock-data.js fetches via /api/moods"
+// Date: 2026-03-08 | Model: claude-4.6-opus-high-thinking
+function handleMoodsApi(req, res) {
+  if (req.method !== "GET") return false;
+  const parsedUrl = new URL(req.url, "http://localhost");
+  const from = parsedUrl.searchParams.get("from");
+
+  const app = createDevApp();
+  app.getMoodRatings(from ? Number(from) : null).then(moods => {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(moods));
+  }).catch(err => {
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: err.message }));
+  });
+  return true;
+}
+
 // [Claude] Task: handle image upload from data URL and save to local file for dev background image
 // Prompt: "add background image upload option to DashboardSettings"
 // Date: 2026-03-01 | Model: claude-4.6-opus-high-thinking
@@ -226,6 +245,10 @@ async function main() {
 
     if (req.url === "/api/tasks" || req.url.startsWith("/api/tasks?")) {
       if (handleTasksApi(req, res)) return;
+    }
+
+    if (req.url === "/api/moods" || req.url.startsWith("/api/moods?")) {
+      if (handleMoodsApi(req, res)) return;
     }
 
     if (req.url === "/api/attach-media") {

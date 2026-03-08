@@ -68,6 +68,11 @@ $config-popup-z-index: 1000;
     .config-field {
       margin-bottom: $sp-md;
 
+      .config-line {
+        margin-bottom: 10px;
+        margin-top: 10px;
+      }
+
       &:last-child {
         margin-bottom: 0;
       }

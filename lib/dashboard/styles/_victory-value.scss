@@ -78,3 +78,19 @@
     }
   }
 }
+
+.vertical-1-cell .widget-victory-value .vv-chart {
+  height: 180px;
+}
+
+.horizontal-2-cell .widget-victory-value .vv-chart {
+  height: 260px;
+}
+
+.vertical-2-cell .widget-victory-value .vv-chart {
+  height: 380px;
+}
+
+.horizontal-2-cell.vertical-2-cell .widget-victory-value .vv-chart {
+  height: 460px;
+}

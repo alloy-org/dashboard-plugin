@@ -297,11 +297,37 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH) {
       return sampleTasks.filter(t => t.noteUUID === uuid && t.completedAt == null && t.dismissedAt == null);
     },
 
+    // [Claude] Task: generate 10 days of mock mood ratings with note text
+    // Prompt: "ensure dev-environment mood ratings are one per date for the last 10 days with a note value"
+    // Date: 2026-03-08 | Model: claude-4.6-opus-high-thinking
     async getMoodRatings(_fromUnixSeconds) {
-      return [
-        { rating: 1 }, { rating: 2 }, { rating: 0 },
-        { rating: 1 }, { rating: -1 }, { rating: 2 }, { rating: 1 },
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const midnightSec = Math.floor(today.getTime() / 1000);
+      const DAY = 86400;
+      const ratings = [1, -1, 2, 0, 1, -2, 2, -1, 0, 1];
+      const notes = [
+        'Slept well, feeling rested and ready to go',
+        'Stressful morning but afternoon was better',
+        'Productive day — knocked out the whole backlog',
+        'Bit tired, low energy after lunch',
+        'Great coffee chat with a friend',
+        'Overwhelmed with meetings all day',
+        'Solid workout this morning, feeling strong',
+        'Quiet day, caught up on reading',
+        'Tricky bug took hours — finally squashed it',
+        'Relaxing weekend, recharged for the week ahead',
       ];
+      return ratings.map((rating, i) => {
+        const daysBack = ratings.length - 1 - i;
+        const hour = 8 + (i % 5) * 2;
+        return {
+          rating,
+          timestamp: midnightSec - daysBack * DAY + hour * 3600,
+          uuid: `mock-mood-uuid-${i}`,
+          note: notes[i],
+        };
+      });
     },
 
     async getCompletedTasks(_fromSec, _toSec) {
