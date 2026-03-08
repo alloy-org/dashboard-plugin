@@ -5,6 +5,21 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-08 — Month plan display improvements (markdown, lists, overflow)
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/util/utility.js` (modified — added `renderBlockMarkdown` using `marked.parse` for block-level markdown)
+- `lib/dashboard/planning.js` (modified — switched to `dangerouslySetInnerHTML` with `renderBlockMarkdown`, added console.log for raw markdown)
+- `lib/dashboard/styles/_planning.scss` (modified — added `overflow: hidden`, tightened line spacing, added `ol`/`ul`/`li`/`p` styles)
+
+**Task:** Improve the monthly plan content display: hide overflow, render numbered items as proper `<ol>` lists, eliminate extra line spacing, and apply full markdown formatting via `marked.parse`. Added debug logging of raw markdown content.
+**Prompt summary:** "hide overflow, render numeric items as ol list, no extra space between lines, ensure markdown formatting, console.log the markdown"
+**Scope:** ~25 lines of new/modified logic across 3 files
+**Notes:** The existing `renderMarkdown` uses `marked.parseInline` which strips block-level constructs; the new `renderBlockMarkdown` uses `marked.parse` to support lists and paragraphs.
+
+---
+
 ## 2026-03-08 — Monthly plan content expansion in Quarterly Planning widget
 
 **Model:** claude-4.6-opus-high-thinking

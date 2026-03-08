@@ -81,6 +81,7 @@ $planning-transition-duration: 0.15s;
     border: 1px solid $color-border;
     border-radius: $radius-sm;
     margin-top: $sp-md;
+    overflow: hidden;
     padding: $sp-md $sp-lg;
   }
 
@@ -97,11 +98,35 @@ $planning-transition-duration: 0.15s;
     margin-bottom: $sp-sm;
   }
 
+  /* [Claude] Task: month content text — block markdown with tight spacing and list styles */
+  /* Prompt: "hide overflow, render numeric items as ol, no extra space, ensure markdown" */
+  /* Date: 2026-03-08 | Model: claude-4.6-opus-high-thinking */
   .month-content-text {
     color: $color-text;
     font-size: 0.8rem;
-    line-height: 1.6;
-    white-space: pre-line;
+    line-height: 1.4;
+
+    p {
+      margin: 0 0 $sp-xs;
+    }
+
+    ol, ul {
+      margin: 0 0 $sp-xs;
+      padding-left: $sp-lg;
+    }
+
+    li {
+      margin: 0;
+      padding: 0;
+    }
+
+    strong {
+      color: $color-navy;
+    }
+
+    > :last-child {
+      margin-bottom: 0;
+    }
   }
 
   .month-content-empty {
