@@ -3,6 +3,24 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-03-09 — Extract handler/response functions to module scope in dashboard.js
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dashboard/dashboard.js` (modified — extracted 6 handler functions to module scope)
+
+**Task:** Move response/handler functions out of `DashboardApp` component body into
+module-scope local functions that receive setters and values as explicit arguments,
+keeping `useCallback` wrappers inside the component as thin one-liner delegations.
+**Prompt summary:** "move response/handler functions outside main component to be local functions that receive arguments"
+**Scope:** ~130 lines of handler logic extracted; 6 `useCallback` bodies replaced with
+one-line delegations to `handleInitResult`, `fetchMoodRatingsForDate`, `applyDomainChange`,
+`saveLayout`, `saveSettings`, and `appendMoodRating`.
+**Notes:** No behavioral change — identical runtime semantics. Component body reduced
+from ~160 lines of mixed state+logic to ~100 lines of state+thin wrappers+render.
+
+---
+
 ## 2026-03-09 — Fall back to previous week in VictoryValue when current week is sparse
 
 **Model:** claude-4.6-opus-high-thinking
