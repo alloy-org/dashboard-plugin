@@ -1,0 +1,209 @@
+/* [Claude-authored file]
+ * Created: 2026-03-09 | Model: claude-4.6-opus-high-thinking
+ * Task: Tippy.js base positioning CSS + dashboard theme + tooltip content classes
+ * Prompt summary: "replace hand-rolled tooltips with tippy.js, separated into its own component and stylesheet"
+ */
+
+@use 'theme' as *;
+
+// ── Tippy base positioning (replaces tippy.css; styled inline by Popper for position) ──
+
+$tippy-arrow-size: 8px;
+$tippy-arrow-offset: -$tippy-arrow-size + 1;
+$tooltip-max-width: 260px;
+$tooltip-min-width: 180px;
+$tooltip-shadow-blur: 12px;
+$tooltip-shadow-y: 4px;
+$tooltip-row-padding-y: 2px;
+
+[data-tippy-root] {
+  max-width: calc(100vw - 10px);
+}
+
+.tippy-box {
+  border-radius: $radius-sm;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  outline: 0;
+  position: relative;
+  transition-property: transform, visibility, opacity;
+  white-space: normal;
+}
+
+.tippy-box[data-animation='fade'][data-state='hidden'] {
+  opacity: 0;
+}
+
+.tippy-content {
+  padding: $sp-sm $sp-md;
+  position: relative;
+  z-index: 1;
+}
+
+// ── Arrow positioning per placement ──
+
+.tippy-arrow {
+  color: $color-tooltip-bg;
+  height: $tippy-arrow-size * 2;
+  width: $tippy-arrow-size * 2;
+
+  &::before {
+    border-color: transparent;
+    border-style: solid;
+    content: '';
+    position: absolute;
+  }
+}
+
+.tippy-box[data-placement^='top'] > .tippy-arrow {
+  bottom: 0;
+
+  &::before {
+    border-top-color: initial;
+    border-width: $tippy-arrow-size $tippy-arrow-size 0;
+    bottom: $tippy-arrow-offset;
+    left: 0;
+    transform-origin: center top;
+  }
+}
+
+.tippy-box[data-placement^='bottom'] > .tippy-arrow {
+  top: 0;
+
+  &::before {
+    border-bottom-color: initial;
+    border-width: 0 $tippy-arrow-size $tippy-arrow-size;
+    left: 0;
+    top: $tippy-arrow-offset;
+    transform-origin: center bottom;
+  }
+}
+
+.tippy-box[data-placement^='left'] > .tippy-arrow {
+  right: 0;
+
+  &::before {
+    border-left-color: initial;
+    border-width: $tippy-arrow-size 0 $tippy-arrow-size $tippy-arrow-size;
+    right: $tippy-arrow-offset;
+    transform-origin: center left;
+  }
+}
+
+.tippy-box[data-placement^='right'] > .tippy-arrow {
+  left: 0;
+
+  &::before {
+    border-right-color: initial;
+    border-width: $tippy-arrow-size $tippy-arrow-size $tippy-arrow-size 0;
+    left: $tippy-arrow-offset;
+    transform-origin: center right;
+  }
+}
+
+// ── Dashboard theme ──
+
+.tippy-box[data-theme~='dashboard'] {
+  background: $color-tooltip-bg;
+  box-shadow: 0 $tooltip-shadow-y $tooltip-shadow-blur $color-tooltip-shadow;
+  color: $color-tooltip-text;
+  max-width: $tooltip-max-width;
+  min-width: $tooltip-min-width;
+
+  > .tippy-arrow {
+    color: $color-tooltip-bg;
+  }
+
+  // [Claude] Task: constrain tooltip height when placed below chart to avoid viewport overflow
+  // Prompt: "evaluate whether to pop tooltip above or below the date bar"
+  // Date: 2026-03-09 | Model: claude-4.6-opus-high-thinking
+
+  &.below-chart > .tippy-content {
+    max-height: 40vh;
+    overflow-y: auto;
+  }
+
+  // ── Victory-value tooltip content ──
+
+  .dashboard-tooltip-header {
+    border-bottom: 1px solid $color-tooltip-border;
+    font-weight: 600;
+    margin-bottom: $sp-xs;
+    padding-bottom: $sp-xs;
+  }
+
+  .dashboard-tooltip-section {
+    border-bottom: 1px solid $color-tooltip-border;
+    margin-bottom: $sp-xs;
+    padding-bottom: $sp-xs;
+  }
+
+  .dashboard-tooltip-row {
+    align-items: baseline;
+    display: flex;
+    gap: $sp-sm;
+    justify-content: space-between;
+    padding: $tooltip-row-padding-y 0;
+  }
+
+  .dashboard-tooltip-row-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    p {
+      display: inline;
+      margin: 0;
+    }
+  }
+
+  .dashboard-tooltip-row-value {
+    color: $color-tooltip-accent;
+    flex-shrink: 0;
+    font-weight: 600;
+  }
+
+  .dashboard-tooltip-empty {
+    color: $color-tooltip-text-muted;
+    font-style: italic;
+  }
+
+  // ── Mood viz tooltip content ──
+
+  .mood-viz-tooltip-date {
+    border-bottom: 1px solid $color-tooltip-border;
+    font-weight: 600;
+    margin-bottom: 4px;
+    padding-bottom: 4px;
+  }
+
+  .mood-viz-tooltip-entry {
+    align-items: baseline;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    padding: 2px 0;
+  }
+
+  .mood-viz-tooltip-time {
+    color: $color-tooltip-text-muted;
+    font-size: 0.7rem;
+    min-width: 52px;
+  }
+
+  .mood-viz-tooltip-mood {
+    color: $color-tooltip-text;
+  }
+
+  .mood-viz-tooltip-note {
+    color: $color-tooltip-text-muted;
+    flex-basis: 100%;
+    font-size: 0.7rem;
+    font-style: italic;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: normal;
+    word-break: break-word;
+  }
+}

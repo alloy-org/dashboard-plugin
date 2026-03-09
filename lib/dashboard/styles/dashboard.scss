@@ -27,18 +27,18 @@ $breakpoint-sm: 480px;
 @use 'quick-actions';
 @use 'recent-notes';
 @use 'task-domains';
-@use 'tooltip';
+@use 'dashboard-tippy';
 @use 'victory-value';
-
-// Global resets
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
 
 html {
   overflow-y: scroll;
+
+  // Global resets
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
   body {
     -webkit-font-smoothing: antialiased;

@@ -3,6 +3,25 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-03-09 — Replace hand-rolled tooltips with Tippy.js
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dashboard/dashboard-tippy.js` (created — `DashboardTippy` React component and `useCanvasTippy` hook wrapping tippy.js)
+- `lib/dashboard/styles/_dashboard-tippy.scss` (created — base tippy positioning CSS, dashboard theme, tooltip content classes)
+- `lib/dashboard/victory-value.js` (modified — replaced `DashboardTooltip` component with `useCanvasTippy` hook; tooltip content now rendered as HTML string)
+- `lib/dashboard/mood.js` (modified — replaced custom `renderMoodTooltip` with `useCanvasTippy` in both RadialRing and WaveGraph)
+- `lib/dashboard/planning.js` (modified — replaced native `title` attribute on plan indicator with `DashboardTippy` component)
+- `lib/dashboard/styles/dashboard.scss` (modified — swapped `@use 'tooltip'` for `@use 'dashboard-tippy'`)
+- `lib/dashboard/styles/_mood.scss` (modified — removed `.mood-viz-tooltip*` styles, now in `_dashboard-tippy.scss`)
+- `lib/dashboard/tooltip.js` (deleted — hand-rolled tooltip component no longer needed)
+- `lib/dashboard/styles/_tooltip.scss` (deleted — hand-rolled tooltip styles no longer needed)
+
+**Task:** Consolidate three separate tooltip implementations (DashboardTooltip component, mood viz tooltip, native `title` attributes) into a single tippy.js-based system
+**Prompt summary:** "replace hand-rolled tooltips with tippy.js, separated into its own component and stylesheet"
+**Scope:** ~90 lines of new wrapper code; ~150 lines of old tooltip code removed; tippy.js added as bundled dependency
+**Notes:** Tippy.js adds ~42 KB minified / ~14 KB gzipped to the client bundle (plus @popperjs/core). The `useCanvasTippy` hook uses tippy's virtual element API for positioning tooltips on canvas visualizations. The `DashboardTippy` component provides a declarative wrapper for DOM element tooltips.
+
 ## 2026-03-09 — Quarter card created-plan styling and monthly-details indicator
 
 **Model:** claude-4.6-sonnet-medium-thinking

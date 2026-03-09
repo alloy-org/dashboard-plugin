@@ -9,7 +9,8 @@
     "marked": "^15.0.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
-    "sass": "^1.97.3"
+    "sass": "^1.97.3",
+    "tippy.js": "^6.3.7"
   },
   "scripts": {
     "dev": "node dev/dev-server.js",
