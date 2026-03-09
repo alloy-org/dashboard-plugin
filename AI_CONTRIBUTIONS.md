@@ -3,6 +3,19 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-03-09 — Fall back to previous week in VictoryValue when current week is sparse
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/util/date-utility.js` (modified — added `isCurrentWeekEarly()` helper)
+- `lib/hooks/use-completed-tasks.js` (modified — merge multi-week data instead of replacing; Set-based dedup with domain-change reset)
+- `lib/dashboard/dashboard.js` (modified — compute `victoryReferenceDate` with early-week fallback; fetch both weeks' completed tasks; extend mood rating range)
+
+**Task:** When the current week has fewer than 3 full elapsed days (Mon/Tue/Wed), automatically show the previous week's data in the VictoryValue chart instead of a nearly empty current week
+**Prompt summary:** "when beginning of new week with less than 3 full days of stats, show previous week"
+**Scope:** ~40 lines of new/modified logic across 3 files
+**Notes:** Only applies on default view (no explicit date selection); user can still navigate to the current week via the right arrow. useCompletedTasks now accumulates data across multiple week fetches so both Calendar and VictoryValue have their respective weeks' data.
+
 ## 2026-03-09 — Replace hand-rolled tooltips with Tippy.js
 
 **Model:** claude-4.6-opus-high-thinking
