@@ -3,6 +3,25 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-03-09 — Quarter card created-plan styling and monthly-details indicator
+
+**Model:** claude-4.6-sonnet-medium-thinking
+**Files created/modified:**
+- `lib/dashboard/planning.js` (modified — added `quarter-card--has-plan` class, status row layout, ✅/🚧 icon with tooltip)
+- `lib/data-service.js` (modified — `_findQuarterlyPlans` now sets `hasAllMonthlyDetails`; added `_quarterMonthNames` and `_hasAllMonthSections` helpers)
+- `lib/dashboard/styles/_planning.scss` (modified — `--has-plan` modifier styles, `.quarter-status-row`, `.quarter-plan-indicator`)
+- `lib/dashboard/styles/_theme.scss` (modified — added `$color-plan-created-bg` and `$color-plan-created-border` tokens)
+- `lib/dashboard/styles/_theme-light.scss` (modified — added light-mode plan-created color values)
+- `lib/dashboard/styles/_theme-dark.scss` (modified — added dark-mode plan-created color values)
+- `dev/mock-data.js` (modified — added `hasAllMonthlyDetails: false` to mock quarterly plans)
+
+**Task:** When a quarterly plan has been created, change its card to solid green border + light-green background; show a ✅ or 🚧 icon (with tooltip) indicating whether all 3 months have been detailed
+**Prompt summary:** "solid border + green bg when quarterly plan exists; checkmark or WIP icon based on monthly details"
+**Scope:** ~50 lines of new/changed logic across 7 files
+**Notes:** `hasAllMonthlyDetails` is computed at fetch time via `app.getNoteSections`; icon uses host-app `text_in_tip tooltip` classes with `title` for the tooltip text
+
+---
+
 ## 2026-03-08 — VictoryValue tooltip direction-aware positioning
 
 **Model:** claude-sonnet-4-6

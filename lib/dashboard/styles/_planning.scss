@@ -19,6 +19,9 @@ $planning-transition-duration: 0.15s;
     margin-bottom: $sp-lg;
   }
 
+  /* [Claude] Task: quarter card base styles; --has-plan modifier for solid border + green bg */
+  /* Prompt: "solid border and light-green background when a quarterly plan has been created" */
+  /* Date: 2026-03-09 | Model: claude-4.6-sonnet-medium-thinking */
   .quarter-card {
     border: $planning-border-width dashed $color-border;
     border-radius: $radius-md;
@@ -28,10 +31,21 @@ $planning-transition-duration: 0.15s;
     flex-direction: column;
     gap: $sp-xs;
     padding: $sp-md $sp-lg;
-    transition: border-color $planning-transition-duration;
+    transition: background $planning-transition-duration, border-color $planning-transition-duration;
 
     &:hover {
       border-color: $color-blue;
+    }
+
+    &--has-plan {
+      background: $color-plan-created-bg;
+      border-color: $color-plan-created-border;
+      border-style: solid;
+
+      &:hover {
+        border-color: $color-plan-created-border;
+        filter: brightness(0.97);
+      }
     }
 
     .quarter-label {
@@ -40,9 +54,23 @@ $planning-transition-duration: 0.15s;
       font-weight: 700;
     }
 
+    .quarter-status-row {
+      align-items: center;
+      display: flex;
+      gap: $sp-sm;
+      justify-content: space-between;
+    }
+
     .quarter-status {
       color: $color-text-secondary;
       font-size: 0.75rem;
+    }
+
+    .quarter-plan-indicator {
+      cursor: default;
+      flex-shrink: 0;
+      font-size: 0.85rem;
+      line-height: 1;
     }
   }
 

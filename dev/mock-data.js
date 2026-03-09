@@ -232,13 +232,15 @@ async function callPlugin(action, ...args) {
             year: now.getFullYear(),
             quarter: Math.ceil((now.getMonth() + 1) / 3),
             label: `Q${Math.ceil((now.getMonth() + 1) / 3)} ${now.getFullYear()}`,
-            noteUUID: "mock-quarterly-plan-uuid"
+            noteUUID: "mock-quarterly-plan-uuid",
+            hasAllMonthlyDetails: false
           },
           next: {
             year: now.getFullYear(),
             quarter: Math.ceil((now.getMonth() + 1) / 3) + 1,
             label: `Q${Math.ceil((now.getMonth() + 1) / 3) + 1} ${now.getFullYear()}`,
-            noteUUID: null
+            noteUUID: null,
+            hasAllMonthlyDetails: false
           }
         },
         currentDate: now.toISOString(),

@@ -11,7 +11,7 @@ $task-domain-transition-duration: 0.15s;
 /* [Claude] Task: task domain selector bar with pills, settings icon, and refresh link */
 /* Prompt: "style the task domain selector bar above the dashboard grid" */
 /* Date: 2026-02-21 | Model: claude-opus-4-6 */
-.dashboard {
+.dashboard-toolbar {
   .task-domains {
     align-items: center;
     background: $color-bg-card;

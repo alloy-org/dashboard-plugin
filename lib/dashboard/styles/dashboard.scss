@@ -16,20 +16,19 @@ $breakpoint-md: 800px;
 $breakpoint-sm: 480px;
 
 // Component partials
-@use 'widget-wrapper';
-@use 'task-domains';
-@use 'planning';
-@use 'victory-value';
-@use 'mood';
-@use 'calendar';
 @use 'agenda';
-@use 'quotes';
-@use 'quick-actions';
-@use 'recent-notes';
+@use 'calendar';
 @use 'config-popup';
 @use 'dashboard-layout-popup';
 @use 'dashboard-settings-popup';
+@use 'mood';
+@use 'quotes';
+@use 'planning';
+@use 'quick-actions';
+@use 'recent-notes';
+@use 'task-domains';
 @use 'tooltip';
+@use 'victory-value';
 
 // Global resets
 *, *::before, *::after {
@@ -54,98 +53,59 @@ html {
 /* Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking */
 
 // Full-width background wrapper
-.dashboard {
+.dashboard-outer-container {
   min-height: 100vh;
   width: 100%;
-}
 
-// Constrained content area
-.dashboard-content {
-  margin: 0 auto;
-  max-width: $dashboard-max-width;
-  padding: $sp-xl;
-
-  .dashboard-grid {
-    display: grid;
-    gap: $sp-lg;
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  /* [Claude] Task: grid-cell sizing classes for vertical and horizontal cell counts */
-  /* Prompt: "apply a class for the number of horizontal and vertical cells assigned by user" */
-  /* Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking */
-  .grid-cell {
-    opacity: 0.95;
-    min-width: 0;
-    transition: 0.3s ease opacity;
-
-    &:hover {
-      opacity: 1;
-    }
-
-    &.span-2 {
-      grid-column: span 2;
-    }
-
-    &.vertical-1-cell {
-      max-height: 400px;
-      min-height: 300px;
-    }
-
-    &.vertical-2-cell {
-      max-height: 800px;
-      min-height: 600px;
-    }
-  }
-}
-
-// Loading state
-.dashboard-loading {
-  align-items: center;
-  color: $color-text-secondary;
-  display: flex;
-  flex-direction: column;
-  gap: $sp-lg;
-  height: 100vh;
-  justify-content: center;
-
-  .spinner {
-    animation: spin $spinner-duration linear infinite;
-    border: $spinner-border-width solid $color-border;
-    border-radius: 50%;
-    border-top-color: $color-blue;
-    height: $spinner-size;
-    width: $spinner-size;
-  }
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-// Error state
-.dashboard-error {
-  color: $color-danger;
-  padding: $error-padding;
-  text-align: center;
-
-  p {
-    color: $color-text-secondary;
-    margin-top: $sp-sm;
-  }
-}
-
-// Responsive
-@media (max-width: $breakpoint-md) {
+  // Constrained content area
   .dashboard-content {
+    margin: 0 auto;
+    max-width: $dashboard-max-width;
+    padding: $sp-xl;
+
+    .dashboard-grid {
+      display: grid;
+      gap: $sp-lg;
+      grid-template-columns: repeat(4, 1fr);
+    }
+
+    /* [Claude] Task: grid-cell sizing classes for vertical and horizontal cell counts */
+    /* Prompt: "apply a class for the number of horizontal and vertical cells assigned by user" */
+    /* Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking */
+    .grid-cell {
+      opacity: 0.95;
+      min-width: 0;
+      transition: 0.3s ease opacity;
+
+      &:hover {
+        opacity: 1;
+      }
+
+      &.span-2 {
+        grid-column: span 2;
+      }
+
+      &.vertical-1-cell {
+        max-height: 400px;
+        min-height: 300px;
+      }
+
+      &.vertical-2-cell {
+        max-height: 800px;
+        min-height: 600px;
+      }
+    }
+  }
+
+
+  // Responsive
+  @media (max-width: $breakpoint-md) {
     .dashboard-grid {
       grid-template-columns: repeat(2, 1fr);
     }
   }
-}
 
-@media (max-width: $breakpoint-sm) {
-  .dashboard-content {
+  @media (max-width: $breakpoint-sm) {
     .dashboard-grid {
       grid-template-columns: 1fr;
     }
@@ -154,4 +114,91 @@ html {
       grid-column: span 1;
     }
   }
+
+  .widget {
+    @include card;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+
+    &-header {
+      align-items: center;
+      border-bottom: 1px solid $color-border;
+      display: flex;
+      gap: $sp-sm;
+      padding: $sp-md $sp-lg;
+    }
+
+    &-icon {
+      font-size: 1rem;
+    }
+
+    &-title {
+      color: $color-navy;
+      flex: 1;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      margin: 0;
+      text-transform: uppercase;
+    }
+
+    /* [Claude] Task: shared header action button style; used by configure and reseed buttons */
+    /* Prompt: "component should have a link in the top bar to reseed" */
+    /* Date: 2026-03-05 | Model: claude-4.6-sonnet-medium-thinking */
+    &-configure,
+    &-header-action {
+      background: none;
+      border: none;
+      color: $color-text-secondary;
+      cursor: pointer;
+      font-size: 0.75rem;
+      padding: $sp-xs $sp-sm;
+
+      &:hover {
+        color: $color-navy;
+      }
+    }
+
+    &-body {
+      flex: 1;
+      padding: $sp-lg;
+    }
+  }
+
+  // Loading state
+  .dashboard-loading {
+    align-items: center;
+    color: $color-text-secondary;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-lg;
+    height: 100vh;
+    justify-content: center;
+
+    .spinner {
+      animation: spin $spinner-duration linear infinite;
+      border: $spinner-border-width solid $color-border;
+      border-radius: 50%;
+      border-top-color: $color-blue;
+      height: $spinner-size;
+      width: $spinner-size;
+    }
+  }
+
+  // Error state
+  .dashboard-error {
+    color: $color-danger;
+    padding: $error-padding;
+    text-align: center;
+
+    p {
+      color: $color-text-secondary;
+      margin-top: $sp-sm;
+    }
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
