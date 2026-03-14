@@ -196,9 +196,9 @@ async function callPlugin(action, ...args) {
 
   switch (action) {
 
-    // [Claude] Task: parse JSON-string settings values so they arrive as proper types
-    // Prompt: "layout size values are not persisted — mock init returns dashboard_elements as string"
-    // Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking
+    // [Claude] Task: resolve real quarterly plan UUIDs from /notes directory for init
+    // Prompt: "use logIfEnabled to output more debug information so we can understand which part of the process is failing"
+    // Date: 2026-03-14 | Model: claude-4.6-sonnet-medium-thinking
     case "init": {
       const settings = await _loadSettings();
       if (!settings[CONSOLE_LOGGING_KEY]) settings[CONSOLE_LOGGING_KEY] = "true";
@@ -220,6 +220,28 @@ async function callPlugin(action, ...args) {
       const weekStart = _getWeekStart(now);
       const tasks = await _fetchAllTasks();
       const moodRatings = await _fetchMoodRatings();
+
+      const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
+      const currentLabel = `Q${currentQuarter} ${now.getFullYear()}`;
+      const nextQuarter = currentQuarter === 4 ? 1 : currentQuarter + 1;
+      const nextYear = currentQuarter === 4 ? now.getFullYear() + 1 : now.getFullYear();
+      const nextLabel = `Q${nextQuarter} ${nextYear}`;
+
+      const [currentFound, nextFound] = await Promise.all([
+        _findNoteByName(`${currentLabel} Plan`),
+        _findNoteByName(`${nextLabel} Plan`),
+      ]);
+      console.log(`[mock] init quarterly plans — current "${currentLabel} Plan": ${currentFound?.uuid ?? "not found"}, next "${nextLabel} Plan": ${nextFound?.uuid ?? "not found"}`);
+
+      const [currentSections, nextSections] = await Promise.all([
+        currentFound?.uuid ? _fetchNoteSections(currentFound.uuid) : Promise.resolve([]),
+        nextFound?.uuid    ? _fetchNoteSections(nextFound.uuid)    : Promise.resolve([]),
+      ]);
+      const currentMonths = _quarterMonthNames(currentQuarter);
+      const nextMonths    = _quarterMonthNames(nextQuarter);
+      const currentHasAll = currentMonths.every(m => currentSections.some(s => s.heading?.text?.trim().toLowerCase() === m.toLowerCase()));
+      const nextHasAll    = nextMonths.every(m => nextSections.some(s => s.heading?.text?.trim().toLowerCase() === m.toLowerCase()));
+
       return {
         tasks,
         todayTasks: _filterTodayTasks(tasks, now),
@@ -230,18 +252,18 @@ async function callPlugin(action, ...args) {
         quarterlyPlans: {
           current: {
             year: now.getFullYear(),
-            quarter: Math.ceil((now.getMonth() + 1) / 3),
-            label: `Q${Math.ceil((now.getMonth() + 1) / 3)} ${now.getFullYear()}`,
-            noteUUID: "mock-quarterly-plan-uuid",
-            hasAllMonthlyDetails: false
+            quarter: currentQuarter,
+            label: currentLabel,
+            noteUUID: currentFound?.uuid ?? null,
+            hasAllMonthlyDetails: currentHasAll,
           },
           next: {
-            year: now.getFullYear(),
-            quarter: Math.ceil((now.getMonth() + 1) / 3) + 1,
-            label: `Q${Math.ceil((now.getMonth() + 1) / 3) + 1} ${now.getFullYear()}`,
-            noteUUID: null,
-            hasAllMonthlyDetails: false
-          }
+            year: nextYear,
+            quarter: nextQuarter,
+            label: nextLabel,
+            noteUUID: nextFound?.uuid ?? null,
+            hasAllMonthlyDetails: nextHasAll,
+          },
         },
         currentDate: now.toISOString(),
         settings,
@@ -413,7 +435,9 @@ async function callPlugin(action, ...args) {
       const uuid = args[0];
       try {
         const content = await callPlugin('getNoteContent', uuid);
-        return _parseHeadingsFromMarkdown(content || '');
+        const sections = _parseHeadingsFromMarkdown(content || '');
+        console.log(`[mock] getNoteSections uuid=${uuid} → ${sections.length} sections:`, sections.map(s => s.heading.text));
+        return sections;
       } catch {
         return [];
       }
@@ -424,8 +448,12 @@ async function callPlugin(action, ...args) {
       const sectionName = args[1];
       try {
         const content = await callPlugin('getNoteContent', noteUUID);
-        if (!content) return { found: false, content: null };
+        if (!content) {
+          console.log(`[mock] getMonthlyPlanContent uuid=${noteUUID} section="${sectionName}" → no content`);
+          return { found: false, content: null };
+        }
         const sectionContent = _extractSectionContent(content, sectionName);
+        console.log(`[mock] getMonthlyPlanContent uuid=${noteUUID} section="${sectionName}" → found=${!!sectionContent}`);
         return sectionContent
           ? { found: true, content: sectionContent }
           : { found: false, content: null };
@@ -498,7 +526,9 @@ async function callPlugin(action, ...args) {
             body: JSON.stringify({ uuid: result.uuid, content: `\n### ${weekLabel}\n- Primary focus:\n- Key tasks:\n- Commitments:\n` }),
           });
         }
-        return { noteUUID: result.uuid };
+        const content = await callPlugin('getNoteContent', result.uuid);
+        const sectionContent = _extractSectionContent(content || '', weekLabel);
+        return { noteUUID: result.uuid, content: sectionContent || '' };
       } catch {
         return null;
       }
@@ -513,6 +543,33 @@ async function callPlugin(action, ...args) {
 // ---------------------------------------------------------------------------
 // Note content helpers (inlined since mock-data.js is a plain script, not a module)
 // ---------------------------------------------------------------------------
+
+// [Claude] Task: look up a note by name via the dev server's /api/note-find endpoint
+// Prompt: "use logIfEnabled to output more debug information so we can understand which part of the process is failing"
+// Date: 2026-03-14 | Model: claude-4.6-sonnet-medium-thinking
+async function _findNoteByName(name) {
+  try {
+    const res = await fetch(`/api/note-find?name=${encodeURIComponent(name)}`);
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+async function _fetchNoteSections(uuid) {
+  try {
+    const content = await callPlugin('getNoteContent', uuid);
+    return _parseHeadingsFromMarkdown(content || '');
+  } catch {
+    return [];
+  }
+}
+
+function _quarterMonthNames(quarter) {
+  const allMonths = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const start = (quarter - 1) * 3;
+  return [allMonths[start], allMonths[start + 1], allMonths[start + 2]];
+}
 
 function _extractSectionContent(markdown, sectionName) {
   const escaped = sectionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
