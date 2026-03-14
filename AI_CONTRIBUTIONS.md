@@ -5,6 +5,34 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-14 — Remove underscore prefix from component SCSS filenames
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dashboard/styles/_agenda.scss` → `agenda.scss`
+- `lib/dashboard/styles/_calendar.scss` → `calendar.scss`
+- `lib/dashboard/styles/_config-popup.scss` → `config-popup.scss`
+- `lib/dashboard/styles/_dashboard-layout-popup.scss` → `dashboard-layout-popup.scss`
+- `lib/dashboard/styles/_dashboard-settings-popup.scss` → `dashboard-settings-popup.scss`
+- `lib/dashboard/styles/_dashboard-tippy.scss` → `dashboard-tippy.scss`
+- `lib/dashboard/styles/_dream-task.scss` → `dream-task.scss`
+- `lib/dashboard/styles/_mood.scss` → `mood.scss`
+- `lib/dashboard/styles/_planning.scss` → `planning.scss`
+- `lib/dashboard/styles/_quick-actions.scss` → `quick-actions.scss`
+- `lib/dashboard/styles/_quotes.scss` → `quotes.scss`
+- `lib/dashboard/styles/_recent-notes.scss` → `recent-notes.scss`
+- `lib/dashboard/styles/_theme.scss` → `theme.scss`
+- `lib/dashboard/styles/_theme-dark.scss` → `theme-dark.scss`
+- `lib/dashboard/styles/_theme-light.scss` → `theme-light.scss`
+- `lib/dashboard/styles/_theme-tokens.scss` → `theme-tokens.scss`
+
+**Task:** Remove the SCSS partial underscore prefix from all component stylesheets
+**Prompt summary:** "ensure we have renamed any stylesheets for a component not to be prefixed by the underscore"
+**Scope:** 16 file renames
+**Notes:** Sass `@use` and `@forward` resolve both `_foo.scss` and `foo.scss`, so no import changes needed
+
+---
+
 ## 2026-03-14 — Replace global callPlugin with app object abstraction
 
 **Model:** claude-4.6-opus-high-thinking
