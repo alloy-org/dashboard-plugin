@@ -135,10 +135,12 @@ describe("Dev App Harness", () => {
   // [Claude] Generated tests for: filterNotes searches /notes directory frontmatter
   // Date: 2026-03-14 | Model: claude-4.6-sonnet-medium-thinking
   describe("filterNotes", () => {
-    function writeFrontmatterNote(dir, title, uuid, tags = []) {
+    // Matches the production Amplenote format: opening ---, fields, closing ---,
+    // followed by the note body. Also matches what _buildFrontmatter produces.
+    function writeFrontmatterNote(dir, title, uuid, { tags = [], body = "" } = {}) {
       const now = new Date().toISOString();
       const tagLines = tags.map(t => `  - ${t}`).join("\n");
-      const content = [
+      const frontmatter = [
         "---",
         `title: ${title}`,
         `uuid: ${uuid}`,
@@ -147,9 +149,8 @@ describe("Dev App Harness", () => {
         `updated: '${now}'`,
         tagLines ? `tags:\n${tagLines}` : "tags: []",
         "---",
-        "",
       ].join("\n");
-      fs.writeFileSync(path.join(dir, `${uuid}.md`), content, "utf-8");
+      fs.writeFileSync(path.join(dir, `${uuid}.md`), frontmatter + "\n" + body, "utf-8");
     }
 
     it("returns an empty array when the notes directory contains no matching files", async () => {
@@ -168,6 +169,20 @@ describe("Dev App Harness", () => {
       expect(results).toHaveLength(1);
       expect(results[0].uuid).toBe(uuid);
       expect(results[0].name).toBe("Q1 2026 Plan");
+    });
+
+    it("finds a note that has tags and body content after the closing ---", async () => {
+      const uuid = "test-quarterly-uuid-tags";
+      writeFrontmatterNote(tmpNotesDir, "Q1 2026 Plan", uuid, {
+        tags: ["plugins/dashboard", "planning/quarterly"],
+        body: "# Q1 2026 Plan\n\n## January\n- Focus:\n",
+      });
+
+      const app = createDevApp(tmpSettingsPath, tmpNotesDir);
+      const results = await app.filterNotes({ query: "Q1 2026 Plan" });
+
+      expect(results).toHaveLength(1);
+      expect(results[0].uuid).toBe(uuid);
     });
 
     it("does not return notes whose title does not match the query", async () => {
@@ -202,6 +217,104 @@ describe("Dev App Harness", () => {
       expect(results).toHaveLength(2);
       expect(results.map(r => r.uuid)).toContain("uuid-match-1");
       expect(results.map(r => r.uuid)).toContain("uuid-match-2");
+    });
+  });
+
+  // --------------------------------------------------
+  // [Claude] Generated tests for: getNoteSections parses headings from note body
+  // Date: 2026-03-14 | Model: claude-4.6-sonnet-medium-thinking
+  describe("getNoteSections", () => {
+    const QUARTERLY_NOTE_BODY = [
+      "# Q1 2026 Plan",
+      "",
+      "## January",
+      "- Focus:",
+      "- Key move:",
+      "",
+      "## February",
+      "- Focus:",
+      "- Key move:",
+      "",
+      "## March",
+      "- Focus:",
+      "- Key move:",
+      "",
+      "### Week of March 16",
+      "- Primary focus:",
+      "- Key tasks:",
+      "- Commitments:",
+    ].join("\n");
+
+    function writeNoteWithBody(dir, title, uuid, body) {
+      const now = new Date().toISOString();
+      const frontmatter = [
+        "---",
+        `title: ${title}`,
+        `uuid: ${uuid}`,
+        `version: 1`,
+        `created: '${now}'`,
+        `updated: '${now}'`,
+        "tags:",
+        "  - plugins/dashboard",
+        "  - planning/quarterly",
+        "---",
+      ].join("\n");
+      fs.writeFileSync(path.join(dir, `${uuid}.md`), frontmatter + "\n" + body, "utf-8");
+    }
+
+    it("returns an empty array for an unknown note UUID", async () => {
+      const app = createDevApp(tmpSettingsPath, tmpNotesDir);
+      const sections = await app.getNoteSections({ uuid: "no-such-uuid" });
+      expect(sections).toEqual([]);
+    });
+
+    it("returns one entry per heading line found in the note body", async () => {
+      const uuid = "sections-test-uuid";
+      writeNoteWithBody(tmpNotesDir, "Q1 2026 Plan", uuid, QUARTERLY_NOTE_BODY);
+
+      const app = createDevApp(tmpSettingsPath, tmpNotesDir);
+      const sections = await app.getNoteSections({ uuid });
+
+      // Expect headings: "Q1 2026 Plan", "January", "February", "March", "Week of March 16"
+      expect(sections).toHaveLength(5);
+    });
+
+    it("each section has a heading.text and heading.level", async () => {
+      const uuid = "sections-shape-uuid";
+      writeNoteWithBody(tmpNotesDir, "Q1 2026 Plan", uuid, QUARTERLY_NOTE_BODY);
+
+      const app = createDevApp(tmpSettingsPath, tmpNotesDir);
+      const sections = await app.getNoteSections({ uuid });
+
+      for (const s of sections) {
+        expect(s).toHaveProperty("heading");
+        expect(typeof s.heading.text).toBe("string");
+        expect(typeof s.heading.level).toBe("number");
+      }
+    });
+
+    it("correctly identifies the month headings used by _hasAllMonthSections", async () => {
+      const uuid = "sections-months-uuid";
+      writeNoteWithBody(tmpNotesDir, "Q1 2026 Plan", uuid, QUARTERLY_NOTE_BODY);
+
+      const app = createDevApp(tmpSettingsPath, tmpNotesDir);
+      const sections = await app.getNoteSections({ uuid });
+
+      const headingTexts = sections.map(s => s.heading.text);
+      expect(headingTexts).toContain("January");
+      expect(headingTexts).toContain("February");
+      expect(headingTexts).toContain("March");
+    });
+
+    it("finds sub-headings like 'Week of March 16' used by getMonthlyPlanContent", async () => {
+      const uuid = "sections-week-uuid";
+      writeNoteWithBody(tmpNotesDir, "Q1 2026 Plan", uuid, QUARTERLY_NOTE_BODY);
+
+      const app = createDevApp(tmpSettingsPath, tmpNotesDir);
+      const sections = await app.getNoteSections({ uuid });
+
+      const headingTexts = sections.map(s => s.heading.text);
+      expect(headingTexts).toContain("Week of March 16");
     });
   });
 });

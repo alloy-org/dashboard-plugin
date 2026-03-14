@@ -289,6 +289,8 @@ function _buildFrontmatter(title, uuid, tags = []) {
 }
 
 function _parseFrontmatter(raw) {
+  // Standard YAML frontmatter: opening line of dashes, fields, closing line of dashes.
+  // Production Amplenote notes and dev-created notes both use this format.
   const match = raw.match(/^---\n([\s\S]*?)\n---/);
   if (!match) return null;
 
@@ -505,6 +507,26 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       const raw = fs.readFileSync(filePath, "utf-8");
       const parsed = _parseFrontmatter(raw);
       return parsed ? parsed.content : raw;
+    },
+
+    // [Claude] Task: parse headings from note body to simulate app.getNoteSections
+    // Prompt: "getNoteSections can be mocked by taking the content below the frontmatter and doing regex searches for lines beginning with 1-4 pound signs"
+    // Date: 2026-03-14 | Model: claude-4.6-sonnet-medium-thinking
+    async getNoteSections(noteHandle) {
+      const uuid = typeof noteHandle === "string" ? noteHandle : noteHandle?.uuid;
+      const filePath = path.join(notesDir, `${uuid}.md`);
+      if (!fs.existsSync(filePath)) return [];
+      const raw = fs.readFileSync(filePath, "utf-8");
+      const parsed = _parseFrontmatter(raw);
+      const content = parsed ? parsed.content : raw;
+      const matches = content.match(/^(#{1,4})\s+(.+)$/gm) || [];
+      return matches.map((line, i) => ({
+        heading: {
+          text: line.replace(/^#{1,4}\s+/, "").trim(),
+          level: (line.match(/^#+/) || [""])[0].length,
+        },
+        index: i,
+      }));
     },
 
     navigate(url) {
