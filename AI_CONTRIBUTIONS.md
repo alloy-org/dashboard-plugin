@@ -3,6 +3,49 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-03-14 — Widget header subtitle support
+
+**Model:** claude-4.6-sonnet-medium-thinking
+**Files created/modified:**
+- `lib/dashboard/draggable-heading.js` (modified — replaced mixed JSX/createElement subtitle markup with clean `widget-title__label` / `widget-title__subtitle` elements)
+- `lib/dashboard/styles/dashboard.scss` (modified — added flex layout to `.widget-title` and styled `.widget-title__subtitle` with muted color, smaller font, no uppercase)
+- `lib/dashboard/widget-wrapper.js` (modified — added `@param` JSDoc for `subtitle` prop)
+
+**Task:** Allow a subtitle string to appear to the right of the widget module title with lighter, smaller text
+**Prompt summary:** "allow a subtitle as a string with lighter color text that resides to the right of the module title"
+**Scope:** ~15 lines changed across 3 files
+**Notes:** Subtitle uses `$color-text-muted`, `0.75rem`, normal weight, and no uppercase transform; title uses `align-items: baseline` so short and tall text stay optically aligned
+
+---
+
+## 2026-03-14 — DreamTask: grid-based task count, reseed link, and seen-UUID exclusion
+
+**Model:** claude-4.6-sonnet-medium-thinking
+**Files created/modified:**
+- `lib/dashboard/dream-task.js` (modified — `gridWidthSize` prop; `maxTasks = width × height`; seen-UUIDs tracking; reseed header link)
+- `lib/dream-task-service.js` (modified — `excludeUuids` param; filters candidate tasks before LLM; bypasses cache on reseed; returns `shownUuids`)
+- `lib/dashboard/styles/dream-task.scss` (modified — `.dream-task-header-actions` flex row for multiple header links)
+- `lib/dashboard/dashboard.js` (modified — pass `gridWidthSize` to `DreamTaskCell`)
+
+**Task:** Show tasks equal to grid cell count; add reseed link that excludes recently-shown task UUIDs
+**Prompt summary:** "show as many tasks as cells; add reseed link that excludes seen UUIDs; store daily UUID hash in app.setSetting"
+**Scope:** ~80 lines changed/added across 4 files
+**Notes:** Seen UUIDs stored under `dashboard_dream-task_seen_uuids` as `{ [YYYY-MM-DD]: [uuid, ...] }`. Entries older than 7 days are pruned on each load. The "Reseed" header link feeds the full 7-day exclusion set to `analyzeDreamTasks`, which bypasses the daily cache and filters the task candidate pool before ranking and sending to the LLM. The service returns `shownUuids` (the ranked candidates sent to the LLM) so the widget can record them — the LLM-suggested tasks themselves may not carry UUIDs.
+
+---
+
+## 2026-03-14 — DreamTask: pointer cursor and click-to-navigate on task text
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dashboard/dream-task.js` (modified — task title clickable, navigates to task in note via section anchor)
+- `lib/dashboard/styles/dream-task.scss` (modified — pointer cursor and hover styles for clickable task title)
+
+**Task:** Hovering on task text shows pointer cursor; clicking navigates to the task in its note
+**Prompt summary:** "Hovering on the task text should show a pointer cursor, and clicking on the task text in dream-task.js should navigate to the task in its note"
+**Scope:** ~25 lines across 2 files
+**Notes:** Uses Amplenote section anchor format (heading text with spaces→underscores) for deep-link navigation. In dev mode, opens NoteEditor same as Note link.
+
 ---
 
 ## 2026-03-14 — DreamTask: call analyzeDreamTasks directly instead of app.dreamTaskAnalyze bridge
