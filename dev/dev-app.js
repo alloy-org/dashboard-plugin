@@ -257,6 +257,7 @@ export function readSettingsFile(settingsPath = DEFAULT_SETTINGS_PATH) {
 // [Claude] Task: atomically write settings object to JSON file
 // Date: 2026-03-01 | Model: claude-opus-4-6
 export function writeSettingsFile(settings, settingsPath = DEFAULT_SETTINGS_PATH) {
+  console.log(`Writing settings to ${settingsPath}:`, settings);
   fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), "utf-8");
 }
 
