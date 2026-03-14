@@ -13,4 +13,5 @@ background-image.png
 .idea
 copilot.data*
 dashboard-plugin.iml
+.env
 /node_modules

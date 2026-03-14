@@ -4,6 +4,7 @@
  * Task: Local dev server with esbuild watch + serve and SCSS compilation
  * Prompt summary: "dev server that bundles client-entry.js, compiles SCSS on rebuild, and serves on port 3000"
  */
+import dotenv from "dotenv";
 import esbuild from "esbuild";
 import path from "path";
 import fs from "fs";
@@ -12,6 +13,8 @@ import * as sass from "sass";
 import { fileURLToPath } from "url";
 import { createLibImportsPlugin } from "../lib-imports-plugin.js";
 import { readSettingsFile, writeSettingsFile, DEFAULT_SETTINGS_PATH, createDevApp } from "./dev-app.js";
+
+dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
@@ -196,6 +199,7 @@ async function main() {
     outfile: path.join(devDir, "bundle.js"),
     define: {
       "process.env.NODE_ENV": '"development"',
+      "process.env.OPEN_AI_ACCESS_TOKEN": JSON.stringify(process.env.OPEN_AI_ACCESS_TOKEN || ""),
     },
     target: ["chrome91", "firefox90", "safari15", "edge91"],
     sourcemap: true,
