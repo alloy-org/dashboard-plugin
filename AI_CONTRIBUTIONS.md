@@ -3,6 +3,21 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-03-14 — File-backed notes for dev environment (createNote, findNote, replaceContent)
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `.gitignore` (modified — added `/notes` to ignored paths)
+- `dev/dev-app.js` (modified — added `crypto` import, `NOTES_DIR` constant, frontmatter helpers `_ensureNotesDir`, `_buildFrontmatter`, `_parseFrontmatter`, `_readAllNoteFiles`; rewrote `createNote` to write UUID-named `.md` files with YAML frontmatter; added `findNote` to scan notes directory by name/uuid; added `replaceContent` to replace content below frontmatter; upgraded `insertNoteContent` and `getNoteContent` to read/write from note files)
+- `lib/plugin.js` (modified — added `replaceContent` case to `onEmbedCall` switch)
+
+**Task:** Enable dev-mode note persistence via the filesystem so the quarterly goals module can read real content
+**Prompt summary:** "when app.createNote is called in dev environment, create a file with a random uuid in the /notes directory; findNote loops over files; replaceContent appends content below frontmatter"
+**Scope:** ~120 lines of new logic across 3 files
+**Notes:** Notes are stored as `notes/<uuid>.md` with YAML frontmatter (title, uuid, version, created, updated, tags). The `/notes` directory is gitignored. `replaceContent` updates the `updated` timestamp in frontmatter when writing.
+
+---
+
 ## 2026-03-14 — DreamTask widget with agentic LLM-powered task suggestions
 
 **Model:** claude-4.6-opus-high-thinking

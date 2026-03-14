@@ -5,11 +5,13 @@
  * Prompt summary: "emulate Amplenote app.settings with a local JSON file so dev mode persists state"
  */
 import fs from "fs";
+import crypto from "crypto";
 import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_SETTINGS_PATH = path.join(__dirname, "settings.json");
+const NOTES_DIR = path.join(__dirname, "..", "notes");
 
 // Note handles referenced by sample tasks, grouped by domain.
 // Each entry provides the name shown in the Recent Notes widget.
@@ -259,6 +261,81 @@ export function writeSettingsFile(settings, settingsPath = DEFAULT_SETTINGS_PATH
 }
 
 // ---------------------------------------------------------------------------
+// Note File I/O
+// ---------------------------------------------------------------------------
+
+// [Claude] Task: ensure the notes directory exists and provide helpers for reading/writing frontmatter-based note files
+// Prompt: "when app.createNote is called in dev environment, create a file with a random uuid in the /notes directory"
+// Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
+function _ensureNotesDir() {
+  if (!fs.existsSync(NOTES_DIR)) {
+    fs.mkdirSync(NOTES_DIR, { recursive: true });
+  }
+}
+
+function _buildFrontmatter(title, uuid, tags = []) {
+  const now = new Date().toISOString();
+  const tagLines = tags.map(t => `  - ${t}`).join("\n");
+  return [
+    "---",
+    `title: ${title}`,
+    `uuid: ${uuid}`,
+    `version: 1`,
+    `created: '${now}'`,
+    `updated: '${now}'`,
+    tagLines ? `tags:\n${tagLines}` : "tags: []",
+    "---",
+  ].join("\n");
+}
+
+function _parseFrontmatter(raw) {
+  const match = raw.match(/^---\n([\s\S]*?)\n---/);
+  if (!match) return null;
+
+  const block = match[1];
+  const meta = {};
+  let currentKey = null;
+  let listBuffer = [];
+
+  for (const line of block.split("\n")) {
+    const kvMatch = line.match(/^(\w[\w\s]*):\s*(.*)/);
+    if (kvMatch && !line.startsWith("  ")) {
+      if (currentKey && listBuffer.length) {
+        meta[currentKey] = listBuffer;
+        listBuffer = [];
+      }
+      currentKey = kvMatch[1].trim();
+      const val = kvMatch[2].trim();
+      if (val === "" || val === "[]") {
+        meta[currentKey] = val === "[]" ? [] : val;
+      } else {
+        meta[currentKey] = val.replace(/^'(.*)'$/, "$1");
+      }
+    } else if (line.match(/^\s+-\s+/)) {
+      listBuffer.push(line.replace(/^\s+-\s+/, ""));
+    }
+  }
+  if (currentKey && listBuffer.length) {
+    meta[currentKey] = listBuffer;
+  }
+
+  const endIdx = raw.indexOf("\n---", 3);
+  const content = raw.slice(endIdx + 4).replace(/^\n/, "");
+  return { meta, content, frontmatterEnd: endIdx + 4 };
+}
+
+function _readAllNoteFiles() {
+  _ensureNotesDir();
+  const files = fs.readdirSync(NOTES_DIR).filter(f => f.endsWith(".md"));
+  return files.map(filename => {
+    const raw = fs.readFileSync(path.join(NOTES_DIR, filename), "utf-8");
+    const parsed = _parseFrontmatter(raw);
+    if (!parsed) return null;
+    return { filename, raw, ...parsed };
+  }).filter(Boolean);
+}
+
+// ---------------------------------------------------------------------------
 // Dev App Factory
 // ---------------------------------------------------------------------------
 
@@ -338,16 +415,86 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH) {
       return [];
     },
 
-    async getNoteContent(_noteHandle) {
-      return "# Sample Note\n\nThis is dev-mode placeholder content.";
+    // [Claude] Task: create a markdown file with frontmatter in the /notes directory
+    // Prompt: "when app.createNote is called in dev environment, create a file with a random uuid in the /notes directory"
+    // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
+    async createNote(name, tags = []) {
+      _ensureNotesDir();
+      const uuid = crypto.randomUUID();
+      const frontmatter = _buildFrontmatter(name, uuid, tags);
+      const filePath = path.join(NOTES_DIR, `${uuid}.md`);
+      fs.writeFileSync(filePath, frontmatter + "\n", "utf-8");
+      console.log(`[dev-app] createNote "${name}" -> ${uuid}`);
+      return uuid;
     },
 
-    async createNote(name, _tags) {
-      return `dev-note-${Date.now()}`;
+    // [Claude] Task: find a note by looping over files in the /notes directory and matching frontmatter
+    // Prompt: "when app.findNote is called, loop over each of the files in the notes directory"
+    // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
+    async findNote(params = {}) {
+      const notes = _readAllNoteFiles();
+      for (const note of notes) {
+        if (params.uuid && note.meta.uuid === params.uuid) {
+          return { uuid: note.meta.uuid, name: note.meta.title };
+        }
+        if (params.name && note.meta.title === params.name) {
+          return { uuid: note.meta.uuid, name: note.meta.title };
+        }
+      }
+      return null;
     },
 
-    async insertNoteContent(_noteHandle, _content) {
+    // [Claude] Task: replace content below the frontmatter in a note file
+    // Prompt: "implement app.replaceContent to append the passed content below the frontmatter"
+    // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
+    async replaceContent(noteHandle, content) {
+      const uuid = typeof noteHandle === "string" ? noteHandle : noteHandle?.uuid;
+      const filePath = path.join(NOTES_DIR, `${uuid}.md`);
+      if (!fs.existsSync(filePath)) {
+        console.warn(`[dev-app] replaceContent: note file not found for ${uuid}`);
+        return false;
+      }
+      const raw = fs.readFileSync(filePath, "utf-8");
+      const parsed = _parseFrontmatter(raw);
+      if (!parsed) {
+        console.warn(`[dev-app] replaceContent: could not parse frontmatter for ${uuid}`);
+        return false;
+      }
+      const frontmatterSection = raw.slice(0, parsed.frontmatterEnd);
+      const updatedFrontmatter = frontmatterSection.replace(
+        /updated: '.*?'/,
+        `updated: '${new Date().toISOString()}'`
+      );
+      fs.writeFileSync(filePath, updatedFrontmatter + "\n" + content, "utf-8");
+      console.log(`[dev-app] replaceContent for ${uuid} (${content.length} chars)`);
       return true;
+    },
+
+    async insertNoteContent(noteHandle, content, options = {}) {
+      const uuid = typeof noteHandle === "string" ? noteHandle : noteHandle?.uuid;
+      const filePath = path.join(NOTES_DIR, `${uuid}.md`);
+      if (!fs.existsSync(filePath)) {
+        console.warn(`[dev-app] insertNoteContent: note file not found for ${uuid}`);
+        return false;
+      }
+      const raw = fs.readFileSync(filePath, "utf-8");
+      fs.writeFileSync(filePath, raw + content, "utf-8");
+      console.log(`[dev-app] insertNoteContent for ${uuid} (${content.length} chars)`);
+      return true;
+    },
+
+    // [Claude] Task: read note content from a file in the /notes directory
+    // Prompt: "when app.findNote is called, loop over each of the files in the notes directory"
+    // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
+    async getNoteContent(noteHandle) {
+      const uuid = typeof noteHandle === "string" ? noteHandle : noteHandle?.uuid;
+      const filePath = path.join(NOTES_DIR, `${uuid}.md`);
+      if (!fs.existsSync(filePath)) {
+        return "# Sample Note\n\nThis is dev-mode placeholder content.";
+      }
+      const raw = fs.readFileSync(filePath, "utf-8");
+      const parsed = _parseFrontmatter(raw);
+      return parsed ? parsed.content : raw;
     },
 
     navigate(url) {
@@ -383,4 +530,4 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH) {
   return app;
 }
 
-export { SAMPLE_DOMAINS, DEFAULT_SETTINGS_PATH };
+export { SAMPLE_DOMAINS, DEFAULT_SETTINGS_PATH, NOTES_DIR };
