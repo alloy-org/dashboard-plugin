@@ -418,12 +418,14 @@ async function callPlugin(action, ...args) {
       }
     }
 
-    case "replaceContent": {
+    case "replaceNoteContent": {
       try {
+        const payload = { uuid: args[0], content: args[1] };
+        if (args[2]?.section) payload.section = args[2].section;
         await fetch('/api/note-content', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ uuid: args[0], content: args[1] }),
+          body: JSON.stringify(payload),
         });
         return true;
       } catch {
@@ -532,6 +534,53 @@ async function callPlugin(action, ...args) {
       } catch {
         return null;
       }
+    }
+
+    case "findNote": {
+      const params = args[0] || {};
+      try {
+        if (params.uuid) {
+          const res = await fetch(`/api/note-find?uuid=${encodeURIComponent(params.uuid)}`);
+          return await res.json();
+        }
+        if (params.name) {
+          const res = await fetch(`/api/note-find?name=${encodeURIComponent(params.name)}`);
+          return await res.json();
+        }
+        return null;
+      } catch {
+        return null;
+      }
+    }
+
+    case "createNote": {
+      const name = args[0];
+      const tags = args[1] || [];
+      try {
+        const res = await fetch('/api/note-create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, tags }),
+        });
+        const data = await res.json();
+        return data.uuid;
+      } catch {
+        return null;
+      }
+    }
+
+    // [Claude] Task: mock dreamTaskAnalyze returning sample task suggestions for dev
+    // Prompt: "make the DreamTask widget work in dev mode"
+    // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
+    case "dreamTaskAnalyze": {
+      return {
+        tasks: [
+          { title: "Research caching strategies for API layer", rating: 9, explanation: "This aligns with your quarterly goal of improving system performance. The API layer research is high-value work best done with focused attention." },
+          { title: "Fix flaky integration test suite", rating: 8, explanation: "Reliability infrastructure pays compound returns. A stable test suite unblocks confident shipping of new features." },
+          { title: "Draft blog post outline", rating: 7, explanation: "Content creation advances your side project visibility. Today is a good day to outline while ideas are fresh from recent work." },
+        ],
+        noteUUID: null,
+      };
     }
 
     default:

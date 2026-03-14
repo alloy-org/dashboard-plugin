@@ -5,6 +5,23 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-14 — Long-press draggable widget headings with persisted dashboard reordering
+
+**Model:** gpt-5.3-codex
+**Files created/modified:**
+- `lib/dashboard/draggable-heading.js` (created — new shared heading component with `useEffect` long-press detection and drag-ready event dispatch)
+- `lib/dashboard/widget-wrapper.js` (modified — all widgets now render a common `DraggableHeading` heading bar)
+- `lib/dashboard/dashboard.js` (modified — listens for drag-ready events, reorders widgets during drag, and persists layout order on mouse release)
+- `lib/dashboard/styles/dashboard.scss` (modified — added heading/drag classes plus wobble and drag-shift animations)
+- `AI_CONTRIBUTIONS.md` (modified — added this entry)
+
+**Task:** Add a new DraggableHeading component and implement long-press (2s) drag reordering behavior for dashboard widgets, including visual drag affordances and persisted layout order.
+**Prompt summary:** "Create DraggableHeading with a useEffect that monitors long mousedown, wobble when ready, slide other widgets, and persist layout order on release"
+**Scope:** ~140 lines across 4 dashboard files + documentation update
+**Notes:** Long-press detection is centralized in `DraggableHeading` via a `dashboard:widget-drag-ready` custom event; DashboardApp performs live reorder by hovering over other widget cells while the mouse remains down, then calls `saveLayout` with the reordered widget IDs when the mouse is released.
+
+---
+
 ## 2026-03-14 — Dev app: filterNotes searches /notes directory frontmatter; notesDir parameterized for tests
 
 **Model:** claude-4.6-sonnet-medium-thinking

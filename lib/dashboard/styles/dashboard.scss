@@ -76,7 +76,7 @@ html {
     .grid-cell {
       opacity: 0.95;
       min-width: 0;
-      transition: 0.3s ease opacity;
+      transition: opacity 0.3s ease, transform 0.22s ease;
 
       &:hover {
         opacity: 1;
@@ -94,6 +94,23 @@ html {
       &.vertical-2-cell {
         max-height: 800px;
         min-height: 600px;
+      }
+
+      /* [Claude] Task: dashboard drag visual states for long-press widget reordering */
+      /* Prompt: "apply wobble when ready to drag and slide neighbors out of the way" */
+      /* Date: 2026-03-14 | Model: gpt-5.3-codex */
+      &.grid-cell--drag-active {
+        cursor: grabbing;
+      }
+
+      &.grid-cell--dragging-ready {
+        animation: widget-wobble 0.35s ease-in-out infinite alternate;
+        opacity: 1;
+        z-index: 3;
+      }
+
+      &.grid-cell--drag-shift {
+        transform: scale(0.985);
       }
     }
   }
@@ -128,6 +145,11 @@ html {
       display: flex;
       gap: $sp-sm;
       padding: $sp-md $sp-lg;
+    }
+
+    &-heading-bar {
+      cursor: grab;
+      user-select: none;
     }
 
     &-icon {
@@ -202,4 +224,9 @@ html {
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+@keyframes widget-wobble {
+  from { transform: rotate(-1.5deg); }
+  to { transform: rotate(1.5deg); }
 }
