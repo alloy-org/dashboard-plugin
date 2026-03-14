@@ -149,13 +149,27 @@ html {
     }
 
     &-title {
+      align-items: baseline;
       color: $color-navy;
+      display: flex;
       flex: 1;
       font-size: 0.85rem;
       font-weight: 700;
+      gap: $sp-sm;
       letter-spacing: 0.03em;
       margin: 0;
       text-transform: uppercase;
+
+      /* [Claude] Task: subtitle string displayed to the right of the widget title with lighter color */
+      /* Prompt: "allow a subtitle as a string with lighter color text that resides to the right of the module title" */
+      /* Date: 2026-03-14 | Model: claude-4.6-sonnet-medium-thinking */
+      &__subtitle {
+        color: $color-text-muted;
+        font-size: 0.75rem;
+        font-weight: 400;
+        letter-spacing: 0.01em;
+        text-transform: none;
+      }
     }
 
     /* [Claude] Task: shared header action button style; used by configure and reseed buttons */

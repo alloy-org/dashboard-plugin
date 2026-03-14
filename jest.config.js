@@ -9,7 +9,8 @@ export default {
     // Map absolute imports to lib directory
     '^dashboard/(.*)$': '<rootDir>/lib/dashboard/$1',
     '^constants/(.*)$': '<rootDir>/lib/constants/$1',
-    '^styles/(.*)$': '<rootDir>/lib/styles/$1',
+    '^styles/(.*)$': '<rootDir>/test/stubs/scss.js',
+    '\\.scss$': '<rootDir>/test/stubs/scss.js',
     '^hooks/(.*)$': '<rootDir>/lib/hooks/$1',
     '^util/(.*)$':  '<rootDir>/lib/util/$1',
     '^lib/(.*)$': '<rootDir>/lib/$1',
