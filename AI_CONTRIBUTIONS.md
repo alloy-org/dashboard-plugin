@@ -5,6 +5,51 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-14 — DreamTask: call analyzeDreamTasks directly instead of app.dreamTaskAnalyze bridge
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dashboard/dream-task.js` (modified — removed duplicate note lifecycle functions, import and call `analyzeDreamTasks` directly from `dream-task-service`)
+- `lib/dream-task-service.js` (modified — dropped unused `plugin` parameter from `analyzeDreamTasks`)
+- `lib/plugin.js` (modified — removed `dreamTaskAnalyze` bridge case and `analyzeDreamTasks` import)
+- `lib/util/browser-dev-app.js` (modified — removed `dreamTaskAnalyze` mock method)
+
+**Task:** `dreamTaskAnalyze` was not a real `app` method in the native Amplenote plugin environment — it only worked via the `onEmbedCall` bridge in `plugin.js`. Refactored so `dream-task.js` imports and calls `analyzeDreamTasks` from `dream-task-service.js` directly, eliminating the bridge indirection and ~100 lines of duplicate note lifecycle code (`initializeMonthlyNote`, `checkExistingAnalysis`, `writeTodayAnalysis`, `runDreamTaskAnalysis`).
+**Prompt summary:** "dreamTaskAnalyze is not a method of app within the native plugin environment. Revise the implementation so that it is functional in either the native production environment or the dev environment."
+**Scope:** ~100 lines removed from `dream-task.js`, minor edits to 3 other files
+**Notes:** `llmPrompt` in `fetch-ai-provider.js` does not use its `plugin` parameter, so `analyzeDreamTasks` now passes `null` for it. The widget calls `analyzeDreamTasks(app)` directly in both dev and production environments.
+
+---
+
+## 2026-03-14 — DreamTask service: remove abbreviations from variable and method names
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dream-task-service.js` (modified — expanded all abbreviated names)
+
+**Task:** Replace abbreviated variable and method names with full descriptive names
+**Prompt summary:** "Update lib/dream-task-service.js not to use abbreviations for any variable or method names"
+**Scope:** ~25 renames across the file
+**Notes:** Changes include: `t`→`task`, `n`→`note`, `s`→`scoredEntry`, `taskJsons`→`taskJsonObjects`, `err`→`error`, `raw`→`rawValue`, `stored`→`parsedSettings`, `match`→`regexMatch`, `firstTaskIdx`→`firstTaskIndex`, `dlSec`→`deadlineSeconds`, `nowSec`→`nowSeconds`, `startSec`→`startSeconds`, `a,b`→`first,second`, `i`→`index`, `uuid`→`uniqueIdentifier`, `json`→`taskJsonObject`, `_buildTaskJson`→`_buildTaskJsonObject`
+
+---
+
+## 2026-03-14 — DreamTask: goals summary, task ranking, and full task JSON for LLM
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dream-task-service.js` (modified — added goals summary generation, weekly plan fetching, task ranking by attributes, full task JSON for LLM evaluation)
+- `lib/dashboard/dream-task.js` (modified — parse and display goals summary from cached/fresh results)
+- `lib/util/browser-dev-app.js` (modified — added goalsSummary to dreamTaskAnalyze mock)
+- `lib/dashboard/styles/dream-task.scss` (modified — added goals summary styling)
+
+**Task:** Enhance DreamTask analysis to summarize quarter/month/week goals before task recommendations, rank tasks by all attributes (important, urgent, score/value, deadline), and send top candidate task JSONs to the LLM
+**Prompt summary:** "begin date content with goals summary, consider all task attributes, send top 10%/50 tasks as JSON to LLM"
+**Scope:** ~130 lines of new logic across 4 files
+**Notes:** Task ranking uses a weighted scoring system (important +20, urgent +15, overdue +25, high score +15/+8). Top min(10%, 50) tasks sent as Amplenote task-type JSON objects. Goals summary capped at 500 chars, written to note before task list.
+
+---
+
 ## 2026-03-14 — Remove underscore prefix from component SCSS filenames
 
 **Model:** claude-4.6-opus-high-thinking

@@ -16,6 +16,23 @@
     gap: $sp-md;
   }
 
+  /* [Claude] Task: goals summary styling above task cards */
+  /* Prompt: "begin the date's content by summarizing quarter/month/week goals before the task list" */
+  /* Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking */
+  .dream-task-goals-summary {
+    border-bottom: 1px solid $color-border;
+    margin-bottom: $sp-sm;
+    padding-bottom: $sp-md;
+  }
+
+  .dream-task-goals-text {
+    color: $color-text-secondary;
+    font-size: 0.8rem;
+    font-style: italic;
+    line-height: 1.5;
+    margin: 0;
+  }
+
   .dream-task-card {
     border: 1px solid $color-border;
     border-radius: $radius-md;
