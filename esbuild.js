@@ -28,6 +28,7 @@ const clientBuild = await esbuild.build({
   entryPoints: [path.join(__dirname, 'lib/dashboard/client-entry.js')],
   bundle: true,
   format: 'iife',
+  minify: true,
   write: false,
   define: {
     "process.env.NODE_ENV": '"production"',
@@ -72,7 +73,7 @@ const result = await esbuild.build({
   entryPoints: [`lib/plugin.js`],
   bundle: true,
   format: "iife",
-  // minify: true,
+  minify: true,
   outfile: "build/compiled.js",
   packages: "external",
   platform: "node",

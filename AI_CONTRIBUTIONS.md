@@ -3,6 +3,19 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+---
+
+## 2026-03-14 — Bundle size analysis document
+
+**Model:** claude-4.6-sonnet-medium-thinking
+**Files created/modified:**
+- `doc/size_analysis.md` (created)
+
+**Task:** Analyze the compiled plugin bundle size and break down each library/module that contributes more than 1 KB, with necessity and removability assessment
+**Prompt summary:** "Create doc/size_analysis.md breaking down compiled plugin size, libraries/components, and whether each >1KB module could be removed"
+**Scope:** Analysis document — no code changes
+**Notes:** Measured from `build/compiled.js` (908 KB) and `dev/bundle.js` (1.33 MB) using esbuild section headers. Production bundle is ~86% base64-encoded client bundle. Largest single opportunity is enabling minification (one commented-out line in esbuild.js).
+
 ## 2026-03-14 — File-backed notes for dev environment (createNote, findNote, replaceContent)
 
 **Model:** claude-4.6-opus-high-thinking
