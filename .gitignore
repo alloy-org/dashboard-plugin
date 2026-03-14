@@ -3,16 +3,18 @@ background-image.png
 /dev/bundle*
 /dev/styles.css
 /dev/settings.json
-/shelf/
-/workspace.xml
+.DS_Store
+/lib/.DS_Store
 # Editor-based HTTP Client requests
-/httpRequests/
 # Datasource local storage ignored files
 /dataSources/
 /dataSources.local.xml
+/httpRequests/
 .idea
 copilot.data*
 dashboard-plugin.iml
 .env
 /node_modules
 /notes
+/shelf/
+/workspace.xml
