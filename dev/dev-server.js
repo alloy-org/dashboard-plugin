@@ -221,9 +221,10 @@ function handleNoteContentApi(req, res) {
     req.on("data", chunk => { body += chunk; });
     req.on("end", async () => {
       try {
-        const { uuid, content } = JSON.parse(body);
+        const { uuid, content, section } = JSON.parse(body);
         const app = createDevApp();
-        await app.replaceContent({ uuid }, content);
+        const options = section ? { section } : {};
+        await app.replaceNoteContent({ uuid }, content, options);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ ok: true }));
       } catch (err) {
@@ -262,9 +263,9 @@ function handleNoteAppendApi(req, res) {
   req.on("data", chunk => { body += chunk; });
   req.on("end", async () => {
     try {
-      const { uuid, content } = JSON.parse(body);
+      const { uuid, content, atEnd } = JSON.parse(body);
       const app = createDevApp();
-      await app.insertNoteContent({ uuid }, content, { atEnd: true });
+      await app.insertNoteContent({ uuid }, content, { atEnd: atEnd !== false });
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ ok: true }));
     } catch (err) {
@@ -279,13 +280,15 @@ function handleNoteFindApi(req, res) {
   if (req.method !== "GET") return false;
   const parsedUrl = new URL(req.url, "http://localhost");
   const name = parsedUrl.searchParams.get("name");
-  if (!name) {
+  const uuid = parsedUrl.searchParams.get("uuid");
+  if (!name && !uuid) {
     res.writeHead(400, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: "name required" }));
+    res.end(JSON.stringify({ error: "name or uuid required" }));
     return true;
   }
   const app = createDevApp();
-  app.findNote({ name }).then(result => {
+  const params = uuid ? { uuid } : { name };
+  app.findNote(params).then(result => {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(result || null));
   }).catch(err => {

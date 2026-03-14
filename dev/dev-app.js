@@ -326,6 +326,28 @@ function _parseFrontmatter(raw) {
   return { meta, content, frontmatterEnd: endIdx + 4 };
 }
 
+// [Claude] Task: find section boundaries in markdown content for replaceNoteContent section support
+// Prompt: "implementing replaceNoteContent with the 'section' object will require a regular expression"
+// Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
+function _findSectionBoundaries(content, headingText) {
+  const escaped = headingText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const headingRe = new RegExp(`^(#{1,6})\\s+${escaped}\\s*$`, 'gm');
+  const match = headingRe.exec(content);
+  if (!match) return null;
+
+  const headingLevel = match[1].length;
+  const headingLineEnd = match.index + match[0].length;
+
+  const rest = content.substring(headingLineEnd);
+  const nextHeadingRe = new RegExp(`^#{1,${headingLevel}}\\s+`, 'gm');
+  const nextMatch = nextHeadingRe.exec(rest);
+
+  return {
+    headingLineEnd,
+    sectionContentEnd: nextMatch ? headingLineEnd + nextMatch.index : content.length,
+  };
+}
+
 function _readAllNoteFiles(dir = NOTES_DIR) {
   _ensureNotesDir(dir);
   const files = fs.readdirSync(dir).filter(f => f.endsWith(".md"));
@@ -456,20 +478,20 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       return null;
     },
 
-    // [Claude] Task: replace content below the frontmatter in a note file
-    // Prompt: "implement app.replaceContent to append the passed content below the frontmatter"
+    // [Claude] Task: replace note content with optional section-targeted replacement
+    // Prompt: "implementing replaceNoteContent with the 'section' object will require a regular expression"
     // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
-    async replaceContent(noteHandle, content) {
+    async replaceNoteContent(noteHandle, content, options = {}) {
       const uuid = typeof noteHandle === "string" ? noteHandle : noteHandle?.uuid;
       const filePath = path.join(notesDir, `${uuid}.md`);
       if (!fs.existsSync(filePath)) {
-        console.warn(`[dev-app] replaceContent: note file not found for ${uuid}`);
+        console.warn(`[dev-app] replaceNoteContent: note file not found for ${uuid}`);
         return false;
       }
       const raw = fs.readFileSync(filePath, "utf-8");
       const parsed = _parseFrontmatter(raw);
       if (!parsed) {
-        console.warn(`[dev-app] replaceContent: could not parse frontmatter for ${uuid}`);
+        console.warn(`[dev-app] replaceNoteContent: could not parse frontmatter for ${uuid}`);
         return false;
       }
       const frontmatterSection = raw.slice(0, parsed.frontmatterEnd);
@@ -477,11 +499,27 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
         /updated: '.*?'/,
         `updated: '${new Date().toISOString()}'`
       );
-      fs.writeFileSync(filePath, updatedFrontmatter + "\n" + content, "utf-8");
-      console.log(`[dev-app] replaceContent for ${uuid} (${content.length} chars)`);
+
+      if (options.section?.heading?.text) {
+        const boundaries = _findSectionBoundaries(parsed.content, options.section.heading.text);
+        if (!boundaries) {
+          console.warn(`[dev-app] replaceNoteContent: section "${options.section.heading.text}" not found`);
+          return false;
+        }
+        const before = parsed.content.substring(0, boundaries.headingLineEnd);
+        const after = parsed.content.substring(boundaries.sectionContentEnd);
+        const merged = before + "\n" + content + "\n" + after;
+        fs.writeFileSync(filePath, updatedFrontmatter + "\n" + merged, "utf-8");
+      } else {
+        fs.writeFileSync(filePath, updatedFrontmatter + "\n" + content, "utf-8");
+      }
+      console.log(`[dev-app] replaceNoteContent for ${uuid} (${content.length} chars${options.section ? ', section: ' + options.section.heading.text : ''})`);
       return true;
     },
 
+    // [Claude] Task: insert content at beginning or end of note, matching Amplenote API default (prepend)
+    // Prompt: "implementing replaceNoteContent with the 'section' object will require a regular expression"
+    // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
     async insertNoteContent(noteHandle, content, options = {}) {
       const uuid = typeof noteHandle === "string" ? noteHandle : noteHandle?.uuid;
       const filePath = path.join(notesDir, `${uuid}.md`);
@@ -490,8 +528,19 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
         return false;
       }
       const raw = fs.readFileSync(filePath, "utf-8");
-      fs.writeFileSync(filePath, raw + content, "utf-8");
-      console.log(`[dev-app] insertNoteContent for ${uuid} (${content.length} chars)`);
+      if (options.atEnd) {
+        fs.writeFileSync(filePath, raw + content, "utf-8");
+      } else {
+        const parsed = _parseFrontmatter(raw);
+        if (parsed) {
+          const frontmatter = raw.slice(0, parsed.frontmatterEnd);
+          const existing = raw.slice(parsed.frontmatterEnd);
+          fs.writeFileSync(filePath, frontmatter + "\n" + content + existing, "utf-8");
+        } else {
+          fs.writeFileSync(filePath, content + raw, "utf-8");
+        }
+      }
+      console.log(`[dev-app] insertNoteContent for ${uuid} (${content.length} chars, atEnd=${!!options.atEnd})`);
       return true;
     },
 
