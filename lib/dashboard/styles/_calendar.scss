@@ -4,7 +4,7 @@
  * Prompt summary: "styles for monthly calendar grid with nav arrows and colored indicator dots"
  */
 
-@use 'theme' as *;
+@use 'theme-tokens' as *;
 
 $cal-cell-gap: 2px;
 $cal-dot-size: 4px;
@@ -17,6 +17,60 @@ $cal-transition-duration: 0.12s;
 /* Prompt: "styles for monthly calendar grid with nav arrows and colored indicator dots" */
 /* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .widget-calendar {
+  &.vertical-2-cell {
+    .cal-arrow {
+      font-size: 0.9rem;
+    }
+
+    .cal-month {
+      font-size: 1.1rem;
+    }
+
+    .cal-header {
+      font-size: 0.85rem;
+    }
+
+    .cal-cell {
+      padding-top: 0;
+
+      .cal-day {
+        font-size: 1.1rem;
+        top: 0;
+      }
+
+      .cal-dot {
+        bottom: 18%;
+        height: 6px;
+        width: 6px;
+      }
+    }
+  }
+
+  &.horizontal-2-cell.vertical-1-cell {
+    .widget-body {
+      display: flex;
+      flex-direction: column;
+      padding: $sp-sm $sp-lg;
+    }
+
+    .cal-nav {
+      margin-bottom: $sp-sm;
+    }
+
+    .cal-grid {
+      flex: 1;
+    }
+
+    .cal-header {
+      padding: 2px 0;
+    }
+
+    .cal-cell {
+      aspect-ratio: auto;
+      border-radius: $sp-md;
+    }
+  }
+
   .cal-nav {
     align-items: center;
     display: flex;
@@ -117,63 +171,5 @@ $cal-transition-duration: 0.12s;
       position: absolute;
       width: $cal-dot-size;
     }
-  }
-}
-
-/* [Claude] Task: compact calendar layout for 2-wide, 1-tall grid placement */
-/* Prompt: "adjust the two-wide calendar to use more width while fitting into the available 1-tall height" */
-/* Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking */
-/* [Claude] Task: enlarged calendar for 2-tall grid placement — bigger fonts, dots closer to numbers */
-/* Prompt: "when 2-tall, dots closer and larger, overall font larger since there is so much room" */
-/* Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking */
-.vertical-2-cell .widget-calendar {
-  .cal-arrow {
-    font-size: 0.9rem;
-  }
-
-  .cal-month {
-    font-size: 1.1rem;
-  }
-
-  .cal-header {
-    font-size: 0.85rem;
-  }
-
-  .cal-cell {
-    .cal-day {
-      font-size: 1.1rem;
-      top: 0;
-    }
-
-    .cal-dot {
-      bottom: 18%;
-      height: 6px;
-      width: 6px;
-    }
-  }
-}
-
-.horizontal-2-cell.vertical-1-cell .widget-calendar {
-  .widget-body {
-    display: flex;
-    flex-direction: column;
-    padding: $sp-sm $sp-lg;
-  }
-
-  .cal-nav {
-    margin-bottom: $sp-sm;
-  }
-
-  .cal-grid {
-    flex: 1;
-  }
-
-  .cal-header {
-    padding: 2px 0;
-  }
-
-  .cal-cell {
-    aspect-ratio: auto;
-    border-radius: $sp-md;
   }
 }

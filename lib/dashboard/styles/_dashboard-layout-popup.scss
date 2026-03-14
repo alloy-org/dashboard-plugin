@@ -3,7 +3,7 @@
 /* Task: Styles for the dashboard layout popup with tabbed Components/Sizing interface */
 /* Prompt summary: "rename dashboard-config-popup to dashboard-layout-popup; add sizing tab styles" */
 
-@use 'theme' as *;
+@use 'theme-tokens' as *;
 
 // Override base config-popup-container sizing for the larger dashboard layout popup.
 // On desktop/tablet: constrained to 800×800px. On mobile: fills available space minus margin.

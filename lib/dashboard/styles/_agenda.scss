@@ -4,7 +4,7 @@
  * Prompt summary: "styles for today's agenda task list with priority color bars and durations"
  */
 
-@use 'theme' as *;
+@use 'theme-tokens' as *;
 
 $agenda-indicator-height: 36px;
 $agenda-indicator-width: 4px;

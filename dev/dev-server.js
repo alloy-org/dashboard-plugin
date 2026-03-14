@@ -9,9 +9,9 @@ import esbuild from "esbuild";
 import path from "path";
 import fs from "fs";
 import http from "http";
-import * as sass from "sass";
 import { fileURLToPath } from "url";
 import { createLibImportsPlugin } from "../lib-imports-plugin.js";
+import { createScssPlugin } from "../scss-plugin.js";
 import { readSettingsFile, writeSettingsFile, DEFAULT_SETTINGS_PATH, createDevApp } from "./dev-app.js";
 
 dotenv.config();
@@ -34,31 +34,10 @@ function sendSSE(data) {
   }
 }
 
-function compileSCSS() {
-  try {
-    const scssResult = sass.compile(
-      path.join(rootDir, "lib/dashboard/styles/dashboard.scss"),
-      { style: "expanded" }
-    );
-    fs.writeFileSync(path.join(devDir, "styles.css"), scssResult.css);
-    console.log("[scss] styles.css updated");
-    return true;
-  } catch (err) {
-    console.error("[scss] compilation error:", err.message);
-    return false;
-  }
-}
-
-// Plugin: compile SCSS after each rebuild
-const scssPlugin = {
-  name: "scss-compile",
-  setup(build) {
-    build.onEnd((result) => {
-      if (result.errors.length > 0) return;
-      compileSCSS();
-    });
-  },
-};
+// [Claude] Task: use shared esbuild SCSS plugin so widgets load their own styles
+// Prompt: "refactor so widgets load their own scss instead of dashboard.scss importing everything"
+// Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
+const scssPlugin = createScssPlugin({ style: "expanded" });
 
 // Plugin: notify connected browsers after a successful rebuild
 const liveReloadPlugin = {
@@ -303,7 +282,8 @@ async function main() {
     entryPoints: [path.join(rootDir, "lib/dashboard/client-entry.js")],
     bundle: true,
     format: "iife",
-    outfile: path.join(devDir, "bundle.js"),
+    outdir: devDir,
+    entryNames: "bundle",
     define: {
       "process.env.NODE_ENV": '"development"',
       "process.env.OPEN_AI_ACCESS_TOKEN": JSON.stringify(process.env.OPEN_AI_ACCESS_TOKEN || ""),
@@ -319,21 +299,6 @@ async function main() {
   const { host, port: esbuildPort } = await ctx.serve({
     servedir: devDir,
     port: 3001,
-  });
-
-  // Watch SCSS files for CSS-only hot reload (changes that don't trigger esbuild)
-  const stylesDir = path.join(rootDir, "lib/dashboard/styles");
-  let scssDebounce = null;
-  fs.watch(stylesDir, { recursive: true }, (_eventType, filename) => {
-    if (!filename?.endsWith(".scss")) return;
-    clearTimeout(scssDebounce);
-    scssDebounce = setTimeout(() => {
-      console.log(`[scss] ${filename} changed`);
-      if (compileSCSS()) {
-        sendSSE({ type: "css" });
-        console.log("[reload] css-only reload sent");
-      }
-    }, 100);
   });
 
   const proxyServer = http.createServer((req, res) => {

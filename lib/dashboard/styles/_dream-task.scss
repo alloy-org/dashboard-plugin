@@ -4,7 +4,7 @@
  * Prompt summary: "styles for DreamTask widget showing AI-suggested tasks with ratings"
  */
 
-@use 'theme' as *;
+@use 'theme-tokens' as *;
 
 /* [Claude] Task: DreamTask widget layout, cards, rating badges, and state styles */
 /* Prompt: "Create a DreamTask widget that uses an agentic loop to suggest goal-aligned tasks" */

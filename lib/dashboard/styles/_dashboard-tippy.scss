@@ -4,7 +4,7 @@
  * Prompt summary: "replace hand-rolled tooltips with tippy.js, separated into its own component and stylesheet"
  */
 
-@use 'theme' as *;
+@use 'theme-tokens' as *;
 
 // ── Tippy base positioning (replaces tippy.css; styled inline by Popper for position) ──
 

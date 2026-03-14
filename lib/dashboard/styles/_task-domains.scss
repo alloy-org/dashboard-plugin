@@ -4,7 +4,7 @@
  * Prompt summary: "style the task domain selector bar above the dashboard grid"
  */
 
-@use 'theme' as *;
+@use 'theme-tokens' as *;
 
 $task-domain-transition-duration: 0.15s;
 

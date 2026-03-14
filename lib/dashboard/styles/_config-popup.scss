@@ -4,7 +4,7 @@
  * Prompt summary: "popup component styles for widget configuration"
  */
 
-@use 'theme' as *;
+@use 'theme-tokens' as *;
 
 $config-popup-max-width: 440px;
 $config-popup-min-width: 320px;

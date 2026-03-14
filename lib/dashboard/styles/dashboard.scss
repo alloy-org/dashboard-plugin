@@ -15,22 +15,6 @@ $error-padding: 40px;
 $breakpoint-md: 800px;
 $breakpoint-sm: 480px;
 
-// Component partials
-@use 'agenda';
-@use 'calendar';
-@use 'config-popup';
-@use 'dashboard-layout-popup';
-@use 'dashboard-settings-popup';
-@use 'dashboard-tippy';
-@use 'dream-task';
-@use 'mood';
-@use 'quotes';
-@use 'planning';
-@use 'quick-actions';
-@use 'recent-notes';
-@use 'task-domains';
-@use 'victory-value';
-
 html {
   overflow-y: scroll;
 

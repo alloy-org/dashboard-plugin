@@ -7,36 +7,37 @@
 import dotenv from "dotenv"
 import esbuild from "esbuild"
 import path from "path"
-import * as sass from "sass"
 import { fileURLToPath } from "url"
 import { createLibImportsPlugin } from "./lib-imports-plugin.js"
+import { createScssPlugin } from "./scss-plugin.js"
 
 dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Step 0: Compile SCSS to CSS string
-const scssResult = sass.compile(path.join(__dirname, 'lib/dashboard/styles/dashboard.scss'), {
-  style: 'compressed',
-});
-const compiledCSS = scssResult.css;
-
 const absoluteImportsPlugin = createLibImportsPlugin(path.join(__dirname, 'lib'));
+const scssPlugin = createScssPlugin({ style: "compressed" });
 
-// Step 1: Bundle client-side dashboard code (with React included)
+// [Claude] Task: bundle client JS + CSS in one esbuild pass; widgets import their own SCSS
+// Prompt: "refactor so widgets load their own scss instead of dashboard.scss importing everything"
+// Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
 const clientBuild = await esbuild.build({
   entryPoints: [path.join(__dirname, 'lib/dashboard/client-entry.js')],
   bundle: true,
   format: 'iife',
   minify: true,
   write: false,
+  outdir: path.join(__dirname, 'build/client'),
   define: {
     "process.env.NODE_ENV": '"production"',
   },
   target: ["chrome91", "firefox90", "safari15", "edge91"],
-  plugins: [absoluteImportsPlugin],
+  plugins: [absoluteImportsPlugin, scssPlugin],
 });
-const clientBase64 = Buffer.from(clientBuild.outputFiles[0].text).toString("base64");
+const jsOutput = clientBuild.outputFiles.find(f => f.path.endsWith('.js'));
+const cssOutput = clientBuild.outputFiles.find(f => f.path.endsWith('.css'));
+const clientBase64 = Buffer.from(jsOutput.text).toString("base64");
+const compiledCSS = cssOutput ? cssOutput.text : "";
 
 // Plugin to provide the client bundle as a virtual module
 const clientBundlePlugin = {

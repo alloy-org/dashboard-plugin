@@ -4,7 +4,7 @@
  * Prompt summary: "add recent-notes.scss stylesheet with a containing class"
  */
 
-@use 'theme' as *;
+@use 'theme-tokens' as *;
 
 /* [Claude] Task: Recent Notes widget — clickable note rows with name and open-task count */
 /* Prompt: "avoid the rn abbreviation with a short unabbreviated word" */

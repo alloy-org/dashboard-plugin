@@ -4,7 +4,7 @@
  * Prompt summary: "styles for mood selector buttons, average display, and sparkline dots"
  */
 
-@use 'theme' as *;
+@use 'theme-tokens' as *;
 
 $mood-btn-size: 44px;
 $mood-dot-gap: 3px;

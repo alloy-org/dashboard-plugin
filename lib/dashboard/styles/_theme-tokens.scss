@@ -1,0 +1,64 @@
+/* [Claude-authored file]
+ * Created: 2026-03-14 | Model: claude-4.6-opus-high-thinking
+ * Task: SCSS-only design tokens — colors, spacing, radii, fonts, card mixin (no CSS output)
+ * Prompt summary: "refactor so widgets load their own scss instead of dashboard.scss importing everything"
+ */
+
+$color-bg-page: var(--dashboard-color-bg-page);
+$color-bg-page-hover: var(--dashboard-color-bg-page-hover);
+$color-bg-card: var(--dashboard-color-bg-card);
+$color-border: var(--dashboard-color-border);
+$color-overlay-backdrop: var(--dashboard-color-overlay-backdrop);
+$color-overlay-shadow: var(--dashboard-color-overlay-shadow);
+$color-text-on-accent: var(--dashboard-color-text-on-accent);
+$color-text-on-accent-muted: var(--dashboard-color-text-on-accent-muted);
+$color-tooltip-accent: var(--dashboard-color-tooltip-accent);
+$color-tooltip-bg: var(--dashboard-color-tooltip-bg);
+$color-tooltip-border: var(--dashboard-color-tooltip-border);
+$color-tooltip-text: var(--dashboard-color-tooltip-text);
+$color-tooltip-shadow: var(--dashboard-color-tooltip-shadow);
+$color-tooltip-text-muted: var(--dashboard-color-tooltip-text-muted);
+
+$color-navy: var(--dashboard-color-navy);
+$color-accent: var(--dashboard-color-accent);
+$color-blue: var(--dashboard-color-blue);
+$color-blue-light: var(--dashboard-color-blue-light);
+
+$color-text: var(--dashboard-color-text);
+$color-text-secondary: var(--dashboard-color-text-secondary);
+$color-text-muted: var(--dashboard-color-text-muted);
+
+$color-danger: var(--dashboard-color-danger);
+$color-warning: var(--dashboard-color-warning);
+$color-success: var(--dashboard-color-success);
+$color-info: var(--dashboard-color-info);
+$color-plan-created-bg: var(--dashboard-color-plan-created-bg);
+$color-plan-created-border: var(--dashboard-color-plan-created-border);
+
+$color-agenda-priority-critical: var(--dashboard-color-agenda-priority-critical);
+$color-agenda-priority-important: var(--dashboard-color-agenda-priority-important);
+$color-agenda-priority-urgent: var(--dashboard-color-agenda-priority-urgent);
+$color-agenda-priority-normal: var(--dashboard-color-agenda-priority-normal);
+
+// Spacing
+$sp-xs: 4px;
+$sp-sm: 8px;
+$sp-md: 12px;
+$sp-lg: 16px;
+$sp-xl: 24px;
+
+// Radii
+$radius-sm: 6px;
+$radius-md: 10px;
+$radius-lg: 14px;
+
+// Fonts
+$font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+$font-serif: Georgia, 'Times New Roman', serif;
+
+// Mixins
+@mixin card {
+  background: $color-bg-card;
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
+}

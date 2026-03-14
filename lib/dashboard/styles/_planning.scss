@@ -4,7 +4,7 @@
  * Prompt summary: "styles for quarterly plan cards and month tab navigation"
  */
 
-@use 'theme' as *;
+@use 'theme-tokens' as *;
 
 $planning-border-width: 2px;
 $planning-transition-duration: 0.15s;
