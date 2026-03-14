@@ -5,6 +5,36 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-14 — Extract drag-reorder logic into useDashboardDrag hook
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dashboard/draggable-heading.js` (modified — added `useDashboardDrag` hook, `moveWidgetBefore`, `widgetRectsById`, `animateReorderedWidgets`, `widgetOrder`, and FLIP animation utilities)
+- `lib/dashboard/dashboard.js` (modified — removed drag utility functions and all drag-related state/effects from `DashboardApp`, replaced with single `useDashboardDrag` hook call)
+
+**Task:** Move all widget drag-reorder functionality out of `dashboard.js` into `draggable-heading.js`, consolidating the `DraggableHeading` component (long-press event emitter) with the drag state management, mouse tracking, FLIP animations, and layout persistence into a single module. The `useDashboardDrag` custom hook encapsulates all drag state (`draggingWidgetId`, `displayedComponents`) and five `useEffect`/`useLayoutEffect` hooks previously scattered through `DashboardApp`.
+**Prompt summary:** "move as much of the widget dragging functionality as possible out of dashboard and into draggable-heading.js"
+**Scope:** ~130 lines moved/refactored across 2 files; dashboard.js reduced by ~90 lines
+**Notes:** Grid-cell layout helpers (`gridCellStyle`, `gridCellClassName`, `gridCellContainerProps`) remain in `dashboard.js` since they serve the widget cell factory, not drag logic specifically.
+
+---
+
+## 2026-03-14 — Animate widget repositioning during drag reorder
+
+**Model:** gpt-5.3-codex
+**Files created/modified:**
+- `lib/dashboard/dashboard.js` (modified — added FLIP-based reorder animation: captures cell rects before reorder and animates non-dragged widgets to new positions)
+- `lib/dashboard/styles/dashboard.scss` (modified — added CSS transform variables for flip offset and drag scale; moved drag-shift effect to `--drag-scale`)
+- `build/compiled.js` (modified — rebuilt bundle via `npm run build` to include reorder animation changes)
+- `AI_CONTRIBUTIONS.md` (modified — added this entry)
+
+**Task:** Smoothly animate widgets into their new positions while dragging a widget through the grid.
+**Prompt summary:** "Animate the repositioning of widgets when a widget is dragged from one place to another"
+**Scope:** ~55 lines of animation logic and style changes across dashboard source files, plus compiled bundle refresh
+**Notes:** Reordering now uses a FLIP transition on affected grid cells so neighbors slide into place instead of snapping; the actively dragged widget is excluded from the FLIP step.
+
+---
+
 ## 2026-03-14 — Long-press draggable widget headings with persisted dashboard reordering
 
 **Model:** gpt-5.3-codex

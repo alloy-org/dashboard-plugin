@@ -74,9 +74,14 @@ html {
     /* Prompt: "apply a class for the number of horizontal and vertical cells assigned by user" */
     /* Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking */
     .grid-cell {
+      --drag-scale: 1;
+      --flip-x: 0px;
+      --flip-y: 0px;
       opacity: 0.95;
       min-width: 0;
+      transform: translate(var(--flip-x), var(--flip-y)) scale(var(--drag-scale));
       transition: opacity 0.3s ease, transform 0.22s ease;
+      will-change: transform;
 
       &:hover {
         opacity: 1;
@@ -110,7 +115,7 @@ html {
       }
 
       &.grid-cell--drag-shift {
-        transform: scale(0.985);
+        --drag-scale: 0.985;
       }
     }
   }
@@ -148,8 +153,11 @@ html {
     }
 
     &-heading-bar {
-      cursor: grab;
       user-select: none;
+
+      &.widget-heading-bar--drag-ready {
+        cursor: grabbing;
+      }
     }
 
     &-icon {

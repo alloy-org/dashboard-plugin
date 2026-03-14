@@ -35,6 +35,11 @@ $config-popup-z-index: 1000;
   min-width: $config-popup-min-width;
   width: $config-popup-width-pct;
 
+  .explanation-paragraph {
+    font-size: 14px;
+    margin: 12px 0 20px;
+  }
+
   .config-popup-header {
     border-bottom: 1px solid $color-border;
     padding: $sp-lg;
