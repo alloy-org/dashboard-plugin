@@ -267,9 +267,9 @@ export function writeSettingsFile(settings, settingsPath = DEFAULT_SETTINGS_PATH
 // [Claude] Task: ensure the notes directory exists and provide helpers for reading/writing frontmatter-based note files
 // Prompt: "when app.createNote is called in dev environment, create a file with a random uuid in the /notes directory"
 // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
-function _ensureNotesDir() {
-  if (!fs.existsSync(NOTES_DIR)) {
-    fs.mkdirSync(NOTES_DIR, { recursive: true });
+function _ensureNotesDir(dir = NOTES_DIR) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
 }
 
@@ -324,11 +324,11 @@ function _parseFrontmatter(raw) {
   return { meta, content, frontmatterEnd: endIdx + 4 };
 }
 
-function _readAllNoteFiles() {
-  _ensureNotesDir();
-  const files = fs.readdirSync(NOTES_DIR).filter(f => f.endsWith(".md"));
+function _readAllNoteFiles(dir = NOTES_DIR) {
+  _ensureNotesDir(dir);
+  const files = fs.readdirSync(dir).filter(f => f.endsWith(".md"));
   return files.map(filename => {
-    const raw = fs.readFileSync(path.join(NOTES_DIR, filename), "utf-8");
+    const raw = fs.readFileSync(path.join(dir, filename), "utf-8");
     const parsed = _parseFrontmatter(raw);
     if (!parsed) return null;
     return { filename, raw, ...parsed };
@@ -342,7 +342,7 @@ function _readAllNoteFiles() {
 // [Claude] Task: create an app object that mirrors the Amplenote plugin app interface for local dev
 // Prompt: "dev mode should persist settings to a JSON file and return sample tasks"
 // Date: 2026-03-01 | Model: claude-opus-4-6
-export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH) {
+export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NOTES_DIR) {
   const settings = readSettingsFile(settingsPath);
   const sampleTasks = _buildSampleTasks();
 
@@ -411,18 +411,28 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH) {
       return sampleTasks.filter(t => t.completedAt != null);
     },
 
-    async filterNotes(_options) {
-      return [];
+    // [Claude] Task: search /notes directory for files whose frontmatter title matches query
+    // Prompt: "app.filterNotes should loop over each file and load its frontmatter to see if its note name matches the value of query passed to filterNotes"
+    // Date: 2026-03-14 | Model: claude-4.6-sonnet-medium-thinking
+    async filterNotes(options = {}) {
+      const { query } = options;
+      const notes = _readAllNoteFiles(notesDir);
+      return notes
+        .filter(note => {
+          if (!query) return true;
+          return note.meta.title === query;
+        })
+        .map(note => ({ uuid: note.meta.uuid, name: note.meta.title }));
     },
 
     // [Claude] Task: create a markdown file with frontmatter in the /notes directory
     // Prompt: "when app.createNote is called in dev environment, create a file with a random uuid in the /notes directory"
     // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
     async createNote(name, tags = []) {
-      _ensureNotesDir();
+      _ensureNotesDir(notesDir);
       const uuid = crypto.randomUUID();
       const frontmatter = _buildFrontmatter(name, uuid, tags);
-      const filePath = path.join(NOTES_DIR, `${uuid}.md`);
+      const filePath = path.join(notesDir, `${uuid}.md`);
       fs.writeFileSync(filePath, frontmatter + "\n", "utf-8");
       console.log(`[dev-app] createNote "${name}" -> ${uuid}`);
       return uuid;
@@ -432,7 +442,7 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH) {
     // Prompt: "when app.findNote is called, loop over each of the files in the notes directory"
     // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
     async findNote(params = {}) {
-      const notes = _readAllNoteFiles();
+      const notes = _readAllNoteFiles(notesDir);
       for (const note of notes) {
         if (params.uuid && note.meta.uuid === params.uuid) {
           return { uuid: note.meta.uuid, name: note.meta.title };
@@ -449,7 +459,7 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH) {
     // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
     async replaceContent(noteHandle, content) {
       const uuid = typeof noteHandle === "string" ? noteHandle : noteHandle?.uuid;
-      const filePath = path.join(NOTES_DIR, `${uuid}.md`);
+      const filePath = path.join(notesDir, `${uuid}.md`);
       if (!fs.existsSync(filePath)) {
         console.warn(`[dev-app] replaceContent: note file not found for ${uuid}`);
         return false;
@@ -472,7 +482,7 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH) {
 
     async insertNoteContent(noteHandle, content, options = {}) {
       const uuid = typeof noteHandle === "string" ? noteHandle : noteHandle?.uuid;
-      const filePath = path.join(NOTES_DIR, `${uuid}.md`);
+      const filePath = path.join(notesDir, `${uuid}.md`);
       if (!fs.existsSync(filePath)) {
         console.warn(`[dev-app] insertNoteContent: note file not found for ${uuid}`);
         return false;
@@ -488,7 +498,7 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH) {
     // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
     async getNoteContent(noteHandle) {
       const uuid = typeof noteHandle === "string" ? noteHandle : noteHandle?.uuid;
-      const filePath = path.join(NOTES_DIR, `${uuid}.md`);
+      const filePath = path.join(notesDir, `${uuid}.md`);
       if (!fs.existsSync(filePath)) {
         return "# Sample Note\n\nThis is dev-mode placeholder content.";
       }

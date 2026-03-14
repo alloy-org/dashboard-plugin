@@ -5,6 +5,20 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-14 — Dev app: filterNotes searches /notes directory frontmatter; notesDir parameterized for tests
+
+**Model:** claude-4.6-sonnet-medium-thinking
+**Files created/modified:**
+- `dev/dev-app.js` (modified — `createDevApp` accepts optional `notesDir`; all note file I/O uses it; `filterNotes` stub replaced with real frontmatter scan)
+- `test/dev-app.test.js` (modified — each test uses isolated `tmpNotesDir`; new `filterNotes` describe block with 5 cases)
+
+**Task:** Make `app.filterNotes` work in dev mode by scanning `/notes` files for frontmatter title matches, and add tests that write fixture files into a temp directory to confirm the lookup works
+**Prompt summary:** "add a dev-environment test that places a file in the notes/ directory for the test, then confirms that the note is located when app.filterNotes is subsequently called"
+**Scope:** ~40 lines modified in dev-app.js, ~80 lines added in test
+**Notes:** `notesDir` defaults to `NOTES_DIR` so production dev-server usage is unchanged; tests are fully isolated using `os.tmpdir()` scratch directories cleaned up in `afterEach`
+
+---
+
 ## 2026-03-14 — Planning widget: shared goal-notes library, Month class, weekly plan, dev note editor
 
 **Model:** claude-4.6-opus-high-thinking
