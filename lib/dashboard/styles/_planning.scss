@@ -184,4 +184,101 @@ $planning-transition-duration: 0.15s;
     padding: $sp-lg 0;
     text-align: center;
   }
+
+  .weekly-plan-section {
+    border-top: 1px solid $color-border;
+    margin-top: $sp-lg;
+    padding-top: $sp-md;
+  }
+
+  .weekly-plan-header {
+    color: $color-navy;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-bottom: $sp-sm;
+  }
+
+  .weekly-plan-loading {
+    color: $color-text-muted;
+    font-size: 0.8rem;
+    font-style: italic;
+  }
+
+  .create-week-plan-link {
+    background: none;
+    border: $planning-border-width dashed $color-border;
+    border-radius: $radius-sm;
+    color: $color-blue;
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: $sp-sm $sp-lg;
+    transition: border-color $planning-transition-duration, color $planning-transition-duration;
+    width: 100%;
+
+    &:hover {
+      border-color: $color-blue;
+      color: $color-navy;
+    }
+  }
+
+  .note-editor {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+    height: 100%;
+  }
+
+  .note-editor-loading {
+    color: $color-text-muted;
+    font-size: 0.8rem;
+    font-style: italic;
+    padding: $sp-md;
+  }
+
+  .note-editor-toolbar {
+    display: flex;
+    gap: $sp-sm;
+  }
+
+  .note-editor-btn {
+    background: none;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: $sp-xs $sp-md;
+    transition: background $planning-transition-duration;
+
+    &:hover {
+      background: $color-blue-light;
+    }
+
+    &--save {
+      background: $color-accent;
+      border-color: $color-accent;
+      color: $color-text-on-accent;
+      font-weight: 600;
+
+      &:hover {
+        filter: brightness(0.92);
+      }
+
+      &:disabled {
+        cursor: default;
+        opacity: 0.6;
+      }
+    }
+  }
+
+  .note-editor-textarea {
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    flex: 1;
+    font-family: monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    min-height: 180px;
+    padding: $sp-md;
+    resize: vertical;
+  }
 }

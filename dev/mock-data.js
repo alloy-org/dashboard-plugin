@@ -385,10 +385,166 @@ async function callPlugin(action, ...args) {
       return tasks.filter(t => t.noteUUID === noteUUID && t.completedAt == null && t.dismissedAt == null);
     }
 
+    case "getNoteContent": {
+      const uuid = args[0];
+      try {
+        const res = await fetch(`/api/note-content?uuid=${encodeURIComponent(uuid)}`);
+        const data = await res.json();
+        return data.content;
+      } catch {
+        return "";
+      }
+    }
+
+    case "replaceContent": {
+      try {
+        await fetch('/api/note-content', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uuid: args[0], content: args[1] }),
+        });
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    case "getNoteSections": {
+      const uuid = args[0];
+      try {
+        const content = await callPlugin('getNoteContent', uuid);
+        return _parseHeadingsFromMarkdown(content || '');
+      } catch {
+        return [];
+      }
+    }
+
+    case "getMonthlyPlanContent": {
+      const noteUUID = args[0];
+      const sectionName = args[1];
+      try {
+        const content = await callPlugin('getNoteContent', noteUUID);
+        if (!content) return { found: false, content: null };
+        const sectionContent = _extractSectionContent(content, sectionName);
+        return sectionContent
+          ? { found: true, content: sectionContent }
+          : { found: false, content: null };
+      } catch {
+        return { found: false, content: null };
+      }
+    }
+
+    case "createQuarterlyPlan": {
+      const { label, year, quarter } = args[0];
+      const noteName = `${label} Plan`;
+      try {
+        const findRes = await fetch(`/api/note-find?name=${encodeURIComponent(noteName)}`);
+        const found = await findRes.json();
+        if (found?.uuid) {
+          app.navigate(`https://www.amplenote.com/notes/${found.uuid}`);
+          return { uuid: found.uuid, existed: true };
+        }
+        const createRes = await fetch('/api/note-create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: noteName, tags: ['plugins/dashboard', 'planning/quarterly'] }),
+        });
+        const created = await createRes.json();
+        await fetch('/api/note-append', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uuid: created.uuid, content: _defaultQuarterlyPlanTemplate(label, quarter) }),
+        });
+        app.navigate(`https://www.amplenote.com/notes/${created.uuid}`);
+        return { uuid: created.uuid, existed: false };
+      } catch {
+        return null;
+      }
+    }
+
+    case "createOrAppendMonthlyPlan": {
+      const planInfo = args[0];
+      const monthName = args[1];
+      try {
+        const result = await callPlugin('createQuarterlyPlan', planInfo);
+        if (!result?.uuid) return null;
+        const existing = await callPlugin('getMonthlyPlanContent', result.uuid, monthName);
+        if (!existing.found) {
+          await fetch('/api/note-append', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uuid: result.uuid, content: `\n### ${monthName}\n- Focus:\n- Key move:\n` }),
+          });
+        }
+        const content = await callPlugin('getNoteContent', result.uuid);
+        const sectionContent = _extractSectionContent(content || '', monthName);
+        return { noteUUID: result.uuid, content: sectionContent || '', created: !result.existed };
+      } catch {
+        return null;
+      }
+    }
+
+    case "createOrAppendWeeklyPlan": {
+      const planInfo = args[0];
+      const weekLabel = args[1];
+      try {
+        const result = await callPlugin('createQuarterlyPlan', planInfo);
+        if (!result?.uuid) return null;
+        const existing = await callPlugin('getMonthlyPlanContent', result.uuid, weekLabel);
+        if (!existing.found) {
+          await fetch('/api/note-append', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ uuid: result.uuid, content: `\n### ${weekLabel}\n- Primary focus:\n- Key tasks:\n- Commitments:\n` }),
+          });
+        }
+        return { noteUUID: result.uuid };
+      } catch {
+        return null;
+      }
+    }
+
     default:
       console.warn("[mock] unhandled callPlugin action:", action, args);
       return null;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Note content helpers (inlined since mock-data.js is a plain script, not a module)
+// ---------------------------------------------------------------------------
+
+function _extractSectionContent(markdown, sectionName) {
+  const escaped = sectionName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const headingRe = new RegExp(`(^|\\n)(#{1,6})\\s+${escaped}\\s*\\n`, 'i');
+  const match = markdown.match(headingRe);
+  if (!match) return null;
+  const start = match.index + match[0].length;
+  const rest = markdown.substring(start);
+  const nextHeading = rest.match(/\n#{1,6}\s/);
+  return (nextHeading ? rest.substring(0, nextHeading.index) : rest).trim();
+}
+
+function _parseHeadingsFromMarkdown(content) {
+  const matches = content.match(/^(#{1,6})\s+(.+)$/gm) || [];
+  return matches.map((line, i) => ({
+    heading: {
+      text: line.replace(/^#{1,6}\s+/, '').trim(),
+      level: (line.match(/^#+/) || [''])[0].length,
+    },
+    index: i,
+  }));
+}
+
+function _defaultQuarterlyPlanTemplate(label, quarter) {
+  const months = {
+    1: ['January', 'February', 'March'],
+    2: ['April', 'May', 'June'],
+    3: ['July', 'August', 'September'],
+    4: ['October', 'November', 'December'],
+  };
+  const m = months[quarter] || ['Month 1', 'Month 2', 'Month 3'];
+  return `# ${label} Plan\n\n## ${m[0]}\n- Focus:\n- Key move:\n\n## ${m[1]}\n- Focus:\n- Key move:\n\n## ${m[2]}\n- Focus:\n- Key move:\n`;
 }
 
 // ---------------------------------------------------------------------------

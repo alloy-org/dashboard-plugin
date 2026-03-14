@@ -191,6 +191,110 @@ function handleAttachMediaApi(req, res) {
   return true;
 }
 
+// ────────────────────────────────────────────────────────────────
+// Note API — read/write/create note files via dev-app
+// ────────────────────────────────────────────────────────────────
+
+function handleNoteContentApi(req, res) {
+  const parsedUrl = new URL(req.url, "http://localhost");
+
+  if (req.method === "GET") {
+    const uuid = parsedUrl.searchParams.get("uuid");
+    if (!uuid) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "uuid required" }));
+      return true;
+    }
+    const app = createDevApp();
+    app.getNoteContent({ uuid }).then(content => {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ content }));
+    }).catch(err => {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: err.message }));
+    });
+    return true;
+  }
+
+  if (req.method === "POST") {
+    let body = "";
+    req.on("data", chunk => { body += chunk; });
+    req.on("end", async () => {
+      try {
+        const { uuid, content } = JSON.parse(body);
+        const app = createDevApp();
+        await app.replaceContent({ uuid }, content);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return true;
+  }
+
+  return false;
+}
+
+function handleNoteCreateApi(req, res) {
+  if (req.method !== "POST") return false;
+  let body = "";
+  req.on("data", chunk => { body += chunk; });
+  req.on("end", async () => {
+    try {
+      const { name, tags } = JSON.parse(body);
+      const app = createDevApp();
+      const uuid = await app.createNote(name, tags || []);
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ uuid }));
+    } catch (err) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+  });
+  return true;
+}
+
+function handleNoteAppendApi(req, res) {
+  if (req.method !== "POST") return false;
+  let body = "";
+  req.on("data", chunk => { body += chunk; });
+  req.on("end", async () => {
+    try {
+      const { uuid, content } = JSON.parse(body);
+      const app = createDevApp();
+      await app.insertNoteContent({ uuid }, content, { atEnd: true });
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: true }));
+    } catch (err) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+  });
+  return true;
+}
+
+function handleNoteFindApi(req, res) {
+  if (req.method !== "GET") return false;
+  const parsedUrl = new URL(req.url, "http://localhost");
+  const name = parsedUrl.searchParams.get("name");
+  if (!name) {
+    res.writeHead(400, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "name required" }));
+    return true;
+  }
+  const app = createDevApp();
+  app.findNote({ name }).then(result => {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(result || null));
+  }).catch(err => {
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: err.message }));
+  });
+  return true;
+}
+
 async function main() {
   const ctx = await esbuild.context({
     entryPoints: [path.join(rootDir, "lib/dashboard/client-entry.js")],
@@ -257,6 +361,22 @@ async function main() {
 
     if (req.url === "/api/attach-media") {
       if (handleAttachMediaApi(req, res)) return;
+    }
+
+    if (req.url.startsWith("/api/note-content")) {
+      if (handleNoteContentApi(req, res)) return;
+    }
+
+    if (req.url === "/api/note-create") {
+      if (handleNoteCreateApi(req, res)) return;
+    }
+
+    if (req.url === "/api/note-append") {
+      if (handleNoteAppendApi(req, res)) return;
+    }
+
+    if (req.url.startsWith("/api/note-find")) {
+      if (handleNoteFindApi(req, res)) return;
     }
 
     if (req.url.includes("background-image")) {

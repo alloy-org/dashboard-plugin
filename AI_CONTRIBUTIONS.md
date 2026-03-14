@@ -5,6 +5,29 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-14 — Planning widget: shared goal-notes library, Month class, weekly plan, dev note editor
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/constants/quarters.js` (modified — added `Month` class, `getUpcomingWeekMonday`, `formatWeekLabel`, `defaultWeekTemplate`)
+- `lib/util/goal-notes.js` (created) — shared library for reading/writing goal notes via callPlugin
+- `lib/dashboard/note-editor.js` (created) — dev-mode inline textarea editor with save/back
+- `lib/dashboard/planning.js` (modified — refactored to use goal-notes library, added weekly plan section for 2-tall, integrated dev note editor)
+- `lib/dashboard/dream-task.js` (modified — uses `navigateToNote` from goal-notes, dev note editor support)
+- `lib/dashboard/dashboard.js` (modified — passes `gridHeightSize` to PlanningWidget)
+- `lib/dashboard/styles/_planning.scss` (modified — added weekly plan section and note editor styles)
+- `lib/data-service.js` (modified — added `createOrAppendWeeklyPlan` function)
+- `lib/plugin.js` (modified — added `createOrAppendWeeklyPlan` dispatch)
+- `dev/dev-server.js` (modified — added note CRUD API endpoints: note-content, note-create, note-append, note-find)
+- `dev/mock-data.js` (modified — added handlers for getNoteContent, replaceContent, getNoteSections, getMonthlyPlanContent, createQuarterlyPlan, createOrAppendMonthlyPlan, createOrAppendWeeklyPlan)
+
+**Task:** Refactor planning infrastructure: formalize Month type, extract shared goal-note library, add weekly planning, and build dev-mode note editor
+**Prompt summary:** "expand month into class, shared goal-note library for planning+dream-task, weekly plan section when 2-tall, dev note editor with save/back"
+**Scope:** ~350 lines of new logic across 11 files
+**Notes:** The `Month` class in quarters.js makes the month object shape explicit. The `goal-notes.js` library wraps callPlugin calls for note operations and handles dev-mode devEdit signaling. Weekly plan appears when gridHeightSize >= 2, targeting the upcoming Monday (visible from Saturday). Dev note editor intercepts navigateToNote in IS_DEV_ENVIRONMENT, showing an inline textarea backed by /notes/ files via new dev-server API endpoints.
+
+---
+
 ## 2026-03-14 — Bundle size analysis document
 
 **Model:** claude-4.6-sonnet-medium-thinking
