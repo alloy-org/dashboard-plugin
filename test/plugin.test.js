@@ -94,11 +94,10 @@ describe('Dashboard Plugin', () => {
       expect(html).toContain('</html>');
     });
 
-    it('should include React CDN scripts', async () => {
+    it('should include the client bundle as a data URI script', async () => {
       const html = await plugin.renderEmbed(mockApp);
 
-      expect(html).toContain('react@18');
-      expect(html).toContain('react-dom@18');
+      expect(html).toContain('data:text/javascript;base64,');
     });
 
     it('should include dashboard root element', async () => {
@@ -107,11 +106,10 @@ describe('Dashboard Plugin', () => {
       expect(html).toContain('dashboard-root');
     });
 
-    it('should include callPlugin bridge function', async () => {
+    it('should not include the legacy callPlugin global', async () => {
       const html = await plugin.renderEmbed(mockApp);
 
-      expect(html).toContain('callPlugin');
-      expect(html).toContain('callAmplenotePlugin');
+      expect(html).not.toContain('callPlugin');
     });
 
     it('should handle errors gracefully', async () => {

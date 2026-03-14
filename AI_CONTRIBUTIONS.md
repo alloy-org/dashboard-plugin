@@ -5,6 +5,42 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-14 — Replace global callPlugin with app object abstraction
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/util/create-app.js` (deleted — production app factory was unnecessary; the real Amplenote app flows through the callAmplenotePlugin bridge)
+- `lib/util/browser-dev-app.js` (modified — expanded from partial DreamTask mock to full dev app simulating all Amplenote plugin API methods)
+- `lib/dashboard/client-entry.js` (modified — dev creates simulated app via createBrowserDevApp; production uses a Proxy over callAmplenotePlugin)
+- `lib/dashboard/dashboard.js` (modified — accepts app prop, passes to all widgets, extracted helper functions accept app parameter)
+- `lib/util/goal-notes.js` (modified — all functions accept app as first parameter instead of calling callPlugin)
+- `lib/dashboard/agenda.js` (modified — accepts app prop, uses app.navigateToTask/navigateToNote)
+- `lib/dashboard/calendar.js` (modified — accepts app prop, uses app.saveSetting)
+- `lib/dashboard/mood.js` (modified — accepts app prop, uses app.recordMoodRating/saveMoodNote/saveSetting)
+- `lib/dashboard/note-editor.js` (modified — accepts app prop, passes to goal-notes functions)
+- `lib/dashboard/planning.js` (modified — accepts app prop, passes to goal-notes functions)
+- `lib/dashboard/quotes.js` (modified — accepts app prop, uses app.fetchQuotes)
+- `lib/dashboard/quick-actions.js` (modified — accepts app prop, uses app.navigateToUrl/randomNote/quickAction)
+- `lib/dashboard/recent-notes.js` (modified — accepts app prop, uses app.getTaskDomains/getNoteTasks/navigateToNote)
+- `lib/dashboard/ai-plugins.js` (modified — accepts app prop, uses app.getTaskDomains/getNoteTasks/navigateToNote)
+- `lib/dashboard/task-domains.js` (modified — accepts app prop, uses app.refreshTaskDomains/setActiveTaskDomain/navigateToUrl)
+- `lib/dashboard/victory-value.js` (modified — accepts app prop, uses app.saveSetting)
+- `lib/dashboard/widget-wrapper.js` (modified — accepts app prop, uses app.configure)
+- `lib/dashboard/dream-task.js` (modified — passes app to NoteEditor)
+- `lib/dashboard/dashboard-settings-popup.js` (modified — accepts app prop, passes to useBackgroundUploadFields)
+- `lib/hooks/use-completed-tasks.js` (modified — accepts app parameter, uses app.getCompletedTasks)
+- `lib/hooks/use-background-upload-fields.js` (modified — accepts app in options, uses app.uploadBackgroundImage)
+- `lib/embed-html.js` (modified — removed callPlugin global injection script tag)
+- `dev/index.html` (modified — removed mock-data.js script tag)
+- `dev/mock-data.js` (deleted — functionality absorbed into browser-dev-app.js)
+
+**Task:** Replace the global `callPlugin` function pattern with a structured `app` object interface. In production, the real Amplenote `app` (passed to `renderEmbed`) flows through the `callAmplenotePlugin`/`onEmbedCall` bridge — the client uses a lightweight Proxy to call methods by name. In development, `browser-dev-app.js` provides a full simulation via the dev server's REST API. All widgets, hooks, and utility modules now receive `app` as a prop or parameter instead of calling a global function.
+**Prompt summary:** "rewrite plugin so widgets receive app object directly instead of using callPlugin"
+**Scope:** ~500 lines of modified logic across 24 files (2 deleted, 22 modified)
+**Notes:** No `createProductionApp` factory is needed — in production, the Amplenote `app` is passed to every invocation method including `renderEmbed`, and the embed's `callAmplenotePlugin` bridge routes calls to `onEmbedCall(app, ...)`. The `callPlugin` global is no longer injected or referenced in client code. Prop drilling was chosen over React Context to match existing codebase patterns.
+
+---
+
 ## 2026-03-14 — Extract drag-reorder logic into useDashboardDrag hook
 
 **Model:** claude-4.6-opus-high-thinking

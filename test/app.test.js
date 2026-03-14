@@ -9,7 +9,7 @@ import { createElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 // No jest.unstable_mockModule calls — hooks AND widgets both run for real.
-// The Amplenote app object is mocked instead; callPlugin routes through the real plugin.
+// The Amplenote app object is mocked; widgets receive it directly via the app prop.
 import DashboardApp from '../lib/dashboard/dashboard.js';
 import { mockPlugin } from "./test-helpers.js";
 import { dateKeyFromDateInput, weekStartFromDateInput } from "util/date-utility";
@@ -19,26 +19,26 @@ import {
 
 // --------------------------------------------------
 // Factory: fresh mock app for each test so call counts start at zero.
+// Builds a raw Amplenote API mock, then wraps it with a Proxy that routes
+// high-level dashboard methods (init, saveSetting, etc.) through onEmbedCall.
 // --------------------------------------------------
-// [Claude] Task: build Amplenote app mock that routes task/mood queries to sample data
-// Date: 2026-02-28 | Model: claude-sonnet-4-6
-function buildMockApp() {
+// [Claude] Task: build mock app that routes high-level methods through onEmbedCall
+// Prompt: "only in dev do we need to create a simulated app; in production the app flows from renderEmbed"
+// Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
+function buildMockApp(plugin) {
   const app = { settings: {} };
 
   app.getTaskDomains = jest.fn().mockResolvedValue(DOMAINS);
 
-  // Return all sample tasks for the Work domain; fewer for Personal.
   app.getTaskDomainTasks = jest.fn().mockImplementation(async (domainUuid) => {
     if (domainUuid === 'dom-work') return SAMPLE_TASKS;
     return SAMPLE_TASKS.filter(t => !t.important);
   });
 
-  // Filter completed tasks to those whose completedAt falls in [fromSec, toSec).
   app.getCompletedTasks = jest.fn().mockImplementation(async (fromSec, toSec) =>
     COMPLETED_TASKS.filter(t => t.completedAt >= fromSec && t.completedAt < toSec)
   );
 
-  // Mood ratings — a week of sample ratings
   app.getMoodRatings = jest.fn().mockResolvedValue([
     { timestamp: daysAgo(6), rating:  1 },
     { timestamp: daysAgo(5), rating:  0 },
@@ -49,17 +49,26 @@ function buildMockApp() {
     { timestamp: nowSec,     rating:  2 },
   ]);
 
-  // Mood recording
   app.recordMoodRating = jest.fn().mockResolvedValue('mock-mood-uuid');
   app.findNote = jest.fn().mockResolvedValue(null);
   app.createNote = jest.fn().mockResolvedValue('mock-note-uuid');
   app.insertNoteContent = jest.fn().mockResolvedValue();
+  app.getNoteSections = jest.fn().mockResolvedValue([]);
+  app.getNoteContent = jest.fn().mockResolvedValue('');
+  app.attachNoteMedia = jest.fn().mockResolvedValue('https://example.com/image.png');
 
-  // No LLM key → fetchQuotes returns static fallback (no HTTP call).
   app.filterNotes = jest.fn().mockResolvedValue([]);
   app.setSetting  = jest.fn().mockImplementation((k, v) => { app.settings[k] = v; });
 
-  return app;
+  // Wrap with a Proxy: methods present on `app` are used directly;
+  // unknown methods (init, saveSetting, etc.) route through onEmbedCall.
+  return new Proxy(app, {
+    get(target, prop) {
+      if (prop in target) return target[prop];
+      if (typeof prop === 'symbol') return undefined;
+      return (...args) => plugin.onEmbedCall(target, prop, ...args);
+    }
+  });
 }
 
 // --------------------------------------------------
@@ -73,9 +82,8 @@ function mondayWeekStartKey(date) {
 }
 
 // Mount DashboardApp into container and flush all async work.
-async function mountDashboard(container, root, callPluginImpl) {
-  global.callPlugin = jest.fn().mockImplementation(callPluginImpl);
-  await act(async () => { root.render(createElement(DashboardApp)); });
+async function mountDashboard(container, root, app) {
+  await act(async () => { root.render(createElement(DashboardApp, { app })); });
   await flushAsync();
 }
 
@@ -93,14 +101,19 @@ describe('DashboardApp', () => {
 
   beforeAll(() => {
     // VictoryValueWidget draws on <canvas>; stub the 2d context so jsdom doesn't throw.
+    const mockGradient = { addColorStop: jest.fn() };
     const mockCtx = {
       scale: jest.fn(), clearRect: jest.fn(), fillRect: jest.fn(),
-      beginPath: jest.fn(), roundRect: jest.fn(), fill: jest.fn(),
-      stroke: jest.fn(), moveTo: jest.fn(), lineTo: jest.fn(),
-      arc: jest.fn(), fillText: jest.fn(), setLineDash: jest.fn(),
+      beginPath: jest.fn(), closePath: jest.fn(), roundRect: jest.fn(),
+      fill: jest.fn(), stroke: jest.fn(), moveTo: jest.fn(), lineTo: jest.fn(),
+      arc: jest.fn(), fillText: jest.fn(), setLineDash: jest.fn(), save: jest.fn(),
+      restore: jest.fn(), clip: jest.fn(), quadraticCurveTo: jest.fn(),
+      createRadialGradient: jest.fn().mockReturnValue(mockGradient),
+      createLinearGradient: jest.fn().mockReturnValue(mockGradient),
       measureText: jest.fn().mockReturnValue({ width: 0 }),
-      fillStyle: '', strokeStyle: '', font: '', textAlign: '',
-      globalAlpha: 1, lineWidth: 1,
+      fillStyle: '', strokeStyle: '', font: '', textAlign: '', textBaseline: '',
+      globalAlpha: 1, lineWidth: 1, lineCap: '', lineJoin: '', shadowColor: '',
+      shadowBlur: 0, shadowOffsetX: 0, shadowOffsetY: 0,
     };
     HTMLCanvasElement.prototype.getContext = jest.fn().mockReturnValue(mockCtx);
 
@@ -112,11 +125,7 @@ describe('DashboardApp', () => {
     document.body.appendChild(container);
     root = createRoot(container);
 
-    mockApp = buildMockApp();
-    // Default: route every callPlugin action through the real plugin with the mock app.
-    global.callPlugin = jest.fn().mockImplementation(
-      (action, ...args) => plugin.onEmbedCall(mockApp, action, ...args)
-    );
+    mockApp = buildMockApp(plugin);
   });
 
   afterEach(async () => {
@@ -130,9 +139,14 @@ describe('DashboardApp', () => {
   // ------------------------------------------------
   describe('loading state', () => {
     it('renders a loading spinner before init resolves', async () => {
-      global.callPlugin = jest.fn().mockReturnValue(new Promise(() => {}));
+      const hangingApp = new Proxy({}, {
+        get(_, prop) {
+          if (typeof prop === 'symbol') return undefined;
+          return () => new Promise(() => {});
+        }
+      });
 
-      await act(async () => { root.render(createElement(DashboardApp)); });
+      await act(async () => { root.render(createElement(DashboardApp, { app: hangingApp })); });
 
       expect(container.querySelector('.dashboard-loading')).not.toBeNull();
       expect(container.querySelector('.spinner')).not.toBeNull();
@@ -143,9 +157,15 @@ describe('DashboardApp', () => {
   // ------------------------------------------------
   describe('error state', () => {
     it('shows an error banner when init returns an error object', async () => {
-      global.callPlugin = jest.fn().mockResolvedValue({ error: 'Something went wrong' });
+      const errorApp = new Proxy({}, {
+        get(_, prop) {
+          if (typeof prop === 'symbol') return undefined;
+          if (prop === 'init') return () => Promise.resolve({ error: 'Something went wrong' });
+          return () => Promise.resolve(null);
+        }
+      });
 
-      await act(async () => { root.render(createElement(DashboardApp)); });
+      await act(async () => { root.render(createElement(DashboardApp, { app: errorApp })); });
       await flushAsync();
 
       expect(container.querySelector('.dashboard-error')).not.toBeNull();
@@ -154,9 +174,15 @@ describe('DashboardApp', () => {
     });
 
     it('shows an error banner when the init promise rejects', async () => {
-      global.callPlugin = jest.fn().mockRejectedValue(new Error('Network timeout'));
+      const rejectApp = new Proxy({}, {
+        get(_, prop) {
+          if (typeof prop === 'symbol') return undefined;
+          if (prop === 'init') return () => Promise.reject(new Error('Network timeout'));
+          return () => Promise.resolve(null);
+        }
+      });
 
-      await act(async () => { root.render(createElement(DashboardApp)); });
+      await act(async () => { root.render(createElement(DashboardApp, { app: rejectApp })); });
       await flushAsync();
 
       expect(container.querySelector('.dashboard-error')).not.toBeNull();
@@ -167,12 +193,8 @@ describe('DashboardApp', () => {
   // ------------------------------------------------
   describe('app object calls during init', () => {
     beforeEach(async () => {
-      await act(async () => { root.render(createElement(DashboardApp)); });
+      await act(async () => { root.render(createElement(DashboardApp, { app: mockApp })); });
       await flushAsync();
-    });
-
-    it('calls callPlugin("init") as the first action', () => {
-      expect(global.callPlugin.mock.calls[0]).toEqual(['init']);
     });
 
     it('queries app.getTaskDomains to resolve the active domain', () => {
@@ -199,12 +221,12 @@ describe('DashboardApp', () => {
   // ------------------------------------------------
   describe('widget rendering with real task data', () => {
     beforeEach(async () => {
-      await act(async () => { root.render(createElement(DashboardApp)); });
+      await act(async () => { root.render(createElement(DashboardApp, { app: mockApp })); });
       await flushAsync();
     });
 
     it('renders the outer dashboard shell without errors', () => {
-      expect(container.querySelector('.dashboard')).not.toBeNull();
+      expect(container.querySelector('.dashboard-outer-container')).not.toBeNull();
       expect(container.querySelector('.dashboard-grid')).not.toBeNull();
       expect(container.querySelector('.dashboard-loading')).toBeNull();
       expect(container.querySelector('.dashboard-error')).toBeNull();
@@ -261,7 +283,7 @@ describe('DashboardApp', () => {
   // ------------------------------------------------
   describe('domain switching', () => {
     it('calls app.getTaskDomainTasks for the new domain when a domain button is clicked', async () => {
-      await act(async () => { root.render(createElement(DashboardApp)); });
+      await act(async () => { root.render(createElement(DashboardApp, { app: mockApp })); });
       await flushAsync();
 
       // Find the Personal domain button and click it.
@@ -282,7 +304,7 @@ describe('DashboardApp', () => {
   // Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking
   describe('layout popup', () => {
     it('opens the Layout popup without error when the Layout button is clicked', async () => {
-      await act(async () => { root.render(createElement(DashboardApp)); });
+      await act(async () => { root.render(createElement(DashboardApp, { app: mockApp })); });
       await flushAsync();
 
       const layoutBtn = Array.from(container.querySelectorAll('.dashboard-configure-button'))
@@ -300,18 +322,19 @@ describe('DashboardApp', () => {
     });
 
     it('opens the Layout popup without error when settings has non-array dashboard_elements', async () => {
-      const origCallPlugin = global.callPlugin;
-      global.callPlugin = jest.fn().mockImplementation((action, ...args) => {
-        if (action === 'init') {
-          return origCallPlugin(action, ...args).then(result => ({
-            ...result,
-            settings: { ...result.settings, dashboard_elements: {} },
-          }));
+      const origInit = mockApp.init.bind(mockApp);
+      const overrideApp = new Proxy(mockApp, {
+        get(target, prop) {
+          if (prop === 'init') return async (...args) => {
+            const result = await origInit(...args);
+            return { ...result, settings: { ...result.settings, dashboard_elements: {} } };
+          };
+          const val = Reflect.get(target, prop);
+          return typeof val === 'function' ? val.bind(target) : val;
         }
-        return origCallPlugin(action, ...args);
       });
 
-      await act(async () => { root.render(createElement(DashboardApp)); });
+      await act(async () => { root.render(createElement(DashboardApp, { app: overrideApp })); });
       await flushAsync();
 
       const layoutBtn = Array.from(container.querySelectorAll('.dashboard-configure-button'))
@@ -329,19 +352,20 @@ describe('DashboardApp', () => {
     // [Claude] Generated test for: Save Layout from Sizing tab with non-array dashboard_elements
     // Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking
     it('saves layout from the Sizing tab without error when dashboard_elements is non-array', async () => {
-      const origCallPlugin = global.callPlugin;
-      global.callPlugin = jest.fn().mockImplementation((action, ...args) => {
-        if (action === 'init') {
-          return origCallPlugin(action, ...args).then(result => ({
-            ...result,
-            settings: { ...result.settings, dashboard_elements: {} },
-          }));
+      const origInit = mockApp.init.bind(mockApp);
+      const overrideApp = new Proxy(mockApp, {
+        get(target, prop) {
+          if (prop === 'init') return async (...args) => {
+            const result = await origInit(...args);
+            return { ...result, settings: { ...result.settings, dashboard_elements: {} } };
+          };
+          if (prop === 'saveLayout') return () => Promise.resolve();
+          const val = Reflect.get(target, prop);
+          return typeof val === 'function' ? val.bind(target) : val;
         }
-        if (action === 'saveLayout') return Promise.resolve();
-        return origCallPlugin(action, ...args);
       });
 
-      await act(async () => { root.render(createElement(DashboardApp)); });
+      await act(async () => { root.render(createElement(DashboardApp, { app: overrideApp })); });
       await flushAsync();
 
       // Open the Layout popup
@@ -372,7 +396,7 @@ describe('DashboardApp', () => {
   // ------------------------------------------------
   describe('calendar-selected week propagation', () => {
     it('re-fetches completed tasks when clicking a day in a different week', async () => {
-      await act(async () => { root.render(createElement(DashboardApp)); });
+      await act(async () => { root.render(createElement(DashboardApp, { app: mockApp })); });
       await flushAsync();
 
       const callCountBeforeClick = mockApp.getCompletedTasks.mock.calls.length;
