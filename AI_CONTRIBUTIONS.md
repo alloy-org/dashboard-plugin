@@ -3,6 +3,36 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-03-14 — DreamTask widget with agentic LLM-powered task suggestions
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dream-task-service.js` (created — agentic loop: gathers tasks, plans, previous analyses, calls LLM, writes monthly note)
+- `lib/dashboard/dream-task.js` (created — React widget component with settings gate, loading/error states, 1-tall/2-tall rendering)
+- `lib/dashboard/styles/_dream-task.scss` (created — card layout, rating badges, loading/error/no-config states)
+- `lib/constants/settings.js` (modified — added `dream-task` to `WIDGET_REGISTRY`)
+- `lib/dashboard/dashboard.js` (modified — imported DreamTaskWidget, added memoized DreamTaskCell, added switch case)
+- `lib/plugin.js` (modified — imported `analyzeDreamTasks`, added `dreamTaskAnalyze` bridge action)
+- `lib/data-service.js` (modified — added `LLM_PROVIDER` and `LLM_API_KEY` to `_readDashboardSettings`)
+- `lib/dashboard/styles/dashboard.scss` (modified — imported `dream-task` partial)
+- `lib/providers/ai-provider-settings.js` (modified — fixed import path from `constants/provider` to `constants/llm-providers`, added `defaultProviderModel` and `preferredModels` exports, fixed `apiKeyFromApp` to read `LLM_API_KEY` instead of `LLM_PROVIDER`)
+
+**Task:** Create a DreamTask widget that uses an agentic loop to suggest 3-5 tasks
+aligned with the user's quarterly and monthly goals, writes results to a monthly
+planning note, and renders the top-rated suggestions in the widget.
+**Prompt summary:** "Create a new widget, DreamTask, that retrieves all tasks from
+getTaskDomainTasks, uses an agentic loop to interpret the user's quarterly/monthly plan,
+suggests goal-aligned tasks with ratings, writes to a monthly note, and renders in widget"
+**Scope:** ~350 lines of new logic across 3 new files; ~30 lines of modifications across
+6 existing files
+**Notes:** The agentic service reads prior analyses from the monthly note to avoid
+repetition. Today's results are cached in the note and returned without re-calling the
+LLM on subsequent loads. Widget shows 1 task when 1-tall, 2 tasks when 2-tall, sorted
+by rating. If no LLM provider/key is configured, the widget shows a link to open the
+settings dialog. Also fixed pre-existing build errors in ai-provider-settings.js.
+
+---
+
 ## 2026-03-09 — Extract handler/response functions to module scope in dashboard.js
 
 **Model:** claude-4.6-opus-high-thinking

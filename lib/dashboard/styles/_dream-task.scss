@@ -1,0 +1,163 @@
+/* [Claude-authored file]
+ * Created: 2026-03-14 | Model: claude-4.6-opus-high-thinking
+ * Task: DreamTask widget styles — task suggestion cards with rating badges
+ * Prompt summary: "styles for DreamTask widget showing AI-suggested tasks with ratings"
+ */
+
+@use 'theme' as *;
+
+/* [Claude] Task: DreamTask widget layout, cards, rating badges, and state styles */
+/* Prompt: "Create a DreamTask widget that uses an agentic loop to suggest goal-aligned tasks" */
+/* Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking */
+.widget-dream-task {
+  .dream-task-list {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-md;
+  }
+
+  .dream-task-card {
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    padding: $sp-md $sp-lg;
+    transition: border-color 0.15s ease;
+
+    &:hover {
+      border-color: $color-blue-light;
+    }
+  }
+
+  .dream-task-card-header {
+    align-items: flex-start;
+    display: flex;
+    gap: $sp-sm;
+    justify-content: space-between;
+    margin-bottom: $sp-sm;
+  }
+
+  .dream-task-card-title {
+    color: $color-navy;
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .dream-task-rating {
+    border-radius: $radius-sm;
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    padding: 2px $sp-sm;
+    white-space: nowrap;
+
+    &--high {
+      background: rgba(34, 197, 94, 0.12);
+      color: $color-success;
+    }
+
+    &--medium {
+      background: rgba(234, 179, 8, 0.12);
+      color: $color-warning;
+    }
+
+    &--low {
+      background: rgba(239, 68, 68, 0.12);
+      color: $color-danger;
+    }
+  }
+
+  .dream-task-card-explanation {
+    color: $color-text-secondary;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .dream-task-no-config {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-md;
+    padding: $sp-xl $sp-lg;
+    text-align: center;
+  }
+
+  .dream-task-no-config-text {
+    color: $color-text-secondary;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .dream-task-settings-link {
+    color: $color-blue;
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .dream-task-loading {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-md;
+    padding: $sp-xl;
+    text-align: center;
+
+    p {
+      color: $color-text-secondary;
+      font-size: 0.85rem;
+      margin: 0;
+    }
+  }
+
+  .dream-task-spinner {
+    animation: spin 0.8s linear infinite;
+    border: 3px solid $color-border;
+    border-radius: 50%;
+    border-top-color: $color-blue;
+    height: 24px;
+    width: 24px;
+  }
+
+  .dream-task-error {
+    padding: $sp-lg;
+    text-align: center;
+
+    p {
+      color: $color-danger;
+      font-size: 0.85rem;
+      margin: 0 0 $sp-md;
+    }
+  }
+
+  .dream-task-empty {
+    padding: $sp-lg;
+    text-align: center;
+
+    p {
+      color: $color-text-secondary;
+      font-size: 0.85rem;
+      margin: 0 0 $sp-md;
+    }
+  }
+
+  .dream-task-retry {
+    background: none;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    color: $color-text-secondary;
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: $sp-xs $sp-md;
+
+    &:hover {
+      border-color: $color-blue;
+      color: $color-blue;
+    }
+  }
+}
