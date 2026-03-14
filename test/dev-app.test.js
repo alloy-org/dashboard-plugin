@@ -8,6 +8,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { createDevApp, readSettingsFile } from "../dev/dev-app.js";
+import { SETTING_KEYS, widgetConfigKey } from "../lib/constants/settings.js";
 
 // [Claude] Generated tests for: dev-mode app harness settings persistence
 // Date: 2026-03-01 | Model: claude-opus-4-6
@@ -36,23 +37,23 @@ describe("Dev App Harness", () => {
     it("writes a setting to the JSON file when setSetting is called", async () => {
       const app = createDevApp(tmpSettingsPath, tmpNotesDir);
 
-      await app.setSetting("LLM Provider", "anthropic");
+      await app.setSetting(SETTING_KEYS.LLM_PROVIDER, "anthropic");
 
       const raw = fs.readFileSync(tmpSettingsPath, "utf-8");
       const persisted = JSON.parse(raw);
-      expect(persisted["LLM Provider"]).toBe("anthropic");
+      expect(persisted[SETTING_KEYS.LLM_PROVIDER]).toBe("anthropic");
     });
 
     it("persists settings across separate app instantiations", async () => {
       const firstApp = createDevApp(tmpSettingsPath, tmpNotesDir);
-      await firstApp.setSetting("dashboard_quotes_config", '["motivational"]');
-      await firstApp.setSetting("LLM API Key", "sk-test-key-123");
+      await firstApp.setSetting(widgetConfigKey("quotes"), '["motivational"]');
+      await firstApp.setSetting(SETTING_KEYS.LLM_API_KEY, "sk-test-key-123");
 
       // Simulate a fresh start by creating a brand-new app instance.
       const secondApp = createDevApp(tmpSettingsPath, tmpNotesDir);
 
-      expect(secondApp.settings["dashboard_quotes_config"]).toBe('["motivational"]');
-      expect(secondApp.settings["LLM API Key"]).toBe("sk-test-key-123");
+      expect(secondApp.settings[widgetConfigKey("quotes")]).toBe('["motivational"]');
+      expect(secondApp.settings[SETTING_KEYS.LLM_API_KEY]).toBe("sk-test-key-123");
     });
 
     it("accumulates multiple settings without losing earlier ones", async () => {

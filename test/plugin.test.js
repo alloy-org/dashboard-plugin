@@ -147,40 +147,36 @@ describe('Dashboard Plugin', () => {
       expect(Array.isArray(result)).toBe(true);
     });
 
-    // [Claude] Generated tests for: saveMoodNote tags the history note with "plugins/dashboard"
-    // Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking
-    it('should create the mood history note with the plugins/dashboard tag', async () => {
+    // [Claude] Task: test standard API pass-through for navigate and setSetting
+    // Prompt: "widgets call standard API methods directly; plugin.js bridges them to the real app"
+    // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
+    it('should pass through navigate to app.navigate', async () => {
       const spyApp = {
         ...mockApp,
-        findNote: jest.fn().mockResolvedValue(null),
-        createNote: jest.fn().mockResolvedValue('new-mood-uuid'),
-        insertNoteContent: jest.fn().mockResolvedValue(true),
+        navigate: jest.fn().mockResolvedValue(true),
       };
-
-      await plugin.onEmbedCall(spyApp, 'saveMoodNote', 1, 'Good', 'feeling great');
-
-      expect(spyApp.createNote).toHaveBeenCalledWith(
-        'Mood rating history',
-        ['plugins/dashboard']
-      );
+      const result = await plugin.onEmbedCall(spyApp, 'navigate', 'https://www.amplenote.com/notes/abc');
+      expect(spyApp.navigate).toHaveBeenCalledWith('https://www.amplenote.com/notes/abc');
+      expect(result).toBe(true);
     });
 
-    it('should not re-create the mood history note when it already exists', async () => {
+    it('should pass through setSetting to app.setSetting', async () => {
       const spyApp = {
         ...mockApp,
-        findNote: jest.fn().mockResolvedValue({ uuid: 'existing-uuid' }),
-        createNote: jest.fn(),
-        insertNoteContent: jest.fn().mockResolvedValue(true),
+        setSetting: jest.fn().mockResolvedValue(true),
       };
+      const result = await plugin.onEmbedCall(spyApp, 'setSetting', 'myKey', 'myValue');
+      expect(spyApp.setSetting).toHaveBeenCalledWith('myKey', 'myValue');
+    });
 
-      await plugin.onEmbedCall(spyApp, 'saveMoodNote', 0, 'Okay', '');
-
-      expect(spyApp.createNote).not.toHaveBeenCalled();
-      expect(spyApp.insertNoteContent).toHaveBeenCalledWith(
-        { uuid: 'existing-uuid' },
-        expect.stringContaining('**Mood:** Okay (0)'),
-        { atEnd: true }
-      );
+    it('should pass through createNote to app.createNote', async () => {
+      const spyApp = {
+        ...mockApp,
+        createNote: jest.fn().mockResolvedValue('new-uuid'),
+      };
+      const result = await plugin.onEmbedCall(spyApp, 'createNote', 'Test Note', ['tag1']);
+      expect(spyApp.createNote).toHaveBeenCalledWith('Test Note', ['tag1']);
+      expect(result).toBe('new-uuid');
     });
 
     it('should return error for unknown action', async () => {
@@ -192,6 +188,7 @@ describe('Dashboard Plugin', () => {
     it('should handle errors gracefully', async () => {
       const brokenApp = {
         ...mockApp,
+        settings: {},
         getTaskDomains: async () => { throw new Error('Test error'); }
       };
 
