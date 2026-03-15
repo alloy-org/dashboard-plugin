@@ -1,0 +1,170 @@
+/* [Claude-authored file]
+ * Created: 2026-03-14 | Model: claude-4.6-opus-high-thinking
+ * Task: Peak Hours widget styles — hourly task activity chart with metrics and legend
+ * Prompt summary: "translate peak-hours inline styles into a standalone SCSS stylesheet"
+ */
+
+@use 'theme-tokens' as *;
+
+/* [Claude] Task: Peak Hours widget layout, metrics grid, chart, tooltip, and legend */
+/* Prompt: "rewrite peak-hours into a project-native widget with standalone stylesheet" */
+/* Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking */
+.widget-peak-hours {
+  .peak-hours-metrics-grid {
+    display: grid;
+    gap: $sp-md;
+    grid-template-columns: repeat(3, 1fr);
+    margin-bottom: $sp-lg;
+  }
+
+  .peak-hours-metric-card {
+    background: $color-bg-page;
+    border-radius: $radius-md;
+    padding: $sp-md $sp-lg;
+  }
+
+  .peak-hours-metric-label {
+    color: $color-text-secondary;
+    font-size: 0.8rem;
+    margin-bottom: $sp-xs;
+  }
+
+  .peak-hours-metric-value {
+    color: $color-navy;
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+
+  .peak-hours-legend {
+    color: $color-text-secondary;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.75rem;
+    gap: $sp-lg;
+    margin-bottom: $sp-sm;
+  }
+
+  .peak-hours-legend-item {
+    align-items: center;
+    display: flex;
+    gap: $sp-xs;
+  }
+
+  .peak-hours-legend-swatch {
+    border-radius: 2px;
+    display: inline-block;
+    height: 10px;
+    width: 10px;
+
+    &--created {
+      background: $color-blue;
+    }
+
+    &--completed {
+      background: $color-accent;
+    }
+  }
+
+  .peak-hours-chart-container {
+    height: 260px;
+    position: relative;
+    width: 100%;
+  }
+
+  .peak-hours-canvas {
+    display: block;
+    height: 100%;
+    width: 100%;
+  }
+
+  .peak-hours-tooltip {
+    background: $color-tooltip-bg;
+    border: 1px solid $color-tooltip-border;
+    border-radius: $radius-sm;
+    box-shadow: 0 2px 8px $color-tooltip-shadow;
+    color: $color-tooltip-text;
+    font-size: 0.75rem;
+    padding: $sp-sm $sp-md;
+    pointer-events: none;
+    position: absolute;
+    white-space: nowrap;
+    z-index: 10;
+  }
+
+  .peak-hours-tooltip-header {
+    font-weight: 600;
+    margin-bottom: $sp-xs;
+  }
+
+  .peak-hours-tooltip-label {
+    &--created {
+      color: $color-tooltip-accent;
+    }
+
+    &--completed {
+      color: $color-accent;
+    }
+  }
+
+  .peak-hours-footer {
+    color: $color-text-muted;
+    font-size: 0.75rem;
+    margin-top: $sp-md;
+    text-align: center;
+  }
+
+  .peak-hours-empty {
+    padding: $sp-xl;
+    text-align: center;
+
+    p {
+      color: $color-text-secondary;
+      font-size: 0.85rem;
+      margin: 0;
+    }
+  }
+}
+
+.vertical-1-cell .widget-peak-hours {
+  .peak-hours-metrics-grid {
+    gap: $sp-sm;
+    margin-bottom: $sp-sm;
+  }
+
+  .peak-hours-metric-card {
+    padding: $sp-xs $sp-sm;
+  }
+
+  .peak-hours-metric-label {
+    font-size: 0.7rem;
+    margin-bottom: 0;
+  }
+
+  .peak-hours-metric-value {
+    font-size: 1rem;
+  }
+
+  .peak-hours-legend {
+    margin-bottom: $sp-xs;
+  }
+
+  .peak-hours-chart-container {
+    height: 160px;
+  }
+
+  .peak-hours-footer {
+    margin-top: $sp-sm;
+  }
+}
+
+.horizontal-2-cell .widget-peak-hours .peak-hours-chart-container {
+  height: 260px;
+}
+
+.vertical-2-cell .widget-peak-hours .peak-hours-chart-container {
+  height: 380px;
+}
+
+.horizontal-2-cell.vertical-2-cell .widget-peak-hours .peak-hours-chart-container {
+  height: 440px;
+}

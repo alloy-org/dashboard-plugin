@@ -3,6 +3,36 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-03-15 — Peak Hours widget: fetch full month of completed tasks
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dashboard/peak-hours.js` (modified — replaced `completedTasksByDate` prop with `app`/`selectedDate`/`currentDate`; widget now fetches all completed tasks for the full month via `app.getCompletedTasks`)
+- `lib/dashboard/dashboard.js` (modified — updated PeakHoursCell to pass `app`, `selectedDate`, `currentDate` instead of `completedTasksByDate`)
+
+**Task:** Make Peak Hours widget retrieve ALL tasks completed during the currently selected month instead of only the ~7-day window provided by the dashboard's weekly fetch
+**Prompt summary:** "peak-hours should retrieve ALL tasks completed during the month that is currently selected"
+**Scope:** ~30 lines changed across 2 files
+**Notes:** Uses `monthBoundaries()` helper to compute month start/end as Unix seconds; caches by month key to avoid duplicate fetches; footer now shows full month name
+
+---
+
+## 2026-03-14 — Peak Hours widget: rewrite as project-native component
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dashboard/peak-hours.js` (rewritten — replaced web-sourced prototype with project-native widget using createElement, WidgetWrapper, and completedTasksByDate from dashboard)
+- `lib/dashboard/styles/peak-hours.scss` (created — standalone stylesheet using theme tokens; responsive chart heights for grid size variants)
+- `lib/constants/settings.js` (modified — added peak-hours entry to WIDGET_REGISTRY)
+- `lib/dashboard/dashboard.js` (modified — added PeakHoursWidget import, PeakHoursCell, and CELL_COMPONENTS entry)
+
+**Task:** Rewrite peak-hours.js into a project-convention widget that receives completed tasks from the dashboard and analyzes createdAt/completedAt timestamps in the user's local time zone
+**Prompt summary:** "rewrite peak-hours.js to match project conventions with standalone stylesheet; receive all tasks from dashboard; translate createdAt and completedAt to user's local time zone"
+**Scope:** ~250 lines of new/rewritten logic across 4 files
+**Notes:** Canvas chart reads CSS custom properties at draw time for theme-aware colors (light/dark mode). Timestamps are treated as unix seconds and converted to local Date objects via `new Date(ts * 1000)`, so `getHours()` returns the hour in the user's local time zone. Falls back to `startAt` when `createdAt` is unavailable.
+
+---
+
 ## 2026-03-14 — Amplenote Rich Footnote rendering with tippy popups
 
 **Model:** claude-4.6-opus-high-thinking
