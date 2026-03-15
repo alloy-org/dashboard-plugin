@@ -1,5 +1,7 @@
 # dashboard-plugin
 
+<a href='https://www.gitclear.com/snap_changelogs/759d7ea5-c3b1-4c0b-b71f-db5193a037d4' target='_blank'><img src='https://www.gitclear.com/snap_changelogs/759d7ea5-c3b1-4c0b-b71f-db5193a037d4.png?snap_token=026ff50713128b2c83707cede5e7c106351320d3' /></a>
+
 An Amplenote plugin that renders a personal dashboard with planning, victory-value tracking, mood, calendar, agenda, quotes, and quick-action widgets.
 
 https://claude.ai/artifacts/ab35afa3-4920-4be6-9a14-d828162c37af
