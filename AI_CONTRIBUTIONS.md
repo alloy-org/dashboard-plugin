@@ -3,6 +3,20 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-03-14 — Amplenote Rich Footnote rendering with tippy popups
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/util/amplenote-markdown-render.js` (created)
+- `lib/dashboard/styles/amplenote-markdown-render.scss` (created)
+
+**Task:** Render Amplenote Rich Footnotes as interactive links with content-type indicator icons (image, video, URL, text) and tippy popups that display the footnote content
+**Prompt summary:** "implement rich footnotes rendering with icons and tippy popups for text, images, video, URL"
+**Scope:** ~250 lines of new logic across 2 files
+**Notes:** `amplenoteMarkdownRender(markdown)` is a drop-in replacement for `renderMarkdown` that parses `[^N]:` footnote definitions, replaces `[text][^N]` references with enhanced links, and adds data attributes for popup content. `attachFootnotePopups(containerEl)` must be called after DOM insertion to wire up tippy instances. Supports images, video (YouTube/Vimeo/direct), URLs, and description text.
+
+---
+
 ## 2026-03-14 — Update mood visualization scale from 1–5 to -2..+2
 
 **Model:** claude-4.6-opus-high-thinking
