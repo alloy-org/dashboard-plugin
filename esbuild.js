@@ -77,7 +77,10 @@ const result = await esbuild.build({
   minify: true,
   outfile: "build/compiled.js",
   packages: "external",
-  platform: "node",
+  platform: "browser",
+  define: {
+    "process.env.NODE_ENV": '"production"',
+  },
   plugins: [clientBundlePlugin, cssContentPlugin, absoluteImportsPlugin],
   write: true,
 });

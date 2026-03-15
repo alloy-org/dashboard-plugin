@@ -3,7 +3,33 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
-## 2026-03-14 — Widget header subtitle support
+## 2026-03-14 — Update mood visualization scale from 1–5 to -2..+2
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dashboard/mood.js` (modified — removed `toVizScale()` mapping layer; changed `VISUALIZATION_MOOD_COLORS` and `VISUALIZATION_MOOD_EMOJIS` to use -2..+2 keys; updated WaveGraph y-axis labels from 1–5 to -2..+2 with `+` prefix for positive values; updated all y-position formulas in WaveGraph and RadialRing to use `(val + 2) / 4` instead of `(val - 1) / 4`)
+
+**Task:** Display mood wave and ring visualizations on the native -2 to +2 scale instead of an internal 1–5 mapping
+**Prompt summary:** "update the mood wave visualization to be on a scale from -2 to +2 instead of 1 to 5"
+**Scope:** ~30 lines changed across 6 locations in 1 file
+**Notes:** The plugin already stored mood values as -2..+2; this removes the unnecessary intermediate 1..5 scale that was only used for rendering
+
+---
+
+## 2026-03-14 — Rename settings state to configParams; fix API key not persisting
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dashboard/dashboard.js` (modified — renamed `settings`/`setSettings` state to `configParams`/`setConfigParams`; `DashboardSettingsPopup` now receives `configParams` as a prop; removed `app.settings` mirroring hack)
+- `lib/dashboard/dashboard-settings-popup.js` (modified — reads initial values from `configParams` prop instead of `app.settings`)
+- `build/compiled.js` (rebuilt)
+
+**Task:** Disambiguate component state from `app.settings` and fix API key persistence bug
+**Prompt summary:** "rename the component's state variable to configParams; ensure app.setSetting is used per API docs"
+**Scope:** ~20 lines changed across 2 files
+**Notes:** Root cause: `DashboardSettingsPopup` read its initial values from `app.settings`, an in-memory Proxy object. Per the Amplenote API docs, `app.settings` is "not guaranteed to be updated" after `app.setSetting` calls. The popup now reads from a `configParams` React state prop that is always up to date. The `settings`→`configParams` rename eliminates the naming collision between the React state and the Amplenote `app.settings` API property.
+
+---
 
 **Model:** claude-4.6-sonnet-medium-thinking
 **Files created/modified:**
