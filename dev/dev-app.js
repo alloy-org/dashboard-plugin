@@ -190,7 +190,7 @@ function _buildSampleTasks() {
       noteUUID: "note-work-12", startAt: null,
     },
     {
-      uuid: "dev-task-21", content: "🎸 Practice guitar for 30 minutes", important: false, urgent: false,
+      uuid: "dev-task-21", content: "🎸 [Practice guitar for 30 minutes][^1]\n\n[^1]: [Practice guitar for 30 minutes](https://www.amplenote.com)\n\n    Here's some text\n\n    ![](https://images.amplenote.com/7bf7ef0c-1f51-11f1-84ca-318dcfb76e95/9ca2a2a0-f064-4e09-8083-d126b0028f0a.png)", important: false, urgent: false,
       completedAt: null, dismissedAt: null, deadline: null, victoryValue: 4,
       noteUUID: "note-personal-8", startAt: nowSec + day + 18 * hour,
     },
