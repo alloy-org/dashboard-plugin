@@ -135,7 +135,7 @@ function _buildSampleTasks() {
   // 20 new open tasks — ~half unscheduled, ~half starting within the next 5 days
   const newTasks = [
     {
-      uuid: "dev-task-10", content: "Draft blog post outline", important: true, urgent: false,
+      uuid: "dev-task-10", content: "Draft and [blog post outline][^1]\n\n  [^1]: [blog post outline]()\n \n  ![](https://images.amplenote.com/c6cf84d6-ceb4-11ed-a7db-d2ab91c23399/53eb85c9-e7d3-4a7f-92e3-b68fa595113c.png)\n", important: true, urgent: false,
       completedAt: null, dismissedAt: null, deadline: null, victoryValue: 7,
       noteUUID: "note-side-1", startAt: null,
     },
@@ -165,7 +165,7 @@ function _buildSampleTasks() {
       noteUUID: "note-side-2", startAt: null,
     },
     {
-      uuid: "dev-task-16", content: "Schedule dentist appointment", important: false, urgent: false,
+      uuid: "dev-task-16", content: "[Schedule dentist appointment][^1]\n\n  [^1]: [Schedule dentist appointment]()\n \n  ![](https://images.amplenote.com/c6cf84d6-ceb4-11ed-a7db-d2ab91c23399/53eb85c9-e7d3-4a7f-92e3-b68fa595113c.png)", important: false, urgent: false,
       completedAt: null, dismissedAt: null, deadline: null, victoryValue: 2,
       noteUUID: "note-personal-6", startAt: null,
     },
