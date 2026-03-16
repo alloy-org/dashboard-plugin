@@ -38,6 +38,7 @@ $notebook-font: 'Segoe Script', 'Bradley Hand', 'Comic Sans MS', cursive, $font-
         $notebook-line-color calc(#{$notebook-line-height} - 1px),
         $notebook-line-color $notebook-line-height
       );
+    background-attachment: local;
     background-position: 0 0;
     background-size: 100% $notebook-line-height;
     border-left: 3px solid $notebook-margin-color;
@@ -59,9 +60,9 @@ $notebook-font: 'Segoe Script', 'Bradley Hand', 'Comic Sans MS', cursive, $font-
   .day-sketch-hour-label {
     color: $notebook-hour-color;
     flex-shrink: 0;
-    font-family: $font-sans;
-    font-size: 0.68rem;
-    font-weight: 600;
+    font-family: $notebook-font;
+    font-size: 0.78rem;
+    font-weight: bold;
     letter-spacing: 0.02em;
     text-align: right;
     text-transform: lowercase;

@@ -15,7 +15,7 @@ export default {
     '^util/(.*)$':  '<rootDir>/lib/util/$1',
     '^lib/(.*)$': '<rootDir>/lib/$1',
     // Bare widget names used by dashboard.js (resolved relative to lib/dashboard/ by esbuild)
-    '^(planning|victory-value|mood|calendar|agenda|quotes|ai-plugins|quick-actions|recent-notes|task-domains)$':
+    '^(planning|victory-value|mood|calendar|agenda|quotes|ai-plugins|quick-actions|recent-notes|task-domains|day-sketch|peak-hours)$':
       '<rootDir>/lib/dashboard/$1.js',
     '^(dashboard-layout-popup|dashboard-settings-popup|config-popup|widget-wrapper|draggable-heading|dream-task|note-editor|dashboard-tippy|quotes-data)$':
       '<rootDir>/lib/dashboard/$1.js',
