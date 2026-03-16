@@ -103,9 +103,14 @@
 
   .dream-task-card-explanation {
     color: $color-text-secondary;
+    display: -webkit-box;
     font-size: 0.8rem;
     line-height: 1.5;
     margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
   }
 
   .dream-task-no-config {

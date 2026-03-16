@@ -204,6 +204,7 @@ html {
     gap: $sp-lg;
     height: 100vh;
     justify-content: center;
+    width: 100%;
 
     .spinner {
       animation: spin $spinner-duration linear infinite;
