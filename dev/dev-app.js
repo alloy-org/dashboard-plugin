@@ -60,6 +60,15 @@ const SAMPLE_DOMAINS = [
   { name: "Side Projects", uuid: "domain-side-uuid",     notes: SAMPLE_NOTE_HANDLES["domain-side-uuid"] },
 ];
 
+// [Claude] Task: map task domain UUIDs to their corresponding note tag names
+// Prompt: "search notes directory for 'work' tag for work domain, 'personal' for personal, 'side-projects' for side-projects"
+// Date: 2026-03-16 | Model: claude-4.6-opus-high-thinking
+const DOMAIN_TAG_MAP = {
+  "domain-work-uuid": "work",
+  "domain-personal-uuid": "personal",
+  "domain-side-uuid": "side-projects",
+};
+
 // [Claude] Task: generate sample tasks matching the shape returned by Amplenote's getTaskDomainTasks
 // Prompt: "existing tasks completed over past 2 weeks, plus 20 new tasks with/without start times"
 // Date: 2026-03-01 | Model: claude-opus-4-6
@@ -387,8 +396,28 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       return SAMPLE_DOMAINS;
     },
 
-    async getTaskDomainTasks(_domainUuid) {
-      return sampleTasks;
+    // [Claude] Task: search notes directory for files tagged with the domain's tag, resolve $sampleTasks$ directive
+    // Prompt: "search each file in notes directory for tags matching the task domain"
+    // Date: 2026-03-16 | Model: claude-4.6-opus-high-thinking
+    async getTaskDomainTasks(domainUuid) {
+      if (!domainUuid) return sampleTasks;
+
+      const tag = DOMAIN_TAG_MAP[domainUuid];
+      if (!tag) return [];
+
+      const notes = _readAllNoteFiles(notesDir);
+      const matchingNotes = notes.filter(note => {
+        const tags = note.meta.tags;
+        return Array.isArray(tags) && tags.includes(tag);
+      });
+
+      let tasks = [];
+      for (const note of matchingNotes) {
+        if (note.content.trim() === "$sampleTasks$") {
+          tasks = tasks.concat(_buildSampleTasks());
+        }
+      }
+      return tasks;
     },
 
     // [Claude] Task: return open tasks belonging to a specific note for the Recent Notes widget

@@ -84,17 +84,18 @@ function handleSettingsApi(req, res) {
   return false;
 }
 
-// [Claude] Task: serve all sample tasks from dev-app as a REST endpoint, with optional from/to filtering
-// Prompt: "consolidate mock-data.js and dev-app.js so dev-app is the single source of task truth"
-// Date: 2026-03-01 | Model: claude-sonnet-4-6
+// [Claude] Task: serve tasks from dev-app, with optional domain and from/to filtering
+// Prompt: "search notes directory for tags matching the task domain"
+// Date: 2026-03-16 | Model: claude-4.6-opus-high-thinking
 function handleTasksApi(req, res) {
   if (req.method !== "GET") return false;
   const parsedUrl = new URL(req.url, "http://localhost");
   const from = parsedUrl.searchParams.get("from");
   const to = parsedUrl.searchParams.get("to");
+  const domain = parsedUrl.searchParams.get("domain");
 
   const app = createDevApp();
-  app.getTaskDomainTasks(null).then(tasks => {
+  app.getTaskDomainTasks(domain || null).then(tasks => {
     let result = tasks;
     if (from != null && to != null) {
       const fromSec = Number(from);
