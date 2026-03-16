@@ -3,6 +3,23 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+---
+
+## 2026-03-16 — DreamTask: 50% existing tasks + click-to-create for invented tasks
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dream-task-service.js` (modified — restructured `analyzeDreamTasks` to fetch domain tasks before cache check; added `_findBusiestNoteUUID`, `_enforceExistingTaskMinimum`; updated `_validateTasks` to track existing vs invented tasks by UUID; updated `_buildPrompt` to require at least 50% existing tasks with UUIDs; updated `_parseCachedTasks` and `_formatTasksForNote` to persist UUID metadata)
+- `lib/dashboard/dream-task.js` (modified — updated `handleTaskClick` to navigate to existing tasks in their notes or create invented tasks via `app.insertTask` in the busiest note; added `defaultNoteUUID` state; updated `renderTaskList` with visual indicators for invented tasks)
+- `lib/dashboard/styles/dream-task.scss` (modified — added `.dream-task-card--invented` and `.dream-task-new-badge` styles)
+
+**Task:** Ensure at least 50% of DreamTask suggestions are existing tasks from `getTaskDomainTasks`; clicking invented tasks creates them in the note with the most tasks
+**Prompt summary:** "at least 50% of suggested tasks should be existing tasks; clicking on non-existing task creates it in the busiest note via app.insertTask"
+**Scope:** ~120 lines of new/modified logic across 3 files
+**Notes:** The LLM prompt now requires existing task UUIDs in responses; `_enforceExistingTaskMinimum` supplements with top-ranked tasks if the LLM under-delivers; task-to-note mapping built from `task.noteUUID` enables direct navigation to existing tasks
+
+---
+
 ## 2026-03-15 — Peak Hours widget: fetch full month of completed tasks
 
 **Model:** claude-4.6-opus-high-thinking

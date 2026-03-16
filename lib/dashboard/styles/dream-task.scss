@@ -101,6 +101,26 @@
     }
   }
 
+  /* [Claude] Task: visual distinction for invented (non-existing) task cards */
+  /* Prompt: "at least 50% of suggested tasks should be existing tasks; clicking invented tasks creates them" */
+  /* Date: 2026-03-16 | Model: claude-4.6-opus-high-thinking */
+  .dream-task-card--invented {
+    border-left: 2px solid $color-blue-light;
+  }
+
+  .dream-task-new-badge {
+    background: rgba(74, 158, 255, 0.12);
+    border-radius: $radius-sm;
+    color: $color-blue;
+    flex-shrink: 0;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 1px $sp-xs;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
   .dream-task-card-explanation {
     color: $color-text-secondary;
     display: -webkit-box;
