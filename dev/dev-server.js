@@ -283,7 +283,7 @@ async function main() {
     entryPoints: [path.join(rootDir, "lib/dashboard/client-entry.js")],
     bundle: true,
     format: "iife",
-    outdir: devDir,
+    outdir: path.join(devDir, "compiled"),
     entryNames: "bundle",
     define: {
       "process.env.NODE_ENV": '"development"',

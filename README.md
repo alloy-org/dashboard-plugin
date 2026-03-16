@@ -21,8 +21,8 @@ npm run dev
 
 This launches esbuild in watch mode on `localhost:3000`. The server:
 
-- Bundles `lib/dashboard/client-entry.js` into an IIFE (`dev/bundle.js`)
-- Compiles `lib/dashboard/styles/dashboard.scss` to `dev/styles.css` on every rebuild
+- Bundles `lib/dashboard/client-entry.js` into an IIFE (`dev/compiled/bundle.js`)
+- Compiles `lib/dashboard/styles/dashboard.scss` to `dev/compiled/bundle.css` on every rebuild
 - Serves the `dev/` directory, which includes `index.html` and `mock-data.js`
 
 Edit any JS or SCSS source file, save, and refresh the browser to see changes. Mock data is defined in `dev/mock-data.js` — adjust it to exercise different widget states.

@@ -1,8 +1,6 @@
 background-image.jpg
 background-image.png
-/dev/bundle*
-/dev/styles.css
-/dev/settings.json
+/dev/compiled/
 .DS_Store
 /lib/.DS_Store
 # Editor-based HTTP Client requests

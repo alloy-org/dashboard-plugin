@@ -28,13 +28,13 @@ Because the client bundle is base64-encoded inside the plugin wrapper, its raw b
 | esbuild IIFE preamble / helpers | ~200 | ~200 | < 0.1% |
 | **Total** | **~473 KB** | — | **100%** |
 
-The dominant cost is the client bundle. All analysis below focuses on its decoded contents (~603 KB), measured from the unminified dev bundle (`dev/bundle.js`, 1.33 MB), which uses the same entry point and dependency graph but includes development builds of React/ReactDOM instead of production builds.
+The dominant cost is the client bundle. All analysis below focuses on its decoded contents (~603 KB), measured from the unminified dev bundle (`dev/compiled/bundle.js`, 1.33 MB), which uses the same entry point and dependency graph but includes development builds of React/ReactDOM instead of production builds.
 
 ---
 
 ## Client bundle: library-level breakdown
 
-Sizes derived from esbuild section-header line numbers in `dev/bundle.js` (32,646 lines, 1,396,600 bytes), then scaled to the production client bundle (~603 KB decoded). Dev builds of React/ReactDOM are significantly larger than production builds; production ratios are estimated accordingly.
+Sizes derived from esbuild section-header line numbers in `dev/compiled/bundle.js` (32,646 lines, 1,396,600 bytes), then scaled to the production client bundle (~603 KB decoded). Dev builds of React/ReactDOM are significantly larger than production builds; production ratios are estimated accordingly.
 
 | Library / Section | Dev bundle bytes | % of dev bundle | Notes |
 |---|---|---|---|
@@ -216,7 +216,7 @@ The single highest-leverage change is enabling minification — it requires unco
 | File | Size |
 |---|---|
 | `build/compiled.js` | **473 KB** (minified; was 908 KB) |
-| `dev/bundle.js` | 1.33 MB (unminified, with source maps ref) |
-| `dev/bundle.js.map` | 2.21 MB (source maps, dev only) |
-| `dev/styles.css` | 63 KB (uncompressed dev CSS) |
+| `dev/compiled/bundle.js` | 1.33 MB (unminified, with source maps ref) |
+| `dev/compiled/bundle.js.map` | 2.21 MB (source maps, dev only) |
+| `dev/compiled/bundle.css` | 63 KB (uncompressed dev CSS) |
 | `lib/` source total | ~392 KB (JS + SCSS, unbuilt) |

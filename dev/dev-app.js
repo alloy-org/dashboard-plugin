@@ -10,7 +10,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DEFAULT_SETTINGS_PATH = path.join(__dirname, "settings.json");
+const COMPILED_DIR = path.join(__dirname, "compiled");
+const DEFAULT_SETTINGS_PATH = path.join(COMPILED_DIR, "settings.json");
 const NOTES_DIR = path.join(__dirname, "..", "notes");
 
 // Note handles referenced by sample tasks, grouped by domain.
@@ -266,6 +267,8 @@ export function readSettingsFile(settingsPath = DEFAULT_SETTINGS_PATH) {
 // [Claude] Task: atomically write settings object to JSON file
 // Date: 2026-03-01 | Model: claude-opus-4-6
 export function writeSettingsFile(settings, settingsPath = DEFAULT_SETTINGS_PATH) {
+  const dir = path.dirname(settingsPath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   console.log(`Writing settings to ${settingsPath}:`, settings);
   fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2), "utf-8");
 }
@@ -641,4 +644,4 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
   return app;
 }
 
-export { SAMPLE_DOMAINS, DEFAULT_SETTINGS_PATH, NOTES_DIR };
+export { SAMPLE_DOMAINS, DEFAULT_SETTINGS_PATH, COMPILED_DIR, NOTES_DIR };
