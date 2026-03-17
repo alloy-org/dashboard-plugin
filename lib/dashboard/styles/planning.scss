@@ -15,6 +15,7 @@ $planning-transition-duration: 0.15s;
 .widget-planning {
   .planning-quarters {
     display: flex;
+    flex-wrap: wrap;
     gap: $sp-lg;
     margin-bottom: $sp-lg;
   }
@@ -27,9 +28,10 @@ $planning-transition-duration: 0.15s;
     border-radius: $radius-md;
     cursor: pointer;
     display: flex;
-    flex: 1;
+    flex: 1 1 140px;
     flex-direction: column;
     gap: $sp-xs;
+    min-width: 0;
     padding: $sp-md $sp-lg;
     transition: background $planning-transition-duration, border-color $planning-transition-duration;
 
@@ -76,6 +78,7 @@ $planning-transition-duration: 0.15s;
 
   .month-tabs {
     display: flex;
+    flex-wrap: wrap;
     gap: $sp-xs;
   }
 
