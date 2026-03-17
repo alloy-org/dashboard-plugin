@@ -91,6 +91,10 @@ $task-domain-transition-duration: 0.15s;
     padding: $sp-xs $sp-sm;
     white-space: nowrap;
 
+    @media (max-width: 800px) {
+      display: none;
+    }
+
     &:hover {
       color: $color-navy;
     }

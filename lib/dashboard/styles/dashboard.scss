@@ -71,9 +71,9 @@ html {
         opacity: 1;
       }
 
-      &.span-2 {
-        grid-column: span 2;
-      }
+      &.horizontal-2-cell { grid-column: span 2; }
+      &.horizontal-3-cell { grid-column: span 3; }
+      &.horizontal-4-cell { grid-column: span 4; }
 
       &.vertical-1-cell {
         max-height: 400px;
@@ -81,6 +81,7 @@ html {
       }
 
       &.vertical-2-cell {
+        grid-row: span 2;
         max-height: 800px;
         min-height: 600px;
       }
@@ -102,23 +103,31 @@ html {
         --drag-scale: 0.985;
       }
     }
-  }
 
+    // [Claude] Task: force single-column layout on mobile regardless of widget gridWidthSize
+    // Prompt: "fix display of dashboard on mobile such that every component is 1-wide and laid out in a column"
+    // Date: 2026-03-16 | Model: claude-4.6-opus-high-thinking
+    @media (max-width: $breakpoint-md) {
+      padding: $sp-md;
 
-  // Responsive
-  @media (max-width: $breakpoint-md) {
-    .dashboard-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
 
-  @media (max-width: $breakpoint-sm) {
-    .dashboard-grid {
-      grid-template-columns: 1fr;
-    }
+      .grid-cell {
+        &.horizontal-2-cell,
+        &.horizontal-3-cell,
+        &.horizontal-4-cell {
+          grid-column: span 1;
+        }
 
-    .grid-cell.span-2 {
-      grid-column: span 1;
+        &.vertical-1-cell,
+        &.vertical-2-cell {
+          grid-row: span 1;
+          max-height: none;
+          min-height: auto;
+        }
+      }
     }
   }
 
