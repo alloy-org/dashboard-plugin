@@ -16,10 +16,9 @@ $task-domain-transition-duration: 0.15s;
     align-items: center;
     background: $color-bg-card;
     border: 1px solid $color-border;
-    border-radius: $radius-md;
+    border-radius: $radius-sm;
     display: flex;
     gap: $sp-md;
-    margin-bottom: $sp-lg;
     padding: $sp-sm $sp-md;
   }
 
