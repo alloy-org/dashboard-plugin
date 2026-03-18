@@ -5,6 +5,20 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-18 — Recent Notes weekly UUID exclusion history
+
+**Model:** gpt-5.3-codex
+**Files created/modified:**
+- `lib/dashboard/recent-notes.js` (modified — added persisted weekday UUID history, past-week exclusion filtering, and automatic reset when all stale candidates have been shown)
+- `lib/data-service.js` (modified — includes `dashboard_recent-notes_config` in dashboard settings hydration so history is available after init)
+
+**Task:** Persist day-by-day UUIDs of shown Recent Notes candidates and avoid re-suggesting notes shown within the last week
+**Prompt summary:** "persist to app settings a Monday/Tuesday... map of shown note UUIDs; skip UUIDs from the past week; clear past-week values when all eligible notes are exhausted"
+**Scope:** ~90 lines of logic added across 2 files
+**Notes:** History is stored at `dashboard_recent-notes_config` in `{ Monday: [...], ... }` shape and updated after each successful suggestion fetch.
+
+---
+
 ## 2026-03-16 — DaySketch: notebook-paper day planner widget
 
 **Model:** claude-4.6-opus-high-thinking
