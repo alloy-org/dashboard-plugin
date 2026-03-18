@@ -5,6 +5,20 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-18 — DaySketch multi-hour scheduled task prefills
+
+**Model:** gpt-5.3-codex
+**Files created/modified:**
+- `lib/dashboard/day-sketch.js` (modified — added duration-aware hour mapping so scheduled tasks can prefill multiple DaySketch rows based on `startAt` and `endAt`)
+- `test/day-sketch.test.js` (modified — added regression test asserting a task from 10:16am to 1:18pm pre-fills `10am`, `11am`, and `12pm` rows)
+
+**Task:** Show multi-hour scheduled tasks in multiple hourly DaySketch rows for the current date
+**Prompt summary:** "update day-sketch and test so a task from 10:16am to 1:18pm appears in 10am, 11am, and 12pm rows"
+**Scope:** ~45 lines of logic and test coverage across 2 files
+**Notes:** Prefill logic continues to avoid overwriting non-empty rows and still strips markdown/footnote syntax from task text.
+
+---
+
 ## 2026-03-18 — Recent Notes weekly UUID exclusion history
 
 **Model:** gpt-5.3-codex

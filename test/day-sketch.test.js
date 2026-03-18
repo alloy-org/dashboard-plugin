@@ -126,4 +126,33 @@ describe("DaySketchWidget", () => {
       name: "Day Sketch Thursday, January 1, 2026",
     });
   });
+
+  it("prefills multiple hour rows when a scheduled task spans multiple hours", async () => {
+    const app = buildMockApp();
+    const testDate = "2026-04-15";
+    const longTask = {
+      content: "Deep work block",
+      startAt: new Date(2026, 3, 15, 10, 16).getTime(),
+      endAt: new Date(2026, 3, 15, 13, 18).getTime(),
+    };
+
+    await act(async () => {
+      root.render(createElement(DaySketchWidget, {
+        app,
+        agendaTasks: { [testDate]: [longTask] },
+        currentDate: testDate,
+      }));
+    });
+    await flushAsync();
+
+    const tenAmInput = container.querySelector('input[aria-label="10am entry"]');
+    const elevenAmInput = container.querySelector('input[aria-label="11am entry"]');
+    const twelvePmInput = container.querySelector('input[aria-label="12pm entry"]');
+    const onePmInput = container.querySelector('input[aria-label="1pm entry"]');
+
+    expect(tenAmInput.value).toBe("Deep work block");
+    expect(elevenAmInput.value).toBe("Deep work block");
+    expect(twelvePmInput.value).toBe("Deep work block");
+    expect(onePmInput.value).toBe("");
+  });
 });
