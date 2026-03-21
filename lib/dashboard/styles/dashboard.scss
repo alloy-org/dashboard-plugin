@@ -239,6 +239,53 @@ html {
       margin-top: $sp-sm;
     }
   }
+
+  /* [Claude] Task: error fallback UI for individual widget crashes */
+  /* Prompt: "wrap each component in try...catch so failure to render one widget does not disrupt others" */
+  /* Date: 2026-03-21 | Model: claude-4.6-opus-high-thinking */
+  .widget-error-fallback {
+    align-items: center;
+    background: $color-bg-card;
+    border: 1px dashed $color-danger;
+    border-radius: $radius-md;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+    height: 100%;
+    justify-content: center;
+    padding: $sp-xl;
+    text-align: center;
+
+    &-title {
+      color: $color-danger;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    &-message {
+      color: $color-text-muted;
+      font-size: 0.8rem;
+      max-width: 280px;
+      word-break: break-word;
+    }
+
+    &-retry {
+      background: none;
+      border: 1px solid $color-border;
+      border-radius: $radius-sm;
+      color: $color-text-secondary;
+      cursor: pointer;
+      font-size: 0.75rem;
+      margin-top: $sp-xs;
+      padding: $sp-xs $sp-md;
+      transition: color 0.15s ease, border-color 0.15s ease;
+
+      &:hover {
+        border-color: $color-navy;
+        color: $color-navy;
+      }
+    }
+  }
 }
 
 @keyframes spin {

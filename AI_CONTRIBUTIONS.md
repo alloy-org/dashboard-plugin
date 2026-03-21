@@ -5,6 +5,24 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-21 — Widget error boundary and resilient data fetching
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dashboard/dashboard.js` (modified — added `WidgetErrorBoundary` class component and wrapped each widget cell in it)
+- `lib/dashboard/styles/dashboard.scss` (modified — added `.widget-error-fallback` styles)
+- `lib/data-service.js` (modified — wrapped `_resolveTaskDomains` in try/catch, switched `Promise.all` to `Promise.allSettled` with `_settledValueOr` helper, hardened `_fetchTasksForDomain` and `_resolveTaskDomains` against bad API responses)
+- `lib/dashboard/recent-notes.js` (modified — wrapped `getTaskDomains` call in try/catch, added null guards on domain iteration)
+- `lib/dashboard/quick-actions.js` (modified — wrapped `getTaskDomains` call in try/catch, added null guards)
+- `lib/dashboard/ai-plugins.js` (modified — wrapped `getTaskDomains` call in try/catch, added null guards)
+
+**Task:** Isolate widget rendering and data fetching failures so one crash doesn't take down the entire dashboard
+**Prompt summary:** "wrap each component load in try...catch so failure to render one widget does not disrupt others"
+**Scope:** ~90 lines of new logic across 6 files
+**Notes:** Two layers of resilience: (1) React error boundary around each widget cell catches render crashes and shows a retry-able fallback, (2) `fetchDashboardData` uses `Promise.allSettled` so a failing Amplenote API call (e.g. `getTaskDomainTasks` throwing internally) returns graceful defaults instead of blocking the entire init. The `getTaskDomains()` call is also guarded in all consumer sites (recent-notes, quick-actions, ai-plugins) since it can throw when domain UUIDs map to missing internal entries.
+
+---
+
 ## 2026-03-18 — DaySketch multi-hour scheduled task prefills
 
 **Model:** gpt-5.3-codex

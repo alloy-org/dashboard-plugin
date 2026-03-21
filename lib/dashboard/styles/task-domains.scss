@@ -108,4 +108,32 @@ $task-domain-transition-duration: 0.15s;
     color: $color-text-muted;
     font-size: 0.8rem;
   }
+
+  /* [Claude] Task: empty-state styling with setup prompt for missing task domains */
+  /* Prompt: "update the Task Domain area to include a message 'Set up a task domain to use the dashboard'" */
+  /* Date: 2026-03-21 | Model: claude-4.6-opus-high-thinking */
+  .task-domains--empty {
+    flex-wrap: wrap;
+
+    .task-domains-empty {
+      flex: 1 1 100%;
+      font-weight: 500;
+    }
+  }
+
+  .task-domains-setup {
+    background: $color-navy;
+    border: none;
+    border-radius: $radius-sm;
+    color: $color-bg-card;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: $sp-xs $sp-md;
+    transition: opacity $task-domain-transition-duration ease;
+
+    &:hover {
+      opacity: 0.85;
+    }
+  }
 }
