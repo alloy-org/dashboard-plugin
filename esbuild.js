@@ -74,7 +74,7 @@ const result = await esbuild.build({
   entryPoints: [`lib/plugin.js`],
   bundle: true,
   format: "iife",
-  minify: true,
+  minify: false,
   outfile: "build/compiled.js",
   packages: "external",
   platform: "browser",
