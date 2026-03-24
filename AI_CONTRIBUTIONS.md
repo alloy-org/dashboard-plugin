@@ -5,6 +5,21 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-24 — Shared splash image utility for quotes and dashboard fallback
+
+**Model:** gpt-5.3-codex
+**Files created/modified:**
+- `lib/util/background-splash-images.js` (created — centralized curated splash image list and deterministic `backgroundSplashUrl(size, seed, variant)` selector)
+- `lib/dashboard/quotes.js` (modified — removed inline `BG_IMAGES`, added mount-stable background seed, and switched quote tile backgrounds to shared helper URLs)
+- `lib/dashboard/dashboard.js` (modified — added deterministic date-based fallback large splash background when no user image is configured)
+
+**Task:** Move quote background image list into a shared utility and use deterministic seeding for stable quote backgrounds plus daily-rotating dashboard fallback backgrounds
+**Prompt summary:** "move BG_IMAGES into util/background-splash-images.js; keep quotes stable across rerenders with a seed; use large splash for dashboard when user has no uploaded background, changing by date"
+**Scope:** ~55 lines of new utility + ~15 lines of integration changes across 3 files
+**Notes:** Quote tiles now remain visually stable for the lifetime of a widget mount via a one-time seed. Dashboard fallback background is deterministic per date key (`currentDate` when available) and is automatically superseded as soon as a user-configured background URL exists.
+
+---
+
 ## 2026-03-21 — Widget error boundary and resilient data fetching
 
 **Model:** claude-4.6-opus-high-thinking
