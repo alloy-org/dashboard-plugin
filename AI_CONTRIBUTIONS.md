@@ -5,6 +5,19 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-03-24 — DreamTask round-trip integration test (write→read via real LLM)
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `test/dream-task-service.test.js` (modified — rewrote to make real OpenAI calls and verify write→read round-trip)
+
+**Task:** Replace hard-coded `noteContent` with a round-trip integration test that makes a real LLM call via `OPEN_AI_ACCESS_TOKEN`, lets the service write suggestions to the note, then verifies the service can parse them back from cache
+**Prompt summary:** "use OPEN_AI_ACCESS_TOKEN for real LLM calls; mock only the app interface, not the AI"
+**Scope:** ~130 lines rewritten in 1 test file (2 test cases)
+**Notes:** Uses `dotenv` + `isomorphic-fetch` + `OPEN_AI_ACCESS_TOKEN` for real OpenAI API calls; uses `SAMPLE_TASKS` fixture and mocked quarterly plan note; `itIfKey` pattern skips gracefully when no key is available; 90s timeout per test; structural assertions accommodate non-deterministic LLM output while verifying the round-trip is lossless
+
+---
+
 ## 2026-03-24 — Shared splash image utility for quotes and dashboard fallback
 
 **Model:** gpt-5.3-codex
