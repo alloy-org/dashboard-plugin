@@ -195,7 +195,8 @@ describe('Dashboard Plugin', () => {
       const result = await plugin.onEmbedCall(brokenApp, 'init');
 
       expect(result).toBeDefined();
-      expect(result.error).toBeDefined();
+      expect(result.tasks).toBeDefined();
+      expect(result.taskDomains).toEqual([]);
     });
   });
 

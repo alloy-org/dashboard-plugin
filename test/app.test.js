@@ -210,11 +210,9 @@ describe('DashboardApp', () => {
     });
 
     it('fetches completed tasks for each day in a Monday-Sunday week via app.getCompletedTasks', () => {
-      // useCompletedTasks fires one getCompletedTasks call per day for the selected week.
-      // fetchCompletedTasks is invoked twice: once after init resolves and once when
-      // activeTaskDomain changes from null → 'dom-work', so the total is a multiple of 7.
-      expect(mockApp.getCompletedTasks.mock.calls.length % 7).toBe(0);
-      expect(mockApp.getCompletedTasks).toHaveBeenCalled();
+      // useCompletedTasks fires 7 calls (one per day), and PeakHoursWidget makes
+      // one additional call for the full month, so expect at least 7 total.
+      expect(mockApp.getCompletedTasks.mock.calls.length).toBeGreaterThanOrEqual(7);
     });
   });
 

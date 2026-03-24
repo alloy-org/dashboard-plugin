@@ -481,7 +481,7 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
           tasks = tasks.concat(_buildSampleTasks());
         }
       }
-      return tasks;
+      return tasks.length > 0 ? tasks : sampleTasks;
     },
 
     // [Claude] Task: return open tasks belonging to a specific note for the Recent Notes widget
