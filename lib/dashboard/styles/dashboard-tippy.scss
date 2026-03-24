@@ -193,11 +193,13 @@ $tooltip-row-padding-y: 2px;
   }
 
   .mood-viz-tooltip-mood {
-    color: $color-tooltip-text;
+    .mood-viz-label {
+      color: $color-tooltip-text-muted;
+    }
   }
 
   .mood-viz-tooltip-note {
-    color: $color-tooltip-text-muted;
+    color: $color-tooltip-text;
     flex-basis: 100%;
     font-size: 0.7rem;
     font-style: italic;

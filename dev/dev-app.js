@@ -12,6 +12,7 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const COMPILED_DIR = path.join(__dirname, "compiled");
 const DEFAULT_SETTINGS_PATH = path.join(COMPILED_DIR, "settings.json");
+const DEFAULT_MOODS_PATH = path.join(COMPILED_DIR, "moods.json");
 const NOTES_DIR = path.join(__dirname, "..", "notes");
 
 // Note handles referenced by sample tasks, grouped by domain.
@@ -274,6 +275,66 @@ export function writeSettingsFile(settings, settingsPath = DEFAULT_SETTINGS_PATH
 }
 
 // ---------------------------------------------------------------------------
+// Mood File I/O
+// ---------------------------------------------------------------------------
+
+// [Claude] Task: file-backed mood rating persistence so recorded moods survive dev server restarts
+// Prompt: "update the dev environment to ensure that the call to updateMoodRating results in persisted data"
+// Date: 2026-03-24 | Model: claude-4.6-opus-high-thinking
+export function readMoodsFile(moodsPath = DEFAULT_MOODS_PATH) {
+  try {
+    const raw = fs.readFileSync(moodsPath, "utf-8");
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+export function writeMoodsFile(moods, moodsPath = DEFAULT_MOODS_PATH) {
+  const dir = path.dirname(moodsPath);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(moodsPath, JSON.stringify(moods, null, 2), "utf-8");
+}
+
+function _seedMoodRatings() {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const midnightSec = Math.floor(today.getTime() / 1000);
+  const DAY = 86400;
+  const ratings = [1, -1, 2, 0, 1, -2, 2, -1, 0, 1];
+  const notes = [
+    'Slept well, feeling rested and ready to go',
+    'Stressful morning but afternoon was better',
+    'Productive day — knocked out the whole backlog. Managed to close out six tickets before lunch, then spent the afternoon pairing with Jamie on the auth refactor. We finally tracked down the session expiry bug that had been haunting us for weeks. Turns out the token refresh was racing with the logout handler. Documented the fix in the wiki and added a regression test. Feeling accomplished — this kind of deep focus day is exactly what I needed after a scattered start to the week.',
+    'Bit tired, low energy after lunch',
+    'Great coffee chat with a friend',
+    'Overwhelmed with meetings all day',
+    'Solid workout this morning, feeling strong',
+    'Quiet day, caught up on reading',
+    'Tricky bug took hours — finally squashed it',
+    'Relaxing weekend, recharged for the week ahead',
+  ];
+  return ratings.map((rating, i) => {
+    const daysBack = ratings.length - 1 - i;
+    const hour = 8 + (i % 5) * 2;
+    return {
+      rating,
+      timestamp: midnightSec - daysBack * DAY + hour * 3600,
+      uuid: `mock-mood-uuid-${i}`,
+      note: notes[i],
+    };
+  });
+}
+
+function _ensureMoodsFile(moodsPath = DEFAULT_MOODS_PATH) {
+  const existing = readMoodsFile(moodsPath);
+  if (existing) return existing;
+  const seed = _seedMoodRatings();
+  writeMoodsFile(seed, moodsPath);
+  return seed;
+}
+
+// ---------------------------------------------------------------------------
 // Note File I/O
 // ---------------------------------------------------------------------------
 
@@ -379,7 +440,7 @@ function _readAllNoteFiles(dir = NOTES_DIR) {
 // [Claude] Task: create an app object that mirrors the Amplenote plugin app interface for local dev
 // Prompt: "dev mode should persist settings to a JSON file and return sample tasks"
 // Date: 2026-03-01 | Model: claude-opus-4-6
-export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NOTES_DIR) {
+export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NOTES_DIR, moodsPath = DEFAULT_MOODS_PATH) {
   const settings = readSettingsFile(settingsPath);
   const sampleTasks = _buildSampleTasks();
 
@@ -431,37 +492,38 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       return sampleTasks.filter(t => t.noteUUID === uuid && t.completedAt == null && t.dismissedAt == null);
     },
 
-    // [Claude] Task: generate 10 days of mock mood ratings with note text
-    // Prompt: "ensure dev-environment mood ratings are one per date for the last 10 days with a note value"
-    // Date: 2026-03-08 | Model: claude-4.6-opus-high-thinking
+    // [Claude] Task: serve mood ratings from file-backed store, seeding on first access
+    // Prompt: "update the dev environment to ensure that the call to updateMoodRating results in persisted data"
+    // Date: 2026-03-24 | Model: claude-4.6-opus-high-thinking
     async getMoodRatings(_fromUnixSeconds) {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const midnightSec = Math.floor(today.getTime() / 1000);
-      const DAY = 86400;
-      const ratings = [1, -1, 2, 0, 1, -2, 2, -1, 0, 1];
-      const notes = [
-        'Slept well, feeling rested and ready to go',
-        'Stressful morning but afternoon was better',
-        'Productive day — knocked out the whole backlog. Managed to close out six tickets before lunch, then spent the afternoon pairing with Jamie on the auth refactor. We finally tracked down the session expiry bug that had been haunting us for weeks. Turns out the token refresh was racing with the logout handler. Documented the fix in the wiki and added a regression test. Feeling accomplished — this kind of deep focus day is exactly what I needed after a scattered start to the week.',
-        'Bit tired, low energy after lunch',
-        'Great coffee chat with a friend',
-        'Overwhelmed with meetings all day',
-        'Solid workout this morning, feeling strong',
-        'Quiet day, caught up on reading',
-        'Tricky bug took hours — finally squashed it',
-        'Relaxing weekend, recharged for the week ahead',
-      ];
-      return ratings.map((rating, i) => {
-        const daysBack = ratings.length - 1 - i;
-        const hour = 8 + (i % 5) * 2;
-        return {
-          rating,
-          timestamp: midnightSec - daysBack * DAY + hour * 3600,
-          uuid: `mock-mood-uuid-${i}`,
-          note: notes[i],
-        };
+      return _ensureMoodsFile(moodsPath);
+    },
+
+    async recordMoodRating(value) {
+      const moods = _ensureMoodsFile(moodsPath);
+      const uuid = crypto.randomUUID();
+      moods.push({
+        rating: value,
+        timestamp: Math.floor(Date.now() / 1000),
+        uuid,
+        note: null,
       });
+      writeMoodsFile(moods, moodsPath);
+      console.log(`[dev-app] recordMoodRating(${value}) -> ${uuid}`);
+      return uuid;
+    },
+
+    async updateMoodRating(moodRatingUUID, updates) {
+      const moods = _ensureMoodsFile(moodsPath);
+      const entry = moods.find(m => m.uuid === moodRatingUUID);
+      if (!entry) {
+        console.warn(`[dev-app] updateMoodRating: uuid ${moodRatingUUID} not found`);
+        return;
+      }
+      if ('note' in updates) entry.note = updates.note;
+      if ('rating' in updates) entry.rating = updates.rating;
+      writeMoodsFile(moods, moodsPath);
+      console.log(`[dev-app] updateMoodRating(${moodRatingUUID}) updated:`, Object.keys(updates).join(', '));
     },
 
     async getCompletedTasks(_fromSec, _toSec) {
@@ -644,4 +706,4 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
   return app;
 }
 
-export { SAMPLE_DOMAINS, DEFAULT_SETTINGS_PATH, COMPILED_DIR, NOTES_DIR };
+export { SAMPLE_DOMAINS, DEFAULT_SETTINGS_PATH, DEFAULT_MOODS_PATH, COMPILED_DIR, NOTES_DIR };

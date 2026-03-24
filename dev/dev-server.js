@@ -111,23 +111,61 @@ function handleTasksApi(req, res) {
   return true;
 }
 
-// [Claude] Task: serve mock mood ratings from dev-app as a REST endpoint
-// Prompt: "DRY up mock mood ratings — single source in dev-app.js, mock-data.js fetches via /api/moods"
-// Date: 2026-03-08 | Model: claude-4.6-opus-high-thinking
+// [Claude] Task: serve file-backed mood ratings with record and update support
+// Prompt: "update the dev environment to ensure that the call to updateMoodRating results in persisted data"
+// Date: 2026-03-24 | Model: claude-4.6-opus-high-thinking
 function handleMoodsApi(req, res) {
-  if (req.method !== "GET") return false;
-  const parsedUrl = new URL(req.url, "http://localhost");
-  const from = parsedUrl.searchParams.get("from");
+  if (req.method === "GET") {
+    const parsedUrl = new URL(req.url, "http://localhost");
+    const from = parsedUrl.searchParams.get("from");
+    const app = createDevApp();
+    app.getMoodRatings(from ? Number(from) : null).then(moods => {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(moods));
+    }).catch(err => {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: err.message }));
+    });
+    return true;
+  }
 
-  const app = createDevApp();
-  app.getMoodRatings(from ? Number(from) : null).then(moods => {
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(moods));
-  }).catch(err => {
-    res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ error: err.message }));
-  });
-  return true;
+  if (req.method === "POST") {
+    let body = "";
+    req.on("data", chunk => { body += chunk; });
+    req.on("end", async () => {
+      try {
+        const { value } = JSON.parse(body);
+        const app = createDevApp();
+        const uuid = await app.recordMoodRating(value);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ uuid }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return true;
+  }
+
+  if (req.method === "PATCH") {
+    let body = "";
+    req.on("data", chunk => { body += chunk; });
+    req.on("end", async () => {
+      try {
+        const { uuid, updates } = JSON.parse(body);
+        const app = createDevApp();
+        await app.updateMoodRating(uuid, updates);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
+    return true;
+  }
+
+  return false;
 }
 
 // [Claude] Task: handle image upload from data URL and save to local file for dev background image
