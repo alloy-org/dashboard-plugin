@@ -3,6 +3,24 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-03-25 — Bright link colors in dark mode
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dashboard/styles/theme-light.scss` (modified — added `--dashboard-color-link` token)
+- `lib/dashboard/styles/theme-dark.scss` (modified — added `--dashboard-color-link` with brighter `#60a5fa`)
+- `lib/dashboard/styles/theme-tokens.scss` (modified — added `$color-link` variable)
+- `lib/dashboard/styles/agenda.scss` (modified — switched `a` and `.agenda-note-link` from `$color-blue` to `$color-link`)
+- `lib/dashboard/styles/amplenote-markdown-render.scss` (modified — switched `a` from `$color-accent` to `$color-link`)
+- `lib/dashboard/styles/dream-task.scss` (modified — switched `.dream-task-settings-link` to `$color-link`)
+- `lib/dashboard/styles/dashboard-settings-popup.scss` (modified — switched `.dashboard-settings-api-key-link` to `$color-link`)
+- `lib/dashboard/styles/planning.scss` (modified — switched `.create-month-plan-link` and `.create-week-plan-link` to `$color-link`)
+
+**Task:** Make anchor tags and link-styled elements brighter and more vivid in dark mode
+**Prompt summary:** "Update anchor tags to be bright-colored in dark mode"
+**Scope:** New `--dashboard-color-link` / `$color-link` design token; 7 SCSS files updated to use it
+**Notes:** Light mode uses same blue (`#5b7bbf`) as before; dark mode uses a more saturated `#60a5fa` instead of the pastel `#8fb2ff`
+
 ## 2026-03-25 — Fix task UUID visible in DreamTask widget
 
 **Model:** claude-4.6-opus-high-thinking

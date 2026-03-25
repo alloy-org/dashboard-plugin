@@ -18,7 +18,7 @@ $agenda-transition-duration: 0.12s;
 /* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .widget-agenda {
   a {
-    color: $color-blue;
+    color: $color-link;
     text-decoration: none;
 
     &:hover {
@@ -122,7 +122,7 @@ $agenda-transition-duration: 0.12s;
       .agenda-note-link {
         background: transparent;
         border: 0;
-        color: $color-blue;
+        color: $color-link;
         cursor: pointer;
         font-size: 0.72rem;
         margin: 0;
