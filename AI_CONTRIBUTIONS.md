@@ -3,6 +3,17 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-03-25 — Fix task UUID visible in DreamTask widget
+
+**Model:** claude-4.6-opus-high-thinking
+**Files modified:**
+- `lib/dream-task-service.js` (modified — changed UUID note format from markdown italic to HTML comment; rewrote `_parseCachedTasks` to extract and strip UUID markers from body text)
+
+**Task:** Hide task UUIDs from rendered DreamTask output; only show task text and explanation
+**Prompt summary:** "task UUID should not be shown to the user — only the text and reasoning"
+**Scope:** ~15 lines changed in 2 functions
+**Notes:** The old `*[task:uuid]*` format was markdown italic, which could leak visibly into the explanation field if Amplenote normalized the markdown on read-back. New format uses `<!-- task:uuid -->` HTML comments. Parser supports both formats for backward compatibility with existing notes.
+
 ---
 
 ## 2026-03-24 — DreamTask round-trip integration test (write→read via real LLM)
