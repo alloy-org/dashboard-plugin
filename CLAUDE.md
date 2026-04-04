@@ -1,52 +1,25 @@
-# CLAUDE.md — AI Authorship Documentation Standards
+# AGENTS.md/CLAUDE.md — AI Authorship Documentation Standards
 
 ## Purpose
 
-This project tracks AI-generated code for attribution, auditing, and code quality
-research. **You MUST document your authorship in every applicable way whenever you
-write or significantly modify code.**
+This project tracks AI-generated code for attribution, auditing, and code quality research. 
+**You MUST document your authorship in every applicable way whenever you write or significantly modify code.**
+
+This document is primarily concerned with documentation standards. For equally important guidelines on code 
+conventions and best practices, **You MUST also follow the standards outlined in `doc/code_conventions.md`**.
 
 ---
 
 ## 1. Inline Code Comments
 
 Add a structured comment directly above every function, class, method, or meaningful
-block you write or significantly modify.
-
-### Python
-```python
-# [Claude] Task: parse and validate incoming webhook payloads
-# Prompt: "add webhook validation with signature verification"
-# Date: 2025-02-21 | Model: claude-sonnet-4-6
-def validate_webhook(payload: dict, signature: str) -> bool:
-    ...
-```
-
-### Java
-```java
-// [Claude] Task: retry HTTP requests with exponential backoff
-// Prompt: "add retry logic with backoff to the API client"
-// Date: 2025-02-21 | Model: claude-sonnet-4-6
-public Response fetchWithRetry(String url, int maxAttempts) {
-    ...
-}
-```
-
-### TypeScript
-```typescript
-// [Claude] Task: debounce search input to reduce API calls
-// Prompt: "add debounce to prevent excessive API calls on keystroke"
-// Date: 2025-02-21 | Model: claude-sonnet-4-6
-function handleSearchInput(e: React.ChangeEvent<HTMLInputElement>): void {
-...
-}
-```
+block you write or significantly modify. See also `doc/code_conventions.md` for examples of dividers and 
+JSDoc standards per-function.
 
 ### JavaScript
 ```javascript
-// [Claude] Task: normalize API response shape across endpoints
+// [Claude claude-sonnet-4-6] Task: normalize API response shape across endpoints
 // Prompt: "write a utility to normalize inconsistent API responses"
-// Date: 2025-02-21 | Model: claude-sonnet-4-6
 function normalizeResponse(data) {
     ...
 }
@@ -54,16 +27,14 @@ function normalizeResponse(data) {
 
 ### HTML / Templates
 ```html
-<!-- [Claude] Task: render data summary table with sortable columns -->
+<!-- [Claude claude-sonnet-4-6] Task: render data summary table with sortable columns -->
 <!-- Prompt: "create a table showing sortable records with pagination" -->
-<!-- Date: 2025-02-21 | Model: claude-sonnet-4-6 -->
 ```
 
 ### CSS / SCSS
 ```css
-/* [Claude] Task: responsive card grid layout for dashboard */
+/* [Claude claude-sonnet-4-6] Task: responsive card grid layout for dashboard */
 /* Prompt: "make the dashboard cards wrap gracefully on mobile" */
-/* Date: 2025-02-21 | Model: claude-sonnet-4-6 */
 ```
 
 **Rules:**
@@ -79,34 +50,10 @@ function normalizeResponse(data) {
 When you create a new file entirely, add a header block at the very top before any
 imports or code.
 
-### Python
-```python
-# =============================================================================
-# [Claude-authored file]
-# Created: 2025-02-21 | Model: claude-sonnet-4-6
-# Task: Webhook validation utilities
-# Prompt summary: "build webhook signature verification for incoming events"
-# =============================================================================
-```
-
-### Java
-```java
-/*
- * [Claude-authored file]
- * Created: 2025-02-21 | Model: claude-sonnet-4-6
- * Task: HTTP client with retry and backoff logic
- * Prompt summary: "build a robust HTTP client wrapper with retries"
- */
-```
-
-### TypeScript / JavaScript
-```typescript
-/**
- * [Claude-authored file]
- * Created: 2025-02-21 | Model: claude-sonnet-4-6
- * Task: Search input component with debounce
- * Prompt summary: "create a reusable debounced search input component"
- */
+### JavaScript
+```javascript
+// [claude-sonnet-4-6-authored file]
+// Prompt summary: "create a reusable debounced search input component"
 ```
 
 ---
@@ -149,27 +96,9 @@ Co-authored-by: Claude <claude@anthropic.com>
 
 When you write tests, add a comment at the top of the outermost test block.
 
-### Python (pytest)
-```python
-# [Claude] Generated tests for: webhook signature validation
-# Date: 2025-02-21 | Model: claude-sonnet-4-6
-class TestWebhookValidator:
-    ...
-```
-
-### Java (JUnit)
-```java
-// [Claude] Generated tests for: HTTP client retry behavior
-// Date: 2025-02-21 | Model: claude-sonnet-4-6
-class ApiClientRetryTest {
-    ...
-}
-```
-
-### TypeScript / JavaScript (Jest, Vitest)
-```typescript
-// [Claude] Generated tests for: debounced search input component
-// Date: 2025-02-21 | Model: claude-sonnet-4-6
+### JavaScript (Jest)
+```javascript
+// [Claude claude-sonnet-4-6] Generated tests for: debounced search input component
 describe('SearchInput', () => {
     ...
 });
@@ -202,22 +131,18 @@ of over-documenting — these records are used for code quality and attribution 
 
 ---
 
-## 6. Pull Request Descriptions
+## 6. Running Jest (Javascript) Tests
 
-When drafting a pull request description, always include an **AI Authorship** section:
+Tests use Jest with ECMAScript Modules. Always run with the `--experimental-vm-modules` flag:
 
-```markdown
-## AI Authorship
+```bash
+NODE_OPTIONS=--experimental-vm-modules npx jest --no-coverage
+```
 
-This PR includes code generated by Claude (claude-sonnet-4-6).
+To run a specific test file or pattern:
 
-| File | Authorship |
-|------|------------|
-| src/webhooks/validator.py | Claude (100%) |
-| tests/test_validator.py | Claude (100%) |
-| src/config/settings.py | Mixed (~20% Claude) |
-
-**Prompt summary:** "add webhook validation with signature verification"
+```bash
+NODE_OPTIONS=--experimental-vm-modules npx jest --testPathPattern='dream-task' --no-coverage
 ```
 
 ---
@@ -237,18 +162,3 @@ When in doubt, over-document. These records are used for ongoing research into A
 impact on code quality and long-term maintainability.
 
 ---
-
-## Running Tests
-
-Tests use Jest with ECMAScript Modules. Always run with the `--experimental-vm-modules`
-flag:
-
-```bash
-NODE_OPTIONS=--experimental-vm-modules npx jest --no-coverage
-```
-
-To run a specific test file or pattern:
-
-```bash
-NODE_OPTIONS=--experimental-vm-modules npx jest --testPathPattern='dream-task' --no-coverage
-```
