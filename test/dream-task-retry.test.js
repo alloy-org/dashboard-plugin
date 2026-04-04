@@ -127,14 +127,14 @@ describe("DreamTaskWidget API key retry", () => {
     expect(container.querySelector(".dream-task-card")).toBeFalsy();
 
     app.settings[SETTING_KEYS.LLM_PROVIDER] = "anthropic";
-    app.settings[SETTING_KEYS.LLM_API_KEY] = ANTHROPIC_KEY;
+    app.settings[SETTING_KEYS.LLM_API_KEY_ANTHROPIC] = ANTHROPIC_KEY;
 
     await act(async () => {
       root.render(createElement(DreamTaskWidget, {
         app,
         gridHeightSize: 1,
         gridWidthSize: 1,
-        llmApiKey: ANTHROPIC_KEY,
+        providerApiKey: ANTHROPIC_KEY,
         onOpenSettings,
       }));
     });

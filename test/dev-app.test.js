@@ -47,13 +47,13 @@ describe("Dev App Harness", () => {
     it("persists settings across separate app instantiations", async () => {
       const firstApp = createDevApp(tmpSettingsPath, tmpNotesDir);
       await firstApp.setSetting(widgetConfigKey("quotes"), '["motivational"]');
-      await firstApp.setSetting(SETTING_KEYS.LLM_API_KEY, "sk-test-key-123");
+      await firstApp.setSetting(SETTING_KEYS.LLM_API_KEY_OPENAI, "sk-test-key-123");
 
       // Simulate a fresh start by creating a brand-new app instance.
       const secondApp = createDevApp(tmpSettingsPath, tmpNotesDir);
 
       expect(secondApp.settings[widgetConfigKey("quotes")]).toBe('["motivational"]');
-      expect(secondApp.settings[SETTING_KEYS.LLM_API_KEY]).toBe("sk-test-key-123");
+      expect(secondApp.settings[SETTING_KEYS.LLM_API_KEY_OPENAI]).toBe("sk-test-key-123");
     });
 
     it("accumulates multiple settings without losing earlier ones", async () => {

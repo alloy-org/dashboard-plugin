@@ -22,7 +22,7 @@ function buildLlmApp() {
   return {
     settings: {
       [SETTING_KEYS.LLM_PROVIDER]: "openai",
-      [SETTING_KEYS.LLM_API_KEY]: OPEN_AI_KEY,
+      [SETTING_KEYS.LLM_API_KEY_OPENAI]: OPEN_AI_KEY,
     },
     alert: jest.fn(),
   };

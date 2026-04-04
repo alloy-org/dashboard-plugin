@@ -3,18 +3,25 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
-## 2026-04-04 — DreamTask retry on API key addition
+## 2026-04-04 — Per-provider API key storage, providerApiKey prop, settings auto-populate
 
 **Model:** claude-4.6-opus-high-thinking
 **Files created/modified:**
-- `lib/dashboard/dream-task.js` (modified — accept `llmApiKey` prop, add retry `useEffect` when config arrives and no suggestions exist)
-- `lib/dashboard/dashboard.js` (modified — sync `app.settings` in `saveSettings`, pass `llmApiKey` from `configParams` to `DreamTaskCell`)
-- `test/dream-task-retry.test.js` (created — integration test rendering the widget with no key, then adding an Anthropic key and verifying real LLM suggestions appear)
+- `lib/providers/ai-provider-settings.js` (modified — `apiKeyFromApp` reads per-provider keys via `apiKeyFromProvider`, falls back to legacy `"LLM API Key"`)
+- `lib/dashboard/dashboard.js` (modified — `saveSettings` persists API key to per-provider setting key, computes `providerApiKey` from `configParams` and passes to all widget cells)
+- `lib/dashboard/dream-task.js` (modified — accepts `providerApiKey` prop instead of `llmApiKey`, no default args mixed with named args, no direct `app.settings` reads for AI config)
+- `lib/dashboard/dashboard-settings-popup.js` (modified — auto-populates API key when provider dropdown changes, sends `apiKeyProvider` to save handler, reads per-provider keys from `configParams`)
+- `lib/dashboard/quotes.js` (modified — accepts `providerApiKey` prop, passes to `fetchQuotes`)
+- `lib/data-service.js` (modified — `fetchQuotes` accepts `{ apiKey, provider }` parameter, `_readDashboardSettings` reads all per-provider API keys)
+- `test/dream-task-retry.test.js` (modified — uses `providerApiKey` prop and `SETTING_KEYS.LLM_API_KEY_ANTHROPIC`)
+- `test/dream-task-service.test.js` (modified — uses `SETTING_KEYS.LLM_API_KEY_OPENAI`)
+- `test/llm-integration.test.js` (modified — uses `SETTING_KEYS.LLM_API_KEY_OPENAI`)
+- `test/dev-app.test.js` (modified — uses `SETTING_KEYS.LLM_API_KEY_OPENAI`)
 
-**Task:** Retry DreamTask query when a new AI API key is added, if no suggestions exist for the current date
-**Prompt summary:** "update the input props for dream-task.js such that it will retry its query if it does not already have suggestions for the current date; add test using ANTHROPIC_AI_ACCESS_TOKEN"
-**Scope:** ~20 lines of new logic in source files, ~90 lines in test
-**Notes:** The widget tracks the previous `hasLlmConfig` state via a ref; when it transitions from falsy to truthy and `tasks` is still null, `runAnalysis` is triggered. The dashboard's `saveSettings` now also mutates `app.settings` so downstream service code picks up the new provider/key immediately.
+**Task:** Store API keys per-provider, pass `providerApiKey` prop to AI-using widgets, auto-populate key on provider switch
+**Prompt summary:** "store API key per provider (LLM_API_KEY_ANTHROPIC etc.), widgets use providerApiKey prop not app.settings, auto-populate on provider change"
+**Scope:** ~80 lines of new/changed logic across 6 source files, ~10 lines across 4 test files
+**Notes:** The old generic `LLM_API_KEY` setting key was already removed from SETTING_KEYS (per-provider keys like `LLM_API_KEY_ANTHROPIC` and `apiKeyFromProvider` were already present). This change completes the migration: `apiKeyFromApp` reads per-provider keys, `saveSettings` persists to per-provider keys, widgets receive the resolved key as `providerApiKey` instead of reading `app.settings` directly, and the settings popup auto-fills the stored key when the user switches providers.
 
 ---
 
