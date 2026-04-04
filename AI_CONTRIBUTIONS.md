@@ -3,6 +3,21 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-04-04 — DreamTask retry on API key addition
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dashboard/dream-task.js` (modified — accept `llmApiKey` prop, add retry `useEffect` when config arrives and no suggestions exist)
+- `lib/dashboard/dashboard.js` (modified — sync `app.settings` in `saveSettings`, pass `llmApiKey` from `configParams` to `DreamTaskCell`)
+- `test/dream-task-retry.test.js` (created — integration test rendering the widget with no key, then adding an Anthropic key and verifying real LLM suggestions appear)
+
+**Task:** Retry DreamTask query when a new AI API key is added, if no suggestions exist for the current date
+**Prompt summary:** "update the input props for dream-task.js such that it will retry its query if it does not already have suggestions for the current date; add test using ANTHROPIC_AI_ACCESS_TOKEN"
+**Scope:** ~20 lines of new logic in source files, ~90 lines in test
+**Notes:** The widget tracks the previous `hasLlmConfig` state via a ref; when it transitions from falsy to truthy and `tasks` is still null, `runAnalysis` is triggered. The dashboard's `saveSettings` now also mutates `app.settings` so downstream service code picks up the new provider/key immediately.
+
+---
+
 ## 2026-03-25 — Bright link colors in dark mode
 
 **Model:** claude-4.6-opus-high-thinking
