@@ -4,6 +4,7 @@ import fetch from "isomorphic-fetch"
 import { jest } from "@jest/globals"
 import pluginObject from "../lib/plugin"
 import path from "path"
+import { replaceSectionContent } from "../lib/util/replace-note-section-content.js"
 import { fileURLToPath } from "url"
 
 dotenv.config();
@@ -144,10 +145,10 @@ export function mockApp(notes, { plugin = null } = {}) {
   app.notes.find = jest.fn().mockResolvedValue(null);
   app.notes.filter = jest.fn().mockResolvedValue(null);
   app.openEmbed = jest.fn().mockImplementation(async () => plugin?.renderEmbed(app))
-  app.replaceNoteContent = jest.fn().mockImplementation(async (noteHandle, content) => {
+  app.replaceNoteContent = jest.fn().mockImplementation(async (noteHandle, content, options) => {
     const note = findNoteByHandle(noteHandle);
     if (note) {
-      note.body = content;
+      note.body = replaceSectionContent(note.body, content, options);
     }
   });
   app.setSetting = jest.fn().mockResolvedValue(null);
@@ -219,33 +220,7 @@ export function mockNote(name, content, uuid, options = {}) {
 
   // --------------------------------------------------------------------------------------
   note.replaceContent = async (newContent, sectionObject = null) => {
-    if (sectionObject) {
-      const sectionHeadingText = sectionObject.section.heading.text;
-      let throughLevel = sectionObject.section.heading?.level;
-      if (!throughLevel) throughLevel = sectionHeadingText.match(/^#*/)[0].length;
-      if (!throughLevel) throughLevel = 1;
-
-      const indexes = Array.from(note.body.matchAll(/^#+\s*([^#\n\r]+)/gm));
-      const sectionMatch = indexes.find(m => m[1].trim() === sectionHeadingText.trim());
-      let startIndex, endIndex;
-      if (!sectionMatch) {
-        throw new Error(`Could not find section ${ sectionHeadingText } that was looked up. This might be expected`);
-      } else {
-        const level = sectionMatch[0].match(/^#+/)[0].length;
-        const nextMatch = indexes.find(m => m.index > sectionMatch.index && m[0].match(/^#+/)[0].length <= level);
-        endIndex = nextMatch ? nextMatch.index : note.body.length;
-        startIndex = sectionMatch.index + sectionMatch[0].length + 1;
-      }
-
-      if (Number.isInteger(startIndex)) {
-        const revisedContent = `${ note.body.slice(0, startIndex) }${ newContent.trim() }\n${ note.body.slice(endIndex) }`;
-        note.body = revisedContent;
-      } else {
-        throw new Error(`Could not find section ${ sectionObject.section.heading.text } in note ${ note.name }`);
-      }
-    } else {
-      note.body = newContent;
-    }
+    note.body = replaceSectionContent(note.body, newContent, sectionObject);
   };
 
   // --------------------------------------------------------------------------------------

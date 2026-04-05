@@ -8,6 +8,7 @@ import { jest } from "@jest/globals";
 import { updateDreamTaskTaskMetadata } from "../lib/dashboard/dream-task-internals.js";
 import { analyzeDreamTasks } from "../lib/dream-task-service.js";
 import { SETTING_KEYS } from "../lib/constants/settings.js";
+import { replaceSectionContent } from "../lib/util/replace-note-section-content.js";
 import { SAMPLE_TASKS } from "./fixtures/tasks.js";
 
 const MOCK_NOTE_UUID = "dream-note-uuid";
@@ -47,27 +48,22 @@ function buildMockAppWithNote(initialContent) {
     settings: {
       [SETTING_KEYS.TASK_DOMAINS]: JSON.stringify({ selectedDomainUuid: "dom-work" }),
     },
-    getNoteContent: jest.fn().mockImplementation(({ uuid }) => {
-      if (uuid === MOCK_NOTE_UUID) return Promise.resolve(noteContent);
-      return Promise.resolve("");
-    }),
-    replaceNoteContent: jest.fn().mockImplementation((_handle, sectionBody, options) => {
-      const heading = options?.section?.heading?.text;
-      if (!heading) return Promise.resolve(false);
-      const sectionPattern = new RegExp(
-        `(^##\\s+${ heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") }\\n)([\\s\\S]*?)(?=^##\\s+.+?\\n|$)`, "gm"
-      );
-      noteContent = noteContent.replace(sectionPattern, `$1${ sectionBody }`);
-      return Promise.resolve(true);
-    }),
+    createNote: jest.fn().mockResolvedValue(MOCK_NOTE_UUID),
+    filterNotes: jest.fn().mockResolvedValue([]),
     findNote: jest.fn().mockImplementation(({ uuid, name }) => {
       if (uuid === MOCK_NOTE_UUID || name) return Promise.resolve({ uuid: MOCK_NOTE_UUID });
       return Promise.resolve(null);
     }),
+    getNoteContent: jest.fn().mockImplementation(({ uuid }) => {
+      if (uuid === MOCK_NOTE_UUID) return Promise.resolve(noteContent);
+      return Promise.resolve("");
+    }),
     getTaskDomains: jest.fn().mockResolvedValue([{ uuid: "dom-work", name: "Work" }]),
     getTaskDomainTasks: jest.fn().mockResolvedValue(SAMPLE_TASKS),
-    filterNotes: jest.fn().mockResolvedValue([]),
-    createNote: jest.fn().mockResolvedValue(MOCK_NOTE_UUID),
+    replaceNoteContent: jest.fn().mockImplementation((_handle, content, options) => {
+      noteContent = replaceSectionContent(noteContent, content, options);
+      return Promise.resolve(true);
+    }),
     currentNoteContent: () => noteContent,
   };
 
