@@ -53,12 +53,21 @@
   .dream-task-card {
     border: 1px solid $color-border;
     border-radius: $radius-md;
+    opacity: 1;
     padding: $sp-md $sp-lg;
-    transition: border-color 0.15s ease;
+    transition: border-color 0.15s ease, opacity 0.28s ease, transform 0.28s ease;
 
     &:hover {
       border-color: $color-blue-light;
     }
+  }
+
+  /* [Claude gpt-5.3-codex] Task: fade and collapse cards on complete/remove */
+  /* Prompt: "Mark complete/remove should fade out and be replaced by the next generated task" */
+  .dream-task-card--dismissing {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(6px) scale(0.98);
   }
 
   .dream-task-card-header {
@@ -147,6 +156,7 @@
 
   .dream-task-card-explanation {
     color: $color-text-secondary;
+    cursor: pointer;
     display: -webkit-box;
     font-size: 0.8rem;
     line-height: 1.5;
@@ -155,6 +165,38 @@
     text-overflow: ellipsis;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
+  }
+
+  /* [Claude gpt-5.3-codex] Task: expanded explanation state removes the 3-line clamp */
+  /* Prompt: "click explanation to expand unlimited length, click again to collapse to 3 lines" */
+  .dream-task-card-explanation--expanded {
+    display: block;
+    overflow: visible;
+    text-overflow: clip;
+    -webkit-box-orient: initial;
+    -webkit-line-clamp: initial;
+  }
+
+  /* [Claude gpt-5.3-codex] Task: action row links below task explanation */
+  /* Prompt: "After each dream-task-card-explanation, add links for preserve through tomorrow, mark complete, and remove" */
+  .dream-task-card-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-sm;
+    margin-top: $sp-sm;
+  }
+
+  .dream-task-card-action {
+    color: $color-link;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 
   .dream-task-no-config {

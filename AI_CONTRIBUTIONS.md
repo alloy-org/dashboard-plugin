@@ -3,6 +3,24 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-04-05 — DreamTask card actions and replacement flow
+
+**Model:** gpt-5.3-codex
+**Files created/modified:**
+- `lib/dashboard/dream-task.js` (modified — added action links per card, preserve toggle, complete/remove fade-and-replace behavior, confetti trigger, and split render-vs-generate counts usage)
+- `lib/dashboard/dream-task-internals.js` (modified — introduced `_taskGenerateCount`, changed `_maxTasksFromGrid` to visible-card count, added metadata update bridge helper)
+- `lib/dream-task-service.js` (modified — added suggestion IDs + metadata parsing/serialization, filtered dismissed tasks from cache/fresh merge, exported note metadata updater)
+- `lib/dashboard/styles/dream-task.scss` (modified — card action-row styles and dismissal fade animation)
+- `package.json` (modified — added `canvas-confetti`)
+- `package-lock.json` (modified — lockfile update for `canvas-confetti`)
+
+**Task:** Add per-card DreamTask links for preserve/complete/remove with note-backed metadata and replacement from pre-generated task pool
+**Prompt summary:** "after each explanation add preserve/mark complete/remove links; complete/remove should fade out and show next task; split max visible from generation count"
+**Scope:** ~220 lines of new/changed logic across 4 source files + dependency update
+**Notes:** Preserve status is persisted via suggestion metadata in the daily note; complete/remove mark metadata and immediately remove the card from UI so the next pre-generated suggestion fills in when available.
+
+---
+
 ## 2026-04-05 — DreamTask reseed provider chooser
 
 **Model:** gpt-5.3-codex
