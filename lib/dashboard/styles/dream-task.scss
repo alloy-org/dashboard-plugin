@@ -30,9 +30,7 @@
     color: $color-text-secondary;
     font-size: 0.7rem;
     line-height: 1.4;
-    margin: $sp-sm 0 0;
     padding-top: $sp-sm;
-    border-top: 1px solid $color-border;
   }
 
   /* [Claude] Task: goals summary styling above task cards */
@@ -119,6 +117,23 @@
     border-radius: $radius-sm;
     color: $color-blue;
     flex-shrink: 0;
+  }
+
+  /* [Claude claude-opus-4-6] Task: compact label showing source note title for existing suggestions */
+  /* Prompt: "first 15 characters of the note; similar to +new, different background" */
+  .dream-task-source-note-badge {
+    background: rgba(124, 58, 237, 0.1);
+    border-radius: $radius-sm;
+    color: $color-navy;
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    max-width: 11rem;
+    overflow: hidden;
+    padding: 2px $sp-xs;
+    text-overflow: ellipsis;
+    text-transform: none;
+    white-space: nowrap;
   }
 
   .dream-task-new-badge,

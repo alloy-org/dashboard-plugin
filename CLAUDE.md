@@ -33,7 +33,7 @@ function normalizeResponse(data) {
 
 ### CSS / SCSS
 ```css
-/* [Claude claude-sonnet-4-6] Task: responsive card grid layout for dashboard */
+/* [Claude current-model-name-5.1] Task: responsive card grid layout for dashboard */
 /* Prompt: "make the dashboard cards wrap gracefully on mobile" */
 ```
 
@@ -52,7 +52,7 @@ imports or code.
 
 ### JavaScript
 ```javascript
-// [claude-sonnet-4-6-authored file]
+// [current-model-name-4.2-authored file]
 // Prompt summary: "create a reusable debounced search input component"
 ```
 
@@ -62,7 +62,7 @@ imports or code.
 
 Every commit message you draft or suggest must include:
 
-1. A `[Claude]` tag on the subject line
+1. A `[AI Provider]` tag on the subject line, e.g., `[Claude]`, `[Gemini]`
 2. A short body describing what was generated and the originating prompt
 3. A list of files you authored
 4. The `Co-authored-by` trailer
@@ -98,7 +98,7 @@ When you write tests, add a comment at the top of the outermost test block.
 
 ### JavaScript (Jest)
 ```javascript
-// [Claude claude-sonnet-4-6] Generated tests for: debounced search input component
+// [AiProviderName llm-provider-model-5.2] Generated tests for: debounced search input component
 describe('SearchInput', () => {
     ...
 });
@@ -114,7 +114,7 @@ non-trivial task, append an entry using this format:
 ```markdown
 ## 2025-02-21 — Webhook signature validation
 
-**Model:** claude-sonnet-4-6
+**Model:** name-of-llm-provider-model-version-4.2
 **Files created/modified:**
 - `src/webhooks/validator.py` (created)
 - `tests/test_validator.py` (created)
