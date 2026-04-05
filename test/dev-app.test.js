@@ -37,11 +37,11 @@ describe("Dev App Harness", () => {
     it("writes a setting to the JSON file when setSetting is called", async () => {
       const app = createDevApp(tmpSettingsPath, tmpNotesDir);
 
-      await app.setSetting(SETTING_KEYS.LLM_PROVIDER, "anthropic");
+      await app.setSetting(SETTING_KEYS.LLM_PROVIDER_MODEL, "anthropic");
 
       const raw = fs.readFileSync(tmpSettingsPath, "utf-8");
       const persisted = JSON.parse(raw);
-      expect(persisted[SETTING_KEYS.LLM_PROVIDER]).toBe("anthropic");
+      expect(persisted[SETTING_KEYS.LLM_PROVIDER_MODEL]).toBe("anthropic");
     });
 
     it("persists settings across separate app instantiations", async () => {

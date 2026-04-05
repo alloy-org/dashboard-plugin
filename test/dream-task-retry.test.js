@@ -126,7 +126,7 @@ describe("DreamTaskWidget API key retry", () => {
     expect(container.querySelector(".dream-task-no-config")).toBeTruthy();
     expect(container.querySelector(".dream-task-card")).toBeFalsy();
 
-    app.settings[SETTING_KEYS.LLM_PROVIDER] = "anthropic";
+    app.settings[SETTING_KEYS.LLM_PROVIDER_MODEL] = "anthropic";
     app.settings[SETTING_KEYS.LLM_API_KEY_ANTHROPIC] = ANTHROPIC_KEY;
 
     await act(async () => {

@@ -21,7 +21,7 @@ const itIfKey = OPEN_AI_KEY ? it : it.skip;
 function buildLlmApp() {
   return {
     settings: {
-      [SETTING_KEYS.LLM_PROVIDER]: "openai",
+      [SETTING_KEYS.LLM_PROVIDER_MODEL]: "openai",
       [SETTING_KEYS.LLM_API_KEY_OPENAI]: OPEN_AI_KEY,
     },
     alert: jest.fn(),

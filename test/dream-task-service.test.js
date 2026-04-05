@@ -48,7 +48,7 @@ function buildMockApp() {
   const app = {
     settings: {
       [SETTING_KEYS.TASK_DOMAINS]: JSON.stringify({ selectedDomainUuid: "dom-work" }),
-      [SETTING_KEYS.LLM_PROVIDER]: "openai",
+      [SETTING_KEYS.LLM_PROVIDER_MODEL]: "openai",
       [SETTING_KEYS.LLM_API_KEY_OPENAI]: OPEN_AI_KEY,
     },
     alert: jest.fn(),

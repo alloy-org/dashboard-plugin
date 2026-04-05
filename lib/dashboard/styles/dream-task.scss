@@ -24,6 +24,17 @@
     gap: $sp-md;
   }
 
+  /* [Claude claude-opus-4-6] Task: attribution line under suggestion cards */
+  /* Prompt: "print which LLM provider generated the suggestions at the bottom of the widget" */
+  .dream-task-llm-attribution {
+    color: $color-text-secondary;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    margin: $sp-sm 0 0;
+    padding-top: $sp-sm;
+    border-top: 1px solid $color-border;
+  }
+
   /* [Claude] Task: goals summary styling above task cards */
   /* Prompt: "begin the date's content by summarizing quarter/month/week goals before the task list" */
   /* Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking */
