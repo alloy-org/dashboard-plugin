@@ -3,6 +3,23 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-04-05 — DreamTask reseed provider chooser
+
+**Model:** gpt-5.3-codex
+**Files created/modified:**
+- `lib/dashboard/dream-task-provider-selection.js` (created — provider-key detection + reseed chooser prompt)
+- `lib/dashboard/dream-task.js` (modified — reseed flow now prompts for provider when multiple keys are configured and passes provider override to analysis)
+- `lib/dashboard/dream-task-internals.js` (modified — forwards provider override through refresh/fetch helpers)
+- `lib/dream-task-service.js` (modified — supports provider override via `providerEmOverride` in LLM options and attribution resolution)
+- `test/dream-task-provider-selection.test.js` (created — unit tests for configured-provider detection and chooser behavior)
+
+**Task:** On DreamTask "Reseed", ask which provider to use when multiple AI API keys are configured
+**Prompt summary:** "When clicking Reseed, detect multiple keys and let the user pick which LLM provider to use"
+**Scope:** ~120 lines of new/changed logic across 4 source files plus 1 new test file
+**Notes:** The chooser appears only when more than one provider key is configured; canceling the dialog aborts reseed; single-key and zero-key setups continue without a prompt.
+
+---
+
 ## 2026-04-05 — DreamTask widget LLM attribution footer
 
 **Model:** claude-opus-4-6

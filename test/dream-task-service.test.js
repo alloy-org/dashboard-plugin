@@ -7,15 +7,25 @@
 import { jest } from "@jest/globals";
 import dotenv from "dotenv";
 import fetch from "isomorphic-fetch";
-import { analyzeDreamTasks } from "../lib/dream-task-service.js";
 import { SETTING_KEYS } from "../lib/constants/settings.js";
+import { analyzeDreamTasks } from "../lib/dream-task-service.js";
 import { SAMPLE_TASKS } from "./fixtures/tasks.js";
 
 dotenv.config();
 global.fetch = fetch;
 
+const ANTHROPIC_KEY = process.env.ANTHROPIC_AI_ACCESS_TOKEN;
+const GEMINI_KEY = process.env.GEMINI_AI_ACCESS_TOKEN;
+const GROK_KEY = process.env.GROK_AI_ACCESS_TOKEN;
 const OPEN_AI_KEY = process.env.OPEN_AI_ACCESS_TOKEN;
-const itIfKey = OPEN_AI_KEY ? it : it.skip;
+const PROVIDER_KEY_CONFIGS = [
+  { providerEm: "openai", settingKey: SETTING_KEYS.LLM_API_KEY_OPENAI, value: OPEN_AI_KEY },
+  { providerEm: "anthropic", settingKey: SETTING_KEYS.LLM_API_KEY_ANTHROPIC, value: ANTHROPIC_KEY },
+  { providerEm: "gemini", settingKey: SETTING_KEYS.LLM_API_KEY_GEMINI, value: GEMINI_KEY },
+  { providerEm: "grok", settingKey: SETTING_KEYS.LLM_API_KEY_GROK, value: GROK_KEY },
+];
+const PROVIDER_KEY_CONFIGS_WITH_VALUES = PROVIDER_KEY_CONFIGS.filter(provider => !!provider.value);
+const itIfProviderKey = PROVIDER_KEY_CONFIGS_WITH_VALUES.length > 0 ? it : it.skip;
 
 const MOCK_QUARTERLY_PLAN = `# Q1 2026 Plan
 
@@ -32,24 +42,23 @@ const MOCK_QUARTERLY_PLAN = `# Q1 2026 Plan
 - Primary focus: Dashboard testing and polish
 - Key tasks: Write integration tests, fix edge cases`;
 
-// [Claude] Task: derive today's note name identically to the DreamTask component
-// Date: 2026-03-24 | Model: claude-4.6-opus-high-thinking
-function todayNoteName() {
-  const label = new Date().toLocaleString([], { year: "numeric", month: "long", day: "numeric" });
-  return `Dashboard proposed tasks for ${label}`;
-}
-
-// [Claude] Task: build mock app backed by SAMPLE_TASKS and a quarterly plan note, with mutable dream note storage
-// Prompt: "use OPEN_AI_ACCESS_TOKEN for real LLM calls; mock only the app interface"
-// Date: 2026-03-24 | Model: claude-4.6-opus-high-thinking
-function buildMockApp() {
+// ----------------------------------------------------------------------------------------------
+// @desc Build mock app backed by SAMPLE_TASKS and a quarterly plan note, with mutable dream note storage.
+// @param {object} providerConfig - Provider config with `providerEm`.
+// [Claude gpt-5.3-codex] Task: include all provider keys from .env and select active provider for integration test
+// Prompt: "Use valid .env keys for each provider to ensure dream-task-service.test.js passes"
+function buildMockApp(providerConfig) {
   let dreamNoteContent = "";
+  const providerSettings = PROVIDER_KEY_CONFIGS.reduce((accumulator, config) => {
+    if (config.value) accumulator[config.settingKey] = config.value;
+    return accumulator;
+  }, {});
 
   const app = {
     settings: {
+      ...providerSettings,
       [SETTING_KEYS.TASK_DOMAINS]: JSON.stringify({ selectedDomainUuid: "dom-work" }),
-      [SETTING_KEYS.LLM_PROVIDER_MODEL]: "openai",
-      [SETTING_KEYS.LLM_API_KEY_OPENAI]: OPEN_AI_KEY,
+      [SETTING_KEYS.LLM_PROVIDER_MODEL]: providerConfig.providerEm,
     },
     alert: jest.fn(),
     findNote: jest.fn().mockResolvedValue({ uuid: "dream-note-uuid" }),
@@ -76,11 +85,30 @@ function buildMockApp() {
   return app;
 }
 
-// [Claude] Generated tests for: DreamTask write→read round-trip via real OpenAI LLM
+// ----------------------------------------------------------------------------------------------
+// @desc Pick the active provider to run integration tests against.
+// @returns {object|null} Provider config with provider enum + setting key + key value.
+// [Claude gpt-5.3-codex] Task: derive active provider from available .env keys
+// Prompt: "Use valid .env keys for each provider to ensure dream-task-service.test.js passes"
+function providerConfigFromEnvironment() {
+  return PROVIDER_KEY_CONFIGS_WITH_VALUES[0] || null;
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Derive today's note name identically to the DreamTask component.
+// [Claude] Task: derive today's note name identically to the DreamTask component
 // Date: 2026-03-24 | Model: claude-4.6-opus-high-thinking
-describe("analyzeDreamTasks (requires OPEN_AI_ACCESS_TOKEN)", () => {
-  itIfKey("generates suggestions via real LLM and reads them back from cache", async () => {
-    const app = buildMockApp();
+function todayNoteName() {
+  const label = new Date().toLocaleString([], { year: "numeric", month: "long", day: "numeric" });
+  return `Dashboard proposed tasks for ${ label }`;
+}
+
+// [Claude gpt-5.3-codex] Generated tests for: DreamTask write→read round-trip via real provider key from .env
+// Prompt: "Use valid .env keys for each provider to ensure dream-task-service.test.js passes"
+describe("analyzeDreamTasks (requires provider API key from .env)", () => {
+  itIfProviderKey("generates suggestions via real LLM and reads them back from cache", async () => {
+    const providerConfig = providerConfigFromEnvironment();
+    const app = buildMockApp(providerConfig);
     const noteName = todayNoteName();
 
     const freshResult = await analyzeDreamTasks(app, {
@@ -153,8 +181,9 @@ describe("analyzeDreamTasks (requires OPEN_AI_ACCESS_TOKEN)", () => {
     expect(app.replaceNoteContent).toHaveBeenCalledTimes(2);
   }, 90_000);
 
-  itIfKey("loads the quarterly plan note to build context for the LLM prompt", async () => {
-    const app = buildMockApp();
+  itIfProviderKey("loads the quarterly plan note to build context for the LLM prompt", async () => {
+    const providerConfig = providerConfigFromEnvironment();
+    const app = buildMockApp(providerConfig);
     const noteName = todayNoteName();
 
     await analyzeDreamTasks(app, { noteName, minimumTaskCount: 1, forceRefresh: false });
