@@ -131,6 +131,13 @@
 
   // ── API key field ────────────────────────────────────────────────────────────────────
 
+  .dashboard-settings-api-key-hint {
+    color: $color-text-secondary;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    margin: 0 0 $sp-xs;
+  }
+
   .dashboard-settings-api-key-link {
     color: $color-link;
     display: inline-block;

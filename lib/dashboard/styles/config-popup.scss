@@ -6,11 +6,10 @@
 
 @use 'theme-tokens' as *;
 
-$config-popup-max-width: 440px;
+$config-popup-max-width: 90%;
 $config-popup-min-width: 320px;
 $config-popup-shadow-blur: 32px;
 $config-popup-shadow-y: 8px;
-$config-popup-width-pct: 90%;
 $config-popup-z-index: 1000;
 
 /* [Claude] Task: modal overlay and popup card styles with submit/cancel actions */
@@ -33,7 +32,7 @@ $config-popup-z-index: 1000;
   box-shadow: 0 $config-popup-shadow-y $config-popup-shadow-blur $color-overlay-shadow;
   max-width: $config-popup-max-width;
   min-width: $config-popup-min-width;
-  width: $config-popup-width-pct;
+  width: 650px;
 
   .explanation-paragraph {
     font-size: 14px;
