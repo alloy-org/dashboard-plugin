@@ -13,7 +13,14 @@
   .dashboard-settings-section {
     display: flex;
     flex-direction: column;
-    gap: $sp-lg;
+  }
+
+  /* [Composer] Task: visual separation between stacked settings blocks (matches header/footer hairlines) */
+  /* Prompt: "section class — obvious line between sections" | Date: 2026-04-09 */
+  .dashboard-settings-section.section:not(:first-child) {
+    border-top: 1px solid $color-border;
+    margin-top: $sp-lg;
+    padding-top: $sp-lg;
   }
 
   .dashboard-settings-section-header {

@@ -39,8 +39,11 @@ html {
 
 // Full-width background wrapper
 .dashboard-outer-container {
+  /* [Composer] Task: positioning context for document-anchored settings overlay (absolute top = scroll offset) */
+  /* Prompt: "absolute positioning for dashboard settings popup" | Date: 2026-04-09 */
   min-height: 100vh;
   overflow-x: hidden;
+  position: relative;
   width: 100%;
 
   // Constrained content area
