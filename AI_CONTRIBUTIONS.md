@@ -3,6 +3,19 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-04-09 — DaySketch logic extraction into hooks/helpers + enable up/down arrows
+
+**Model:** gpt-5.3-codex
+**Files created/modified:**
+- `lib/dashboard/day-sketch.js` (modified — extracted persistence/loading flow, agenda prefill, keyboard navigation, row renderer, and save-button builder out of component body)
+
+**Task:** Refactor DaySketch to avoid a large monolithic component body by moving behavior into standalone hooks/local functions
+**Prompt summary:** "Revise day-sketch.js so logic isn't a huge block in component body; move as much as possible into hooks/local functions"
+**Scope:** ~180 lines reorganized across 1 file (logic moved, behavior preserved)
+**Notes:** `DaySketchWidget` now composes `useDaySketchEntries`, `useDaySketchAgendaPrefill`, and `useDaySketchInputNavigation`, with rendering delegated to focused local helpers.
+
+---
+
 ## 2026-04-05 — DreamTask card actions and replacement flow
 
 **Model:** gpt-5.3-codex
