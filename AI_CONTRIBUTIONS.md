@@ -3,6 +3,28 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-04-09 — Global Time & Date format settings via DashboardSettingNote
+
+**Model:** claude-4.6-opus-high-thinking
+**Files created/modified:**
+- `lib/dashboard/dashboard-setting-note.js` (created — DashboardSettingNote class for finding/creating/parsing a plugin settings note with locale detection)
+- `lib/dashboard/dashboard-settings-popup.js` (modified — added Time & Date Format section with radio buttons for time format and week format)
+- `lib/dashboard/dashboard.js` (modified — added timeFormat/weekFormat useState, DashboardSettingNote loading on init, pass props to all widgets)
+- `lib/dashboard/day-sketch.js` (modified — formatHourLabel supports 24h format via timeFormat prop)
+- `lib/dashboard/calendar.js` (modified — removed local week-start config popup, uses weekFormat prop, Configure opens global Dashboard Settings)
+- `lib/dashboard/peak-hours.js` (modified — hour labels respect timeFormat prop for meridian vs 24h display)
+- `lib/dashboard/agenda.js` (modified — formatTime respects timeFormat prop for 12h vs 24h display)
+- `lib/dashboard/victory-value.js` (modified — week chart respects weekFormat prop for Sunday vs Monday start)
+- `lib/util/date-utility.js` (modified — added optional weekStartDay parameter to weekStartFromDateInput, weekEndFromDateInput, weekBoundariesFromDateInput, weekDateSlotsFromDateInput; added weekStartDayFromFormat helper)
+- `jest.config.js` (modified — added dashboard-setting-note to module name mapper)
+
+**Task:** Add global time/date format settings persisted to a dedicated plugin settings note, with locale-aware defaults
+**Prompt summary:** "add Time & Date format section to dashboard settings popup, create DashboardSettingNote class, propagate settings to all time/week-rendering components"
+**Scope:** ~180 lines of new logic across 10 files
+**Notes:** Settings are stored in an archived note named "Mission Control Dashboard: plugin settings" (same pattern as dream-task daily notes). Locale detection uses Intl.DateTimeFormat and Intl.Locale APIs. Calendar's local week-start config was removed in favor of the global setting.
+
+---
+
 ## 2026-04-09 — DaySketch logic extraction into hooks/helpers + enable up/down arrows
 
 **Model:** gpt-5.3-codex
