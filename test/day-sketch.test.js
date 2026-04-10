@@ -127,6 +127,28 @@ describe("DaySketchWidget", () => {
     });
   });
 
+  it("strips markdown formatting (bold, highlight) from task content when prefilling rows", async () => {
+    const app = buildMockApp();
+    const testDate = "2026-04-15";
+    const formattedTask = {
+      content: "**Bold meeting** with ==highlighted topic==",
+      startAt: new Date(2026, 3, 15, 9, 0).getTime(),
+      endAt: new Date(2026, 3, 15, 9, 30).getTime(),
+    };
+
+    await act(async () => {
+      root.render(createElement(DaySketchWidget, {
+        app,
+        agendaTasks: { [testDate]: [formattedTask] },
+        currentDate: testDate,
+      }));
+    });
+    await flushAsync();
+
+    const nineAmInput = container.querySelector('input[aria-label="9am entry"]');
+    expect(nineAmInput.value).toBe("Bold meeting with highlighted topic");
+  });
+
   it("prefills multiple hour rows when a scheduled task spans multiple hours", async () => {
     const app = buildMockApp();
     const testDate = "2026-04-15";
