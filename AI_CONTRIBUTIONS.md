@@ -3,6 +3,17 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-04-10 — DaySketch Shift+Arrow line selection
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dashboard/day-sketch.js` (modified — updated `handleInputKeyDown` in `useDaySketchInputNavigation`)
+
+**Task:** When Shift+Up/Down is pressed in a DaySketch hour input, select all text on the current line instead of navigating to the adjacent row. Shift+Up leaves cursor at the beginning; Shift+Down leaves cursor at the end.
+**Prompt summary:** "if the user presses up or down while holding shift, highlight all text on the current line with cursor at beginning (up) or end (down)"
+**Scope:** ~10 lines changed in 1 function
+**Notes:** Uses `setSelectionRange(0, len, "backward"/"forward")` to control which end the cursor lands on after selecting all text.
+
 ## 2026-04-09 — Global Time & Date format settings via DashboardSettingNote
 
 **Model:** claude-4.6-opus-high-thinking
