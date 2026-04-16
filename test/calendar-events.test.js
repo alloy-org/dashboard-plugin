@@ -1,6 +1,7 @@
 /**
  * [Claude-authored file]
  * Created: 2026-04-15 | Model: claude-sonnet-4-6
+ * Updated: 2026-04-16 | Model: claude-4.6-opus
  * Task: Tests for calendarEvents prop display in AgendaWidget and DaySketchWidget
  * Prompt summary: "prove that calendar events given to components as props show in agenda.js and day-sketch.js"
  */
@@ -23,18 +24,36 @@ const SAMPLE_EVENTS = [
     title: "Team Standup",
     allDay: false,
     calendar: { uuid: "cal-work-uuid", name: "Work Calendar" },
+    color: "#4285f4",
+    end: new Date("2026-04-15T10:00:00"),
+    start: new Date("2026-04-15T09:00:00"),
   },
   {
     title: "Company All-Hands",
     allDay: true,
     calendar: { uuid: "cal-work-uuid", name: "Work Calendar" },
+    color: "#0b8043",
+    end: new Date("2026-04-15T23:59:59"),
+    start: new Date("2026-04-15T00:00:00"),
   },
   {
     title: "Personal Reminder",
     allDay: false,
     calendar: { uuid: "cal-personal-uuid", name: "Personal" },
+    color: "#7986cb",
+    end: new Date("2026-04-15T15:30:00"),
+    start: new Date("2026-04-15T14:00:00"),
   },
 ];
+
+const TOMORROW_EVENT = {
+  title: "Tomorrow Meeting",
+  allDay: false,
+  calendar: { uuid: "cal-work-uuid", name: "Work Calendar" },
+  color: "#4285f4",
+  end: new Date("2026-04-16T17:00:00"),
+  start: new Date("2026-04-16T16:00:00"),
+};
 
 function buildMockDaySketchApp({ findNoteResult = null } = {}) {
   return {
@@ -46,8 +65,7 @@ function buildMockDaySketchApp({ findNoteResult = null } = {}) {
   };
 }
 
-// [Claude] Generated tests for: calendar events display in AgendaWidget and DaySketchWidget
-// Date: 2026-04-15 | Model: claude-sonnet-4-6
+// [Claude claude-4.6-opus] Generated tests for: calendar events display in AgendaWidget and DaySketchWidget
 describe("AgendaWidget — calendarEvents prop", () => {
   let container;
   let root;
@@ -101,7 +119,7 @@ describe("AgendaWidget — calendarEvents prop", () => {
         app: { navigate: jest.fn() },
         currentDate: CURRENT_DATE,
         tasks: {},
-        calendarEvents: [SAMPLE_EVENTS[1]], // Company All-Hands, allDay: true
+        calendarEvents: [SAMPLE_EVENTS[1]],
       }));
     });
 
@@ -109,7 +127,7 @@ describe("AgendaWidget — calendarEvents prop", () => {
   });
 
   it("renders calendar events alongside existing tasks", async () => {
-    const todayMs = new Date(`${CURRENT_DATE}T09:00:00`).getTime();
+    const todayMs = new Date(`${ CURRENT_DATE }T09:00:00`).getTime();
     const tasks = {
       [CURRENT_DATE]: [
         { uuid: "t1", content: "Daily planning", startAt: todayMs, important: false, urgent: false },
@@ -139,10 +157,8 @@ describe("AgendaWidget — calendarEvents prop", () => {
       }));
     });
 
-    // Today section header should be present (not the "No tasks" fallback alone)
     expect(container.querySelector(".agenda-day")).not.toBeNull();
     expect(container.textContent).toContain("Team Standup");
-    // "No tasks scheduled" should NOT appear since there is a calendar event
     expect(container.textContent).not.toContain("No tasks scheduled");
   });
 
@@ -151,17 +167,15 @@ describe("AgendaWidget — calendarEvents prop", () => {
       root.render(createElement(AgendaWidget, {
         app: { navigate: jest.fn() },
         currentDate: CURRENT_DATE,
-        // Pass today as an explicit key so the date section renders
         tasks: { [CURRENT_DATE]: [] },
         calendarEvents: [],
       }));
     });
 
-    // With no tasks and no calendar events the empty-day copy should appear
     expect(container.textContent).toContain("No tasks scheduled");
   });
 
-  it("renders calendar events using agenda-calendar-event-row class", async () => {
+  it("renders calendar events using agenda-task-row class (same as tasks)", async () => {
     await act(async () => {
       root.render(createElement(AgendaWidget, {
         app: { navigate: jest.fn() },
@@ -171,12 +185,41 @@ describe("AgendaWidget — calendarEvents prop", () => {
       }));
     });
 
-    expect(container.querySelector(".agenda-calendar-event-row")).not.toBeNull();
+    const taskRows = container.querySelectorAll(".agenda-task-row");
+    expect(taskRows.length).toBeGreaterThanOrEqual(1);
+    expect(taskRows[0].textContent).toContain("Team Standup");
+  });
+
+  it("does not show tomorrow's calendar event in today's section", async () => {
+    await act(async () => {
+      root.render(createElement(AgendaWidget, {
+        app: { navigate: jest.fn() },
+        currentDate: CURRENT_DATE,
+        tasks: { [CURRENT_DATE]: [] },
+        calendarEvents: [TOMORROW_EVENT],
+      }));
+    });
+
+    expect(container.textContent).not.toContain("Tomorrow Meeting");
+  });
+
+  it("shows calendar event duration when start and end are present", async () => {
+    await act(async () => {
+      root.render(createElement(AgendaWidget, {
+        app: { navigate: jest.fn() },
+        currentDate: CURRENT_DATE,
+        tasks: {},
+        calendarEvents: [SAMPLE_EVENTS[0]],
+      }));
+    });
+
+    expect(container.textContent).toContain("60m");
   });
 });
 
 // ----------------------------------------------------------------------------
 
+// [Claude claude-4.6-opus] Generated tests for: DaySketch calendar event prefill into hour rows
 describe("DaySketchWidget — calendarEvents prop", () => {
   let container;
   let root;
@@ -195,58 +238,7 @@ describe("DaySketchWidget — calendarEvents prop", () => {
     container.remove();
   });
 
-  it("renders calendar event titles in the Today's Calendar panel", async () => {
-    const app = buildMockDaySketchApp();
-
-    await act(async () => {
-      root.render(createElement(DaySketchWidget, {
-        app,
-        agendaTasks: {},
-        currentDate: CURRENT_DATE,
-        calendarEvents: SAMPLE_EVENTS,
-      }));
-    });
-    await flushAsync();
-
-    expect(container.textContent).toContain("Team Standup");
-    expect(container.textContent).toContain("Company All-Hands");
-    expect(container.textContent).toContain("Personal Reminder");
-  });
-
-  it("renders the calendar name alongside each event", async () => {
-    const app = buildMockDaySketchApp();
-
-    await act(async () => {
-      root.render(createElement(DaySketchWidget, {
-        app,
-        agendaTasks: {},
-        currentDate: CURRENT_DATE,
-        calendarEvents: SAMPLE_EVENTS,
-      }));
-    });
-    await flushAsync();
-
-    expect(container.textContent).toContain("Work Calendar");
-    expect(container.textContent).toContain("Personal");
-  });
-
-  it("shows 'All day' indicator for allDay events", async () => {
-    const app = buildMockDaySketchApp();
-
-    await act(async () => {
-      root.render(createElement(DaySketchWidget, {
-        app,
-        agendaTasks: {},
-        currentDate: CURRENT_DATE,
-        calendarEvents: [SAMPLE_EVENTS[1]], // Company All-Hands, allDay: true
-      }));
-    });
-    await flushAsync();
-
-    expect(container.textContent).toContain("All day");
-  });
-
-  it("renders the Today's Calendar heading when events are present", async () => {
+  it("prefills hour rows with calendar event titles at scheduled times", async () => {
     const app = buildMockDaySketchApp();
 
     await act(async () => {
@@ -259,11 +251,12 @@ describe("DaySketchWidget — calendarEvents prop", () => {
     });
     await flushAsync();
 
-    expect(container.textContent).toContain("Today's Calendar");
-    expect(container.querySelector(".day-sketch-calendar-events")).not.toBeNull();
+    const inputs = container.querySelectorAll(".day-sketch-input");
+    const nineAmInput = Array.from(inputs).find(input => input.value === "Team Standup");
+    expect(nineAmInput).not.toBeUndefined();
   });
 
-  it("does not render the Today's Calendar panel when calendarEvents is empty", async () => {
+  it("prefills multiple hours for events spanning more than one hour", async () => {
     const app = buildMockDaySketchApp();
 
     await act(async () => {
@@ -271,15 +264,17 @@ describe("DaySketchWidget — calendarEvents prop", () => {
         app,
         agendaTasks: {},
         currentDate: CURRENT_DATE,
-        calendarEvents: [],
+        calendarEvents: [SAMPLE_EVENTS[2]],
       }));
     });
     await flushAsync();
 
-    expect(container.querySelector(".day-sketch-calendar-events")).toBeNull();
+    const inputs = container.querySelectorAll(".day-sketch-input");
+    const matchingInputs = Array.from(inputs).filter(input => input.value === "Personal Reminder");
+    expect(matchingInputs.length).toBe(2);
   });
 
-  it("does not render the Today's Calendar panel when calendarEvents is null", async () => {
+  it("does not prefill rows for allDay events", async () => {
     const app = buildMockDaySketchApp();
 
     await act(async () => {
@@ -287,7 +282,43 @@ describe("DaySketchWidget — calendarEvents prop", () => {
         app,
         agendaTasks: {},
         currentDate: CURRENT_DATE,
-        calendarEvents: null,
+        calendarEvents: [SAMPLE_EVENTS[1]],
+      }));
+    });
+    await flushAsync();
+
+    const inputs = container.querySelectorAll(".day-sketch-input");
+    const allHandsInput = Array.from(inputs).find(input => input.value === "Company All-Hands");
+    expect(allHandsInput).toBeUndefined();
+  });
+
+  it("does not prefill rows for events on a different date", async () => {
+    const app = buildMockDaySketchApp();
+
+    await act(async () => {
+      root.render(createElement(DaySketchWidget, {
+        app,
+        agendaTasks: {},
+        currentDate: CURRENT_DATE,
+        calendarEvents: [TOMORROW_EVENT],
+      }));
+    });
+    await flushAsync();
+
+    const inputs = container.querySelectorAll(".day-sketch-input");
+    const tomorrowInput = Array.from(inputs).find(input => input.value === "Tomorrow Meeting");
+    expect(tomorrowInput).toBeUndefined();
+  });
+
+  it("does not render a separate Today's Calendar panel", async () => {
+    const app = buildMockDaySketchApp();
+
+    await act(async () => {
+      root.render(createElement(DaySketchWidget, {
+        app,
+        agendaTasks: {},
+        currentDate: CURRENT_DATE,
+        calendarEvents: SAMPLE_EVENTS,
       }));
     });
     await flushAsync();

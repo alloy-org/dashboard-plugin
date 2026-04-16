@@ -3,6 +3,20 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-04-16 — Inline calendar events into DaySketch hour rows and agenda task list
+
+**Model:** claude-4.6-opus
+**Files created/modified:**
+- `lib/util/browser-dev-app.js` (modified — added `getExternalCalendarEvents` mock returning two events)
+- `lib/dashboard/day-sketch.js` (modified — replaced separate "Today's Calendar" panel with hour-row prefill via `hoursFromCalendarEvent`, `entriesPrefilledFromCalendarEvents`, `useDaySketchCalendarPrefill`)
+- `lib/dashboard/agenda.js` (modified — added `calendarEventsForDateKey` filter; calendar events now render with same `agenda-task-row` formatting as tasks; non-today events excluded)
+- `test/calendar-events.test.js` (modified — updated sample events with start/end Dates; new tests for prefill, date filtering, duration display)
+
+**Task:** Place calendar events inline at scheduled times in DaySketch and Agenda, with same formatting as tasks and date-based filtering
+**Prompt summary:** "place calendar events in day sketch at scheduled time; agenda events use same formatting as tasks; filter out non-today events"
+**Scope:** ~80 lines of new logic across 4 files
+**Notes:** Dev environment now returns "Birthday party" (4pm today) and "Quarterly Review Sync" (11:25am in two days). DaySketch prefills hour rows for today-only events. Agenda filters calendar events by date key and renders them with `priority-normal` indicator and duration. All 14 calendar-events tests pass.
+
 ## 2026-04-15 — Wire calendarEvents into DaySketch and Agenda rendering
 
 **Model:** claude-sonnet-4-6
