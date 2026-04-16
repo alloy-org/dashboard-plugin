@@ -3,6 +3,18 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-04-15 — Wire calendarEvents into DaySketch and Agenda rendering
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dashboard/day-sketch.js` (modified — added `formatCalendarEventTime` and `renderCalendarEventsPanel` helpers; panel rendered below notebook)
+- `lib/dashboard/agenda.js` (modified — calendar events now display `start` time for non-allDay events using existing `formatTime`)
+
+**Task:** Update both widgets to consume the normalized calendar event shape `{ allDay, calendar, color, end, start, title }` where `start`/`end` are `Date` objects
+**Prompt summary:** "Update day-sketch.js to utilize calendarEvents array; ensure agenda.js uses the same event structure"
+**Scope:** ~55 lines of new logic across 2 files
+**Notes:** `DaySketchWidget` renders a "Today's Calendar" panel (`.day-sketch-calendar-events`) below the notebook; hidden when array is empty or null. `AgendaWidget` now shows `formatTime(event.start)` for non-allDay events; existing `toMillis` handles `Date` instances. All 13 calendar-events tests pass.
+
 ## 2026-04-10 — DaySketch Shift+Arrow line selection
 
 **Model:** claude-sonnet-4-6

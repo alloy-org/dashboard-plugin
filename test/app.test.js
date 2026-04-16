@@ -59,6 +59,7 @@ function buildMockApp(plugin) {
 
   app.filterNotes = jest.fn().mockResolvedValue([]);
   app.setSetting  = jest.fn().mockImplementation((k, v) => { app.settings[k] = v; });
+  app.getExternalCalendarEvents = jest.fn().mockResolvedValue(null);
 
   // Wrap with a Proxy: methods present on `app` are used directly;
   // unknown methods (init, saveSetting, etc.) route through onEmbedCall.
