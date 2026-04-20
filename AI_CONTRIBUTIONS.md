@@ -3,6 +3,23 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-04-19 — Add Schedule link to DreamTask cards and AI-rank stale notes in Recent Notes
+
+**Model:** claude-opus-4.7
+**Files created/modified:**
+- `lib/dashboard/recent-notes-ai.js` (created — plugin-first, LLM-fallback ranker for stale-note candidates)
+- `lib/dashboard/recent-notes.js` (modified — accepts `providerApiKey`; applies AI ranking before seed-based rotation)
+- `lib/dashboard/dashboard.js` (modified — passes `providerApiKey` into `RecentNotesCell`)
+- `lib/dashboard/dream-task-schedule.js` (created — `buildAvailableTimeSlots`, `fetchSchedulingOccupancy`, `startAtSecondsFromDateAndMinutes`)
+- `lib/dashboard/dream-task.js` (modified — shortened "Mark complete" label to "Completed"; added "📅 Schedule" card action; `useDreamTaskActions` now accepts `defaultNoteUUID` and exposes `onScheduleTask`)
+
+**Task:** Mirror DreamTask's Ample-Agent-Pro-first-then-user-LLM pattern in the Recent Notes widget to rank stale-task notes by importance, and add a Schedule action to DreamTask suggestions that prompts for a date and conflict-free 30-minute time slot before writing `startAt`. Existing invented tasks are created via `app.insertTask` before their `startAt` is set.
+**Prompt summary:** "recent-notes mirror dream-task by calling Ample Agent Pro before user API keys; dream-task shorten 'Mark complete' to 'Completed' and add a Schedule link that uses app.prompt to pick an unoccupied time"
+**Scope:** ~260 lines of new logic across 5 files (2 new, 3 modified)
+**Notes:** AI ranking is silent-fail — if Ample Agent Pro returns falsy and no `providerApiKey` is available (or the LLM call throws), Recent Notes keeps its deterministic seed-based order. Scheduling occupancy merges `app.getExternalCalendarEvents({ days: 30 })` with every domain's `getTaskDomainTasks` startAt values; time slots run 6 AM–10 PM in 30-minute increments and exclude any slot overlapping a calendar event or scheduled task. If the user changes the date after the dialog opens, the shown conflict list still reflects today (app.prompt is not reactive) — the prompt message explains this trade-off.
+
+---
+
 ## 2026-04-16 — Inline calendar events into DaySketch hour rows and agenda task list
 
 **Model:** claude-4.6-opus
