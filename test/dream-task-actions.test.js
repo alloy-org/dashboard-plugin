@@ -5,7 +5,7 @@
  * Prompt summary: "test that clicking 3 action links modifies note content; verify subsequent load interprets designations"
  */
 import { jest } from "@jest/globals";
-import { updateDreamTaskTaskMetadata } from "../lib/dashboard/dream-task-internals.js";
+import { completeDreamTask, updateDreamTaskTaskMetadata } from "../lib/dashboard/dream-task-internals.js";
 import { analyzeDreamTasks } from "../lib/dream-task-service.js";
 import { SETTING_KEYS } from "../lib/constants/settings.js";
 import { replaceSectionContent } from "../lib/util/replace-note-section-content.js";
@@ -64,6 +64,8 @@ function buildMockAppWithNote(initialContent) {
       noteContent = replaceSectionContent(noteContent, content, options);
       return Promise.resolve(true);
     }),
+    insertNoteContent: jest.fn().mockResolvedValue(undefined),
+    updateTask: jest.fn().mockResolvedValue(true),
     currentNoteContent: () => noteContent,
   };
 
@@ -72,6 +74,10 @@ function buildMockAppWithNote(initialContent) {
 
 // [Claude claude-4.6-opus-high-thinking] Generated tests for: DreamTask action links and subsequent load
 describe("DreamTask action links", () => {
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
   describe("clicking action links modifies the dream task content note", () => {
     it("preserve action inserts dream-preserve:through-tomorrow comment into the note", async () => {
       const app = buildMockAppWithNote(MOCK_NOTE_CONTENT);
@@ -128,6 +134,49 @@ describe("DreamTask action links", () => {
       expect(result).toBe(true);
       const updatedBody = app.replaceNoteContent.mock.calls[0][1];
       expect(updatedBody).not.toContain("<!-- dream-preserve:through-tomorrow -->");
+    });
+  });
+
+  describe("completing DreamTask suggestions updates Amplenote tasks", () => {
+    it("complete action calls app.updateTask for an existing task", async () => {
+      jest.useFakeTimers().setSystemTime(new Date("2026-04-29T22:30:00Z"));
+      const app = buildMockAppWithNote(MOCK_NOTE_CONTENT);
+      const task = { isExisting: true, suggestionId: "sug-101", title: "Update budget", uuid: "task-7", rating: 7 };
+
+      const result = await completeDreamTask(app, MOCK_NOTE_UUID, task);
+
+      expect(result).toBe(true);
+      expect(app.updateTask).toHaveBeenCalledWith("task-7", { completedAt: 1777501800 });
+      expect(app.insertNoteContent).not.toHaveBeenCalled();
+      const updatedBody = app.replaceNoteContent.mock.calls[0][1];
+      expect(updatedBody).toContain("<!-- dream-completed-at:1777501800 -->");
+    });
+
+    it("complete action creates today's daily jot and inserts a completed task when the task is new", async () => {
+      jest.useFakeTimers().setSystemTime(new Date("2026-04-29T22:30:00Z"));
+      const app = buildMockAppWithNote(MOCK_NOTE_CONTENT);
+      app.findNote.mockImplementation(({ name, uuid }) => {
+        if (uuid === MOCK_NOTE_UUID) return Promise.resolve({ uuid: MOCK_NOTE_UUID });
+        if (name === "April 29th, 2026") return Promise.resolve(null);
+        if (name) return Promise.resolve({ uuid: MOCK_NOTE_UUID });
+        return Promise.resolve(null);
+      });
+      app.createNote.mockResolvedValue("daily-jot-uuid");
+      const task = { isExisting: false, suggestionId: "sug-102", title: "Build a landing page for Task Agent Pro", rating: 8 };
+
+      const result = await completeDreamTask(app, MOCK_NOTE_UUID, task);
+
+      expect(result).toBe(true);
+      expect(app.findNote).toHaveBeenCalledWith({ name: "April 29th, 2026", tags: ["daily-jots"] });
+      expect(app.createNote).toHaveBeenCalledWith("April 29th, 2026", ["daily-jots"]);
+      expect(app.insertNoteContent).toHaveBeenCalledWith(
+        { uuid: "daily-jot-uuid" },
+        "\n- [x] Build a landing page for Task Agent Pro <!-- {\"completedAt\":1777501800} -->\n",
+        { atEnd: true },
+      );
+      expect(app.updateTask).not.toHaveBeenCalled();
+      const updatedBody = app.replaceNoteContent.mock.calls[0][1];
+      expect(updatedBody).toContain("<!-- dream-completed-at:1777501800 -->");
     });
   });
 
