@@ -5,10 +5,11 @@
  * Prompt summary: "test that clicking 3 action links modifies note content; verify subsequent load interprets designations"
  */
 import { jest } from "@jest/globals";
-import { completeDreamTask, updateDreamTaskTaskMetadata } from "../lib/dashboard/dream-task-internals.js";
+import { updateDreamTaskTaskMetadata } from "../lib/dashboard/dream-task-internals.js";
 import { analyzeDreamTasks } from "../lib/dream-task-service.js";
 import { SETTING_KEYS } from "../lib/constants/settings.js";
 import { replaceSectionContent } from "../lib/util/replace-note-section-content.js";
+import { dailyJotNoteUuidFromToday, markTaskComplete } from "../lib/util/task-util.js";
 import { SAMPLE_TASKS } from "./fixtures/tasks.js";
 
 const MOCK_NOTE_UUID = "dream-note-uuid";
@@ -138,12 +139,13 @@ describe("DreamTask action links", () => {
   });
 
   describe("completing DreamTask suggestions updates Amplenote tasks", () => {
-    it("complete action calls app.updateTask for an existing task", async () => {
+    it("shared completion helper calls app.updateTask for an existing task", async () => {
       jest.useFakeTimers().setSystemTime(new Date("2026-04-29T22:30:00Z"));
       const app = buildMockAppWithNote(MOCK_NOTE_CONTENT);
       const task = { isExisting: true, suggestionId: "sug-101", title: "Update budget", uuid: "task-7", rating: 7 };
 
-      const result = await completeDreamTask(app, MOCK_NOTE_UUID, task);
+      const completedAt = await markTaskComplete(app, null, task);
+      const result = await updateDreamTaskTaskMetadata(app, MOCK_NOTE_UUID, task, { completedAt, removedAt: null });
 
       expect(result).toBe(true);
       expect(app.updateTask).toHaveBeenCalledWith("task-7", { completedAt: 1777501800 });
@@ -152,7 +154,7 @@ describe("DreamTask action links", () => {
       expect(updatedBody).toContain("<!-- dream-completed-at:1777501800 -->");
     });
 
-    it("complete action creates today's daily jot and inserts a completed task when the task is new", async () => {
+    it("shared completion helper creates today's daily jot and inserts a completed task when the task is new", async () => {
       jest.useFakeTimers().setSystemTime(new Date("2026-04-29T22:30:00Z"));
       const app = buildMockAppWithNote(MOCK_NOTE_CONTENT);
       app.findNote.mockImplementation(({ name, uuid }) => {
@@ -164,7 +166,9 @@ describe("DreamTask action links", () => {
       app.createNote.mockResolvedValue("daily-jot-uuid");
       const task = { isExisting: false, suggestionId: "sug-102", title: "Build a landing page for Task Agent Pro", rating: 8 };
 
-      const result = await completeDreamTask(app, MOCK_NOTE_UUID, task);
+      const completedNoteUUID = await dailyJotNoteUuidFromToday(app);
+      const completedAt = await markTaskComplete(app, completedNoteUUID, task);
+      const result = await updateDreamTaskTaskMetadata(app, MOCK_NOTE_UUID, task, { completedAt, removedAt: null });
 
       expect(result).toBe(true);
       expect(app.findNote).toHaveBeenCalledWith({ name: "April 29th, 2026", tags: ["daily-jots"] });

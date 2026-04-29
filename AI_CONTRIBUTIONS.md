@@ -7,14 +7,15 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 **Model:** GPT-5.5
 **Files created/modified:**
-- `lib/dashboard/dream-task-internals.js` (modified — added shared completion helper for existing and invented suggestions)
-- `lib/dashboard/dream-task.js` (modified — routes Complete link through the Amplenote completion helper)
+- `lib/util/task-util.js` (created — general task completion helper for existing tasks and completed markdown insertion)
+- `lib/dashboard/dream-task-internals.js` (modified — keeps DreamTask-specific metadata persistence separate from completion)
+- `lib/dashboard/dream-task.js` (modified — routes Complete link through the shared task completion helper)
 - `test/dream-task-actions.test.js` (modified — covers app.updateTask and daily-jot insertNoteContent completion paths)
 
 **Task:** Mark DreamTask suggestions complete through Amplenote task APIs instead of only updating widget cache metadata
 **Prompt summary:** "when Complete is clicked, use app.updateTask for existing tasks and insert a completed task into today's daily jot for new tasks"
-**Scope:** ~80 lines changed across 3 files
-**Notes:** Existing tasks receive a Unix-second `completedAt`; invented tasks append completed task markdown to today's `daily-jots` note, creating it when absent.
+**Scope:** ~120 lines changed across 4 files
+**Notes:** Existing tasks receive a Unix-second `completedAt`; inserted tasks append completed task markdown to a provided note UUID, with a helper for resolving today's `daily-jots` note.
 
 ---
 
