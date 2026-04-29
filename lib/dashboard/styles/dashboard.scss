@@ -7,13 +7,11 @@
 @use 'theme' as *;
 
 // Layout & component constants
-$dashboard-max-width: 1200px;
+$dashboard-maximum-width: 1200px;
 $spinner-size: 32px;
 $spinner-border-width: 3px;
 $spinner-duration: 0.8s;
 $error-padding: 40px;
-$breakpoint-md: 800px;
-$breakpoint-sm: 480px;
 
 html {
   overflow-y: scroll;
@@ -49,7 +47,7 @@ html {
   // Constrained content area
   .dashboard-content {
     margin: 0 auto;
-    max-width: $dashboard-max-width;
+    max-width: $dashboard-maximum-width;
     padding: $sp-xl;
 
     .dashboard-grid {
@@ -111,7 +109,7 @@ html {
     // [Claude] Task: force single-column layout on mobile regardless of widget gridWidthSize
     // Prompt: "fix display of dashboard on mobile such that every component is 1-wide and laid out in a column"
     // Date: 2026-03-16 | Model: claude-4.6-opus-high-thinking
-    @media (max-width: $breakpoint-md) {
+    @media (max-width: $breakpoint-tablet) {
       padding: $sp-md;
 
       .dashboard-grid {

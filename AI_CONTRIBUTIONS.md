@@ -3,6 +3,22 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-04-29 — Stack DreamTask headers on compact cards
+
+**Model:** GPT-5.5
+**Files created/modified:**
+- `lib/dashboard/styles/breakpoints.scss` (created — shared large-phone, tablet, laptop, desktop variables)
+- `lib/dashboard/styles/theme-tokens.scss` (modified — forwards shared breakpoint variables to widget styles)
+- `lib/dashboard/styles/dashboard.scss` (modified — uses shared tablet breakpoint for mobile dashboard layout)
+- `lib/dashboard/styles/dream-task.scss` (modified — viewport-breakpoint responsive card header layout)
+
+**Task:** Improve DreamTask card header layout at low widths by placing task text above note title
+**Prompt summary:** "Update DreamTask styling so low-width breakpoints show task text first, note title second, hide rating, and use shared breakpoint variables"
+**Scope:** ~35 lines of SCSS
+**Notes:** Applies below the large-phone breakpoint, defined as the iPhone 15 Pro Max CSS viewport width.
+
+---
+
 ## 2026-04-29 — Persist Recent Notes state in daily archived notes
 
 **Model:** GPT-5.5

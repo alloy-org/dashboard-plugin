@@ -4,6 +4,8 @@
  * Prompt summary: "refactor so widgets load their own scss instead of dashboard.scss importing everything"
  */
 
+@forward 'breakpoints';
+
 $color-bg-page: var(--dashboard-color-bg-page);
 $color-bg-page-hover: var(--dashboard-color-bg-page-hover);
 $color-bg-card: var(--dashboard-color-bg-card);

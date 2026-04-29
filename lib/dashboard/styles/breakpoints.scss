@@ -1,0 +1,10 @@
+/* [GPT-5.5-authored file]
+ * Prompt summary: "create shared SCSS breakpoint variables for dashboard styles"
+ */
+
+/* [GPT-5.5] Task: shared viewport breakpoints for dashboard stylesheets */
+/* Prompt: "define breakpoints for large phone, tablet, laptop, and desktop" */
+$breakpoint-large-phone: 430px; // iPhone 15 Pro Max CSS viewport width.
+$breakpoint-tablet: 800px;
+$breakpoint-laptop: 1024px;
+$breakpoint-desktop: 1200px;

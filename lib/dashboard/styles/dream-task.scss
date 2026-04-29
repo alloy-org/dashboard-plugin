@@ -154,6 +154,31 @@
     white-space: nowrap;
   }
 
+  /* [GPT-5.5] Task: stack task text above source note on compact DreamTask cards */
+  /* Prompt: "apply only below the large iPhone breakpoint" */
+  @media (max-width: $breakpoint-large-phone) {
+    .dream-task-card-header {
+      gap: $sp-xs;
+      justify-content: flex-start;
+    }
+
+    .dream-task-card-title {
+      flex: 1 0 100%;
+      min-width: 0;
+      order: 1;
+    }
+
+    .dream-task-new-badge,
+    .dream-task-source-note-badge {
+      max-width: 100%;
+      order: 2;
+    }
+
+    .dream-task-rating {
+      display: none;
+    }
+  }
+
   .dream-task-card-explanation {
     color: $color-text-secondary;
     cursor: pointer;
@@ -163,6 +188,7 @@
     margin: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
   }
@@ -173,6 +199,7 @@
     display: block;
     overflow: visible;
     text-overflow: clip;
+    line-clamp: initial;
     -webkit-box-orient: initial;
     -webkit-line-clamp: initial;
   }
