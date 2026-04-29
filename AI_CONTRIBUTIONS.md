@@ -3,6 +3,20 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-04-29 — Persist Recent Notes state in daily archived notes
+
+**Model:** GPT-5.5
+**Files created/modified:**
+- `lib/recent-notes-service.js` (created — daily archived-note state, previous-day seeding, visited-note tracking, selected-note caching)
+- `lib/dashboard/recent-notes.js` (modified — delegates stale-note discovery to the service and refreshes on reseed)
+
+**Task:** Store Recent Notes recently visited notes and current-date selections in archived dashboard notes
+**Prompt summary:** "revise recent-notes.js to use an archived note for recently visited notes and selected notes; seed new days from previous day data"
+**Scope:** ~430 lines of new service logic plus a focused widget refactor
+**Notes:** Daily notes are tagged `plugins/dashboard`, created archived, and contain a fenced JSON state block.
+
+---
+
 ## 2026-04-29 — Sort Agenda tasks and events by time
 
 **Model:** GPT-5.5
