@@ -6,6 +6,7 @@
  */
 import dotenv from "dotenv"
 import esbuild from "esbuild"
+import fs from "fs"
 import path from "path"
 import { fileURLToPath } from "url"
 import { createLibImportsPlugin } from "./lib-imports-plugin.js"
@@ -70,6 +71,8 @@ const cssContentPlugin = {
 };
 
 // Step 2: Bundle the plugin (with client code injected via virtual module)
+// [Claude claude-opus-4-7] Task: post-process esbuild output so the IIFE returns the plugin directly
+// Prompt: "make compiled.js end with `return plugin;\n})()` instead of `var plugin_default = plugin;\n})();`"
 const result = await esbuild.build({
   entryPoints: [`lib/plugin.js`],
   bundle: true,
@@ -82,6 +85,11 @@ const result = await esbuild.build({
     "process.env.NODE_ENV": '"production"',
   },
   plugins: [clientBundlePlugin, cssContentPlugin, absoluteImportsPlugin],
-  write: true,
+  write: false,
 });
+
+let code = result.outputFiles[0].text;
+code = code.replace(/\n(\s*)var plugin_default = plugin;\n/, "\n$1return plugin;\n");
+code = code.replace(/\}\)\(\);\s*$/, "})()\n");
+fs.writeFileSync("build/compiled.js", code);
 console.log("Result was", result)
