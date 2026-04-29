@@ -3,6 +3,21 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-04-29 — Normalize mobile calendar event dates
+
+**Model:** GPT-5.5
+**Files created/modified:**
+- `lib/hooks/use-external-calendar-events.js` (modified — normalizes external event start/end values into Date instances)
+- `lib/dashboard/agenda.js` (modified — guards event duration rendering against serialized date strings)
+- `test/calendar-events.test.js` (modified — added mobile serialized-date regression coverage)
+
+**Task:** Prevent Agenda from crashing when mobile calendar events contain serialized date values
+**Prompt summary:** "After restoring the ability of mobile to retrieve calendar events, agenda errors on mobile"
+**Scope:** ~55 lines changed across 3 files
+**Notes:** Calendar events are normalized at the hook boundary, and Agenda now calculates event duration through its existing timestamp-normalization path.
+
+---
+
 ## 2026-04-29 — Add shared large-phone breakpoint helper
 
 **Model:** GPT-5.5

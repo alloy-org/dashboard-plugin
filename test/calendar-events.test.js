@@ -11,6 +11,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import AgendaWidget from "../lib/dashboard/agenda.js";
 import DaySketchWidget from "../lib/dashboard/day-sketch.js";
+import { normalizeExternalCalendarEvents } from "../lib/hooks/use-external-calendar-events.js";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -215,6 +216,28 @@ describe("AgendaWidget — calendarEvents prop", () => {
 
     expect(container.textContent).toContain("60m");
   });
+
+  // [OpenAI GPT-5.5] Generated test for: agenda accepts serialized mobile calendar event dates
+  // Date: 2026-04-29 | Model: GPT-5.5
+  it("shows calendar event duration when mobile returns serialized date strings", async () => {
+    await act(async () => {
+      root.render(createElement(AgendaWidget, {
+        app: { navigate: jest.fn() },
+        currentDate: CURRENT_DATE,
+        tasks: {},
+        calendarEvents: [{
+          title: "Mobile Sync",
+          allDay: false,
+          calendar: { uuid: "cal-mobile", name: "Mobile Calendar" },
+          end: "2026-04-15T10:30:00",
+          start: "2026-04-15T09:00:00",
+        }],
+      }));
+    });
+
+    expect(container.textContent).toContain("Mobile Sync");
+    expect(container.textContent).toContain("90m");
+  });
 });
 
 // ----------------------------------------------------------------------------
@@ -324,5 +347,23 @@ describe("DaySketchWidget — calendarEvents prop", () => {
     await flushAsync();
 
     expect(container.querySelector(".day-sketch-calendar-events")).toBeNull();
+  });
+});
+
+// ----------------------------------------------------------------------------
+
+// [OpenAI GPT-5.5] Generated tests for: external calendar event date normalization
+// Date: 2026-04-29 | Model: GPT-5.5
+describe("normalizeExternalCalendarEvents", () => {
+  it("converts serialized start and end values into Date instances", () => {
+    const normalized = normalizeExternalCalendarEvents([{
+      title: "Mobile Sync",
+      end: "2026-04-15T10:30:00",
+      start: "2026-04-15T09:00:00",
+    }]);
+
+    expect(normalized).toHaveLength(1);
+    expect(normalized[0].end).toBeInstanceOf(Date);
+    expect(normalized[0].start).toBeInstanceOf(Date);
   });
 });
