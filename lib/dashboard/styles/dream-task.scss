@@ -37,7 +37,7 @@
     align-items: center;
     display: flex;
 
-    @media (max-width: $breakpoint-large-phone) {
+    @include breakpoint($breakpoint-large-phone) {
       .widget-title__subtitle {
         display: none;
       }
@@ -167,7 +167,7 @@
 
   /* [GPT-5.5] Task: stack task text above source note on compact DreamTask cards */
   /* Prompt: "apply only below the large iPhone breakpoint" */
-  @media (max-width: $breakpoint-large-phone) {
+  @include breakpoint($breakpoint-large-phone) {
     .dream-task-card-header {
       gap: $sp-xs;
       justify-content: flex-start;

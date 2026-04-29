@@ -8,3 +8,31 @@ $breakpoint-large-phone: 430px; // iPhone 15 Pro Max CSS viewport width.
 $breakpoint-tablet: 800px;
 $breakpoint-laptop: 1024px;
 $breakpoint-desktop: 1200px;
+
+/* [GPT-5.5] Task: one include for viewport breakpoints plus iOS iframe large-phone fallback */
+/* Prompt: "avoid double-including a mixin to avail a mobile-phone style" */
+/* @desc Emits a normal max-width media query and, for phone-sized breakpoints, a second
+ * selector path for Amplenote's iOS WKWebView iframe. In that host, the CSS layout
+ * viewport can be wider than the visible device, so media queries miss phone styles
+ * even though `screen.width` reports an iPhone-sized viewport.
+ *
+ * The secondary include can be removed when the host iframe reports a layout viewport
+ * matching the visible device width, which we can verify by removing the
+ * `dashboard-large-phone-viewport` class logic in `client-entry.js` and confirming
+ * iPhone 15 Pro Max matches `$breakpoint-large-phone` through the media query alone.
+ *
+ * The fallback does not apply to undesired elements because the root class is only
+ * toggled when real device width is at or below the large-phone breakpoint, and `&`
+ * nests the extra selector under the same component selector that requested the mixin.
+ */
+@mixin breakpoint($maximum-width) {
+  @media (max-width: $maximum-width) {
+    @content;
+  }
+
+  @if $maximum-width >= $breakpoint-large-phone {
+    .dashboard-large-phone-viewport & {
+      @content;
+    }
+  }
+}

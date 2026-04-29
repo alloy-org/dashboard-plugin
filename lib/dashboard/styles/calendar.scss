@@ -177,7 +177,7 @@ $cal-transition-duration: 0.12s;
   /* [GPT-5.5] Task: keep mobile calendar dots separated from date numbers */
   /* Prompt: "ensure at least 6px separation between calendar date number and dot on mobile" */
   /* Date: 2026-04-29 | Model: GPT-5.5 */
-  @media (max-width: $breakpoint-large-phone) {
+  @include breakpoint($breakpoint-large-phone) {
     .cal-cell {
       aspect-ratio: auto;
       min-height: 32px;

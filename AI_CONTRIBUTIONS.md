@@ -3,6 +3,22 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-04-29 — Add shared large-phone breakpoint helper
+
+**Model:** GPT-5.5
+**Files created/modified:**
+- `lib/dashboard/client-entry.js` (modified — named large-phone fallback constants and documented the iOS iframe class)
+- `lib/dashboard/styles/breakpoints.scss` (modified — added `breakpoint` mixin with the large-phone root-class fallback)
+- `lib/dashboard/styles/calendar.scss` (modified — uses the shared breakpoint mixin for mobile calendar spacing)
+- `lib/dashboard/styles/dream-task.scss` (modified — uses the shared breakpoint mixin for mobile title/header layout)
+
+**Task:** Centralize large-phone responsive styling so component styles use one breakpoint include
+**Prompt summary:** "document the iOS breakpoint fallback constants and support @include breakpoint($breakpoint-large-phone)"
+**Scope:** ~50 lines changed across client bootstrap and SCSS
+**Notes:** The mixin emits both the normal media query and, for phone-sized breakpoints, the iOS iframe root-class fallback.
+
+---
+
 ## 2026-04-29 — Reuse same-day Recent Notes selections
 
 **Model:** GPT-5.5
