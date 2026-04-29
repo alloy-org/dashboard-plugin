@@ -7,6 +7,7 @@
 @use 'theme-tokens' as *;
 
 $cal-cell-gap: 2px;
+$cal-date-dot-gap: 6px;
 $cal-dot-size: 4px;
 $cal-dot-bottom: 6px;
 $cal-day-offset: -2px;
@@ -170,6 +171,22 @@ $cal-transition-duration: 0.12s;
       height: $cal-dot-size;
       position: absolute;
       width: $cal-dot-size;
+    }
+  }
+
+  /* [GPT-5.5] Task: keep mobile calendar dots separated from date numbers */
+  /* Prompt: "ensure at least 6px separation between calendar date number and dot on mobile" */
+  /* Date: 2026-04-29 | Model: GPT-5.5 */
+  @media (max-width: $breakpoint-large-phone) {
+    .cal-cell {
+      aspect-ratio: auto;
+      min-height: 32px;
+
+      .cal-dot {
+        bottom: auto;
+        margin-top: $cal-date-dot-gap;
+        position: static;
+      }
     }
   }
 }
