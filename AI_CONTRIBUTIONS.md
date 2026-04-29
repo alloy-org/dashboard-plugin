@@ -3,6 +3,20 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-04-29 — Reuse same-day Recent Notes selections
+
+**Model:** GPT-5.5
+**Files created/modified:**
+- `lib/recent-notes-service.js` (modified — reuses persisted same-day selected notes once enough notes exist to render)
+- `test/recent-notes-service.test.js` (modified — added same-day multi-client reuse regression coverage)
+
+**Task:** Ensure later clients reuse the first device's current-day Recent Notes selection before scanning task-domain notes
+**Prompt summary:** "confirm clients reuse today's found notes; update recent-notes.js so new devices load existing first"
+**Scope:** ~35 lines changed across 2 files
+**Notes:** The service already loaded the archived daily note before scanning; this change prevents taller/new clients from scanning again just because their `maxNotes` is higher than the saved selection count.
+
+---
+
 ## 2026-04-29 — Stack DreamTask headers on compact cards
 
 **Model:** GPT-5.5

@@ -176,4 +176,31 @@ describe("Recent Notes archived daily state", () => {
     );
     expect(app.getNoteTasks.mock.calls.length).toBeLessThan(NOTE_COUNT * dates.length);
   });
+
+  it("reuses current-day selected notes before scanning on later clients", async () => {
+    const { app, dataNotes } = buildRecentNotesMockApp();
+    const date = new Date(TEST_YEAR, TEST_MONTH_INDEX, TEST_DAYS[0], LOCAL_MIDDAY_HOUR, 0, 0);
+    setSystemDate(date);
+
+    const firstResults = await findStaleTaskNotes(app, buildRecentNotesSeed(0), {
+      maxNotes: SELECTED_NOTES_PER_DAY,
+    });
+    const firstSelectedUuids = firstResults.map(entry => entry.noteHandle.uuid);
+    const firstTaskDomainCalls = app.getTaskDomains.mock.calls.length;
+    const firstTaskFetchCalls = app.getNoteTasks.mock.calls.length;
+
+    const secondResults = await findStaleTaskNotes(app, buildRecentNotesSeed(0), {
+      maxNotes: SELECTED_NOTES_PER_DAY * 2,
+    });
+    const secondSelectedUuids = secondResults.map(entry => entry.noteHandle.uuid);
+
+    expect(secondSelectedUuids).toEqual(firstSelectedUuids);
+    expect(app.createNote).toHaveBeenCalledTimes(1);
+    expect(app.getTaskDomains).toHaveBeenCalledTimes(firstTaskDomainCalls);
+    expect(app.getNoteTasks).toHaveBeenCalledTimes(firstTaskFetchCalls);
+
+    const dailyNote = dataNotes.find(note => note.name === recentNotesDataNoteNameFromDate(date));
+    expect(recentNotesStateFromContent(dailyNote.body).selectedNotes.map(note => note.uuid))
+      .toEqual(firstSelectedUuids);
+  });
 });
