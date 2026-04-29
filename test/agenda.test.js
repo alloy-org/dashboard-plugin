@@ -91,6 +91,43 @@ describe("AgendaWidget", () => {
     expect(text).not.toContain("Snoozed until later");
   });
 
+  // [OpenAI GPT-5.5] Generated test for: mixed Agenda task/event ordering by timestamp
+  // Date: 2026-04-29 | Model: GPT-5.5
+  it("intersperses tasks and calendar events by ascending time within a day", async () => {
+    const app = buildMockApp();
+    const dayStart = new Date();
+    dayStart.setHours(0, 0, 0, 0);
+    const dateKey = formatDateKey(dayStart);
+    const msFromHour = (hour) => new Date(dayStart.getFullYear(), dayStart.getMonth(), dayStart.getDate(),
+      hour, 0, 0, 0).getTime();
+    const tasks = {
+      [dateKey]: [
+        { uuid: "task-1500", content: "Task at 3 PM", startAt: msFromHour(15) },
+        { uuid: "task-1000", content: "Task at 10 AM", startAt: msFromHour(10) },
+      ],
+    };
+    const calendarEvents = [
+      { end: new Date(msFromHour(12)), start: new Date(msFromHour(11)), title: "Event at 11 AM" },
+      { end: new Date(msFromHour(10)), start: new Date(msFromHour(9)), title: "Event at 9 AM" },
+    ];
+
+    await act(async () => {
+      root.render(
+        createElement(AgendaWidget, {
+          app,
+          calendarEvents,
+          currentDate: dayStart.toISOString(),
+          tasks,
+        })
+      );
+    });
+    await flushAsync();
+
+    const labels = Array.from(container.querySelectorAll(".agenda-item .agenda-text"))
+      .map((element) => element.textContent);
+    expect(labels).toEqual(["Event at 9 AM", "Task at 10 AM", "Event at 11 AM", "Task at 3 PM"]);
+  });
+
   it("shows at most three date sections per page and reveals the next date after clicking forward", async () => {
     const app = buildMockApp();
     const base = new Date();

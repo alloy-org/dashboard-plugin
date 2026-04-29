@@ -3,6 +3,20 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-04-29 — Sort Agenda tasks and events by time
+
+**Model:** GPT-5.5
+**Files created/modified:**
+- `lib/dashboard/agenda.js` (modified — merges visible tasks and calendar events before sorting by timestamp)
+- `test/agenda.test.js` (modified — added mixed task/event ordering regression coverage)
+
+**Task:** Sort tasks and events within each Agenda day by ascending time of day
+**Prompt summary:** "Task Agenda is not correctly interspersing events and tasks by the time of day"
+**Scope:** ~45 lines changed across 2 files
+**Notes:** All-day events sort to the start of their date; tasks/events without a timestamp remain at the end with stable source order.
+
+---
+
 ## 2026-04-19 — Add Schedule link to DreamTask cards and AI-rank stale notes in Recent Notes
 
 **Model:** claude-opus-4.7
