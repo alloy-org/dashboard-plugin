@@ -6,6 +6,7 @@
  */
 import { jest } from "@jest/globals";
 import { updateDreamTaskTaskMetadata } from "../lib/dashboard/dream-task-internals.js";
+import { scheduledDreamTaskResultFromStartAt, startAtSecondsFromDateAndMinutes } from "../lib/dashboard/dream-task-schedule.js";
 import { analyzeDreamTasks } from "../lib/dream-task-service.js";
 import { SETTING_KEYS } from "../lib/constants/settings.js";
 import { replaceSectionContent } from "../lib/util/replace-note-section-content.js";
@@ -66,6 +67,7 @@ function buildMockAppWithNote(initialContent) {
       return Promise.resolve(true);
     }),
     insertNoteContent: jest.fn().mockResolvedValue(undefined),
+    insertTask: jest.fn().mockResolvedValue("created-task-uuid"),
     updateTask: jest.fn().mockResolvedValue(true),
     currentNoteContent: () => noteContent,
   };
@@ -181,6 +183,45 @@ describe("DreamTask action links", () => {
       expect(app.updateTask).not.toHaveBeenCalled();
       const updatedBody = app.replaceNoteContent.mock.calls[0][1];
       expect(updatedBody).toContain("<!-- dream-completed-at:1777501800 -->");
+    });
+  });
+
+  // [OpenAI GPT-5.5] Generated tests for: DreamTask scheduling date formatting and task creation
+  describe("scheduling DreamTask suggestions updates Amplenote startAt", () => {
+    it("combines picker date and selected time as unix seconds", () => {
+      const localMidnightSeconds = Math.floor(new Date(2026, 3, 29, 0, 0, 0).getTime() / 1000);
+      const expectedStartAt = Math.floor(new Date(2026, 3, 29, 9, 30, 0).getTime() / 1000);
+
+      const startAt = startAtSecondsFromDateAndMinutes(localMidnightSeconds, 9 * 60 + 30);
+
+      expect(startAt).toBe(expectedStartAt);
+    });
+
+    it("creates invented tasks with startAt in the insertTask payload", async () => {
+      const app = buildMockAppWithNote(MOCK_NOTE_CONTENT);
+      const task = { isExisting: false, suggestionId: "sug-102", title: "Build a landing page for Task Agent Pro", rating: 8 };
+      const startAt = Math.floor(new Date(2026, 3, 29, 9, 30, 0).getTime() / 1000);
+
+      const result = await scheduledDreamTaskResultFromStartAt(app, "daily-jot-uuid", startAt, task);
+
+      expect(result).toEqual({ taskUuid: "created-task-uuid" });
+      expect(app.insertTask).toHaveBeenCalledWith(
+        { uuid: "daily-jot-uuid" },
+        { content: "Build a landing page for Task Agent Pro", startAt },
+      );
+      expect(app.updateTask).not.toHaveBeenCalled();
+    });
+
+    it("updates existing tasks with a unix-seconds startAt", async () => {
+      const app = buildMockAppWithNote(MOCK_NOTE_CONTENT);
+      const task = { isExisting: true, suggestionId: "sug-101", title: "Update budget", uuid: "task-7", rating: 7 };
+      const startAt = Math.floor(new Date(2026, 3, 29, 10, 0, 0).getTime() / 1000);
+
+      const result = await scheduledDreamTaskResultFromStartAt(app, "daily-jot-uuid", startAt, task);
+
+      expect(result).toEqual({ taskUuid: "task-7" });
+      expect(app.updateTask).toHaveBeenCalledWith("task-7", { startAt });
+      expect(app.insertTask).not.toHaveBeenCalled();
     });
   });
 

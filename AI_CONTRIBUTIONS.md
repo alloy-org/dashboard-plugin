@@ -3,6 +3,23 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-05-01 — Schedule DreamTask suggestions with startAt
+
+**Model:** GPT-5.5
+**Files created/modified:**
+- `lib/dashboard/dream-task.js` (modified — routes Schedule through a helper that validates startAt and reports failures)
+- `lib/dashboard/dream-task-schedule.js` (modified — normalizes picker dates and creates invented tasks with startAt)
+- `lib/util/date-utility.js` (modified — consolidates date parsing into `dateFromDateInput`)
+- `test/dream-task-actions.test.js` (modified — covers Unix-second formatting and insert/update scheduling payloads)
+- `build/compiled.js` (modified — rebuilt plugin bundle)
+
+**Task:** Ensure DreamTask Schedule creates or updates Amplenote tasks with a valid Unix-second `startAt`
+**Prompt summary:** "When schedule creates a DreamTask, preserve the picker start time and match app.updateTask formatting"
+**Scope:** ~85 lines changed across source, tests, and compiled output
+**Notes:** Invented tasks now receive `startAt` in the `app.insertTask` payload instead of relying on an immediate follow-up update to the newly created UUID.
+
+---
+
 ## 2026-04-29 — Complete DreamTask suggestions in Amplenote
 
 **Model:** GPT-5.5
