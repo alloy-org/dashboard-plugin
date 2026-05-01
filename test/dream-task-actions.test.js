@@ -204,7 +204,7 @@ describe("DreamTask action links", () => {
 
       const result = await scheduledDreamTaskResultFromStartAt(app, "daily-jot-uuid", startAt, task);
 
-      expect(result).toEqual({ taskUuid: "created-task-uuid" });
+      expect(result).toEqual({ noteUUID: "daily-jot-uuid", startAt, taskUuid: "created-task-uuid" });
       expect(app.insertTask).toHaveBeenCalledWith(
         { uuid: "daily-jot-uuid" },
         { content: "Build a landing page for Task Agent Pro", startAt },
@@ -219,9 +219,21 @@ describe("DreamTask action links", () => {
 
       const result = await scheduledDreamTaskResultFromStartAt(app, "daily-jot-uuid", startAt, task);
 
-      expect(result).toEqual({ taskUuid: "task-7" });
+      expect(result).toEqual({ noteUUID: null, startAt, taskUuid: "task-7" });
       expect(app.updateTask).toHaveBeenCalledWith("task-7", { startAt });
       expect(app.insertTask).not.toHaveBeenCalled();
+    });
+
+    it("persists the created task UUID onto the cached DreamTask suggestion", async () => {
+      const app = buildMockAppWithNote(MOCK_NOTE_CONTENT);
+      const task = { isExisting: false, suggestionId: "sug-102", title: "Build a landing page for Task Agent Pro", rating: 8 };
+
+      const result = await updateDreamTaskTaskMetadata(app, MOCK_NOTE_UUID, task, { taskUuid: "created-task-uuid" });
+
+      expect(result).toBe(true);
+      const updatedBody = app.replaceNoteContent.mock.calls[0][1];
+      expect(updatedBody).toContain("<!-- task:created-task-uuid -->");
+      expect(updatedBody).toContain("<!-- suggestion:sug-102 -->");
     });
   });
 

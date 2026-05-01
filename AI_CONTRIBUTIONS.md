@@ -7,16 +7,19 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 **Model:** GPT-5.5
 **Files created/modified:**
+- `lib/hooks/use-dashboard-task-updates.js` (created — listens for task-update events and refreshes task-domain state)
+- `lib/dashboard/dashboard.js` (modified — delegates task-update event handling to the hook)
 - `lib/dashboard/dream-task.js` (modified — routes Schedule through a helper that validates startAt and reports failures)
+- `lib/dashboard/dream-task-internals.js` (modified — persists created task UUIDs into cached DreamTask suggestions)
 - `lib/dashboard/dream-task-schedule.js` (modified — normalizes picker dates and creates invented tasks with startAt)
 - `lib/util/date-utility.js` (modified — consolidates date parsing into `dateFromDateInput`)
 - `test/dream-task-actions.test.js` (modified — covers Unix-second formatting and insert/update scheduling payloads)
 - `build/compiled.js` (modified — rebuilt plugin bundle)
 
-**Task:** Ensure DreamTask Schedule creates or updates Amplenote tasks with a valid Unix-second `startAt`
+**Task:** Ensure DreamTask Schedule creates or updates Amplenote tasks with a valid Unix-second `startAt` and refreshes scheduled-task widgets
 **Prompt summary:** "When schedule creates a DreamTask, preserve the picker start time and match app.updateTask formatting"
-**Scope:** ~85 lines changed across source, tests, and compiled output
-**Notes:** Invented tasks now receive `startAt` in the `app.insertTask` payload instead of relying on an immediate follow-up update to the newly created UUID.
+**Scope:** ~140 lines changed across source, tests, and compiled output
+**Notes:** Invented tasks now receive `startAt` in the `app.insertTask` payload, are linked back to their created UUID in the DreamTask cache, and broadcast a task-update event so Agenda and DaySketch refresh.
 
 ---
 
