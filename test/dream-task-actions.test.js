@@ -5,6 +5,9 @@
  * Prompt summary: "test that clicking 3 action links modifies note content; verify subsequent load interprets designations"
  */
 import { jest } from "@jest/globals";
+import { act, createElement } from "react";
+import { createRoot } from "react-dom/client";
+import DreamTaskWidget from "../lib/dashboard/dream-task.js";
 import { updateDreamTaskTaskMetadata } from "../lib/dashboard/dream-task-internals.js";
 import { scheduledDreamTaskResultFromStartAt, startAtSecondsFromDateAndMinutes } from "../lib/dashboard/dream-task-schedule.js";
 import { analyzeDreamTasks } from "../lib/dream-task-service.js";
@@ -12,6 +15,9 @@ import { SETTING_KEYS } from "../lib/constants/settings.js";
 import { replaceSectionContent } from "../lib/util/replace-note-section-content.js";
 import { dailyJotNoteUuidFromToday, markTaskComplete } from "../lib/util/task-util.js";
 import { SAMPLE_TASKS } from "./fixtures/tasks.js";
+
+// Codex 5.5 added this but WBH' tests pass w/o it
+// globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 const MOCK_NOTE_UUID = "dream-note-uuid";
 
@@ -73,6 +79,21 @@ function buildMockAppWithNote(initialContent) {
   };
 
   return app;
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Wait for DreamTask cards to render in jsdom component tests.
+// @param {Element} container - Rendered test container.
+// @returns {Promise<NodeList>} Rendered cards.
+// [OpenAI GPT-5.5] Task: verify native Amplenote scheduled tasks hide DreamTask Schedule links
+// Prompt: "ensure DreamTask render can tell whether the native Amplenote task already has startAt"
+async function waitForDreamTaskCards(container) {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
+    const cards = container.querySelectorAll(".dream-task-card");
+    if (cards.length > 0) return cards;
+  }
+  throw new Error("Timed out waiting for DreamTask cards");
 }
 
 // [Claude claude-4.6-opus-high-thinking] Generated tests for: DreamTask action links and subsequent load
@@ -234,6 +255,45 @@ describe("DreamTask action links", () => {
       const updatedBody = app.replaceNoteContent.mock.calls[0][1];
       expect(updatedBody).toContain("<!-- task:created-task-uuid -->");
       expect(updatedBody).toContain("<!-- suggestion:sug-102 -->");
+    });
+
+    it("attaches native Amplenote task data when loading cached DreamTask suggestions", async () => {
+      const app = buildMockAppWithNote(MOCK_NOTE_CONTENT);
+      const todayLabel = new Date().toLocaleString([], { year: "numeric", month: "long", day: "numeric" });
+      const noteName = `Dashboard proposed tasks for ${ todayLabel }`;
+
+      const result = await analyzeDreamTasks(app, { noteName, minimumTaskCount: 1, forceRefresh: false });
+
+      const scheduledDreamTask = result.tasks.find(dreamTask => dreamTask.uuid === "task-7");
+      expect(scheduledDreamTask.nativeTask).toBeTruthy();
+      expect(scheduledDreamTask.nativeTask.uuid).toBe("task-7");
+      expect(scheduledDreamTask.nativeTask.startAt).toBeTruthy();
+      expect(scheduledDreamTask.startAt).toBeUndefined();
+    });
+
+    it("hides Schedule for existing native tasks that already have startAt", async () => {
+      const app = buildMockAppWithNote(MOCK_NOTE_CONTENT);
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      const root = createRoot(container);
+
+      try {
+        await act(async () => {
+          root.render(createElement(DreamTaskWidget, {
+            app, gridHeightSize: 1, gridWidthSize: 2, onOpenSettings: jest.fn(), providerApiKey: "test-key",
+          }));
+        });
+        const cards = await waitForDreamTaskCards(container);
+
+        expect(cards).toHaveLength(2);
+        expect(cards[0].textContent).toContain("Message one luminary or press");
+        expect(cards[0].textContent).not.toContain("Schedule");
+        expect(cards[1].textContent).toContain("Build a landing page for Task Agent Pro");
+        expect(cards[1].textContent).toContain("Schedule");
+      } finally {
+        await act(async () => { root.unmount(); });
+        container.remove();
+      }
     });
   });
 

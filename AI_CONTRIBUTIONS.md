@@ -3,6 +3,21 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-05-01 — Hide Schedule for already scheduled native tasks
+
+**Model:** GPT-5.5
+**Files created/modified:**
+- `lib/dream-task-service.js` (modified — attaches native Amplenote task objects to DreamTask suggestions by UUID)
+- `lib/dashboard/dream-task.js` (modified — distinguishes `dreamTask` suggestions from native `task` objects during render)
+- `test/dream-task-actions.test.js` (modified — covers native-task enrichment and Schedule link hiding)
+
+**Task:** Hide DreamTask's Schedule action when the underlying native Amplenote task already has `startAt`
+**Prompt summary:** "DreamTask render receives a DreamTask-specific task; pass the native Amplenote task through so Schedule can hide when native startAt exists"
+**Scope:** ~80 lines changed across 3 files
+**Notes:** Existing suggestions now carry `nativeTask` from the active task domain context; rendered cards use that native task's `startAt` while keeping DreamTask metadata separate.
+
+---
+
 ## 2026-05-01 — Schedule DreamTask suggestions with startAt
 
 **Model:** GPT-5.5
