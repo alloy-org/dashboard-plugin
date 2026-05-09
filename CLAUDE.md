@@ -1,5 +1,11 @@
 # AGENTS.md/CLAUDE.md — AI Authorship Documentation Standards
 
+This project implements a plugin that utilized the Amplenote Plugin API:
+- [App methods - Start here. Most of the interactions with the plugin API happen through the app object](https://www.amplenote.com/help/developing_amplenote_plugins/app_interface)
+- [Object types and attributes - When interfacing with notes and tasks, it's useful to know their attributes and structure](https://www.amplenote.com/help/developing_amplenote_plugins/appendix_i)
+- [Markdown content guide - How to format markdown content, like tables, code blocks, and Rich Footnotes](https://www.amplenote.com/help/developing_amplenote_plugins/appendix_iii)
+- [Index of API pages](https://www.amplenote.com/help/developing_amplenote_plugins)
+
 ## Purpose
 
 This project tracks AI-generated code for attribution, auditing, and code quality research. 
