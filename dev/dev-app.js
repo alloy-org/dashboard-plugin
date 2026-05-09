@@ -640,17 +640,12 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       if (taskDomainUUID) {
         return _sortFilteredNotes(SAMPLE_NOTE_HANDLES[taskDomainUUID] || [], query, sortOrder);
       }
-      const notes = _readAllNoteFiles(notesDir);
-      return _sortFilteredNotes(
-        notes
-        .filter(note => {
-          if (!query) return true;
-          return note.meta.title === query;
-        }),
-        query,
-        sortOrder
-      )
+      // No domain — merge file-backed notes with all sample handles (mirrors real Amplenote behaviour).
+      const fileNotes = _readAllNoteFiles(notesDir)
+        .filter(note => !query || note.meta.title === query)
         .map(note => ({ uuid: note.meta.uuid, name: note.meta.title }));
+      const sampleHandles = Object.values(SAMPLE_NOTE_HANDLES).flat();
+      return _sortFilteredNotes([...fileNotes, ...sampleHandles], query, sortOrder);
     },
 
     // [Claude] Task: create a markdown file with frontmatter in the /notes directory
