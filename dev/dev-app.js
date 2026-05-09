@@ -36,6 +36,12 @@ const SAMPLE_NOTE_HANDLES = {
     { uuid: "note-work-15", name: "API Error Handling" },
     { uuid: "note-work-16", name: "Auth Token Refresh" },
     { uuid: "note-work-17", name: "DB Query Performance" },
+    // Stale notes for graveyard fixture data (3–7 months old)
+    { uuid: "note-old-3mo", name: "Security Backlog (Q4)" },
+    { uuid: "note-old-4mo", name: "Platform Migration Notes" },
+    { uuid: "note-old-5mo", name: "Tech Debt Tracker" },
+    { uuid: "note-old-6mo", name: "Abandoned Feature Concepts" },
+    { uuid: "note-old-7mo", name: "Legacy System Docs" },
   ],
   "domain-personal-uuid": [
     { uuid: "note-personal-1",  name: "Networking Outreach" },
@@ -247,7 +253,46 @@ function _buildSampleTasks() {
     },
   ];
 
-  return [...completedTasks, ...newTasks];
+  // [Claude claude-sonnet-4-6] Task: stale tasks for graveyard fixture — createdAt 3.5–10 months ago
+  // Prompt: "mock five notes of ages 3-7 months old with 5-10 tasks each for graveyard dev fixture data"
+  const staleTasks = [
+    // note-old-3mo: tasks created ~3.5–4 months ago
+    { uuid: "dev-old-1",  content: "Migrate legacy auth system to OAuth2",          createdAt: nowSec - 110 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-3mo", victoryValue: 9  },
+    { uuid: "dev-old-2",  content: "Document current database schema",               createdAt: nowSec - 108 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-3mo", victoryValue: 4  },
+    { uuid: "dev-old-3",  content: "Review and close stale pull requests",           createdAt: nowSec - 105 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-3mo", victoryValue: 5  },
+    { uuid: "dev-old-4",  content: "Set up production error monitoring alerts",      createdAt: nowSec - 115 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-3mo", victoryValue: 7  },
+    { uuid: "dev-old-5",  content: "Update API docs with v3 endpoints",              createdAt: nowSec - 112 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-3mo", victoryValue: 4  },
+    // note-old-4mo: tasks created ~5–6 months ago
+    { uuid: "dev-old-6",  content: "Break monolith into microservices POC",          createdAt: nowSec - 155 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-4mo", victoryValue: 12 },
+    { uuid: "dev-old-7",  content: "Evaluate vitest as Jest replacement",            createdAt: nowSec - 152 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-4mo", victoryValue: 5  },
+    { uuid: "dev-old-8",  content: "Write new team onboarding guide",                createdAt: nowSec - 165 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-4mo", victoryValue: 6  },
+    { uuid: "dev-old-9",  content: "Audit and remove unused env variables",          createdAt: nowSec - 160 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-4mo", victoryValue: 3  },
+    { uuid: "dev-old-10", content: "Review third-party license compliance",          createdAt: nowSec - 158 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-4mo", victoryValue: 4  },
+    { uuid: "dev-old-11", content: "Profile dashboard rendering bottleneck",         createdAt: nowSec - 170 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-4mo", victoryValue: 8  },
+    // note-old-5mo: tasks created ~6–7 months ago
+    { uuid: "dev-old-12", content: "Migrate from deprecated payments API v1",        createdAt: nowSec - 185 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-5mo", victoryValue: 10 },
+    { uuid: "dev-old-13", content: "Renew SSL certificates before expiry",           createdAt: nowSec - 195 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-5mo", victoryValue: 8  },
+    { uuid: "dev-old-14", content: "Consolidate duplicate utility functions",        createdAt: nowSec - 200 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-5mo", victoryValue: 5  },
+    { uuid: "dev-old-15", content: "Research GraphQL adoption feasibility",          createdAt: nowSec - 190 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-5mo", victoryValue: 6  },
+    { uuid: "dev-old-16", content: "Write deployment runbook for ops team",          createdAt: nowSec - 205 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-5mo", victoryValue: 7  },
+    // note-old-6mo: tasks created ~7–8 months ago
+    { uuid: "dev-old-17", content: "Implement dark mode for dashboard",              createdAt: nowSec - 215 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-6mo", victoryValue: 9  },
+    { uuid: "dev-old-18", content: "Evaluate Kubernetes vs ECS for containers",      createdAt: nowSec - 220 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-6mo", victoryValue: 8  },
+    { uuid: "dev-old-19", content: "Draft load testing plan for peak traffic",       createdAt: nowSec - 230 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-6mo", victoryValue: 7  },
+    { uuid: "dev-old-20", content: "Decommission old analytics service",             createdAt: nowSec - 235 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-6mo", victoryValue: 6  },
+    { uuid: "dev-old-21", content: "Replace hard-coded config with env vars",        createdAt: nowSec - 225 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-6mo", victoryValue: 4  },
+    { uuid: "dev-old-22", content: "Review and update privacy policy",               createdAt: nowSec - 218 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-6mo", victoryValue: 3  },
+    // note-old-7mo: tasks created ~8–10 months ago
+    { uuid: "dev-old-23", content: "Research alternative database backends",         createdAt: nowSec - 250 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-7mo", victoryValue: 9  },
+    { uuid: "dev-old-24", content: "Build internal tools dashboard for ops",         createdAt: nowSec - 265 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-7mo", victoryValue: 7  },
+    { uuid: "dev-old-25", content: "Establish code review guidelines doc",           createdAt: nowSec - 270 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-7mo", victoryValue: 5  },
+    { uuid: "dev-old-26", content: "Investigate WebSocket memory leak",              createdAt: nowSec - 280 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-7mo", victoryValue: 8  },
+    { uuid: "dev-old-27", content: "Replace custom logger with winston",             createdAt: nowSec - 255 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-7mo", victoryValue: 4  },
+    { uuid: "dev-old-28", content: "Set up LaunchDarkly feature flag infrastructure", createdAt: nowSec - 290 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-7mo", victoryValue: 6 },
+    { uuid: "dev-old-29", content: "Automate database backup verification",          createdAt: nowSec - 260 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-7mo", victoryValue: 5  },
+  ];
+
+  return [...completedTasks, ...newTasks, ...staleTasks];
 }
 
 // ---------------------------------------------------------------------------
@@ -534,7 +579,10 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
     // Prompt: "app.filterNotes should loop over each file and load its frontmatter to see if its note name matches the value of query passed to filterNotes"
     // Date: 2026-03-14 | Model: claude-4.6-sonnet-medium-thinking
     async filterNotes(options = {}) {
-      const { query } = options;
+      const { query, taskDomainUUID } = options;
+      if (taskDomainUUID) {
+        return SAMPLE_NOTE_HANDLES[taskDomainUUID] || [];
+      }
       const notes = _readAllNoteFiles(notesDir);
       return notes
         .filter(note => {
@@ -696,6 +744,13 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       fs.writeFileSync(filePath, buffer);
       console.log(`[dev-app] attachNoteMedia saved ${filename} (${buffer.length} bytes)`);
       return `/${filename}`;
+    },
+
+    // [Claude claude-sonnet-4-6] Task: stub updateTask for graveyard widget dev mode
+    // Prompt: "add graveyard.js component..."
+    async updateTask(taskUuid, patch) {
+      console.log('[dev-app] updateTask', taskUuid, patch);
+      return true;
     },
 
     async openSidebarEmbed() { return true; },
