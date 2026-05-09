@@ -294,7 +294,15 @@ function _buildSampleTasks() {
     { uuid: "dev-old-29", content: "Automate database backup verification",          createdAt: nowSec - 260 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-7mo", victoryValue: 5  },
   ];
 
-  return [...completedTasks, ...newTasks, ...staleTasks];
+  return [...completedTasks, ...newTasks, ...staleTasks].map(task => ({
+    important: false,
+    urgent: false,
+    completedAt: null,
+    deadline: null,
+    dismissedAt: null,
+    startAt: null,
+    ...task,
+  }));
 }
 
 // ---------------------------------------------------------------------------
@@ -485,7 +493,7 @@ function _readAllNoteFiles(dir = NOTES_DIR) {
 // @param {Array<object>} notes - Parsed note records from _readAllNoteFiles.
 // @param {string} query - Original filterNotes query text, needed for relevance sorting.
 // @param {string} sortOrder - Optional Amplenote sort-order argument.
-// [OpenAI gpt-5.4] Task: support Amplenote filterNotes sort-order argument in dev app
+// [OpenAI gpt-5.4] Task: support filterNotes sort order without discarding note metadata
 // Prompt: "Implement a function called by filterNotes where, if a second param is given that matches one of the valid sort options, that we call a function that sorts the filtered notes by whatever criteria the caller passed in"
 // Date: 2026-05-09 | Model: gpt-5.4
 function _sortFilteredNotes(notes, query = "", sortOrder = "") {
@@ -531,8 +539,18 @@ function _sortFilteredNotes(notes, query = "", sortOrder = "") {
     const rightTimestamp = timestampFromValue(
       right?.meta?.[sortField] || (normalizedSortOrder === "opened" ? right?.meta?.updated || right?.meta?.created : "")
     );
-    return rightTimestamp - leftTimestamp;
+    if (rightTimestamp !== leftTimestamp) return rightTimestamp - leftTimestamp;
+    return leftTitle.localeCompare(rightTitle);
   });
+}
+
+// ---------------------------------------------------------------------------
+// Convert a note's attributes to the attrs guaranteed to be in a noteHandle
+function _noteHandleFromRecord(note) {
+  return {
+    uuid: note?.meta?.uuid || note?.uuid,
+    name: note?.meta?.title || note?.name || "",
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -632,7 +650,7 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       return sampleTasks.filter(t => t.completedAt != null);
     },
 
-    // [OpenAI gpt-5.4] Task: support Amplenote filterNotes sort-order argument in dev app
+    // [OpenAI gpt-5.4] Task: keep filterNotes results limited to matching note files while honoring sort order
     // Prompt: "Implement a function called by filterNotes where, if a second param is given that matches one of the valid sort options, that we call a function that sorts the filtered notes by whatever criteria the caller passed in"
     // Date: 2026-05-09 | Model: gpt-5.4
     async filterNotes(options = {}, sortOrder = "") {
@@ -640,12 +658,9 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       if (taskDomainUUID) {
         return _sortFilteredNotes(SAMPLE_NOTE_HANDLES[taskDomainUUID] || [], query, sortOrder);
       }
-      // No domain — merge file-backed notes with all sample handles (mirrors real Amplenote behaviour).
-      const fileNotes = _readAllNoteFiles(notesDir)
-        .filter(note => !query || note.meta.title === query)
-        .map(note => ({ uuid: note.meta.uuid, name: note.meta.title }));
-      const sampleHandles = Object.values(SAMPLE_NOTE_HANDLES).flat();
-      return _sortFilteredNotes([...fileNotes, ...sampleHandles], query, sortOrder);
+      const matchingNotes = _readAllNoteFiles(notesDir)
+        .filter(note => !query || note.meta.title === query);
+      return _sortFilteredNotes(matchingNotes, query, sortOrder).map(_noteHandleFromRecord);
     },
 
     // [Claude] Task: create a markdown file with frontmatter in the /notes directory
