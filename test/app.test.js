@@ -390,6 +390,50 @@ describe('DashboardApp', () => {
       // Popup should close (no longer in DOM)
       expect(container.querySelector('.dashboard-layout-popup')).toBeNull();
     });
+
+    it('updates both grid-cell and inner widget sizing classes after resizing a widget', async () => {
+      await mountDashboard(container, root, mockApp);
+
+      const initialPlanningCell = container.querySelector('.grid-cell[data-widget-id="planning"]');
+      const initialPlanningWidget = container.querySelector('.widget-planning');
+      expect(initialPlanningCell.className).toContain('horizontal-2-cell');
+      expect(initialPlanningWidget.className).toContain('horizontal-2-cell');
+
+      const layoutBtn = Array.from(container.querySelectorAll('.dashboard-configure-button'))
+        .find(btn => btn.textContent.includes('Layout'));
+      await act(async () => { layoutBtn.click(); });
+      await flushAsync();
+
+      const sizingTab = Array.from(container.querySelectorAll('.dashboard-layout-popup-tab'))
+        .find(btn => btn.textContent.includes('Sizing'));
+      await act(async () => { sizingTab.click(); });
+      await flushAsync();
+
+      const planningSizingItem = Array.from(container.querySelectorAll('.dashboard-layout-popup-sizing-item'))
+        .find(item => item.textContent.includes('Planning'));
+      expect(planningSizingItem).toBeDefined();
+
+      const [widthSelect, heightSelect] = planningSizingItem.querySelectorAll('select');
+      await act(async () => {
+        widthSelect.value = '3';
+        widthSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        heightSelect.value = '2';
+        heightSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      await flushAsync();
+
+      const saveBtn = Array.from(container.querySelectorAll('.config-popup-btn--submit'))
+        .find(btn => btn.textContent.includes('Save Layout'));
+      await act(async () => { saveBtn.click(); });
+      await flushAsync();
+
+      const updatedPlanningCell = container.querySelector('.grid-cell[data-widget-id="planning"]');
+      const updatedPlanningWidget = container.querySelector('.widget-planning');
+      expect(updatedPlanningCell.className).toContain('horizontal-3-cell');
+      expect(updatedPlanningCell.className).toContain('vertical-2-cell');
+      expect(updatedPlanningWidget.className).toContain('horizontal-3-cell');
+      expect(updatedPlanningWidget.className).toContain('vertical-2-cell');
+    });
   });
 
   // ------------------------------------------------
