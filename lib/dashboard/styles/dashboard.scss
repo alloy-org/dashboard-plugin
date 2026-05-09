@@ -78,8 +78,8 @@ html {
       &.horizontal-4-cell { grid-column: span 4; }
 
       &.vertical-1-cell {
-        max-height: 400px;
-        min-height: 300px;
+        max-height: 420px;
+        min-height: 320px;
       }
 
       &.vertical-2-cell {
@@ -162,7 +162,6 @@ html {
     }
 
     &-title {
-      align-items: baseline;
       color: $color-navy;
       display: flex;
       flex: 1;

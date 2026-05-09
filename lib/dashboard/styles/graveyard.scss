@@ -15,6 +15,12 @@
     overflow: hidden;
   }
 
+  &.horizontal-1-cell {
+    .widget-title__subtitle {
+      display: none;
+    }
+  }
+
   /* [Claude claude-sonnet-4-6] Task: meadow wrapper — positions image behind scrollable task list */
   /* Prompt: "fade visibility of a green image placed behind tasks, more visible as each is dismissed" */
   .graveyard-meadow-wrapper {
@@ -94,6 +100,12 @@
   .graveyard-task-actions {
     display: flex;
     gap: $sp-md;
+
+    > a {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
 
   .graveyard-task-action {

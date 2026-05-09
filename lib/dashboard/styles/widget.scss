@@ -2,4 +2,16 @@
   .widget-body {
     overflow-y: auto;
   }
+
+  .widget-heading-bar,
+  .widget-title {
+    align-items: center;
+    display: flex;
+  }
+
+  .widget-title__label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
