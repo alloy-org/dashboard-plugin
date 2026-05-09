@@ -6,6 +6,7 @@
  */
 import fs from "fs";
 import crypto from "crypto";
+import { SAMPLE_NOTE_HANDLES, withAsyncIterator } from "lib/util/dev-sample-notes.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -14,53 +15,6 @@ const COMPILED_DIR = path.join(__dirname, "compiled");
 const DEFAULT_SETTINGS_PATH = path.join(COMPILED_DIR, "settings.json");
 const DEFAULT_MOODS_PATH = path.join(COMPILED_DIR, "moods.json");
 const NOTES_DIR = path.join(__dirname, "..", "notes");
-
-// Note handles referenced by sample tasks, grouped by domain.
-// Each entry provides the name shown in the Recent Notes widget.
-const SAMPLE_NOTE_HANDLES = {
-  "domain-work-uuid": [
-    { uuid: "note-work-1",  name: "Q1 Goal Review" },
-    { uuid: "note-work-2",  name: "Stand-up Notes" },
-    { uuid: "note-work-3",  name: "Feature Implementation" },
-    { uuid: "note-work-4",  name: "Design Feedback" },
-    { uuid: "note-work-5",  name: "Budget Tracker" },
-    { uuid: "note-work-6",  name: "Offline Testing" },
-    { uuid: "note-work-7",  name: "Sprint Retro" },
-    { uuid: "note-work-8",  name: "API Layer Research" },
-    { uuid: "note-work-9",  name: "Integration Tests" },
-    { uuid: "note-work-10", name: "Pull Request Queue" },
-    { uuid: "note-work-11", name: "Settings Module Tests" },
-    { uuid: "note-work-12", name: "CSS Cleanup" },
-    { uuid: "note-work-13", name: "Dashboard Memory Leak" },
-    { uuid: "note-work-14", name: "Client Feedback" },
-    { uuid: "note-work-15", name: "API Error Handling" },
-    { uuid: "note-work-16", name: "Auth Token Refresh" },
-    { uuid: "note-work-17", name: "DB Query Performance" },
-    // Stale notes for graveyard fixture data (3–7 months old)
-    { uuid: "note-old-3mo", name: "Security Backlog (Q4)" },
-    { uuid: "note-old-4mo", name: "Platform Migration Notes" },
-    { uuid: "note-old-5mo", name: "Tech Debt Tracker" },
-    { uuid: "note-old-6mo", name: "Abandoned Feature Concepts" },
-    { uuid: "note-old-7mo", name: "Legacy System Docs" },
-  ],
-  "domain-personal-uuid": [
-    { uuid: "note-personal-1",  name: "Networking Outreach" },
-    { uuid: "note-personal-2",  name: "Fitness Log" },
-    { uuid: "note-personal-3",  name: "Social Reminders" },
-    { uuid: "note-personal-4",  name: "Entertainment" },
-    { uuid: "note-personal-5",  name: "Shopping List" },
-    { uuid: "note-personal-6",  name: "Health Appointments" },
-    { uuid: "note-personal-7",  name: "Reading List" },
-    { uuid: "note-personal-8",  name: "Hobbies" },
-    { uuid: "note-personal-9",  name: "Trip Planning" },
-    { uuid: "note-personal-10", name: "Home Office" },
-  ],
-  "domain-side-uuid": [
-    { uuid: "note-side-1", name: "Blog Post Ideas" },
-    { uuid: "note-side-2", name: "Side Project README" },
-    { uuid: "note-side-3", name: "CI Pipeline Setup" },
-  ],
-};
 
 const SAMPLE_DOMAINS = [
   { name: "Work",          uuid: "domain-work-uuid",     notes: SAMPLE_NOTE_HANDLES["domain-work-uuid"] },
@@ -653,14 +607,19 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
     // [OpenAI gpt-5.4] Task: keep filterNotes results limited to matching note files while honoring sort order
     // Prompt: "Implement a function called by filterNotes where, if a second param is given that matches one of the valid sort options, that we call a function that sorts the filtered notes by whatever criteria the caller passed in"
     // Date: 2026-05-09 | Model: gpt-5.4
-    async filterNotes(options = {}, sortOrder = "") {
+    // [Claude claude-opus-4-7] Task: return a sync array carrying Symbol.asyncIterator so callers can iterate the result directly or await it as an array, matching production filterNoteHandles
+    // Prompt: "update our dev-app implementation of filterNotes to return a compatible iterator so that calls of filterNotes can iterate over it if they don't use its return value as an array"
+    filterNotes(options = {}, sortOrder = "") {
       const { query, taskDomainUUID } = options;
+      let noteHandles;
       if (taskDomainUUID) {
-        return _sortFilteredNotes(SAMPLE_NOTE_HANDLES[taskDomainUUID] || [], query, sortOrder);
+        noteHandles = _sortFilteredNotes(SAMPLE_NOTE_HANDLES[taskDomainUUID] || [], query, sortOrder);
+      } else {
+        const matchingNotes = _readAllNoteFiles(notesDir)
+          .filter(note => !query || note.meta.title === query);
+        noteHandles = _sortFilteredNotes(matchingNotes, query, sortOrder).map(_noteHandleFromRecord);
       }
-      const matchingNotes = _readAllNoteFiles(notesDir)
-        .filter(note => !query || note.meta.title === query);
-      return _sortFilteredNotes(matchingNotes, query, sortOrder).map(_noteHandleFromRecord);
+      return withAsyncIterator(noteHandles);
     },
 
     // [Claude] Task: create a markdown file with frontmatter in the /notes directory
