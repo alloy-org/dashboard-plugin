@@ -55,17 +55,17 @@
     flex-direction: column;
     gap: $sp-xs;
     padding: $sp-sm $sp-md;
-    transition: opacity 0.28s ease, transform 0.28s ease;
 
     &:last-child {
       border-bottom: none;
     }
   }
 
+  /* [Claude claude-sonnet-4-6] Task: hide dismissed task in place — layout slot preserved, other tasks stay put */
+  /* Prompt: "continue rendering it, but change its visibility to hidden" */
   .graveyard-task-item--dismissing {
-    opacity: 0;
     pointer-events: none;
-    transform: translateY(6px) scale(0.98);
+    visibility: hidden;
   }
 
   .graveyard-task-header {
