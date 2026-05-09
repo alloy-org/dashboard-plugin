@@ -1,0 +1,123 @@
+/* [Claude-authored file]
+ * Created: 2026-05-09 | Model: claude-sonnet-4-6
+ * Task: Graveyard widget styles — candidate task list with dismiss/keep actions
+ * Prompt summary: "add graveyard.scss for the graveyard widget"
+ */
+
+@use 'theme-tokens' as *;
+
+/* [Claude claude-sonnet-4-6] Task: Graveyard widget — scrollable task list with action links */
+/* Prompt: "add a new graveyard.js component..." */
+.widget-graveyard {
+  .widget-body {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .graveyard-task-list {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: $sp-xs;
+    list-style: none;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .graveyard-task-item {
+    border-bottom: 1px solid $color-border;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+    padding: $sp-sm $sp-md;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  .graveyard-task-header {
+    align-items: baseline;
+    display: flex;
+    gap: $sp-sm;
+    justify-content: space-between;
+  }
+
+  .graveyard-task-title {
+    color: $color-text;
+    flex: 1;
+    font-size: 0.85rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .graveyard-task-age {
+    color: $color-text-muted;
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    white-space: nowrap;
+  }
+
+  .graveyard-task-actions {
+    display: flex;
+    gap: $sp-md;
+  }
+
+  .graveyard-task-action {
+    color: $color-text-secondary;
+    font-size: 0.75rem;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    &--send:hover {
+      color: $color-danger;
+    }
+
+    &--keep:hover {
+      color: $color-link;
+    }
+  }
+
+  .graveyard-loading,
+  .graveyard-empty {
+    color: $color-text-secondary;
+    font-size: 0.85rem;
+    padding: $sp-md 0;
+    text-align: center;
+  }
+
+  .graveyard-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $sp-sm;
+    padding: $sp-md 0;
+
+    p {
+      color: $color-danger;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+  }
+
+  .graveyard-retry {
+    background: none;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    color: $color-text-secondary;
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: $sp-xs $sp-sm;
+
+    &:hover {
+      border-color: $color-border;
+      color: $color-text;
+    }
+  }
+}

@@ -3,6 +3,21 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-05-09 — Task Graveyard widget
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/graveyard-service.js` (created — discovers aged tasks and persists candidates in monthly archived note)
+- `lib/dashboard/graveyard.js` (created — React widget component with send-to-graveyard/keep actions)
+- `lib/dashboard/styles/graveyard.scss` (created — widget styles)
+- `lib/constants/settings.js` (modified — added graveyard to WIDGET_REGISTRY)
+- `lib/dashboard/dashboard.js` (modified — imported GraveyardWidget, added GraveyardCell, registered in CELL_COMPONENTS, passed taskDomainUUID to all cells)
+
+**Task:** Add a Graveyard dashboard widget that surfaces tasks in the 90th percentile of age (by createdAt), shows them as dismissal candidates, and persists the daily candidate list in a monthly archived note keyed by date
+**Prompt summary:** "add graveyard.js component that discovers old tasks eligible for dismissal, caches candidates in 'Graveyard tasks of Month Year' archived note as a date-keyed table, and renders them with Send to graveyard / Keep actions"
+**Scope:** ~280 lines of new logic across 3 new files, ~20 lines modified across 2 existing files
+**Notes:** Task discovery uses filterNotes(sort: opened) in reverse order to favor least-recently-opened notes; applies 6-month → 3-month → any-age cascade. "Send to graveyard" calls app.updateTask with dismissedAt. Cached UUID rows are hydrated via getTaskDomainTasks on subsequent same-day loads.
+
 ## 2026-05-01 — Hide Schedule for already scheduled native tasks
 
 **Model:** GPT-5.5
