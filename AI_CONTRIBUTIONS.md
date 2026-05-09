@@ -3,6 +3,33 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-05-09 — Tighten layout save API
+
+**Model:** GPT-5.4
+**Files created/modified:**
+- `lib/dashboard/dashboard.js` (modified — split popup-close behavior from raw layout persistence and removed focus control from `saveLayout`)
+- `lib/hooks/use-dashboard-layout.js` (modified — uses the raw persistence callback for init-time layout syncing)
+- `lib/dashboard/dashboard-layout-popup.js` (modified — calls layout save with explicit `isReset` and `sizing` params instead of an options bag)
+
+**Task:** Replace the undocumented layout-save options object with explicit parameters and remove imperative focus control from the low-level layout persistence function
+**Prompt summary:** "Break up handleLayoutSave so it consumes specific params, and remove setFocus as a param to saveLayout"
+**Scope:** ~20 lines changed across 3 files
+**Notes:** `handleLayoutPersist` now serves drag/init flows, while the popup-specific `handleLayoutSave` closes focus state explicitly after persistence succeeds.
+
+**Model:** GPT-5.4
+**Files created/modified:**
+- `lib/util/new-component-popin.js` (created — parses/merges `COMPONENTS_SEEN` and derives recent-widget pop-in behavior)
+- `lib/constants/settings.js` (modified — added `COMPONENTS_SEEN` setting key and `introducedAt` metadata for Graveyard)
+- `lib/data-service.js` (modified — hydrates parsed `COMPONENTS_SEEN` into init settings)
+- `lib/dashboard/dashboard.js` (modified — delays layout derivation until seen-setting load, persists init-time seen ids, and saves seen ids alongside layout changes)
+- `test/new-component-popin.test.js` (created — unit tests for seen-setting parsing, merging, and pop-in derivation)
+- `test/app.test.js` (modified — integration test covering init-time `COMPONENTS_SEEN` persistence)
+
+**Task:** Track which dashboard widgets have ever been shown and auto-pop a newly introduced unseen widget into the visible layout for one week after launch
+**Prompt summary:** "store shown components in COMPONENTS_SEEN, only auto-show recent unseen widgets after the setting loads, and manage the derivation in a standalone util"
+**Scope:** ~140 lines of new logic across 2 new files, ~50 lines modified across 4 existing files
+**Notes:** `COMPONENTS_SEEN` is stored as a sorted unique array of widget ids; init and layout-save flows both merge currently visible ids into that setting so recent widgets only pop in once per user.
+
 ## 2026-05-09 — Task Graveyard widget
 
 **Model:** claude-sonnet-4-6
