@@ -54,6 +54,7 @@ html {
     /* [OpenAI gpt-5.4] Task: add focus-mode backdrop container around the widget grid */
     /* Prompt: "clicking the background should restore the other components to their usual place" */
     .dashboard-grid-shell {
+      isolation: isolate;
       position: relative;
 
       &--focused {
@@ -69,7 +70,7 @@ html {
       cursor: zoom-out;
       inset: -$sp-md;
       position: absolute;
-      z-index: 1;
+      z-index: 2;
     }
 
     .dashboard-grid {
@@ -77,7 +78,6 @@ html {
       gap: $sp-lg;
       grid-template-columns: repeat(4, 1fr);
       position: relative;
-      z-index: 2;
     }
 
     /* [Claude] Task: grid-cell sizing classes for vertical and horizontal cell counts */
@@ -96,6 +96,7 @@ html {
       filter: blur(var(--focus-blur));
       min-width: 0;
       opacity: calc(var(--grid-cell-base-opacity) * var(--focus-opacity));
+      position: relative;
       transform: translate(var(--flip-x), var(--flip-y)) translate(var(--focus-x), var(--focus-y))
         scale(var(--drag-scale)) scale(var(--focus-scale));
       transition: filter 0.32s ease, opacity 0.32s ease, transform 0.32s ease;
