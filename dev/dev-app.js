@@ -77,6 +77,8 @@ const DOMAIN_TAG_MAP = {
   "domain-side-uuid": "side-projects",
 };
 
+const NOTE_SORT_ORDERS = new Set(["changed", "created", "opened", "relevance", "title", "updated"]);
+
 // [Claude] Task: generate sample tasks matching the shape returned by Amplenote's getTaskDomainTasks
 // Prompt: "existing tasks completed over past 2 weeks, plus 20 new tasks with/without start times"
 // Date: 2026-03-01 | Model: claude-opus-4-6
@@ -478,6 +480,61 @@ function _readAllNoteFiles(dir = NOTES_DIR) {
   }).filter(Boolean);
 }
 
+// ----------------------------------------------------------------------------------------------
+// @desc Sort filtered notes using the Amplenote filterNotes sort-order argument when supported.
+// @param {Array<object>} notes - Parsed note records from _readAllNoteFiles.
+// @param {string} query - Original filterNotes query text, needed for relevance sorting.
+// @param {string} sortOrder - Optional Amplenote sort-order argument.
+// [OpenAI gpt-5.4] Task: support Amplenote filterNotes sort-order argument in dev app
+// Prompt: "Implement a function called by filterNotes where, if a second param is given that matches one of the valid sort options, that we call a function that sorts the filtered notes by whatever criteria the caller passed in"
+// Date: 2026-05-09 | Model: gpt-5.4
+function _sortFilteredNotes(notes, query = "", sortOrder = "") {
+  const normalizedSortOrder = typeof sortOrder === "string" ? sortOrder.trim().toLowerCase() : "";
+  if (!NOTE_SORT_ORDERS.has(normalizedSortOrder)) return notes;
+  if (normalizedSortOrder === "relevance" && !query) return notes;
+
+  const filteredNotes = [...notes];
+  return filteredNotes.sort((left, right) => {
+    const leftTitle = left?.meta?.title || left?.name || "";
+    const rightTitle = right?.meta?.title || right?.name || "";
+
+    if (normalizedSortOrder === "title") {
+      return leftTitle.localeCompare(rightTitle);
+    }
+
+    if (normalizedSortOrder === "relevance") {
+      const lowerQuery = query.trim().toLowerCase();
+      const relevanceScoreFromNote = (noteTitle) => {
+        const normalizedTitle = noteTitle.toLowerCase();
+        if (normalizedTitle === lowerQuery) return 3;
+        if (normalizedTitle.startsWith(lowerQuery)) return 2;
+        if (normalizedTitle.includes(lowerQuery)) return 1;
+        return 0;
+      };
+      const scoreDifference = relevanceScoreFromNote(rightTitle) - relevanceScoreFromNote(leftTitle);
+      if (scoreDifference !== 0) return scoreDifference;
+      return leftTitle.localeCompare(rightTitle);
+    }
+
+    const sortField = normalizedSortOrder === "created"
+      ? "created"
+      : normalizedSortOrder === "opened"
+        ? "opened"
+        : "updated";
+    const timestampFromValue = (value) => {
+      const millis = Date.parse(value || "");
+      return Number.isNaN(millis) ? 0 : millis;
+    };
+    const leftTimestamp = timestampFromValue(
+      left?.meta?.[sortField] || (normalizedSortOrder === "opened" ? left?.meta?.updated || left?.meta?.created : "")
+    );
+    const rightTimestamp = timestampFromValue(
+      right?.meta?.[sortField] || (normalizedSortOrder === "opened" ? right?.meta?.updated || right?.meta?.created : "")
+    );
+    return rightTimestamp - leftTimestamp;
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Dev App Factory
 // ---------------------------------------------------------------------------
@@ -575,20 +632,24 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       return sampleTasks.filter(t => t.completedAt != null);
     },
 
-    // [Claude] Task: search /notes directory for files whose frontmatter title matches query
-    // Prompt: "app.filterNotes should loop over each file and load its frontmatter to see if its note name matches the value of query passed to filterNotes"
-    // Date: 2026-03-14 | Model: claude-4.6-sonnet-medium-thinking
-    async filterNotes(options = {}) {
+    // [OpenAI gpt-5.4] Task: support Amplenote filterNotes sort-order argument in dev app
+    // Prompt: "Implement a function called by filterNotes where, if a second param is given that matches one of the valid sort options, that we call a function that sorts the filtered notes by whatever criteria the caller passed in"
+    // Date: 2026-05-09 | Model: gpt-5.4
+    async filterNotes(options = {}, sortOrder = "") {
       const { query, taskDomainUUID } = options;
       if (taskDomainUUID) {
-        return SAMPLE_NOTE_HANDLES[taskDomainUUID] || [];
+        return _sortFilteredNotes(SAMPLE_NOTE_HANDLES[taskDomainUUID] || [], query, sortOrder);
       }
       const notes = _readAllNoteFiles(notesDir);
-      return notes
+      return _sortFilteredNotes(
+        notes
         .filter(note => {
           if (!query) return true;
           return note.meta.title === query;
-        })
+        }),
+        query,
+        sortOrder
+      )
         .map(note => ({ uuid: note.meta.uuid, name: note.meta.title }));
     },
 

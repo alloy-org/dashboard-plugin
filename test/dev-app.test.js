@@ -135,19 +135,29 @@ describe("Dev App Harness", () => {
   // --------------------------------------------------
   // [Claude] Generated tests for: filterNotes searches /notes directory frontmatter
   // Date: 2026-03-14 | Model: claude-4.6-sonnet-medium-thinking
+  // [OpenAI gpt-5.4] Generated tests for: filterNotes sort-order argument handling
+  // Date: 2026-05-09 | Model: gpt-5.4
   describe("filterNotes", () => {
     // Matches the production Amplenote format: opening ---, fields, closing ---,
     // followed by the note body. Also matches what _buildFrontmatter produces.
-    function writeFrontmatterNote(dir, title, uuid, { tags = [], body = "" } = {}) {
+    function writeFrontmatterNote(dir, title, uuid, { body = "", opened, tags = [], timestamps = {} } = {}) {
       const now = new Date().toISOString();
       const tagLines = tags.map(t => `  - ${t}`).join("\n");
+      const metadataLines = [];
+      if (opened) metadataLines.push(`opened: '${opened}'`);
+      if (timestamps.extra && typeof timestamps.extra === "object") {
+        for (const [key, value] of Object.entries(timestamps.extra)) {
+          metadataLines.push(`${key}: '${value}'`);
+        }
+      }
       const frontmatter = [
         "---",
         `title: ${title}`,
         `uuid: ${uuid}`,
         `version: 1`,
-        `created: '${now}'`,
-        `updated: '${now}'`,
+        `created: '${timestamps.created || now}'`,
+        `updated: '${timestamps.updated || now}'`,
+        ...metadataLines,
         tagLines ? `tags:\n${tagLines}` : "tags: []",
         "---",
       ].join("\n");
@@ -205,6 +215,80 @@ describe("Dev App Harness", () => {
       const results = await app.filterNotes({});
 
       expect(results).toHaveLength(3);
+    });
+
+    it("sorts matching notes alphabetically when title sort order is requested", async () => {
+      writeFrontmatterNote(tmpNotesDir, "Zulu Note", "uuid-z");
+      writeFrontmatterNote(tmpNotesDir, "Alpha Note", "uuid-a");
+      writeFrontmatterNote(tmpNotesDir, "Middle Note", "uuid-m");
+
+      const app = createDevApp(tmpSettingsPath, tmpNotesDir);
+      const results = await app.filterNotes({}, "title");
+
+      expect(results.map(result => result.name)).toEqual(["Alpha Note", "Middle Note", "Zulu Note"]);
+    });
+
+    it("sorts matching notes by created timestamp when created sort order is requested", async () => {
+      writeFrontmatterNote(tmpNotesDir, "First", "uuid-first", {
+        timestamps: { created: "2026-01-01T00:00:00.000Z", updated: "2026-01-01T00:00:00.000Z" },
+      });
+      writeFrontmatterNote(tmpNotesDir, "Second", "uuid-second", {
+        timestamps: { created: "2026-03-01T00:00:00.000Z", updated: "2026-03-01T00:00:00.000Z" },
+      });
+      writeFrontmatterNote(tmpNotesDir, "Third", "uuid-third", {
+        timestamps: { created: "2026-02-01T00:00:00.000Z", updated: "2026-02-01T00:00:00.000Z" },
+      });
+
+      const app = createDevApp(tmpSettingsPath, tmpNotesDir);
+      const results = await app.filterNotes({}, "created");
+
+      expect(results.map(result => result.uuid)).toEqual(["uuid-second", "uuid-third", "uuid-first"]);
+    });
+
+    it("sorts matching notes by updated timestamp when changed sort order is requested", async () => {
+      writeFrontmatterNote(tmpNotesDir, "First", "uuid-first", {
+        timestamps: { updated: "2026-01-01T00:00:00.000Z" },
+      });
+      writeFrontmatterNote(tmpNotesDir, "Second", "uuid-second", {
+        timestamps: { updated: "2026-03-01T00:00:00.000Z" },
+      });
+      writeFrontmatterNote(tmpNotesDir, "Third", "uuid-third", {
+        timestamps: { updated: "2026-02-01T00:00:00.000Z" },
+      });
+
+      const app = createDevApp(tmpSettingsPath, tmpNotesDir);
+      const results = await app.filterNotes({}, "changed");
+
+      expect(results.map(result => result.uuid)).toEqual(["uuid-second", "uuid-third", "uuid-first"]);
+    });
+
+    it("sorts matching notes by opened timestamp when opened sort order is requested", async () => {
+      writeFrontmatterNote(tmpNotesDir, "First", "uuid-first", {
+        opened: "2026-01-01T00:00:00.000Z",
+      });
+      writeFrontmatterNote(tmpNotesDir, "Second", "uuid-second", {
+        opened: "2026-03-01T00:00:00.000Z",
+      });
+      writeFrontmatterNote(tmpNotesDir, "Third", "uuid-third", {
+        opened: "2026-02-01T00:00:00.000Z",
+      });
+
+      const app = createDevApp(tmpSettingsPath, tmpNotesDir);
+      const results = await app.filterNotes({}, "opened");
+
+      expect(results.map(result => result.uuid)).toEqual(["uuid-second", "uuid-third", "uuid-first"]);
+    });
+
+    it("ignores unsupported sort orders and preserves the original filtered note order", async () => {
+      writeFrontmatterNote(tmpNotesDir, "Zulu Note", "uuid-z");
+      writeFrontmatterNote(tmpNotesDir, "Alpha Note", "uuid-a");
+      writeFrontmatterNote(tmpNotesDir, "Middle Note", "uuid-m");
+
+      const app = createDevApp(tmpSettingsPath, tmpNotesDir);
+      const defaultResults = await app.filterNotes({});
+      const invalidSortResults = await app.filterNotes({}, "not-a-real-sort");
+
+      expect(invalidSortResults).toEqual(defaultResults);
     });
 
     it("returns multiple notes when more than one file matches the query", async () => {
