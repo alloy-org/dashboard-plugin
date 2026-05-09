@@ -3,6 +3,21 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-05-09 — Desktop widget focus mode
+
+**Model:** GPT-5.4
+**Files created/modified:**
+- `lib/dashboard/draggable-heading.js` (modified — exposes desktop-only icon buttons that request widget focus mode)
+- `lib/dashboard/focus-widget.js` (created — owns widget-focus transforms, event handling, and clear/reset behavior behind exported helpers)
+- `lib/dashboard/dashboard.js` (modified — delegates widget-focus state to the new utility module instead of embedding the logic inline)
+- `lib/dashboard/styles/dashboard.scss` (modified — animates non-selected widgets offscreen and styles the restore backdrop/icon button)
+- `test/app.test.js` (modified — integration coverage for enter/exit behavior and desktop-only gating)
+
+**Task:** Add a desktop-only widget focus interaction that centers the clicked widget and animates all other widgets out of view until the background is clicked
+**Prompt summary:** "when the user clicks on the icon for a particular component, animate the others out and center it; clicking the background should restore the grid"
+**Scope:** ~120 lines of new logic and tests across 1 new file and 4 existing files
+**Notes:** Focus mode is gated to widths above the tablet breakpoint, exits on background click, and now lives in a dedicated utility module that also clears automatically on resize, popup transitions, and widget drag mode.
+
 ## 2026-05-09 — Tighten layout save API
 
 **Model:** GPT-5.4

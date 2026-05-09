@@ -89,6 +89,16 @@ async function mountDashboard(container, root, app) {
 }
 
 // --------------------------------------------------
+// @description Temporarily overrides jsdom's viewport width so responsive dashboard behaviors
+//   can be tested without remounting the entire test environment.
+// @param {number} width - New window.innerWidth value to expose during the test
+// [OpenAI gpt-5.4] Task: test desktop-only widget focus mode across viewport sizes
+// Prompt: "Implement a new widget behavior via a new behavior only available on desktop clients"
+function setWindowInnerWidth(width) {
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: width, writable: true });
+}
+
+// --------------------------------------------------
 // Tests
 // --------------------------------------------------
 
@@ -276,6 +286,57 @@ describe('DashboardApp', () => {
       // task-7 has startAt = tomorrow, so it should appear in the agenda.
       const agendaWidget = container.querySelector('.widget-agenda');
       expect(agendaWidget.textContent).toContain('Update budget');
+    });
+
+    it('focuses a widget from its icon and restores the grid from the backdrop click', async () => {
+      const planningIconButton = container.querySelector('.widget-planning .widget-icon-button');
+      const planningCell = container.querySelector('.grid-cell[data-widget-id="planning"]');
+      const moodCell = container.querySelector('.grid-cell[data-widget-id="mood"]');
+      expect(planningIconButton).not.toBeNull();
+      expect(planningCell).not.toBeNull();
+      expect(moodCell).not.toBeNull();
+
+      await act(async () => { planningIconButton.click(); });
+      await flushAsync();
+
+      const focusBackdrop = container.querySelector('.dashboard-grid-focus-backdrop');
+      expect(container.querySelector('.dashboard-grid--focused')).not.toBeNull();
+      expect(focusBackdrop).not.toBeNull();
+      expect(planningCell.className).toContain('grid-cell--focused');
+      expect(moodCell.className).toContain('grid-cell--focus-hidden');
+      expect(planningCell.style.getPropertyValue('--focus-x')).not.toBe('');
+
+      await act(async () => { focusBackdrop.click(); });
+      await flushAsync();
+
+      expect(container.querySelector('.dashboard-grid--focused')).toBeNull();
+      expect(container.querySelector('.dashboard-grid-focus-backdrop')).toBeNull();
+      expect(planningCell.className).not.toContain('grid-cell--focused');
+      expect(moodCell.className).not.toContain('grid-cell--focus-hidden');
+    });
+
+    it('keeps widget focus mode unavailable below the desktop breakpoint', async () => {
+      const originalWidth = window.innerWidth;
+      try {
+        setWindowInnerWidth(760);
+        await act(async () => { window.dispatchEvent(new Event('resize')); });
+        await flushAsync();
+
+        expect(container.querySelector('.widget-planning .widget-icon-button')).toBeNull();
+        expect(container.querySelector('.widget-planning .widget-icon')).not.toBeNull();
+
+        const planningIcon = container.querySelector('.widget-planning .widget-icon');
+        await act(async () => {
+          planningIcon.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        });
+        await flushAsync();
+
+        expect(container.querySelector('.dashboard-grid--focused')).toBeNull();
+      } finally {
+        setWindowInnerWidth(originalWidth);
+        await act(async () => { window.dispatchEvent(new Event('resize')); });
+        await flushAsync();
+      }
     });
   });
 

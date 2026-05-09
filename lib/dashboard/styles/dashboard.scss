@@ -49,11 +49,35 @@ html {
     margin: 0 auto;
     max-width: $dashboard-maximum-width;
     padding: $sp-xl;
+    position: relative;
+
+    /* [OpenAI gpt-5.4] Task: add focus-mode backdrop container around the widget grid */
+    /* Prompt: "clicking the background should restore the other components to their usual place" */
+    .dashboard-grid-shell {
+      position: relative;
+
+      &--focused {
+        z-index: 2;
+      }
+    }
+
+    /* [OpenAI gpt-5.4] Task: backdrop button that exits focused-widget mode on click */
+    /* Prompt: "If the user clicks on the background in this state, the other components transition back into view" */
+    .dashboard-grid-focus-backdrop {
+      background: rgba($color-bg-page, 0.18);
+      border: none;
+      cursor: zoom-out;
+      inset: -$sp-md;
+      position: absolute;
+      z-index: 1;
+    }
 
     .dashboard-grid {
       display: grid;
       gap: $sp-lg;
       grid-template-columns: repeat(4, 1fr);
+      position: relative;
+      z-index: 2;
     }
 
     /* [Claude] Task: grid-cell sizing classes for vertical and horizontal cell counts */
@@ -63,14 +87,22 @@ html {
       --drag-scale: 1;
       --flip-x: 0px;
       --flip-y: 0px;
-      opacity: 0.95;
+      --focus-blur: 0px;
+      --focus-opacity: 1;
+      --focus-scale: 1;
+      --focus-x: 0px;
+      --focus-y: 0px;
+      --grid-cell-base-opacity: 0.95;
+      filter: blur(var(--focus-blur));
       min-width: 0;
-      transform: translate(var(--flip-x), var(--flip-y)) scale(var(--drag-scale));
-      transition: opacity 0.3s ease, transform 0.22s ease;
+      opacity: calc(var(--grid-cell-base-opacity) * var(--focus-opacity));
+      transform: translate(var(--flip-x), var(--flip-y)) translate(var(--focus-x), var(--focus-y))
+        scale(var(--drag-scale)) scale(var(--focus-scale));
+      transition: filter 0.32s ease, opacity 0.32s ease, transform 0.32s ease;
       will-change: transform;
 
       &:hover {
-        opacity: 1;
+        --grid-cell-base-opacity: 1;
       }
 
       &.horizontal-2-cell { grid-column: span 2; }
@@ -103,6 +135,20 @@ html {
 
       &.grid-cell--drag-shift {
         --drag-scale: 0.985;
+      }
+
+      &.grid-cell--focus-mode {
+        pointer-events: none;
+      }
+
+      &.grid-cell--focused {
+        --grid-cell-base-opacity: 1;
+        pointer-events: auto;
+        z-index: 4;
+      }
+
+      &.grid-cell--focus-hidden {
+        z-index: 1;
       }
     }
 
@@ -155,10 +201,31 @@ html {
       &.widget-heading-bar--drag-ready {
         cursor: grabbing;
       }
+
+       &.widget-heading-bar--focusable .widget-icon-button:hover {
+        transform: scale(1.06);
+      }
     }
 
     &-icon {
       font-size: 1rem;
+    }
+
+    /* [OpenAI gpt-5.4] Task: style the widget icon as a desktop focus-mode button */
+    /* Prompt: "when the user clicks on the icon for a particular component" */
+    &-icon-button {
+      background: rgba($color-bg-page, 0.6);
+      border: 1px solid transparent;
+      border-radius: 999px;
+      cursor: pointer;
+      line-height: 1;
+      padding: $sp-xs;
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+
+      &:hover {
+        background: rgba($color-blue, 0.12);
+        border-color: rgba($color-blue, 0.28);
+      }
     }
 
     &-title {
