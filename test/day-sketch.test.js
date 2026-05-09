@@ -11,8 +11,6 @@ import { createRoot } from "react-dom/client";
 import DaySketchWidget from "../lib/dashboard/day-sketch.js";
 import { DASHBOARD_NOTE_TAG } from "constants/settings";
 
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 const flushAsync = () =>
   act(async () => { await new Promise(r => setTimeout(r, 0)); });
 

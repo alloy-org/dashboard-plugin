@@ -13,8 +13,6 @@ import AgendaWidget from "../lib/dashboard/agenda.js";
 import DaySketchWidget from "../lib/dashboard/day-sketch.js";
 import { normalizeExternalCalendarEvents } from "../lib/hooks/use-external-calendar-events.js";
 
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 const flushAsync = () =>
   act(async () => { await new Promise(r => setTimeout(r, 0)); });
 

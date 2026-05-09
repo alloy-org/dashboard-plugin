@@ -16,9 +16,6 @@ import { replaceSectionContent } from "../lib/util/replace-note-section-content.
 import { dailyJotNoteUuidFromToday, markTaskComplete } from "../lib/util/task-util.js";
 import { SAMPLE_TASKS } from "./fixtures/tasks.js";
 
-// Codex 5.5 added this but WBH' tests pass w/o it
-// globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 const MOCK_NOTE_UUID = "dream-note-uuid";
 
 const MOCK_NOTE_CONTENT = `## Sunday April 5, 2026

@@ -16,7 +16,6 @@ import { SAMPLE_TASKS } from "./fixtures/tasks.js";
 
 dotenv.config();
 global.fetch = fetch;
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 const ANTHROPIC_KEY = process.env.ANTHROPIC_AI_ACCESS_TOKEN;
 const itIfKey = ANTHROPIC_KEY ? it : it.skip;

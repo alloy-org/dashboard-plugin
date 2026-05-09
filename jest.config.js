@@ -17,6 +17,7 @@ export default {
     '^util/(.*)$':  '<rootDir>/lib/util/$1',
     '\\.scss$': '<rootDir>/test/stubs/scss.cjs',
   },
+  setupFilesAfterEnv: ['<rootDir>/test/setup-react-act.js'],
   transform: {},
   testMatch: ['**/test/**/*.test.js'],
   collectCoverageFrom: [

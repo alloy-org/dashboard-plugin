@@ -11,8 +11,6 @@ import { createRoot } from "react-dom/client";
 import { formatDateKey } from "util/date-utility";
 import AgendaWidget from "../lib/dashboard/agenda.js";
 
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 const flushAsync = () =>
   act(async () => { await new Promise((r) => setTimeout(r, 0)); });
 
