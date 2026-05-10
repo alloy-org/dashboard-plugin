@@ -140,31 +140,10 @@
     font-size: 0.78rem;
     line-height: 1.4;
 
-    p {
-      margin: 0 0 $sp-xs;
-    }
-
-    ul, ol {
-      margin: 0 0 $sp-xs;
-      padding-left: $sp-lg;
-    }
-
-    li {
-      margin: 0;
-    }
-
-    a {
-      color: $color-tooltip-accent;
-    }
-
     code {
       background: rgba(255, 255, 255, 0.08);
       border-radius: 4px;
       padding: 1px 4px;
-    }
-
-    > :last-child {
-      margin-bottom: 0;
     }
   }
 
@@ -174,12 +153,6 @@
   }
 
   .graveyard-task-score {
-    align-items: center;
-    display: inline-flex;
-    font-size: 0.74rem;
-    font-weight: 600;
-    gap: $sp-xs;
-
     &--muted {
       color: $color-tooltip-text-muted;
     }

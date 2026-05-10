@@ -82,22 +82,24 @@ function localDateKey(date) {
 // [OpenAI gpt-5.4] Task: build a cached graveyard app stub for tooltip and date-label component tests
 // Prompt: "When hovering on task text for 500ms, pop a styled tooltip..."
 function buildMockApp(taskOverrides = {}) {
-  const task = {
+  const baseTask = {
     content: "**Finish** the proposal",
     createdAt: CREATED_AT_SECONDS,
     noteName: "Product Roadmap",
     noteUUID: "note-1",
     uuid: "task-1",
     victoryValue: 11,
-    ...taskOverrides,
   };
+  const tasks = Array.isArray(taskOverrides)
+    ? taskOverrides.map((task, index) => ({ ...baseTask, uuid: `task-${ index + 1 }`, ...task }))
+    : [{ ...baseTask, ...taskOverrides }];
   const todayKey = localDateKey(new Date());
   const graveyardNoteContent = [
     "# Graveyard task candidates",
     "",
     "| Date | Task UUIDs |",
     "|------|------------|",
-    `| ${ todayKey } | ${ task.uuid } |`,
+    `| ${ todayKey } | ${ tasks.map(task => task.uuid).join(",") } |`,
     "",
   ].join("\n");
 
@@ -106,12 +108,13 @@ function buildMockApp(taskOverrides = {}) {
     createNote: jest.fn().mockResolvedValue("graveyard-note"),
     filterNotes: jest.fn().mockResolvedValue([]),
     findNote: jest.fn().mockImplementation(({ name, uuid }) => {
-      if (uuid === task.noteUUID) return Promise.resolve({ name: task.noteName, uuid: task.noteUUID });
+      const matchingTask = tasks.find(task => task.noteUUID === uuid);
+      if (matchingTask) return Promise.resolve({ name: matchingTask.noteName, uuid: matchingTask.noteUUID });
       if (name) return Promise.resolve({ name, uuid: "graveyard-note" });
       return Promise.resolve(null);
     }),
     getNoteContent: jest.fn().mockResolvedValue(graveyardNoteContent),
-    getTaskDomainTasks: jest.fn().mockResolvedValue([task]),
+    getTaskDomainTasks: jest.fn().mockResolvedValue(tasks),
     navigate: jest.fn().mockResolvedValue(undefined),
     replaceNoteContent: jest.fn().mockResolvedValue(undefined),
     updateTask: jest.fn().mockResolvedValue(undefined),
@@ -223,5 +226,27 @@ describe("GraveyardWidget", () => {
 
     expect(app.navigate).toHaveBeenCalledWith("https://www.amplenote.com/notes/note-1");
     await cleanup();
+  });
+
+  it("keeps dismiss prompts and subtitle stable across rerenders within the same hour", async () => {
+    jest.useFakeTimers().setSystemTime(new Date("2026-05-10T08:00:00"));
+    const taskOverrides = [
+      { content: "First task", noteUUID: "note-1", uuid: "task-1" },
+      { content: "Second task", noteUUID: "note-2", uuid: "task-2" },
+    ];
+    const firstRender = await renderGraveyardWidget({}, taskOverrides);
+    const firstSubtitle = firstRender.container.querySelector(".widget-title__subtitle")?.textContent;
+    const firstSendLabels = Array.from(firstRender.container.querySelectorAll(".graveyard-task-action--send"))
+      .map(element => element.textContent);
+    await firstRender.cleanup();
+
+    const secondRender = await renderGraveyardWidget({}, taskOverrides);
+    const secondSubtitle = secondRender.container.querySelector(".widget-title__subtitle")?.textContent;
+    const secondSendLabels = Array.from(secondRender.container.querySelectorAll(".graveyard-task-action--send"))
+      .map(element => element.textContent);
+
+    expect(secondSubtitle).toBe(firstSubtitle);
+    expect(secondSendLabels).toEqual(firstSendLabels);
+    await secondRender.cleanup();
   });
 });

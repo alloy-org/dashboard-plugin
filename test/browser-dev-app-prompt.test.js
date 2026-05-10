@@ -2,6 +2,7 @@
  * [gpt-5.3-codex-authored file]
  * Prompt summary: "Mock app.prompt in dev environment as the simplest possible modal window that transforms an array of inputs into lines within an HTML form"
  */
+import { jest } from "@jest/globals";
 import { createBrowserDevApp } from "../lib/util/browser-dev-app.js";
 
 // [Claude gpt-5.3-codex] Generated tests for: browser dev app prompt modal behavior
@@ -80,5 +81,41 @@ describe("browser dev app prompt modal", () => {
     cancel.click();
 
     await expect(promise).resolves.toBeNull();
+  });
+});
+
+// [OpenAI gpt-5.4] Generated tests for: browser dev app task score normalization
+describe("browser dev app tasks", () => {
+  it("ensures returned task objects always include score values", async () => {
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn().mockImplementation(async (url) => {
+      if (String(url).startsWith("/api/tasks")) {
+        return {
+          async json() {
+            return [
+              { uuid: "task-1", victoryValue: 7 },
+              { score: 2, uuid: "task-2", victoryValue: 9 },
+              { uuid: "task-3" },
+            ];
+          },
+        };
+      }
+      return {
+        async json() {
+          return {};
+        },
+      };
+    });
+
+    try {
+      const app = createBrowserDevApp();
+      const domainTasks = await app.getTaskDomainTasks("domain-work-uuid");
+      const completedTasks = await app.getCompletedTasks(1, 2);
+
+      expect(domainTasks.map(task => task.score)).toEqual([7, 2, 0]);
+      expect(completedTasks.map(task => task.score)).toEqual([7, 2, 0]);
+    } finally {
+      global.fetch = originalFetch;
+    }
   });
 });
