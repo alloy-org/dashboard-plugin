@@ -3,6 +3,36 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-05-10 — Layout Picker widget with one-click dashboard profile presets
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dashboard/layout-picker.js` (created — Layout Picker widget with three profile buttons)
+- `lib/dashboard/styles/layout-picker.scss` (created — styles for profile card layout)
+- `lib/constants/settings.js` (modified — added `layout-picker` entry to WIDGET_REGISTRY)
+- `lib/dashboard/dashboard.js` (modified — import, cell registration, `onLayoutApply` prop, and `activeTaskDomain?.uuid` → `activeTaskDomain` fix)
+
+**Task:** Add a Layout Picker widget with three clickable profile presets that immediately rearrange all dashboard components
+**Prompt summary:** "add Layout Picker widget with Goal Oriented / Day-to-Day / Mindful Achiever profile buttons that rearrange all components"
+**Scope:** ~110 lines of new logic across 4 files
+**Notes:** Profiles call `handleLayoutPersist` with `isReset=true` so sizes are applied cleanly; "Goal Oriented" derives its widget list from WIDGET_REGISTRY at runtime so it stays current automatically
+
+---
+
+## 2026-05-10 — Graveyard header refresh repopulation
+
+**Model:** GPT-5.4
+**Files created/modified:**
+- `lib/dashboard/graveyard.js` (modified — adds a title-bar refresh link and wires it to force a fresh graveyard candidate reload)
+- `lib/graveyard-service.js` (modified — adds a force-refresh option that bypasses the current day's cache row and replaces it with new candidates)
+- `test/graveyard-widget.test.js` (modified — verifies the header refresh link repopulates the rendered graveyard task list)
+- `test/graveyard-service.test.js` (modified — verifies force-refresh bypasses the cached today row and persists a fresh replacement set)
+
+**Task:** Add a graveyard header refresh action that repopulates the widget's visible task slots with a fresh candidate set
+**Prompt summary:** "Update @lib/dashboard/graveyard.js so that its title bar includes a refresh link that will repopulate the five task slots in the component"
+**Scope:** ~70 lines across 2 production files and 2 tests
+**Notes:** Refresh now bypasses the current day's cached graveyard row, excludes already-shown candidates from reselection, and rewrites the day row with the newly discovered tasks.
+
 ## 2026-05-10 — Graveyard hover tooltip and compact date stamp
 
 **Model:** GPT-5.4

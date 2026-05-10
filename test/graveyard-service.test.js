@@ -87,4 +87,51 @@ describe("loadGraveyardCandidates", () => {
     expect(app.findNote).toHaveBeenCalledTimes(1);
     expect(app.findNote).not.toHaveBeenCalledWith({ uuid: taskFromNotes.noteUUID });
   });
+
+  it("forceRefresh bypasses today's cache row and persists a fresh replacement candidate set", async () => {
+    jest.useFakeTimers().setSystemTime(new Date("2026-05-10T15:00:00Z"));
+    const todayKey = localDateKey(new Date("2026-05-10T15:00:00Z"));
+    let noteContent = [
+      "# Graveyard task candidates",
+      "",
+      "| Date | Task UUIDs | Task note metadata |",
+      "|------|------------|--------------------|",
+      `| ${ todayKey } | cached-task | ${ encodeURIComponent(JSON.stringify([{ noteName: "Cached Note", noteUUID: "cached-note", uuid: "cached-task" }])) } |`,
+      "",
+    ].join("\n");
+    const freshTask = {
+      content: "Fresh candidate after refresh",
+      createdAt: Math.floor(new Date("2024-01-10T12:00:00Z").getTime() / 1000),
+      noteName: "Fresh Note",
+      noteUUID: "fresh-note",
+      uuid: "fresh-task",
+      victoryValue: 8,
+    };
+    const app = {
+      createNote: jest.fn().mockResolvedValue("graveyard-note-uuid"),
+      filterNotes: jest.fn().mockImplementation(async function* () {
+        yield { name: freshTask.noteName, uuid: freshTask.noteUUID };
+      }),
+      findNote: jest.fn().mockResolvedValue({ name: "Task graveyard data: May 2026", uuid: "graveyard-note-uuid" }),
+      getNoteContent: jest.fn().mockImplementation(async () => noteContent),
+      getNoteTasks: jest.fn().mockResolvedValue([freshTask]),
+      getTaskDomainTasks: jest.fn().mockResolvedValue([{ uuid: "cached-task" }]),
+      replaceNoteContent: jest.fn().mockImplementation(async (_noteHandle, content) => {
+        noteContent = content;
+      }),
+    };
+
+    const refreshedLoad = await loadGraveyardCandidates(app, 5, "domain-1", { forceRefresh: true });
+
+    expect(refreshedLoad.candidates).toHaveLength(1);
+    expect(refreshedLoad.candidates[0]).toMatchObject({
+      noteName: freshTask.noteName,
+      noteUUID: freshTask.noteUUID,
+      uuid: freshTask.uuid,
+    });
+    expect(app.getTaskDomainTasks).not.toHaveBeenCalled();
+    expect(app.filterNotes).toHaveBeenCalledTimes(1);
+    expect(noteContent).toContain("fresh-task");
+    expect(noteContent).not.toContain("cached-task");
+  });
 });

@@ -14,4 +14,12 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
+  .widget-header-action {
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 }
