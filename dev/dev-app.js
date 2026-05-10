@@ -6,7 +6,7 @@
  */
 import fs from "fs";
 import crypto from "crypto";
-import { SAMPLE_NOTE_HANDLES, withAsyncIterator } from "lib/util/dev-sample-notes.js";
+import { SAMPLE_NOTE_HANDLES, withAsyncIterator } from "../lib/util/dev-sample-notes.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
