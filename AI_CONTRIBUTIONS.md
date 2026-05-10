@@ -3,6 +3,23 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-05-10 — Layout profile extraction, profile selector in popup, and dismiss link
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dashboard/layout-profiles.js` (created — standalone module exporting `goalOrientedWidgets`, `LAYOUT_PROFILES`, `layoutMatchesProfile`, `getProfileById`)
+- `lib/constants/settings.js` (modified — added `SELECTED_LAYOUT_PROFILE` to `SETTING_KEYS`)
+- `lib/dashboard/layout-picker.js` (modified — imports from `layout-profiles`; passes `profile.id` to `onLayoutApply`; adds `headerActions` dismiss button)
+- `lib/dashboard/dashboard-layout-popup.js` (modified — imports `LAYOUT_PROFILES`/`getProfileById`; adds `selectedLayoutProfile` prop, `selectedProfileId` state, profile selector `<select>` above tabs; scopes reset to active profile; passes `selectedProfileId` to `onSave`)
+- `lib/dashboard/dashboard.js` (modified — adds `handleProfileApply` useCallback; wires `onLayoutApply` to `handleProfileApply`; passes `selectedLayoutProfile` to `DashboardLayoutPopup`; updates `handleLayoutSave` to accept and forward `profileId`)
+
+**Task:** Extract layout profile data into a shared module, allow the layout popup to remember and reset to a chosen profile, and let users dismiss the layout-picker widget from its header
+**Prompt summary:** "move profile definitions to layout-profiles.js; add profile selector and profile-scoped reset to dashboard-layout-popup; add dismiss link to layout-picker header; wire profile ID persistence through dashboard.js"
+**Scope:** ~130 lines of new/changed logic across 5 files
+**Notes:** `handleProfileApply` explicitly distinguishes `null` (clear profile) from `undefined` (no change) so the setting is not accidentally wiped when only a layout reorder is saved.
+
+---
+
 ## 2026-05-10 — Layout Picker widget with one-click dashboard profile presets
 
 **Model:** claude-sonnet-4-6
