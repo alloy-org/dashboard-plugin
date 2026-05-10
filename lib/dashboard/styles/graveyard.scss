@@ -81,13 +81,128 @@
     justify-content: space-between;
   }
 
+  /* [OpenAI gpt-5.4] Task: style graveyard hover tooltip trigger, card, markdown body, and score badge */
+  /* Prompt: "When hovering on task text for 500ms, pop a styled tooltip..." */
+  .graveyard-task-title-wrap {
+    flex: 1;
+    min-width: 0;
+  }
+
   .graveyard-task-title {
     color: $color-text;
-    flex: 1;
+    display: block;
     font-size: 0.85rem;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+
+    &:focus {
+      outline: 1px solid $color-link;
+      outline-offset: 2px;
+    }
+  }
+
+  .graveyard-task-title-wrap:hover .graveyard-task-title,
+  .graveyard-task-title-wrap:focus-within .graveyard-task-title {
+    text-decoration: underline dotted;
+  }
+
+  .graveyard-task-tooltip {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+    max-height: 280px;
+    overflow-y: auto;
+    padding: $sp-md;
+  }
+
+  .graveyard-task-tooltip-meta {
+    align-items: baseline;
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-xs $sp-md;
+    justify-content: space-between;
+  }
+
+  .graveyard-task-tooltip-note {
+    color: $color-tooltip-accent;
+    font-size: 0.76rem;
+    font-weight: 600;
+  }
+
+  .graveyard-task-tooltip-created {
+    color: $color-tooltip-text-muted;
+    font-size: 0.72rem;
+  }
+
+  .graveyard-task-tooltip-content {
+    color: $color-tooltip-text;
+    font-size: 0.78rem;
+    line-height: 1.4;
+
+    p {
+      margin: 0 0 $sp-xs;
+    }
+
+    ul, ol {
+      margin: 0 0 $sp-xs;
+      padding-left: $sp-lg;
+    }
+
+    li {
+      margin: 0;
+    }
+
+    a {
+      color: $color-tooltip-accent;
+    }
+
+    code {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      padding: 1px 4px;
+    }
+
+    > :last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  .graveyard-task-tooltip-footer {
+    border-top: 1px solid $color-tooltip-border;
+    padding-top: $sp-sm;
+  }
+
+  .graveyard-task-score {
+    align-items: center;
+    display: inline-flex;
+    font-size: 0.74rem;
+    font-weight: 600;
+    gap: $sp-xs;
+
+    &--muted {
+      color: $color-tooltip-text-muted;
+    }
+
+    &--cool {
+      color: $color-blue-light;
+    }
+
+    &--warm {
+      color: $color-warning;
+    }
+
+    &--hot {
+      color: $color-danger;
+    }
+  }
+
+  .graveyard-task-score-dot {
+    background: currentColor;
+    border-radius: 999px;
+    display: inline-block;
+    height: 9px;
+    width: 9px;
   }
 
   .graveyard-task-age {
@@ -123,6 +238,28 @@
 
     &--keep:hover {
       color: $color-link;
+    }
+
+    &--note:hover {
+      color: $color-blue;
+    }
+  }
+
+  /* [OpenAI gpt-5.4] Task: tighten graveyard tooltip width and date text for compact 1-column cards */
+  /* Prompt: "When the component is only 1-wide, do not show the word Created..." */
+  &.vertical-1-cell {
+    .graveyard-task-tooltip {
+      max-height: 220px;
+    }
+  }
+
+  &.horizontal-1-cell.vertical-1-cell {
+    .graveyard-task-header {
+      align-items: flex-start;
+    }
+
+    .graveyard-task-age {
+      font-size: 0.7rem;
     }
   }
 

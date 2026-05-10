@@ -3,6 +3,21 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-05-10 — Graveyard hover tooltip and compact date stamp
+
+**Model:** GPT-5.4
+**Files created/modified:**
+- `lib/dashboard/graveyard.js` (modified — adds 500ms hover tooltip with markdown-rendered task content, note metadata, locale-aware created date, score badge, and compact 1-column date labels)
+- `lib/graveyard-service.js` (modified — persists task-to-note metadata in the graveyard cache so note labels survive cached reloads without extra note lookups)
+- `lib/dashboard/styles/graveyard.scss` (modified — styles the hover tooltip, score badge, and narrow-card layout tweaks)
+- `test/graveyard-widget.test.js` (created — verifies delayed tooltip rendering and 1-column date stamp behavior)
+- `test/graveyard-service.test.js` (created — verifies cached graveyard rows roundtrip task-to-note metadata)
+
+**Task:** Add a delayed graveyard hover tooltip with full task metadata and tighten the visible date stamp when the widget is only one column wide
+**Prompt summary:** "update graveyard.js so hovering task text for 500ms shows markdown content, note name, locale created date, and score dot; omit 'Created' in 1-wide stamps"
+**Scope:** ~180 lines across 3 modified files and 1 new test
+**Notes:** Tooltip content uses the shared Amplenote markdown renderer, score colors map to gray/blue/yellow/red based on the requested thresholds, and the graveyard data note now caches per-task note metadata for later hydration.
+
 ## 2026-05-09 — Desktop widget focus mode
 
 **Model:** GPT-5.4
@@ -897,7 +912,7 @@ from ~160 lines of mixed state+logic to ~100 lines of state+thin wrappers+render
 
 **Model:** claude-4.6-opus-high-thinking
 **Files created/modified:**
-- `lib/dashboard/dashboard-tippy.js` (created — `DashboardTippy` React component and `useCanvasTippy` hook wrapping tippy.js)
+- `lib/dashboard/dashboard-tooltip-tippy.js` (created — `DashboardTippy` React component and `useCanvasTippy` hook wrapping tippy.js)
 - `lib/dashboard/styles/_dashboard-tippy.scss` (created — base tippy positioning CSS, dashboard theme, tooltip content classes)
 - `lib/dashboard/victory-value.js` (modified — replaced `DashboardTooltip` component with `useCanvasTippy` hook; tooltip content now rendered as HTML string)
 - `lib/dashboard/mood.js` (modified — replaced custom `renderMoodTooltip` with `useCanvasTippy` in both RadialRing and WaveGraph)

@@ -79,7 +79,7 @@ Sizes derived from esbuild section-header line numbers in `dev/compiled/bundle.j
 
 ### `@popperjs/core` — ~57 KB (dev); ~25 KB minified
 
-**Why it's here:** `@popperjs/core` is a peer dependency of `tippy.js` and provides the positioning math (flip, offset, prevent-overflow modifiers) that tippy uses to place tooltip popups relative to their reference elements. It is imported transitively — project code imports `tippy.js` directly in `lib/dashboard/dashboard-tippy.js`, and tippy's ESM build bundles `@popperjs/core` inline.
+**Why it's here:** `@popperjs/core` is a peer dependency of `tippy.js` and provides the positioning math (flip, offset, prevent-overflow modifiers) that tippy uses to place tooltip popups relative to their reference elements. It is imported transitively — project code imports `tippy.js` directly in `lib/dashboard/dashboard-tooltip-tippy.js`, and tippy's ESM build bundles `@popperjs/core` inline.
 
 **Could it be removed?** Only if `tippy.js` is removed (see below). `@popperjs/core` on its own is not imported anywhere in the project. The library is well-maintained and purpose-built; there is no lighter alternative that provides the same positioning guarantees.
 
@@ -87,7 +87,7 @@ Sizes derived from esbuild section-header line numbers in `dev/compiled/bundle.j
 
 ### `tippy.js` — ~45 KB (dev); ~20 KB minified
 
-**Why it's here:** Used exclusively in `lib/dashboard/dashboard-tippy.js` to render popover tooltips on dashboard widget controls. It is a single import in a single file.
+**Why it's here:** Used exclusively in `lib/dashboard/dashboard-tooltip-tippy.js` to render popover tooltips on dashboard widget controls. It is a single import in a single file.
 
 **Could it be removed?** Yes — this is the most removable external dependency. It is used in one file for tooltip/popover behavior that could be replaced with a small CSS-only or hand-rolled implementation (a positioned `<div>` with `visibility` toggling). Removing `tippy.js` would also eliminate `@popperjs/core`, saving roughly **~45 KB** combined (minified) from the client bundle. The tradeoff is losing the accessibility handling and edge-case positioning logic tippy provides.
 
