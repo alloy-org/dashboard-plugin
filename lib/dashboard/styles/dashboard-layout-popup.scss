@@ -298,7 +298,7 @@
 // ── Dashboard toolbar (configure layout button) ───────────────────────────────────────
 
 .dashboard-toolbar {
-  align-items: center;
+  align-items: stretch;
   display: flex;
   flex-wrap: wrap;
   gap: $sp-md;
