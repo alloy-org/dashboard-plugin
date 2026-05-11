@@ -1,9 +1,7 @@
-/**
- * [Claude-authored file]
- * Created: 2026-03-24 | Model: claude-4.6-opus-high-thinking
- * Task: DreamTask round-trip integration test — real LLM call, verify cached read-back
- * Prompt summary: "use OPEN_AI_ACCESS_TOKEN for real LLM calls; mock only the app interface, not the AI"
- */
+// [Claude-authored file]
+// Created: 2026-03-24 | Model: claude-4.6-opus-high-thinking
+// Task: DreamTask round-trip integration test — real LLM call, verify cached read-back
+// Prompt summary: "use OPEN_AI_ACCESS_TOKEN for real LLM calls; mock only the app interface, not the AI"
 import { jest } from "@jest/globals";
 import dotenv from "dotenv";
 import fetch from "isomorphic-fetch";
@@ -68,6 +66,7 @@ function buildMockApp(providerConfig) {
       if (uuid === "dream-note-uuid") return Promise.resolve(dreamNoteContent);
       return Promise.resolve("");
     }),
+    getTask: jest.fn().mockImplementation(uuid => Promise.resolve(SAMPLE_TASKS.find(t => t.uuid === uuid) || null)),
     getTaskDomains: jest.fn().mockResolvedValue([{ uuid: "dom-work", name: "Work" }]),
     getTaskDomainTasks: jest.fn().mockResolvedValue(SAMPLE_TASKS),
     filterNotes: jest.fn().mockImplementation(({ query }) => {
@@ -114,7 +113,6 @@ describe("analyzeDreamTasks (requires provider API key from .env)", () => {
     const freshResult = await analyzeDreamTasks(app, {
       noteName,
       minimumTaskCount: 1,
-      forceRefresh: false,
     });
 
     expect(freshResult.cached).toBe(false);
@@ -149,7 +147,6 @@ describe("analyzeDreamTasks (requires provider API key from .env)", () => {
     const cachedResult = await analyzeDreamTasks(app, {
       noteName,
       minimumTaskCount: 1,
-      forceRefresh: false,
     });
 
     expect(cachedResult.cached).toBe(true);
@@ -174,7 +171,6 @@ describe("analyzeDreamTasks (requires provider API key from .env)", () => {
     const crlfCached = await analyzeDreamTasks(app, {
       noteName,
       minimumTaskCount: 1,
-      forceRefresh: false,
     });
     expect(crlfCached.llmAttributionFooter).toBe(freshResult.llmAttributionFooter);
 
@@ -186,7 +182,7 @@ describe("analyzeDreamTasks (requires provider API key from .env)", () => {
     const app = buildMockApp(providerConfig);
     const noteName = todayNoteName();
 
-    await analyzeDreamTasks(app, { noteName, minimumTaskCount: 1, forceRefresh: false });
+    await analyzeDreamTasks(app, { noteName, minimumTaskCount: 1 });
 
     expect(app.filterNotes).toHaveBeenCalled();
     const filterCall = app.filterNotes.mock.calls[0][0];

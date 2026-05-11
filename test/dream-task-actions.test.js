@@ -1,9 +1,7 @@
-/**
- * [Claude-authored file]
- * Created: 2026-04-05 | Model: claude-4.6-opus-high-thinking
- * Task: Test DreamTask action links (preserve/complete/remove) and subsequent load interpretation
- * Prompt summary: "test that clicking 3 action links modifies note content; verify subsequent load interprets designations"
- */
+// [Claude-authored file]
+// Created: 2026-04-05 | Model: claude-4.6-opus-high-thinking
+// Task: Test DreamTask action links (preserve/complete/remove) and subsequent load interpretation
+// Prompt summary: "test that clicking 3 action links modifies note content; verify subsequent load interprets designations"
 import { jest } from "@jest/globals";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
@@ -63,6 +61,7 @@ function buildMockAppWithNote(initialContent) {
       if (uuid === MOCK_NOTE_UUID) return Promise.resolve(noteContent);
       return Promise.resolve("");
     }),
+    getTask: jest.fn().mockImplementation(uuid => Promise.resolve(SAMPLE_TASKS.find(t => t.uuid === uuid) || null)),
     getTaskDomains: jest.fn().mockResolvedValue([{ uuid: "dom-work", name: "Work" }]),
     getTaskDomainTasks: jest.fn().mockResolvedValue(SAMPLE_TASKS),
     replaceNoteContent: jest.fn().mockImplementation((_handle, content, options) => {
@@ -259,7 +258,7 @@ describe("DreamTask action links", () => {
       const todayLabel = new Date().toLocaleString([], { year: "numeric", month: "long", day: "numeric" });
       const noteName = `Dashboard proposed tasks for ${ todayLabel }`;
 
-      const result = await analyzeDreamTasks(app, { noteName, minimumTaskCount: 1, forceRefresh: false });
+      const result = await analyzeDreamTasks(app, { noteName, minimumTaskCount: 1 });
 
       const scheduledDreamTask = result.tasks.find(dreamTask => dreamTask.uuid === "task-7");
       expect(scheduledDreamTask.nativeTask).toBeTruthy();
@@ -309,7 +308,7 @@ describe("DreamTask action links", () => {
 
       const todayLabel = new Date().toLocaleString([], { year: "numeric", month: "long", day: "numeric" });
       const noteName = `Dashboard proposed tasks for ${ todayLabel }`;
-      const result = await analyzeDreamTasks(app, { noteName, minimumTaskCount: 1, forceRefresh: false });
+      const result = await analyzeDreamTasks(app, { noteName, minimumTaskCount: 1 });
 
       expect(result.cached).toBe(true);
       expect(result.tasks.length).toBe(1);
@@ -325,7 +324,7 @@ describe("DreamTask action links", () => {
       const app = buildMockAppWithNote(MOCK_NOTE_CONTENT);
       const todayLabel = new Date().toLocaleString([], { year: "numeric", month: "long", day: "numeric" });
       const noteName = `Dashboard proposed tasks for ${ todayLabel }`;
-      const result = await analyzeDreamTasks(app, { noteName, minimumTaskCount: 1, forceRefresh: false });
+      const result = await analyzeDreamTasks(app, { noteName, minimumTaskCount: 1 });
 
       expect(result.cached).toBe(true);
       expect(result.tasks.length).toBe(3);

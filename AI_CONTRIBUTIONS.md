@@ -3,6 +3,17 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-05-11 — Fast-path cached DreamTask suggestions without loading all domain tasks
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dream-task-service.js` (modified — added `_loadTaskContextForCachedTasks`; reordered `analyzeDreamTasks` to check cached undismissed count before calling `_loadTaskContext`)
+
+**Task:** Skip `getTaskDomainTasks` (loading 1000+ tasks) when the note already has enough cached suggestions for today
+**Prompt summary:** "check for existent+undismissed tasks before querying task domain; evaluate what consumes 14393ms in fetchDreamTaskSuggestions"
+**Scope:** ~20 lines added, ~3 lines restructured in `analyzeDreamTasks`
+**Notes:** Cached path now calls `app.getTask` only for the 2-5 UUIDs in cached suggestions; full domain load only occurs when generation is needed
+
 ## 2026-05-10 — Layout profile extraction, profile selector in popup, and dismiss link
 
 **Model:** claude-sonnet-4-6
