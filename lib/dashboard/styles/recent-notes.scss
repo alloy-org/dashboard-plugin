@@ -63,7 +63,8 @@
     white-space: nowrap;
   }
 
-  .note-count {
+  .note-count,
+  .note-metadata {
     color: $color-text-muted;
     flex-shrink: 0;
     font-size: 0.75rem;

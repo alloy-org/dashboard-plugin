@@ -17,6 +17,7 @@
 
   .widget-header-action {
     text-decoration: none;
+    white-space: nowrap;
 
     &:hover {
       text-decoration: underline;
