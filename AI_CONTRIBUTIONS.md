@@ -3,6 +3,21 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-05-11 — Fix Recent Notes widget deadlock and add domain tags to sample note handles
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/recent-notes-service.js` (modified — `staleCandidatesFromScan` now falls back to a full rescan when `visitedByDay` covers all notes and `staleCandidates` is empty, breaking the deadlock that caused the widget to show nothing)
+- `dev/dev-app.js` (modified — added `id` field to `SAMPLE_DOMAINS` matching each domain's `uuid` so `domain.id` in the service resolves correctly instead of `undefined`)
+- `lib/util/browser-dev-app.js` (modified — same `id` field addition to `_SAMPLE_DOMAINS_WITH_NOTES`)
+- `lib/util/dev-sample-notes.js` (modified — added `tags` array to every entry in `SAMPLE_NOTE_HANDLES` using the domain-specific tag, e.g. `["work"]`, `["personal"]`, `["side-projects"]`)
+- `notes/bfcc5a78-fd6f-47dc-ab33-620169bc4adf.md` (modified — cleared stuck `visitedByDay` state so the widget rescans immediately)
+
+**Task:** Restore Recent Notes widget functionality in dev environment after it stopped showing any notes
+**Prompt summary:** "component no longer finds notes in dev environment — revise note construction adding each note to a tag present in the task domain"
+**Scope:** ~10 lines of logic added to service; minor additions to 3 dev/fixture files
+**Notes:** Root cause was a two-part deadlock: (1) dev domain objects lacked `id`, so `domain.id` was `undefined` and every `filterNotes` call returned all 35 notes at once, flooding `visitedByDay` in a single pass; (2) with `staleCandidates` empty and all notes visited, the existing reset path (`staleCandidates.length > 0 && filteredCandidates.length === 0`) never fired. The new fallback in `staleCandidatesFromScan` catches the `notes.length === 0 && state.staleCandidates.length === 0` case and forces a full rescan, which also populates `staleCandidates` for subsequent runs.
+
 ## 2026-05-11 — Fast-path cached DreamTask suggestions without loading all domain tasks
 
 **Model:** claude-sonnet-4-6

@@ -17,9 +17,9 @@ const DEFAULT_MOODS_PATH = path.join(COMPILED_DIR, "moods.json");
 const NOTES_DIR = path.join(__dirname, "..", "notes");
 
 const SAMPLE_DOMAINS = [
-  { name: "Work",          uuid: "domain-work-uuid",     notes: SAMPLE_NOTE_HANDLES["domain-work-uuid"] },
-  { name: "Personal",      uuid: "domain-personal-uuid", notes: SAMPLE_NOTE_HANDLES["domain-personal-uuid"] },
-  { name: "Side Projects", uuid: "domain-side-uuid",     notes: SAMPLE_NOTE_HANDLES["domain-side-uuid"] },
+  { id: "domain-work-uuid",     name: "Work",          uuid: "domain-work-uuid",     notes: SAMPLE_NOTE_HANDLES["domain-work-uuid"] },
+  { id: "domain-personal-uuid", name: "Personal",      uuid: "domain-personal-uuid", notes: SAMPLE_NOTE_HANDLES["domain-personal-uuid"] },
+  { id: "domain-side-uuid",     name: "Side Projects", uuid: "domain-side-uuid",     notes: SAMPLE_NOTE_HANDLES["domain-side-uuid"] },
 ];
 
 // [Claude] Task: map task domain UUIDs to their corresponding note tag names
@@ -564,6 +564,12 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
     async getNoteTasks(noteHandle, _options = {}) {
       const uuid = typeof noteHandle === "string" ? noteHandle : noteHandle?.uuid;
       return sampleTasks.filter(t => t.noteUUID === uuid && t.completedAt == null && t.dismissedAt == null);
+    },
+
+    // [Claude claude-sonnet-4-6] Task: stub getTask for graveyard/dream-task UUID lookups
+    // Prompt: "app2.getTask is not a function in dev environment"
+    async getTask(uuid) {
+      return sampleTasks.find(t => t.uuid === uuid) || null;
     },
 
     // [Claude] Task: serve mood ratings from file-backed store, seeding on first access
