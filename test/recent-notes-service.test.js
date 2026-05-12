@@ -14,6 +14,10 @@ const NOTE_NUMBER_PAD_FILL = "0";
 const NOTE_NUMBER_PAD_LENGTH = 3;
 const SECOND_RENDER_INDEX = 1;
 const SELECTED_NOTES_PER_DAY = 5;
+const SECOND_TASK_DOMAIN_NAME = "Work Notes";
+const SECOND_TASK_DOMAIN_UUID = "domain-work";
+const SECOND_SOURCE_NOTE_NAME_PREFIX = "Work Note";
+const SECOND_SOURCE_NOTE_UUID_PREFIX = "work-note";
 const SOURCE_NOTE_NAME_PREFIX = "Project Note";
 const SOURCE_NOTE_UUID_PREFIX = "project-note";
 const TASK_CONTENT = "Follow up";
@@ -54,17 +58,33 @@ function setSystemDate(date) {
 }
 
 // ----------------------------------------------------------------------------------------------
+// @desc Build sequential mock note handles for a specific task domain.
+// @param {number} count - Number of source notes to create.
+// @param {string} namePrefix - Display name prefix for each note.
+// @param {string} uuidPrefix - UUID prefix for each note.
+// [OpenAI gpt-5.4] Task: support domain-specific Recent Notes test fixtures
+// Prompt: "Update lib/recent-notes-service.js to receive the selected task domain ID from the dashboard parent"
+function buildSourceNotes(count, namePrefix, uuidPrefix) {
+  return Array.from({ length: count }, (_, index) => ({
+    name: [
+      namePrefix,
+      String(index + NOTE_NUMBER_OFFSET).padStart(NOTE_NUMBER_PAD_LENGTH, NOTE_NUMBER_PAD_FILL),
+    ].join(" "),
+    uuid: `${ uuidPrefix }-${ index + NOTE_NUMBER_OFFSET }`,
+  }));
+}
+
+// ----------------------------------------------------------------------------------------------
 // @desc Build an in-memory Amplenote app with 200 task-bearing notes plus data-note persistence.
 // [GPT-5.5] Task: simulate notebook notes and archived dashboard data notes
 // Prompt: "simulate a notebook with 200 notes, all of which have tasks"
-function buildRecentNotesMockApp() {
-  const sourceNotes = Array.from({ length: NOTE_COUNT }, (_, index) => ({
-    name: [
-      SOURCE_NOTE_NAME_PREFIX,
-      String(index + NOTE_NUMBER_OFFSET).padStart(NOTE_NUMBER_PAD_LENGTH, NOTE_NUMBER_PAD_FILL),
-    ].join(" "),
-    uuid: `${ SOURCE_NOTE_UUID_PREFIX }-${ index + NOTE_NUMBER_OFFSET }`,
-  }));
+function buildRecentNotesMockApp(domainConfigs = [{
+  name: TASK_DOMAIN_NAME,
+  notes: buildSourceNotes(NOTE_COUNT, SOURCE_NOTE_NAME_PREFIX, SOURCE_NOTE_UUID_PREFIX),
+  uuid: TASK_DOMAIN_UUID,
+}]) {
+  const sourceNotes = domainConfigs.flatMap(domain => domain.notes || []);
+  const sourceNotesByDomain = new Map(domainConfigs.map(domain => [domain.uuid, domain.notes || []]));
   const dataNotes = [];
 
   const app = {
@@ -88,11 +108,7 @@ function buildRecentNotesMockApp() {
       return dataNotes.find(note => note.uuid === uuid)?.body || "";
     }),
     getNoteTasks: jest.fn().mockResolvedValue([{ content: TASK_CONTENT }]),
-    getTaskDomains: jest.fn().mockResolvedValue([{
-      name: TASK_DOMAIN_NAME,
-      notes: sourceNotes,
-      uuid: TASK_DOMAIN_UUID,
-    }]),
+    filterNotes: jest.fn().mockImplementation(async ({ taskDomainUUID }) => sourceNotesByDomain.get(taskDomainUUID) || []),
     replaceNoteContent: jest.fn().mockImplementation(async ({ uuid }, content) => {
       const note = dataNotes.find(candidate => candidate.uuid === uuid);
       if (note) note.body = content;
@@ -125,8 +141,11 @@ describe("Recent Notes archived daily state", () => {
     // those selections into the note so the next day can seed from this saved state.
     for (const date of dates) {
       setSystemDate(date);
-      const results = await findStaleTaskNotes(app, buildRecentNotesSeed(0), {
+      const results = await findStaleTaskNotes({
+        app,
         maxNotes: SELECTED_NOTES_PER_DAY,
+        seed: buildRecentNotesSeed(0),
+        taskDomainUUID: TASK_DOMAIN_UUID,
       });
       selectedByDay.push(results.map(entry => entry.noteHandle.uuid));
     }
@@ -175,6 +194,7 @@ describe("Recent Notes archived daily state", () => {
       EXPECTED_RENDER_COUNT * SELECTED_NOTES_PER_DAY
     );
     expect(app.getNoteTasks.mock.calls.length).toBeLessThan(NOTE_COUNT * dates.length);
+    expect(app.filterNotes).toHaveBeenCalledWith({ group: "taskLists", taskDomainUUID: TASK_DOMAIN_UUID }, "changed");
   });
 
   it("reuses current-day selected notes before scanning on later clients", async () => {
@@ -182,25 +202,101 @@ describe("Recent Notes archived daily state", () => {
     const date = new Date(TEST_YEAR, TEST_MONTH_INDEX, TEST_DAYS[0], LOCAL_MIDDAY_HOUR, 0, 0);
     setSystemDate(date);
 
-    const firstResults = await findStaleTaskNotes(app, buildRecentNotesSeed(0), {
+    const firstResults = await findStaleTaskNotes({
+      app,
       maxNotes: SELECTED_NOTES_PER_DAY,
+      seed: buildRecentNotesSeed(0),
+      taskDomainUUID: TASK_DOMAIN_UUID,
     });
     const firstSelectedUuids = firstResults.map(entry => entry.noteHandle.uuid);
-    const firstTaskDomainCalls = app.getTaskDomains.mock.calls.length;
+    const firstFilterCalls = app.filterNotes.mock.calls.length;
     const firstTaskFetchCalls = app.getNoteTasks.mock.calls.length;
 
-    const secondResults = await findStaleTaskNotes(app, buildRecentNotesSeed(0), {
+    const secondResults = await findStaleTaskNotes({
+      app,
       maxNotes: SELECTED_NOTES_PER_DAY * 2,
+      seed: buildRecentNotesSeed(0),
+      taskDomainUUID: TASK_DOMAIN_UUID,
     });
     const secondSelectedUuids = secondResults.map(entry => entry.noteHandle.uuid);
 
     expect(secondSelectedUuids).toEqual(firstSelectedUuids);
     expect(app.createNote).toHaveBeenCalledTimes(1);
-    expect(app.getTaskDomains).toHaveBeenCalledTimes(firstTaskDomainCalls);
+    expect(app.filterNotes).toHaveBeenCalledTimes(firstFilterCalls);
     expect(app.getNoteTasks).toHaveBeenCalledTimes(firstTaskFetchCalls);
 
     const dailyNote = dataNotes.find(note => note.name === recentNotesDataNoteNameFromDate(date));
     expect(recentNotesStateFromContent(dailyNote.body).selectedNotes.map(note => note.uuid))
       .toEqual(firstSelectedUuids);
+  });
+
+  it("resets same-day cached selections when the active task domain changes", async () => {
+    const { app } = buildRecentNotesMockApp([
+      {
+        name: TASK_DOMAIN_NAME,
+        notes: buildSourceNotes(NOTE_COUNT, SOURCE_NOTE_NAME_PREFIX, SOURCE_NOTE_UUID_PREFIX),
+        uuid: TASK_DOMAIN_UUID,
+      },
+      {
+        name: SECOND_TASK_DOMAIN_NAME,
+        notes: buildSourceNotes(NOTE_COUNT, SECOND_SOURCE_NOTE_NAME_PREFIX, SECOND_SOURCE_NOTE_UUID_PREFIX),
+        uuid: SECOND_TASK_DOMAIN_UUID,
+      },
+    ]);
+    const date = new Date(TEST_YEAR, TEST_MONTH_INDEX, TEST_DAYS[0], LOCAL_MIDDAY_HOUR, 0, 0);
+    setSystemDate(date);
+
+    const firstResults = await findStaleTaskNotes({
+      app,
+      maxNotes: SELECTED_NOTES_PER_DAY,
+      seed: buildRecentNotesSeed(0),
+      taskDomainUUID: TASK_DOMAIN_UUID,
+    });
+    const filterCallsAfterFirstDomain = app.filterNotes.mock.calls.length;
+
+    const secondResults = await findStaleTaskNotes({
+      app,
+      maxNotes: SELECTED_NOTES_PER_DAY,
+      seed: buildRecentNotesSeed(0),
+      taskDomainUUID: SECOND_TASK_DOMAIN_UUID,
+    });
+
+    expect(app.filterNotes.mock.calls.length).toBeGreaterThan(filterCallsAfterFirstDomain);
+    expect(app.filterNotes).toHaveBeenCalledWith({ group: "taskLists", taskDomainUUID: SECOND_TASK_DOMAIN_UUID }, "changed");
+    expect(firstResults.map(entry => entry.noteHandle.uuid)).not.toEqual(
+      secondResults.map(entry => entry.noteHandle.uuid)
+    );
+    expect(secondResults.every(entry => entry.noteHandle.uuid.startsWith(SECOND_SOURCE_NOTE_UUID_PREFIX))).toBe(true);
+  });
+
+  it("recomputes same-day selections when the manual reseed seed changes", async () => {
+    const { app, dataNotes } = buildRecentNotesMockApp();
+    const date = new Date(TEST_YEAR, TEST_MONTH_INDEX, TEST_DAYS[0], LOCAL_MIDDAY_HOUR, 0, 0);
+    setSystemDate(date);
+
+    const firstSeed = buildRecentNotesSeed(0);
+    const secondSeed = buildRecentNotesSeed(1);
+    const firstResults = await findStaleTaskNotes({
+      app,
+      maxNotes: SELECTED_NOTES_PER_DAY,
+      seed: firstSeed,
+      taskDomainUUID: TASK_DOMAIN_UUID,
+    });
+    const firstFilterCalls = app.filterNotes.mock.calls.length;
+
+    const secondResults = await findStaleTaskNotes({
+      app,
+      maxNotes: SELECTED_NOTES_PER_DAY,
+      seed: secondSeed,
+      taskDomainUUID: TASK_DOMAIN_UUID,
+    });
+
+    expect(firstResults.map(entry => entry.noteHandle.uuid)).not.toEqual(
+      secondResults.map(entry => entry.noteHandle.uuid)
+    );
+    expect(app.filterNotes.mock.calls.length).toBeGreaterThan(firstFilterCalls);
+
+    const dailyNote = dataNotes.find(note => note.name === recentNotesDataNoteNameFromDate(date));
+    expect(recentNotesStateFromContent(dailyNote.body).selectionSeed).toBe(secondSeed);
   });
 });
