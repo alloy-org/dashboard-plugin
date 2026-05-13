@@ -3,6 +3,24 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-05-13 — Add DebugConsole widget gated behind DEBUG_CONSOLE setting
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dashboard/debug-console.js` (created — new DebugConsoleWidget that subscribes to logIfEnabled messages and renders them in a scrollable list)
+- `lib/dashboard/styles/debug-console.scss` (created — styles for the debug console widget)
+- `lib/util/log.js` (modified — added ring buffer, `getLogBuffer`, `addLogListener`, `removeLogListener` exports)
+- `lib/constants/settings.js` (modified — added `SETTING_KEYS.DEBUG_CONSOLE`; added debug-console entry to `WIDGET_REGISTRY` with `debugOnly: true`; filtered `debugOnly` entries from `DEFAULT_DASHBOARD_COMPONENTS`)
+- `lib/dashboard/dashboard-layout-popup.js` (modified — added `excludeWidgetIds` prop; `deriveInitialIds`, `deriveInitialSizing`, and `onReset` all respect excluded widget ids)
+- `lib/dashboard/dashboard.js` (modified — imported and registered `DebugConsoleWidget`; computes `layoutPopupExcludeWidgetIds` from `DEBUG_CONSOLE` setting and passes it to `DashboardLayoutPopup`)
+
+**Task:** Add a DebugConsole dashboard widget that captures all `logIfEnabled` messages and displays them in a scrollable div, visible in the layout config popup only when `SETTING_KEYS.DEBUG_CONSOLE` is set to `"true"`, and excluded from all default layouts
+**Prompt summary:** "Add a new DebugConsole component that is only available to a user if they have SETTING_KEYS.DEBUG_CONSOLE equal to 'true'; capture all logIfEnabled messages in a scrollable div; not in any default layout but visible in the layout config popup when its setting is 'true'"
+**Scope:** ~130 lines of new logic across 2 new files; ~60 lines modified across 4 existing files
+**Notes:** `logIfEnabled` now pushes each entry to a 200-entry ring buffer and notifies registered listeners; the DebugConsole component initialises from the buffer snapshot and appends via listener; the layout popup's `excludeWidgetIds` prop makes the widget invisible in both the Components and Sizing tabs when the setting is absent or non-"true"
+
+---
+
 ## 2026-05-11 — Fix Recent Notes widget deadlock and add domain tags to sample note handles
 
 **Model:** claude-sonnet-4-6
@@ -2007,3 +2025,4 @@ from ~160 lines of mixed state+logic to ~100 lines of state+thin wrappers+render
 ---
 
 STOP. Do not add summaries here. Add them to top of list.
+
