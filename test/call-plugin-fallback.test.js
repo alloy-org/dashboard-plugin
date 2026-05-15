@@ -1,8 +1,9 @@
 // [Claude claude-opus-4-6] Generated tests for: llmPromptWithPluginFallback callPlugin-with-LLM-fallback
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "../lib/constants/settings.js";
-import { llmPromptWithPluginFallback } from "../lib/providers/fetch-ai-provider.js";
 import { AMPLE_AGENT_PRO_UUID } from "../lib/providers/ai-provider-settings.js";
+import { llmPromptWithPluginFallback } from "../lib/providers/fetch-ai-provider.js";
+import { setLoggingEnabled } from "../lib/util/log.js";
 
 // -------------------------------------------------------------------------------------
 // @desc Build a mock app whose callPlugin resolves to `pluginResult` and whose settings
@@ -39,6 +40,7 @@ const originalFetch = global.fetch;
 
 afterEach(() => {
   global.fetch = originalFetch;
+  setLoggingEnabled(false);
   jest.restoreAllMocks();
 });
 
@@ -121,6 +123,24 @@ describe("llmPromptWithPluginFallback", () => {
     expect(app.callPlugin).toHaveBeenCalledTimes(1);
     expect(global.fetch).toHaveBeenCalled();
     expect(result).toEqual({ recovered: true });
+  });
+
+  it("truncates long content fields in the LLM request log without changing the request body", async () => {
+    const app = buildMockApp(null);
+    const longPrompt = "x".repeat(80);
+    const truncatedPrompt = `${ "x".repeat(47) }...`;
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    global.fetch = buildMockFetch('{"logged":true}');
+    setLoggingEnabled(true);
+
+    await llmPromptWithPluginFallback(app, longPrompt, { jsonResponse: true });
+
+    const callingLog = consoleSpy.mock.calls.map(args => args.join(" "))
+      .find(line => line.startsWith("Calling openai"));
+    const requestBody = JSON.parse(global.fetch.mock.calls[0][1].body);
+    expect(callingLog).toContain(`"content":"${ truncatedPrompt }"`);
+    expect(callingLog).not.toContain(`"content":"${ longPrompt }"`);
+    expect(requestBody.messages[0].content).toBe(longPrompt);
   });
 
   it("does not call fetch when callPlugin succeeds", async () => {
