@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import fetch from "isomorphic-fetch";
 import { SETTING_KEYS } from "../lib/constants/settings.js";
 import { analyzeDreamTasks } from "../lib/dream-task-service.js";
+import { setPluginData } from "../lib/plugin-data.js";
 import { SAMPLE_TASKS } from "./fixtures/tasks.js";
 
 dotenv.config();
@@ -51,13 +52,16 @@ function buildMockApp(providerConfig) {
     if (config.value) accumulator[config.settingKey] = config.value;
     return accumulator;
   }, {});
-
-  const app = {
+  setPluginData({
     settings: {
       ...providerSettings,
       [SETTING_KEYS.TASK_DOMAINS]: JSON.stringify({ selectedDomainUuid: "dom-work" }),
       [SETTING_KEYS.LLM_PROVIDER_MODEL]: providerConfig.providerEm,
     },
+    context: {},
+  });
+
+  const app = {
     alert: jest.fn(),
     findNote: jest.fn().mockResolvedValue({ uuid: "dream-note-uuid" }),
     createNote: jest.fn().mockResolvedValue("new-note-uuid"),

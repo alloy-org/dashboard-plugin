@@ -3,6 +3,44 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-05-15 — Replace dead Unsplash background image URLs
+
+**Model:** claude-opus-4-7
+**Files created/modified:**
+- `lib/util/background-splash-images.js` (modified — replaced 4 photo IDs whose Unsplash URLs now 404)
+
+**Task:** Audit every background image URL in the splash/meadow pools and swap any that no longer resolve
+**Prompt summary:** "the graveyard background URL resolves blank — double-check all background images still exist"
+**Scope:** 4 single-line URL substitutions across the SPLASH_IMAGE_BASE_URLS and GRAVEYARD_MEADOW_BASE_URLS arrays
+**Notes:** Verified all 60 URLs via `curl ... ?w=600&h=600&fit=crop&auto=format`. Four returned HTTP 404 (the Unsplash photographer presumably deleted the originals): `photo-1493244040629-...` (aerial river), `photo-1517821365201-...` (mountain lake), `photo-1416889580510-...` (wildflower meadow), `photo-1455541504462-...` (golden-hour green hills — the one Bill flagged). Replacements were sourced from current Unsplash search results for the same themes and re-verified. Note that no Unsplash photo URL carries a permanence guarantee — photographers can delete at any time — so periodic re-checks remain necessary.
+
+---
+
+## 2026-05-15 — Stop shadowing app.settings/app.context on the embed proxy
+
+**Model:** claude-opus-4-7
+**Files created/modified:**
+- `lib/plugin-data.js` (created — embed-side singleton store for plugin settings/context with setPluginData, pluginSettings, pluginContext, updatePluginSetting)
+- `lib/dashboard/dashboard-load.js` (modified — stripped production Proxy to a pure call-router; no settings/context fields)
+- `lib/dashboard/dashboard.js` (modified — populate plugin-data store from init payload; replace app.settings[X]=Y writes with updatePluginSetting; read configParams/pluginContext for render)
+- `lib/data-service.js` (modified — embed-side exports switchTaskDomain, refreshTaskDomains, isPluginRecentlyInstalled, createQuarterlyPlan, createOrAppendMonthlyPlan, createOrAppendWeeklyPlan, fetchQuotes now read from pluginSettings(); fetchDashboardData and plugin-side `_helper` callees keep using the real app.settings)
+- `lib/dream-task-service.js` (modified — `_buildLlmOptions`, `_dreamTaskResolvedModel`, `_llmAttributionFooterFresh`, `_generateSuggestionsFromLlm`, `_getActiveDomainUuid` read settings from pluginSettings())
+- `lib/providers/ai-provider-settings.js` (modified — preferredModels() reads from pluginSettings() with no app arg; apiKeyFromApp still takes app to surface alerts)
+- `lib/providers/fetch-ai-provider.js` (modified — drop app arg from preferredModels() call)
+- `lib/constants/settings.js` (modified — parseWidgetConfig drops app param, reads from pluginSettings())
+- `lib/dashboard/dream-task-internals.js` (modified — _loadSeenUuidsMap drops app param; requestDreamTaskRefreshExcludingRecent drops app param)
+- `lib/dashboard/dream-task.js` (modified — call sites for _loadSeenUuidsMap, requestDreamTaskRefreshExcludingRecent, configuredProvidersFromSettings updated)
+- `lib/dashboard/dream-task-provider-selection.js` (modified — chooseReseedProvider reads settings from pluginSettings())
+- `lib/dashboard/mood.js`, `lib/dashboard/victory-value.js` (modified — parseWidgetConfig call sites)
+- `test/call-plugin-fallback.test.js`, `test/dream-task-provider-selection.test.js`, `test/dream-task-actions.test.js`, `test/dream-task-retry.test.js`, `test/dream-task-service.test.js`, `test/llm-integration.test.js` (modified — populate plugin-data store via setPluginData instead of stuffing settings onto mock app)
+
+**Task:** Stop the embed from mutating `app.settings` / `app.context`; move denormalized settings into a clearly-named local store
+**Prompt summary:** "all mocking that modifies the app object should happen exclusively in dev harness; make a distinct setting like pluginSettings or pluginData"
+**Scope:** New 45-line module, ~40 call sites updated across ~15 source files plus 6 test files
+**Notes:** Production embed Proxy is now a pure call-router — every property access returns a function routed to window.callAmplenotePlugin. The embed-side cache of plugin settings/context lives in lib/plugin-data.js (module singleton), populated once from the init payload and updated via updatePluginSetting after embed-side setSetting calls. Dual-purpose data-service.js functions: fetchDashboardData and its internal `_helper` callees still read from the real app.settings on the plugin side; all exported functions called from embed widgets switched to pluginSettings(). Pre-existing graveyard-service / graveyard-widget test failures (mocks missing app.getTask after a recent graveyard refactor) are unrelated and remain.
+
+---
+
 ## 2026-05-15 — Parallelize dashboard init fetches and add load-time logging
 
 **Model:** claude-sonnet-4-6

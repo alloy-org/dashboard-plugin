@@ -10,6 +10,7 @@ import { updateDreamTaskTaskMetadata } from "../lib/dashboard/dream-task-interna
 import { scheduledDreamTaskResultFromStartAt, startAtSecondsFromDateAndMinutes } from "../lib/dashboard/dream-task-schedule.js";
 import { analyzeDreamTasks } from "../lib/dream-task-service.js";
 import { SETTING_KEYS } from "../lib/constants/settings.js";
+import { setPluginData } from "../lib/plugin-data.js";
 import { replaceSectionContent } from "../lib/util/replace-note-section-content.js";
 import { dailyJotNoteUuidFromToday, markTaskComplete } from "../lib/util/task-util.js";
 import { SAMPLE_TASKS } from "./fixtures/tasks.js";
@@ -46,11 +47,14 @@ An invented task aligned with your product launch goal.
 // Prompt: "test that clicking 3 action links modifies note content"
 function buildMockAppWithNote(initialContent) {
   let noteContent = initialContent;
-
-  const app = {
+  setPluginData({
     settings: {
       [SETTING_KEYS.TASK_DOMAINS]: JSON.stringify({ selectedDomainUuid: "dom-work" }),
     },
+    context: {},
+  });
+
+  const app = {
     createNote: jest.fn().mockResolvedValue(MOCK_NOTE_UUID),
     filterNotes: jest.fn().mockResolvedValue([]),
     findNote: jest.fn().mockImplementation(({ uuid, name }) => {

@@ -9,6 +9,7 @@ import dotenv from "dotenv";
 import fetch from "isomorphic-fetch";
 import { llmPrompt } from "../lib/providers/fetch-ai-provider.js";
 import { SETTING_KEYS } from "../lib/constants/settings.js";
+import { setPluginData } from "../lib/plugin-data.js";
 import { SAMPLE_TASKS } from "./fixtures/tasks.js";
 
 dotenv.config();
@@ -17,15 +18,17 @@ global.fetch = fetch;
 const OPEN_AI_KEY = process.env.OPEN_AI_ACCESS_TOKEN;
 const itIfKey = OPEN_AI_KEY ? it : it.skip;
 
-// Minimal app stub — llmPrompt only reads settings for provider/model selection
+// Minimal app stub — llmPrompt only reads settings (via the embed-side plugin-data store)
+// for provider/model selection.
 function buildLlmApp() {
-  return {
+  setPluginData({
     settings: {
       [SETTING_KEYS.LLM_PROVIDER_MODEL]: "openai",
       [SETTING_KEYS.LLM_API_KEY_OPENAI]: OPEN_AI_KEY,
     },
-    alert: jest.fn(),
-  };
+    context: {},
+  });
+  return { alert: jest.fn() };
 }
 
 const TEST_QUARTERLY_CONTENT = `# Q1 2026 Plan

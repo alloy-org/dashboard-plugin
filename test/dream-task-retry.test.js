@@ -12,6 +12,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import DreamTaskWidget from "../lib/dashboard/dream-task.js";
 import { DASHBOARD_NOTE_TAG, SETTING_KEYS } from "../lib/constants/settings.js";
+import { setPluginData, updatePluginSetting } from "../lib/plugin-data.js";
 import { SAMPLE_TASKS } from "./fixtures/tasks.js";
 
 dotenv.config();
@@ -43,9 +44,9 @@ function todayNoteName() {
 // Date: 2026-04-04 | Model: claude-4.6-opus-high-thinking
 function buildMockApp(initialSettings = {}) {
   let dreamNoteContent = "";
+  setPluginData({ settings: { ...initialSettings }, context: {} });
 
   const app = {
-    settings: { ...initialSettings },
     alert: jest.fn(),
     findNote: jest.fn().mockResolvedValue({ uuid: "dream-note-uuid" }),
     createNote: jest.fn().mockResolvedValue("new-note-uuid"),
@@ -125,8 +126,8 @@ describe("DreamTaskWidget API key retry", () => {
     expect(container.querySelector(".dream-task-no-config")).toBeTruthy();
     expect(container.querySelector(".dream-task-card")).toBeFalsy();
 
-    app.settings[SETTING_KEYS.LLM_PROVIDER_MODEL] = "anthropic";
-    app.settings[SETTING_KEYS.LLM_API_KEY_ANTHROPIC] = ANTHROPIC_KEY;
+    updatePluginSetting(SETTING_KEYS.LLM_PROVIDER_MODEL, "anthropic");
+    updatePluginSetting(SETTING_KEYS.LLM_API_KEY_ANTHROPIC, ANTHROPIC_KEY);
 
     await act(async () => {
       root.render(createElement(DreamTaskWidget, {

@@ -3,6 +3,7 @@ import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "../lib/constants/settings.js";
 import { AMPLE_AGENT_PRO_UUID } from "../lib/providers/ai-provider-settings.js";
 import { llmPromptWithPluginFallback } from "../lib/providers/fetch-ai-provider.js";
+import { setPluginData } from "../lib/plugin-data.js";
 import { setLoggingEnabled } from "../lib/util/log.js";
 
 // -------------------------------------------------------------------------------------
@@ -11,13 +12,14 @@ import { setLoggingEnabled } from "../lib/util/log.js";
 // @param {*} pluginResult - Value that callPlugin will resolve to
 // @returns {Object} Mock app object
 function buildMockApp(pluginResult) {
+  const settings = {
+    [SETTING_KEYS.LLM_PROVIDER_MODEL]: "openai",
+    [SETTING_KEYS.LLM_API_KEY_OPENAI]: "sk-test-key",
+  };
+  setPluginData({ settings, context: {} });
   return {
     callPlugin: jest.fn().mockResolvedValue(pluginResult),
     alert: jest.fn(),
-    settings: {
-      [SETTING_KEYS.LLM_PROVIDER_MODEL]: "openai",
-      [SETTING_KEYS.LLM_API_KEY_OPENAI]: "sk-test-key",
-    },
   };
 }
 
