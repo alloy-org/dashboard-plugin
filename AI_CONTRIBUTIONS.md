@@ -2025,4 +2025,3 @@ from ~160 lines of mixed state+logic to ~100 lines of state+thin wrappers+render
 ---
 
 STOP. Do not add summaries here. Add them to top of list.
-
