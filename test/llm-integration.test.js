@@ -107,12 +107,11 @@ describe("llmPrompt integration (requires OPEN_AI_ACCESS_TOKEN)", () => {
     const app = buildLlmApp();
     const prompt = buildDreamTaskPrompt(SAMPLE_TASKS, TEST_QUARTERLY_CONTENT, TEST_MONTHLY_CONTENT);
 
-    const result = await llmPrompt(app, null, prompt, {
-      aiModel: "gpt-4o-mini",
-      apiKey: OPEN_AI_KEY,
-      jsonResponse: true,
-      timeoutSeconds: 30,
-    });
+    const aiModel = "gpt-4o-mini";
+    const apiKey = OPEN_AI_KEY;
+    const jsonResponse = true;
+    const timeoutSeconds = 30;
+    const result = await llmPrompt(app, null, prompt, aiModel, apiKey, jsonResponse, timeoutSeconds);
 
     expect(result).not.toBeNull();
     expect(typeof result).toBe("object");
@@ -139,12 +138,11 @@ describe("llmPrompt integration (requires OPEN_AI_ACCESS_TOKEN)", () => {
     const app = buildLlmApp();
     const prompt = buildDreamTaskPrompt(SAMPLE_TASKS, TEST_QUARTERLY_CONTENT, TEST_MONTHLY_CONTENT);
 
-    const result = await llmPrompt(app, null, prompt, {
-      aiModel: "gpt-4o-mini",
-      apiKey: OPEN_AI_KEY,
-      jsonResponse: true,
-      timeoutSeconds: 30,
-    });
+    const aiModel = "gpt-4o-mini";
+    const apiKey = OPEN_AI_KEY;
+    const jsonResponse = true;
+    const timeoutSeconds = 30;
+    const result = await llmPrompt(app, null, prompt, aiModel, apiKey, jsonResponse, timeoutSeconds);
 
     for (const task of result.tasks) {
       expect(task.title.length).toBeGreaterThan(0);
