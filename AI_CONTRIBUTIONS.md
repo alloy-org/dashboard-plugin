@@ -3,6 +3,24 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-05-15 — Track human-edited vs auto-populated lines in DaySketch
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/dashboard/day-sketch.js` (modified — adds per-hour human-edited tracking and async refresh of auto-populated rows)
+
+**Task:** Record whether each DaySketch row was auto-populated or human-edited; restore only human-edited rows on load, then re-validate auto rows from current tasks/events; never overwrite human-edited rows
+**Prompt summary:** "record whether each line was auto-populated or human-edited; on load clear auto rows and let prefill refresh them; human-edited lines are permanent for the day"
+**Scope:** ~60 lines changed across 8 functions/hooks in one file
+**Notes:**
+- `parseNoteContent` now returns `{ entries, humanEditedHours }` (Set); note footer `human-edited: 6,9,14` stores which hours the user directly edited
+- `buildNoteBody` appends the human-edited footer when any hours are marked
+- On load, only human-edited rows are restored; auto-populated rows start blank so prefill re-validates them against current tasks/events (satisfies the async re-confirm requirement)
+- `entriesPrefilledFromTasks` and `entriesPrefilledFromCalendarEvents` both accept `humanEditedHours` and skip those hours
+- `handleInputChange` adds the edited hour to `humanEditedHours` immediately; subsequent prefill runs will not touch it
+
+---
+
 ## 2026-05-13 — Add DebugConsole widget gated behind DEBUG_CONSOLE setting
 
 **Model:** claude-sonnet-4-6
