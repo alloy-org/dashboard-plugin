@@ -3,6 +3,28 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-05-15 — Parallelize dashboard init fetches and add load-time logging
+
+**Model:** claude-sonnet-4-6
+**Files created/modified:**
+- `lib/data-service.js` (modified — restructured fetchDashboardData to parallelize domain resolution with mood/plans/settings; domain tasks now chain off domain resolution; added timing logs throughout)
+- `lib/dashboard/dashboard.js` (modified — added app.init() and DashboardSettingNote load timing logs to useEffect)
+- `lib/dashboard/dashboard-load.js` (created — standalone init entry point; dev uses createBrowserDevApp, production uses minimal proxy)
+- `lib/dashboard/client-entry.js` (modified — reduced to thin redirect import for backward compat; real logic moved to dashboard-load.js)
+- `esbuild.js` (modified — entry point updated to dashboard-load.js)
+- `dev/dev-server.js` (modified — entry point updated to dashboard-load.js)
+
+**Task:** (1) Add logIfEnabled timing coverage to diagnose "Loading dashboard" latency on mobile; (2) fix sequential bottleneck where _resolveTaskDomains blocked all other parallel fetches; (3) move init complexity out of client-entry.js into standalone dashboard-load.js
+**Prompt summary:** "add logIfEnabled coverage for loading latency; fix red flags; move app.init() paradigm to dashboard-load.js with IS_DEV_ENVIRONMENT guard"
+**Scope:** ~50 lines changed/added across 6 files
+**Notes:**
+- Key fix: `_resolveTaskDomains` previously ran alone before any parallel fetch; now it runs in parallel with mood/plans/settings while domain tasks chain off it with `.then()` — strictly better in all timing scenarios
+- Timing logs in `fetchDashboardData`, `_resolveTaskDomains`, `_findQuarterlyPlans`, `_fetchTasksForDomain`, and the `DashboardApp` init `useEffect` now provide full visibility into which fetch phase is slow
+- `dashboard-load.js` production path: minimal proxy to `callAmplenotePlugin` + React mount (no dev code ships in prod due to IS_DEV_ENVIRONMENT tree-shaking)
+- Removed `_settledValueOr` helper (no longer needed after switching from Promise.allSettled to Promise.all with .catch())
+
+---
+
 ## 2026-05-15 — Track human-edited vs auto-populated lines in DaySketch
 
 **Model:** claude-sonnet-4-6

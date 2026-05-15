@@ -318,7 +318,7 @@ function handleNoteFindApi(req, res) {
 
 async function main() {
   const ctx = await esbuild.context({
-    entryPoints: [path.join(rootDir, "lib/dashboard/client-entry.js")],
+    entryPoints: [path.join(rootDir, "lib/dashboard/dashboard-load.js")],
     bundle: true,
     format: "iife",
     outdir: path.join(devDir, "compiled"),

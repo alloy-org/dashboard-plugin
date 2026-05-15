@@ -83,8 +83,9 @@ function mondayWeekStartKey(date) {
 }
 
 // Mount DashboardApp into container and flush all async work.
-async function mountDashboard(container, root, app) {
-  await act(async () => { root.render(createElement(DashboardApp, { app })); });
+// initPromise defaults to app.init() so most callers don't need to supply it.
+async function mountDashboard(container, root, app, initPromise = app.init()) {
+  await act(async () => { root.render(createElement(DashboardApp, { app, initPromise })); });
   await flushAsync();
 }
 
@@ -151,13 +152,11 @@ describe('DashboardApp', () => {
   describe('loading state', () => {
     it('renders a loading spinner before init resolves', async () => {
       const hangingApp = new Proxy({}, {
-        get(_, prop) {
-          if (typeof prop === 'symbol') return undefined;
-          return () => new Promise(() => {});
-        }
+        get(_, prop) { if (typeof prop === 'symbol') return undefined; return () => Promise.resolve(null); }
       });
+      const initPromise = new Promise(() => {}); // never resolves
 
-      await act(async () => { root.render(createElement(DashboardApp, { app: hangingApp })); });
+      await act(async () => { root.render(createElement(DashboardApp, { app: hangingApp, initPromise })); });
 
       expect(container.querySelector('.dashboard-loading')).not.toBeNull();
       expect(container.querySelector('.spinner')).not.toBeNull();
@@ -168,15 +167,12 @@ describe('DashboardApp', () => {
   // ------------------------------------------------
   describe('error state', () => {
     it('shows an error banner when init returns an error object', async () => {
+      const initPromise = Promise.resolve({ error: 'Something went wrong' });
       const errorApp = new Proxy({}, {
-        get(_, prop) {
-          if (typeof prop === 'symbol') return undefined;
-          if (prop === 'init') return () => Promise.resolve({ error: 'Something went wrong' });
-          return () => Promise.resolve(null);
-        }
+        get(_, prop) { if (typeof prop === 'symbol') return undefined; return () => Promise.resolve(null); }
       });
 
-      await act(async () => { root.render(createElement(DashboardApp, { app: errorApp })); });
+      await act(async () => { root.render(createElement(DashboardApp, { app: errorApp, initPromise })); });
       await flushAsync();
 
       expect(container.querySelector('.dashboard-error')).not.toBeNull();
@@ -185,15 +181,13 @@ describe('DashboardApp', () => {
     });
 
     it('shows an error banner when the init promise rejects', async () => {
-      const rejectApp = new Proxy({}, {
-        get(_, prop) {
-          if (typeof prop === 'symbol') return undefined;
-          if (prop === 'init') return () => Promise.reject(new Error('Network timeout'));
-          return () => Promise.resolve(null);
-        }
+      const initPromise = Promise.reject(new Error('Network timeout'));
+      initPromise.catch(() => {}); // suppress unhandled rejection warning
+      const errorApp = new Proxy({}, {
+        get(_, prop) { if (typeof prop === 'symbol') return undefined; return () => Promise.resolve(null); }
       });
 
-      await act(async () => { root.render(createElement(DashboardApp, { app: rejectApp })); });
+      await act(async () => { root.render(createElement(DashboardApp, { app: errorApp, initPromise })); });
       await flushAsync();
 
       expect(container.querySelector('.dashboard-error')).not.toBeNull();
@@ -204,7 +198,8 @@ describe('DashboardApp', () => {
   // ------------------------------------------------
   describe('app object calls during init', () => {
     beforeEach(async () => {
-      await act(async () => { root.render(createElement(DashboardApp, { app: mockApp })); });
+      const initPromise = mockApp.init();
+      await act(async () => { root.render(createElement(DashboardApp, { app: mockApp, initPromise })); });
       await flushAsync();
     });
 
@@ -230,7 +225,8 @@ describe('DashboardApp', () => {
   // ------------------------------------------------
   describe('widget rendering with real task data', () => {
     beforeEach(async () => {
-      await act(async () => { root.render(createElement(DashboardApp, { app: mockApp })); });
+      const initPromise = mockApp.init();
+      await act(async () => { root.render(createElement(DashboardApp, { app: mockApp, initPromise })); });
       await flushAsync();
     });
 
@@ -343,7 +339,8 @@ describe('DashboardApp', () => {
   // ------------------------------------------------
   describe('domain switching', () => {
     it('calls app.getTaskDomainTasks for the new domain when a domain button is clicked', async () => {
-      await act(async () => { root.render(createElement(DashboardApp, { app: mockApp })); });
+      const initPromise = mockApp.init();
+      await act(async () => { root.render(createElement(DashboardApp, { app: mockApp, initPromise })); });
       await flushAsync();
 
       // Find the Personal domain button and click it.
@@ -364,7 +361,8 @@ describe('DashboardApp', () => {
   // Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking
   describe('layout popup', () => {
     it('opens the Layout popup without error when the Layout button is clicked', async () => {
-      await act(async () => { root.render(createElement(DashboardApp, { app: mockApp })); });
+      const initPromise = mockApp.init();
+      await act(async () => { root.render(createElement(DashboardApp, { app: mockApp, initPromise })); });
       await flushAsync();
 
       const layoutBtn = Array.from(container.querySelectorAll('.dashboard-configure-button'))
@@ -393,8 +391,9 @@ describe('DashboardApp', () => {
           return typeof val === 'function' ? val.bind(target) : val;
         }
       });
+      const initPromise = overrideApp.init();
 
-      await act(async () => { root.render(createElement(DashboardApp, { app: overrideApp })); });
+      await act(async () => { root.render(createElement(DashboardApp, { app: overrideApp, initPromise })); });
       await flushAsync();
 
       const layoutBtn = Array.from(container.querySelectorAll('.dashboard-configure-button'))
@@ -424,8 +423,9 @@ describe('DashboardApp', () => {
           return typeof val === 'function' ? val.bind(target) : val;
         }
       });
+      const initPromise = overrideApp.init();
 
-      await act(async () => { root.render(createElement(DashboardApp, { app: overrideApp })); });
+      await act(async () => { root.render(createElement(DashboardApp, { app: overrideApp, initPromise })); });
       await flushAsync();
 
       // Open the Layout popup
@@ -500,7 +500,8 @@ describe('DashboardApp', () => {
   // ------------------------------------------------
   describe('calendar-selected week propagation', () => {
     it('re-fetches completed tasks when clicking a day in a different week', async () => {
-      await act(async () => { root.render(createElement(DashboardApp, { app: mockApp })); });
+      const initPromise = mockApp.init();
+      await act(async () => { root.render(createElement(DashboardApp, { app: mockApp, initPromise })); });
       await flushAsync();
 
       const callCountBeforeClick = mockApp.getCompletedTasks.mock.calls.length;

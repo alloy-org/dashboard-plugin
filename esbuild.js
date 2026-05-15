@@ -23,7 +23,7 @@ const scssPlugin = createScssPlugin({ style: "compressed" });
 // Prompt: "refactor so widgets load their own scss instead of dashboard.scss importing everything"
 // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
 const clientBuild = await esbuild.build({
-  entryPoints: [path.join(__dirname, 'lib/dashboard/client-entry.js')],
+  entryPoints: [path.join(__dirname, 'lib/dashboard/dashboard-load.js')],
   bundle: true,
   format: 'iife',
   minify: true,
