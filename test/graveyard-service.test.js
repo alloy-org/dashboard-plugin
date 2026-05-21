@@ -41,6 +41,7 @@ function buildMockApp() {
       findNote: jest.fn().mockResolvedValue({ name: "Task graveyard data: May 2026", uuid: "graveyard-note-uuid" }),
       getNoteContent: jest.fn().mockImplementation(async () => noteContent),
       getNoteTasks: jest.fn().mockResolvedValue([taskFromNotes]),
+      getTask: jest.fn().mockImplementation(async uuid => uuid === taskFromNotes.uuid ? domainTaskWithoutNoteName : null),
       getTaskDomainTasks: jest.fn().mockResolvedValue([domainTaskWithoutNoteName]),
       replaceNoteContent: jest.fn().mockImplementation(async (_noteHandle, content) => {
         noteContent = content;
@@ -52,6 +53,7 @@ function buildMockApp() {
 }
 
 // [OpenAI gpt-5.4] Generated tests for: graveyard cache task-to-note mapping persistence
+// [OpenAI gpt-5.5] Generated tests for: graveyard nine-month value/proximity heuristic
 describe("loadGraveyardCandidates", () => {
   afterEach(() => {
     jest.useRealTimers();
@@ -133,5 +135,38 @@ describe("loadGraveyardCandidates", () => {
     expect(app.filterNotes).toHaveBeenCalledTimes(1);
     expect(noteContent).toContain("fresh-task");
     expect(noteContent).not.toContain("cached-task");
+  });
+
+  it("scores every discovered task before selecting the top graveyard candidates", async () => {
+    jest.useFakeTimers().setSystemTime(new Date("2026-05-10T15:00:00Z"));
+    let noteContent = "# Graveyard task candidates\n\n| Date | Task UUIDs | Task note metadata |\n|------|------------|--------------------|\n";
+    const timestampFromDate = date => Math.floor(new Date(date).getTime() / 1000);
+    const tasks = [
+      { content: "Created close to nine months ago", createdAt: timestampFromDate("2025-08-10T15:00:00Z"), uuid: "near-target", victoryValue: 10 },
+      { content: "Slightly newer but still valuable", createdAt: timestampFromDate("2025-08-17T15:00:00Z"), uuid: "near-newer", victoryValue: 9.5 },
+      { content: "High value but years too old", createdAt: timestampFromDate("2023-08-10T15:00:00Z"), uuid: "far-old", victoryValue: 12 },
+      { content: "Exactly target age with less value", createdAt: timestampFromDate("2025-08-10T15:00:00Z"), uuid: "lower-target", victoryValue: 7.6 },
+      { content: "Recent high value", createdAt: timestampFromDate("2026-05-10T15:00:00Z"), uuid: "far-new", victoryValue: 10 },
+      { content: "Low value at target age", createdAt: timestampFromDate("2025-08-10T15:00:00Z"), uuid: "low-target", victoryValue: 1 },
+    ];
+    const app = {
+      createNote: jest.fn().mockResolvedValue("graveyard-note-uuid"),
+      filterNotes: jest.fn().mockImplementation(async function* () {
+        yield { name: "Heuristic Note", uuid: "heuristic-note" };
+      }),
+      findNote: jest.fn().mockResolvedValue({ name: "Task graveyard data: May 2026", uuid: "graveyard-note-uuid" }),
+      getNoteContent: jest.fn().mockImplementation(async () => noteContent),
+      getNoteTasks: jest.fn().mockResolvedValue(tasks),
+      replaceNoteContent: jest.fn().mockImplementation(async (_noteHandle, content) => {
+        noteContent = content;
+      }),
+    };
+
+    const { candidates } = await loadGraveyardCandidates(app, 5, "domain-1");
+
+    expect(candidates).toHaveLength(5);
+    expect(candidates.map(task => task.uuid)).toEqual(["near-target", "near-newer", "lower-target", "far-old", "far-new"]);
+    expect(candidates.every(task => Number.isFinite(task.graveyardHeuristicScore))).toBe(true);
+    expect(candidates).not.toEqual(expect.arrayContaining([expect.objectContaining({ uuid: "low-target" })]));
   });
 });

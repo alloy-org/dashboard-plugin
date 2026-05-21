@@ -3,6 +3,20 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-05-21 — Rank Graveyard candidates by nine-month proximity
+
+**Model:** gpt-5.5
+**Files created/modified:**
+- `lib/graveyard-service.js` (modified — replaced age-bucket/oldest-first selection with value minus log weekly distance from nine months old)
+- `test/graveyard-service.test.js` (modified — added regression coverage that scores all discovered tasks before selecting the top five)
+
+**Task:** Rewrite Graveyard candidate suitability scoring to prefer high-value tasks created close to nine months ago
+**Prompt summary:** "rewrite graveyard task heuristic to subtract log weekly distance from nine months ago before selecting top 5"
+**Scope:** ~75 lines changed across candidate ranking and focused Jest coverage
+**Notes:** Fresh discovery and cached row hydration both attach `graveyardHeuristicScore` before returning candidates.
+
+---
+
 ## 2026-05-15 — Replace dead Unsplash background image URLs
 
 **Model:** claude-opus-4-7
