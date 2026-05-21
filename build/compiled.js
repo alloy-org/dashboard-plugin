@@ -8,6 +8,7 @@
 
   // lib/embed-html.js
   function buildEmbedHTML() {
+    console.debug("Building embed HTML for Dashboard plugin");
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
