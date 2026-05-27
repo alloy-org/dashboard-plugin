@@ -3,6 +3,32 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-05-27 — Migrate component rendering from createElement to JSX
+
+**Model:** claude-4.7-opus
+**Files created/modified:**
+- `esbuild.js` (modified — added `jsx: 'automatic'`, `jsxImportSource: 'react'`, and `loader: { '.jsx': 'jsx' }` to both the client and plugin build configs; updated client entry to `dashboard-load.jsx`)
+- `dev/dev-server.js` (modified — same JSX config and entry update for the watch context)
+- `lib-imports-plugin.js` (modified — extensionless imports now try `.jsx` before `.js`)
+- `jest.config.js` (modified — added `@swc/jest` transformer with automatic JSX runtime, `module.type: 'es6'`, and `extensionsToTreatAsEsm: ['.jsx']` so .jsx lib files load as ESM during tests)
+- `package.json` (modified — added `@swc/jest` and `@swc/core` as devDependencies)
+- 25 widget/component files in `lib/dashboard/` renamed from `.js` → `.jsx` and converted from `createElement(...)` / `h(...)` to JSX (`agenda`, `calendar`, `config-popup`, `copy-link`, `dashboard`, `dashboard-layout-popup`, `dashboard-load`, `dashboard-settings-popup`, `dashboard-tooltip-tippy`, `day-sketch`, `debug-console`, `draggable-heading`, `dream-task`, `graveyard`, `layout-picker`, `mood`, `note-editor`, `peak-hours`, `planning`, `quick-actions`, `quotes`, `recent-notes`, `task-domains`, `victory-value`, `widget-wrapper`)
+- Helper functions that previously took `h` as a parameter (e.g. `renderTaskCard(h, …)` in graveyard, `renderItem(h, …)` in dashboard-layout-popup, `renderMetricCard(h, …)` in peak-hours, `renderSparkline(h, …)` in mood, `renderHourLine(h, …)` in day-sketch) were refactored into JSX component functions (e.g. `TaskCard`, `LayoutItem`, `MetricCard`, `Sparkline`, `HourLine`)
+- Test files updated to import the renamed `.jsx` source files: `test/agenda.test.js`, `test/app.test.js`, `test/calendar-events.test.js`, `test/day-sketch.test.js`, `test/dream-task-actions.test.js`, `test/dream-task-retry.test.js`, `test/graveyard-widget.test.js`
+
+**Task:** Translate the entire dashboard plugin's component rendering from imperative `createElement` calls to JSX syntax while preserving all behavior.
+**Prompt summary:** "translate this project to render components with JSX instead"
+**Scope:** ~6,000 lines touched across 30+ files (build config, resolver, Jest config, and 25 component files renamed/rewritten)
+**Notes:**
+- Uses React 17+ **automatic** JSX runtime (esbuild auto-imports `react/jsx-runtime`); no source file needs to `import { createElement }` solely for JSX.
+- `lib/util/browser-dev-app.js` keeps its 21 `document.createElement(...)` calls — those are real DOM creation, not React.
+- `renderTaskTooltipContent` in `graveyard.jsx` still returns an HTML template string because tippy.js's `content` prop takes raw HTML, not React.
+- `embed-html.js` produces a raw HTML string for the plugin embed shell and was not touched.
+- Build verified: `npm run build` produces a 705 KB `build/compiled.js` with the expected `return plugin;\n})()` IIFE footer.
+- Tests verified: full Jest suite passes apart from the two suites that were already failing on `main` before the migration (`test/call-plugin-fallback.test.js` and `test/graveyard-widget.test.js` — both pre-existing test-mock issues, not JSX-related).
+
+---
+
 ## 2026-05-21 — Rank Graveyard candidates by nine-month proximity
 
 **Model:** gpt-5.5

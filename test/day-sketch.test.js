@@ -8,7 +8,7 @@ import { jest } from "@jest/globals";
 import { createElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import DaySketchWidget from "../lib/dashboard/day-sketch.jsx";
+import DaySketchWidget from "day-sketch";
 import { DASHBOARD_NOTE_TAG } from "constants/settings";
 
 const flushAsync = () =>

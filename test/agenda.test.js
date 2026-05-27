@@ -9,7 +9,7 @@ import { createElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { formatDateKey } from "util/date-utility";
-import AgendaWidget from "../lib/dashboard/agenda.jsx";
+import AgendaWidget from "agenda";
 
 const flushAsync = () =>
   act(async () => { await new Promise((r) => setTimeout(r, 0)); });

@@ -18,12 +18,14 @@ export default {
     '\\.scss$': '<rootDir>/test/stubs/scss.cjs',
   },
   setupFilesAfterEnv: ['<rootDir>/test/setup-react-act.js'],
+  extensionsToTreatAsEsm: ['.jsx'],
   transform: {
     '^.+\\.(js|jsx)$': ['@swc/jest', {
       jsc: {
         parser: { syntax: 'ecmascript', jsx: true },
         transform: { react: { runtime: 'automatic' } },
       },
+      module: { type: 'es6' },
     }],
   },
   testMatch: ['**/test/**/*.test.js'],

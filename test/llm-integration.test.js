@@ -7,9 +7,9 @@
 import { jest } from "@jest/globals";
 import dotenv from "dotenv";
 import fetch from "isomorphic-fetch";
-import { llmPrompt } from "../lib/providers/fetch-ai-provider.js";
-import { SETTING_KEYS } from "../lib/constants/settings.js";
-import { setPluginData } from "../lib/plugin-data.js";
+import { llmPrompt } from "providers/fetch-ai-provider";
+import { SETTING_KEYS } from "constants/settings";
+import { setPluginData } from "plugin-data";
 import { SAMPLE_TASKS } from "./fixtures/tasks.js";
 
 dotenv.config();

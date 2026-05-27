@@ -3,7 +3,7 @@
  * Prompt summary: "ensure graveyard-service persists task-to-note mappings in its cache rows"
  */
 import { jest } from "@jest/globals";
-import { loadGraveyardCandidates } from "../lib/graveyard-service.js";
+import { loadGraveyardCandidates } from "graveyard-service";
 
 function localDateKey(date) {
   const year = date.getFullYear();

@@ -10,7 +10,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 // No jest.unstable_mockModule calls — hooks AND widgets both run for real.
 // The Amplenote app object is mocked; widgets receive it directly via the app prop.
-import DashboardApp from '../lib/dashboard/dashboard.jsx';
+import DashboardApp from 'dashboard/dashboard';
 import { mockPlugin } from "./test-helpers.js";
 import { dateKeyFromDateInput, weekStartFromDateInput } from "util/date-utility";
 import {

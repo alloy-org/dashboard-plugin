@@ -8,7 +8,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { createDevApp, readSettingsFile } from "../dev/dev-app.js";
-import { SETTING_KEYS, widgetConfigKey } from "../lib/constants/settings.js";
+import { SETTING_KEYS, widgetConfigKey } from "constants/settings";
 
 // [Claude] Generated tests for: dev-mode app harness settings persistence
 // Date: 2026-03-01 | Model: claude-opus-4-6

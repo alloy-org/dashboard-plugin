@@ -1,6 +1,6 @@
 // [Claude claude-opus-4-6] Generated tests for: apiKeyBucketFromLlmProvider
 // Prompt: "providerApiKey is blank while settings show a key — evolve extraction"
-import { apiKeyBucketFromLlmProvider, apiKeyFromProvider, SETTING_KEYS } from "../lib/constants/settings.js";
+import { apiKeyBucketFromLlmProvider, apiKeyFromProvider, SETTING_KEYS } from "constants/settings";
 
 describe("apiKeyBucketFromLlmProvider", () => {
   it("maps anthropic-sonnet providerEm to anthropic API key bucket", () => {

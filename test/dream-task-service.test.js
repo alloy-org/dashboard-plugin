@@ -5,9 +5,9 @@
 import { jest } from "@jest/globals";
 import dotenv from "dotenv";
 import fetch from "isomorphic-fetch";
-import { SETTING_KEYS } from "../lib/constants/settings.js";
-import { analyzeDreamTasks } from "../lib/dream-task-service.js";
-import { setPluginData } from "../lib/plugin-data.js";
+import { SETTING_KEYS } from "constants/settings";
+import { analyzeDreamTasks } from "dream-task-service";
+import { setPluginData } from "plugin-data";
 import { SAMPLE_TASKS } from "./fixtures/tasks.js";
 
 dotenv.config();

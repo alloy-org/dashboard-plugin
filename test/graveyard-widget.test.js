@@ -70,7 +70,7 @@ await jest.unstable_mockModule("dashboard/dashboard-tooltip-tippy", async () => 
   return { default: DashboardTippyMock };
 });
 
-const { default: GraveyardWidget } = await import("../lib/dashboard/graveyard.jsx");
+const { default: GraveyardWidget } = await import("graveyard");
 
 function localDateKey(date) {
   const year = date.getFullYear();

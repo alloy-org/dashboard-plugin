@@ -5,14 +5,14 @@
 import { jest } from "@jest/globals";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
-import DreamTaskWidget from "../lib/dashboard/dream-task.jsx";
-import { updateDreamTaskTaskMetadata } from "../lib/dashboard/dream-task-internals.js";
-import { scheduledDreamTaskResultFromStartAt, startAtSecondsFromDateAndMinutes } from "../lib/dashboard/dream-task-schedule.js";
-import { analyzeDreamTasks } from "../lib/dream-task-service.js";
-import { SETTING_KEYS } from "../lib/constants/settings.js";
-import { setPluginData } from "../lib/plugin-data.js";
-import { replaceSectionContent } from "../lib/util/replace-note-section-content.js";
-import { dailyJotNoteUuidFromToday, markTaskComplete } from "../lib/util/task-util.js";
+import DreamTaskWidget from "dream-task";
+import { updateDreamTaskTaskMetadata } from "dashboard/dream-task-internals";
+import { scheduledDreamTaskResultFromStartAt, startAtSecondsFromDateAndMinutes } from "dashboard/dream-task-schedule";
+import { analyzeDreamTasks } from "dream-task-service";
+import { SETTING_KEYS } from "constants/settings";
+import { setPluginData } from "plugin-data";
+import { replaceSectionContent } from "util/replace-note-section-content";
+import { dailyJotNoteUuidFromToday, markTaskComplete } from "util/task-util";
 import { SAMPLE_TASKS } from "./fixtures/tasks.js";
 
 const MOCK_NOTE_UUID = "dream-note-uuid";

@@ -2,9 +2,9 @@ import fs from "fs"
 import dotenv from "dotenv"
 import fetch from "isomorphic-fetch"
 import { jest } from "@jest/globals"
-import pluginObject from "../lib/plugin"
+import pluginObject from "plugin"
 import path from "path"
-import { replaceSectionContent } from "../lib/util/replace-note-section-content.js"
+import { replaceSectionContent } from "util/replace-note-section-content"
 import { fileURLToPath } from "url"
 
 dotenv.config();

@@ -1,10 +1,10 @@
 // [Claude claude-opus-4-6] Generated tests for: llmPromptWithPluginFallback callPlugin-with-LLM-fallback
 import { jest } from "@jest/globals";
-import { SETTING_KEYS } from "../lib/constants/settings.js";
-import { AMPLE_AGENT_PRO_UUID } from "../lib/providers/ai-provider-settings.js";
-import { llmPromptWithPluginFallback } from "../lib/providers/fetch-ai-provider.js";
-import { setPluginData } from "../lib/plugin-data.js";
-import { setLoggingEnabled } from "../lib/util/log.js";
+import { SETTING_KEYS } from "constants/settings";
+import { AMPLE_AGENT_PRO_UUID } from "providers/ai-provider-settings";
+import { llmPromptWithPluginFallback } from "providers/fetch-ai-provider";
+import { setPluginData } from "plugin-data";
+import { setLoggingEnabled } from "util/log";
 
 // -------------------------------------------------------------------------------------
 // @desc Build a mock app whose callPlugin resolves to `pluginResult` and whose settings

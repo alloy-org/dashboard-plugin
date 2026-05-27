@@ -1,8 +1,8 @@
 // [GPT-5.5-authored file]
 // Prompt summary: "test Recent Notes archived daily note persistence and multi-day selection"
 import { jest } from "@jest/globals";
-import { DASHBOARD_NOTE_TAG } from "../lib/constants/settings.js";
-import { buildRecentNotesSeed, findStaleTaskNotes } from "../lib/recent-notes-service.js";
+import { DASHBOARD_NOTE_TAG } from "constants/settings";
+import { buildRecentNotesSeed, findStaleTaskNotes } from "recent-notes-service";
 
 const NOTE_COUNT = 200;
 const DATA_NOTE_UUID_PREFIX = "recent-data-note";

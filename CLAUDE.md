@@ -67,10 +67,34 @@ return { description, displayName, headerActions, isActive, justTooMuch, recordI
 When you create a new file entirely, add a header block at the very top before any
 imports or code.
 
-### JavaScript
+### JavaScript / JSX
 ```javascript
 // [current-model-name-4.2-authored file]
 // Prompt summary: "create a reusable debounced search input component"
+```
+
+Note: dashboard widget/component files live under `lib/dashboard/` and use the
+`.jsx` extension. esbuild is configured with the React 17+ **automatic** JSX
+runtime, so `.jsx` files do NOT need to `import { createElement } from "react"`
+just to render markup. Non-component files (services, hooks, utilities,
+constants) stay as `.js`.
+
+Example of a JSX widget component matching the project's conventions:
+
+```jsx
+// [Claude claude-4.7-opus] Task: render a simple counter card
+// Prompt: "add a small counter card to the dashboard"
+import { useState } from "react";
+import WidgetWrapper from "widget-wrapper";
+
+export default function CounterCard({ title }) {
+  const [count, setCount] = useState(0);
+  return (
+    <WidgetWrapper title={title} icon="🔢" widgetId="counter">
+      <button onClick={() => setCount(c => c + 1)}>Clicked {count} times</button>
+    </WidgetWrapper>
+  );
+}
 ```
 
 ---

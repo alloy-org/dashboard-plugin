@@ -2,9 +2,9 @@
  * [gpt-5.3-codex-authored file]
  * Prompt summary: "Test DreamTask reseed provider selection when multiple API keys are configured"
  */
-import { chooseReseedProvider, configuredProvidersFromSettings } from "../lib/dashboard/dream-task-provider-selection.js";
-import { SETTING_KEYS } from "../lib/constants/settings.js";
-import { setPluginData } from "../lib/plugin-data.js";
+import { chooseReseedProvider, configuredProvidersFromSettings } from "dashboard/dream-task-provider-selection";
+import { SETTING_KEYS } from "constants/settings";
+import { setPluginData } from "plugin-data";
 import { jest } from "@jest/globals";
 
 // [Claude gpt-5.3-codex] Generated tests for: DreamTask reseed provider chooser

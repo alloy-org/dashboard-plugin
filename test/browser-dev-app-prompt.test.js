@@ -3,7 +3,7 @@
  * Prompt summary: "Mock app.prompt in dev environment as the simplest possible modal window that transforms an array of inputs into lines within an HTML form"
  */
 import { jest } from "@jest/globals";
-import { createBrowserDevApp } from "../lib/util/browser-dev-app.js";
+import { createBrowserDevApp } from "util/browser-dev-app";
 
 // [Claude gpt-5.3-codex] Generated tests for: browser dev app prompt modal behavior
 describe("browser dev app prompt modal", () => {

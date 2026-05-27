@@ -5,7 +5,7 @@
  * Prompt summary: "jest tests for the Amplenote dashboard plugin API surface"
  */
 import { jest } from "@jest/globals";
-import plugin from '../lib/plugin.js';
+import plugin from 'plugin';
 
 // Mock Amplenote app object
 const mockApp = {
