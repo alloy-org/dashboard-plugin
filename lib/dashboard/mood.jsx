@@ -4,7 +4,7 @@
  * Task: Mood widget — emoji selector, average, and sparkline visualization
  * Prompt summary: "widget displaying mood buttons, 7-day average, and sparkline visualization"
  */
-import { createElement, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ConfigPopup from "config-popup";
 import { useCanvasTippy } from "dashboard/dashboard-tooltip-tippy";
 import WidgetWrapper from "widget-wrapper";
@@ -14,7 +14,7 @@ import { logIfEnabled } from "util/log";
 import "styles/mood.scss"
 
 const CONFIRMATION_DISPLAY_MS = 5000;
-const AVERAGE_MOOD_WINDOW    = 7;   // number of recent ratings used for the 7-day average
+const AVERAGE_MOOD_WINDOW    = 7;
 const MOOD_TEXTAREA_ROWS     = 3;
 
 // Canvas shared
@@ -23,26 +23,26 @@ const CANVAS_CORNER_RADIUS  = 14;
 const PIXEL_RATIO_FALLBACK  = 2;
 
 // Radial ring layout
-const RING_CENTER_Y_OFFSET  = 4;   // shift ring center slightly downward to leave room for title
+const RING_CENTER_Y_OFFSET  = 4;
 const RING_OUTER_RADIUS     = 78;
 const RING_INNER_RADIUS     = 40;
-const RING_INNER_HOLE_INSET = 4;   // center hole = innerRadius - this
-const RING_GUIDE_START      = 48;  // first decorative guide ring radius
-const RING_GUIDE_END        = 95;  // last decorative guide ring radius
+const RING_INNER_HOLE_INSET = 4;
+const RING_GUIDE_START      = 48;
+const RING_GUIDE_END        = 95;
 const RING_GUIDE_STEP       = 16;
-const RING_GAP_ANGLE        = 0.04; // radian gap between segments
-const RING_SHADOW_BLUR_SCALE = 12;  // shadow = RING_SHADOW_BLUR_SCALE * progress
-const RING_LABEL_RADIUS_OFFSET = 12; // outward distance beyond outerRadius for text
+const RING_GAP_ANGLE        = 0.04;
+const RING_SHADOW_BLUR_SCALE = 12;
+const RING_LABEL_RADIUS_OFFSET = 12;
 const RING_LABEL_PROGRESS_THRESHOLD = 0.5;
-const RING_LABEL_FADE_SCALE = 1.8;  // (progress - threshold) * scale -> alpha
-const RING_DAY_LABEL_Y_OFFSET  = -4; // day-of-week nudged above label mid-point
-const RING_DATE_LABEL_Y_OFFSET = 5;  // date nudged below label mid-point
+const RING_LABEL_FADE_SCALE = 1.8;
+const RING_DAY_LABEL_Y_OFFSET  = -4;
+const RING_DATE_LABEL_Y_OFFSET = 5;
 const RING_EMOJI_PROGRESS_THRESHOLD = 0.7;
 const RING_EMOJI_FADE_SCALE  = 3.3;
-const RING_HOVER_OUTER_MARGIN = 18;  // px beyond outerRadius still considered "on segment"
+const RING_HOVER_OUTER_MARGIN = 18;
 const RING_AVG_FONT_SIZE     = 22;
-const RING_AVG_NUMBER_Y_OFFSET = -5; // average value nudged up from center
-const RING_AVG_LABEL_Y_OFFSET  = 11; // "7-DAY AVG" nudged down from center
+const RING_AVG_NUMBER_Y_OFFSET = -5;
+const RING_AVG_LABEL_Y_OFFSET  = 11;
 const RING_TITLE_Y           = 13;
 
 // Wave graph layout
@@ -50,10 +50,10 @@ const WAVE_PADDING_LEFT     = 26;
 const WAVE_PADDING_RIGHT    = 10;
 const WAVE_PADDING_TOP      = 30;
 const WAVE_PADDING_BOTTOM   = 44;
-const WAVE_AXIS_LABEL_X_GAP = 5;   // gap left of axis line for the numeric label
-const WAVE_BEZIER_FRACTION  = 1 / 3; // control-point fraction for smooth bezier curves
-const WAVE_ANIM_SCALE       = 1.3;  // progress multiplier for the upward "grow" animation
-const WAVE_FILL_GRADIENT    = [     // [stop, color] pairs for the area-fill gradient
+const WAVE_AXIS_LABEL_X_GAP = 5;
+const WAVE_BEZIER_FRACTION  = 1 / 3;
+const WAVE_ANIM_SCALE       = 1.3;
+const WAVE_FILL_GRADIENT    = [
   [0,   '#27AE6050'],
   [0.5, '#F2C94C20'],
   [1,   '#E8453C08'],
@@ -63,28 +63,28 @@ const WAVE_DOT_OUTER_RADIUS  = 3.5;
 const WAVE_DOT_INNER_RADIUS  = 1.2;
 const WAVE_DOT_SHADOW_BLUR   = 8;
 const WAVE_DOT_PROGRESS_THRESHOLD = 0.3;
-const WAVE_DOT_FADE_SCALE    = 2;    // (progress - threshold) * scale -> opacity
+const WAVE_DOT_FADE_SCALE    = 2;
 const WAVE_LABEL_OPACITY_SCALE = 1;
-const WAVE_DAY_LABEL_Y_OFFSET  = 16; // px below graphHeight baseline
-const WAVE_DATE_LABEL_Y_OFFSET = 28; // px below graphHeight baseline
+const WAVE_DAY_LABEL_Y_OFFSET  = 16;
+const WAVE_DATE_LABEL_Y_OFFSET = 28;
 const WAVE_EMOJI_PROGRESS_THRESHOLD = 0.7;
 const WAVE_EMOJI_FADE_SCALE  = 3;
-const WAVE_EMOJI_Y_OFFSET    = -11;  // px above the data point dot
+const WAVE_EMOJI_Y_OFFSET    = -11;
 const WAVE_TITLE_Y           = 14;
-const WAVE_AVG_BADGE_RIGHT_MARGIN = 56;  // distance from right edge to badge left
+const WAVE_AVG_BADGE_RIGHT_MARGIN = 56;
 const WAVE_AVG_BADGE_WIDTH   = 46;
 const WAVE_AVG_BADGE_HEIGHT  = 16;
 const WAVE_AVG_BADGE_RADIUS  = 8;
-const WAVE_AVG_BADGE_TEXT_X_FROM_RIGHT = 33; // distance from right edge to badge text center
+const WAVE_AVG_BADGE_TEXT_X_FROM_RIGHT = 33;
 const WAVE_AVG_BADGE_TEXT_Y  = 12;
-const WAVE_TWO_POINT_LEFT_X  = 0.25; // x-fraction for first of two points
-const WAVE_TWO_POINT_RIGHT_X = 0.75; // x-fraction for second of two points
-const WAVE_TOOLTIP_HIT_RADIUS = 25;  // max px from data point to trigger tooltip
+const WAVE_TWO_POINT_LEFT_X  = 0.25;
+const WAVE_TWO_POINT_RIGHT_X = 0.75;
+const WAVE_TOOLTIP_HIT_RADIUS = 25;
 
 // Animation durations
 const RING_ANIM_DURATION_MS  = 1200;
 const WAVE_ANIM_DURATION_MS  = 1000;
-const ANIM_EASE_EXPONENT     = 3;    // cubic ease-out: 1 - (1-t)^3
+const ANIM_EASE_EXPONENT     = 3;
 
 const MOODS = [
   { value: -2, emoji: '😵‍💫', label: 'Awful' },
@@ -94,9 +94,6 @@ const MOODS = [
   { value: 2, emoji: '🤩', label: 'Great' },
 ];
 
-// [Claude] Task: update viz color/emoji maps to use native -2..+2 scale
-// Prompt: "update the mood wave visualization to be on a scale from -2 to +2 instead of 1 to 5"
-// Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
 const VISUALIZATION_MOOD_COLORS = {
   '-2': '#E8453C',
   '-1': '#F2994A',
@@ -117,18 +114,11 @@ function visualizationMoodEmoji(vizValue) {
   return VISUALIZATION_MOOD_EMOJIS[Math.round(vizValue)] || '❓';
 }
 
-// ---------------------------------------------------------------------------------------------------------
-// [Claude] Task: tooltip helpers for mood viz hover
-// Prompt: "hovering on a date should show full date, ratings, times, and notes"
-// Date: 2026-03-08 | Model: claude-4.6-opus-high-thinking
 function pluginMoodLabel(pluginValue) {
   const mood = MOODS.find(m => m.value === pluginValue);
   return mood ? mood.label : '';
 }
 
-// [Claude] Task: build tooltip HTML string for mood viz hover
-// Prompt: "replace hand-rolled tooltips with tippy.js"
-// Date: 2026-03-09 | Model: claude-4.6-opus-high-thinking
 function buildMoodTooltipHTML(data) {
   if (!data) return '';
   const { fullDate, entries } = data;
@@ -148,13 +138,11 @@ function buildMoodTooltipHTML(data) {
   return parts.join('');
 }
 
-// ---------------------------------------------------------------------------------------------------------
 function handleMoodClick(mood, submitting, submitted, setSelectedMood) {
   if (submitting || submitted) return;
   setSelectedMood(mood);
 }
 
-// ---------------------------------------------------------------------------------------------------------
 function handleTextareaKeyDown(app, event, selectedMood, notes, setSubmitting, setSubmitted, onMoodRecorded) {
   if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
     event.preventDefault();
@@ -162,10 +150,6 @@ function handleTextareaKeyDown(app, event, selectedMood, notes, setSubmitting, s
   }
 }
 
-// ---------------------------------------------------------------------------------------------------------
-// [Claude] Task: use updateMoodRating API to attach notes to mood ratings
-// Prompt: "use the UUID returned from recordMoodRating to call updateMoodRating; stop persisting to a note"
-// Date: 2026-03-24 | Model: claude-4.6-opus-high-thinking
 async function handleSubmit(app, selectedMood, notes, setSubmitting, setSubmitted, onMoodRecorded) {
   setSubmitting(true);
 
@@ -189,7 +173,6 @@ async function handleSubmit(app, selectedMood, notes, setSubmitting, setSubmitte
   setSubmitting(false);
 }
 
-// ---------------------------------------------------------------------------------------------------------
 function computeAverageMood(moodRatings) {
   const recent = (moodRatings || []).slice(-AVERAGE_MOOD_WINDOW);
   if (!recent.length) return { recentMoods: recent, averageMood: '\u2014' };
@@ -197,10 +180,6 @@ function computeAverageMood(moodRatings) {
   return { recentMoods: recent, averageMood: average };
 }
 
-// ---------------------------------------------------------------------------------------------------------
-// [Claude] Task: read dashboard CSS custom property theme colors at canvas draw-time
-// Prompt: "utilize standardized theme-dark and theme-light colors for canvas visualizations"
-// Date: 2026-03-07 | Model: claude-4.6-sonnet-medium-thinking
 function readThemeColors() {
   const style = getComputedStyle(document.documentElement);
   const get = (v) => style.getPropertyValue(v).trim();
@@ -213,19 +192,15 @@ function readThemeColors() {
   };
 }
 
-// Produce a CSS color string with appended hex alpha (e.g. colorWithAlpha('#1f2937', '18'))
 function colorWithAlpha(cssColor, hexAlpha) {
-  // For hex colors append alpha; for rgb/rgba pass through with opacity via canvas globalAlpha instead
   if (cssColor.startsWith('#') && cssColor.length === 7) return cssColor + hexAlpha;
   return cssColor;
 }
 
-// ---------------------------------------------------------------------------------------------------------
 // [Claude] Task: render past-week moods as animated radial ring with hover tooltip
-// Prompt: "show dates, only animate on viz change, add hover tooltip with ratings/times/notes"
-// Date: 2026-03-08 | Model: claude-4.6-opus-high-thinking
+// [Claude claude-4.7-opus] Task: migrate RadialRing from createElement to JSX
+// Prompt: "translate this project to render components with JSX instead"
 function RadialRing({ moodData }) {
-  const h = createElement;
   const canvasRef = useRef(null);
   const geometryRef = useRef(null);
   const [progress, setProgress] = useState(0);
@@ -396,22 +371,21 @@ function RadialRing({ moodData }) {
 
   const handleCanvasMouseLeave = () => tip.hide();
 
-  return h('div', { style: { position: 'relative', lineHeight: 0 } },
-    h('canvas', {
-      ref: canvasRef,
-      className: 'mood-viz-canvas',
-      onMouseMove: handleCanvasMouseMove,
-      onMouseLeave: handleCanvasMouseLeave,
-    })
+  return (
+    <div style={{ position: 'relative', lineHeight: 0 }}>
+      <canvas
+        ref={canvasRef}
+        className="mood-viz-canvas"
+        onMouseMove={handleCanvasMouseMove}
+        onMouseLeave={handleCanvasMouseLeave}
+      />
+    </div>
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------
-// [Claude] Task: render past-week moods as animated wave graph with hover tooltip
-// Prompt: "show dates, only animate on viz change, add hover tooltip with ratings/times/notes"
-// Date: 2026-03-08 | Model: claude-4.6-opus-high-thinking
+// [Claude claude-4.7-opus] Task: migrate WaveGraph from createElement to JSX
+// Prompt: "translate this project to render components with JSX instead"
 function WaveGraph({ moodData }) {
-  const h = createElement;
   const canvasRef = useRef(null);
   const pointsRef = useRef([]);
   const [progress, setProgress] = useState(0);
@@ -631,20 +605,18 @@ function WaveGraph({ moodData }) {
 
   const handleCanvasMouseLeave = () => tip.hide();
 
-  return h('div', { style: { position: 'relative', lineHeight: 0 } },
-    h('canvas', {
-      ref: canvasRef,
-      className: 'mood-viz-canvas',
-      onMouseMove: handleCanvasMouseMove,
-      onMouseLeave: handleCanvasMouseLeave,
-    })
+  return (
+    <div style={{ position: 'relative', lineHeight: 0 }}>
+      <canvas
+        ref={canvasRef}
+        className="mood-viz-canvas"
+        onMouseMove={handleCanvasMouseMove}
+        onMouseLeave={handleCanvasMouseLeave}
+      />
+    </div>
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------
-// [Claude] Task: build mood data array grouped by day, sorted oldest-first, last 7 days
-// Prompt: "wave graph is not ordering ratings by recency — show previous 7 days oldest-left newest-right"
-// Date: 2026-03-08 | Model: claude-4.6-opus-high-thinking
 function buildMoodData(moodRatings) {
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const sorted = [...(moodRatings || [])].sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
@@ -697,36 +669,34 @@ function buildMoodData(moodRatings) {
   }));
 }
 
-// ---------------------------------------------------------------------------------------------------------
-// [Claude] Task: render sparkline section dispatching to ring or wave viz based on active mode
-// Prompt: "implement separate functions to render moods as either radial ring or wave graph"
-// Date: 2026-03-07 | Model: claude-4.6-sonnet-medium-thinking
-function renderSparkline(createElement, moodRatings, averageMood, visualizationMode, visualizationKey, onConfigure) {
-  const h = createElement;
-
+// [Claude claude-4.7-opus] Task: convert renderSparkline to JSX component
+// Prompt: "translate this project to render components with JSX instead"
+function Sparkline({ moodRatings, averageMood, visualizationMode, visualizationKey, onConfigure }) {
   if (!(moodRatings || []).length) {
-    return h('div', { className: 'mood-summary' },
-      h('span', null, 'Avg mood (7d): ' + averageMood)
+    return (
+      <div className="mood-summary">
+        <span>{'Avg mood (7d): ' + averageMood}</span>
+      </div>
     );
   }
 
   const moodData = buildMoodData(moodRatings);
   const visualization = visualizationMode === 'wave'
-    ? h(WaveGraph, { key: visualizationKey, moodData })
-    : h(RadialRing, { key: visualizationKey, moodData });
+    ? <WaveGraph key={visualizationKey} moodData={moodData} />
+    : <RadialRing key={visualizationKey} moodData={moodData} />;
 
-  return h('div', { className: 'mood-viz-section' },
-    h('div', { className: 'mood-viz-canvas-wrap' }, visualization),
-    h('button', { className: 'mood-viz-configure-link', onClick: onConfigure }, '⚙ Configure')
+  return (
+    <div className="mood-viz-section">
+      <div className="mood-viz-canvas-wrap">{visualization}</div>
+      <button className="mood-viz-configure-link" onClick={onConfigure}>⚙ Configure</button>
+    </div>
   );
 }
 
-// ---------------------------------------------------------------------------------------------------------
 // [Claude] Task: mood widget with ring/wave viz toggle, Cancel button, and viz hidden while details open
-// Prompt: "hide mood visualization while details textarea is open; add Cancel button alongside Submit"
-// Date: 2026-03-07 | Model: claude-4.6-sonnet-medium-thinking
+// [Claude claude-4.7-opus] Task: migrate MoodWidget from createElement to JSX
+// Prompt: "translate this project to render components with JSX instead"
 export default function MoodWidget({ app, moodRatings, onMoodRecorded }) {
-  const h = createElement;
   const [selectedMood, setSelectedMood] = useState(null);
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -772,77 +742,97 @@ export default function MoodWidget({ app, moodRatings, onMoodRecorded }) {
   };
 
   const { averageMood } = computeAverageMood(moodRatings);
-  const sparkline = renderSparkline(h, moodRatings, averageMood, visualizationMode, visualizationKey, handleConfigureOpen);
+  const sparkline = (
+    <Sparkline
+      moodRatings={moodRatings}
+      averageMood={averageMood}
+      visualizationMode={visualizationMode}
+      visualizationKey={visualizationKey}
+      onConfigure={handleConfigureOpen}
+    />
+  );
 
-  const configurationPopup = isConfigurationOpen
-    ? h(ConfigPopup, {
-        title: 'Mood Visualization',
-        onSubmit: handleConfigureSubmit,
-        onCancel: handleConfigureCancel,
-        submitLabel: 'Apply',
-      },
-        h('div', { className: 'config-field' },
-          h('div', { className: 'config-field-label' }, 'Display style'),
-          [['ring', 'Ring'], ['wave', 'Wave']].map(([value, label]) =>
-            h('label', { key: value, className: 'mood-viz-config-option' },
-              h('input', {
-                type: 'radio',
-                name: 'mood-viz-mode',
-                value,
-                checked: pendingVisualizationMode === value,
-                onChange: () => setPendingVisualizationMode(value),
-              }),
-              label
-            )
-          )
-        )
-      )
-    : null;
+  const configurationPopup = isConfigurationOpen ? (
+    <ConfigPopup
+      title="Mood Visualization"
+      onSubmit={handleConfigureSubmit}
+      onCancel={handleConfigureCancel}
+      submitLabel="Apply"
+    >
+      <div className="config-field">
+        <div className="config-field-label">Display style</div>
+        {[['ring', 'Ring'], ['wave', 'Wave']].map(([value, label]) => (
+          <label key={value} className="mood-viz-config-option">
+            <input
+              type="radio"
+              name="mood-viz-mode"
+              value={value}
+              checked={pendingVisualizationMode === value}
+              onChange={() => setPendingVisualizationMode(value)}
+            />
+            {label}
+          </label>
+        ))}
+      </div>
+    </ConfigPopup>
+  ) : null;
 
   if (submitted) {
-    return h(WidgetWrapper, { title: widgetTitleFromId('mood'), icon: '🎭', widgetId: 'mood' },
-      configurationPopup,
-      h('div', { className: 'mood-confirmation' },
-        h('div', { className: 'mood-confirmation-icon' }, selectedMood.emoji),
-        h('p', { className: 'mood-confirmation-text' }, 'Mood rating recorded')
-      ),
-      sparkline
+    return (
+      <WidgetWrapper title={widgetTitleFromId('mood')} icon="🎭" widgetId="mood">
+        {configurationPopup}
+        <div className="mood-confirmation">
+          <div className="mood-confirmation-icon">{selectedMood.emoji}</div>
+          <p className="mood-confirmation-text">Mood rating recorded</p>
+        </div>
+        {sparkline}
+      </WidgetWrapper>
     );
   }
 
-  return h(WidgetWrapper, { title: widgetTitleFromId('mood'), icon: '🎭', widgetId: 'mood' },
-    configurationPopup,
-    h('div', { className: 'mood-selector' },
-      MOODS.map(mood => h('button', {
-        key: mood.value,
-        className: 'mood-btn' + (selectedMood?.value === mood.value ? ' mood-btn--selected' : ''),
-        title: mood.label,
-        onClick: () => handleMoodClick(mood, submitting, submitted, setSelectedMood),
-      }, h('span', { className: 'mood-emoji' }, mood.emoji)))
-    ),
-    selectedMood !== null && h('div', { className: 'mood-details' },
-      h('label', { className: 'mood-details-label' }, 'More details (optional)'),
-      h('textarea', {
-        className: 'mood-details-textarea',
-        value: notes,
-        onChange: event => setNotes(event.target.value),
-        onKeyDown: event => handleTextareaKeyDown(app, event, selectedMood, notes, setSubmitting, setSubmitted, onMoodRecorded),
-        placeholder: "What's on your mind?",
-        rows: MOOD_TEXTAREA_ROWS,
-      })
-    ),
-    selectedMood !== null && h('div', { className: 'mood-submit-row' },
-      h('button', {
-        className: 'mood-cancel-btn',
-        onClick: handleCancelMood,
-        disabled: submitting,
-      }, 'Cancel'),
-      h('button', {
-        className: 'mood-submit-btn',
-        onClick: () => handleSubmit(app, selectedMood, notes, setSubmitting, setSubmitted, onMoodRecorded),
-        disabled: submitting,
-      }, submitting ? 'Recording...' : 'Submit'),
-    ),
-    selectedMood === null && sparkline
+  return (
+    <WidgetWrapper title={widgetTitleFromId('mood')} icon="🎭" widgetId="mood">
+      {configurationPopup}
+      <div className="mood-selector">
+        {MOODS.map(mood => (
+          <button
+            key={mood.value}
+            className={'mood-btn' + (selectedMood?.value === mood.value ? ' mood-btn--selected' : '')}
+            title={mood.label}
+            onClick={() => handleMoodClick(mood, submitting, submitted, setSelectedMood)}
+          >
+            <span className="mood-emoji">{mood.emoji}</span>
+          </button>
+        ))}
+      </div>
+      {selectedMood !== null && (
+        <div className="mood-details">
+          <label className="mood-details-label">More details (optional)</label>
+          <textarea
+            className="mood-details-textarea"
+            value={notes}
+            onChange={event => setNotes(event.target.value)}
+            onKeyDown={event => handleTextareaKeyDown(app, event, selectedMood, notes, setSubmitting, setSubmitted, onMoodRecorded)}
+            placeholder="What's on your mind?"
+            rows={MOOD_TEXTAREA_ROWS}
+          />
+        </div>
+      )}
+      {selectedMood !== null && (
+        <div className="mood-submit-row">
+          <button
+            className="mood-cancel-btn"
+            onClick={handleCancelMood}
+            disabled={submitting}
+          >Cancel</button>
+          <button
+            className="mood-submit-btn"
+            onClick={() => handleSubmit(app, selectedMood, notes, setSubmitting, setSubmitted, onMoodRecorded)}
+            disabled={submitting}
+          >{submitting ? 'Recording...' : 'Submit'}</button>
+        </div>
+      )}
+      {selectedMood === null && sparkline}
+    </WidgetWrapper>
   );
 }

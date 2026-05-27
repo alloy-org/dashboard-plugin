@@ -318,7 +318,7 @@ function handleNoteFindApi(req, res) {
 
 async function main() {
   const ctx = await esbuild.context({
-    entryPoints: [path.join(rootDir, "lib/dashboard/dashboard-load.js")],
+    entryPoints: [path.join(rootDir, "lib/dashboard/dashboard-load.jsx")],
     bundle: true,
     format: "iife",
     outdir: path.join(devDir, "compiled"),
@@ -329,6 +329,9 @@ async function main() {
     },
     target: ["chrome91", "firefox90", "safari15", "edge91"],
     sourcemap: true,
+    jsx: 'automatic',
+    jsxImportSource: 'react',
+    loader: { '.jsx': 'jsx' },
     plugins: [createLibImportsPlugin(path.join(rootDir, "lib")), scssPlugin, liveReloadPlugin],
   });
 

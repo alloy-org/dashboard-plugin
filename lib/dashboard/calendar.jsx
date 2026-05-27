@@ -4,7 +4,7 @@
  * Task: Calendar widget — month grid with task-density dots
  * Prompt summary: "monthly calendar grid with navigation and colored dots indicating task density"
  */
-import { createElement, useState } from "react";
+import { useState } from "react";
 import WidgetWrapper from "widget-wrapper";
 import { widgetTitleFromId } from "constants/settings";
 import "styles/calendar.scss"
@@ -14,9 +14,10 @@ import "styles/calendar.scss"
 // Date: 2026-02-22 | Model: claude-opus-4-6
 // [Claude claude-4.6-opus-high-thinking] Task: remove local week-start config; use weekFormat prop from dashboard
 // Prompt: "calendar should use weekFormat prop; Configure link opens global Dashboard Settings popup"
+// [Claude claude-4.7-opus] Task: migrate CalendarWidget from createElement to JSX
+// Prompt: "translate this project to render components with JSX instead"
 export default function CalendarWidget({ app, completedTasksByDate, currentDate, gridHeightSize, gridWidthSize,
     onDateSelect, onOpenSettings, openTasks, selectedDate, weekFormat }) {
-  const h = createElement;
   const today = new Date(currentDate);
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const weekStartsOn = weekFormat === 'monday' ? 1 : 0;
@@ -28,7 +29,6 @@ export default function CalendarWidget({ app, completedTasksByDate, currentDate,
     ? ['Mo','Tu','We','Th','Fr','Sa','Su']
     : ['Su','Mo','Tu','We','Th','Fr','Sa'];
 
-  // Count tasks per day for dot coloring from grouped date-key objects
   const taskCountByDay = {};
   const viewYear = viewDate.getFullYear();
   const viewMonth = viewDate.getMonth();
@@ -68,40 +68,42 @@ export default function CalendarWidget({ app, completedTasksByDate, currentDate,
   };
 
   const cells = [];
-  for (let i = 0; i < firstDayOfWeek; i++) cells.push(h('div', { key: 'empty-' + i, className: 'cal-cell empty' }));
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    cells.push(<div key={'empty-' + i} className="cal-cell empty" />);
+  }
   for (let day = 1; day <= daysInMonth; day++) {
     const count = taskCountByDay[day] || 0;
     const dotColor = count === 0 ? 'none' : count <= 2 ? '#86efac' : count <= 5 ? '#fbbf24' : '#f87171';
     let cellClass = 'cal-cell';
     if (isToday(day)) cellClass += ' today';
     if (isSelected(day)) cellClass += ' selected';
-    cells.push(h('div', {
-      key: day,
-      className: cellClass,
-      onClick: () => handleDayClick(day)
-    },
-      h('span', { className: 'cal-day' }, day),
-      dotColor !== 'none' ? h('span', { className: 'cal-dot', style: { backgroundColor: dotColor } }) : null
-    ));
+    cells.push(
+      <div key={day} className={cellClass} onClick={() => handleDayClick(day)}>
+        <span className="cal-day">{day}</span>
+        {dotColor !== 'none' ? <span className="cal-dot" style={{ backgroundColor: dotColor }} /> : null}
+      </div>
+    );
   }
 
-  return h(WidgetWrapper, {
-    configurable: true,
-    gridHeightSize,
-    gridWidthSize,
-    icon: '📅',
-    onConfigure: onOpenSettings,
-    title: widgetTitleFromId('calendar'),
-    widgetId: 'calendar',
-  },
-    h('div', { className: 'cal-nav' },
-      h('button', { onClick: prevMonth, className: 'cal-arrow' }, '◀'),
-      h('span', { className: 'cal-month' }, monthName),
-      h('button', { onClick: nextMonth, className: 'cal-arrow' }, '▶')
-    ),
-    h('div', { className: 'cal-grid' },
-      DAY_LABELS.map(d => h('div', { key: d, className: 'cal-header' }, d)),
-      ...cells
-    )
+  return (
+    <WidgetWrapper
+      configurable={true}
+      gridHeightSize={gridHeightSize}
+      gridWidthSize={gridWidthSize}
+      icon="📅"
+      onConfigure={onOpenSettings}
+      title={widgetTitleFromId('calendar')}
+      widgetId="calendar"
+    >
+      <div className="cal-nav">
+        <button onClick={prevMonth} className="cal-arrow">◀</button>
+        <span className="cal-month">{monthName}</span>
+        <button onClick={nextMonth} className="cal-arrow">▶</button>
+      </div>
+      <div className="cal-grid">
+        {DAY_LABELS.map(d => <div key={d} className="cal-header">{d}</div>)}
+        {cells}
+      </div>
+    </WidgetWrapper>
   );
 }

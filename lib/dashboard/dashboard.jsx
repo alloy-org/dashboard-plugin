@@ -4,7 +4,7 @@
  * Task: Root dashboard component — fetches data and renders widget grid
  * Prompt summary: "main React component that calls init, shows loading/error, and lays out widgets"
  */
-import { Component, createElement, memo, useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { Component, memo, useEffect, useState, useCallback, useRef, useMemo } from "react";
 import PlanningWidget from 'planning';
 import AgendaWidget from 'agenda';
 import CalendarWidget from 'calendar';
@@ -40,23 +40,12 @@ import { WidgetSizeContext } from "widget-wrapper";
 import VictoryValueWidget from 'victory-value';
 import "styles/dashboard.scss"
 
-// ------------------------------------------------------------------------------------------
-// @description Generates CSS class names for a grid cell based on its configured dimensions.
-//   Grid spanning is handled entirely via these classes (horizontal-N-cell, vertical-N-cell)
-//   so that CSS media queries can override them on mobile without needing inline style overrides.
-// @param {Object} config - Widget configuration with gridWidthSize and gridHeightSize
-// @returns {string} Space-separated class name string
 function gridCellClassName(config) {
   const w = Number(config?.gridWidthSize) > 0 ? Number(config.gridWidthSize) : 1;
   const h = Number(config?.gridHeightSize) > 0 ? Number(config.gridHeightSize) : 1;
   return `grid-cell horizontal-${w}-cell vertical-${h}-cell`;
 }
 
-// @description Builds container props (className, style, data attributes) for a grid cell,
-//   including drag-state classes when a widget is being dragged
-// @param {Object} config - Widget configuration object
-// @param {string|null} draggingWidgetId - ID of the widget currently being dragged, or null
-// @returns {Object} Props object suitable for spreading onto a container element
 function gridCellContainerProps(config, draggingWidgetId, focusedWidgetId, widgetFocusTransform) {
   const widgetId = config?.widgetId;
   const { classNames: focusClassNames, style } = gridCellFocusProps(focusedWidgetId, widgetFocusTransform, widgetId);
@@ -78,6 +67,8 @@ function gridCellContainerProps(config, draggingWidgetId, focusedWidgetId, widge
 // [Claude] Task: add error boundary so one widget crash doesn't take down the dashboard
 // Prompt: "wrap each component load in try...catch so failure to render one widget does not disrupt others"
 // Date: 2026-03-21 | Model: claude-4.6-opus-high-thinking
+// [Claude claude-4.7-opus] Task: migrate WidgetErrorBoundary.render from createElement to JSX
+// Prompt: "translate this project to render components with JSX instead"
 class WidgetErrorBoundary extends Component {
   constructor(props) {
     super(props);
@@ -91,31 +82,25 @@ class WidgetErrorBoundary extends Component {
   }
   render() {
     if (this.state.hasError) {
-      return createElement('div', { className: 'widget-error-fallback' },
-        createElement('p', { className: 'widget-error-fallback-title' }, `⚠ ${ this.props.widgetId }`),
-        createElement('p', { className: 'widget-error-fallback-message' },
-          this.state.error?.message || 'An unexpected error occurred'
-        ),
-        createElement('button', {
-          className: 'widget-error-fallback-retry',
-          onClick: () => this.setState({ hasError: false, error: null }),
-        }, 'Retry')
+      return (
+        <div className="widget-error-fallback">
+          <p className="widget-error-fallback-title">{`⚠ ${ this.props.widgetId }`}</p>
+          <p className="widget-error-fallback-message">
+            {this.state.error?.message || 'An unexpected error occurred'}
+          </p>
+          <button
+            className="widget-error-fallback-retry"
+            onClick={() => this.setState({ hasError: false, error: null })}
+          >Retry</button>
+        </div>
       );
     }
     return this.props.children;
   }
 }
 
-// ------------------------------------------------------------------------------------------
-// @description Factory that creates a memoized React component for a dashboard widget cell.
-//   Each cell tracks load timing, applies grid layout props, and renders the given widget
-//   inside an error boundary so that a crash in one widget does not break the rest.
-// @param {string} widgetId - Unique identifier for the widget type
-// @param {Function} WidgetComponent - The React component to render inside the cell
-// @param {Function} buildWidgetProps - Function that maps cell props to widget-specific props
-// @returns {React.MemoExoticComponent} Memoized cell component
-// [OpenAI gpt-5.4] Task: provide widget sizing to WidgetWrapper via shared context
-// Prompt: "when a widget is resized from dashboard-layout-popup, update the inner widget-* sizing classes too"
+// [Claude claude-4.7-opus] Task: convert createWidgetCell factory to JSX
+// Prompt: "translate this project to render components with JSX instead"
 function createWidgetCell(widgetId, WidgetComponent, buildWidgetProps) {
   return memo(function DashboardWidgetCell(cellProps) {
     useWidgetLoadTiming(widgetId);
@@ -124,23 +109,18 @@ function createWidgetCell(widgetId, WidgetComponent, buildWidgetProps) {
       gridHeightSize: Number(config?.gridHeightSize) > 0 ? Number(config.gridHeightSize) : 1,
       gridWidthSize: Number(config?.gridWidthSize) > 0 ? Number(config.gridWidthSize) : 1,
     };
-    return createElement('div', gridCellContainerProps(config, draggingWidgetId, focusedWidgetId, widgetFocusTransform),
-      createElement(WidgetErrorBoundary, { widgetId },
-        createElement(WidgetSizeContext.Provider, { value: widgetSizeValue },
-          createElement(WidgetComponent, buildWidgetProps(cellProps))
-        )
-      )
+    return (
+      <div {...gridCellContainerProps(config, draggingWidgetId, focusedWidgetId, widgetFocusTransform)}>
+        <WidgetErrorBoundary widgetId={widgetId}>
+          <WidgetSizeContext.Provider value={widgetSizeValue}>
+            <WidgetComponent {...buildWidgetProps(cellProps)} />
+          </WidgetSizeContext.Provider>
+        </WidgetErrorBoundary>
+      </div>
     );
   });
 }
 
-// ------------------------------------------------------------------------------------------
-// @desc Builds a prop-picker callback for createWidgetCell when the widget just receives a
-//   subset of cellProps with no transformation. Avoids verbose destructure-and-reassemble.
-// @param {...string} keys - Prop names to forward from cellProps to the widget
-// @returns {Function} buildWidgetProps callback
-// [Claude claude-4.6-opus-high-thinking] Task: DRY pure pass-through cell definitions
-// Prompt: "eliminate repeated destructure-and-reassemble pattern in widget cell definitions"
 function pickProps(...keys) {
   return (cellProps) => {
     const result = {};
@@ -204,17 +184,6 @@ const CELL_COMPONENTS = {
   'victory-value': VictoryValueCell,
 };
 
-// ------------------------------------------------------------------------------------------
-// Extracted handler / response functions — each receives `app` as an explicit argument
-// ------------------------------------------------------------------------------------------
-
-// ------------------------------------------------------------------------------------------
-// @description Distributes the payload returned by fetchDashboardData into the corresponding
-//   React state setters. Called once on load when the initPromise resolves.
-// @param {Object} data - The full dashboard data object from fetchDashboardData
-// @param {Object} setters - Destructured state setter functions and refs
-// [Claude claude-sonnet-4-6] Task: rename handleInitResult → applyDashboardData for clarity
-// Date: 2026-05-15
 function applyDashboardData(data, { initDataFreshRef, initializeDomainTasks, setConfigParams,
     setCurrentDate, setDailyVictoryValues, setMoodRatings, setPluginNoteUUID,
     setQuarterlyPlans, setWeeklyVictoryValue }) {
@@ -231,22 +200,12 @@ function applyDashboardData(data, { initDataFreshRef, initializeDomainTasks, set
   initDataFreshRef.current = true;
 }
 
-// ------------------------------------------------------------------------------------------
-// @description Returns whether the current week has fewer than 3 full elapsed days,
-//   using the same week start as the visible dashboard widgets.
-// @param {number} weekStartDay - Numeric week start day, 0 for Sunday and 1 for Monday
-// @returns {boolean} Whether the visible current week is still early
 function isCurrentWeekEarlyForWeekStart(weekStartDay) {
   const now = new Date();
   const weekStart = weekStartFromDateInput(now, weekStartDay);
   return now.getTime() - weekStart.getTime() < 3 * 24 * 60 * 60 * 1000;
 }
 
-// ------------------------------------------------------------------------------------------
-// @description Merges newly fetched mood ratings with ratings already loaded for other weeks.
-// @param {Array<Object>} currentRatings - Existing shared mood ratings in dashboard state
-// @param {Array<Object>} fetchedRatings - Newly fetched mood ratings
-// @returns {Array<Object>} Chronologically sorted, de-duplicated mood ratings
 function mergeMoodRatingsByIdentity(currentRatings, fetchedRatings) {
   const ratingsByKey = new Map();
   for (const rating of [...(currentRatings || []), ...(fetchedRatings || [])]) {
@@ -257,14 +216,6 @@ function mergeMoodRatingsByIdentity(currentRatings, fetchedRatings) {
   return Array.from(ratingsByKey.values()).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 }
 
-// ------------------------------------------------------------------------------------------
-// @async
-// @description Fetches mood ratings for the week surrounding a given reference date.
-//   Extends the range back one week if the current week is early (few days in).
-// @param {Object} app - Application instance with getMoodRatings method
-// @param {string|Date} referenceDate - The date to center the mood rating query around
-// @param {Function} setMoodRatings - State setter for mood ratings array
-// @returns {Promise<void>}
 async function fetchMoodRatingsForDate(app, referenceDate, setMoodRatings, weekStartDay) {
   let weekStart = weekStartFromDateInput(referenceDate, weekStartDay);
   if (isCurrentWeekEarlyForWeekStart(weekStartDay)) {
@@ -282,14 +233,6 @@ async function fetchMoodRatingsForDate(app, referenceDate, setMoodRatings, weekS
   }
 }
 
-// @function applyDomainChange
-// @description Applies a domain change and updates victory value state if new task data is provided
-// @param {Function} onDomainChange - Callback to process the domain switch
-// @param {Function} setDailyVictoryValues - State setter for daily victory values
-// @param {Function} setWeeklyVictoryValue - State setter for weekly victory value
-// @param {Array} newDomains - Updated list of task domains
-// @param {Object} newActiveDomain - The newly selected active domain
-// @param {Object|null} taskData - Optional task data containing updated victory values
 function applyDomainChange(onDomainChange, setDailyVictoryValues, setWeeklyVictoryValue, newDomains, newActiveDomain, taskData) {
   onDomainChange(newDomains, newActiveDomain, taskData);
   if (taskData) {
@@ -298,19 +241,6 @@ function applyDomainChange(onDomainChange, setDailyVictoryValues, setWeeklyVicto
   }
 }
 
-// @async
-// @function saveLayout
-// @description Persists the dashboard widget layout to settings. Merges existing widget
-//   configurations with new widget ordering, applying optional size overrides.
-// @param {Object} app - Application instance with setSetting method
-// @param {Object} currentConfigParams - Current configuration parameters
-// @param {Function} setConfigParams - State setter for config parameters
-// @param {string[]} newRenderedWidgetIds - Ordered array of widget IDs to display
-// @param {boolean} isReset - Whether to ignore the existing layout when rebuilding.
-// @param {Object|null} sizing - Optional per-widget size overrides keyed by widget id.
-// @returns {Promise<void>}
-// [OpenAI gpt-5.4] Task: persist seen widget ids alongside dashboard layout updates
-// Prompt: "track shown dashboard components and auto-show newly introduced unseen widgets"
 async function saveLayout(app, currentConfigParams, setConfigParams, newRenderedWidgetIds, isReset = false,
     sizing = null) {
   const existingLayout = Array.isArray(currentConfigParams?.[SETTING_KEYS.DASHBOARD_COMPONENTS])
@@ -335,25 +265,6 @@ async function saveLayout(app, currentConfigParams, setConfigParams, newRendered
   setConfigParams(prev => ({ ...prev, [SETTING_KEYS.DASHBOARD_COMPONENTS]: newLayout }));
 }
 
-// [Claude] Task: persist per-provider API keys and sync app.settings for downstream code
-// Prompt: "store the API key in a settings key that corresponds to the provider"
-// Date: 2026-04-04 | Model: claude-4.6-opus-high-thinking
-// ------------------------------------------------------------------------------------------
-// @async
-// @description Persists LLM provider, per-provider API key, and background image settings
-//   via app.setSetting, then syncs app.settings and configParams for immediate widget use.
-// @param {Object} app - Application instance with setSetting method
-// @param {Function} setConfigParams - State setter for config parameters
-// @param {Function} setFocusState - State setter for dashboard focus/popup state
-// @param {Object} settings - Settings to save
-// @param {string} settings.llmProvider - Selected LLM provider identifier
-// @param {string} settings.apiKey - API key for the selected provider
-// @param {string} settings.apiKeyProvider - Base provider name for per-provider key storage
-// @param {string} settings.backgroundMode - Background image display mode
-// @param {string} settings.backgroundImageUrl - URL for the background image
-// @returns {Promise<void>}
-// [Claude claude-4.6-opus-high-thinking] Task: persist time/week format via DashboardSettingNote alongside LLM/background settings
-// Prompt: "when Save Settings is clicked, update DashboardSettingNote with new time/week values"
 async function saveSettings(app, dashboardSettingNoteRef, setConfigParams, setFocusState, setTimeFormat, setWeekFormat,
     { apiKey, apiKeyProvider, backgroundImageUrl, backgroundMode, llmProvider, timeFormat, weekFormat }) {
   logIfEnabled('[dashboard] handleSettingsSave called with:', { llmProvider, apiKeyProvider, backgroundMode, backgroundImageUrl: backgroundImageUrl != null ? '(set)' : '(unchanged)', timeFormat, weekFormat });
@@ -391,24 +302,15 @@ async function saveSettings(app, dashboardSettingNoteRef, setConfigParams, setFo
   setFocusState(DASHBOARD_FOCUS.DEFAULT);
 }
 
-// ------------------------------------------------------------------------------------------
-// @description Appends a new mood rating entry to the existing mood ratings array
-// @param {Function} setMoodRatings - State setter for mood ratings
-// @param {Object} newRating - The mood rating object to append
 function appendMoodRating(setMoodRatings, newRating) {
   setMoodRatings(prev => [...(prev || []), newRating]);
 }
 
 // ------------------------------------------------------------------------------------------
-// @description Root dashboard component. Manages shared state (mood ratings, plans, victory values,
-//   selected date) and renders the widget grid with toolbar controls for settings and layout configuration.
-// @param {Object} props
-// @param {Object} props.app - Amplenote API proxy; never used for plugin-internal actions here
-// @param {Promise} props.initPromise - Pre-started promise from dashboard-load.js that resolves
-//   to the full fetchDashboardData payload when the plugin-side init completes
-// @returns {React.ReactElement} The rendered dashboard UI
+// @description Root dashboard component. Manages shared state and renders the widget grid.
+// [Claude claude-4.7-opus] Task: migrate DashboardApp from createElement to JSX
+// Prompt: "translate this project to render components with JSX instead"
 export default function DashboardApp({ app, initPromise }) {
-  const h = createElement;
   const { activeTaskDomain, buildAgendaTasksByDate, initializeDomainTasks,
     onDomainChange, openTasks, taskDomains } = useDomainTasks();
   const { completedTasksByDate, fetchCompletedTasks } = useCompletedTasks(app);
@@ -430,8 +332,6 @@ export default function DashboardApp({ app, initPromise }) {
   const initDataFreshRef = useRef(false);
   const weekStartDay = weekStartDayFromFormat(weekFormat);
 
-  // Await the dashboard data promise started in dashboard-load.js, then distribute the
-  // payload to state and load the setting note for time/week format preferences.
   useEffect(() => {
     const t0 = Date.now();
     logIfEnabled('[dashboard] awaiting init data');
@@ -496,16 +396,12 @@ export default function DashboardApp({ app, initPromise }) {
     [onDomainChange]
   );
 
-  // [OpenAI gpt-5.4] Task: separate raw layout persistence from popup close behavior
-  // Prompt: "Break up handleLayoutSave so it consumes specific params"
   const handleLayoutPersist = useCallback(
     (newRenderedWidgetIds, isReset = false, sizing = null) =>
       saveLayout(app, configParams, setConfigParams, newRenderedWidgetIds, isReset, sizing),
     [app, configParams]
   );
 
-  // [Claude claude-sonnet-4-6] Task: sync selected profile id into React state from layout-picker
-  // Prompt: "Move handleProfileApply to layout-picker.js"
   const handleSelectedProfileChange = useCallback(
     (profileId) => setConfigParams(prev => ({ ...prev, [SETTING_KEYS.SELECTED_LAYOUT_PROFILE]: profileId })),
     []
@@ -546,19 +442,23 @@ export default function DashboardApp({ app, initPromise }) {
     []
   );
 
-  if (error) return h('div', { className: 'dashboard-error' },
-    h('h2', null, 'Dashboard Error'),
-    h('p', null, error)
-  );
+  if (error) {
+    return (
+      <div className="dashboard-error">
+        <h2>Dashboard Error</h2>
+        <p>{error}</p>
+      </div>
+    );
+  }
 
   if (!configParams) {
-    return(
-      h('div', { className: 'dashboard-outer-container' },
-        h('div', { className: 'dashboard-loading' },
-          h('div', { className: 'spinner' }),
-          h('p', null, 'Loading dashboard...')
-        )
-      )
+    return (
+      <div className="dashboard-outer-container">
+        <div className="dashboard-loading">
+          <div className="spinner" />
+          <p>Loading dashboard...</p>
+        </div>
+      </div>
     );
   }
 
@@ -579,8 +479,6 @@ export default function DashboardApp({ app, initPromise }) {
     };
   })() : undefined;
 
-  // [Claude claude-sonnet-4-6] Task: exclude debug-console from layout popup when DEBUG_CONSOLE setting is not 'true'
-  // Prompt: "DebugConsole should only be visible in layout config popup when SETTING_KEYS.DEBUG_CONSOLE is 'true'"
   const debugConsoleEnabled = String(configParams[SETTING_KEYS.DEBUG_CONSOLE] || '').trim() === 'true' || IS_DEV_ENVIRONMENT || pluginContext().pluginUUID === "6da03574-0f4b-11f1-ba9e-11ba9c716f59";
   if (debugConsoleEnabled) {
     logIfEnabled(`[dashboard] Debug console enabled (configParams ${ configParams[SETTING_KEYS.DEBUG_CONSOLE] } app setting keys ${ Object.keys(app.settings) }, ${ pluginContext().pluginUUID }), including in layout popup`);
@@ -589,110 +487,118 @@ export default function DashboardApp({ app, initPromise }) {
   }
   const layoutPopupExcludeWidgetIds = debugConsoleEnabled ? [] : ['debug-console'];
 
-  return h('div', { className: 'dashboard-outer-container', style: backgroundStyle },
-    focusState === DASHBOARD_FOCUS.LAYOUT_CONFIG
-      ? h(DashboardLayoutPopup, {
-          currentLayout: Array.isArray(configParams?.[SETTING_KEYS.DASHBOARD_COMPONENTS]) ? configParams[SETTING_KEYS.DASHBOARD_COMPONENTS] : DEFAULT_DASHBOARD_COMPONENTS,
-          excludeWidgetIds: layoutPopupExcludeWidgetIds,
-          onSave: handleLayoutSave,
-          onCancel: () => setFocusState(DASHBOARD_FOCUS.DEFAULT),
-          selectedLayoutProfile: configParams?.[SETTING_KEYS.SELECTED_LAYOUT_PROFILE] || null,
-        })
-      : null,
-    focusState === DASHBOARD_FOCUS.SETTINGS_CONFIG
-      ? (() => {
-          logIfEnabled('[dashboard] rendering DashboardSettingsPopup, bgUrl:', configParams?.[SETTING_KEYS.BACKGROUND_IMAGE_URL]);
-          return h(DashboardSettingsPopup, {
-            app,
-            configParams,
-            onCancel: () => setFocusState(DASHBOARD_FOCUS.DEFAULT),
-            onSave: handleSettingsSave,
-            pluginNoteUUID,
-            timeFormat,
-            weekFormat,
-          });
-        })()
-      : null,
-    h('div', { className: 'dashboard-content' },
-      h('div', { className: 'dashboard-toolbar' },
-        h(TaskDomains, {
-          activeTaskDomain: activeTaskDomain,
-          app,
-          domains: taskDomains,
-          onDomainChange: handleDomainChange,
-        }),
-        h('div', { className: 'dashboard-toolbar-actions' },
-          h('button', {
-            className: 'dashboard-configure-button',
-            type: 'button',
-            onClick: () => { logIfEnabled('[dashboard] opening Settings popup'); setFocusState(DASHBOARD_FOCUS.SETTINGS_CONFIG); },
-            title: 'Configure LLM provider and API key for AI-powered features',
-          }, '\u2699\uFE0F Settings'),
-          h('button', {
-            className: 'dashboard-configure-button',
-            type: 'button',
-            onClick: () => setFocusState(DASHBOARD_FOCUS.LAYOUT_CONFIG),
-            title: 'Configure which widgets are shown and in what order',
-          }, '\u2630 Layout')
-        )
-      ),
-      h('div', { className: `dashboard-grid-shell${isWidgetFocusMode ? ' dashboard-grid-shell--focused' : ''}` },
-        isWidgetFocusMode
-          ? h('button', {
-              className: 'dashboard-grid-focus-backdrop',
-              type: 'button',
-              title: 'Return all widgets to the dashboard grid',
-              'aria-label': 'Return all widgets to the dashboard grid',
-              onClick: clearFocusedWidget,
-            })
-          : null,
-        h('div', {
-          className: `dashboard-grid${draggingWidgetId ? ' dashboard-grid--dragging' : ''}${isWidgetFocusMode ? ' dashboard-grid--focused' : ''}`,
-        },
-          ...displayedComponents.map((config, index) => {
-            const widgetId = config?.widgetId || DEFAULT_DASHBOARD_COMPONENTS[index]?.widgetId;
-            const CellComponent = CELL_COMPONENTS[widgetId];
-            if (!CellComponent) return null;
-            const providerEm = configParams?.[SETTING_KEYS.LLM_PROVIDER_MODEL];
-            const apiKeyBucket = apiKeyBucketFromLlmProvider(providerEm);
-            const providerSettingKey = apiKeyBucket ? apiKeyFromProvider(apiKeyBucket) : null;
-            const providerApiKey = providerSettingKey ? (configParams?.[providerSettingKey] || '') : '';
-            const providerEmForWidgets = apiKeyBucket || providerEm || null;
-            return h(CellComponent, {
-              key: widgetId,
-              agendaTasks,
-              app,
-              calendarEvents,
-              calendarEventsLoaded,
-              completedTasksByDate,
-              config,
-              currentDate,
-              dailyValues: dailyVictoryValues,
-              draggingWidgetId,
-              focusedWidgetId,
-              moodRatings,
-              onDateSelect: setSelectedDate,
-              currentLayout: Array.isArray(configParams?.[SETTING_KEYS.DASHBOARD_COMPONENTS]) ? configParams[SETTING_KEYS.DASHBOARD_COMPONENTS] : DEFAULT_DASHBOARD_COMPONENTS,
-              onLayoutApply: handleLayoutPersist,
-              onSelectedProfileChange: handleSelectedProfileChange,
-              onMoodRecorded: handleMoodRecorded,
-              onOpenSettings: onOpenDreamTaskSettings,
-              onReferenceDateChange: setSelectedDate,
-              openTasks,
-              providerApiKey,
-              providerEm: providerEmForWidgets,
-              quarterlyPlans,
-              referenceDate: victoryReferenceDate,
-              selectedDate,
-              taskDomainUUID: activeTaskDomain,
-              timeFormat,
-              weekFormat,
-              weeklyTotal: weeklyVictoryValue,
-              widgetFocusTransform: widgetFocusTransforms[widgetId] || null,
-            });
-          }).filter(Boolean)
-        )
-      )
-    )
+  const currentLayoutArray = Array.isArray(configParams?.[SETTING_KEYS.DASHBOARD_COMPONENTS])
+    ? configParams[SETTING_KEYS.DASHBOARD_COMPONENTS]
+    : DEFAULT_DASHBOARD_COMPONENTS;
+
+  return (
+    <div className="dashboard-outer-container" style={backgroundStyle}>
+      {focusState === DASHBOARD_FOCUS.LAYOUT_CONFIG ? (
+        <DashboardLayoutPopup
+          currentLayout={currentLayoutArray}
+          excludeWidgetIds={layoutPopupExcludeWidgetIds}
+          onSave={handleLayoutSave}
+          onCancel={() => setFocusState(DASHBOARD_FOCUS.DEFAULT)}
+          selectedLayoutProfile={configParams?.[SETTING_KEYS.SELECTED_LAYOUT_PROFILE] || null}
+        />
+      ) : null}
+      {focusState === DASHBOARD_FOCUS.SETTINGS_CONFIG ? (() => {
+        logIfEnabled('[dashboard] rendering DashboardSettingsPopup, bgUrl:', configParams?.[SETTING_KEYS.BACKGROUND_IMAGE_URL]);
+        return (
+          <DashboardSettingsPopup
+            app={app}
+            configParams={configParams}
+            onCancel={() => setFocusState(DASHBOARD_FOCUS.DEFAULT)}
+            onSave={handleSettingsSave}
+            pluginNoteUUID={pluginNoteUUID}
+            timeFormat={timeFormat}
+            weekFormat={weekFormat}
+          />
+        );
+      })() : null}
+      <div className="dashboard-content">
+        <div className="dashboard-toolbar">
+          <TaskDomains
+            activeTaskDomain={activeTaskDomain}
+            app={app}
+            domains={taskDomains}
+            onDomainChange={handleDomainChange}
+          />
+          <div className="dashboard-toolbar-actions">
+            <button
+              className="dashboard-configure-button"
+              type="button"
+              onClick={() => { logIfEnabled('[dashboard] opening Settings popup'); setFocusState(DASHBOARD_FOCUS.SETTINGS_CONFIG); }}
+              title="Configure LLM provider and API key for AI-powered features"
+            >⚙️ Settings</button>
+            <button
+              className="dashboard-configure-button"
+              type="button"
+              onClick={() => setFocusState(DASHBOARD_FOCUS.LAYOUT_CONFIG)}
+              title="Configure which widgets are shown and in what order"
+            >☰ Layout</button>
+          </div>
+        </div>
+        <div className={`dashboard-grid-shell${isWidgetFocusMode ? ' dashboard-grid-shell--focused' : ''}`}>
+          {isWidgetFocusMode ? (
+            <button
+              className="dashboard-grid-focus-backdrop"
+              type="button"
+              title="Return all widgets to the dashboard grid"
+              aria-label="Return all widgets to the dashboard grid"
+              onClick={clearFocusedWidget}
+            />
+          ) : null}
+          <div
+            className={`dashboard-grid${draggingWidgetId ? ' dashboard-grid--dragging' : ''}${isWidgetFocusMode ? ' dashboard-grid--focused' : ''}`}
+          >
+            {displayedComponents.map((config, index) => {
+              const widgetId = config?.widgetId || DEFAULT_DASHBOARD_COMPONENTS[index]?.widgetId;
+              const CellComponent = CELL_COMPONENTS[widgetId];
+              if (!CellComponent) return null;
+              const providerEm = configParams?.[SETTING_KEYS.LLM_PROVIDER_MODEL];
+              const apiKeyBucket = apiKeyBucketFromLlmProvider(providerEm);
+              const providerSettingKey = apiKeyBucket ? apiKeyFromProvider(apiKeyBucket) : null;
+              const providerApiKey = providerSettingKey ? (configParams?.[providerSettingKey] || '') : '';
+              const providerEmForWidgets = apiKeyBucket || providerEm || null;
+              return (
+                <CellComponent
+                  key={widgetId}
+                  agendaTasks={agendaTasks}
+                  app={app}
+                  calendarEvents={calendarEvents}
+                  calendarEventsLoaded={calendarEventsLoaded}
+                  completedTasksByDate={completedTasksByDate}
+                  config={config}
+                  currentDate={currentDate}
+                  dailyValues={dailyVictoryValues}
+                  draggingWidgetId={draggingWidgetId}
+                  focusedWidgetId={focusedWidgetId}
+                  moodRatings={moodRatings}
+                  onDateSelect={setSelectedDate}
+                  currentLayout={currentLayoutArray}
+                  onLayoutApply={handleLayoutPersist}
+                  onSelectedProfileChange={handleSelectedProfileChange}
+                  onMoodRecorded={handleMoodRecorded}
+                  onOpenSettings={onOpenDreamTaskSettings}
+                  onReferenceDateChange={setSelectedDate}
+                  openTasks={openTasks}
+                  providerApiKey={providerApiKey}
+                  providerEm={providerEmForWidgets}
+                  quarterlyPlans={quarterlyPlans}
+                  referenceDate={victoryReferenceDate}
+                  selectedDate={selectedDate}
+                  taskDomainUUID={activeTaskDomain}
+                  timeFormat={timeFormat}
+                  weekFormat={weekFormat}
+                  weeklyTotal={weeklyVictoryValue}
+                  widgetFocusTransform={widgetFocusTransforms[widgetId] || null}
+                />
+              );
+            }).filter(Boolean)}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

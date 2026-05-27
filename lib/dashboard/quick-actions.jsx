@@ -5,7 +5,6 @@
  * Prompt summary: "widget with a 2x2 grid of quick-action buttons (Daily Jot, Journal, etc.)"
  */
 import { widgetTitleFromId } from "constants/settings";
-import { createElement } from "react";
 import WidgetWrapper from "widget-wrapper";
 import "styles/quick-actions.scss"
 
@@ -39,9 +38,9 @@ async function randomNote(app) {
 // [Claude] Task: use app.navigate (real API) instead of non-API convenience methods
 // Prompt: "non-API methods on app should be standalone functions"
 // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
+// [Claude claude-4.7-opus] Task: migrate QuickActionsWidget from createElement to JSX
+// Prompt: "translate this project to render components with JSX instead"
 export default function QuickActionsWidget({ app }) {
-  const h = createElement;
-
   const actions = [
     { label: 'Daily Jot',    icon: '📝', action: 'dailyJot' },
     { label: 'Journal',      icon: '📓', action: 'journal' },
@@ -58,16 +57,20 @@ export default function QuickActionsWidget({ app }) {
     if (url) await app.navigate(url);
   };
 
-  return h(WidgetWrapper, { title: widgetTitleFromId('quick-actions'), icon: '⚡', widgetId: 'quick-actions' },
-    h('div', { className: 'qa-grid' },
-      actions.map(a => h('button', {
-        key: a.action,
-        className: 'qa-button',
-        onClick: () => handleAction(a.action)
-      },
-        h('span', { className: 'qa-icon' }, a.icon),
-        h('span', { className: 'qa-label' }, a.label)
-      ))
-    )
+  return (
+    <WidgetWrapper title={widgetTitleFromId('quick-actions')} icon="⚡" widgetId="quick-actions">
+      <div className="qa-grid">
+        {actions.map(a => (
+          <button
+            key={a.action}
+            className="qa-button"
+            onClick={() => handleAction(a.action)}
+          >
+            <span className="qa-icon">{a.icon}</span>
+            <span className="qa-label">{a.label}</span>
+          </button>
+        ))}
+      </div>
+    </WidgetWrapper>
   );
 }

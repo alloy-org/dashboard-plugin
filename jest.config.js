@@ -18,7 +18,14 @@ export default {
     '\\.scss$': '<rootDir>/test/stubs/scss.cjs',
   },
   setupFilesAfterEnv: ['<rootDir>/test/setup-react-act.js'],
-  transform: {},
+  transform: {
+    '^.+\\.(js|jsx)$': ['@swc/jest', {
+      jsc: {
+        parser: { syntax: 'ecmascript', jsx: true },
+        transform: { react: { runtime: 'automatic' } },
+      },
+    }],
+  },
   testMatch: ['**/test/**/*.test.js'],
   collectCoverageFrom: [
     'lib/**/*.js',

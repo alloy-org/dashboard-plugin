@@ -1,4 +1,4 @@
-import React, { createElement, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 export const DASHBOARD_WIDGET_FOCUS_EVENT = "dashboard:widget-focus-request";
 export const MIN_MS_TO_BEGIN_DRAG = 2000;
@@ -12,9 +12,6 @@ function isInteractiveTarget(target) {
 
 // ---------------------------------------------------------------------------
 // @description Returns whether the current client should expose desktop-only widget-focus mode.
-//   The interaction is intentionally unavailable on mobile/touch-first clients and under the
-//   tablet breakpoint, where centered-card motion would fight the single-column layout.
-// @returns {boolean}
 // [OpenAI gpt-5.4] Task: gate widget icon focus mode to desktop-like clients only
 // Prompt: "Implement a new widget behavior via a new behavior only available on desktop clients"
 export function isDesktopDashboardFocusClient() {
@@ -30,8 +27,6 @@ export function isDesktopDashboardFocusClient() {
 // ---------------------------------------------------------------------------
 
 // [Claude] Task: reorder helper used while dragging dashboard widgets
-// Prompt: "long-press a widget heading to drag and persist the new dashboard order on release"
-// Date: 2026-03-14 | Model: gpt-5.3-codex
 function moveWidgetBefore(layoutConfig, draggedWidgetId, targetWidgetId) {
   if (!Array.isArray(layoutConfig)) return layoutConfig;
   if (!draggedWidgetId || !targetWidgetId || draggedWidgetId === targetWidgetId) return layoutConfig;
@@ -46,8 +41,6 @@ function moveWidgetBefore(layoutConfig, draggedWidgetId, targetWidgetId) {
 }
 
 // [Claude] Task: capture pre-reorder widget positions for FLIP animation
-// Prompt: "Animate the repositioning of widgets when a widget is dragged from one place to another"
-// Date: 2026-03-14 | Model: gpt-5.3-codex
 function widgetRectsById() {
   if (typeof document === 'undefined') return new Map();
   const rects = new Map();
@@ -61,8 +54,6 @@ function widgetRectsById() {
 }
 
 // [Claude] Task: animate grid-cell movement between drag reorder states
-// Prompt: "Animate the repositioning of widgets when a widget is dragged from one place to another"
-// Date: 2026-03-14 | Model: gpt-5.3-codex
 function animateReorderedWidgets(previousRects, excludeWidgetId) {
   if (!(previousRects instanceof Map) || previousRects.size === 0) return;
   if (typeof document === 'undefined') return;
@@ -107,8 +98,6 @@ function widgetOrder(layoutConfig) {
 // ---------------------------------------------------------------------------
 
 // [Claude] Task: custom hook encapsulating all dashboard drag-reorder state and effects
-// Prompt: "move as much of the widget dragging functionality as possible into draggable-heading.js"
-// Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
 export function useDashboardDrag(activeComponents, onReorder) {
   const [draggingWidgetId, setDraggingWidgetId] = useState(null);
   const [displayedComponents, setDisplayedComponents] = useState(activeComponents);
@@ -124,9 +113,6 @@ export function useDashboardDrag(activeComponents, onReorder) {
     displayedComponentsRef.current = displayedComponents;
   }, [displayedComponents]);
 
-  // [Claude] Task: play FLIP transition after each drag-driven reorder update
-  // Prompt: "Animate the repositioning of widgets when a widget is dragged from one place to another"
-  // Date: 2026-03-14 | Model: gpt-5.3-codex
   useLayoutEffect(() => {
     const previousRects = previousRectsRef.current;
     if (!draggingWidgetId || !previousRects) return;
@@ -134,9 +120,6 @@ export function useDashboardDrag(activeComponents, onReorder) {
     animateReorderedWidgets(previousRects, draggingWidgetId);
   }, [displayedComponents, draggingWidgetId]);
 
-  // [Claude] Task: activate dashboard drag mode when a widget heading dispatches drag-ready after long press
-  // Prompt: "Create DraggableHeading with useEffect monitoring mousedown >= 2000ms for drag mode"
-  // Date: 2026-03-14 | Model: gpt-5.3-codex
   useEffect(() => {
     const onDragReady = (event) => {
       const readyWidgetId = event?.detail?.widgetId;
@@ -158,9 +141,6 @@ export function useDashboardDrag(activeComponents, onReorder) {
     }
   }, [activeComponents, draggingWidgetId, onReorder]);
 
-  // [Claude] Task: live-reorder dashboard widgets while mouse is held after long-press drag activation
-  // Prompt: "other widgets should slide out of the way and layout should persist on release"
-  // Date: 2026-03-14 | Model: gpt-5.3-codex
   useEffect(() => {
     if (!draggingWidgetId) return;
 
@@ -201,9 +181,9 @@ export function useDashboardDrag(activeComponents, onReorder) {
 // DraggableHeading — widget header that emits long-press drag-ready events
 // ---------------------------------------------------------------------------
 
-// [Claude] Task: widget header component that emits long-press drag-ready events; subtitle rendered to the right of title
-// Prompt: "Create DraggableHeading with useEffect monitoring mousedown >= 2000ms for drag mode" / "allow a subtitle as a string with lighter color text that resides to the right of the module title"
-// Date: 2026-03-14 | Model: gpt-5.3-codex / claude-4.6-sonnet-medium-thinking
+// [Claude] Task: widget header component that emits long-press drag-ready events
+// [Claude claude-4.7-opus] Task: migrate DraggableHeading from createElement to JSX
+// Prompt: "translate this project to render components with JSX instead"
 export default function DraggableHeading({
   configurable,
   headerActions,
@@ -274,26 +254,30 @@ export default function DraggableHeading({
     };
   }, [dragEventDetail]);
 
-  return createElement("div", {
-    ref: headerRef,
-    className: `widget-header widget-heading-bar${desktopFocusAvailable ? ' widget-heading-bar--focusable' : ''}`,
-  },
-    desktopFocusAvailable
-      ? createElement("button", {
-          className: "widget-icon widget-icon-button",
-          type: "button",
-          title: `Focus ${title}`,
-          "aria-label": `Focus ${title}`,
-          onClick: () => window.dispatchEvent(new CustomEvent(DASHBOARD_WIDGET_FOCUS_EVENT, { detail: dragEventDetail })),
-        }, icon)
-      : createElement("span", { className: "widget-icon" }, icon),
-    createElement("h3", { className: "widget-title" },
-      createElement("span", { className: "widget-title__label" }, title),
-      subtitle ? createElement("span", { className: "widget-title__subtitle" }, subtitle) : null
-    ),
-    headerActions || null,
-    configurable
-      ? createElement("button", { className: "widget-configure", onClick: onConfigure }, "\u2699 Configure")
-      : null
+  return (
+    <div
+      ref={headerRef}
+      className={`widget-header widget-heading-bar${desktopFocusAvailable ? ' widget-heading-bar--focusable' : ''}`}
+    >
+      {desktopFocusAvailable ? (
+        <button
+          className="widget-icon widget-icon-button"
+          type="button"
+          title={`Focus ${title}`}
+          aria-label={`Focus ${title}`}
+          onClick={() => window.dispatchEvent(new CustomEvent(DASHBOARD_WIDGET_FOCUS_EVENT, { detail: dragEventDetail }))}
+        >{icon}</button>
+      ) : (
+        <span className="widget-icon">{icon}</span>
+      )}
+      <h3 className="widget-title">
+        <span className="widget-title__label">{title}</span>
+        {subtitle ? <span className="widget-title__subtitle">{subtitle}</span> : null}
+      </h3>
+      {headerActions || null}
+      {configurable ? (
+        <button className="widget-configure" onClick={onConfigure}>⚙ Configure</button>
+      ) : null}
+    </div>
   );
 }

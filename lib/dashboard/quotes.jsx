@@ -5,7 +5,7 @@
  * Prompt summary: "widget that fetches quotes via callPlugin and displays on image tiles"
  */
 import { widgetTitleFromId } from "constants/settings";
-import { createElement, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchQuotes as fetchQuotesFromLLM } from "data-service";
 import { getRandomQuotes } from "quotes-data";
 import { backgroundSplashUrl } from "util/background-splash-images";
@@ -21,34 +21,13 @@ import "styles/quotes.scss"
 // [Claude] Task: accept providerApiKey prop and pass to fetchQuotes instead of reading app.settings
 // Prompt: "for each widget that needs to call AI, use apiKeyFromProvider to pass a providerApiKey prop"
 // Date: 2026-04-04 | Model: claude-4.6-opus-high-thinking
+// [Claude claude-4.7-opus] Task: migrate QuotesWidget from createElement to JSX
+// Prompt: "translate this project to render components with JSX instead"
 export default function QuotesWidget({ app, gridHeightSize, planContent, providerApiKey, quotes }) {
-  const h = createElement;
   const quoteCount = (gridHeightSize || 1) >= 2 ? 4 : 2;
   const [displayQuotes, setDisplayQuotes] = useState(quotes || (!planContent ? getRandomQuotes(quoteCount) : []));
   const [loading, setLoading] = useState(!quotes && !!planContent);
   const [backgroundSeed] = useState(() => `${ Date.now() }-${ Math.random() }`);
-
-  // Background image queries for Unsplash
-  // NOTE ON IMAGE SOURCING:
-  // Unsplash API (https://unsplash.com/developers) is recommended:
-  //   - Free: 50 req/hr (demo), 5000 req/hr (production)
-  //   - Hotlinking REQUIRED (perfect for client-side plugins)
-  //   - Attribution required (photographer name + Unsplash link)
-  //   - Example: https://api.unsplash.com/photos/random?query=mountains&orientation=landscape
-  //   - Pass API key as: Authorization: Client-ID YOUR_ACCESS_KEY
-  //
-  // Pexels API (https://www.pexels.com/api/) is the best alternative:
-  //   - Free: 200 req/hr, 20K/month
-  //   - Example: GET https://api.pexels.com/v1/search?query=nature&orientation=landscape
-  //
-  // For zero-cost MVP, use static Unsplash source URLs (no API key needed):
-  //   https://source.unsplash.com/featured/?mountains,nature
-  //   NOTE: This endpoint is deprecated; use the API instead.
-  //
-  // Pixabay (https://pixabay.com/api/) is NOT recommended because
-  // it prohibits hotlinking — images must be downloaded server-side.
-  //
-  // For lowest-cost approach: bundle 10-20 curated image URLs and rotate them.
 
   useEffect(() => {
     if (!quotes && planContent) {
@@ -76,28 +55,34 @@ export default function QuotesWidget({ app, gridHeightSize, planContent, provide
     setDisplayQuotes(getRandomQuotes(quoteCount));
   };
 
-  const reseedButton = h('button', {
-    className: 'widget-header-action',
-    onClick: handleReseed,
-    title: 'Reseed quotes',
-  }, '↻ Reseed');
-
-  if (loading) return h(WidgetWrapper, { title: widgetTitleFromId('quotes'), icon: '💡', widgetId: 'quotes' },
-    h('div', { className: 'quotes-loading' }, 'Generating quotes...')
+  const reseedButton = (
+    <button className="widget-header-action" onClick={handleReseed} title="Reseed quotes">
+      ↻ Reseed
+    </button>
   );
 
-  return h(WidgetWrapper, { title: widgetTitleFromId('quotes'), icon: '💡', widgetId: 'quotes', headerActions: reseedButton },
-    h('div', { className: 'quotes-grid' },
-      displayQuotes.slice(0, quoteCount).map((q, i) =>
-        h('div', {
-          key: i,
-          className: 'quote-tile',
-          style: { backgroundImage: 'linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.6)), url(' + backgroundSplashUrl('small', backgroundSeed, i) + ')' }
-        },
-          h('p', { className: 'quote-text' }, '"' + q.text + '"'),
-          q.author ? h('span', { className: 'quote-author' }, '— ' + q.author) : null
-        )
-      )
-    )
+  if (loading) {
+    return (
+      <WidgetWrapper title={widgetTitleFromId('quotes')} icon="💡" widgetId="quotes">
+        <div className="quotes-loading">Generating quotes...</div>
+      </WidgetWrapper>
+    );
+  }
+
+  return (
+    <WidgetWrapper title={widgetTitleFromId('quotes')} icon="💡" widgetId="quotes" headerActions={reseedButton}>
+      <div className="quotes-grid">
+        {displayQuotes.slice(0, quoteCount).map((q, i) => (
+          <div
+            key={i}
+            className="quote-tile"
+            style={{ backgroundImage: 'linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.6)), url(' + backgroundSplashUrl('small', backgroundSeed, i) + ')' }}
+          >
+            <p className="quote-text">{'"' + q.text + '"'}</p>
+            {q.author ? <span className="quote-author">{'— ' + q.author}</span> : null}
+          </div>
+        ))}
+      </div>
+    </WidgetWrapper>
   );
 }

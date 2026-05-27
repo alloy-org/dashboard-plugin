@@ -1,7 +1,7 @@
 // [claude-sonnet-4-6-authored file]
 // Prompt summary: "extract CopyPluginLink into a standalone reusable component for copying URLs in sandboxed iframes"
 
-import { createElement, useState } from "react";
+import { useState } from "react";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Anchor that copies its href to the clipboard on click instead of navigating.
@@ -14,6 +14,8 @@ import { createElement, useState } from "react";
 // @param {number} [props.confirmationMs=2500] - How long to show the "copied" state.
 // [Claude claude-sonnet-4-6] Task: reusable copy-to-clipboard link for sandboxed iframe contexts
 // Prompt: "make CopyPluginLink its own standalone file since other contexts (API key dialog) may also need it"
+// [Claude claude-4.7-opus] Task: migrate CopyLink from createElement to JSX
+// Prompt: "translate this project to render components with JSX instead"
 export default function CopyLink({ url, children, className, confirmationMs = 2500 }) {
   const [copied, setCopied] = useState(false);
 
@@ -28,10 +30,14 @@ export default function CopyLink({ url, children, className, confirmationMs = 25
     }
   };
 
-  return createElement('a', {
-    href: url,
-    className,
-    onClick: handleClick,
-    title: copied ? 'Copied to clipboard!' : `Click to copy: ${ url }`,
-  }, copied ? '\u2713 Link copied!' : children);
+  return (
+    <a
+      href={url}
+      className={className}
+      onClick={handleClick}
+      title={copied ? 'Copied to clipboard!' : `Click to copy: ${ url }`}
+    >
+      {copied ? '\u2713 Link copied!' : children}
+    </a>
+  );
 }

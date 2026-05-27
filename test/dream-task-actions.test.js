@@ -5,7 +5,7 @@
 import { jest } from "@jest/globals";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
-import DreamTaskWidget from "../lib/dashboard/dream-task.js";
+import DreamTaskWidget from "../lib/dashboard/dream-task.jsx";
 import { updateDreamTaskTaskMetadata } from "../lib/dashboard/dream-task-internals.js";
 import { scheduledDreamTaskResultFromStartAt, startAtSecondsFromDateAndMinutes } from "../lib/dashboard/dream-task-schedule.js";
 import { analyzeDreamTasks } from "../lib/dream-task-service.js";

@@ -4,7 +4,7 @@
  * Task: Peak Hours widget — hourly distribution chart of task creation and completion
  * Prompt summary: "rewrite peak-hours as a project-native widget consuming completed tasks from dashboard"
  */
-import { createElement, useEffect, useRef, useMemo, useCallback, useState } from "react";
+import { useEffect, useRef, useMemo, useCallback, useState } from "react";
 import { widgetTitleFromId } from "constants/settings";
 import { dateFromDateInput, formatHourLabel } from "util/date-utility";
 import { logIfEnabled } from "util/log";
@@ -207,17 +207,23 @@ function getBarIndex(canvas, e) {
 // Render helpers
 // ---------------------------------------------------------------------------
 
-function renderMetricCard(h, label, value) {
-  return h('div', { className: 'peak-hours-metric-card', key: label },
-    h('div', { className: 'peak-hours-metric-label' }, label),
-    h('div', { className: 'peak-hours-metric-value' }, value)
+// [Claude claude-4.7-opus] Task: drop createElement `h` parameter; render JSX directly
+// Prompt: "translate this project to render components with JSX instead"
+function MetricCard({ label, value }) {
+  return (
+    <div className="peak-hours-metric-card">
+      <div className="peak-hours-metric-label">{label}</div>
+      <div className="peak-hours-metric-value">{value}</div>
+    </div>
   );
 }
 
-function renderLegendItem(h, modifierClass, label) {
-  return h('span', { className: 'peak-hours-legend-item', key: label },
-    h('span', { className: `peak-hours-legend-swatch ${modifierClass}` }),
-    label
+function LegendItem({ modifierClass, label }) {
+  return (
+    <span className="peak-hours-legend-item">
+      <span className={`peak-hours-legend-swatch ${modifierClass}`} />
+      {label}
+    </span>
   );
 }
 
@@ -230,8 +236,9 @@ function renderLegendItem(h, modifierClass, label) {
 // Date: 2026-03-15 | Model: claude-4.6-opus-high-thinking
 // [Claude claude-4.6-opus-high-thinking] Task: accept timeFormat prop for hour label display
 // Prompt: "components that render times should utilize timeFormat prop"
+// [Claude claude-4.7-opus] Task: migrate PeakHoursWidget from createElement to JSX
+// Prompt: "translate this project to render components with JSX instead"
 export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFormat }) {
-  const h = createElement;
   const canvasRef = useRef(null);
   const [tooltip, setTooltip] = useState(null);
   const [tasks, setTasks] = useState([]);
@@ -305,45 +312,51 @@ export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFo
   const handleMouseLeave = useCallback(() => setTooltip(null), []);
 
   if (totalTasks === 0) {
-    return h(WidgetWrapper, { title: widgetTitleFromId(WIDGET_ID), icon: '\u23F0', widgetId: WIDGET_ID, subtitle: monthSubtitle },
-      h('div', { className: 'peak-hours-empty' },
-        h('p', null, 'No completed task data available yet.')
-      )
+    return (
+      <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon="⏰" widgetId={WIDGET_ID} subtitle={monthSubtitle}>
+        <div className="peak-hours-empty">
+          <p>No completed task data available yet.</p>
+        </div>
+      </WidgetWrapper>
     );
   }
 
-  return h(WidgetWrapper, { title: widgetTitleFromId(WIDGET_ID), icon: '\u23F0', widgetId: WIDGET_ID, subtitle: monthSubtitle },
-    h('div', { className: 'peak-hours-metrics-grid' },
-      renderMetricCard(h, 'Tasks analyzed', totalTasks),
-      renderMetricCard(h, 'Peak create hour', peakCreateHour),
-      renderMetricCard(h, 'Peak complete hour', peakCompleteHour)
-    ),
-    h('div', { className: 'peak-hours-legend' },
-      renderLegendItem(h, 'peak-hours-legend-swatch--created', 'Created value'),
-      renderLegendItem(h, 'peak-hours-legend-swatch--completed', 'Completed value')
-    ),
-    h('div', { className: 'peak-hours-chart-container' },
-      h('canvas', {
-        ref: canvasRef,
-        className: 'peak-hours-canvas',
-        onMouseMove: handleMouseMove,
-        onMouseLeave: handleMouseLeave,
-      }),
-      tooltip && h('div', {
-        className: 'peak-hours-tooltip',
-        style: { left: tooltip.x, top: tooltip.y, transform: 'translateX(-50%)' },
-      },
-        h('div', { className: 'peak-hours-tooltip-header' }, tooltip.hour),
-        h('div', { className: 'peak-hours-tooltip-row' },
-          h('span', { className: 'peak-hours-tooltip-label peak-hours-tooltip-label--created' }, 'Created:'),
-          ` ${tooltip.created} pts`
-        ),
-        h('div', { className: 'peak-hours-tooltip-row' },
-          h('span', { className: 'peak-hours-tooltip-label peak-hours-tooltip-label--completed' }, 'Completed:'),
-          ` ${tooltip.completed} pts`
-        )
-      )
-    ),
-    dateRange && h('div', { className: 'peak-hours-footer' }, monthSubtitle)
+  return (
+    <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon="⏰" widgetId={WIDGET_ID} subtitle={monthSubtitle}>
+      <div className="peak-hours-metrics-grid">
+        <MetricCard label="Tasks analyzed" value={totalTasks} />
+        <MetricCard label="Peak create hour" value={peakCreateHour} />
+        <MetricCard label="Peak complete hour" value={peakCompleteHour} />
+      </div>
+      <div className="peak-hours-legend">
+        <LegendItem modifierClass="peak-hours-legend-swatch--created" label="Created value" />
+        <LegendItem modifierClass="peak-hours-legend-swatch--completed" label="Completed value" />
+      </div>
+      <div className="peak-hours-chart-container">
+        <canvas
+          ref={canvasRef}
+          className="peak-hours-canvas"
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+        />
+        {tooltip && (
+          <div
+            className="peak-hours-tooltip"
+            style={{ left: tooltip.x, top: tooltip.y, transform: 'translateX(-50%)' }}
+          >
+            <div className="peak-hours-tooltip-header">{tooltip.hour}</div>
+            <div className="peak-hours-tooltip-row">
+              <span className="peak-hours-tooltip-label peak-hours-tooltip-label--created">Created:</span>
+              {` ${tooltip.created} pts`}
+            </div>
+            <div className="peak-hours-tooltip-row">
+              <span className="peak-hours-tooltip-label peak-hours-tooltip-label--completed">Completed:</span>
+              {` ${tooltip.completed} pts`}
+            </div>
+          </div>
+        )}
+      </div>
+      {dateRange && <div className="peak-hours-footer">{monthSubtitle}</div>}
+    </WidgetWrapper>
   );
 }

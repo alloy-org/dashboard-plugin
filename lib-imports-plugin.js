@@ -17,6 +17,7 @@ function buildCandidates(baseDir, importPath) {
       }
     }
   } else {
+    candidates.push(path.join(baseDir, importPath + ".jsx"));
     candidates.push(path.join(baseDir, importPath + ".js"));
   }
   return candidates;

@@ -5,7 +5,7 @@
  * Prompt summary: "replace hand-rolled tooltips with tippy.js, separated into its own component and stylesheet"
  */
 import tippy from 'tippy.js';
-import { createElement, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import "styles/dashboard-tippy.scss"
 
 const TIPPY_DEFAULTS = {
@@ -18,6 +18,8 @@ const TIPPY_DEFAULTS = {
 // [Claude] Task: React wrapper component that attaches a tippy tooltip to its children
 // Prompt: "replace hand-rolled tooltips with tippy.js, separated into its own component"
 // Date: 2026-03-09 | Model: claude-4.6-opus-high-thinking
+// [Claude claude-4.7-opus] Task: migrate DashboardTippy from createElement to JSX
+// Prompt: "translate this project to render components with JSX instead"
 export default function DashboardTippy({ content, placement, interactive, children, ...rest }) {
   const ref = useRef(null);
   const instanceRef = useRef(null);
@@ -44,7 +46,7 @@ export default function DashboardTippy({ content, placement, interactive, childr
     }
   }, [content]);
 
-  return createElement('span', { ref, style: { display: 'inline' } }, children);
+  return <span ref={ref} style={{ display: 'inline' }}>{children}</span>;
 }
 
 // [Claude] Task: hook for canvas-based tooltips using a tippy virtual element with optional interactive mode

@@ -4,15 +4,14 @@
  * Task: Victory value widget — weekly total and canvas bar chart with mood overlay
  * Prompt summary: "widget with bar chart of daily victory values and optional mood trend line"
  */
-import { createElement, useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import WidgetWrapper from "./widget-wrapper"
 import { widgetTitleFromId, parseWidgetConfig, widgetConfigKey } from "../constants/settings"
 import { pluginSettings } from "plugin-data"
 import ConfigPopup from "./config-popup"
-import { useCanvasTippy } from "./dashboard-tooltip-tippy.js"
+import { useCanvasTippy } from "./dashboard-tooltip-tippy.jsx"
 import { renderMarkdown } from "util/utility"
 import "styles/victory-value.scss"
-import { logIfEnabled } from "util/log"
 import {
   dateFromDateInput,
   dateKeyFromDateInput,
@@ -31,8 +30,6 @@ const MOODS = [
 ];
 
 // [Claude] Task: format week date range for display in widget header
-// Prompt: "print the date range shown in a lighter shade after the Victory Value title"
-// Date: 2026-03-01 | Model: claude-sonnet-4-6
 function formatWeekDateRange(chartDailyValues) {
   if (!chartDailyValues || chartDailyValues.length < 7) return '';
   const start = dateFromDateInput(chartDailyValues[0].date);
@@ -42,8 +39,6 @@ function formatWeekDateRange(chartDailyValues) {
 }
 
 // [Claude] Task: shift reference date by N weeks for chart navigation arrows
-// Prompt: "add left arrow to choose selected date minus one week, right arrow to advance by one week"
-// Date: 2026-03-01 | Model: claude-sonnet-4-6
 function shiftWeekDate(referenceDate, deltaWeeks) {
   const date = dateFromDateInput(referenceDate);
   date.setDate(date.getDate() + deltaWeeks * 7);
@@ -51,8 +46,6 @@ function shiftWeekDate(referenceDate, deltaWeeks) {
 }
 
 // [Claude] Task: determine whether referenceDate is in the current week or later (disables right arrow)
-// Prompt: "right arrow is disabled unless the currently selected date is earlier than the current week"
-// Date: 2026-03-01 | Model: claude-sonnet-4-6
 function isCurrentWeekOrLater(referenceDate, weekStartDay) {
   const refWeekStart = weekStartFromDateInput(referenceDate, weekStartDay);
   const todayWeekStart = weekStartFromDateInput(new Date(), weekStartDay);
@@ -60,8 +53,6 @@ function isCurrentWeekOrLater(referenceDate, weekStartDay) {
 }
 
 // [Claude] Task: derive chart values from completed tasks keyed by date
-// Prompt: "VictoryValue receives completedTasksByDate but graph stays blank"
-// Date: 2026-02-28 | Model: gpt-5.3-codex
 function buildDailyValuesFromCompletedTasks(dailyValues, completedTasksByDate) {
   if (!Array.isArray(dailyValues) || dailyValues.length === 0) return [];
   if (!completedTasksByDate || typeof completedTasksByDate !== 'object') return dailyValues;
@@ -80,8 +71,6 @@ function buildDailyValuesFromCompletedTasks(dailyValues, completedTasksByDate) {
 }
 
 // [Claude] Task: derive chart values for selected week from completed task map
-// Prompt: "clicking calendar date should change VictoryValue week and completed-task fetch window"
-// Date: 2026-02-28 | Model: gpt-5.3-codex
 function buildDailyValuesForWeek(referenceDate, dailyValues, completedTasksByDate, weekStartDay) {
   const weekSlots = weekDateSlotsFromDateInput(referenceDate, weekStartDay);
   if (!completedTasksByDate || typeof completedTasksByDate !== 'object') {
@@ -100,12 +89,7 @@ function buildDailyValuesForWeek(referenceDate, dailyValues, completedTasksByDat
   });
 }
 
-// [Claude] Task: submit widget configuration to plugin settings
-// Prompt: "all possible functions are local functions, not embedded in the component"
-// Date: 2026-02-28 | Model: gpt-5.3-codex
 // [Claude] Task: persist widget config via app.setSetting (real Amplenote API)
-// Prompt: "replace non-API saveSetting with app.setSetting"
-// Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
 async function handleConfigSubmit(app, timeRange, showMood, setConfigOpen) {
   const result = [timeRange, String(showMood)];
   await app.setSetting(widgetConfigKey('victory-value'), JSON.stringify(result));
@@ -113,25 +97,17 @@ async function handleConfigSubmit(app, timeRange, showMood, setConfigOpen) {
 }
 
 // [Claude] Task: parse showMood boolean setting, defaulting to true when unset
-// Prompt: "ensure that the daily mood line + dot is visible in VictoryValue component"
-// Date: 2026-03-01 | Model: claude-sonnet-4-6
 function parseShowMoodSetting(value) {
   if (value === undefined || value === null) return true;
   return value === 'true' || value === true;
 }
 
-// [Claude] Task: reset popup state to persisted values
-// Prompt: "all possible functions are local functions, not embedded in the component"
-// Date: 2026-02-28 | Model: gpt-5.3-codex
 function handleConfigCancel(currentConfig, setTimeRange, setShowMood, setConfigOpen) {
   setTimeRange(currentConfig[0] || 'week');
   setShowMood(parseShowMoodSetting(currentConfig[1]));
   setConfigOpen(false);
 }
 
-// [Claude] Task: resolve hovered bar from mouse coordinates
-// Prompt: "all possible functions are local functions, not embedded in the component"
-// Date: 2026-02-28 | Model: gpt-5.3-codex
 function handleCanvasMouseMove(canvasRef, setHoveredBar, e) {
   const canvas = canvasRef.current;
   if (!canvas) return;
@@ -152,9 +128,6 @@ function handleCanvasMouseMove(canvasRef, setHoveredBar, e) {
   setHoveredBar(null);
 }
 
-// [Claude] Task: compute tooltip x-position for hovered bar
-// Prompt: "all possible functions are local functions, not embedded in the component"
-// Date: 2026-02-28 | Model: gpt-5.3-codex
 function getTooltipLeft(canvasRef, index) {
   const canvas = canvasRef.current;
   if (!canvas) return 0;
@@ -163,9 +136,6 @@ function getTooltipLeft(canvasRef, index) {
   return 40 + index * barW + barW * 0.5;
 }
 
-// [Claude] Task: compute bar-top Y in screen coordinates for above/below tooltip placement
-// Prompt: "evaluate whether to pop tooltip above or below the date bar"
-// Date: 2026-03-09 | Model: claude-4.6-opus-high-thinking
 function getBarTopScreenY(canvasRef, index, dailyValues, maxValue) {
   const canvas = canvasRef.current;
   if (!canvas) return 0;
@@ -177,9 +147,6 @@ function getBarTopScreenY(canvasRef, index, dailyValues, maxValue) {
   return rect.top + chartH - barH + 10;
 }
 
-// [Claude] Task: collect sorted completed tasks for hovered day
-// Prompt: "all possible functions are local functions, not embedded in the component"
-// Date: 2026-02-28 | Model: gpt-5.3-codex
 function getHoveredDayTasks(index, dailyValues, completedTasksByDate) {
   if (!completedTasksByDate || !dailyValues[index]) return [];
   const dateKey = dateKeyFromDateInput(dailyValues[index].date);
@@ -188,9 +155,6 @@ function getHoveredDayTasks(index, dailyValues, completedTasksByDate) {
     .sort((a, b) => (b.victoryValue || 0) - (a.victoryValue || 0));
 }
 
-// [Claude] Task: align raw mood ratings (chronological, arbitrary date range) to the 7 chart day slots
-// Prompt: "mood ratings received by Victory Value do not include the date on which the mood was submitted"
-// Date: 2026-03-08 | Model: claude-4.6-opus-high-thinking
 function buildMoodByDay(moodRatings, chartDailyValues) {
   if (!moodRatings || !Array.isArray(moodRatings) || !chartDailyValues) return [];
 
@@ -210,9 +174,6 @@ function buildMoodByDay(moodRatings, chartDailyValues) {
   });
 }
 
-// [Claude] Task: map hovered day mood rating to mood metadata, guarding against future dates
-// Prompt: "showing mood rating data for dates that have not yet occurred"
-// Date: 2026-03-08 | Model: claude-4.6-opus-high-thinking
 function getHoveredDayMood(index, moodByDay, dailyValues) {
   if (!moodByDay || !moodByDay[index]) return null;
   if (dailyValues && dailyValues[index]) {
@@ -225,9 +186,6 @@ function getHoveredDayMood(index, moodByDay, dailyValues) {
   return MOODS.find((m) => m.value === rating) || null;
 }
 
-// [Claude] Task: draw victory bars for each day with day-of-week and month/day labels
-// Prompt: "underneath each day-of-week label, print [short month] [day of month]"
-// Date: 2026-03-01 | Model: claude-sonnet-4-6
 function drawBars(ctx, dailyValues, maxValue, barW, chartH, ht) {
   dailyValues.forEach((d, i) => {
     const barH = (d.value / maxValue) * chartH * 0.85;
@@ -257,16 +215,10 @@ function drawBars(ctx, dailyValues, maxValue, barW, chartH, ht) {
   });
 }
 
-// [Claude] Task: format per-day bar labels to one decimal place
-// Prompt: "point values shown on each date need to be rounded to nearest tenth"
-// Date: 2026-02-28 | Model: gpt-5.3-codex
 function formatBarPointValue(value) {
   return (Math.round((value || 0) * 10) / 10).toFixed(1);
 }
 
-// [Claude] Task: draw optional mood trend line and points; dashed across missing days, skipping future dates
-// Prompt: "mood ratings received by Victory Value do not include the date on which the mood was submitted"
-// Date: 2026-03-08 | Model: claude-4.6-opus-high-thinking
 function drawMoodOverlay(ctx, moodByDay, chartDailyValues, barW, chartH) {
   const today = new Date();
   today.setHours(23, 59, 59, 999);
@@ -306,12 +258,8 @@ function drawMoodOverlay(ctx, moodByDay, chartDailyValues, barW, chartH) {
   });
 }
 
-// [Claude] Task: render canvas chart for victory value widget
-// Prompt: "all possible functions are local functions, not embedded in the component"
-// Date: 2026-02-28 | Model: gpt-5.3-codex
 function drawChart(canvasRef, dailyValues, maxValue, moodByDay, showMood) {
   const canvas = canvasRef.current;
-  // logIfEnabled("Drawing chart in VictoryValue with dailyValues", dailyValues, "and moodByDay", moodByDay);
   if (!canvas) return;
 
   const ctx = canvas.getContext('2d');
@@ -332,30 +280,7 @@ function drawChart(canvasRef, dailyValues, maxValue, moodByDay, showMood) {
   }
 }
 
-// --------------------------------------------------------------------------------------------------
-// [Claude] Task: construct debug payload of expected tooltip tasks by day
-// Prompt: "output debug console information about what tasks are expected to be shown by the VictoryValue component"
-// Date: 2026-02-28 | Model: gpt-5.3-codex
-function buildExpectedTasksDebugInfo(dailyValues, completedTasksByDate) {
-  return dailyValues.map((dailyEntry, index) => {
-    const tasks = getHoveredDayTasks(index, dailyValues, completedTasksByDate);
-    return {
-      day: dailyEntry.day,
-      date: dailyEntry.date,
-      dateKey: dateKeyFromDateInput(dailyEntry.date),
-      expectedTaskCount: tasks.length,
-      expectedTasks: tasks.map((task) => ({
-        uuid: task.uuid || null,
-        content: task.content || '',
-        victoryValue: task.victoryValue || 0
-      }))
-    };
-  });
-}
-
 // [Claude] Task: build tooltip HTML string for a hovered victory-value bar
-// Prompt: "replace hand-rolled tooltips with tippy.js"
-// Date: 2026-03-09 | Model: claude-4.6-opus-high-thinking
 function buildTooltipHTML(hoveredBar, dailyValues, completedTasksByDate, moodByDay) {
   const tasks = getHoveredDayTasks(hoveredBar, dailyValues, completedTasksByDate);
   const mood = getHoveredDayMood(hoveredBar, moodByDay, dailyValues);
@@ -387,30 +312,34 @@ function buildTooltipHTML(hoveredBar, dailyValues, completedTasksByDate, moodByD
 
 // --------------------------------------------------------------------------------------------------
 // [Claude] Task: render configurable time range radio options
-// Prompt: "all possible functions are local functions, not embedded in the component"
-// Date: 2026-02-28 | Model: gpt-5.3-codex
-function renderTimeRangeOptions(h, timeRange, setTimeRange) {
-  return ['week', 'month', '30days'].map((value) => h('label', { key: value },
-    h('input', {
-      type: 'radio',
-      name: 'vv-time-range',
-      value,
-      checked: timeRange === value,
-      onChange: setTimeRange.bind(null, value)
-    }),
-    value === 'week' ? 'This week' : value === 'month' ? 'This month' : 'Last 30 days'
-  ));
+// [Claude claude-4.7-opus] Task: convert TimeRangeOptions render fn to JSX component
+// Prompt: "translate this project to render components with JSX instead"
+function TimeRangeOptions({ timeRange, setTimeRange }) {
+  return (
+    <>
+      {['week', 'month', '30days'].map((value) => (
+        <label key={value}>
+          <input
+            type="radio"
+            name="vv-time-range"
+            value={value}
+            checked={timeRange === value}
+            onChange={setTimeRange.bind(null, value)}
+          />
+          {value === 'week' ? 'This week' : value === 'month' ? 'This month' : 'Last 30 days'}
+        </label>
+      ))}
+    </>
+  );
 }
 
 // --------------------------------------------------------------------------------------------------
 // [Claude] Task: victory-value widget using useCanvasTippy for bar hover tooltips
-// Prompt: "replace hand-rolled tooltips with tippy.js"
-// Date: 2026-03-09 | Model: claude-4.6-opus-high-thinking
 // [Claude claude-4.6-opus-high-thinking] Task: accept weekFormat prop for week day ordering
-// Prompt: "components that render weeks should utilize weekFormat prop"
+// [Claude claude-4.7-opus] Task: migrate VictoryValueWidget from createElement to JSX
+// Prompt: "translate this project to render components with JSX instead"
 export default function VictoryValueWidget({ app, completedTasksByDate, dailyValues, moodRatings,
     onReferenceDateChange, referenceDate, weekFormat, weeklyTotal }) {
-  const h = createElement;
   const canvasRef = useRef(null);
   const weekStartDay = weekStartDayFromFormat(weekFormat);
   const chartDailyValues = buildDailyValuesForWeek(referenceDate, dailyValues, completedTasksByDate, weekStartDay);
@@ -428,21 +357,14 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
   const onConfigSubmit = handleConfigSubmit.bind(null, app, timeRange, showMood, setConfigOpen);
   const onConfigCancel = handleConfigCancel.bind(null, currentConfig, setTimeRange, setShowMood, setConfigOpen);
   const weekDateRange = formatWeekDateRange(chartDailyValues);
-  // [Claude] Task: interactive tooltip with scheduled hide on canvas mouse leave
-  // Prompt: "when a user hovers on a bar, show interactive tooltip; on mouse leave, begin timer to hide"
-  // Date: 2026-03-18 | Model: claude-4.6-opus-high-thinking
   const tip = useCanvasTippy({ interactive: true });
   const onCanvasMouseMove = (e) => { tip.cancelScheduledHide(); handleCanvasMouseMove(canvasRef, setHoveredBar, e); };
   const onCanvasMouseLeave = () => tip.scheduleHide(300, () => setHoveredBar(null));
-  // logIfEnabled("Fixin to render VV widget with completedTasksByDate", completedTasksByDate)
 
   useEffect(() => {
     drawChart(canvasRef, chartDailyValues, maxValue, moodByDay, showMood);
   }, [chartDailyValues, maxValue, moodByDay, showMood]);
 
-  // [Claude] Task: choose above-bar or below-chart tooltip placement based on available viewport space
-  // Prompt: "evaluate whether to pop tooltip above or below the date bar"
-  // Date: 2026-03-09 | Model: claude-4.6-opus-high-thinking
   useEffect(() => {
     if (hoveredBar === null) { tip.hide(); return; }
     const canvas = canvasRef.current;
@@ -462,60 +384,66 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
     }
   }, [hoveredBar]);
 
-  return h(WidgetWrapper, {
-    title: widgetTitleFromId('victory-value'), icon: '\u{1F3C6}', widgetId: 'victory-value', configurable: true,
-    onConfigure
-  },
-    configOpen
-      ? h(ConfigPopup, {
-          title: 'Configure Victory Value',
-          onSubmit: onConfigSubmit,
-          onCancel: onConfigCancel
-        },
-          h('div', { className: 'config-field' },
-            h('div', { className: 'config-field-label' }, 'Time range'),
-            renderTimeRangeOptions(h, timeRange, setTimeRange)
-          ),
-          h('div', { className: 'config-field' },
-            h('div', { className: 'config-field-label' }, 'Mood overlay'),
-            h('label', null,
-              h('input', {
-                type: 'checkbox', checked: showMood,
-                onChange: (event) => setShowMood(event.target.checked)
-              }),
-              'Show mood overlay'
-            )
-          )
-        )
-      : null,
-    h('div', { className: 'vv-header' },
-      h('span', { className: 'vv-total' }, roundedWeeklyTotal),
-      h('span', { className: 'vv-label' }, `points ${ weekDateRange }`)
-    ),
-    h('div', { className: 'vv-chart-container' },
-      h('button', {
-        className: 'vv-nav-arrow',
-        type: 'button',
-        onClick: () => onReferenceDateChange && onReferenceDateChange(shiftWeekDate(referenceDate, -1)),
-        title: 'Previous week',
-        'aria-label': 'Previous week'
-      }, '\u2039'),
-      h('div', { className: 'vv-chart-wrap' },
-        h('canvas', {
-          ref: canvasRef,
-          className: 'vv-chart',
-          onMouseMove: onCanvasMouseMove,
-          onMouseLeave: onCanvasMouseLeave
-        })
-      ),
-      h('button', {
-        className: 'vv-nav-arrow',
-        type: 'button',
-        disabled: isCurrentWeekOrLater(referenceDate, weekStartDay),
-        onClick: () => onReferenceDateChange && onReferenceDateChange(shiftWeekDate(referenceDate, 1)),
-        title: 'Next week',
-        'aria-label': 'Next week'
-      }, '\u203a')
-    )
+  return (
+    <WidgetWrapper
+      title={widgetTitleFromId('victory-value')}
+      icon="🏆"
+      widgetId="victory-value"
+      configurable={true}
+      onConfigure={onConfigure}
+    >
+      {configOpen ? (
+        <ConfigPopup
+          title="Configure Victory Value"
+          onSubmit={onConfigSubmit}
+          onCancel={onConfigCancel}
+        >
+          <div className="config-field">
+            <div className="config-field-label">Time range</div>
+            <TimeRangeOptions timeRange={timeRange} setTimeRange={setTimeRange} />
+          </div>
+          <div className="config-field">
+            <div className="config-field-label">Mood overlay</div>
+            <label>
+              <input
+                type="checkbox"
+                checked={showMood}
+                onChange={(event) => setShowMood(event.target.checked)}
+              />
+              Show mood overlay
+            </label>
+          </div>
+        </ConfigPopup>
+      ) : null}
+      <div className="vv-header">
+        <span className="vv-total">{roundedWeeklyTotal}</span>
+        <span className="vv-label">{`points ${ weekDateRange }`}</span>
+      </div>
+      <div className="vv-chart-container">
+        <button
+          className="vv-nav-arrow"
+          type="button"
+          onClick={() => onReferenceDateChange && onReferenceDateChange(shiftWeekDate(referenceDate, -1))}
+          title="Previous week"
+          aria-label="Previous week"
+        >‹</button>
+        <div className="vv-chart-wrap">
+          <canvas
+            ref={canvasRef}
+            className="vv-chart"
+            onMouseMove={onCanvasMouseMove}
+            onMouseLeave={onCanvasMouseLeave}
+          />
+        </div>
+        <button
+          className="vv-nav-arrow"
+          type="button"
+          disabled={isCurrentWeekOrLater(referenceDate, weekStartDay)}
+          onClick={() => onReferenceDateChange && onReferenceDateChange(shiftWeekDate(referenceDate, 1))}
+          title="Next week"
+          aria-label="Next week"
+        >›</button>
+      </div>
+    </WidgetWrapper>
   );
 }

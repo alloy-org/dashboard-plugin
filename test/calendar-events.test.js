@@ -9,8 +9,8 @@ import { jest } from "@jest/globals";
 import { createElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import AgendaWidget from "../lib/dashboard/agenda.js";
-import DaySketchWidget from "../lib/dashboard/day-sketch.js";
+import AgendaWidget from "../lib/dashboard/agenda.jsx";
+import DaySketchWidget from "../lib/dashboard/day-sketch.jsx";
 import { normalizeExternalCalendarEvents } from "../lib/hooks/use-external-calendar-events.js";
 
 const flushAsync = () =>

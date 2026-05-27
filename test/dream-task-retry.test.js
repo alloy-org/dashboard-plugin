@@ -10,7 +10,7 @@ import fetch from "isomorphic-fetch";
 import { createElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import DreamTaskWidget from "../lib/dashboard/dream-task.js";
+import DreamTaskWidget from "../lib/dashboard/dream-task.jsx";
 import { DASHBOARD_NOTE_TAG, SETTING_KEYS } from "../lib/constants/settings.js";
 import { setPluginData, updatePluginSetting } from "../lib/plugin-data.js";
 import { SAMPLE_TASKS } from "./fixtures/tasks.js";

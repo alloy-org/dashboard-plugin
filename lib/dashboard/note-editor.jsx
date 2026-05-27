@@ -4,20 +4,17 @@
  * Task: Dev-mode inline note editor with save/back
  * Prompt summary: "textarea editor for viewing and editing note content in the dev environment"
  */
-import { createElement, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchNoteContent, saveNoteContent } from "util/goal-notes";
 
 // ────────────────────────────────────────────────────────────────
 /**
  * Inline note editor shown in dev mode when a widget navigates to a note.
  * Loads the note's markdown content into a textarea and provides save/back controls.
- * @param {Object} props
- * @param {string} props.noteUUID - UUID of the note to edit.
- * @param {Function} props.onBack - Callback invoked when the user clicks Back.
- * @returns {React.ReactElement}
  */
+// [Claude claude-4.7-opus] Task: migrate NoteEditor from createElement to JSX
+// Prompt: "translate this project to render components with JSX instead"
 export default function NoteEditor({ app, noteUUID, onBack }) {
-  const h = createElement;
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -40,25 +37,27 @@ export default function NoteEditor({ app, noteUUID, onBack }) {
   };
 
   if (loading) {
-    return h('div', { className: 'note-editor-loading' }, 'Loading note…');
+    return <div className="note-editor-loading">Loading note…</div>;
   }
 
-  return h('div', { className: 'note-editor' },
-    h('div', { className: 'note-editor-toolbar' },
-      h('button', {
-        className: 'note-editor-btn note-editor-btn--back',
-        onClick: onBack,
-      }, '← Back'),
-      h('button', {
-        className: 'note-editor-btn note-editor-btn--save',
-        onClick: handleSave,
-        disabled: saving,
-      }, saving ? 'Saving…' : 'Save'),
-    ),
-    h('textarea', {
-      className: 'note-editor-textarea',
-      value: content,
-      onChange: (e) => setContent(e.target.value),
-    })
+  return (
+    <div className="note-editor">
+      <div className="note-editor-toolbar">
+        <button
+          className="note-editor-btn note-editor-btn--back"
+          onClick={onBack}
+        >← Back</button>
+        <button
+          className="note-editor-btn note-editor-btn--save"
+          onClick={handleSave}
+          disabled={saving}
+        >{saving ? 'Saving…' : 'Save'}</button>
+      </div>
+      <textarea
+        className="note-editor-textarea"
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+      />
+    </div>
   );
 }

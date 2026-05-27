@@ -23,7 +23,7 @@ const scssPlugin = createScssPlugin({ style: "compressed" });
 // Prompt: "refactor so widgets load their own scss instead of dashboard.scss importing everything"
 // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
 const clientBuild = await esbuild.build({
-  entryPoints: [path.join(__dirname, 'lib/dashboard/dashboard-load.js')],
+  entryPoints: [path.join(__dirname, 'lib/dashboard/dashboard-load.jsx')],
   bundle: true,
   format: 'iife',
   minify: true,
@@ -33,6 +33,9 @@ const clientBuild = await esbuild.build({
     "process.env.NODE_ENV": '"production"',
   },
   target: ["chrome91", "firefox90", "safari15", "edge91"],
+  jsx: 'automatic',
+  jsxImportSource: 'react',
+  loader: { '.jsx': 'jsx' },
   plugins: [absoluteImportsPlugin, scssPlugin],
 });
 const jsOutput = clientBuild.outputFiles.find(f => f.path.endsWith('.js'));
@@ -84,6 +87,9 @@ const result = await esbuild.build({
   define: {
     "process.env.NODE_ENV": '"production"',
   },
+  jsx: 'automatic',
+  jsxImportSource: 'react',
+  loader: { '.jsx': 'jsx' },
   plugins: [clientBundlePlugin, cssContentPlugin, absoluteImportsPlugin],
   write: false,
 });

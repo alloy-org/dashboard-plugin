@@ -5,7 +5,7 @@
  * Prompt summary: "widget listing today's scheduled tasks with time, priority indicator, and duration"
  */
 import { widgetTitleFromId } from "constants/settings"
-import { createElement, useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef } from "react"
 import WidgetWrapper from "widget-wrapper"
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render"
 // [Claude] Task: use shared `formatDateKey` from date-utility (single YYYY-MM-DD implementation)
@@ -19,10 +19,6 @@ const DATES_PER_PAGE = 3;
 // ------------------------------------------------------------------------------------------
 // [Claude claude-4.6-opus] Task: filter calendar events to those starting on a given date
 // Prompt: "filter calendar events by date so non-today events don't appear in today's schedule"
-// @description Returns only events whose start Date falls on the given date key.
-// @param {Array} events - Calendar event objects
-// @param {string} dateKey - YYYY-MM-DD date key to match
-// @returns {Array} Filtered events for the given date
 function calendarEventsForDateKey(events, dateKey) {
   if (!Array.isArray(events) || !dateKey) return [];
   return events.filter(event => event?.start && formatDateKey(event.start) === dateKey);
@@ -31,36 +27,17 @@ function calendarEventsForDateKey(events, dateKey) {
 // [Claude] Task: render today's task list with priority colors and time/duration
 // Prompt: "widget listing today's scheduled tasks with time, priority indicator, and duration"
 // Date: 2026-02-17 | Model: claude-sonnet-4-5-20250929
-/**
- * Renders the dashboard agenda card grouped by date sections.
- *
- * @param {object} props
- * @param {object} props.tasks - Task collection grouped by date key (`YYYY-MM-DD`), where each value is an array of tasks.
- * @param {Array<object>} [props.tasks.YYYY-MM-DD] - Tasks scheduled for the date key.
- * @param {string} [props.tasks.YYYY-MM-DD[].uuid] - Stable task identifier used as React key and task deep-link target.
- * @param {string} [props.tasks.YYYY-MM-DD[].content] - Task title/body text (markdown characters are stripped for display).
- * @param {number} [props.tasks.YYYY-MM-DD[].startAt] - Task start timestamp in milliseconds since epoch.
- * @param {number} [props.tasks.YYYY-MM-DD[].endAt] - Task end timestamp in milliseconds since epoch.
- * @param {boolean} [props.tasks.YYYY-MM-DD[].important] - Whether the task is marked important.
- * @param {boolean} [props.tasks.YYYY-MM-DD[].urgent] - Whether the task is marked urgent.
- * @param {string} [props.tasks.YYYY-MM-DD[].noteUUID] - Note UUID where the task is located.
- * @param {string} [props.tasks.YYYY-MM-DD[].noteName] - Human-readable note name where the task is located.
- * @param {number|Date} [props.tasks.YYYY-MM-DD[].hideUntil] - If set and after "now", the task is omitted from the list.
- * @param {string} props.currentDate - Current date ISO string used to determine the "today" section.
- * @returns {React.ReactElement} Agenda widget with date-grouped task list and task/note navigation.
- */
 // [Claude] Task: add pagination with header arrows to navigate through date pages
 // Prompt: "implement Agenda pagination, with arrows in header to move forward and backward from page 1"
 // [Claude claude-4.6-opus-high-thinking] Task: accept timeFormat prop for time display
 // Prompt: "components that render times should utilize timeFormat prop"
+// [Claude claude-4.7-opus] Task: migrate AgendaWidget from createElement to JSX
+// Prompt: "translate this project to render components with JSX instead"
 export default function AgendaWidget({ app, calendarEvents, currentDate, selectedDate, tasks, timeFormat }) {
-  const h = createElement;
   const [page, setPage] = useState(0);
   const listRef = useRef(null);
   const todayDateKey = formatDateKey(currentDate || new Date().toISOString());
 
-  // Build the full ordered date key list, ensuring selectedDate and today (when there are
-  // calendar events) are included
   const taskDateKeys = Object.keys(tasks || {}).sort();
   const hasCalendarEvents = Array.isArray(calendarEvents) && calendarEvents.length > 0;
   const todayCalendarEvents = hasCalendarEvents ? calendarEventsForDateKey(calendarEvents, todayDateKey) : [];
@@ -74,7 +51,6 @@ export default function AgendaWidget({ app, calendarEvents, currentDate, selecte
 
   const totalPages = Math.max(1, Math.ceil(allDateKeys.length / DATES_PER_PAGE));
 
-  // When selectedDate changes, jump to the page containing it
   useEffect(() => {
     if (!selectedDate) return;
     const dateIndex = allDateKeys.indexOf(selectedDate);
@@ -117,10 +93,6 @@ export default function AgendaWidget({ app, calendarEvents, currentDate, selecte
     return null;
   };
 
-  // ------------------------------------------------------------------------------------------
-  // @description Returns a calendar event duration in minutes from Date or serialized values.
-  // @param {Object} event - Calendar event with start/end date-like values
-  // @returns {number|null} Duration in minutes, or null when no positive duration exists
   // [OpenAI GPT-5.5] Task: guard agenda event duration against serialized mobile event dates
   // Prompt: "After restoring the ability of mobile to retrieve calendar events, agenda errors on mobile"
   const calendarEventDurationMinutes = (event) => {
@@ -200,83 +172,96 @@ export default function AgendaWidget({ app, calendarEvents, currentDate, selecte
       .sort((a, b) => (a.sortMs - b.sortMs) || (a.sourceOrder - b.sourceOrder));
   };
 
-  const paginationControls = totalPages > 1
-    ? h('div', { className: 'agenda-pagination' },
-        h('button', {
-          className: 'agenda-page-arrow',
-          onClick: () => setPage(p => Math.max(0, p - 1)),
-          disabled: currentPage === 0
-        }, '\u25C0'),
-        h('span', { className: 'agenda-page-indicator' }, `${currentPage + 1} / ${totalPages}`),
-        h('button', {
-          className: 'agenda-page-arrow',
-          onClick: () => setPage(p => Math.min(totalPages - 1, p + 1)),
-          disabled: currentPage >= totalPages - 1
-        }, '\u25B6')
-      )
-    : null;
+  const paginationControls = totalPages > 1 ? (
+    <div className="agenda-pagination">
+      <button
+        className="agenda-page-arrow"
+        onClick={() => setPage(p => Math.max(0, p - 1))}
+        disabled={currentPage === 0}
+      >{'\u25C0'}</button>
+      <span className="agenda-page-indicator">{`${currentPage + 1} / ${totalPages}`}</span>
+      <button
+        className="agenda-page-arrow"
+        onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+        disabled={currentPage >= totalPages - 1}
+      >{'\u25B6'}</button>
+    </div>
+  ) : null;
 
-  return h(WidgetWrapper, {
-    title: widgetTitleFromId('agenda'), icon: '\uD83D\uDCCB', widgetId: 'agenda',
-    headerActions: paginationControls
-  },
-    // [Claude claude-4.6-opus] Task: render calendar events with same formatting as tasks, filtered by date
-    // Prompt: "calendar events use same formatting as other events; don't show non-today events on today"
-    h('div', { className: 'agenda-list', ref: listRef },
-      visibleDateKeys.map(dateKey => {
-        const tasksForDate = tasks[dateKey] || [];
-        const visibleTasks = visibleTasksForDate(tasksForDate);
-        const eventsForDate = calendarEventsForDateKey(calendarEvents, dateKey);
-        const agendaItems = agendaItemsForDate(dateKey, eventsForDate, visibleTasks);
+  const renderTaskItem = (item) => {
+    const startMs = toMillis(item.task.startAt);
+    const endMs = toMillis(item.task.endAt);
+    const hasDuration = startMs && endMs && endMs > startMs;
+    return (
+      <div
+        key={item.task.uuid}
+        className="agenda-item agenda-task-row"
+        onClick={(e) => { if (!e.target.closest('a')) navigateToTask(item.task); }}
+      >
+        <div className={`agenda-indicator ${priorityClassName(item.task)}`} />
+        <div className="agenda-content">
+          <span className="agenda-time" title={`${item.task.startAt ? 'Start' : 'Deadline'} time for task`}>
+            {formatTime(item.task.startAt || item.task.deadline)}
+          </span>
+          <span
+            className="agenda-text"
+            dangerouslySetInnerHTML={{ __html: amplenoteMarkdownRender(item.task.content) || 'Untitled task' }}
+          />
+          {getTaskNoteUuid(item.task)
+            ? <button type="button" className="agenda-note-link" onClick={(event) => navigateToTaskNote(item.task, event)}>{getTaskNoteLabel(item.task)}</button>
+            : null}
+        </div>
+        {hasDuration
+          ? <span className="agenda-duration">{Math.round((endMs - startMs) / 60000) + 'm'}</span>
+          : null}
+      </div>
+    );
+  };
 
-      return h('section', { key: dateKey, className: 'agenda-day' },
-          h('h4', { className: 'agenda-date-label' }, renderDateLabel(dateKey)),
-          visibleTasks.length === 0 && eventsForDate.length === 0
-            ? h('p', { className: 'agenda-empty-day' },
-                dateKey === todayDateKey ? 'No tasks scheduled for today' : 'No tasks scheduled')
-            : agendaItems.map(item => item.type === 'task'
-              ? h('div', {
-                    key: item.task.uuid, className: 'agenda-item agenda-task-row',
-                    onClick: (e) => { if (!e.target.closest('a')) navigateToTask(item.task); }
-                  },
-                  h('div', { className: `agenda-indicator ${ priorityClassName(item.task) }` }),
-                  h('div', { className: 'agenda-content' },
-                    h('span', { className: 'agenda-time',
-                      title: `${ item.task.startAt ? "Start" : "Deadline" } time for task` },
-                      formatTime(item.task.startAt || item.task.deadline)),
-                    h('span', { className: 'agenda-text',
-                      dangerouslySetInnerHTML: { __html: amplenoteMarkdownRender(item.task.content) ||
-                        'Untitled task' } }),
-                    getTaskNoteUuid(item.task)
-                      ? h('button', { type: 'button', className: 'agenda-note-link',
-                          onClick: (event) => navigateToTaskNote(item.task, event) }, getTaskNoteLabel(item.task))
-                      : null
-                  ),
-                  toMillis(item.task.endAt) && toMillis(item.task.startAt) &&
-                    toMillis(item.task.endAt) > toMillis(item.task.startAt)
-                    ? h('span', { className: 'agenda-duration' },
-                        Math.round((toMillis(item.task.endAt) - toMillis(item.task.startAt)) / 60000) + 'm')
-                    : null
-                )
-              : h('div', {
-                    key: `cal-${ item.index }`, className: 'agenda-item agenda-task-row',
-                  },
-                  h('div', { className: 'agenda-indicator priority-normal' }),
-                  h('div', { className: 'agenda-content' },
-                    item.event.allDay
-                      ? h('span', { className: 'agenda-time' }, 'All day')
-                      : item.event.start ? h('span', { className: 'agenda-time' }, formatTime(item.event.start)) : null,
-                    h('span', { className: 'agenda-text' }, item.event.title || 'Calendar event'),
-                    item.event.calendar?.name
-                      ? h('span', { className: 'agenda-note-link' }, item.event.calendar.name) : null
-                  ),
-                  calendarEventDurationMinutes(item.event)
-                    ? h('span', { className: 'agenda-duration' },
-                        calendarEventDurationMinutes(item.event) + 'm')
-                    : null
-                ))
-        );
-      })
-    )
+  const renderEventItem = (item) => {
+    const durationMinutes = calendarEventDurationMinutes(item.event);
+    return (
+      <div key={`cal-${item.index}`} className="agenda-item agenda-task-row">
+        <div className="agenda-indicator priority-normal" />
+        <div className="agenda-content">
+          {item.event.allDay
+            ? <span className="agenda-time">All day</span>
+            : item.event.start ? <span className="agenda-time">{formatTime(item.event.start)}</span> : null}
+          <span className="agenda-text">{item.event.title || 'Calendar event'}</span>
+          {item.event.calendar?.name
+            ? <span className="agenda-note-link">{item.event.calendar.name}</span> : null}
+        </div>
+        {durationMinutes ? <span className="agenda-duration">{durationMinutes + 'm'}</span> : null}
+      </div>
+    );
+  };
+
+  return (
+    <WidgetWrapper
+      title={widgetTitleFromId('agenda')}
+      icon="📋"
+      widgetId="agenda"
+      headerActions={paginationControls}
+    >
+      {/* [Claude claude-4.6-opus] Task: render calendar events with same formatting as tasks, filtered by date */}
+      {/* Prompt: "calendar events use same formatting as other events; don't show non-today events on today" */}
+      <div className="agenda-list" ref={listRef}>
+        {visibleDateKeys.map(dateKey => {
+          const tasksForDate = tasks[dateKey] || [];
+          const visibleTasks = visibleTasksForDate(tasksForDate);
+          const eventsForDate = calendarEventsForDateKey(calendarEvents, dateKey);
+          const agendaItems = agendaItemsForDate(dateKey, eventsForDate, visibleTasks);
+
+          return (
+            <section key={dateKey} className="agenda-day">
+              <h4 className="agenda-date-label">{renderDateLabel(dateKey)}</h4>
+              {visibleTasks.length === 0 && eventsForDate.length === 0
+                ? <p className="agenda-empty-day">{dateKey === todayDateKey ? 'No tasks scheduled for today' : 'No tasks scheduled'}</p>
+                : agendaItems.map(item => item.type === 'task' ? renderTaskItem(item) : renderEventItem(item))}
+            </section>
+          );
+        })}
+      </div>
+    </WidgetWrapper>
   );
 }

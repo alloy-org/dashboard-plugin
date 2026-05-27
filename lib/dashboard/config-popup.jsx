@@ -4,7 +4,7 @@
  * Task: Reusable settings popup with Submit/Cancel actions
  * Prompt summary: "popup component for widget configuration with onSubmit, onCancel, and content props"
  */
-import { createElement, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import "styles/config-popup.scss"
 
 // [Claude] Task: render a modal popup overlay with settings content and Submit/Cancel buttons
@@ -13,12 +13,11 @@ import "styles/config-popup.scss"
 // [Composer] Task: click-outside-to-close for document-anchored (scrollTop) mode via document mousedown listener
 // Prompt: "clicking outside dashboard-settings-popup should close it; check parent chain to avoid false closes"
 // Date: 2026-04-09
+// [Claude claude-4.7-opus] Task: migrate ConfigPopup from createElement to JSX
+// Prompt: "translate this project to render components with JSX instead"
 export default function ConfigPopup({ title, onSubmit, onCancel, submitLabel = 'Submit', children, scrollTop }) {
-  const h = createElement;
   const containerRef = useRef(null);
 
-  // Document-anchored mode: the overlay uses pointer-events:none so the page can still scroll.
-  // We close the popup when the user clicks anywhere outside the modal card.
   useEffect(() => {
     if (scrollTop === undefined) return;
     const handleMouseDown = (e) => {
@@ -28,28 +27,33 @@ export default function ConfigPopup({ title, onSubmit, onCancel, submitLabel = '
     return () => document.removeEventListener('mousedown', handleMouseDown);
   }, [scrollTop, onCancel]);
 
-  // When scrollTop is provided the overlay is absolutely positioned so it sits at the current scroll
-  // position. pointer-events:none on the backdrop lets the underlying page continue to scroll;
-  // the modal card itself restores pointer events.
   const overlayStyle = scrollTop !== undefined
     ? { position: 'absolute', top: scrollTop, left: 0, right: 0, minHeight: '100vh', pointerEvents: 'none',
         alignItems: 'flex-start', padding: '16px' }
     : undefined;
 
-  return h('div', {
-    className: 'config-popup-overlay',
-    style: overlayStyle,
-    onClick: scrollTop === undefined ? (e) => { if (e.target === e.currentTarget) onCancel(); } : undefined,
-  },
-    h('div', { className: 'config-popup-container', ref: containerRef, style: scrollTop !== undefined ? { pointerEvents: 'auto' } : undefined },
-      title ? h('div', { className: 'config-popup-header' },
-        h('h3', { className: 'config-popup-title' }, title)
-      ) : null,
-      h('div', { className: 'config-popup-body' }, children),
-      h('div', { className: 'config-popup-actions' },
-        h('button', { className: 'config-popup-btn config-popup-btn--cancel', onClick: onCancel }, 'Cancel'),
-        h('button', { className: 'config-popup-btn config-popup-btn--submit', onClick: onSubmit }, submitLabel)
-      )
-    )
+  return (
+    <div
+      className="config-popup-overlay"
+      style={overlayStyle}
+      onClick={scrollTop === undefined ? (e) => { if (e.target === e.currentTarget) onCancel(); } : undefined}
+    >
+      <div
+        className="config-popup-container"
+        ref={containerRef}
+        style={scrollTop !== undefined ? { pointerEvents: 'auto' } : undefined}
+      >
+        {title ? (
+          <div className="config-popup-header">
+            <h3 className="config-popup-title">{title}</h3>
+          </div>
+        ) : null}
+        <div className="config-popup-body">{children}</div>
+        <div className="config-popup-actions">
+          <button className="config-popup-btn config-popup-btn--cancel" onClick={onCancel}>Cancel</button>
+          <button className="config-popup-btn config-popup-btn--submit" onClick={onSubmit}>{submitLabel}</button>
+        </div>
+      </div>
+    </div>
   );
 }
