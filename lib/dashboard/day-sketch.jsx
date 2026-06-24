@@ -176,7 +176,7 @@ function useDaySketchEntries({ app, noteName }) {
       let uuid = noteUUID;
       if (!uuid) {
         const existing = await app.findNote({ name: noteName });
-        uuid = existing?.uuid || await app.createNote(noteName, [DASHBOARD_NOTE_TAG]);
+        uuid = existing?.uuid || await app.createNote(noteName, [DASHBOARD_NOTE_TAG], { archive: true });
         setNoteUUID(uuid);
       }
       await app.replaceNoteContent({ uuid }, body);
