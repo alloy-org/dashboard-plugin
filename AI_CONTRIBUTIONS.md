@@ -3,19 +3,17 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
-## 2026-06-26 — Shared Notes widget follow-up (correct group token, scaffold collaborators, drop catch)
+## 2026-06-26 — DreamTask no-config promo redesign (Ample Agent Pro marketing card)
 
 **Model:** claude-opus-4-8[1m]
 **Files created/modified:**
-- `lib/shared-notes-service.js` (modified — group token `hasTasks` → `taskLists`; rewrote `collaboratorNamesFromNoteHandle` as a clearly-marked scaffold)
-- `lib/dashboard/shared-notes.jsx` (modified — removed the `.catch`/error state per "no unexplained catches")
-- `lib/util/dev-sample-notes.js` (modified — dev group predicate keyed on `taskLists`)
-- `test/shared-notes-service.test.js`, `test/shared-notes-widget.test.js`, `test/dev-app.test.js` (modified — updated to the `taskLists` token and `shareAccess`-only scaffold)
+- `lib/dashboard/dream-task.jsx` (modified — rewrote `NoConfigState` as a marketing card; removed the `CopyLink` import and its usage; `NoConfigState` now takes no props)
+- `lib/dashboard/styles/dream-task.scss` (modified — replaced `.dream-task-no-config-text` styling with `.dream-task-promo-*` badge/headline/feature-pill/button styles)
 
-**Task:** Three corrections after review. (1) Amplenote's real filter token for task-bearing notes is `"taskLists"` (FILTER_GROUP.HAS_TASKS in ample-web `lib/ample-util/filter-group.js`), not `"hasTasks"` — the old token silently matched nothing, so the checkbox changed no results. (2) Verified against ample-web `use-get-app-interface.js` / `note-handle.js` that the plugin API exposes no collaborator identities (a noteHandle carries only the boolean `shared`, set when `note.accounts > 1`); per Bill, `collaboratorNamesFromNoteHandle` is left as a scaffold (reads the dev-fixture `shareAccess` array, with a TODO to wire the real retrieval). (3) Removed the only pending-commit `catch` (the widget's filterNotes error handler), since note loading has no known expected-failure case.
-**Prompt summary:** "keep the collaborators list but scaffold it; correct group is 'taskLists'; remove pending-commit catch statements unless we know what they catch"
-**Scope:** ~40 lines changed across 3 source + 3 test files
-**Notes:** Dev `taskLists` predicate treats an unspecified `hasTasks` as task-bearing so the broad fixture set still reaches the recent-notes and graveyard widgets (which also query `"taskLists"`); only an explicit `hasTasks: false` excludes a note.
+**Task:** Match the supplied design for the DreamTask no-config state — brand + price badges, "Unlock 21 AI features" headline, a 2-column feature-pill grid, "+ 15 more features included", a divider, two CTA buttons, and a "no API key required" footnote. Both CTAs are plain `<a>` links straight to `/plugins/ample_agent_pro` (CopyLink no longer needed).
+**Prompt summary:** "Update NoConfigStat to match this design. We no longer need CopyLink, we can just use a standard link to connect straight to /plugins/ample_agent_pro"
+**Scope:** ~45 lines of new component markup + ~120 lines of SCSS
+**Notes:** Feature pills collapse to a single column below the large-phone breakpoint. `.dream-task-settings-link` retained since `ErrorState` still uses it. All 22 dream-task tests pass; build is clean.
 
 ## 2026-06-26 — Shared Notes widget (collaborator-updated notes)
 

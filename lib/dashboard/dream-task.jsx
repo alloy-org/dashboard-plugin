@@ -14,7 +14,6 @@ import { DASHBOARD_TASKS_UPDATED_EVENT } from "hooks/use-dashboard-task-updates"
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import { logIfEnabled } from "util/log";
 import { dailyJotNoteUuidFromToday, markTaskComplete } from "util/task-util";
-import CopyLink from "copy-link";
 import WidgetWrapper from "widget-wrapper";
 
 import "styles/dream-task.scss";
@@ -130,25 +129,50 @@ function LoadingState() {
   );
 }
 
-// [Claude claude-sonnet-4-6] Task: suggest Amplenote AI plugin when no API key is configured
-function NoConfigState({ onSettingsClick, providerName }) {
-  const message = providerName
-    ? `No API key is available for the currently selected AI provider, ${ providerName }.`
-    : `DreamTask uses AI to suggest tasks aligned with your goals (as defined in the dashboard's "${ widgetTitleFromId("planning") }" component). An LLM provider and API key are required`;
+const AMPLE_AGENT_PRO_URL = "https://www.amplenote.com/plugins/ample_agent_pro";
+
+// [Claude claude-opus-4-8] Task: list of highlighted Ample Agent Pro features rendered as pills
+const NO_CONFIG_FEATURES = [
+  { icon: '🎯', label: 'Highlight goal-matched tasks' },
+  { icon: '⚖️', label: 'Sort tasks (fun, fast, etc)' },
+  { icon: '🕵', label: 'Deep note search' },
+  { icon: '💪', label: 'Task completion agent' },
+  { icon: '🔬', label: 'Multi-agent deep research' },
+  { icon: '✏️', label: 'Finish a note in progress' },
+];
+
+// [Claude claude-opus-4-8] Task: redesign no-config promo to a marketing card for Ample Agent Pro
+// Prompt: "Update NoConfigStat to match this design, linking straight to /plugins/ample_agent_pro"
+function NoConfigState() {
   return (
     <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon={widgetIcon()} widgetId={WIDGET_ID}>
       <div className="dream-task-no-config">
-        <p className="dream-task-no-config-text">{message}</p>
-        <p className="dream-task-no-config-text">
-          {'No API key? Install '}
-          <CopyLink url="https://www.amplenote.com/plugins/ample_agent_pro" className="dream-task-settings-link">
-            Amplenote’s AI integration
-          </CopyLink>
-          {' to enable suggested tasks and 10+ other AI features — no API key required.'}
+        <div className="dream-task-promo-badges">
+          <span className="dream-task-promo-badge dream-task-promo-badge--brand">Ample Agent Pro</span>
+          <span className="dream-task-promo-badge dream-task-promo-badge--price">Early Adopters $8/mo Special</span>
+        </div>
+        <h3 className="dream-task-promo-headline">Unlock 21 AI features — no API key needed</h3>
+        <p className="dream-task-promo-subhead">
+          Amplenote provides free access to frontier models for writing, task management, research, and more.
         </p>
-        <p className="dream-task-no-config-text">
-          <a href="#" className="dream-task-settings-link" onClick={onSettingsClick}>Configure AI settings →</a>
-        </p>
+        <div className="dream-task-promo-features">
+          {NO_CONFIG_FEATURES.map(({ icon, label }) => (
+            <span key={label} className="dream-task-promo-feature">
+              <span className="dream-task-promo-feature-icon" aria-hidden="true">{icon}</span>
+              {label}
+            </span>
+          ))}
+        </div>
+        <p className="dream-task-promo-more">+ 15 more features included</p>
+        <div className="dream-task-promo-actions">
+          <a href={AMPLE_AGENT_PRO_URL} className="dream-task-promo-button dream-task-promo-button--primary">
+            ⚡ Start for $8/month
+          </a>
+          <a href={AMPLE_AGENT_PRO_URL} className="dream-task-promo-button dream-task-promo-button--secondary">
+            See all features →
+          </a>
+        </div>
+        <p className="dream-task-promo-footnote">✓ No API key required for core features</p>
       </div>
     </WidgetWrapper>
   );
@@ -607,7 +631,7 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   if (shouldRenderNoConfig) {
     logIfEnabled('[DreamTask] rendering no-config state', { providerName, hasError: !!error,
       errorCode: error?.errorCode ?? null, taskCount: tasks?.length ?? 0 });
-    return <NoConfigState onSettingsClick={onSettingsClick} providerName={providerName} />;
+    return <NoConfigState />;
   }
 
   const headerActions = <DreamTaskHeaderActions noteUUID={noteUUID} onOpenNote={onOpenNote} onReseed={onReseed} />;
