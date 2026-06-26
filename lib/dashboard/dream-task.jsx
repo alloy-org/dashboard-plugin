@@ -143,7 +143,7 @@ const NO_CONFIG_FEATURES = [
 
 // [Claude claude-opus-4-8] Task: redesign no-config promo to a marketing card for Ample Agent Pro
 // Prompt: "Update NoConfigStat to match this design, linking straight to /plugins/ample_agent_pro"
-function NoConfigState() {
+function NoConfigState({ app }) {
   return (
     <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon={widgetIcon()} widgetId={WIDGET_ID}>
       <div className="dream-task-no-config">
@@ -165,10 +165,10 @@ function NoConfigState() {
         </div>
         <p className="dream-task-promo-more">+ 15 more features included</p>
         <div className="dream-task-promo-actions">
-          <a href={AMPLE_AGENT_PRO_URL} className="dream-task-promo-button dream-task-promo-button--primary">
+          <a href="javascript:void(0)" onClick={ () => app.navigate(AMPLE_AGENT_PRO_URL) } className="dream-task-promo-button dream-task-promo-button--primary">
             ⚡ Start for $8/month
           </a>
-          <a href={AMPLE_AGENT_PRO_URL} className="dream-task-promo-button dream-task-promo-button--secondary">
+          <a href="javascript:void(0)" onClick={ () => app.navigate(AMPLE_AGENT_PRO_URL) } className="dream-task-promo-button dream-task-promo-button--secondary">
             See all features →
           </a>
         </div>
@@ -631,7 +631,7 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   if (shouldRenderNoConfig) {
     logIfEnabled('[DreamTask] rendering no-config state', { providerName, hasError: !!error,
       errorCode: error?.errorCode ?? null, taskCount: tasks?.length ?? 0 });
-    return <NoConfigState />;
+    return <NoConfigState app={ app } />;
   }
 
   const headerActions = <DreamTaskHeaderActions noteUUID={noteUUID} onOpenNote={onOpenNote} onReseed={onReseed} />;
