@@ -6,7 +6,7 @@
  */
 import fs from "fs";
 import crypto from "crypto";
-import { SAMPLE_NOTE_HANDLES, withAsyncIterator } from "../lib/util/dev-sample-notes.js";
+import { noteHandleMatchesGroups, SAMPLE_NOTE_HANDLES, withAsyncIterator } from "../lib/util/dev-sample-notes.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -487,11 +487,16 @@ function _sortFilteredNotes(notes, query = "", sortOrder = "") {
       const millis = Date.parse(value || "");
       return Number.isNaN(millis) ? 0 : millis;
     };
+    // Prefer frontmatter `meta` (file-backed notes) but fall back to top-level handle fields so
+    // the SAMPLE_NOTE_HANDLES domain fixtures, which carry flat `updated`/`changed`/`created`
+    // attributes, also sort correctly (e.g. the Shared Notes widget's "updated" ordering).
     const leftTimestamp = timestampFromValue(
-      left?.meta?.[sortField] || (normalizedSortOrder === "opened" ? left?.meta?.updated || left?.meta?.created : "")
+      left?.meta?.[sortField] || left?.[sortField]
+        || (normalizedSortOrder === "opened" ? left?.meta?.updated || left?.meta?.created || left?.updated || left?.created : "")
     );
     const rightTimestamp = timestampFromValue(
-      right?.meta?.[sortField] || (normalizedSortOrder === "opened" ? right?.meta?.updated || right?.meta?.created : "")
+      right?.meta?.[sortField] || right?.[sortField]
+        || (normalizedSortOrder === "opened" ? right?.meta?.updated || right?.meta?.created || right?.updated || right?.created : "")
     );
     if (rightTimestamp !== leftTimestamp) return rightTimestamp - leftTimestamp;
     return leftTitle.localeCompare(rightTitle);
@@ -616,10 +621,12 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
     // [Claude claude-opus-4-7] Task: return a sync array carrying Symbol.asyncIterator so callers can iterate the result directly or await it as an array, matching production filterNoteHandles
     // Prompt: "update our dev-app implementation of filterNotes to return a compatible iterator so that calls of filterNotes can iterate over it if they don't use its return value as an array"
     filterNotes(options = {}, sortOrder = "") {
-      const { query, taskDomainUUID } = options;
+      const { group, query, taskDomainUUID } = options;
       let noteHandles;
       if (taskDomainUUID) {
-        noteHandles = _sortFilteredNotes(SAMPLE_NOTE_HANDLES[taskDomainUUID] || [], query, sortOrder);
+        const domainHandles = (SAMPLE_NOTE_HANDLES[taskDomainUUID] || [])
+          .filter(handle => noteHandleMatchesGroups(handle, group));
+        noteHandles = _sortFilteredNotes(domainHandles, query, sortOrder);
       } else {
         const matchingNotes = _readAllNoteFiles(notesDir)
           .filter(note => !query || note.meta.title === query);

@@ -1,0 +1,99 @@
+/* [Claude claude-opus-4-8-authored file]
+ * Task: Shared Notes widget styles — notes recently updated by collaborators
+ * Prompt summary: "note title on the first line, collaborators and last-updated on the second line"
+ */
+
+@use 'theme-tokens' as *;
+
+/* [Claude claude-opus-4-8] Task: lay out a scrollable list of collaborator-updated shared notes */
+/* Prompt: "show which notes have been recently updated by collaborators" */
+.widget-shared-notes {
+  .widget-body {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Checkbox toggle in the header reuses widget-header-action spacing but lays out inline. */
+  .shared-notes-toggle {
+    align-items: center;
+    cursor: pointer;
+    display: inline-flex;
+    gap: $sp-xs;
+  }
+
+  .shared-note-list {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: $sp-xs;
+    list-style: none;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .shared-note-item {
+    &:hover {
+      background-color: $color-bg-page;
+    }
+  }
+
+  .shared-note-link {
+    background: none;
+    border: none;
+    border-radius: $radius-sm;
+    color: inherit;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    font-family: inherit;
+    gap: 2px;
+    padding: $sp-sm $sp-md;
+    text-align: left;
+    width: 100%;
+  }
+
+  /* Title abbreviated to a single line when it would otherwise consume more than one. */
+  .shared-note-title {
+    color: $color-text;
+    font-size: 0.85rem;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .shared-note-meta {
+    align-items: baseline;
+    color: $color-text-muted;
+    display: flex;
+    font-size: 0.75rem;
+    gap: $sp-sm;
+    justify-content: space-between;
+  }
+
+  .shared-note-collaborators {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .shared-note-updated {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .note-loading,
+  .note-empty,
+  .note-error {
+    color: $color-text-secondary;
+    font-size: 0.85rem;
+    padding: $sp-md 0;
+    text-align: center;
+  }
+
+  .note-error {
+    color: $color-danger;
+  }
+}

@@ -3,6 +3,38 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-06-26 — Shared Notes widget follow-up (correct group token, scaffold collaborators, drop catch)
+
+**Model:** claude-opus-4-8[1m]
+**Files created/modified:**
+- `lib/shared-notes-service.js` (modified — group token `hasTasks` → `taskLists`; rewrote `collaboratorNamesFromNoteHandle` as a clearly-marked scaffold)
+- `lib/dashboard/shared-notes.jsx` (modified — removed the `.catch`/error state per "no unexplained catches")
+- `lib/util/dev-sample-notes.js` (modified — dev group predicate keyed on `taskLists`)
+- `test/shared-notes-service.test.js`, `test/shared-notes-widget.test.js`, `test/dev-app.test.js` (modified — updated to the `taskLists` token and `shareAccess`-only scaffold)
+
+**Task:** Three corrections after review. (1) Amplenote's real filter token for task-bearing notes is `"taskLists"` (FILTER_GROUP.HAS_TASKS in ample-web `lib/ample-util/filter-group.js`), not `"hasTasks"` — the old token silently matched nothing, so the checkbox changed no results. (2) Verified against ample-web `use-get-app-interface.js` / `note-handle.js` that the plugin API exposes no collaborator identities (a noteHandle carries only the boolean `shared`, set when `note.accounts > 1`); per Bill, `collaboratorNamesFromNoteHandle` is left as a scaffold (reads the dev-fixture `shareAccess` array, with a TODO to wire the real retrieval). (3) Removed the only pending-commit `catch` (the widget's filterNotes error handler), since note loading has no known expected-failure case.
+**Prompt summary:** "keep the collaborators list but scaffold it; correct group is 'taskLists'; remove pending-commit catch statements unless we know what they catch"
+**Scope:** ~40 lines changed across 3 source + 3 test files
+**Notes:** Dev `taskLists` predicate treats an unspecified `hasTasks` as task-bearing so the broad fixture set still reaches the recent-notes and graveyard widgets (which also query `"taskLists"`); only an explicit `hasTasks: false` excludes a note.
+
+## 2026-06-26 — Shared Notes widget (collaborator-updated notes)
+
+**Model:** claude-opus-4-8[1m]
+**Files created/modified:**
+- `lib/shared-notes-service.js` (created — filterNotes query + timestamp/collaborator/label helpers)
+- `lib/dashboard/shared-notes.jsx` (created — widget component with a "Has tasks" checkbox)
+- `lib/dashboard/styles/shared-notes.scss` (created — two-line note row layout)
+- `test/shared-notes-service.test.js` (created — service + helper unit tests)
+- `test/shared-notes-widget.test.js` (created — widget render + toggle interaction tests)
+- `lib/constants/settings.js` (modified — added `shared-notes` to `WIDGET_REGISTRY`, default 2-wide)
+- `lib/dashboard/dashboard.jsx` (modified — import, `SharedNotesCell` factory, `CELL_COMPONENTS` entry)
+- `lib/dashboard/layout-profiles.js` (modified — added `shared-notes` to the Day-to-Day profile; the Goal-Oriented profile picks it up automatically via `goalOrientedWidgets()`)
+
+**Task:** Show which notes were recently updated by collaborators. Uses `app.filterNotes` with group `"shared"` (and optionally `"hasTasks"` via a checkbox), filtered by the active task domain and ordered by `"updated"`, keeping noteHandles whose `updated` timestamp is greater than `changed` (i.e. another collaborator edited after the current user). Shows up to 5 notes when 1 cell tall, 10 when 2 tall.
+**Prompt summary:** "build a new component to show which notes have been recently updated by collaborators (dashboard/shared-notes), 2 wide by 1 tall, with a checkbox to limit to notes with tasks"
+**Scope:** ~270 lines of new logic/markup across 3 source files + 2 test files, plus 3 registration touch-points
+**Notes:** Component file uses the `.jsx` extension (per project convention for widgets) rather than the `.js` named in the prompt. The documented Amplenote `noteHandle` exposes only a boolean `shared` flag and no recipient list, so `collaboratorNamesFromNoteHandle` defensively reads any richer sharing fields a host may attach (`shareAccess`/`sharedWith`/`collaborators`/`people`/`shareRecipients`) and the widget falls back to a generic "Shared with collaborators" label when none are present. The "Has tasks" checkbox is local component state (not persisted across reloads).
+
 ## 2026-05-27 — Migrate component rendering from createElement to JSX
 
 **Model:** claude-4.7-opus

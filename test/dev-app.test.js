@@ -303,6 +303,40 @@ describe("Dev App Harness", () => {
       expect(results.map(r => r.uuid)).toContain("uuid-match-1");
       expect(results.map(r => r.uuid)).toContain("uuid-match-2");
     });
+
+    // [Claude claude-opus-4-8] Generated tests for: domain filterNotes honoring the shared/taskLists groups
+    // Prompt: "create sample notes in dev mode that have the attributes necessary to be found by the filterNotes seeking shared notes"
+    it("returns only shared sample notes for the 'shared' group, ordered by updated", async () => {
+      const app = createDevApp(tmpSettingsPath, tmpNotesDir);
+      const results = [...await app.filterNotes({ group: "shared", taskDomainUUID: "domain-work-uuid" }, "updated")];
+
+      // Every returned handle is flagged shared, and only shared work notes come back.
+      expect(results.every(handle => handle.shared)).toBe(true);
+      expect(results.map(handle => handle.uuid)).toEqual(
+        expect.arrayContaining(["note-work-1", "note-work-4", "note-work-7", "note-work-10", "note-work-14"])
+      );
+      expect(results.map(handle => handle.uuid)).not.toContain("note-work-2");
+      // "updated" sort puts the most recently collaborator-touched note (note-work-1, 8m ago) first.
+      expect(results[0].uuid).toBe("note-work-1");
+    });
+
+    it("excludes shared notes without tasks when the taskLists group is added", async () => {
+      const app = createDevApp(tmpSettingsPath, tmpNotesDir);
+      const results = [...await app.filterNotes({ group: "shared,taskLists", taskDomainUUID: "domain-work-uuid" }, "updated")];
+
+      // note-work-7 is shared but hasTasks: false, so it drops out under "shared,taskLists".
+      expect(results.map(handle => handle.uuid)).toContain("note-work-1");
+      expect(results.map(handle => handle.uuid)).not.toContain("note-work-7");
+    });
+
+    it("provides collaborator-updated sample notes (updated newer than changed) with shareAccess names", async () => {
+      const app = createDevApp(tmpSettingsPath, tmpNotesDir);
+      const results = [...await app.filterNotes({ group: "shared", taskDomainUUID: "domain-work-uuid" }, "updated")];
+      const collaboratorUpdated = results.find(handle => handle.uuid === "note-work-1");
+
+      expect(Date.parse(collaboratorUpdated.updated)).toBeGreaterThan(Date.parse(collaboratorUpdated.changed));
+      expect(collaboratorUpdated.shareAccess).toEqual(["Jordan Lee", "Sam Rivera"]);
+    });
   });
 
   // --------------------------------------------------

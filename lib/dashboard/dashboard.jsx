@@ -31,6 +31,7 @@ import { pluginContext, setPluginData, updatePluginSetting } from "plugin-data";
 import QuotesWidget from 'quotes';
 import QuickActionsWidget from 'quick-actions';
 import RecentNotesWidget from 'recent-notes';
+import SharedNotesWidget from 'shared-notes';
 import TaskDomains from 'task-domains';
 import { backgroundSplashUrl } from 'util/background-splash-images';
 import { dateKeyFromDateInput, weekStartDayFromFormat, weekStartFromDateInput } from 'util/date-utility';
@@ -158,6 +159,9 @@ const QuotesCell = createWidgetCell('quotes', QuotesWidget, ({ app, config, prov
 const RecentNotesCell = createWidgetCell('recent-notes', RecentNotesWidget, ({ app, config, taskDomainUUID }) => ({
   app, gridHeightSize: Number(config?.gridHeightSize) || 1, taskDomainUUID,
 }));
+const SharedNotesCell = createWidgetCell('shared-notes', SharedNotesWidget, ({ app, config, taskDomainUUID }) => ({
+  app, gridHeightSize: Number(config?.gridHeightSize) || 1, taskDomainUUID,
+}));
 const GraveyardCell = createWidgetCell('graveyard', GraveyardWidget, ({ app, config, taskDomainUUID }) => ({
   app, gridHeightSize: Number(config?.gridHeightSize) || 1, gridWidthSize: Number(config?.gridWidthSize) || 2, taskDomainUUID,
 }));
@@ -181,6 +185,7 @@ const CELL_COMPONENTS = {
   'quick-actions': QuickActionsCell,
   quotes: QuotesCell,
   'recent-notes': RecentNotesCell,
+  'shared-notes': SharedNotesCell,
   'victory-value': VictoryValueCell,
 };
 
