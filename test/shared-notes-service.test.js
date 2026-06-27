@@ -1,6 +1,7 @@
 // [Claude claude-opus-4-8] Generated tests for: Shared Notes service — collaborator-updated note discovery
 import { jest } from "@jest/globals";
-import { collaboratorNamesFromNoteHandle, findCollaboratorUpdatedNotes, lastUpdatedLabelFromMs,
+import { avatarTextFromName, buildPeopleIndexByNote, collaboratorNamesFromNoteHandle,
+  collaboratorsForNote, fetchPeopleIndexByNote, findCollaboratorUpdatedNotes, lastUpdatedLabelFromMs,
   noteUpdatedByCollaborator, sharedNotesGroupParam, timestampMsFromValue } from "shared-notes-service";
 
 const TASK_DOMAIN_UUID = "domain-all";
@@ -19,10 +20,16 @@ function buildNoteHandle(overrides = {}) {
 
 // ----------------------------------------------------------------------------------------------
 // @desc Build a mock Amplenote app whose filterNotes returns the supplied handles and records calls.
+//   An optional `people` array, when provided, is returned from a getPeople() mock so the service's
+//   collaborator index can be exercised; omitting it models hosts that predate getPeople().
 // @param {Array<Object>} handles - noteHandles to return from filterNotes.
+// @param {Array<Object>|null} people - person objects for getPeople(), or null to omit getPeople.
 // [Claude claude-opus-4-8] Task: capture filterNotes arguments for the shared-notes service
-function buildMockApp(handles) {
-  return { filterNotes: jest.fn().mockResolvedValue(handles) };
+// [Claude claude-opus-4-8] Task: optionally stub getPeople() for the collaborator index
+function buildMockApp(handles, people = null) {
+  const app = { filterNotes: jest.fn().mockResolvedValue(handles) };
+  if (people) app.getPeople = jest.fn().mockResolvedValue(people);
+  return app;
 }
 
 describe("sharedNotesGroupParam", () => {
@@ -106,5 +113,91 @@ describe("findCollaboratorUpdatedNotes", () => {
     const results = await findCollaboratorUpdatedNotes({ app, maxNotes: 5, taskDomainUUID: TASK_DOMAIN_UUID });
 
     expect(results).toHaveLength(1);
+  });
+
+  it("attaches getPeople-derived collaborators (name + avatar) indexed by note uuid", async () => {
+    const handles = [
+      buildNoteHandle({ uuid: "a", name: "Alpha", changed: new Date(1000).toISOString(), updated: new Date(9000).toISOString() }),
+    ];
+    const people = [
+      { uuid: "p1", name: "Ada Lovelace", avatar: { image: "https://example.com/ada.png" }, sharing: { notes: ["a"] } },
+      { uuid: "p2", name: "Grace Hopper", avatar: { text: "GH" }, sharing: { notes: ["a", "other"] } },
+      { uuid: "p3", name: "Not On This Note", avatar: { text: "NO" }, sharing: { notes: ["other"] } },
+    ];
+    const app = buildMockApp(handles, people);
+
+    const results = await findCollaboratorUpdatedNotes({ app, maxNotes: 5, taskDomainUUID: TASK_DOMAIN_UUID });
+
+    expect(app.getPeople).toHaveBeenCalled();
+    expect(results[0].collaborators).toEqual([
+      { avatar: { image: "https://example.com/ada.png" }, name: "Ada Lovelace" },
+      { avatar: { text: "GH" }, name: "Grace Hopper" },
+    ]);
+  });
+
+  it("falls back to shareAccess names with null avatars when getPeople is unavailable", async () => {
+    const handles = [
+      buildNoteHandle({ uuid: "a", name: "Alpha", shareAccess: ["Solo Dev"],
+        changed: new Date(1000).toISOString(), updated: new Date(9000).toISOString() }),
+    ];
+    const app = buildMockApp(handles); // no getPeople
+
+    const results = await findCollaboratorUpdatedNotes({ app, maxNotes: 5, taskDomainUUID: TASK_DOMAIN_UUID });
+
+    expect(results[0].collaborators).toEqual([{ avatar: null, name: "Solo Dev" }]);
+  });
+});
+
+describe("buildPeopleIndexByNote", () => {
+  it("inverts each person's sharing.notes into a note-uuid -> people map, de-duplicating people", () => {
+    const ada = { uuid: "p1", name: "Ada", sharing: { notes: ["n1", "n2"] } };
+    const grace = { uuid: "p2", name: "Grace", sharing: { notes: ["n2"] } };
+    const index = buildPeopleIndexByNote([ada, grace, ada]);
+
+    expect(index.get("n1")).toEqual([ada]);
+    expect(index.get("n2")).toEqual([ada, grace]);
+    expect(index.has("missing")).toBe(false);
+  });
+
+  it("tolerates missing/non-array input and people without sharing.notes", () => {
+    expect(buildPeopleIndexByNote(null).size).toBe(0);
+    expect(buildPeopleIndexByNote([{ uuid: "p1", name: "No Sharing" }]).size).toBe(0);
+  });
+});
+
+describe("fetchPeopleIndexByNote", () => {
+  it("returns an empty index when the host has no getPeople", async () => {
+    const index = await fetchPeopleIndexByNote({});
+    expect(index.size).toBe(0);
+  });
+
+  it("builds an index from getPeople and swallows errors", async () => {
+    const ok = { getPeople: jest.fn().mockResolvedValue([{ uuid: "p1", name: "Ada", sharing: { notes: ["n1"] } }]) };
+    expect((await fetchPeopleIndexByNote(ok)).get("n1")).toHaveLength(1);
+
+    const broken = { getPeople: jest.fn().mockRejectedValue(new Error("nope")) };
+    expect((await fetchPeopleIndexByNote(broken)).size).toBe(0);
+  });
+});
+
+describe("avatarTextFromName", () => {
+  it("derives initials from one- and multi-word names and degrades to '?'", () => {
+    expect(avatarTextFromName("Ada Lovelace")).toBe("AL");
+    expect(avatarTextFromName("Ada Babbage Lovelace")).toBe("AL");
+    expect(avatarTextFromName("madonna")).toBe("MA");
+    expect(avatarTextFromName("")).toBe("?");
+    expect(avatarTextFromName(null)).toBe("?");
+  });
+});
+
+describe("collaboratorsForNote", () => {
+  it("prefers indexed people and falls back to shareAccess names with null avatars", () => {
+    const person = { uuid: "p1", name: "Ada", avatar: { text: "A" }, sharing: { notes: ["n1"] } };
+    const peopleIndex = buildPeopleIndexByNote([person]);
+
+    expect(collaboratorsForNote({ noteHandle: { uuid: "n1" }, peopleIndex }))
+      .toEqual([{ avatar: { text: "A" }, name: "Ada" }]);
+    expect(collaboratorsForNote({ noteHandle: { uuid: "n2", shareAccess: ["Fallback"] }, peopleIndex }))
+      .toEqual([{ avatar: null, name: "Fallback" }]);
   });
 });

@@ -3,13 +3,35 @@
 // collaborators, with a checkbox to limit results to notes that have tasks"
 import { widgetTitleFromId } from "constants/settings";
 import { useEffect, useState } from "react";
-import { findCollaboratorUpdatedNotes, lastUpdatedLabelFromMs } from "shared-notes-service";
+import { avatarTextFromName, findCollaboratorUpdatedNotes, lastUpdatedLabelFromMs } from "shared-notes-service";
 import "styles/shared-notes.scss";
 import { logIfEnabled } from "util/log";
 import WidgetWrapper from "widget-wrapper";
 
 const MAX_NOTES_SHORT = 5;
 const MAX_NOTES_TALL = 10;
+// Cap avatars rendered per note so a heavily-shared note doesn't crowd out the title/timestamp.
+const MAX_AVATARS = 4;
+
+// ----------------------------------------------------------------------------------------------
+// @desc Render a single collaborator's avatar: the person's avatar image when getPeople supplied
+//   one, otherwise a text badge using the person's `avatar.text` or initials derived from the name.
+// @param {Object} props - Component props.
+// @param {Object} props.collaborator - A { name, avatar } entry from collaboratorsForNote.
+// @returns {JSX.Element} An <img> avatar or a text-badge <span>.
+// [Claude claude-opus-4-8] Task: show a collaborator's avatar image when present, else initials
+// Prompt: "use the details about the person to show their avatar when it is present"
+function CollaboratorAvatar({ collaborator }) {
+  const { avatar, name } = collaborator;
+  if (avatar?.image) {
+    return <img className="collaborator-avatar" src={avatar.image} alt={name} title={name} />;
+  }
+  return (
+    <span className="collaborator-avatar collaborator-avatar-text" title={name}>
+      {avatar?.text || avatarTextFromName(name)}
+    </span>
+  );
+}
 
 // ----------------------------------------------------------------------------------------------
 // @desc Shared Notes widget — lists the most recently collaborator-updated notes for the active
@@ -74,8 +96,17 @@ export default function SharedNotesWidget({ app, gridHeightSize = 1, taskDomainU
             >
               <span className="shared-note-title">{noteHandle.name || "Untitled"}</span>
               <span className="shared-note-meta">
+                {collaborators.length > 0 && (
+                  <span className="shared-note-avatars">
+                    {collaborators.slice(0, MAX_AVATARS).map((collaborator, index) => (
+                      <CollaboratorAvatar key={index} collaborator={collaborator} />
+                    ))}
+                  </span>
+                )}
                 <span className="shared-note-collaborators">
-                  {collaborators.length > 0 ? collaborators.join(", ") : "Shared with collaborators"}
+                  {collaborators.length > 0
+                    ? collaborators.map(collaborator => collaborator.name).join(", ")
+                    : "Shared with collaborators"}
                 </span>
                 <span className="shared-note-updated">{lastUpdatedLabelFromMs(updatedMs, nowMs)}</span>
               </span>

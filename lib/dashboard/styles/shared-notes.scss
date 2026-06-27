@@ -64,12 +64,47 @@
   }
 
   .shared-note-meta {
-    align-items: baseline;
+    align-items: center;
     color: $color-text-muted;
     display: flex;
     font-size: 0.75rem;
     gap: $sp-sm;
     justify-content: space-between;
+  }
+
+  /* Overlapping avatar stack: each avatar after the first tucks slightly under its left neighbor. */
+  /* [Claude claude-opus-4-8] Task: style collaborator avatars from getPeople on the meta line */
+  /* Prompt: "use the details about the person to show their avatar when it is present" */
+  .shared-note-avatars {
+    align-items: center;
+    display: inline-flex;
+    flex-shrink: 0;
+
+    .collaborator-avatar {
+      align-items: center;
+      background-color: $color-bg-page;
+      border: 1px solid $color-bg-card;
+      border-radius: 50%;
+      box-sizing: border-box;
+      display: inline-flex;
+      font-size: 0.6rem;
+      font-weight: 600;
+      height: 1.25rem;
+      justify-content: center;
+      line-height: 1;
+      object-fit: cover;
+      overflow: hidden;
+      text-transform: uppercase;
+      width: 1.25rem;
+
+      &:not(:first-child) {
+        margin-left: -0.4rem;
+      }
+    }
+
+    .collaborator-avatar-text {
+      color: $color-text-secondary;
+    }
   }
 
   .shared-note-collaborators {

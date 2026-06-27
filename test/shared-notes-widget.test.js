@@ -73,6 +73,29 @@ describe("SharedNotesWidget", () => {
     expect(app.filterNotes).toHaveBeenLastCalledWith({ group: "shared,taskLists", taskDomainUUID: TASK_DOMAIN_UUID }, "updated");
   });
 
+  it("renders getPeople avatars: an <img> when a person has an avatar image, a text badge otherwise", async () => {
+    const recentIso = iso(Date.now());
+    const app = {
+      filterNotes: jest.fn().mockResolvedValue([
+        { changed: iso(1000), name: "Roadmap", updated: recentIso, uuid: "note-1" },
+      ]),
+      getPeople: jest.fn().mockResolvedValue([
+        { uuid: "p1", name: "Ada Lovelace", avatar: { image: "https://example.com/ada.png" }, sharing: { notes: ["note-1"] } },
+        { uuid: "p2", name: "Grace Hopper", avatar: { text: "GH" }, sharing: { notes: ["note-1"] } },
+      ]),
+      navigate: jest.fn(),
+    };
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    await act(async () => {
+      createRoot(container).render(createElement(SharedNotesWidget, { app, taskDomainUUID: TASK_DOMAIN_UUID }));
+    });
+
+    expect(container.querySelector("img.collaborator-avatar")?.getAttribute("src")).toBe("https://example.com/ada.png");
+    expect(container.querySelector(".collaborator-avatar-text").textContent).toBe("GH");
+    expect(container.querySelector(".shared-note-collaborators").textContent).toBe("Ada Lovelace, Grace Hopper");
+  });
+
   it("shows an empty-state message when no notes were updated by collaborators", async () => {
     const app = { filterNotes: jest.fn().mockResolvedValue([]), navigate: jest.fn() };
     const container = document.createElement("div");

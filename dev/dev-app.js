@@ -6,7 +6,7 @@
  */
 import fs from "fs";
 import crypto from "crypto";
-import { noteHandleMatchesGroups, SAMPLE_NOTE_HANDLES, withAsyncIterator } from "../lib/util/dev-sample-notes.js";
+import { noteHandleMatchesGroups, SAMPLE_NOTE_HANDLES, SAMPLE_PEOPLE, withAsyncIterator } from "../lib/util/dev-sample-notes.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -537,6 +537,12 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
 
     async getTaskDomains() {
       return SAMPLE_DOMAINS;
+    },
+
+    // [Claude claude-opus-4-8] Task: mirror production app.getPeople() in the Node dev shim
+    // Prompt: "there is now documentation... app.getPeople... build and store an index of notesUUID => person"
+    async getPeople() {
+      return SAMPLE_PEOPLE;
     },
 
     // [Claude] Task: search notes directory for files tagged with the domain's tag, resolve $sampleTasks$ directive

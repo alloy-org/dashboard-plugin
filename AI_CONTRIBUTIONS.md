@@ -3,6 +3,23 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-06-27 — Shared Notes collaborators via app.getPeople (avatars)
+
+**Model:** claude-opus-4-8[1m]
+**Files created/modified:**
+- `lib/shared-notes-service.js` (modified — replaced the scaffolded `collaboratorNamesFromNoteHandle` retrieval with real `app.getPeople()` support: added `buildPeopleIndexByNote`, `fetchPeopleIndexByNote`, `avatarTextFromName`, and `collaboratorsForNote`; `findCollaboratorUpdatedNotes` now fetches the people index concurrently with filterNotes and attaches `{ name, avatar }` collaborators per note)
+- `lib/dashboard/shared-notes.jsx` (modified — added a `CollaboratorAvatar` component and an avatar stack on the meta line; renders `avatar.image` as an `<img>`, otherwise `avatar.text`/initials as a badge)
+- `lib/dashboard/styles/shared-notes.scss` (modified — added `.shared-note-avatars` / `.collaborator-avatar` overlapping-circle styling)
+- `lib/util/dev-sample-notes.js` (modified — added `SAMPLE_PEOPLE` fixture whose `sharing.notes` reference the shared sample notes, mixing image and text avatars)
+- `lib/util/browser-dev-app.js` & `dev/dev-app.js` (modified — added `getPeople()` shims returning `SAMPLE_PEOPLE`)
+- `test/shared-notes-service.test.js` (modified — tests for the index builder, fetch helper, initials, fallback, and getPeople-derived collaborators)
+- `test/shared-notes-widget.test.js` (modified — test asserting image vs. text avatar rendering)
+
+**Task:** Now that `app.getPeople()` is documented, build a noteUUID => person index from each person's `sharing.notes` and use the person's `avatar` ({ image } or { text }) to render collaborator avatars in the Shared Notes widget.
+**Prompt summary:** "there is now documentation: app.getPeople. We need to build and store an index of notesUUID => person, and use the person to show their avatar when present"
+**Scope:** ~120 lines of new service/widget logic + ~40 lines SCSS + dev fixtures and tests
+**Notes:** Degrades gracefully — hosts without `getPeople` (or that throw) yield an empty index and fall back to the dev-fixture `shareAccess` names. All shared-notes tests pass; build is clean. Pre-existing failures in call-plugin-fallback/graveyard-widget/day-sketch are unrelated.
+
 ## 2026-06-26 — DreamTask no-config promo redesign (Ample Agent Pro marketing card)
 
 **Model:** claude-opus-4-8[1m]
