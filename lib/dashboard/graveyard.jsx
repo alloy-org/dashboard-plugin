@@ -280,7 +280,8 @@ export default function GraveyardWidget({ app, gridHeightSize = 1, gridWidthSize
     setLoading(true);
     try {
       const { candidates } = await loadGraveyardCandidates(app, maxTasks, taskDomainUUID, { forceRefresh });
-      const sliced = candidates.slice(0, maxTasks);
+      // Parent tasks own sub-tasks, so dismissing them would orphan their children — never recommend them.
+      const sliced = candidates.filter(task => !task.isParent).slice(0, maxTasks);
       setTasks(sliced);
     } catch (err) {
       logIfEnabled('[Graveyard] load failed:', err);
