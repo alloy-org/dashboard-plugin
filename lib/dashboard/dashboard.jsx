@@ -194,6 +194,8 @@ function applyDashboardData(data, { initDataFreshRef, initializeDomainTasks, set
     setQuarterlyPlans, setWeeklyVictoryValue }) {
   setLoggingEnabled(data.settings?.[SETTING_KEYS.CONSOLE_LOGGING]);
   logIfEnabled(`[dashboard] applyDashboardData — tasks:${ data.tasks?.length ?? 0 } moodRatings: ${ data.moodRatings?.length ?? 0 }`);
+  // [Claude claude-opus-4-8] Task: surface captured device width metrics to the on-device DebugConsole
+  if (window.__dashboardViewportDiag) logIfEnabled(`[viewport] ${ JSON.stringify(window.__dashboardViewportDiag) }`);
   initializeDomainTasks(data);
   setMoodRatings(data.moodRatings);
   setQuarterlyPlans(data.quarterlyPlans);

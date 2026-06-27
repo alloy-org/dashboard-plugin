@@ -7,12 +7,15 @@
 
 // Override base config-popup-container sizing for the larger dashboard layout popup.
 // On desktop/tablet: constrained to 800×800px. On mobile: fills available space minus margin.
+// max-width is keyed off --dashboard-viewport-width (the real usable width published by dashboard-load.jsx
+// to work around the iOS WKWebView viewport bug) rather than 100vw, which the host inflates beyond the
+// visible area and would otherwise let the popup overflow the right edge. Falls back to 100vw on desktop.
 .dashboard-layout-popup {
   display: flex;
   flex-direction: column;
   margin: $sp-lg;
   max-height: min(800px, calc(100vh - #{$sp-lg * 2}));
-  max-width: min(800px, calc(100vw - #{$sp-lg * 2}));
+  max-width: min(800px, calc(var(--dashboard-viewport-width, 100vw) - #{$sp-lg * 2}));
   min-width: 0;
   width: 100%;
 

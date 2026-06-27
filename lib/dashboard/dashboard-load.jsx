@@ -22,6 +22,7 @@ const LARGE_PHONE_VIEWPORT_CLASS_NAME = 'dashboard-large-phone-viewport';
     if (visibleWidth >= window.innerWidth) {
       document.documentElement.style.maxWidth = '';
       document.documentElement.style.overflowX = '';
+      document.documentElement.style.removeProperty('--dashboard-viewport-width');
       document.body.style.maxWidth = '';
       document.body.style.overflowX = '';
       return;
@@ -29,6 +30,9 @@ const LARGE_PHONE_VIEWPORT_CLASS_NAME = 'dashboard-large-phone-viewport';
     const maximumWidthStyle = visibleWidth + 'px';
     document.documentElement.style.maxWidth = maximumWidthStyle;
     document.documentElement.style.overflowX = 'hidden';
+    // Publish the real visible width so `position: fixed` overlays (e.g. the layout popup) can size to it
+    // instead of 100vw, which the host inflates beyond the visible area. See config-popup.scss.
+    document.documentElement.style.setProperty('--dashboard-viewport-width', maximumWidthStyle);
     document.body.style.maxWidth = maximumWidthStyle;
     document.body.style.overflowX = 'hidden';
   }

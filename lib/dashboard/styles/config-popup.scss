@@ -15,13 +15,22 @@ $config-popup-z-index: 1000;
 /* [Claude] Task: modal overlay and popup card styles with submit/cancel actions */
 /* Prompt: "popup component that pops up setting options upon clicking Configure" */
 /* Date: 2026-02-22 | Model: claude-opus-4-6 */
+/* `position: fixed` elements escape the JS body-width clamp applied for the iOS WKWebView viewport bug:
+ * they size to the host's inflated layout viewport (e.g. 743px on a 430pt phone) rather than the visible
+ * width, which pushes a centered modal half off the right edge. So pin the overlay to the real usable
+ * width published by dashboard-load.jsx (--dashboard-viewport-width), falling back to 100vw on desktop
+ * where no clamp is applied. left:0 + explicit width (instead of inset:0) keeps it anchored to the
+ * visible left edge. */
 .config-popup-overlay {
   align-items: center;
   background: $color-overlay-backdrop;
+  bottom: 0;
   display: flex;
-  inset: 0;
   justify-content: center;
+  left: 0;
   position: fixed;
+  top: 0;
+  width: var(--dashboard-viewport-width, 100vw);
   z-index: $config-popup-z-index;
 }
 

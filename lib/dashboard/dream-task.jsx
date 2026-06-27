@@ -304,7 +304,7 @@ function TaskList({ dreamTasks, maxTasks, headerActions, onTaskClick, listRef, l
                   title={dreamTask.preserveThroughTomorrow
                     ? 'Clicking this will remove preserve status so the task can reseed normally'
                     : 'Clicking this will ensure that the task remains present in your Dream Task list through tomorrow (normally tasks reseed daily)'}
-                >{dreamTask.preserveThroughTomorrow ? '🚫 Remove preserve status' : '📎 Preserve a day'}</a>
+                >{dreamTask.preserveThroughTomorrow ? '🚫 Remove preserve' : '📎 Preserve'}</a>
                 <a
                   href="#"
                   className="dream-task-card-action"
