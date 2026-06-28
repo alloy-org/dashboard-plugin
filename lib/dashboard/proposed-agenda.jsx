@@ -97,16 +97,25 @@ function PriorityModelBar({ modelName, onChangeModel, onPriorityChange, priority
 
 // ----------------------------------------------------------------------------------------------
 // @desc One agenda row. Already-scheduled obligations and just-scheduled proposals render greyed with a
-//   "Scheduled" badge; pending proposals show their reason plus Add-to-schedule and dismiss controls.
-// @param {object} props - { onDismiss, onSchedule, row, scheduledKeys, timeFormat }.
+//   "Scheduled" badge; pending proposals show their reason plus Add-to-schedule and dismiss controls. A "Note"
+//   link beneath the timestamp opens the note backing the row's task (when one is linkable).
+// @param {object} props - { onDismiss, onOpenNote, onSchedule, row, scheduledKeys, timeFormat }.
 // [Claude claude-opus-4-8 (1M context)] Task: render an obligation or proposed-activity row
-function ActivityRow({ onDismiss, onSchedule, row, scheduledKeys, timeFormat }) {
+function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, timeFormat }) {
   const isScheduled = row.isObligation || scheduledKeys.has(activityKey(row));
   const titleHtml = amplenoteMarkdownRender(row.title) || row.title;
+  const hasNote = !!(row.noteUuid || row.taskUuid);
   return (
     <div className={ `proposed-agenda-item${ isScheduled ? " proposed-agenda-item--scheduled" : "" }` }>
-      <span className={ `proposed-agenda-time${ isScheduled ? " proposed-agenda-time--muted" : "" }` }>
-        { formatClockLabel(row.startMinutes, timeFormat) }</span>
+      <span className="proposed-agenda-time-col">
+        <span className={ `proposed-agenda-time${ isScheduled ? " proposed-agenda-time--muted" : "" }` }>
+          { formatClockLabel(row.startMinutes, timeFormat) }</span>
+        {
+          hasNote
+          ? <a href="#" className="proposed-agenda-note-link" title="Open the note for this task" onClick={ (event) => onOpenNote(event, row) }>Note</a>
+          : null
+        }
+      </span>
       <div className="proposed-agenda-content">
         <span className="proposed-agenda-text" dangerouslySetInnerHTML={ { __html: titleHtml } } />
         { !row.isObligation && row.reason
@@ -206,6 +215,14 @@ export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid
     return scheduleProposedRow(app, row, defaultNoteUuid, setScheduledKeys, llmDateRecord);
   }, [app, defaultNoteUuid, llmDateRecord]);
 
+  // Proposed existing-task rows carry noteUuid directly; obligations carry only taskUuid, so resolve the
+  // owning note via getTask before navigating. Invented/calendar rows with neither are not linkable.
+  const onOpenNote = useCallback(async (event, row) => {
+    event.preventDefault();
+    const noteUuid = row.noteUuid || (await app.getTask(row.taskUuid)).noteUUID;
+    await app.navigate(`https://www.amplenote.com/notes/${ noteUuid }`);
+  }, [app]);
+
   const onApprove = useCallback(() => approveAllProposed(app, { defaultNoteUuid, dismissedKeys, llmDateRecord,
     proposed, scheduledKeys, setApproving, setScheduledKeys }),
     [app, defaultNoteUuid, dismissedKeys, llmDateRecord, proposed, scheduledKeys]);
@@ -261,8 +278,8 @@ export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid
           onPriorityChange={ onPriorityChange } priorityKey={ priorityKey } />
         <div className="proposed-agenda-list" ref={ listRef }>
           { rows.map(row => (
-            <ActivityRow key={ activityKey(row) } onDismiss={ onDismiss } onSchedule={ onSchedule } row={ row }
-              scheduledKeys={ scheduledKeys } timeFormat={ timeFormat } />
+            <ActivityRow key={ activityKey(row) } onDismiss={ onDismiss } onOpenNote={ onOpenNote }
+              onSchedule={ onSchedule } row={ row } scheduledKeys={ scheduledKeys } timeFormat={ timeFormat } />
           )) }
         </div>
         <div className="proposed-agenda-footer">

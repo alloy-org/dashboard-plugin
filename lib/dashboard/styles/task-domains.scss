@@ -30,6 +30,10 @@ $task-domain-transition-duration: 0.15s;
     gap: $sp-sm;
   }
 
+  .task-domain-entry {
+    white-space: nowrap;
+  }
+
   .task-domain-item {
     align-items: center;
     border: 1px solid transparent;

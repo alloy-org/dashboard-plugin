@@ -49,11 +49,11 @@ export default function TaskDomains({ activeTaskDomain, app, domains, onDomainCh
     return (
       <div className="task-domains task-domains--empty">
         <div className="task-domains-list">
-          <div className="task-domain-item active" title="No task domain found \u2014 showing tasks from all notes">
+          <div className="task-domain-item task-domain-entry active" title="No task domain found \u2014 showing tasks from all notes">
             <span className="task-domain-name">All Notes</span>
           </div>
         </div>
-        <div className="task-domains-empty">{`Visit "Settings" to create a domain.`}</div>
+        <div className="task-domains-empty task-domain-entry">{`Task Domains in "Settings"`}</div>
         <button
           className="task-domains-refresh"
           onClick={handleRefresh}

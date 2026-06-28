@@ -92,16 +92,36 @@ $proposed-agenda-transition: 0.12s;
     }
   }
 
+  /* [Claude claude-opus-4-8 (1M context)] Task: stack the timestamp and its "Note" link in one column */
+  .proposed-agenda-time-col {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 52px;
+  }
+
   .proposed-agenda-time {
     color: $color-link;
-    flex: 0 0 auto;
     font-variant-numeric: tabular-nums;
     font-weight: 600;
-    min-width: 52px;
 
     &--muted {
       color: $color-text-secondary;
       font-weight: 500;
+    }
+  }
+
+  /* [Claude claude-opus-4-8 (1M context)] Task: per-row link to the note backing the task */
+  .proposed-agenda-note-link {
+    color: $color-text-secondary;
+    cursor: pointer;
+    font-size: 0.75em;
+    text-decoration: none;
+
+    &:hover {
+      color: $color-link;
+      text-decoration: underline;
     }
   }
 
