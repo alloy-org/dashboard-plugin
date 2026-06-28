@@ -78,7 +78,7 @@ describe("DaySketchWidget", () => {
     expect(app.findNote).toHaveBeenCalledWith({ name: "Day Sketch Wednesday, April 15, 2026" });
     expect(app.createNote).toHaveBeenCalledWith(
       "Day Sketch Wednesday, April 15, 2026",
-      [DASHBOARD_NOTE_TAG],
+      [DASHBOARD_NOTE_TAG], { archive: true },
     );
     expect(app.replaceNoteContent).toHaveBeenCalledWith(
       { uuid: "new-sketch-uuid" },
