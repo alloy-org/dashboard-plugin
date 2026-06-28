@@ -169,4 +169,25 @@ describe("generateProposedAgenda caching + regeneration", () => {
     expect(afterReseed.fromCache).toBe(true);
     expect(afterReseed.activities.map(a => a.title)).toEqual(["Gen 2 morning", "Gen 2 midday"]);
   });
+
+  it("reports 'No tasks found available to schedule in Task Domain' when the domain has no tasks", async () => {
+    const app = buildGenerationApp();
+    app.getTaskDomainTasks = jest.fn(async () => []);
+
+    const result = await generateProposedAgenda(app, { priorityKey: PRIORITY });
+    expect(result.errorCode).toBe("no_tasks");
+    expect(result.error).toBe("No tasks found available to schedule in Task Domain.");
+    expect(result.activities).toEqual([]);
+    expect(app.callPlugin).not.toHaveBeenCalled();
+  });
+
+  it("degrades gracefully (no thrown 'find is not a function') when getTaskDomains returns a non-array", async () => {
+    // buildGenerationApp sets no TASK_DOMAINS setting, so domain resolution falls through to getTaskDomains().
+    const app = buildGenerationApp();
+    app.getTaskDomains = jest.fn(async () => ({})); // CORS-degraded shape: truthy but not an array
+
+    const result = await generateProposedAgenda(app, { priorityKey: PRIORITY });
+    expect(result.errorCode).toBe("no_tasks");
+    expect(result.activities).toEqual([]);
+  });
 });

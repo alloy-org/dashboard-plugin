@@ -5,6 +5,7 @@
 import { PROVIDER_DEFAULT_MODEL } from "constants/llm-providers";
 import { widgetTitleFromId } from "constants/settings";
 import LlmProviderSelector from "llm-provider-selector";
+import NoConfigUpsell from "no-config-upsell";
 import { PROPOSED_TASK_STATUS } from "proposed-agenda-archive";
 import { DEFAULT_PRIORITY_KEY, PROPOSED_AGENDA_PRIORITY_OPTIONS } from "proposed-agenda-priority";
 import { activityKey, approveAllProposed, mergedAgendaRows, pendingCount, recordProposedTaskStatus,
@@ -17,6 +18,22 @@ import WidgetWrapper from "widget-wrapper";
 import "styles/proposed-agenda.scss";
 
 const WIDGET_ID = "proposed-agenda";
+
+// Error codes that mean generation failed for want of a reachable LLM (no API key + no working Ample Agent Pro).
+// When there is also no configured key, we show the Ample Agent Pro upsell instead of a bare error, matching
+// how DreamTask degrades.
+const NO_CONFIG_ERROR_CODES = new Set(["invalid_api_key", "llm_error", "no_provider_configured", "parse_error"]);
+
+// [Claude claude-opus-4-8 (1M context)] Task: scheduling-focused features highlighted in the no-config upsell
+// Prompt: "we will highlight different features" (vs. DreamTask's goal-coach features)
+const NO_CONFIG_FEATURES = [
+  { icon: "🗓️", label: "Auto-draft your day" },
+  { icon: "⚖️", label: "Balance work by priority" },
+  { icon: "🎯", label: "Align the day to goals" },
+  { icon: "⏰", label: "Schedule around obligations" },
+  { icon: "🔄", label: "Reseed with any model" },
+  { icon: "🧠", label: "Frontier models, no key" },
+];
 
 // ----------------------------------------------------------------------------------------------
 // @desc Resolve the model name shown in the model pill from the selected provider enum.
@@ -111,9 +128,10 @@ function ActivityRow({ onDismiss, onSchedule, row, scheduledKeys, timeFormat }) 
 // ----------------------------------------------------------------------------------------------
 // @desc Proposed Agenda widget — derives today's immovable obligations, asks the configured LLM to fill the
 //   gaps for the selected "Today's priority", and lets the user schedule/dismiss each proposal or the whole set.
-// @param {object} props - { app, currentDate, defaultNoteUuid, providerEm, taskDomainUUID, timeFormat }.
-export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid, providerEm, taskDomainUUID,
-    timeFormat }) {
+// @param {object} props - { app, currentDate, defaultNoteUuid, providerApiKey, providerEm, taskDomainUUID,
+//   timeFormat }.
+export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid, providerApiKey, providerEm,
+    taskDomainUUID, timeFormat }) {
   const [approving, setApproving] = useState(false);
   const [attribution, setAttribution] = useState(null);
   const [dateLabel, setDateLabel] = useState(null);
@@ -172,7 +190,17 @@ export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid
   useEffect(() => { attachFootnotePopups(listRef.current); }, [obligations, proposed]);
 
   if (loading) return <LoadingState />;
-  if (error) return <MessageState message={ error } onRetry={ () => runGeneration() } />;
+  if (error) {
+    const envApiKey = (typeof process !== "undefined" && process.env?.OPEN_AI_ACCESS_TOKEN) || "";
+    const hasLlmConfig = !!(envApiKey || providerApiKey);
+    if (!hasLlmConfig && NO_CONFIG_ERROR_CODES.has(error.errorCode)) {
+      return (
+        <NoConfigUpsell app={ app } features={ NO_CONFIG_FEATURES } icon="🗓️"
+          moreFeaturesLabel="+ 15 more features included" title={ widgetTitleFromId(WIDGET_ID) } widgetId={ WIDGET_ID } />
+      );
+    }
+    return <MessageState message={ error.error } onRetry={ () => runGeneration() } />;
+  }
 
   const rows = mergedAgendaRows(obligations, proposed, dismissedKeys);
   if (rows.length === 0) {

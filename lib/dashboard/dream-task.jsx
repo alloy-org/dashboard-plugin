@@ -7,6 +7,7 @@ import { _loadSeenUuidsMap, _maxTasksFromGrid, _recordSeenUuids, _taskGenerateCo
 import { buildAvailableTimeSlots, fetchSchedulingOccupancy, scheduledDreamTaskResultFromStartAt,
   startAtSecondsFromDateAndMinutes } from "dream-task-schedule";
 import LlmProviderSelector from "llm-provider-selector";
+import NoConfigUpsell from "no-config-upsell";
 import { providerNameFromProviderEm } from "providers/ai-provider-settings";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { DASHBOARD_TASKS_UPDATED_EVENT } from "hooks/use-dashboard-task-updates";
@@ -128,9 +129,8 @@ function LoadingState() {
   );
 }
 
-const AMPLE_AGENT_PRO_URL = "https://www.amplenote.com/plugins/ample_agent_pro";
-
 // [Claude claude-opus-4-8] Task: list of highlighted Ample Agent Pro features rendered as pills
+// [Claude claude-opus-4-8 (1M context)] Task: features now feed the shared NoConfigUpsell card
 const NO_CONFIG_FEATURES = [
   { icon: '🎯', label: 'Highlight goal-matched tasks' },
   { icon: '⚖️', label: 'Sort tasks (fun, fast, etc)' },
@@ -139,43 +139,6 @@ const NO_CONFIG_FEATURES = [
   { icon: '🔬', label: 'Multi-agent deep research' },
   { icon: '✏️', label: 'Finish a note in progress' },
 ];
-
-// [Claude claude-opus-4-8] Task: redesign no-config promo to a marketing card for Ample Agent Pro
-// Prompt: "Update NoConfigStat to match this design, linking straight to /plugins/ample_agent_pro"
-function NoConfigState({ app }) {
-  return (
-    <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon={widgetIcon()} widgetId={WIDGET_ID}>
-      <div className="dream-task-no-config">
-        <div className="dream-task-promo-badges">
-          <span className="dream-task-promo-badge dream-task-promo-badge--brand">Ample Agent Pro</span>
-          <span className="dream-task-promo-badge dream-task-promo-badge--price">Early Adopters $8/mo Special</span>
-        </div>
-        <h3 className="dream-task-promo-headline">Unlock 21 AI features — no API key needed</h3>
-        <p className="dream-task-promo-subhead">
-          Amplenote provides free access to frontier models for writing, task management, research, and more.
-        </p>
-        <div className="dream-task-promo-features">
-          {NO_CONFIG_FEATURES.map(({ icon, label }) => (
-            <span key={label} className="dream-task-promo-feature">
-              <span className="dream-task-promo-feature-icon" aria-hidden="true">{icon}</span>
-              {label}
-            </span>
-          ))}
-        </div>
-        <p className="dream-task-promo-more">+ 15 more features included</p>
-        <div className="dream-task-promo-actions">
-          <a href="javascript:void(0)" onClick={ () => app.navigate(AMPLE_AGENT_PRO_URL) } className="dream-task-promo-button dream-task-promo-button--primary">
-            ⚡ Start for $8/month
-          </a>
-          <a href="javascript:void(0)" onClick={ () => app.navigate(AMPLE_AGENT_PRO_URL) } className="dream-task-promo-button dream-task-promo-button--secondary">
-            See all features →
-          </a>
-        </div>
-        <p className="dream-task-promo-footnote">✓ No API key required for core features</p>
-      </div>
-    </WidgetWrapper>
-  );
-}
 
 // [Claude claude-opus-4-6] Task: render specific error messages based on errorCode from the service
 function ErrorState({ errorInfo, noteLink, onRetry, onSettingsClick }) {
@@ -631,7 +594,8 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   if (shouldRenderNoConfig) {
     logIfEnabled('[DreamTask] rendering no-config state', { providerName, hasError: !!error,
       errorCode: error?.errorCode ?? null, taskCount: tasks?.length ?? 0 });
-    return <NoConfigState app={ app } />;
+    return <NoConfigUpsell app={ app } features={ NO_CONFIG_FEATURES } icon={ widgetIcon() }
+      moreFeaturesLabel="+ 15 more features included" title={ widgetTitleFromId(WIDGET_ID) } widgetId={ WIDGET_ID } />;
   }
 
   const headerActions = <DreamTaskHeaderActions noteUUID={noteUUID} onOpenNote={onOpenNote} onReseed={onReseed} />;

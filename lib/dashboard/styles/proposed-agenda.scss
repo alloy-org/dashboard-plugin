@@ -130,7 +130,7 @@ $proposed-agenda-transition: 0.12s;
     color: $color-text-secondary;
     flex: 0 0 auto;
     font-size: 0.8em;
-    padding-top: 2px;
+    padding-top: 8px;
   }
 
   /* [Claude claude-opus-4-8 (1M context)] Task: per-row Add-to-schedule + dismiss controls */
@@ -159,15 +159,16 @@ $proposed-agenda-transition: 0.12s;
 
   .proposed-agenda-dismiss {
     background: transparent;
-    border: 1px solid $color-border;
-    border-radius: $proposed-agenda-radius;
+    border: 2px transparent solid;
+    border-radius: 50%;
     color: $color-text-secondary;
     cursor: pointer;
     font-size: 1em;
     line-height: 1;
-    padding: 4px 9px;
+    padding: 4px 6px;
 
     &:hover {
+      background-color: $color-bg-warning;
       border-color: $color-danger;
       color: $color-danger;
     }

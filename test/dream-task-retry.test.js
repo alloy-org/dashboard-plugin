@@ -123,7 +123,7 @@ describe("DreamTaskWidget API key retry", () => {
     });
     await act(async () => { await new Promise(r => setTimeout(r, 50)); });
 
-    expect(container.querySelector(".dream-task-no-config")).toBeTruthy();
+    expect(container.querySelector(".no-config-upsell")).toBeTruthy();
     expect(container.querySelector(".dream-task-card")).toBeFalsy();
 
     updatePluginSetting(SETTING_KEYS.LLM_PROVIDER_MODEL, "anthropic");
@@ -140,7 +140,7 @@ describe("DreamTaskWidget API key retry", () => {
     });
     await act(async () => { await new Promise(r => setTimeout(r, 50)); });
 
-    expect(container.querySelector(".dream-task-no-config")).toBeFalsy();
+    expect(container.querySelector(".no-config-upsell")).toBeFalsy();
 
     await waitForSelector(container, ".dream-task-card", 90_000);
 

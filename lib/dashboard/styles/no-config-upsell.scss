@@ -1,0 +1,144 @@
+/* [Claude claude-opus-4-8 (1M context)-authored file]
+ * Task: shared styles for the no-config Ample Agent Pro upsell card used by DreamTask and Proposed Agenda
+ * Prompt: "the NoConfigUpsell should be located in a standalone file, called by both DreamTask and ProposedAgenda"
+ * Migrated from the per-widget .dream-task-no-config / .dream-task-promo-* rules so the card renders identically
+ * inside any widget.
+ */
+
+@use 'theme-tokens' as *;
+
+.dashboard-outer-container {
+  .no-config-upsell {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+    padding: $sp-xs $sp-md $sp-md;
+    text-align: center;
+  }
+
+  .no-config-upsell-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-sm;
+    justify-content: center;
+  }
+
+  .no-config-upsell-badge {
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: $sp-xs $sp-md;
+    text-transform: uppercase;
+    white-space: nowrap;
+
+    &--brand {
+      background: rgba(74, 158, 255, 0.12);
+      color: $color-blue;
+    }
+
+    &--price {
+      border: 1px solid $color-border;
+      color: $color-text-secondary;
+      text-transform: none;
+    }
+  }
+
+  .no-config-upsell-headline {
+    color: $color-navy;
+    font-size: 1.05rem;
+    font-weight: 700;
+    line-height: 1.25;
+    margin: $sp-xs 0 0;
+  }
+
+  .no-config-upsell-subhead {
+    color: $color-text-secondary;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    margin: 0;
+    max-width: 26rem;
+  }
+
+  .no-config-upsell-features {
+    display: grid;
+    gap: $sp-sm;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-content: center;
+    width: 100%;
+
+    @include breakpoint($breakpoint-large-phone) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .no-config-upsell-feature {
+    align-items: center;
+    border: 1px solid $color-border;
+    border-radius: 999px;
+    color: $color-navy;
+    display: flex;
+    font-size: 0.8rem;
+    font-weight: 600;
+    gap: $sp-xs;
+    justify-content: center;
+    padding: $sp-xs $sp-md;
+  }
+
+  .no-config-upsell-feature-icon {
+    font-size: 0.85rem;
+    line-height: 1;
+  }
+
+  .no-config-upsell-more {
+    color: $color-text-muted;
+    font-size: 0.8rem;
+    margin: 0;
+  }
+
+  .no-config-upsell-actions {
+    align-items: stretch;
+    border-top: 1px solid $color-border;
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-md;
+    justify-content: center;
+    margin-top: $sp-xs;
+    padding-top: $sp-md;
+    width: 100%;
+  }
+
+  .no-config-upsell-button {
+    align-items: center;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    color: $color-navy;
+    display: inline-flex;
+    font-size: 0.85rem;
+    font-weight: 600;
+    gap: $sp-xs;
+    justify-content: center;
+    line-height: 1.2;
+    padding: $sp-sm $sp-lg;
+    text-decoration: none;
+    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+
+    &--primary:hover {
+      background: rgba(74, 158, 255, 0.12);
+      border-color: $color-blue;
+      color: $color-blue;
+    }
+
+    &--secondary:hover {
+      border-color: $color-blue;
+      color: $color-blue;
+    }
+  }
+
+  .no-config-upsell-footnote {
+    color: $color-success;
+    font-size: 0.78rem;
+    margin: 0;
+  }
+}
