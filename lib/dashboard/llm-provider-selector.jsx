@@ -5,6 +5,7 @@
 import ConfigPopup from "config-popup";
 import { defaultSelectedProviderEm, LLM_PROVIDER_OPTIONS } from "llm-provider";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 
 import "styles/llm-provider-selector.scss";
 
@@ -20,10 +21,13 @@ import "styles/llm-provider-selector.scss";
 //   - {string} [title] - Heading shown at the top of the popup.
 // [Claude claude-opus-4-8 (1M context)] Task: modern in-widget AI-provider selector popup
 // Prompt: "Update the LLM selector to have modern (not default) styling"
+// Portaled to document.body: dashboard widget cells carry a CSS `transform`, which would otherwise make the
+// popup's `position: fixed` overlay anchor to the (offscreen) cell rather than the viewport.
+// Prompt: "It pops offscreen"
 export default function LlmProviderSelector({ currentProviderEm, onCancel, onSelect, submitLabel = "Submit",
     title = "Generate with which AI provider?" }) {
   const [selected, setSelected] = useState(() => defaultSelectedProviderEm(currentProviderEm));
-  return (
+  const popup = (
     <ConfigPopup title={ title } submitLabel={ submitLabel } onCancel={ onCancel }
         onSubmit={ () => onSelect(selected) }>
       <div className="llm-provider-options">
@@ -41,4 +45,5 @@ export default function LlmProviderSelector({ currentProviderEm, onCancel, onSel
       </div>
     </ConfigPopup>
   );
+  return typeof document !== "undefined" && document.body ? createPortal(popup, document.body) : popup;
 }
