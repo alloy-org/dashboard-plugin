@@ -329,13 +329,12 @@ describe("Dev App Harness", () => {
       expect(results.map(handle => handle.uuid)).not.toContain("note-work-7");
     });
 
-    it("provides collaborator-updated sample notes (updated newer than changed) with shareAccess names", async () => {
+    it("provides collaborator-updated sample notes (updated newer than changed)", async () => {
       const app = createDevApp(tmpSettingsPath, tmpNotesDir);
       const results = [...await app.filterNotes({ group: "shared", taskDomainUUID: "domain-work-uuid" }, "updated")];
       const collaboratorUpdated = results.find(handle => handle.uuid === "note-work-1");
 
       expect(Date.parse(collaboratorUpdated.updated)).toBeGreaterThan(Date.parse(collaboratorUpdated.changed));
-      expect(collaboratorUpdated.shareAccess).toEqual(["Jordan Lee", "Sam Rivera"]);
     });
   });
 

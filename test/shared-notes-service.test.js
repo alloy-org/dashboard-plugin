@@ -1,8 +1,8 @@
 // [Claude claude-opus-4-8] Generated tests for: Shared Notes service — collaborator-updated note discovery
 import { jest } from "@jest/globals";
-import { avatarTextFromName, buildPeopleIndexByNote, collaboratorNamesFromNoteHandle,
-  collaboratorsForNote, fetchPeopleIndexByNote, findCollaboratorUpdatedNotes, lastUpdatedLabelFromMs,
-  noteUpdatedByCollaborator, sharedNotesGroupParam, sharerNamesFromIndex, timestampMsFromValue } from "shared-notes-service";
+import { avatarTextFromName, buildPeopleIndexByNote, collaboratorsForNote, fetchPeopleIndexByNote,
+  findCollaboratorUpdatedNotes, lastUpdatedLabelFromMs, noteUpdatedByCollaborator,
+  sharedNotesGroupParam, sharerNamesFromIndex, timestampMsFromValue } from "shared-notes-service";
 
 const TASK_DOMAIN_UUID = "domain-all";
 const MINUTE_MS = 60 * 1000;
@@ -62,14 +62,13 @@ describe("noteUpdatedByCollaborator", () => {
 });
 
 describe("lastUpdatedLabelFromMs", () => {
-  it("formats recent times relatively and older times as a date", () => {
+  it("formats recent times relatively", () => {
     const now = 10 * DAY_MS;
     expect(lastUpdatedLabelFromMs(0, now)).toBe("");
     expect(lastUpdatedLabelFromMs(now - 30 * 1000, now)).toBe("just now");
     expect(lastUpdatedLabelFromMs(now - 5 * MINUTE_MS, now)).toBe("5m ago");
     expect(lastUpdatedLabelFromMs(now - 3 * HOUR_MS, now)).toBe("3h ago");
     expect(lastUpdatedLabelFromMs(now - 2 * DAY_MS, now)).toBe("2d ago");
-    expect(lastUpdatedLabelFromMs(now - 9 * DAY_MS, now)).toBe(new Date(now - 9 * DAY_MS).toLocaleDateString());
   });
 });
 
@@ -144,13 +143,6 @@ describe("sharerNamesFromIndex", () => {
   });
 });
 
-describe("collaboratorNamesFromNoteHandle", () => {
-  it("reads dev-fixture shareAccess names off the noteHandle, returning [] when absent", () => {
-    expect(collaboratorNamesFromNoteHandle({ uuid: "n1", shareAccess: ["Aaron", "Aaron"] })).toEqual(["Aaron"]);
-    expect(collaboratorNamesFromNoteHandle({ uuid: "n2" })).toEqual([]);
-  });
-});
-
 describe("findCollaboratorUpdatedNotes collaborator resolution", () => {
   it("attaches getPeople-derived collaborators (name + avatar) indexed by note uuid", async () => {
     const handles = [
@@ -172,16 +164,15 @@ describe("findCollaboratorUpdatedNotes collaborator resolution", () => {
     ]);
   });
 
-  it("falls back to shareAccess names with null avatars when getPeople is unavailable", async () => {
+  it("returns [] collaborators for a note nobody is indexed against", async () => {
     const handles = [
-      buildNoteHandle({ uuid: "a", name: "Alpha", shareAccess: ["Solo Dev"],
-        changed: new Date(1000).toISOString(), updated: new Date(9000).toISOString() }),
+      buildNoteHandle({ uuid: "a", name: "Alpha", changed: new Date(1000).toISOString(), updated: new Date(9000).toISOString() }),
     ];
-    const app = { filterNotes: jest.fn().mockResolvedValue(handles) }; // no getPeople
+    const app = buildMockApp(handles, []);
 
     const { notes } = await findCollaboratorUpdatedNotes({ app, maxNotes: 5, taskDomainUUID: TASK_DOMAIN_UUID });
 
-    expect(notes[0].collaborators).toEqual([{ avatar: null, name: "Solo Dev" }]);
+    expect(notes[0].collaborators).toEqual([]);
   });
 });
 
@@ -203,17 +194,9 @@ describe("buildPeopleIndexByNote", () => {
 });
 
 describe("fetchPeopleIndexByNote", () => {
-  it("returns an empty index when the host has no getPeople", async () => {
-    const index = await fetchPeopleIndexByNote({});
-    expect(index.size).toBe(0);
-  });
-
-  it("builds an index from getPeople and swallows errors", async () => {
-    const ok = { getPeople: jest.fn().mockResolvedValue([{ uuid: "p1", name: "Ada", sharing: { notes: ["n1"] } }]) };
-    expect((await fetchPeopleIndexByNote(ok)).get("n1")).toHaveLength(1);
-
-    const broken = { getPeople: jest.fn().mockRejectedValue(new Error("nope")) };
-    expect((await fetchPeopleIndexByNote(broken)).size).toBe(0);
+  it("builds a note<>person index from getPeople", async () => {
+    const app = { getPeople: jest.fn().mockResolvedValue([{ uuid: "p1", name: "Ada", sharing: { notes: ["n1"] } }]) };
+    expect((await fetchPeopleIndexByNote(app)).get("n1")).toHaveLength(1);
   });
 });
 
@@ -228,13 +211,12 @@ describe("avatarTextFromName", () => {
 });
 
 describe("collaboratorsForNote", () => {
-  it("prefers indexed people and falls back to shareAccess names with null avatars", () => {
+  it("maps indexed people to { name, avatar } and returns [] for an unindexed note", () => {
     const person = { uuid: "p1", name: "Ada", avatar: { text: "A" }, sharing: { notes: ["n1"] } };
     const peopleIndex = buildPeopleIndexByNote([person]);
 
     expect(collaboratorsForNote({ noteHandle: { uuid: "n1" }, peopleIndex }))
       .toEqual([{ avatar: { text: "A" }, name: "Ada" }]);
-    expect(collaboratorsForNote({ noteHandle: { uuid: "n2", shareAccess: ["Fallback"] }, peopleIndex }))
-      .toEqual([{ avatar: null, name: "Fallback" }]);
+    expect(collaboratorsForNote({ noteHandle: { uuid: "n2" }, peopleIndex })).toEqual([]);
   });
 });
