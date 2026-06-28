@@ -1,12 +1,15 @@
 // [Claude claude-opus-4-8 (1M context)-authored file]
-// Prompt summary: "render the proposed hour-by-hour agenda: each activity links to schedule it at its time, with a
-//   button at the bottom to approve the whole schedule"
+// Prompt summary: "redesign the proposed-agenda widget: a Today's-priority selector + changeable AI model, an
+//   hour-by-hour list that interleaves already-scheduled obligations with LLM proposals (Add to schedule /
+//   dismiss), and an Approve schedule / Dismiss all footer with a pending count"
+import { PROVIDER_DEFAULT_MODEL } from "constants/llm-providers";
 import { widgetTitleFromId } from "constants/settings";
-import { approveProposedAgenda, generateProposedAgenda, scheduleProposedActivity } from "proposed-agenda-service";
+import { DEFAULT_PRIORITY_KEY, PROPOSED_AGENDA_PRIORITY_OPTIONS } from "proposed-agenda-priority";
+import { activityKey, approveAllProposed, changeModelProviderEm, mergedAgendaRows, pendingCount,
+  runProposedAgendaGeneration, scheduleProposedRow } from "proposed-agenda-llm-generator";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import { formatClockLabel } from "util/date-utility";
-import { logIfEnabled } from "util/log";
 import WidgetWrapper from "widget-wrapper";
 
 import "styles/proposed-agenda.scss";
@@ -14,106 +17,16 @@ import "styles/proposed-agenda.scss";
 const WIDGET_ID = "proposed-agenda";
 
 // ----------------------------------------------------------------------------------------------
-// @desc Stable key for an activity row (start time + title are unique enough within one day's schedule).
-// @param {object} activity - Validated activity record.
+// @desc Resolve the model name shown in the model pill from the selected provider enum.
+// @param {string|null} providerEm
 // @returns {string}
-function _activityKey(activity) {
-  return `${ activity.startTime }::${ activity.taskUuid || activity.title }`;
+// [Claude claude-opus-4-8 (1M context)] Task: derive the displayed model name from the provider
+function _modelName(providerEm) {
+  return PROVIDER_DEFAULT_MODEL[providerEm] || providerEm || "default model";
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Add an activity's key to a scheduled-keys set immutably (for use in a setState updater).
-// @param {Set<string>} previous - Current scheduled-keys set.
-// @param {object} activity - Activity whose key should be marked scheduled.
-// @returns {Set<string>}
-// [Claude claude-opus-4-8 (1M context)] Task: keep set-mutation out of the component body
-function _withScheduledKey(previous, activity) {
-  const next = new Set(previous);
-  next.add(_activityKey(activity));
-  return next;
-}
-
-// ----------------------------------------------------------------------------------------------
-// @desc Label for the approve button given its current state.
-// @param {boolean} allScheduled - Whether every activity is already scheduled.
-// @param {boolean} approving - Whether an approve-all request is in flight.
-// @returns {string}
-// [Claude claude-opus-4-8 (1M context)] Task: move approve-button label derivation out of JSX
-function _approveButtonLabel(allScheduled, approving) {
-  if (allScheduled) return "✅ Schedule approved";
-  return approving ? "Approving …" : "Approve schedule";
-}
-
-// ----------------------------------------------------------------------------------------------
-// @desc Run the generation service and route its result into the widget's state setters.
-// @param {object} app - Amplenote app bridge.
-// @param {object} options - { providerEm } plus the setters { setActivities, setDateLabel, setError,
-//   setLlmAttributionFooter, setLoading, setScheduledKeys }.
-// @returns {Promise<void>}
-// [Claude claude-opus-4-8 (1M context)] Task: hoist the generation flow out of the component body
-async function _runGeneration(app, { providerEm, setActivities, setDateLabel, setError, setLlmAttributionFooter,
-    setLoading, setScheduledKeys }) {
-  setLoading(true);
-  setError(null);
-  setScheduledKeys(new Set());
-  try {
-    const result = await generateProposedAgenda(app, { providerEmOverride: providerEm || null });
-    if (result.error) {
-      setError(result.error);
-      setActivities(null);
-    } else {
-      setActivities(result.activities);
-      setDateLabel(result.dateLabel);
-      setLlmAttributionFooter(result.llmAttributionFooter);
-    }
-  } catch (err) {
-    logIfEnabled("[proposed-agenda] runGeneration caught", err);
-    setError(err.message || "Failed to build a schedule.");
-  } finally {
-    setLoading(false);
-  }
-}
-
-// ----------------------------------------------------------------------------------------------
-// @desc Schedule a single activity and mark its key scheduled on success; alerts on failure.
-// @param {object} app - Amplenote app bridge.
-// @param {object} activity - Activity to schedule.
-// @param {string|null} defaultNoteUuid - Fallback note for newly-created activities.
-// @param {Function} setScheduledKeys - State setter for scheduled keys.
-// @returns {Promise<void>}
-// [Claude claude-opus-4-8 (1M context)] Task: hoist single-activity scheduling out of the component body
-async function _scheduleOne(app, activity, defaultNoteUuid, setScheduledKeys) {
-  const result = await scheduleProposedActivity(app, activity, defaultNoteUuid);
-  if (!result.taskUuid) {
-    await app.alert("Could not schedule this activity. Please try again or schedule it manually.");
-    return;
-  }
-  setScheduledKeys(previous => _withScheduledKey(previous, activity));
-}
-
-// ----------------------------------------------------------------------------------------------
-// @desc Approve every not-yet-scheduled activity, mark them all scheduled, and summarize the outcome.
-// @param {object} app - Amplenote app bridge.
-// @param {object} options - { activities, defaultNoteUuid, scheduledKeys, setApproving, setScheduledKeys }.
-// @returns {Promise<void>}
-// [Claude claude-opus-4-8 (1M context)] Task: hoist approve-all flow out of the component body
-async function _approveAll(app, { activities, defaultNoteUuid, scheduledKeys, setApproving, setScheduledKeys }) {
-  const pending = activities.filter(activity => !scheduledKeys.has(_activityKey(activity)));
-  if (pending.length === 0) return;
-  setApproving(true);
-  try {
-    const { failed, scheduled } = await approveProposedAgenda(app, pending, defaultNoteUuid);
-    setScheduledKeys(new Set(activities.map(_activityKey)));
-    await app.alert(failed > 0
-      ? `Scheduled ${ scheduled } activities; ${ failed } could not be scheduled.`
-      : `Scheduled all ${ scheduled } activities.`);
-  } finally {
-    setApproving(false);
-  }
-}
-
-// ----------------------------------------------------------------------------------------------
-// @desc Loading placeholder shown while the LLM builds the schedule.
+// @desc Loading placeholder shown while obligations are derived and the LLM builds the schedule.
 // [Claude claude-opus-4-8 (1M context)] Task: proposed-agenda loading state
 function LoadingState() {
   return (
@@ -142,78 +55,116 @@ function MessageState({ message, onRetry }) {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Single proposed-activity row: time, title, reason, and a per-activity schedule link.
-// @param {object} props - { activity, onSchedule, scheduledKeys, timeFormat }.
-// [Claude claude-opus-4-8 (1M context)] Task: render an activity row with a schedule-at link
-// Prompt: "on each proposed activity, a link to approve scheduling the task at a particular time"
-function ActivityRow({ activity, onSchedule, scheduledKeys, timeFormat }) {
-  const key = _activityKey(activity);
-  const isScheduled = scheduledKeys.has(key);
-  const titleHtml = amplenoteMarkdownRender(activity.title) || activity.title;
+// @desc The Today's-priority selector and the changeable AI-model pill above the agenda list.
+// @param {object} props - { modelName, onChangeModel, onPriorityChange, priorityKey }.
+// [Claude claude-opus-4-8 (1M context)] Task: render the priority selector + model-change control
+function PriorityModelBar({ modelName, onChangeModel, onPriorityChange, priorityKey }) {
   return (
-    <div className={ `proposed-agenda-item${ isScheduled ? " proposed-agenda-item--scheduled" : "" }` }>
-      <span className="proposed-agenda-time">{ formatClockLabel(activity.startMinutes, timeFormat) }</span>
-      <div className="proposed-agenda-content">
-        <span className="proposed-agenda-text" dangerouslySetInnerHTML={ { __html: titleHtml } } />
-        { activity.reason ? <span className="proposed-agenda-reason">{ activity.reason }</span> : null }
-      </div>
-      { activity.durationMinutes ? <span className="proposed-agenda-duration">{ `${ activity.durationMinutes }m` }</span> : null }
-      { isScheduled
-        ? <span className="proposed-agenda-scheduled-badge" title="Scheduled">✅ Scheduled</span>
-        : <a href="#" className="proposed-agenda-schedule-link"
-            title={ `Schedule this for ${ activity.startTime } today` }
-            onClick={ (event) => onSchedule(event, activity) }>📅 Schedule { activity.startTime }</a> }
+    <div className="proposed-agenda-controls">
+      <label className="proposed-agenda-priority-label">Today's priority</label>
+      <select className="proposed-agenda-priority-select" value={ priorityKey } onChange={ onPriorityChange }>
+        {
+          PROPOSED_AGENDA_PRIORITY_OPTIONS.map(option => (
+          <option key={ option.key } value={ option.key }>{ option.label }</option>))
+        }
+      </select>
+      <span className="proposed-agenda-model" title="AI model used to generate this agenda">🌐 { modelName }</span>
+      <button className="proposed-agenda-model-change" title="Change AI provider" onClick={ onChangeModel }>⇅</button>
     </div>
   );
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Proposed Agenda widget — generates an LLM-proposed hour-by-hour schedule from recent task-domain
-//   tasks plus the quarterly plan, lets the user schedule each activity individually, and approve the whole
-//   schedule at the bottom.
-// @param {object} props - { app, defaultNoteUuid, providerEm, timeFormat }.
-// [Claude claude-opus-4-8 (1M context)] Task: top-level Proposed Agenda widget
-// Prompt: "create a proposed-agenda component ... approve the schedule ... schedule each task at a time"
-export default function ProposedAgendaWidget({ app, defaultNoteUuid, providerEm, timeFormat }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [activities, setActivities] = useState(null);
-  const [dateLabel, setDateLabel] = useState(null);
-  const [llmAttributionFooter, setLlmAttributionFooter] = useState(null);
-  const [scheduledKeys, setScheduledKeys] = useState(() => new Set());
+// @desc One agenda row. Already-scheduled obligations and just-scheduled proposals render greyed with a
+//   "Scheduled" badge; pending proposals show their reason plus Add-to-schedule and dismiss controls.
+// @param {object} props - { onDismiss, onSchedule, row, scheduledKeys, timeFormat }.
+// [Claude claude-opus-4-8 (1M context)] Task: render an obligation or proposed-activity row
+function ActivityRow({ onDismiss, onSchedule, row, scheduledKeys, timeFormat }) {
+  const isScheduled = row.isObligation || scheduledKeys.has(activityKey(row));
+  const titleHtml = amplenoteMarkdownRender(row.title) || row.title;
+  return (
+    <div className={ `proposed-agenda-item${ isScheduled ? " proposed-agenda-item--scheduled" : "" }` }>
+      <span className={ `proposed-agenda-time${ isScheduled ? " proposed-agenda-time--muted" : "" }` }>
+        { formatClockLabel(row.startMinutes, timeFormat) }</span>
+      <div className="proposed-agenda-content">
+        <span className="proposed-agenda-text" dangerouslySetInnerHTML={ { __html: titleHtml } } />
+        { !row.isObligation && row.reason
+          ? <span className="proposed-agenda-reason">{ row.reason }</span> : null }
+      </div>
+      { row.durationMinutes
+        ? <span className="proposed-agenda-duration">{ `${ row.durationMinutes }m` }</span> : null }
+      { isScheduled
+        ? <span className="proposed-agenda-scheduled-badge" title="Already scheduled today">Scheduled</span>
+        : <span className="proposed-agenda-actions">
+            <button className="proposed-agenda-add" title={ `Schedule for ${ row.startTime } today` }
+              onClick={ (event) => onSchedule(event, row) }>📅 Add to schedule</button>
+            <button className="proposed-agenda-dismiss" title="Dismiss this suggestion"
+              onClick={ (event) => onDismiss(event, row) }>×</button>
+          </span>
+      }
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Proposed Agenda widget — derives today's immovable obligations, asks the configured LLM to fill the
+//   gaps for the selected "Today's priority", and lets the user schedule/dismiss each proposal or the whole set.
+// @param {object} props - { app, currentDate, defaultNoteUuid, providerEm, taskDomainUUID, timeFormat }.
+export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid, providerEm, taskDomainUUID,
+    timeFormat }) {
   const [approving, setApproving] = useState(false);
+  const [attribution, setAttribution] = useState(null);
+  const [dateLabel, setDateLabel] = useState(null);
+  const [dismissedKeys, setDismissedKeys] = useState(() => new Set());
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [modelProviderEm, setModelProviderEm] = useState(providerEm || null);
+  const [obligations, setObligations] = useState([]);
+  const [priorityKey, setPriorityKey] = useState(DEFAULT_PRIORITY_KEY);
+  const [proposed, setProposed] = useState([]);
+  const [scheduledKeys, setScheduledKeys] = useState(() => new Set());
   const listRef = useRef(null);
 
-  const runGeneration = useCallback(() => _runGeneration(app, { providerEm, setActivities, setDateLabel, setError,
-    setLlmAttributionFooter, setLoading, setScheduledKeys }), [app, providerEm]);
+  const runGeneration = useCallback(() => runProposedAgendaGeneration(app, { currentDate,
+    domainUuid: taskDomainUUID, priorityKey, providerEm: modelProviderEm, setApproving, setAttribution, setDateLabel,
+    setDismissedKeys, setError, setLoading, setObligations, setProposed, setScheduledKeys }),
+    [app, currentDate, modelProviderEm, priorityKey, taskDomainUUID]);
 
-  const onSchedule = useCallback((event, activity) => {
+  const onChangeModel = useCallback(async () => {
+    const next = await changeModelProviderEm(app, modelProviderEm);
+    if (next) setModelProviderEm(next);
+  }, [app, modelProviderEm]);
+
+  const onDismiss = useCallback((event, row) => {
     event.preventDefault();
-    return _scheduleOne(app, activity, defaultNoteUuid, setScheduledKeys);
-  }, [app, defaultNoteUuid]);
-
-  const onApprove = useCallback(() => {
-    if (!activities?.length) return;
-    return _approveAll(app, { activities, defaultNoteUuid, scheduledKeys, setApproving, setScheduledKeys });
-  }, [activities, app, defaultNoteUuid, scheduledKeys]);
-
-  useEffect(() => {
-    if (loading || activities) return;
-    runGeneration();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setDismissedKeys(previous => new Set(previous).add(activityKey(row)));
   }, []);
 
-  useEffect(() => {
-    attachFootnotePopups(listRef.current);
-  }, [activities]);
+  const onDismissAll = useCallback(() => {
+    setDismissedKeys(previous => {
+      const next = new Set(previous);
+      proposed.forEach(a => { if (!scheduledKeys.has(activityKey(a))) next.add(activityKey(a)); });
+      return next;
+    });
+  }, [proposed, scheduledKeys]);
+
+  const onSchedule = useCallback((event, row) => {
+    event.preventDefault();
+    return scheduleProposedRow(app, row, defaultNoteUuid, setScheduledKeys);
+  }, [app, defaultNoteUuid]);
+
+  const onApprove = useCallback(() => approveAllProposed(app, { defaultNoteUuid, dismissedKeys, proposed,
+    scheduledKeys, setApproving, setScheduledKeys }), [app, defaultNoteUuid, dismissedKeys, proposed, scheduledKeys]);
+
+  useEffect(() => { runGeneration(); }, [runGeneration]);
+  useEffect(() => { attachFootnotePopups(listRef.current); }, [obligations, proposed]);
 
   if (loading) return <LoadingState />;
   if (error) return <MessageState message={ error } onRetry={ runGeneration } />;
-  if (!activities || activities.length === 0) {
-    return <MessageState message="No schedule could be proposed yet." onRetry={ runGeneration } />;
-  }
 
-  const allScheduled = activities.every(activity => scheduledKeys.has(_activityKey(activity)));
+  const rows = mergedAgendaRows(obligations, proposed, dismissedKeys);
+  if (rows.length === 0) return <MessageState message="No schedule could be proposed yet." onRetry={ runGeneration } />;
+  const pending = pendingCount(proposed, scheduledKeys, dismissedKeys);
   const reseedAction = (
     <a href="#" className="widget-header-action" title="Propose a fresh schedule"
       onClick={ (event) => { event.preventDefault(); runGeneration(); } }>🔄 Reseed</a>
@@ -222,18 +173,22 @@ export default function ProposedAgendaWidget({ app, defaultNoteUuid, providerEm,
   return (
     <WidgetWrapper title={ widgetTitleFromId(WIDGET_ID) } subtitle={ dateLabel } icon="🗓️"
         widgetId={ WIDGET_ID } headerActions={ reseedAction }>
+      <PriorityModelBar modelName={ _modelName(modelProviderEm) } onChangeModel={ onChangeModel }
+        onPriorityChange={ (event) => setPriorityKey(event.target.value) } priorityKey={ priorityKey } />
       <div className="proposed-agenda-list" ref={ listRef }>
-        { activities.map(activity => (
-          <ActivityRow key={ _activityKey(activity) } activity={ activity } onSchedule={ onSchedule }
+        { rows.map(row => (
+          <ActivityRow key={ activityKey(row) } onDismiss={ onDismiss } onSchedule={ onSchedule } row={ row }
             scheduledKeys={ scheduledKeys } timeFormat={ timeFormat } />
         )) }
       </div>
       <div className="proposed-agenda-footer">
-        <button className="proposed-agenda-approve" onClick={ onApprove } disabled={ approving || allScheduled }>
-          { _approveButtonLabel(allScheduled, approving) }
-        </button>
-        { llmAttributionFooter ? <p className="proposed-agenda-attribution">{ llmAttributionFooter }</p> : null }
+        <button className="proposed-agenda-approve" onClick={ onApprove } disabled={ approving || pending === 0 }>
+          { approving ? "Approving …" : "Approve schedule" }</button>
+        <button className="proposed-agenda-dismiss-all" onClick={ onDismissAll } disabled={ pending === 0 }>
+          Dismiss all</button>
       </div>
+      <p className="proposed-agenda-pending">{ `${ pending } pending` }</p>
+      { attribution ? <p className="proposed-agenda-attribution">{ attribution }</p> : null }
     </WidgetWrapper>
   );
 }

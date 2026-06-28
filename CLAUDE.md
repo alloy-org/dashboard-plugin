@@ -41,7 +41,7 @@ function normalizeResponse(data) {
 }
 ```
 
-# 2. Do NOT break arguments, variables, or return statements into multiple lines unless they exceed 200 characters
+# 2. Do NOT break arguments, variables, or return statements into multiple lines unless they exceed 150 characters
 
 ```javascript
 // BAD
@@ -68,10 +68,6 @@ When you create a new file entirely, add a header block at the very top before a
 imports or code.
 
 ### JavaScript / JSX
-```javascript
-// [current-model-name-4.2-authored file]
-// Prompt summary: "create a reusable debounced search input component"
-```
 
 Note: dashboard widget/component files live under `lib/dashboard/` and use the
 `.jsx` extension. esbuild is configured with the React 17+ **automatic** JSX
@@ -82,8 +78,6 @@ constants) stay as `.js`.
 Example of a JSX widget component matching the project's conventions:
 
 ```jsx
-// [Claude claude-4.7-opus] Task: render a simple counter card
-// Prompt: "add a small counter card to the dashboard"
 import { useState } from "react";
 import WidgetWrapper from "widget-wrapper";
 
@@ -97,48 +91,7 @@ export default function CounterCard({ title }) {
 }
 ```
 
----
-
-# 4. Test File Annotations
-
-When you write tests, add a comment at the top of the outermost test block.
-
-### JavaScript (Jest)
-```javascript
-// [AiProviderName llm-provider-model-5.2] Generated tests for: debounced search input component
-describe('SearchInput', () => {
-    ...
-});
-```
-
----
-
-# 5. AI_CONTRIBUTIONS.md Log
-
-Maintain an `AI_CONTRIBUTIONS.md` file in the repo root. After completing any
-non-trivial task, append an entry using this format:
-
-```markdown
-## 2025-02-21 — Webhook signature validation
-
-**Model:** name-of-llm-provider-model-version-4.2
-**Files created/modified:**
-- `src/webhooks/validator.py` (created)
-- `tests/test_validator.py` (created)
-- `src/config/settings.py` (modified — added webhook secret config key)
-
-**Task:** Validate incoming webhook payloads using HMAC signature verification
-**Prompt summary:** "add webhook validation with signature verification"
-**Scope:** ~90 lines of new logic across 3 files
-**Notes:** Uses HMAC-SHA256; secret must be set in environment before deploying
-```
-
-Add an entry for any task involving more than a few lines of logic. Err on the side
-of over-documenting — these records are used for code quality and attribution research.
-
----
-
-## 6. Running Jest (Javascript) Tests
+## 4. Running Jest (Javascript) Tests
 
 Tests use Jest with ECMAScript Modules. Always run with the `--experimental-vm-modules` flag:
 

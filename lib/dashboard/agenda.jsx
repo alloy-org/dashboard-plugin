@@ -5,6 +5,7 @@
  * Prompt summary: "widget listing today's scheduled tasks with time, priority indicator, and duration"
  */
 import { widgetTitleFromId } from "constants/settings"
+import { obligationsFromTasksAndEvents, TODAY_OBLIGATIONS_EVENT, TODAY_OBLIGATIONS_REQUEST_EVENT } from "proposed-agenda-obligations"
 import { useState, useEffect, useRef } from "react"
 import WidgetWrapper from "widget-wrapper"
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render"
@@ -65,6 +66,17 @@ export default function AgendaWidget({ app, calendarEvents, currentDate, selecte
   useEffect(() => {
     attachFootnotePopups(listRef.current);
   });
+
+  // ------------------------------------------------------------------------------------------
+  useEffect(() => {
+    const broadcastContent = () => {
+      const obligations = obligationsFromTasksAndEvents(tasks?.[todayDateKey] || [], todayCalendarEvents, currentDate);
+      window.dispatchEvent(new CustomEvent(TODAY_OBLIGATIONS_EVENT, { detail: { dateKey: todayDateKey, obligations } }));
+    };
+    broadcastContent();
+    window.addEventListener(TODAY_OBLIGATIONS_REQUEST_EVENT, broadcastContent);
+    return () => window.removeEventListener(TODAY_OBLIGATIONS_REQUEST_EVENT, broadcastContent);
+  }, [calendarEvents, currentDate, tasks, todayDateKey]);
 
   const currentPage = Math.min(page, totalPages - 1);
   const visibleDateKeys = allDateKeys.slice(
