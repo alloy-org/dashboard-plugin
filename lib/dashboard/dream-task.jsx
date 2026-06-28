@@ -4,10 +4,9 @@ import { _loadSeenUuidsMap, _maxTasksFromGrid, _recordSeenUuids, _taskGenerateCo
   applyDreamTaskAnalysisResult, fetchDreamTaskSuggestions, handleOpenSettings, handleTaskClick,
   requestDreamTaskRefreshExcludingRecent, shouldFetchMoreTasksAfterGridGrowth, updateDreamTaskTaskMetadata,
 } from "dream-task-internals";
-import { chooseReseedProvider, configuredProvidersFromSettings } from "dream-task-provider-selection";
 import { buildAvailableTimeSlots, fetchSchedulingOccupancy, scheduledDreamTaskResultFromStartAt,
   startAtSecondsFromDateAndMinutes } from "dream-task-schedule";
-import { pluginSettings } from "plugin-data";
+import LlmProviderSelector from "llm-provider-selector";
 import { providerNameFromProviderEm } from "providers/ai-provider-settings";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { DASHBOARD_TASKS_UPDATED_EVENT } from "hooks/use-dashboard-task-updates";
@@ -510,6 +509,7 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   const [noteUUID, setNoteUUID] = useState(null);
   const [defaultNoteUUID, setDefaultNoteUUID] = useState(null);
   const [llmAttributionFooter, setLlmAttributionFooter] = useState(null);
+  const [providerPopupOpen, setProviderPopupOpen] = useState(false);
   const [, setSeenUuidsMap] = useState(() => _loadSeenUuidsMap());
   const listRef = useRef(null);
   const renderCountRef = useRef(0);
@@ -606,20 +606,20 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
     handleOpenSettings(onOpenSettings);
   };
 
-  const onReseed = async (e) => {
+  // [Claude claude-opus-4-8 (1M context)] Task: open the shared AI-provider chooser before reseeding
+  // Prompt: "use this selector in [DreamTask] as well"
+  const onReseed = (e) => {
     e.preventDefault();
-    const configuredProviders = configuredProvidersFromSettings(pluginSettings());
-    let reseedOptions = {};
-    if (configuredProviders.length > 1) {
-      const selectedProvider = await chooseReseedProvider(app, providerEm);
-      if (!selectedProvider) return;
-      reseedOptions = { providerEmOverride: selectedProvider.providerEm };
-    } else if (configuredProviders.length === 1) {
-      reseedOptions = { providerEmOverride: configuredProviders[0].providerEm };
-    }
+    setProviderPopupOpen(true);
+  };
+
+  // [Claude claude-opus-4-8 (1M context)] Task: reseed suggestions with the provider chosen in the popup
+  const onSelectReseedProvider = (providerEmOverride) => {
+    setProviderPopupOpen(false);
     setTasks(null);
     resetActionState();
     setLlmAttributionFooter(null);
+    const reseedOptions = providerEmOverride ? { providerEmOverride } : {};
     requestDreamTaskRefreshExcludingRecent(runAnalysis, taskGenerateCount, reseedOptions);
   };
 
@@ -639,27 +639,38 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   const onTaskClick = (task) => handleTaskClick(app, task, defaultNoteUUID);
 
   return (
-    <ConfiguredBody
-      error={error}
-      headerActions={headerActions}
-      listRef={listRef}
-      loading={loading}
-      llmAttributionFooter={llmAttributionFooter}
-      maxTasks={maxTasks}
-      noteLink={noteLink}
-      onTaskClick={onTaskClick}
-      tasks={tasks}
-      onSettingsClick={onSettingsClick}
-      runAnalysis={runAnalysis}
-      actionHandlers={{
-        dismissingTaskKeys,
-        expandedExplanationKeys,
-        onComplete: onCompleteTask,
-        onPreserve: onPreserveTask,
-        onRemove: onRemoveTask,
-        onSchedule: onScheduleTask,
-        onToggleExplanation,
-      }}
-    />
+    <>
+      <ConfiguredBody
+        error={error}
+        headerActions={headerActions}
+        listRef={listRef}
+        loading={loading}
+        llmAttributionFooter={llmAttributionFooter}
+        maxTasks={maxTasks}
+        noteLink={noteLink}
+        onTaskClick={onTaskClick}
+        tasks={tasks}
+        onSettingsClick={onSettingsClick}
+        runAnalysis={runAnalysis}
+        actionHandlers={{
+          dismissingTaskKeys,
+          expandedExplanationKeys,
+          onComplete: onCompleteTask,
+          onPreserve: onPreserveTask,
+          onRemove: onRemoveTask,
+          onSchedule: onScheduleTask,
+          onToggleExplanation,
+        }}
+      />
+      {providerPopupOpen
+        ? <LlmProviderSelector
+            currentProviderEm={providerEm}
+            onCancel={() => setProviderPopupOpen(false)}
+            onSelect={onSelectReseedProvider}
+            submitLabel="Reseed"
+            title="Reseed suggestions with which AI provider?"
+          />
+        : null}
+    </>
   );
 }

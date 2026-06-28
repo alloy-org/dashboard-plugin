@@ -4,8 +4,9 @@
 //   dismiss), and an Approve schedule / Dismiss all footer with a pending count"
 import { PROVIDER_DEFAULT_MODEL } from "constants/llm-providers";
 import { widgetTitleFromId } from "constants/settings";
+import LlmProviderSelector from "llm-provider-selector";
 import { DEFAULT_PRIORITY_KEY, PROPOSED_AGENDA_PRIORITY_OPTIONS } from "proposed-agenda-priority";
-import { activityKey, approveAllProposed, changeModelProviderEm, mergedAgendaRows, pendingCount,
+import { activityKey, approveAllProposed, mergedAgendaRows, pendingCount,
   runProposedAgendaGeneration, scheduleProposedRow } from "proposed-agenda-llm-generator";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
@@ -122,6 +123,7 @@ export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid
   const [obligations, setObligations] = useState([]);
   const [priorityKey, setPriorityKey] = useState(DEFAULT_PRIORITY_KEY);
   const [proposed, setProposed] = useState([]);
+  const [providerPopupOpen, setProviderPopupOpen] = useState(false);
   const [scheduledKeys, setScheduledKeys] = useState(() => new Set());
   const listRef = useRef(null);
 
@@ -130,10 +132,12 @@ export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid
     setDismissedKeys, setError, setLoading, setObligations, setProposed, setScheduledKeys }),
     [app, currentDate, modelProviderEm, priorityKey, taskDomainUUID]);
 
-  const onChangeModel = useCallback(async () => {
-    const next = await changeModelProviderEm(app, modelProviderEm);
-    if (next) setModelProviderEm(next);
-  }, [app, modelProviderEm]);
+  const onChangeModel = useCallback(() => setProviderPopupOpen(true), []);
+
+  const onSelectProvider = useCallback((providerEm) => {
+    setProviderPopupOpen(false);
+    if (providerEm && providerEm !== modelProviderEm) setModelProviderEm(providerEm);
+  }, [modelProviderEm]);
 
   const onDismiss = useCallback((event, row) => {
     event.preventDefault();
@@ -171,24 +175,31 @@ export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid
   );
 
   return (
-    <WidgetWrapper title={ widgetTitleFromId(WIDGET_ID) } subtitle={ dateLabel } icon="🗓️"
-        widgetId={ WIDGET_ID } headerActions={ reseedAction }>
-      <PriorityModelBar modelName={ _modelName(modelProviderEm) } onChangeModel={ onChangeModel }
-        onPriorityChange={ (event) => setPriorityKey(event.target.value) } priorityKey={ priorityKey } />
-      <div className="proposed-agenda-list" ref={ listRef }>
-        { rows.map(row => (
-          <ActivityRow key={ activityKey(row) } onDismiss={ onDismiss } onSchedule={ onSchedule } row={ row }
-            scheduledKeys={ scheduledKeys } timeFormat={ timeFormat } />
-        )) }
-      </div>
-      <div className="proposed-agenda-footer">
-        <button className="proposed-agenda-approve" onClick={ onApprove } disabled={ approving || pending === 0 }>
-          { approving ? "Approving …" : "Approve schedule" }</button>
-        <button className="proposed-agenda-dismiss-all" onClick={ onDismissAll } disabled={ pending === 0 }>
-          Dismiss all</button>
-      </div>
-      <p className="proposed-agenda-pending">{ `${ pending } pending` }</p>
-      { attribution ? <p className="proposed-agenda-attribution">{ attribution }</p> : null }
-    </WidgetWrapper>
+    <>
+      <WidgetWrapper title={ widgetTitleFromId(WIDGET_ID) } subtitle={ dateLabel } icon="🗓️"
+          widgetId={ WIDGET_ID } headerActions={ reseedAction }>
+        <PriorityModelBar modelName={ _modelName(modelProviderEm) } onChangeModel={ onChangeModel }
+          onPriorityChange={ (event) => setPriorityKey(event.target.value) } priorityKey={ priorityKey } />
+        <div className="proposed-agenda-list" ref={ listRef }>
+          { rows.map(row => (
+            <ActivityRow key={ activityKey(row) } onDismiss={ onDismiss } onSchedule={ onSchedule } row={ row }
+              scheduledKeys={ scheduledKeys } timeFormat={ timeFormat } />
+          )) }
+        </div>
+        <div className="proposed-agenda-footer">
+          <button className="proposed-agenda-approve" onClick={ onApprove } disabled={ approving || pending === 0 }>
+            { approving ? "Approving …" : "Approve schedule" }</button>
+          <button className="proposed-agenda-dismiss-all" onClick={ onDismissAll } disabled={ pending === 0 }>
+            Dismiss all</button>
+        </div>
+        <p className="proposed-agenda-pending">{ `${ pending } pending` }</p>
+        { attribution ? <p className="proposed-agenda-attribution">{ attribution }</p> : null }
+      </WidgetWrapper>
+      { providerPopupOpen
+        ? <LlmProviderSelector currentProviderEm={ modelProviderEm } onCancel={ () => setProviderPopupOpen(false) }
+            onSelect={ onSelectProvider } submitLabel="Submit"
+            title="Generate the agenda with which AI provider?" />
+        : null }
+    </>
   );
 }

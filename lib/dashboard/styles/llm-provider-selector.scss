@@ -1,0 +1,42 @@
+/* [Claude claude-opus-4-8 (1M context)-authored file]
+ * Prompt summary: "styles for the modern AI-provider chooser popup — a vertical list of themed radios, each
+ *   pairing the provider name with a one-line description of what it excels at, inside the shared ConfigPopup"
+ */
+
+@use 'theme-tokens' as *;
+
+.config-popup-container .config-popup-body {
+  .llm-provider-options {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+  }
+
+  /* Override the popup body's default centered label so the radio aligns to the top of the two-line text. */
+  .llm-provider-option {
+    align-items: flex-start;
+    gap: $sp-sm;
+    padding: $sp-sm $sp-xs;
+
+    input[type="radio"] {
+      margin-top: 3px;
+    }
+  }
+
+  .llm-provider-option-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .llm-provider-option-name {
+    color: $color-text;
+    font-weight: 700;
+  }
+
+  .llm-provider-option-desc {
+    color: $color-text-secondary;
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+}
