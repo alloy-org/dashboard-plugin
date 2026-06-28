@@ -5,6 +5,7 @@ import { widgetTitleFromId } from "constants/settings";
 import { approveProposedAgenda, generateProposedAgenda, scheduleProposedActivity } from "proposed-agenda-service";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
+import { formatClockLabel } from "util/date-utility";
 import { logIfEnabled } from "util/log";
 import WidgetWrapper from "widget-wrapper";
 
@@ -13,26 +14,102 @@ import "styles/proposed-agenda.scss";
 const WIDGET_ID = "proposed-agenda";
 
 // ----------------------------------------------------------------------------------------------
-// @desc Format minutes-since-midnight as a friendly clock label honoring the dashboard timeFormat prop.
-// @param {number} startMinutes - Minutes since midnight.
-// @param {string} timeFormat - '24h' or anything else (defaults to locale 12-hour).
-// @returns {string}
-// [Claude claude-opus-4-8 (1M context)] Task: format a proposed activity's start time for display
-function _formatStartLabel(startMinutes, timeFormat) {
-  const hours = Math.floor(startMinutes / 60);
-  const minutes = startMinutes % 60;
-  if (timeFormat === "24h") return `${ String(hours).padStart(2, "0") }:${ String(minutes).padStart(2, "0") }`;
-  const period = hours >= 12 ? "PM" : "AM";
-  const displayHour = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
-  return `${ displayHour }:${ String(minutes).padStart(2, "0") } ${ period }`;
-}
-
-// ----------------------------------------------------------------------------------------------
 // @desc Stable key for an activity row (start time + title are unique enough within one day's schedule).
 // @param {object} activity - Validated activity record.
 // @returns {string}
 function _activityKey(activity) {
   return `${ activity.startTime }::${ activity.taskUuid || activity.title }`;
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Add an activity's key to a scheduled-keys set immutably (for use in a setState updater).
+// @param {Set<string>} previous - Current scheduled-keys set.
+// @param {object} activity - Activity whose key should be marked scheduled.
+// @returns {Set<string>}
+// [Claude claude-opus-4-8 (1M context)] Task: keep set-mutation out of the component body
+function _withScheduledKey(previous, activity) {
+  const next = new Set(previous);
+  next.add(_activityKey(activity));
+  return next;
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Label for the approve button given its current state.
+// @param {boolean} allScheduled - Whether every activity is already scheduled.
+// @param {boolean} approving - Whether an approve-all request is in flight.
+// @returns {string}
+// [Claude claude-opus-4-8 (1M context)] Task: move approve-button label derivation out of JSX
+function _approveButtonLabel(allScheduled, approving) {
+  if (allScheduled) return "✅ Schedule approved";
+  return approving ? "Approving …" : "Approve schedule";
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Run the generation service and route its result into the widget's state setters.
+// @param {object} app - Amplenote app bridge.
+// @param {object} options - { providerEm } plus the setters { setActivities, setDateLabel, setError,
+//   setLlmAttributionFooter, setLoading, setScheduledKeys }.
+// @returns {Promise<void>}
+// [Claude claude-opus-4-8 (1M context)] Task: hoist the generation flow out of the component body
+async function _runGeneration(app, { providerEm, setActivities, setDateLabel, setError, setLlmAttributionFooter,
+    setLoading, setScheduledKeys }) {
+  setLoading(true);
+  setError(null);
+  setScheduledKeys(new Set());
+  try {
+    const result = await generateProposedAgenda(app, { providerEmOverride: providerEm || null });
+    if (result.error) {
+      setError(result.error);
+      setActivities(null);
+    } else {
+      setActivities(result.activities);
+      setDateLabel(result.dateLabel);
+      setLlmAttributionFooter(result.llmAttributionFooter);
+    }
+  } catch (err) {
+    logIfEnabled("[proposed-agenda] runGeneration caught", err);
+    setError(err.message || "Failed to build a schedule.");
+  } finally {
+    setLoading(false);
+  }
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Schedule a single activity and mark its key scheduled on success; alerts on failure.
+// @param {object} app - Amplenote app bridge.
+// @param {object} activity - Activity to schedule.
+// @param {string|null} defaultNoteUuid - Fallback note for newly-created activities.
+// @param {Function} setScheduledKeys - State setter for scheduled keys.
+// @returns {Promise<void>}
+// [Claude claude-opus-4-8 (1M context)] Task: hoist single-activity scheduling out of the component body
+async function _scheduleOne(app, activity, defaultNoteUuid, setScheduledKeys) {
+  const result = await scheduleProposedActivity(app, activity, defaultNoteUuid);
+  if (!result.taskUuid) {
+    await app.alert("Could not schedule this activity. Please try again or schedule it manually.");
+    return;
+  }
+  setScheduledKeys(previous => _withScheduledKey(previous, activity));
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Approve every not-yet-scheduled activity, mark them all scheduled, and summarize the outcome.
+// @param {object} app - Amplenote app bridge.
+// @param {object} options - { activities, defaultNoteUuid, scheduledKeys, setApproving, setScheduledKeys }.
+// @returns {Promise<void>}
+// [Claude claude-opus-4-8 (1M context)] Task: hoist approve-all flow out of the component body
+async function _approveAll(app, { activities, defaultNoteUuid, scheduledKeys, setApproving, setScheduledKeys }) {
+  const pending = activities.filter(activity => !scheduledKeys.has(_activityKey(activity)));
+  if (pending.length === 0) return;
+  setApproving(true);
+  try {
+    const { failed, scheduled } = await approveProposedAgenda(app, pending, defaultNoteUuid);
+    setScheduledKeys(new Set(activities.map(_activityKey)));
+    await app.alert(failed > 0
+      ? `Scheduled ${ scheduled } activities; ${ failed } could not be scheduled.`
+      : `Scheduled all ${ scheduled } activities.`);
+  } finally {
+    setApproving(false);
+  }
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -75,7 +152,7 @@ function ActivityRow({ activity, onSchedule, scheduledKeys, timeFormat }) {
   const titleHtml = amplenoteMarkdownRender(activity.title) || activity.title;
   return (
     <div className={ `proposed-agenda-item${ isScheduled ? " proposed-agenda-item--scheduled" : "" }` }>
-      <span className="proposed-agenda-time">{ _formatStartLabel(activity.startMinutes, timeFormat) }</span>
+      <span className="proposed-agenda-time">{ formatClockLabel(activity.startMinutes, timeFormat) }</span>
       <div className="proposed-agenda-content">
         <span className="proposed-agenda-text" dangerouslySetInnerHTML={ { __html: titleHtml } } />
         { activity.reason ? <span className="proposed-agenda-reason">{ activity.reason }</span> : null }
@@ -107,27 +184,18 @@ export default function ProposedAgendaWidget({ app, defaultNoteUuid, providerEm,
   const [approving, setApproving] = useState(false);
   const listRef = useRef(null);
 
-  const runGeneration = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    setScheduledKeys(new Set());
-    try {
-      const result = await generateProposedAgenda(app, { providerEmOverride: providerEm || null });
-      if (result.error) {
-        setError(result.error);
-        setActivities(null);
-      } else {
-        setActivities(result.activities);
-        setDateLabel(result.dateLabel);
-        setLlmAttributionFooter(result.llmAttributionFooter);
-      }
-    } catch (err) {
-      logIfEnabled("[proposed-agenda] runGeneration caught", err);
-      setError(err.message || "Failed to build a schedule.");
-    } finally {
-      setLoading(false);
-    }
-  }, [app, providerEm]);
+  const runGeneration = useCallback(() => _runGeneration(app, { providerEm, setActivities, setDateLabel, setError,
+    setLlmAttributionFooter, setLoading, setScheduledKeys }), [app, providerEm]);
+
+  const onSchedule = useCallback((event, activity) => {
+    event.preventDefault();
+    return _scheduleOne(app, activity, defaultNoteUuid, setScheduledKeys);
+  }, [app, defaultNoteUuid]);
+
+  const onApprove = useCallback(() => {
+    if (!activities?.length) return;
+    return _approveAll(app, { activities, defaultNoteUuid, scheduledKeys, setApproving, setScheduledKeys });
+  }, [activities, app, defaultNoteUuid, scheduledKeys]);
 
   useEffect(() => {
     if (loading || activities) return;
@@ -138,33 +206,6 @@ export default function ProposedAgendaWidget({ app, defaultNoteUuid, providerEm,
   useEffect(() => {
     attachFootnotePopups(listRef.current);
   }, [activities]);
-
-  const onSchedule = useCallback(async (event, activity) => {
-    event.preventDefault();
-    const result = await scheduleProposedActivity(app, activity, defaultNoteUuid);
-    if (!result.taskUuid) {
-      await app.alert("Could not schedule this activity. Please try again or schedule it manually.");
-      return;
-    }
-    setScheduledKeys(previous => { const next = new Set(previous); next.add(_activityKey(activity)); return next; });
-  }, [app, defaultNoteUuid]);
-
-  const onApprove = useCallback(async () => {
-    if (!activities?.length) return;
-    const pending = activities.filter(activity => !scheduledKeys.has(_activityKey(activity)));
-    if (pending.length === 0) return;
-    setApproving(true);
-    try {
-      const { failed, scheduled } = await approveProposedAgenda(app, pending, defaultNoteUuid);
-      setScheduledKeys(new Set(activities.map(_activityKey)));
-      const summary = failed > 0
-        ? `Scheduled ${ scheduled } activities; ${ failed } could not be scheduled.`
-        : `Scheduled all ${ scheduled } activities.`;
-      await app.alert(summary);
-    } finally {
-      setApproving(false);
-    }
-  }, [activities, app, defaultNoteUuid, scheduledKeys]);
 
   if (loading) return <LoadingState />;
   if (error) return <MessageState message={ error } onRetry={ runGeneration } />;
@@ -189,7 +230,7 @@ export default function ProposedAgendaWidget({ app, defaultNoteUuid, providerEm,
       </div>
       <div className="proposed-agenda-footer">
         <button className="proposed-agenda-approve" onClick={ onApprove } disabled={ approving || allScheduled }>
-          { allScheduled ? "✅ Schedule approved" : approving ? "Approving …" : "Approve schedule" }
+          { _approveButtonLabel(allScheduled, approving) }
         </button>
         { llmAttributionFooter ? <p className="proposed-agenda-attribution">{ llmAttributionFooter }</p> : null }
       </div>
