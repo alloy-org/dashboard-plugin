@@ -3,6 +3,44 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-06-28 — Proposed Agenda monthly record + LLM-call cache
+
+**Model:** claude-opus-4-8[1m]
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda-archive.js` (created — persists a per-date, per-priority, per-LLM record of what
+  the widget recommended into a monthly archived note "[Month] [Year] Dashboard Proposed Tasks" tagged
+  `plugins/dashboard` (same find-before-create + `{ archive: true }` pattern as graveyard/recent-notes). Each
+  record carries `dateKey`/`priorityKey`/`providerEm` plus a `proposedTasks` array; every entry records its
+  `taskUuid`, lifecycle `scheduledEm` (pending/scheduled/dismissed), and `time`, alongside the fields needed to
+  re-render the activity from cache. Serializes via a fenced JSON block like recent-notes-service. Exposes
+  `loadCachedProposedAgenda`, `storeProposedAgenda` (replaces any existing record for the coordinate),
+  `updateProposedTaskStatuses`, plus `proposedAgendaNoteNameFromDate`/`proposedTaskKey`)
+- `lib/dashboard/proposed-agenda-service.js` (modified — `generateProposedAgenda` now resolves the concrete
+  provider enum, checks the monthly note for an existing date+priority+LLM record BEFORE doing any task selection
+  or LLM call (returning the cached activities + restored scheduled/dismissed keys), and stores/replaces the
+  record after a fresh generation. Added `forceRegenerate` (Reseed) to bypass the cache and `_resolveProviderEm`)
+- `lib/dashboard/proposed-agenda-llm-generator.js` (modified — threads `forceRegenerate`, restores cached
+  scheduled/dismissed key sets and the resolved provider into widget state, and persists status changes back onto
+  the record via a new `recordProposedTaskStatus` helper used by schedule/approve/dismiss flows)
+- `lib/dashboard/proposed-agenda.jsx` (modified — Reseed now force-regenerates (replacing today's saved set);
+  tracks the resolved record provider and builds a `recordCoord` so schedule/dismiss/dismiss-all/approve write the
+  `scheduledEm` status back to the right record)
+- `test/proposed-agenda-archive.test.js` (created — monthly note naming, store→load round trip, cache misses on a
+  different date/priority/LLM, record replacement (no duplication) on re-store, distinct records per
+  priority/LLM, status persistence, and an end-to-end `generateProposedAgenda` test proving an identical request
+  is served from the note with no second LLM call while Reseed forces regeneration and replaces the record)
+
+**Task:** Keep a per-date/priority/LLM record of proposed tasks in a monthly archived note and use it to avoid
+duplicate LLM calls; Reseed replaces the entry. Test the regeneration case.
+**Prompt summary:** "create a per-date, per-priority, per-LLM record of what tasks were recommended ... Before
+calling to an LLM, check if the LLM+date+priority already exists within our data note ... Reseed ... replace the
+entry ... test the case where proposed tasks are regenerated"
+**Scope:** ~210 lines new archive module + ~50 lines of service/generator/widget wiring + ~190 lines of tests
+**Notes:** The persisted entry extends the requested `[task uuid, scheduledEm, time]` tuple to a named-key object
+so a cached agenda (including LLM-proposed supporting activities that have no task UUID) can be re-rendered without
+the LLM. Cache lookup/store are `.catch`-wrapped so a note failure degrades to a normal LLM generation. Full
+suite: no new regressions (the 6 failing day-sketch/graveyard/call-plugin tests pre-date this work).
+
 ## 2026-06-27 — Proposed Agenda real-LLM integration tests + gap enforcement
 
 **Model:** claude-opus-4-8[1m]

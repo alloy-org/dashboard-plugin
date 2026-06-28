@@ -5,10 +5,11 @@
 import { PROVIDER_DEFAULT_MODEL } from "constants/llm-providers";
 import { widgetTitleFromId } from "constants/settings";
 import LlmProviderSelector from "llm-provider-selector";
+import { PROPOSED_TASK_STATUS } from "proposed-agenda-archive";
 import { DEFAULT_PRIORITY_KEY, PROPOSED_AGENDA_PRIORITY_OPTIONS } from "proposed-agenda-priority";
-import { activityKey, approveAllProposed, mergedAgendaRows, pendingCount,
+import { activityKey, approveAllProposed, mergedAgendaRows, pendingCount, recordProposedTaskStatus,
   runProposedAgendaGeneration, scheduleProposedRow } from "proposed-agenda-llm-generator";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import { formatClockLabel } from "util/date-utility";
 import WidgetWrapper from "widget-wrapper";
@@ -124,12 +125,19 @@ export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid
   const [priorityKey, setPriorityKey] = useState(DEFAULT_PRIORITY_KEY);
   const [proposed, setProposed] = useState([]);
   const [providerPopupOpen, setProviderPopupOpen] = useState(false);
+  const [recordProviderEm, setRecordProviderEm] = useState(null);
   const [scheduledKeys, setScheduledKeys] = useState(() => new Set());
   const listRef = useRef(null);
 
-  const runGeneration = useCallback(() => runProposedAgendaGeneration(app, { currentDate,
-    domainUuid: taskDomainUUID, priorityKey, providerEm: modelProviderEm, setApproving, setAttribution, setDateLabel,
-    setDismissedKeys, setError, setLoading, setObligations, setProposed, setScheduledKeys }),
+  // Identifies the stored monthly line for the agenda currently on screen (the llmDateRecord: which date,
+  // priority, and LLM), so schedule/dismiss decisions are written back to the right entry.
+  const llmDateRecord = useMemo(() => ({ date: currentDate, priorityKey, providerEm: recordProviderEm }),
+    [currentDate, priorityKey, recordProviderEm]);
+
+  const runGeneration = useCallback(({ forceRegenerate = false } = {}) => runProposedAgendaGeneration(app,
+    { currentDate, domainUuid: taskDomainUUID, forceRegenerate, priorityKey, providerEm: modelProviderEm, setApproving,
+    setAttribution, setDateLabel, setDismissedKeys, setError, setLoading, setObligations, setProposed,
+    setRecordProviderEm, setScheduledKeys }),
     [app, currentDate, modelProviderEm, priorityKey, taskDomainUUID]);
 
   const onChangeModel = useCallback(() => setProviderPopupOpen(true), []);
@@ -142,36 +150,38 @@ export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid
   const onDismiss = useCallback((event, row) => {
     event.preventDefault();
     setDismissedKeys(previous => new Set(previous).add(activityKey(row)));
-  }, []);
+    recordProposedTaskStatus(app, llmDateRecord, [activityKey(row)], PROPOSED_TASK_STATUS.DISMISSED);
+  }, [app, llmDateRecord]);
 
   const onDismissAll = useCallback(() => {
-    setDismissedKeys(previous => {
-      const next = new Set(previous);
-      proposed.forEach(a => { if (!scheduledKeys.has(activityKey(a))) next.add(activityKey(a)); });
-      return next;
-    });
-  }, [proposed, scheduledKeys]);
+    const dismissing = proposed.filter(a => !scheduledKeys.has(activityKey(a))).map(activityKey);
+    setDismissedKeys(previous => { const next = new Set(previous); dismissing.forEach(key => next.add(key)); return next; });
+    recordProposedTaskStatus(app, llmDateRecord, dismissing, PROPOSED_TASK_STATUS.DISMISSED);
+  }, [app, llmDateRecord, proposed, scheduledKeys]);
 
   const onSchedule = useCallback((event, row) => {
     event.preventDefault();
-    return scheduleProposedRow(app, row, defaultNoteUuid, setScheduledKeys);
-  }, [app, defaultNoteUuid]);
+    return scheduleProposedRow(app, row, defaultNoteUuid, setScheduledKeys, llmDateRecord);
+  }, [app, defaultNoteUuid, llmDateRecord]);
 
-  const onApprove = useCallback(() => approveAllProposed(app, { defaultNoteUuid, dismissedKeys, proposed,
-    scheduledKeys, setApproving, setScheduledKeys }), [app, defaultNoteUuid, dismissedKeys, proposed, scheduledKeys]);
+  const onApprove = useCallback(() => approveAllProposed(app, { defaultNoteUuid, dismissedKeys, llmDateRecord,
+    proposed, scheduledKeys, setApproving, setScheduledKeys }),
+    [app, defaultNoteUuid, dismissedKeys, llmDateRecord, proposed, scheduledKeys]);
 
   useEffect(() => { runGeneration(); }, [runGeneration]);
   useEffect(() => { attachFootnotePopups(listRef.current); }, [obligations, proposed]);
 
   if (loading) return <LoadingState />;
-  if (error) return <MessageState message={ error } onRetry={ runGeneration } />;
+  if (error) return <MessageState message={ error } onRetry={ () => runGeneration() } />;
 
   const rows = mergedAgendaRows(obligations, proposed, dismissedKeys);
-  if (rows.length === 0) return <MessageState message="No schedule could be proposed yet." onRetry={ runGeneration } />;
+  if (rows.length === 0) {
+    return <MessageState message="No schedule could be proposed yet." onRetry={ () => runGeneration() } />;
+  }
   const pending = pendingCount(proposed, scheduledKeys, dismissedKeys);
   const reseedAction = (
-    <a href="#" className="widget-header-action" title="Propose a fresh schedule"
-      onClick={ (event) => { event.preventDefault(); runGeneration(); } }>🔄 Reseed</a>
+    <a href="#" className="widget-header-action" title="Propose a fresh schedule (replaces today's saved set)"
+      onClick={ (event) => { event.preventDefault(); runGeneration({ forceRegenerate: true }); } }>🔄 Reseed</a>
   );
 
   return (
