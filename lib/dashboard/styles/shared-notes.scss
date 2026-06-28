@@ -22,6 +22,32 @@
     gap: $sp-xs;
   }
 
+  /* [Claude claude-opus-4-8] First-line person filter: select on the left, has-tasks toggle right. */
+  /* Prompt: "show the 'Has tasks' checkbox on the right side of the same line as the select" */
+  .shared-notes-filter {
+    align-items: center;
+    display: flex;
+    flex-shrink: 0;
+    gap: $sp-sm;
+    padding: 0 $sp-md $sp-xs;
+
+    /* Push the has-tasks toggle to the right edge of the filter row. */
+    .shared-notes-toggle {
+      margin-left: auto;
+    }
+  }
+
+  .shared-notes-sharer-select {
+    background-color: $color-bg-page;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    color: $color-text;
+    font-family: inherit;
+    font-size: 0.8rem;
+    min-width: 0;
+    padding: 2px $sp-xs;
+  }
+
   .shared-note-list {
     display: flex;
     flex: 1;
@@ -30,6 +56,36 @@
     list-style: none;
     min-height: 0;
     overflow-y: auto;
+  }
+
+  /* [Claude claude-opus-4-8] Pagination controls; mirror the Agenda widget's prev/next arrows. */
+  /* Prompt: "Add pagination controls to the Shared Notes module" */
+  .shared-notes-pagination {
+    align-items: center;
+    display: flex;
+    flex-shrink: 0;
+    gap: $sp-sm;
+    justify-content: center;
+    padding: $sp-xs 0 0;
+  }
+
+  .shared-notes-page-arrow {
+    background: none;
+    border: none;
+    color: $color-text-secondary;
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 0 $sp-xs;
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.35;
+    }
+  }
+
+  .shared-notes-page-indicator {
+    color: $color-text-secondary;
+    font-size: 0.75rem;
   }
 
   .shared-note-item {

@@ -2,7 +2,7 @@
 import { jest } from "@jest/globals";
 import { avatarTextFromName, buildPeopleIndexByNote, collaboratorNamesFromNoteHandle,
   collaboratorsForNote, fetchPeopleIndexByNote, findCollaboratorUpdatedNotes, lastUpdatedLabelFromMs,
-  noteUpdatedByCollaborator, sharedNotesGroupParam, timestampMsFromValue } from "shared-notes-service";
+  noteUpdatedByCollaborator, sharedNotesGroupParam, sharerNamesFromIndex, timestampMsFromValue } from "shared-notes-service";
 
 const TASK_DOMAIN_UUID = "domain-all";
 const MINUTE_MS = 60 * 1000;
@@ -19,17 +19,14 @@ function buildNoteHandle(overrides = {}) {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Build a mock Amplenote app whose filterNotes returns the supplied handles and records calls.
-//   An optional `people` array, when provided, is returned from a getPeople() mock so the service's
-//   collaborator index can be exercised; omitting it models hosts that predate getPeople().
+// @desc Build a mock Amplenote app whose filterNotes returns the supplied handles and whose getPeople
+//   returns the supplied person objects, recording calls to both.
 // @param {Array<Object>} handles - noteHandles to return from filterNotes.
-// @param {Array<Object>|null} people - person objects for getPeople(), or null to omit getPeople.
-// [Claude claude-opus-4-8] Task: capture filterNotes arguments for the shared-notes service
-// [Claude claude-opus-4-8] Task: optionally stub getPeople() for the collaborator index
-function buildMockApp(handles, people = null) {
-  const app = { filterNotes: jest.fn().mockResolvedValue(handles) };
-  if (people) app.getPeople = jest.fn().mockResolvedValue(people);
-  return app;
+// @param {Array<Object>} people - person objects to return from getPeople (defaults to none).
+// [Claude claude-opus-4-8] Task: capture filterNotes/getPeople calls for the shared-notes service
+function buildMockApp(handles, people = []) {
+  return { filterNotes: jest.fn().mockResolvedValue(handles),
+    getPeople: jest.fn().mockResolvedValue(people) };
 }
 
 describe("sharedNotesGroupParam", () => {
@@ -85,11 +82,11 @@ describe("findCollaboratorUpdatedNotes", () => {
     ];
     const app = buildMockApp(handles);
 
-    const results = await findCollaboratorUpdatedNotes({ app, maxNotes: 5, onlyWithTasks: false, taskDomainUUID: TASK_DOMAIN_UUID });
+    const { notes } = await findCollaboratorUpdatedNotes({ app, maxNotes: 5, onlyWithTasks: false, taskDomainUUID: TASK_DOMAIN_UUID });
 
     expect(app.filterNotes).toHaveBeenCalledWith({ group: "shared", taskDomainUUID: TASK_DOMAIN_UUID }, "updated");
-    expect(results.map(entry => entry.noteHandle.uuid)).toEqual(["a", "c"]);
-    expect(results[0].updatedMs).toBe(9000);
+    expect(notes.map(entry => entry.noteHandle.uuid)).toEqual(["a", "c"]);
+    expect(notes[0].updatedMs).toBe(9000);
   });
 
   it("includes the hasTasks group when onlyWithTasks is set and caps results at maxNotes", async () => {
@@ -100,21 +97,61 @@ describe("findCollaboratorUpdatedNotes", () => {
     }));
     const app = buildMockApp(handles);
 
-    const results = await findCollaboratorUpdatedNotes({ app, maxNotes: 3, onlyWithTasks: true, taskDomainUUID: TASK_DOMAIN_UUID });
+    const { notes } = await findCollaboratorUpdatedNotes({ app, maxNotes: 3, onlyWithTasks: true, taskDomainUUID: TASK_DOMAIN_UUID });
 
     expect(app.filterNotes).toHaveBeenCalledWith({ group: "shared,taskLists", taskDomainUUID: TASK_DOMAIN_UUID }, "updated");
-    expect(results).toHaveLength(3);
+    expect(notes).toHaveLength(3);
   });
 
   it("de-duplicates repeated uuids returned by filterNotes", async () => {
     const handle = buildNoteHandle({ uuid: "dupe", changed: new Date(0).toISOString(), updated: new Date(1000).toISOString() });
     const app = buildMockApp([handle, { ...handle }]);
 
-    const results = await findCollaboratorUpdatedNotes({ app, maxNotes: 5, taskDomainUUID: TASK_DOMAIN_UUID });
+    const { notes } = await findCollaboratorUpdatedNotes({ app, maxNotes: 5, taskDomainUUID: TASK_DOMAIN_UUID });
 
-    expect(results).toHaveLength(1);
+    expect(notes).toHaveLength(1);
   });
 
+  it("resolves collaborator names and the alphabetical sharer list from getPeople", async () => {
+    const handles = [
+      buildNoteHandle({ uuid: "n1", changed: new Date(0).toISOString(), updated: new Date(1000).toISOString() }),
+      buildNoteHandle({ uuid: "n2", changed: new Date(0).toISOString(), updated: new Date(1000).toISOString() }),
+    ];
+    const people = [
+      { name: "Zoe", uuid: "p-zoe", sharing: { notes: ["n1"] } },
+      { name: "Aaron", uuid: "p-aaron", sharing: { notes: ["n1", "n2"] } },
+    ];
+    const app = buildMockApp(handles, people);
+
+    const { notes, sharerNames } = await findCollaboratorUpdatedNotes({ app, maxNotes: 5, taskDomainUUID: TASK_DOMAIN_UUID });
+
+    expect(sharerNames).toEqual(["Aaron", "Zoe"]);
+    const n1Names = notes.find(n => n.noteHandle.uuid === "n1").collaborators.map(c => c.name).sort();
+    expect(n1Names).toEqual(["Aaron", "Zoe"]);
+    expect(notes.find(n => n.noteHandle.uuid === "n2").collaborators.map(c => c.name)).toEqual(["Aaron"]);
+  });
+});
+
+describe("sharerNamesFromIndex", () => {
+  it("returns every distinct sharer alphabetically, case-insensitively, from the note<>person index", () => {
+    const peopleIndex = buildPeopleIndexByNote([
+      { uuid: "p1", name: "zoe", sharing: { notes: ["n1"] } },
+      { uuid: "p2", name: "Aaron", sharing: { notes: ["n1", "n2"] } },
+      { uuid: "p3", name: "bea", sharing: { notes: ["n2"] } },
+    ]);
+    expect(sharerNamesFromIndex(peopleIndex)).toEqual(["Aaron", "bea", "zoe"]);
+    expect(sharerNamesFromIndex(null)).toEqual([]);
+  });
+});
+
+describe("collaboratorNamesFromNoteHandle", () => {
+  it("reads dev-fixture shareAccess names off the noteHandle, returning [] when absent", () => {
+    expect(collaboratorNamesFromNoteHandle({ uuid: "n1", shareAccess: ["Aaron", "Aaron"] })).toEqual(["Aaron"]);
+    expect(collaboratorNamesFromNoteHandle({ uuid: "n2" })).toEqual([]);
+  });
+});
+
+describe("findCollaboratorUpdatedNotes collaborator resolution", () => {
   it("attaches getPeople-derived collaborators (name + avatar) indexed by note uuid", async () => {
     const handles = [
       buildNoteHandle({ uuid: "a", name: "Alpha", changed: new Date(1000).toISOString(), updated: new Date(9000).toISOString() }),
@@ -126,10 +163,10 @@ describe("findCollaboratorUpdatedNotes", () => {
     ];
     const app = buildMockApp(handles, people);
 
-    const results = await findCollaboratorUpdatedNotes({ app, maxNotes: 5, taskDomainUUID: TASK_DOMAIN_UUID });
+    const { notes } = await findCollaboratorUpdatedNotes({ app, maxNotes: 5, taskDomainUUID: TASK_DOMAIN_UUID });
 
     expect(app.getPeople).toHaveBeenCalled();
-    expect(results[0].collaborators).toEqual([
+    expect(notes[0].collaborators).toEqual([
       { avatar: { image: "https://example.com/ada.png" }, name: "Ada Lovelace" },
       { avatar: { text: "GH" }, name: "Grace Hopper" },
     ]);
@@ -140,11 +177,11 @@ describe("findCollaboratorUpdatedNotes", () => {
       buildNoteHandle({ uuid: "a", name: "Alpha", shareAccess: ["Solo Dev"],
         changed: new Date(1000).toISOString(), updated: new Date(9000).toISOString() }),
     ];
-    const app = buildMockApp(handles); // no getPeople
+    const app = { filterNotes: jest.fn().mockResolvedValue(handles) }; // no getPeople
 
-    const results = await findCollaboratorUpdatedNotes({ app, maxNotes: 5, taskDomainUUID: TASK_DOMAIN_UUID });
+    const { notes } = await findCollaboratorUpdatedNotes({ app, maxNotes: 5, taskDomainUUID: TASK_DOMAIN_UUID });
 
-    expect(results[0].collaborators).toEqual([{ avatar: null, name: "Solo Dev" }]);
+    expect(notes[0].collaborators).toEqual([{ avatar: null, name: "Solo Dev" }]);
   });
 });
 

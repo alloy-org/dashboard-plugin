@@ -15,17 +15,23 @@ function iso(ms) {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Build a mock Amplenote app whose filterNotes yields collaborator-updated shared notes.
-//   Notes carry a collaborator name so the widget can render the "shared with" line.
-// [Claude claude-opus-4-8] Task: stub filterNotes + navigate for Shared Notes widget rendering
+// @desc Build a mock Amplenote app whose filterNotes yields collaborator-updated shared notes and
+//   whose getPeople maps those notes to sharer names (the source of the "shared with" line).
+// [Claude claude-opus-4-8] Task: stub filterNotes/getPeople/navigate for Shared Notes widget rendering
+// Prompt: "Build an index of person.sharing.notes from the getPeople method"
 function buildMockApp() {
   const baseHandles = [
-    { changed: iso(1000), name: "Roadmap", shareAccess: ["Ada Lovelace"], updated: iso(Date.now()), uuid: "note-1" },
+    { changed: iso(1000), name: "Roadmap", updated: iso(Date.now()), uuid: "note-1" },
     { changed: iso(8000), name: "Self Only", updated: iso(8000), uuid: "note-2" }, // not collaborator-updated
-    { changed: iso(2000), name: "Specs", shareAccess: [{ name: "Grace Hopper" }], updated: iso(Date.now() - 3 * 60 * 60 * 1000), uuid: "note-3" },
+    { changed: iso(2000), name: "Specs", updated: iso(Date.now() - 3 * 60 * 60 * 1000), uuid: "note-3" },
+  ];
+  const people = [
+    { name: "Ada Lovelace", uuid: "p-ada", sharing: { notes: ["note-1"] } },
+    { name: "Grace Hopper", uuid: "p-grace", sharing: { notes: ["note-3"] } },
   ];
   return {
     filterNotes: jest.fn().mockResolvedValue(baseHandles),
+    getPeople: jest.fn().mockResolvedValue(people),
     navigate: jest.fn().mockResolvedValue(undefined),
   };
 }
@@ -53,7 +59,36 @@ describe("SharedNotesWidget", () => {
     expect(titles).toEqual(["Roadmap", "Specs"]);
     const collaborators = [...container.querySelectorAll(".shared-note-collaborators")].map(node => node.textContent);
     expect(collaborators).toEqual(["Ada Lovelace", "Grace Hopper"]);
-    expect(container.querySelectorAll(".shared-note-updated")[1].textContent).toBe("3h ago");
+    const lastUpdated = container.querySelectorAll(".shared-note-updated")[1];
+    expect(lastUpdated.textContent).toBe("3h ago");
+    expect(lastUpdated.getAttribute("title")).toBe("Last time a collaborator updated this note");
+  });
+
+  it("shows the person filter (with the has-tasks toggle on the same row) when 2+ people have shared", async () => {
+    const { container } = await renderWidget();
+    const filterRow = container.querySelector(".shared-notes-filter");
+    expect(filterRow).not.toBeNull();
+    const options = [...filterRow.querySelectorAll("option")].map(node => node.textContent);
+    expect(options).toEqual(["Filter on user...", "Ada Lovelace", "Grace Hopper"]);
+    // The toggle lives inside the filter row, not the widget header, when the filter is shown.
+    expect(filterRow.querySelector(".shared-notes-toggle input")).not.toBeNull();
+  });
+
+  it("hides the person filter and keeps the has-tasks toggle when only one person has shared", async () => {
+    const app = {
+      filterNotes: jest.fn().mockResolvedValue([
+        { changed: iso(1000), name: "Roadmap", updated: iso(Date.now()), uuid: "note-1" },
+      ]),
+      getPeople: jest.fn().mockResolvedValue([{ name: "Ada Lovelace", uuid: "p-ada", sharing: { notes: ["note-1"] } }]),
+      navigate: jest.fn(),
+    };
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    await act(async () => {
+      createRoot(container).render(createElement(SharedNotesWidget, { app, taskDomainUUID: TASK_DOMAIN_UUID }));
+    });
+    expect(container.querySelector(".shared-notes-filter")).toBeNull();
+    expect(container.querySelector(".shared-notes-toggle input")).not.toBeNull();
   });
 
   it("navigates to the note when a row is clicked", async () => {
@@ -97,7 +132,7 @@ describe("SharedNotesWidget", () => {
   });
 
   it("shows an empty-state message when no notes were updated by collaborators", async () => {
-    const app = { filterNotes: jest.fn().mockResolvedValue([]), navigate: jest.fn() };
+    const app = { filterNotes: jest.fn().mockResolvedValue([]), getPeople: jest.fn().mockResolvedValue([]), navigate: jest.fn() };
     const container = document.createElement("div");
     document.body.appendChild(container);
     await act(async () => {
