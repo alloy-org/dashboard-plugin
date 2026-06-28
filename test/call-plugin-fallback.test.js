@@ -54,7 +54,7 @@ describe("llmPromptWithPluginFallback", () => {
     const result = await llmPromptWithPluginFallback(app, "test prompt", { jsonResponse: true });
 
     expect(app.callPlugin).toHaveBeenCalledTimes(1);
-    expect(app.callPlugin).toHaveBeenCalledWith({ uuid: AMPLE_AGENT_PRO_UUID }, "test prompt");
+    expect(app.callPlugin).toHaveBeenCalledWith({ source: AMPLE_AGENT_PRO_UUID }, "test prompt");
     expect(result).toEqual(pluginResponse);
   });
 
@@ -143,6 +143,19 @@ describe("llmPromptWithPluginFallback", () => {
     expect(callingLog).toContain(`"content":"${ truncatedPrompt }"`);
     expect(callingLog).not.toContain(`"content":"${ longPrompt }"`);
     expect(requestBody.messages[0].content).toBe(longPrompt);
+  });
+
+  it("throws an actionable error when callPlugin returns null and no provider is configured", async () => {
+    // [Claude claude-opus-4-8 (1M context)] Regression: Goal Coach crashed with the cryptic
+    //   "Model undefined not found in any provider" when Ample Agent Pro returned null and no
+    //   direct LLM provider was configured. The fallback must now surface a clear, actionable message.
+    setPluginData({ settings: { [SETTING_KEYS.LLM_PROVIDER_MODEL]: "none" }, context: {} });
+    const app = { callPlugin: jest.fn().mockResolvedValue(null), alert: jest.fn() };
+    global.fetch = jest.fn();
+
+    await expect(llmPromptWithPluginFallback(app, "prompt", { jsonResponse: true }))
+      .rejects.toThrow(/No AI provider is configured/);
+    expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it("does not call fetch when callPlugin succeeds", async () => {
