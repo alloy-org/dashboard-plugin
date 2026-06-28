@@ -393,11 +393,11 @@ export default function DashboardApp({ app, initPromise }) {
     } else {
       fetchMoodRatings(referenceDate);
     }
-    if (activeTaskDomain) {
-      fetchCompletedTasks(referenceDate, activeTaskDomain);
-      if (victoryReferenceDate && victoryReferenceDate !== referenceDate) {
-        fetchCompletedTasks(victoryReferenceDate, activeTaskDomain);
-      }
+    // activeTaskDomain may be null here; getCompletedTasks is not domain-scoped, so an All-Notes dashboard
+    // still populates victory-value metrics rather than gating the fetch behind a selected domain.
+    fetchCompletedTasks(referenceDate, activeTaskDomain);
+    if (victoryReferenceDate && victoryReferenceDate !== referenceDate) {
+      fetchCompletedTasks(victoryReferenceDate, activeTaskDomain);
     }
   }, [activeTaskDomain, currentDate, fetchCompletedTasks, fetchMoodRatings, selectedDate, victoryReferenceDate]);
 
