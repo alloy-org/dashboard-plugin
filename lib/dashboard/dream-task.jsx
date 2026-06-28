@@ -1,5 +1,5 @@
 import confetti from "canvas-confetti";
-import { apiKeyFromProvider, SETTING_KEYS, widgetDataFromId, widgetTitleFromId } from "constants/settings";
+import { apiKeyFromProvider, configuredProviderEms, SETTING_KEYS, widgetDataFromId, widgetTitleFromId } from "constants/settings";
 import { _loadSeenUuidsMap, _maxTasksFromGrid, _recordSeenUuids, _taskGenerateCount, _todayProposedTasksNoteName,
   applyDreamTaskAnalysisResult, fetchDreamTaskSuggestions, handleOpenSettings, handleTaskClick,
   requestDreamTaskRefreshExcludingRecent, shouldFetchMoreTasksAfterGridGrowth, updateDreamTaskTaskMetadata,
@@ -8,7 +8,8 @@ import { buildAvailableTimeSlots, fetchSchedulingOccupancy, scheduledDreamTaskRe
   startAtSecondsFromDateAndMinutes } from "dream-task-schedule";
 import LlmProviderSelector from "llm-provider-selector";
 import NoConfigUpsell from "no-config-upsell";
-import { providerNameFromProviderEm } from "providers/ai-provider-settings";
+import { pluginSettings } from "plugin-data";
+import { AMPLE_AGENT_PRO_NOTE_NAME, providerNameFromProviderEm } from "providers/ai-provider-settings";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { DASHBOARD_TASKS_UPDATED_EVENT } from "hooks/use-dashboard-task-updates";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
@@ -473,6 +474,7 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   const [defaultNoteUUID, setDefaultNoteUUID] = useState(null);
   const [llmAttributionFooter, setLlmAttributionFooter] = useState(null);
   const [providerPopupOpen, setProviderPopupOpen] = useState(false);
+  const [ampleAgentProAvailable, setAmpleAgentProAvailable] = useState(false);
   const [, setSeenUuidsMap] = useState(() => _loadSeenUuidsMap());
   const listRef = useRef(null);
   const renderCountRef = useRef(0);
@@ -544,6 +546,15 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
       hasLlmConfig, providerName, renderCount: renderCountRef.current, ...snapshot,
     });
   }, [hasLlmConfig, providerEm, providerApiKey, envApiKey, providerName]);
+
+  // [Claude claude-opus-4-8 (1M context)] Task: detect Ample Agent Pro so the reseed chooser may offer keyless providers
+  // Prompt: "LLMs with no keys should only be visible if we are prompting prior to calling the external Agent Pro plugin"
+  useEffect(() => {
+    let cancelled = false;
+    Promise.resolve(app.findNote({ name: AMPLE_AGENT_PRO_NOTE_NAME }))
+      .then(note => { if (!cancelled) setAmpleAgentProAvailable(!!note); });
+    return () => { cancelled = true; };
+  }, [app]);
 
   useEffect(() => {
     if (!hasLlmConfig) return;
@@ -626,15 +637,19 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
           onToggleExplanation,
         }}
       />
-      {providerPopupOpen
+      {
+        providerPopupOpen
         ? <LlmProviderSelector
+            allowKeylessProviders={ampleAgentProAvailable}
+            configuredProviderEms={configuredProviderEms(pluginSettings())}
             currentProviderEm={providerEm}
             onCancel={() => setProviderPopupOpen(false)}
             onSelect={onSelectReseedProvider}
             submitLabel="Reseed"
             title="Reseed suggestions with which AI provider?"
           />
-        : null}
+        : null
+      }
     </>
   );
 }

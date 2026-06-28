@@ -1,6 +1,7 @@
 // [Claude claude-opus-4-6] Generated tests for: apiKeyBucketFromLlmProvider
 // Prompt: "providerApiKey is blank while settings show a key — evolve extraction"
-import { apiKeyBucketFromLlmProvider, apiKeyFromProvider, SETTING_KEYS } from "constants/settings";
+import { apiKeyBucketFromLlmProvider, apiKeyFromProvider, configuredProviderEms,
+  SETTING_KEYS } from "constants/settings";
 
 describe("apiKeyBucketFromLlmProvider", () => {
   it("maps anthropic-sonnet providerEm to anthropic API key bucket", () => {
@@ -20,5 +21,23 @@ describe("apiKeyBucketFromLlmProvider", () => {
     expect(apiKeyBucketFromLlmProvider("none")).toBeNull();
     expect(apiKeyBucketFromLlmProvider("")).toBeNull();
     expect(apiKeyBucketFromLlmProvider(undefined)).toBeNull();
+  });
+});
+
+// [Claude claude-opus-4-8 (1M context)] Generated tests for: configuredProviderEms
+// Prompt: "only show options that correspond to an LLM whose API key has been given by the user"
+describe("configuredProviderEms", () => {
+  it("lists only providers whose API key setting holds a non-empty value", () => {
+    const settings = {
+      [SETTING_KEYS.LLM_API_KEY_ANTHROPIC]: "sk-ant-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      [SETTING_KEYS.LLM_API_KEY_OPENAI]: "  ",      // whitespace-only → not configured
+      [SETTING_KEYS.LLM_API_KEY_GEMINI]: "AIza-key",
+    };
+    expect(configuredProviderEms(settings).sort()).toEqual(["anthropic", "gemini"]);
+  });
+
+  it("returns an empty array when no keys are present or settings is missing", () => {
+    expect(configuredProviderEms({})).toEqual([]);
+    expect(configuredProviderEms(undefined)).toEqual([]);
   });
 });

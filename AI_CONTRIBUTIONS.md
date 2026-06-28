@@ -3,6 +3,38 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-06-28 — Proposed Agenda provider recovery, persisted Priority/LLM, key-gated provider chooser
+
+**Model:** claude-opus-4-8[1m]
+**Files created/modified:**
+- `lib/constants/settings.js` (modified — added `SETTING_KEYS.PROPOSED_AGENDA_PRIORITY` and
+  `SETTING_KEYS.PROPOSED_AGENDA_LLM` for persisting the widget's "Today's priority" and AI-provider choices; added
+  `configuredProviderEms(settings)` which returns the provider buckets that currently hold a non-empty API key)
+- `lib/dashboard/llm-provider.js` (modified — added `selectableProviderOptions({ allowKeyless, configuredProviderEms,
+  currentProviderEm })`: returns all providers when an Ample Agent Pro fallback can run any provider, otherwise only
+  providers with a configured key plus the current one, falling back to the full list so the chooser is never empty)
+- `lib/dashboard/llm-provider-selector.jsx` (modified — accepts `allowKeylessProviders` + `configuredProviderEms`,
+  renders only `selectableProviderOptions`, and keeps the initial radio selection within the visible set)
+- `lib/dashboard/proposed-agenda.jsx` (modified — (1) Recovery: `runGeneration` now depends on `providerApiKey` and a
+  new effect adopts the dashboard-configured provider when the user has made no in-widget choice, so configuring an
+  AI provider in Dashboard Settings re-triggers generation instead of staying stuck on "No AI provider configured".
+  (2) Persistence: seeds the initial priority/provider from `SETTING_KEYS.PROPOSED_AGENDA_PRIORITY`/`_LLM` and writes
+  them back via `app.setSetting` + `updatePluginSetting` on change. (3) Detects Ample Agent Pro via `findNote` and
+  passes `allowKeylessProviders`/`configuredProviderEms` to the chooser)
+- `lib/dashboard/dream-task.jsx` (modified — detects Ample Agent Pro and passes `allowKeylessProviders` +
+  `configuredProviderEms` to its reseed provider chooser, so keyless providers are hidden unless a fallback exists)
+- `test/dashboard-llm-provider-mapping.test.js` (modified — added `configuredProviderEms` tests: trims
+  whitespace-only keys, lists only keyed providers, tolerant of empty/undefined settings)
+- `test/llm-provider.test.js` (modified — added `selectableProviderOptions` tests: key-gated filtering with the
+  current provider preserved, allow-all under Agent Pro, and empty-config fallback to the full list)
+
+**Design notes:**
+- The "No AI provider configured" stickiness was a stale-state bug: the widget's generation effect never re-ran when
+  a key was added (DreamTask recovers via its `hasLlmConfig` effect; Proposed Agenda had no equivalent). Fixed by
+  re-running on `providerApiKey` change and syncing the in-widget provider to the dashboard provider prop.
+- Keyless providers stay visible only when Ample Agent Pro is installed, because that fallback accepts any provider
+  as an argument; otherwise picking a keyless provider would simply fail, so those options are hidden.
+
 ## 2026-06-28 — Proposed Agenda monthly record + LLM-call cache
 
 **Model:** claude-opus-4-8[1m]

@@ -3,13 +3,15 @@
 //   hour-by-hour list that interleaves already-scheduled obligations with LLM proposals (Add to schedule /
 //   dismiss), and an Approve schedule / Dismiss all footer with a pending count"
 import { PROVIDER_DEFAULT_MODEL } from "constants/llm-providers";
-import { widgetTitleFromId } from "constants/settings";
+import { configuredProviderEms, SETTING_KEYS, widgetTitleFromId } from "constants/settings";
 import LlmProviderSelector from "llm-provider-selector";
 import NoConfigUpsell from "no-config-upsell";
+import { pluginSettings, updatePluginSetting } from "plugin-data";
 import { PROPOSED_TASK_STATUS } from "proposed-agenda-archive";
 import { DEFAULT_PRIORITY_KEY, PROPOSED_AGENDA_PRIORITY_OPTIONS } from "proposed-agenda-priority";
 import { activityKey, approveAllProposed, mergedAgendaRows, pendingCount, recordProposedTaskStatus,
   runProposedAgendaGeneration, scheduleProposedRow } from "proposed-agenda-llm-generator";
+import { AMPLE_AGENT_PRO_NOTE_NAME } from "providers/ai-provider-settings";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import { formatClockLabel } from "util/date-utility";
@@ -132,15 +134,20 @@ function ActivityRow({ onDismiss, onSchedule, row, scheduledKeys, timeFormat }) 
 //   timeFormat }.
 export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid, providerApiKey, providerEm,
     taskDomainUUID, timeFormat }) {
+  // The widget's persisted "Today's priority" and AI-provider choices, seeded from the same SETTING_KEYS
+  const persistedPriorityKey = pluginSettings()[SETTING_KEYS.PROPOSED_AGENDA_PRIORITY] || null;
+  const persistedProviderEm = pluginSettings()[SETTING_KEYS.PROPOSED_AGENDA_LLM] || null;
+
   const [approving, setApproving] = useState(false);
+  const [ampleAgentProAvailable, setAmpleAgentProAvailable] = useState(false);
   const [attribution, setAttribution] = useState(null);
   const [dateLabel, setDateLabel] = useState(null);
   const [dismissedKeys, setDismissedKeys] = useState(() => new Set());
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [modelProviderEm, setModelProviderEm] = useState(providerEm || null);
+  const [modelProviderEm, setModelProviderEm] = useState(persistedProviderEm || providerEm || null);
   const [obligations, setObligations] = useState([]);
-  const [priorityKey, setPriorityKey] = useState(DEFAULT_PRIORITY_KEY);
+  const [priorityKey, setPriorityKey] = useState(persistedPriorityKey || DEFAULT_PRIORITY_KEY);
   const [proposed, setProposed] = useState([]);
   const [providerPopupOpen, setProviderPopupOpen] = useState(false);
   const [recordProviderEm, setRecordProviderEm] = useState(null);
@@ -152,18 +159,35 @@ export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid
   const llmDateRecord = useMemo(() => ({ date: currentDate, priorityKey, providerEm: recordProviderEm }),
     [currentDate, priorityKey, recordProviderEm]);
 
+  // providerApiKey is included so that adding an API key in Dashboard Settings (which leaves providerEm
+  // unchanged) still re-triggers generation, letting the widget recover from the no-provider state.
   const runGeneration = useCallback(({ forceRegenerate = false } = {}) => runProposedAgendaGeneration(app,
     { currentDate, domainUuid: taskDomainUUID, forceRegenerate, priorityKey, providerEm: modelProviderEm, setApproving,
     setAttribution, setDateLabel, setDismissedKeys, setError, setLoading, setObligations, setProposed,
     setRecordProviderEm, setScheduledKeys }),
-    [app, currentDate, modelProviderEm, priorityKey, taskDomainUUID]);
+    [app, currentDate, modelProviderEm, priorityKey, providerApiKey, taskDomainUUID]);
 
   const onChangeModel = useCallback(() => setProviderPopupOpen(true), []);
 
-  const onSelectProvider = useCallback((providerEm) => {
+  // [Claude claude-opus-4-8 (1M context)] Task: persist the chosen provider so it is restored on reload
+  // Prompt: "persist it via app.setSetting, using a const key name"
+  const onSelectProvider = useCallback((selectedProviderEm) => {
     setProviderPopupOpen(false);
-    if (providerEm && providerEm !== modelProviderEm) setModelProviderEm(providerEm);
-  }, [modelProviderEm]);
+    if (selectedProviderEm && selectedProviderEm !== modelProviderEm) {
+      setModelProviderEm(selectedProviderEm);
+      app.setSetting(SETTING_KEYS.PROPOSED_AGENDA_LLM, selectedProviderEm);
+      updatePluginSetting(SETTING_KEYS.PROPOSED_AGENDA_LLM, selectedProviderEm);
+    }
+  }, [app, modelProviderEm]);
+
+  // [Claude claude-opus-4-8 (1M context)] Task: persist the chosen "Today's priority" so it is restored on reload
+  // Prompt: "persist it via app.setSetting, using a const key name"
+  const onPriorityChange = useCallback(event => {
+    const nextKey = event.target.value;
+    setPriorityKey(nextKey);
+    app.setSetting(SETTING_KEYS.PROPOSED_AGENDA_PRIORITY, nextKey);
+    updatePluginSetting(SETTING_KEYS.PROPOSED_AGENDA_PRIORITY, nextKey);
+  }, [app]);
 
   const onDismiss = useCallback((event, row) => {
     event.preventDefault();
@@ -188,6 +212,23 @@ export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid
 
   useEffect(() => { runGeneration(); }, [runGeneration]);
   useEffect(() => { attachFootnotePopups(listRef.current); }, [obligations, proposed]);
+
+  // Adopt the dashboard-configured provider when it changes and the user has not picked one inside the widget,
+  // so configuring an AI provider in Dashboard Settings flows through here (re-triggering generation) instead of
+  // the widget staying stuck on the "No AI provider configured" state.
+  useEffect(() => {
+    if (persistedProviderEm) return;
+    if (providerEm && providerEm !== modelProviderEm) setModelProviderEm(providerEm);
+  }, [providerEm, persistedProviderEm]);
+
+  // Detect whether the Ample Agent Pro plugin is installed. When it is, the provider chooser may offer providers
+  // the user has no local key for, because the chosen provider is passed to Agent Pro as an argument.
+  useEffect(() => {
+    let cancelled = false;
+    Promise.resolve(app.findNote({ name: AMPLE_AGENT_PRO_NOTE_NAME }))
+      .then(note => { if (!cancelled) setAmpleAgentProAvailable(!!note); });
+    return () => { cancelled = true; };
+  }, [app]);
 
   if (loading) return <LoadingState />;
   if (error) {
@@ -217,7 +258,7 @@ export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid
       <WidgetWrapper title={ widgetTitleFromId(WIDGET_ID) } subtitle={ dateLabel } icon="🗓️"
           widgetId={ WIDGET_ID } headerActions={ reseedAction }>
         <PriorityModelBar modelName={ _modelName(modelProviderEm) } onChangeModel={ onChangeModel }
-          onPriorityChange={ (event) => setPriorityKey(event.target.value) } priorityKey={ priorityKey } />
+          onPriorityChange={ onPriorityChange } priorityKey={ priorityKey } />
         <div className="proposed-agenda-list" ref={ listRef }>
           { rows.map(row => (
             <ActivityRow key={ activityKey(row) } onDismiss={ onDismiss } onSchedule={ onSchedule } row={ row }
@@ -234,8 +275,9 @@ export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid
         { attribution ? <p className="proposed-agenda-attribution">{ attribution }</p> : null }
       </WidgetWrapper>
       { providerPopupOpen
-        ? <LlmProviderSelector currentProviderEm={ modelProviderEm } onCancel={ () => setProviderPopupOpen(false) }
-            onSelect={ onSelectProvider } submitLabel="Submit"
+        ? <LlmProviderSelector allowKeylessProviders={ ampleAgentProAvailable }
+            configuredProviderEms={ configuredProviderEms(pluginSettings()) } currentProviderEm={ modelProviderEm }
+            onCancel={ () => setProviderPopupOpen(false) } onSelect={ onSelectProvider } submitLabel="Submit"
             title="Generate the agenda with which AI provider?" />
         : null }
     </>

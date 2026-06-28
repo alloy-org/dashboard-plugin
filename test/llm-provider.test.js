@@ -2,7 +2,7 @@
 // Prompt summary: "tests for the shared llm-provider module: the offered AI-provider catalog, lookup by enum,
 //   and the chooser's default-selection resolution"
 import { DEFAULT_LLM_PROVIDER_EM, LLM_PROVIDER_OPTIONS, defaultSelectedProviderEm,
-  providerOptionFromEm } from "dashboard/llm-provider";
+  providerOptionFromEm, selectableProviderOptions } from "dashboard/llm-provider";
 
 // [Claude claude-opus-4-8 (1M context)] Generated tests for: shared LLM provider catalog + helpers
 describe("llm-provider", () => {
@@ -31,5 +31,26 @@ describe("llm-provider", () => {
     expect(defaultSelectedProviderEm("deepseek")).toBe("deepseek");
     expect(defaultSelectedProviderEm("anthropic-sonnet")).toBe(DEFAULT_LLM_PROVIDER_EM);
     expect(defaultSelectedProviderEm(null)).toBe(DEFAULT_LLM_PROVIDER_EM);
+  });
+
+  // [Claude claude-opus-4-8 (1M context)] Generated tests for: selectableProviderOptions
+  // Prompt: "only show options that correspond to an LLM whose API key has been given by the user"
+  describe("selectableProviderOptions", () => {
+    const ems = (options) => options.map(option => option.providerEm);
+
+    it("shows only providers with a configured key, plus the current provider", () => {
+      const options = selectableProviderOptions({ configuredProviderEms: ["openai"], currentProviderEm: "gemini" });
+      expect(ems(options).sort()).toEqual(["gemini", "openai"]);
+    });
+
+    it("shows every offered provider when keyless providers are allowed (Agent Pro fallback path)", () => {
+      const options = selectableProviderOptions({ allowKeyless: true, configuredProviderEms: [] });
+      expect(ems(options)).toEqual(ems(LLM_PROVIDER_OPTIONS));
+    });
+
+    it("falls back to all options when nothing is configured, so the chooser is never empty", () => {
+      const options = selectableProviderOptions({ configuredProviderEms: [], currentProviderEm: null });
+      expect(ems(options)).toEqual(ems(LLM_PROVIDER_OPTIONS));
+    });
   });
 });
