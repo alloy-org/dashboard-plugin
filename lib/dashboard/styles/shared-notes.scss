@@ -19,6 +19,7 @@
     align-items: center;
     cursor: pointer;
     display: inline-flex;
+    font-size: 13px;
     gap: $sp-xs;
   }
 
@@ -29,6 +30,7 @@
     display: flex;
     flex-shrink: 0;
     gap: $sp-sm;
+    margin-bottom: 10px;
     padding: 0 $sp-md $sp-xs;
 
     /* Push the has-tasks toggle to the right edge of the filter row. */

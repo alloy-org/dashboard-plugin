@@ -126,9 +126,7 @@ export default function SharedNotesWidget({ app, gridHeightSize = 1, taskDomainU
         onChange={event => setSelectedSharer(event.target.value)}
       >
         <option value={ALL_SHARERS}>Filter on user...</option>
-        {sharerNames.map(name => (
-          <option key={name} value={name}>{name}</option>
-        ))}
+        { sharerNames.map(name => (<option key={name} value={name}>{name}</option>)) }
       </select>
       {tasksToggle(false)}
     </div>
