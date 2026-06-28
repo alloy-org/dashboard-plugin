@@ -3,6 +3,51 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-06-27 — Proposed Agenda real-LLM integration tests + gap enforcement
+
+**Model:** claude-opus-4-8[1m]
+**Files created/modified:**
+- `test/proposed-agenda-integration.test.js` (created — drives the real `generateProposedAgenda` service against
+  the live OpenAI API, gated behind `OPEN_AI_ACCESS_TOKEN` via `itIfKey` (skips when absent, like
+  `llm-integration.test.js`); stubs only the note/task surface so the actual prompt, real LLM call, and the
+  service's validation are exercised. Asserts the response is usable: parseable HH:MM start times, in-range
+  startMinutes, non-empty titles, taskUuids that are null or real fixture UUIDs, chronological ordering with a
+  >=60min gap between activities, and that existing activities expose the owning note UUID from the candidate task)
+- `lib/dashboard/proposed-agenda-service.js` (modified — added an optional `aiModelOverride` option threaded through
+  `generateProposedAgenda` → `_generateScheduleFromLlm` → `_llmOptions` (a testing seam so the integration test can
+  pin the cheap `gpt-4o-mini` model, since model strings are sent verbatim); added `_enforceGap` so the >=1hr
+  inter-activity gap is guaranteed in output rather than merely requested in the prompt)
+
+**Task:** Add tests that actually call the LLM and confirm the proposed schedule is usable
+**Prompt summary:** "needs tests that actually call LLM to confirm usable response"
+**Scope:** ~110 lines of new test logic plus ~25 lines of service changes (model override + gap enforcement)
+**Notes:** Verified the assertion body and gap enforcement with a temporary mocked-transport test (since no live key
+is present locally) — a deliberately 30-min-apart pair was correctly pushed to a full >=1hr gap; that scratch test
+was removed after confirming. Full suite: no new regressions (the 6 failing day-sketch/graveyard/call-plugin tests
+pre-date this work).
+
+## 2026-06-27 — Proposed Agenda widget (LLM hour-by-hour schedule)
+
+**Model:** claude-opus-4-8[1m]
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda-service.js` (created — retrieves the active task domain following the volume rules
+  (>=200 most-recent open tasks, or all tasks in notes updated in the past month, capped at 1,000), shapes compact
+  `{ duration, important, noteUuid, taskText, taskUuid }` records, loads the current quarter's plan note, and prompts
+  the configured LLM (with Ample Agent Pro fallback) for an hour-by-hour schedule that leaves >=1hr between activities;
+  also exports `scheduleProposedActivity` / `approveProposedAgenda` to persist startAt via updateTask/insertTask)
+- `lib/dashboard/proposed-agenda.jsx` (created — widget rendering each proposed activity with a "Schedule HH:MM" link
+  and a bottom "Approve schedule" button, plus loading/error/reseed states and LLM attribution)
+- `lib/dashboard/styles/proposed-agenda.scss` (created — activity-row, schedule-link, and approve-button styles)
+- `lib/constants/settings.js` (modified — added the `proposed-agenda` entry to WIDGET_REGISTRY)
+- `lib/dashboard/dashboard.jsx` (modified — imported the widget, added ProposedAgendaCell, registered in CELL_COMPONENTS)
+
+**Task:** Add a Proposed Agenda widget that turns recent tasks + the quarterly plan into an approvable schedule
+**Prompt summary:** "create proposed-agenda; retrieve recent task-domain tasks, submit with the quarterly plan to an
+LLM for an hour-by-hour schedule with >=1hr gaps; per-activity schedule link + a bottom approve button"
+**Scope:** ~430 lines of new logic across 3 new files, plus 2 registration edits
+**Notes:** Mirrors dream-task-service's domain/LLM-option resolution; the service falls back gracefully when no
+default note is available for newly-invented (non-existing) activities. Build passes; no new test regressions.
+
 ## 2026-06-27 — Shared Notes collaborators via app.getPeople (avatars)
 
 **Model:** claude-opus-4-8[1m]

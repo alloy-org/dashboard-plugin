@@ -27,6 +27,7 @@ import useDomainTasks from 'hooks/use-domain-tasks';
 import useExternalCalendarEvents from 'hooks/use-external-calendar-events';
 import MoodWidget from 'mood';
 import PeakHoursWidget from 'peak-hours';
+import ProposedAgendaWidget from 'proposed-agenda';
 import { pluginContext, setPluginData, updatePluginSetting } from "plugin-data";
 import QuotesWidget from 'quotes';
 import QuickActionsWidget from 'quick-actions';
@@ -149,6 +150,9 @@ const DreamTaskCell = createWidgetCell('dream-task', DreamTaskWidget, ({ app, co
 const MoodCell = createWidgetCell('mood', MoodWidget, pickProps('app', 'moodRatings', 'onMoodRecorded'));
 const PeakHoursCell = createWidgetCell('peak-hours', PeakHoursWidget,
   pickProps('app', 'currentDate', 'selectedDate', 'timeFormat'));
+const ProposedAgendaCell = createWidgetCell('proposed-agenda', ProposedAgendaWidget, ({ app, providerEm, timeFormat }) => ({
+  app, defaultNoteUuid: null, providerEm, timeFormat,
+}));
 const PlanningCell = createWidgetCell('planning', PlanningWidget, ({ app, config, quarterlyPlans }) => ({
   app, gridHeightSize: Number(config?.gridHeightSize) || 1, quarterlyPlans,
 }));
@@ -182,6 +186,7 @@ const CELL_COMPONENTS = {
   mood: MoodCell,
   'peak-hours': PeakHoursCell,
   planning: PlanningCell,
+  'proposed-agenda': ProposedAgendaCell,
   'quick-actions': QuickActionsCell,
   quotes: QuotesCell,
   'recent-notes': RecentNotesCell,

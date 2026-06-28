@@ -1,0 +1,161 @@
+/* [Claude claude-opus-4-8 (1M context)-authored file]
+ * Prompt summary: "styles for the proposed-agenda widget — hour-by-hour activity rows with per-activity
+ *   schedule links and a bottom approve button"
+ */
+
+@use 'theme-tokens' as *;
+
+$proposed-agenda-list-max-height: 280px;
+$proposed-agenda-radius: 6px;
+$proposed-agenda-transition: 0.12s;
+
+.widget-proposed-agenda {
+  a {
+    color: $color-link;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .proposed-agenda-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: $proposed-agenda-list-max-height;
+    overflow-y: auto;
+  }
+
+  /* [Claude claude-opus-4-8 (1M context)] Task: activity row layout — time, content, duration, schedule link */
+  .proposed-agenda-item {
+    align-items: flex-start;
+    border: 1px solid $color-border;
+    border-radius: $proposed-agenda-radius;
+    display: flex;
+    gap: 8px;
+    padding: 6px 8px;
+    transition: opacity $proposed-agenda-transition ease;
+
+    &--scheduled {
+      opacity: 0.65;
+    }
+  }
+
+  .proposed-agenda-time {
+    color: $color-navy;
+    flex: 0 0 auto;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    min-width: 58px;
+  }
+
+  .proposed-agenda-content {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .proposed-agenda-text {
+    color: $color-text;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .proposed-agenda-reason {
+    color: $color-text-muted;
+    font-size: 0.8em;
+  }
+
+  .proposed-agenda-duration {
+    color: $color-text-secondary;
+    flex: 0 0 auto;
+    font-size: 0.8em;
+  }
+
+  .proposed-agenda-schedule-link {
+    flex: 0 0 auto;
+    font-size: 0.8em;
+    white-space: nowrap;
+  }
+
+  .proposed-agenda-scheduled-badge {
+    color: $color-success;
+    flex: 0 0 auto;
+    font-size: 0.8em;
+    white-space: nowrap;
+  }
+
+  /* [Claude claude-opus-4-8 (1M context)] Task: footer with the approve-schedule button and attribution */
+  .proposed-agenda-footer {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .proposed-agenda-approve {
+    background: $color-link;
+    border: none;
+    border-radius: $proposed-agenda-radius;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 600;
+    padding: 8px 18px;
+    transition: opacity $proposed-agenda-transition ease;
+
+    &:hover:not(:disabled) {
+      opacity: 0.9;
+    }
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.5;
+    }
+  }
+
+  .proposed-agenda-attribution {
+    color: $color-text-muted;
+    font-size: 0.75em;
+    margin: 0;
+  }
+
+  .proposed-agenda-message,
+  .proposed-agenda-loading {
+    align-items: center;
+    color: $color-text-secondary;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 18px 12px;
+    text-align: center;
+  }
+
+  .proposed-agenda-retry {
+    background: transparent;
+    border: 1px solid $color-border;
+    border-radius: $proposed-agenda-radius;
+    color: $color-link;
+    cursor: pointer;
+    padding: 5px 14px;
+  }
+
+  /* [Claude claude-opus-4-8 (1M context)] Task: spinner reused from dream-task loading idiom */
+  .proposed-agenda-spinner {
+    animation: proposed-agenda-spin 0.8s linear infinite;
+    border: 3px solid $color-border;
+    border-radius: 50%;
+    border-top-color: $color-link;
+    height: 28px;
+    width: 28px;
+  }
+
+  @keyframes proposed-agenda-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
