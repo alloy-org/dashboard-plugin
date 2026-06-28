@@ -8,6 +8,7 @@ import { setPluginData } from "plugin-data";
 import { loadCachedProposedAgenda, PROPOSED_TASK_STATUS, proposedAgendaNoteNameFromDate, proposedTaskKey,
   storeProposedAgenda, updateProposedTaskStatuses } from "proposed-agenda-archive";
 import { generateProposedAgenda } from "proposed-agenda-service";
+import { setLoggingEnabled } from "util/log";
 
 const PRIORITY = "goal-progress";
 const PROVIDER = "anthropic";
@@ -17,6 +18,11 @@ const ACT_A = { durationMinutes: 60, isExisting: true, noteUuid: "note-1", reaso
   startMinutes: 540, startTime: "09:00", taskUuid: "task-1", title: "Deep work block" };
 const ACT_B = { durationMinutes: 30, isExisting: false, noteUuid: null, reason: "recovery",
   startMinutes: 660, startTime: "11:00", taskUuid: null, title: "Walk break" };
+
+afterEach(() => {
+  setLoggingEnabled(false);
+  jest.restoreAllMocks();
+});
 
 // ----------------------------------------------------------------------------------------------
 // @desc Build an in-memory Amplenote app exposing the note surface the archive uses (find/create/get/replace),
@@ -121,20 +127,30 @@ describe("proposed-agenda-archive", () => {
 // ----------------------------------------------------------------------------------------------
 // @desc Build an app that serves fixture tasks + a deterministic schedule through the Ample-Agent-Pro
 //   callPlugin path (so no network), counting LLM invocations.
+// @param {function(number): Array<object>} [activitiesFromCall] - Optional deterministic LLM response builder.
 // @returns {object} App stub; read `app.callPlugin.mock.calls.length` for the LLM call count.
 // [Claude claude-opus-4-8 (1M context)] Task: stub the generation surface with a deterministic LLM
-function buildGenerationApp() {
+// [OpenAI GPT-5.5] Task: allow tests to inject generated activities with specific task UUIDs
+function buildGenerationApp(activitiesFromCall = null) {
   setPluginData({ context: {}, settings: { [SETTING_KEYS.LLM_PROVIDER_MODEL]: PROVIDER } });
   let llmCalls = 0;
   return buildNoteApp({
     alert: jest.fn(),
     filterNotes: jest.fn(async () => []),
     getTaskDomains: jest.fn(async () => [{ name: "Work", uuid: "dom-work" }]),
-    getTaskDomainTasks: jest.fn(async () => [{ content: "Ship the thing", noteUUID: "note-1", uuid: "task-1",
-      updatedAt: Math.floor(DATE.getTime() / 1000) }]),
-    callPlugin: jest.fn(async () => { llmCalls += 1; return { activities: [
-      { durationMinutes: 60, reason: "focus", startTime: "09:00", taskUuid: null, title: `Gen ${ llmCalls } morning` },
-      { durationMinutes: 30, reason: "rest", startTime: "11:00", taskUuid: null, title: `Gen ${ llmCalls } midday` }] }; }),
+    getTaskDomainTasks: jest.fn(async () => [
+      { content: "Ship the thing", noteUUID: "note-1", uuid: "task-1", updatedAt: Math.floor(DATE.getTime() / 1000) },
+      { content: "Follow up with partner", noteUUID: "note-2", uuid: "task-2",
+        updatedAt: Math.floor(DATE.getTime() / 1000) },
+    ]),
+    callPlugin: jest.fn(async () => {
+      llmCalls += 1;
+      const activities = activitiesFromCall ? activitiesFromCall(llmCalls) : [
+        { durationMinutes: 60, reason: "focus", startTime: "09:00", taskUuid: "task-1", title: `Gen ${ llmCalls } morning` },
+        { durationMinutes: 30, reason: "focus", startTime: "11:00", taskUuid: "task-2", title: `Gen ${ llmCalls } midday` },
+      ];
+      return { activities };
+    }),
   });
 }
 
@@ -189,5 +205,25 @@ describe("generateProposedAgenda caching + regeneration", () => {
     const result = await generateProposedAgenda(app, { priorityKey: PRIORITY });
     expect(result.errorCode).toBe("no_tasks");
     expect(result.activities).toEqual([]);
+  });
+
+  it("logs and discards LLM activities that do not reference a supplied task UUID", async () => {
+    const app = buildGenerationApp(() => [
+      { durationMinutes: 60, reason: "valid", startTime: "09:00", taskUuid: "task-1", title: "Use real task" },
+      { durationMinutes: 30, reason: "invented", startTime: "11:00", taskUuid: null, title: "Planning break" },
+      { durationMinutes: 30, reason: "fake", startTime: "13:00", taskUuid: "made-up-task", title: "Fake task" },
+    ]);
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    setLoggingEnabled(true);
+
+    const result = await generateProposedAgenda(app, { priorityKey: PRIORITY });
+
+    expect(result.activities.map(activity => activity.title)).toEqual(["Use real task"]);
+    expect(result.activities[0]).toMatchObject({ isExisting: true, noteUuid: "note-1", taskUuid: "task-1" });
+    expect(consoleSpy).toHaveBeenCalledWith("[proposed-agenda] discarding LLM activity without extant taskUuid",
+      { taskUuid: null, title: "Planning break" });
+    expect(consoleSpy).toHaveBeenCalledWith("[proposed-agenda] discarding LLM activity without extant taskUuid",
+      { taskUuid: "made-up-task", title: "Fake task" });
+    consoleSpy.mockRestore();
   });
 });

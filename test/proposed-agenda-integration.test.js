@@ -90,11 +90,9 @@ describe("generateProposedAgenda integration (requires OPEN_AI_ACCESS_TOKEN)", (
       expect(activity.title.length).toBeGreaterThan(0);
       expect(activity.durationMinutes).toBeGreaterThanOrEqual(0);
 
-      // taskUuid is either null (invented) or a real fixture UUID — the service drops hallucinated ids.
-      if (activity.taskUuid !== null) {
-        expect(fixtureUuids.has(activity.taskUuid)).toBe(true);
-        expect(activity.isExisting).toBe(true);
-      }
+      // Every kept activity must map to a real candidate task; invented activities are discarded.
+      expect(fixtureUuids.has(activity.taskUuid)).toBe(true);
+      expect(activity.isExisting).toBe(true);
 
       // Activities are chronologically ordered and leave at least one hour between them.
       if (previousEndMinutes !== null) {
