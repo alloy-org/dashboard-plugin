@@ -45,9 +45,9 @@ export default function NoConfigUpsell({ app, features = [], headline = DEFAULT_
         </div>
         { moreFeaturesLabel ? <p className="no-config-upsell-more">{ moreFeaturesLabel }</p> : null }
         <div className="no-config-upsell-actions">
-          <a href="javascript:void(0)" onClick={ () => app.navigate(AMPLE_AGENT_PRO_URL) }
+          <a href="#0" onClick={ () => app.navigate(AMPLE_AGENT_PRO_URL) }
             className="no-config-upsell-button no-config-upsell-button--primary">⚡ Start for $8/month</a>
-          <a href="javascript:void(0)" onClick={ () => app.navigate(AMPLE_AGENT_PRO_URL) }
+          <a href="#0" onClick={ () => app.navigate(AMPLE_AGENT_PRO_URL) }
             className="no-config-upsell-button no-config-upsell-button--secondary">See all features →</a>
         </div>
         <p className="no-config-upsell-footnote">✓ No API key required for core features</p>
