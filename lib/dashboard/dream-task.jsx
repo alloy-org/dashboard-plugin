@@ -1,5 +1,5 @@
 import confetti from "canvas-confetti";
-import { apiKeyFromProvider, configuredProviderEms, SETTING_KEYS, widgetDataFromId, widgetTitleFromId } from "constants/settings";
+import { apiKeyFromProvider, configuredProviderEms, devTokenPresent, SETTING_KEYS, widgetDataFromId, widgetTitleFromId } from "constants/settings";
 import { _loadSeenUuidsMap, _maxTasksFromGrid, _recordSeenUuids, _taskGenerateCount, _todayProposedTasksNoteName,
   applyDreamTaskAnalysisResult, fetchDreamTaskSuggestions, handleOpenSettings, handleTaskClick,
   requestDreamTaskRefreshExcludingRecent, shouldFetchMoreTasksAfterGridGrowth, updateDreamTaskTaskMetadata,
@@ -27,7 +27,8 @@ const NO_CONFIG_ERROR_CODES = new Set(['llm_error', 'no_provider_configured', 'p
 // ----------------------------------------------------------------------------------------------
 // @desc Build a single diagnostic object capturing every input that influences whether the widget
 //   can reach paths 1 (cached note), 2 (Ample Agent Pro callPlugin), or 3 (direct llmPrompt).
-function _describeDreamTaskConfigSnapshot(app, providerEm, providerApiKey, envApiKey) {
+// [Claude claude-opus-4-8 (1M context)] Task: report any-provider dev token presence instead of OpenAI-only env key
+function _describeDreamTaskConfigSnapshot(app, providerEm, providerApiKey, hasDevToken) {
   const settings = app?.settings || {};
   const rawLlmProvider = settings[SETTING_KEYS.LLM_PROVIDER_MODEL] ?? null;
   const providerSettingKey = providerEm ? apiKeyFromProvider(providerEm) : null;
@@ -46,7 +47,7 @@ function _describeDreamTaskConfigSnapshot(app, providerEm, providerApiKey, envAp
   return {
     propProviderEm: providerEm ?? null,
     propProviderApiKeyLength: typeof providerApiKey === 'string' ? providerApiKey.trim().length : 0,
-    envApiKeyLength: typeof envApiKey === 'string' ? envApiKey.length : 0,
+    hasDevToken: !!hasDevToken,
     settingsLlmProvider: rawLlmProvider,
     propProviderSettingKey: providerSettingKey,
     settingsKeyLengthForProp: settingsKeyLength(providerSettingKey),
@@ -480,8 +481,10 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   const renderCountRef = useRef(0);
   renderCountRef.current += 1;
 
-  const envApiKey = (typeof process !== 'undefined' && process.env?.OPEN_AI_ACCESS_TOKEN) || '';
-  const hasLlmConfig = !!(envApiKey || providerApiKey);
+  // [Claude claude-opus-4-8 (1M context)] Task: treat any dev provider token (not just OpenAI) as a configured LLM
+  // Prompt: "dev environment isn't showing suggestions in spite of having GROK_AI_ACCESS_TOKEN present"
+  const hasDevToken = devTokenPresent();
+  const hasLlmConfig = !!(hasDevToken || providerApiKey);
   const providerName = providerEm ? providerNameFromProviderEm(providerEm) : null;
 
   const maxTasks = _maxTasksFromGrid(gridWidthSize, gridHeightSize);
@@ -541,11 +544,11 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   }, [hasLlmConfig]);
 
   useEffect(() => {
-    const snapshot = _describeDreamTaskConfigSnapshot(app, providerEm, providerApiKey, envApiKey);
+    const snapshot = _describeDreamTaskConfigSnapshot(app, providerEm, providerApiKey, hasDevToken);
     logIfEnabled('[DreamTask] config snapshot', {
       hasLlmConfig, providerName, renderCount: renderCountRef.current, ...snapshot,
     });
-  }, [hasLlmConfig, providerEm, providerApiKey, envApiKey, providerName]);
+  }, [hasLlmConfig, providerEm, providerApiKey, hasDevToken, providerName]);
 
   // [Claude claude-opus-4-8 (1M context)] Task: detect Ample Agent Pro so the reseed chooser may offer keyless providers
   // Prompt: "LLMs with no keys should only be visible if we are prompting prior to calling the external Agent Pro plugin"

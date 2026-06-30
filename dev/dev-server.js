@@ -20,6 +20,26 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
 const devDir = __dirname;
 
+// Dev-only LLM tokens esbuild substitutes into the browser bundle. Must stay aligned with
+// DEV_ENV_TOKEN_VAR_NAMES / devTokenFromProvider in lib/constants/settings.js — a token read by
+// devLlmOverride but missing here would read as undefined in the bundle (the original OpenAI-only bug).
+const DEV_LLM_TOKEN_VAR_NAMES = ["OPEN_AI_ACCESS_TOKEN", "ANTHROPIC_AI_ACCESS_TOKEN",
+  "GROK_AI_ACCESS_TOKEN", "GEMINI_AI_ACCESS_TOKEN"];
+
+// ----------------------------------------------------------------------------------------------
+// @desc Build the esbuild `define` entries that inject each dev LLM token as a literal process.env.X
+//   value, so devLlmOverride can read them from the browser bundle.
+// @returns {Object<string,string>} Map of "process.env.X" → JSON-stringified token value.
+// [Claude claude-opus-4-8 (1M context)] Task: inject all provider dev tokens, not just OpenAI, into the bundle
+// Prompt: "dev environment isn't showing suggestions in spite of having GROK_AI_ACCESS_TOKEN present"
+function devTokenDefines() {
+  const defines = {};
+  for (const varName of DEV_LLM_TOKEN_VAR_NAMES) {
+    defines[`process.env.${varName}`] = JSON.stringify(process.env[varName] || "");
+  }
+  return defines;
+}
+
 // ---------- SSE live-reload infrastructure ----------
 
 // [Claude] Task: add SSE-based live reload for the dev server
@@ -325,7 +345,7 @@ async function main() {
     entryNames: "bundle",
     define: {
       "process.env.NODE_ENV": '"development"',
-      "process.env.OPEN_AI_ACCESS_TOKEN": JSON.stringify(process.env.OPEN_AI_ACCESS_TOKEN || ""),
+      ...devTokenDefines(),
     },
     target: ["chrome91", "firefox90", "safari15", "edge91"],
     sourcemap: true,

@@ -3,6 +3,37 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-06-29 — Honor any provider's dev LLM token (Grok/Anthropic/Gemini), not just OpenAI
+
+**Model:** claude-opus-4-8[1m]
+**Files created/modified:**
+- `lib/constants/settings.js` (modified — added `DEV_ENV_TOKEN_VAR_NAMES`, `devTokenFromProvider` (reads each
+  token via a literal `process.env.X` access so esbuild's `define` substitution applies in the browser bundle),
+  `devTokenPresent`, and `devLlmOverride` (first-available-token resolution, preference order
+  openai→anthropic→grok→gemini, dev-only))
+- `lib/dream-task-service.js` (modified — `_buildLlmOptions` now uses `devLlmOverride` instead of an OpenAI-only
+  `process.env.OPEN_AI_ACCESS_TOKEN` check gated on `dashboardBucket === "openai"`)
+- `lib/dashboard/proposed-agenda-service.js` (modified — `_llmOptions` switched to the same `devLlmOverride`;
+  dropped now-unused `IS_DEV_ENVIRONMENT` import)
+- `lib/dashboard/dream-task.jsx` (modified — `hasLlmConfig` now derives from `devTokenPresent()` rather than an
+  OpenAI-only env read, so the widget no longer short-circuits to the no-config state when only a Grok token is
+  set; config-snapshot debug reports `hasDevToken` instead of `envApiKeyLength`)
+- `lib/dashboard/no-config-upsell.jsx` (modified — replaced `href="javascript:void(0)"` with `href="#0"` on the
+  Ample Agent Pro promo buttons, carrying forward the "Shush the javascript: notification" fix after the inline
+  DreamTask NoConfigState was replaced by this shared component)
+- `dev/dev-server.js` (modified — `define` block now injects all four provider dev tokens via `devTokenDefines()`,
+  not just `OPEN_AI_ACCESS_TOKEN`)
+
+**Task:** Suggestions never appeared in dev despite `GROK_AI_ACCESS_TOKEN` being set
+**Prompt summary:** "dev environment isn't showing any suggested tasks from dream-task-service / proposed-agenda in spite of having GROK_AI_ACCESS_TOKEN present"
+**Scope:** ~70 lines across 6 files
+**Notes:** Three independent OpenAI-only assumptions all had to be fixed: (1) the dev server only compiled
+`OPEN_AI_ACCESS_TOKEN` into the bundle — every other `process.env.X` resolved to undefined in the browser; (2)
+both services' dev-token override only fired for the `openai` bucket; (3) DreamTask's `hasLlmConfig` gate read
+only the OpenAI env token, so the widget bailed before calling the service. Tokens are read via literal env
+accesses because esbuild's `define` only substitutes literal member expressions, not `process.env[dynamicKey]`.
+Verified the Grok token now appears in a dev-mode bundle; `dream-task-service` and `proposed-agenda` tests pass.
+
 ## 2026-06-28 — Proposed Agenda provider recovery, persisted Priority/LLM, key-gated provider chooser
 
 **Model:** claude-opus-4-8[1m]
