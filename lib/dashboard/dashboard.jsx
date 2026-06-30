@@ -194,21 +194,35 @@ const CELL_COMPONENTS = {
   'victory-value': VictoryValueCell,
 };
 
-function applyDashboardData(data, { initDataFreshRef, initializeDomainTasks, setConfigParams,
+// ------------------------------------------------------------------------------------------
+// @desc Push the plugin's initial payload into the dashboard's React state, hydrating every
+//   widget and flagging the data as freshly loaded
+// @param {Object} initialPayload - The init data resolved from the plugin, with properties:
+//   - {Object} settings - Plugin settings keyed by SETTING_KEYS (drives logging + config params)
+//   - {Array} tasks - Domain tasks consumed by initializeDomainTasks
+//   - {Array} moodRatings - Mood rating entries for the week
+//   - {Array} quarterlyPlans - Quarterly planning entries
+//   - {Array} dailyVictoryValues - Per-day victory values
+//   - {number} weeklyVictoryValue - Aggregate victory value for the week
+//   - {string} currentDate - The reference "today" for the dashboard
+//   - {string} [pluginNoteUUID] - UUID of the plugin's backing note, when available
+// @param {Object} setters - React state setters and refs used to apply the payload
+// [Claude claude-opus-4-8] Task: document and rename the applyDashboardData payload parameter
+function applyDashboardData(initialPayload, { initDataFreshRef, initializeDomainTasks, setConfigParams,
     setCurrentDate, setDailyVictoryValues, setMoodRatings, setPluginNoteUUID,
     setQuarterlyPlans, setWeeklyVictoryValue }) {
-  setLoggingEnabled(data.settings?.[SETTING_KEYS.CONSOLE_LOGGING]);
-  logIfEnabled(`[dashboard] applyDashboardData — tasks:${ data.tasks?.length ?? 0 } moodRatings: ${ data.moodRatings?.length ?? 0 }`);
+  setLoggingEnabled(initialPayload.settings?.[SETTING_KEYS.CONSOLE_LOGGING]);
+  logIfEnabled(`[dashboard] applyDashboardData — tasks:${ initialPayload.tasks?.length ?? 0 } moodRatings: ${ initialPayload.moodRatings?.length ?? 0 }`);
   // [Claude claude-opus-4-8] Task: surface captured device width metrics to the on-device DebugConsole
   if (window.__dashboardViewportDiag) logIfEnabled(`[viewport] ${ JSON.stringify(window.__dashboardViewportDiag) }`);
-  initializeDomainTasks(data);
-  setMoodRatings(data.moodRatings);
-  setQuarterlyPlans(data.quarterlyPlans);
-  setConfigParams(data.settings);
-  setDailyVictoryValues(data.dailyVictoryValues);
-  setWeeklyVictoryValue(data.weeklyVictoryValue);
-  setCurrentDate(data.currentDate);
-  if (data.pluginNoteUUID) setPluginNoteUUID(data.pluginNoteUUID);
+  initializeDomainTasks(initialPayload);
+  setMoodRatings(initialPayload.moodRatings);
+  setQuarterlyPlans(initialPayload.quarterlyPlans);
+  setConfigParams(initialPayload.settings);
+  setDailyVictoryValues(initialPayload.dailyVictoryValues);
+  setWeeklyVictoryValue(initialPayload.weeklyVictoryValue);
+  setCurrentDate(initialPayload.currentDate);
+  if (initialPayload.pluginNoteUUID) setPluginNoteUUID(initialPayload.pluginNoteUUID);
   initDataFreshRef.current = true;
 }
 
