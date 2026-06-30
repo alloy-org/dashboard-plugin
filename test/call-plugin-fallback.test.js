@@ -54,7 +54,7 @@ describe("llmPromptWithPluginFallback", () => {
     const result = await llmPromptWithPluginFallback(app, "test prompt", { jsonResponse: true });
 
     expect(app.callPlugin).toHaveBeenCalledTimes(1);
-    expect(app.callPlugin).toHaveBeenCalledWith({ source: AMPLE_AGENT_PRO_UUID }, "test prompt");
+    expect(app.callPlugin).toHaveBeenCalledWith({ source: AMPLE_AGENT_PRO_UUID }, "", "test prompt", undefined);
     expect(result).toEqual(pluginResponse);
   });
 
