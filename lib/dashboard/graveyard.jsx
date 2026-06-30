@@ -14,6 +14,7 @@ import "styles/graveyard.scss";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import { graveyardMeadowUrl } from "util/background-splash-images";
 import { logIfEnabled } from "util/log";
+import { snapDashboardAction } from "util/plausible";
 import WidgetWrapper from "widget-wrapper";
 
 const TASKS_PER_HEIGHT_CELL = 5;
@@ -308,6 +309,7 @@ export default function GraveyardWidget({ app, gridHeightSize = 1, gridWidthSize
     appendTaskToRetiredNote(app, task).catch(
       err => logIfEnabled('[Graveyard] appendTaskToRetiredNote failed:', err)
     );
+    snapDashboardAction("dismissGraveyardTask");
   }, [app]);
 
   const onKeepTask = useCallback((task) => {

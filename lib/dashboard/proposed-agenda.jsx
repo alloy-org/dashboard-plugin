@@ -15,6 +15,7 @@ import { AMPLE_AGENT_PRO_NOTE_NAME } from "providers/ai-provider-settings";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import { formatClockLabel } from "util/date-utility";
+import { snapDashboardAction } from "util/plausible";
 import WidgetWrapper from "widget-wrapper";
 
 import "styles/proposed-agenda.scss";
@@ -212,6 +213,7 @@ export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid
 
   const onSchedule = useCallback((event, row) => {
     event.preventDefault();
+    snapDashboardAction("scheduleProposedAgendaRow", { hasTask: !!row.taskUuid });
     return scheduleProposedRow(app, row, defaultNoteUuid, setScheduledKeys, llmDateRecord);
   }, [app, defaultNoteUuid, llmDateRecord]);
 
@@ -223,9 +225,11 @@ export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid
     await app.navigate(`https://www.amplenote.com/notes/${ noteUuid }`);
   }, [app]);
 
-  const onApprove = useCallback(() => approveAllProposed(app, { defaultNoteUuid, dismissedKeys, llmDateRecord,
-    proposed, scheduledKeys, setApproving, setScheduledKeys }),
-    [app, defaultNoteUuid, dismissedKeys, llmDateRecord, proposed, scheduledKeys]);
+  const onApprove = useCallback(() => {
+    snapDashboardAction("scheduleAllProposedAgenda", { count: pendingCount(proposed, scheduledKeys, dismissedKeys) });
+    return approveAllProposed(app, { defaultNoteUuid, dismissedKeys, llmDateRecord, proposed, scheduledKeys,
+      setApproving, setScheduledKeys });
+  }, [app, defaultNoteUuid, dismissedKeys, llmDateRecord, proposed, scheduledKeys]);
 
   useEffect(() => { runGeneration(); }, [runGeneration]);
   useEffect(() => { attachFootnotePopups(listRef.current); }, [obligations, proposed]);

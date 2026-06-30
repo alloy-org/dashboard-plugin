@@ -11,6 +11,7 @@ import WidgetWrapper from "widget-wrapper";
 import { widgetTitleFromId, parseWidgetConfig, widgetConfigKey } from "constants/settings";
 import { pluginSettings } from "plugin-data";
 import { logIfEnabled } from "util/log";
+import { snapDashboardAction } from "util/plausible";
 import "styles/mood.scss"
 
 const CONFIRMATION_DISPLAY_MS = 5000;
@@ -155,6 +156,7 @@ async function handleSubmit(app, selectedMood, notes, setSubmitting, setSubmitte
 
   logIfEnabled("Recording mood rating with value:", selectedMood.value);
   const moodRatingUUID = await app.recordMoodRating(selectedMood.value);
+  snapDashboardAction("submitMoodRating", { rating: selectedMood.value });
   const trimmedNotes = notes.trim();
   logIfEnabled(`Mood rating uuid ${ moodRatingUUID } received, trimmed notes size ${ trimmedNotes.length } characters`);
   if (trimmedNotes) {

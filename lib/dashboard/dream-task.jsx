@@ -14,6 +14,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { DASHBOARD_TASKS_UPDATED_EVENT } from "hooks/use-dashboard-task-updates";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import { logIfEnabled } from "util/log";
+import { snapDashboardAction } from "util/plausible";
 import { dailyJotNoteUuidFromToday, markTaskComplete } from "util/task-util";
 import WidgetWrapper from "widget-wrapper";
 
@@ -375,6 +376,7 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks) {
 
   const onCompleteTask = useCallback(async (event, dreamTask) => {
     event.preventDefault();
+    snapDashboardAction("approveDreamTask", { via: "complete" });
     fireConfettiForTask(event);
     const completedNoteUUID = dreamTask.uuid ? null : await dailyJotNoteUuidFromToday(app);
     const completedAt = await markTaskComplete(app, completedNoteUUID, dreamTask);
@@ -433,6 +435,7 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks) {
       await app.alert(message);
       return;
     }
+    snapDashboardAction("approveDreamTask", { via: "schedule" });
     await patchTaskMetadata(dreamTask, { taskUuid: result.taskUuid });
     const key = _taskKey(dreamTask);
     setTasks(previous => (previous || []).map(candidate => (
@@ -519,6 +522,9 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
       });
       logIfEnabled(`[DreamTask] fetchDreamTaskSuggestions took ${(performance.now() - fetchStart).toFixed(1)}ms`,
         { cached: result?.cached, taskCount: result?.tasks?.length ?? 0, errorCode: result?.errorCode ?? null, noteUUID: result?.noteUUID ?? null });
+      if (!result?.cached && !result?.errorCode && result?.tasks?.length) {
+        snapDashboardAction("generateDreamTasks", { count: result.tasks.length });
+      }
       const applyStart = performance.now();
       await applyDreamTaskAnalysisResult(result, {
         providerName: providerNameForRun,

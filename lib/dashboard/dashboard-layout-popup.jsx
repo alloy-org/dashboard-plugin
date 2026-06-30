@@ -7,9 +7,22 @@
 import { LAYOUT_PROFILES, getProfileById, sizingFromProfile } from "layout-profiles";
 import { useState, useRef } from "react";
 import { WIDGET_REGISTRY } from "constants/settings";
+import { snapDashboardAction } from "util/plausible";
 import "styles/dashboard-layout-popup.scss"
 
 // ── Pure data helpers ─────────────────────────────────────────────────────────────────
+
+// ----------------------------------------------------------------------------------------------
+// @desc Fire a Plausible add/remove event when a widget crosses the active (rendered) ↔ available (hidden)
+//   boundary, which is how components are added to or removed from the dashboard's component registry. A move
+//   that stays within the same section (pure reorder) snaps nothing.
+// @param {string} widgetId - The widget being moved.
+// @param {boolean} wasRendered - Whether the widget was in the active section before the move.
+// @param {boolean} nowRendered - Whether the widget is in the active section after the move.
+function _snapComponentMembershipChange(widgetId, wasRendered, nowRendered) {
+  if (wasRendered === nowRendered) return;
+  snapDashboardAction(nowRendered ? "addDashboardComponent" : "removeDashboardComponent", { widgetId });
+}
 
 function getWidget(widgetId) {
   return WIDGET_REGISTRY.find(w => w.widgetId === widgetId);
@@ -236,7 +249,10 @@ function useLayoutState(currentLayout, excludeWidgetIds) {
 
   const onMove = (widgetId, direction) => {
     const result = applyMove(renderedIds, hiddenIds, widgetId, direction);
-    if (result) { setRenderedIds(result.renderedIds); setHiddenIds(result.hiddenIds); }
+    if (result) {
+      _snapComponentMembershipChange(widgetId, renderedIds.includes(widgetId), result.renderedIds.includes(widgetId));
+      setRenderedIds(result.renderedIds); setHiddenIds(result.hiddenIds);
+    }
   };
 
   const onDragStart = (e, widgetId) => {
@@ -269,6 +285,7 @@ function useLayoutState(currentLayout, excludeWidgetIds) {
     clearDrag();
     if (!draggedId || draggedId === targetId) return;
     const { renderedIds: r, hiddenIds: hi } = applyDropOnItem(renderedIds, hiddenIds, draggedId, targetId);
+    _snapComponentMembershipChange(draggedId, renderedIds.includes(draggedId), r.includes(draggedId));
     setRenderedIds(r); setHiddenIds(hi);
   };
 
@@ -278,6 +295,7 @@ function useLayoutState(currentLayout, excludeWidgetIds) {
     clearDrag();
     if (!draggedId) return;
     const { renderedIds: r, hiddenIds: hi } = applyDropOnSection(renderedIds, hiddenIds, draggedId, section);
+    _snapComponentMembershipChange(draggedId, renderedIds.includes(draggedId), r.includes(draggedId));
     setRenderedIds(r); setHiddenIds(hi);
   };
 
@@ -388,7 +406,10 @@ export default function DashboardLayoutPopup({ currentLayout, excludeWidgetIds, 
           <button
             className="config-popup-btn config-popup-btn--submit"
             type="button"
-            onClick={() => onSave(renderedIds, hasReset, sizing, selectedProfileId)}
+            onClick={() => {
+              snapDashboardAction("saveDashboardLayout", { widgetCount: renderedIds.length });
+              onSave(renderedIds, hasReset, sizing, selectedProfileId);
+            }}
           >Save Layout</button>
         </div>
       </div>
