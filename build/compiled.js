@@ -14,6 +14,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>${compiledCSS}</style>
+  <!-- [Claude claude-opus-4-8] Task: load Plausible analytics for the dashboard embed -->
+  <!-- Prompt: "enable plausible() custom events from within the dashboard component" -->
+  <!-- Absolute proxy URL (the embed iframe is not same-origin with amplenote.com, so a relative -->
+  <!-- /plausible-proxy path would not resolve); data-domain attributes events to the registered site. -->
+  <!-- autoCapturePageviews is disabled because location.href inside the embed is a junk data: URL. -->
+  <script defer data-domain="amplenote.com" src="https://www.amplenote.com/plausible-proxy/js/script.js"><\/script>
+  <script>
+    window.plausible = window.plausible || function () { (window.plausible.q = window.plausible.q || []).push(arguments); };
+    window.plausible.init = window.plausible.init || function (options) { window.plausible.o = options || {}; };
+    window.plausible.init({ autoCapturePageviews: false });
+  <\/script>
 </head>
 <body>
   <div id="dashboard-root"></div>

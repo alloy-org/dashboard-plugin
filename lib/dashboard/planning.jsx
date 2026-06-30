@@ -1,21 +1,16 @@
-/**
- * [Claude-authored file]
- * Created: 2026-02-17 | Model: claude-sonnet-4-5-20250929
- * Task: Planning widget — quarterly plan cards and month tabs
- * Prompt summary: "widget showing current/next quarter plans with month tab navigation"
- */
+// Quarterly Planning widget
 import { getQuarterMonths, getUpcomingWeekMonday, formatWeekLabel } from "constants/quarters";
 import { IS_DEV_ENVIRONMENT, widgetTitleFromId } from "constants/settings";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
+import {
+  createOrAppendMonthlyPlan,
+  createOrAppendWeeklyPlan,
+  createQuarterlyPlan,
+  getMonthlyPlanContent,
+} from "data-service";
 import NoteEditor from "note-editor";
 import { useEffect, useState } from "react";
-import {
-  fetchSectionContent,
-  createMonthlyPlan,
-  createWeeklyPlan,
-  openOrCreateQuarterlyPlan,
-  navigateToNote,
-} from "util/goal-notes";
+import { navigateToNote } from "util/goal-notes";
 import { logIfEnabled } from "util/log";
 import { renderBlockMarkdown } from "util/utility";
 import WidgetWrapper from "widget-wrapper";
@@ -25,7 +20,7 @@ async function handleOpenPlan(app, plan) {
   if (plan.noteUUID) {
     return await navigateToNote(app, plan.noteUUID);
   }
-  return await openOrCreateQuarterlyPlan(app, plan);
+  return await createQuarterlyPlan(app, plan);
 }
 
 async function handleMonthClick(app, month, { activeTab, setActiveTab, setMonthLoading, setMonthContent }) {
@@ -45,7 +40,7 @@ async function handleMonthClick(app, month, { activeTab, setActiveTab, setMonthL
     if (!noteUUID) {
       setMonthContent({ found: false, plan: month.plan, monthName: month.full, year: month.plan.year });
     } else {
-      const result = await fetchSectionContent(app, noteUUID, month.full);
+      const result = await getMonthlyPlanContent(app, noteUUID, month.full);
       logIfEnabled(`[Planning] Raw markdown for ${month.full}:`, result?.content);
       setMonthContent({
         ...result,
@@ -65,7 +60,7 @@ async function handleCreateMonthPlan(app, monthContent, { setMonthLoading, setMo
   if (!monthContent) return;
   setMonthLoading(true);
   try {
-    const result = await createMonthlyPlan(app, monthContent.plan, monthContent.monthName);
+    const result = await createOrAppendMonthlyPlan(app, monthContent.plan, monthContent.monthName);
     if (result && result.noteUUID) {
       setMonthContent(prev => ({ ...prev, found: true, content: result.content || '' }));
       return await navigateToNote(app, result.noteUUID);
@@ -80,7 +75,7 @@ async function handleCreateMonthPlan(app, monthContent, { setMonthLoading, setMo
 async function handleCreateWeekPlan(app, plan, weekLabel, setWeekLoading, setWeekContent) {
   setWeekLoading(true);
   try {
-    const result = await createWeeklyPlan(app, plan, weekLabel);
+    const result = await createOrAppendWeeklyPlan(app, plan, weekLabel);
     if (result?.noteUUID) {
       setWeekContent({ found: true, content: result.content || '' });
       return await navigateToNote(app, result.noteUUID);
@@ -239,7 +234,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
     const noteUUID = quarterlyPlans.current?.noteUUID;
     if (!noteUUID) return;
     setWeekLoading(true);
-    fetchSectionContent(app, noteUUID, weekLabel)
+    getMonthlyPlanContent(app, noteUUID, weekLabel)
       .then(result => {
         logIfEnabled(`[Planning] Weekly section "${weekLabel}":`, result);
         setWeekContent(result);

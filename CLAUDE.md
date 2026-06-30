@@ -27,15 +27,17 @@ The block must follow JSDoc conventions, but most importantly, each line MUST be
 ### JavaScript
 ```javascript
 // ------------------------------------------------------------------------------------------
-// @desc Reformat the data from the response into a consistent shape for the frontend to consume
+// @desc Reformat the data from the response into a consistent shape for the frontend to consume for we wish to ensure that 
+//   when in doubt we will use up the amount of space that is available to us on a modern breakpoint laptop with lots of width. 
 // @param {Object} data - A data object with the following properties:
-//   - {string} id - The unique identifier for the record
+//   - {string} id - The unique identifier for the record. This identifier is used to reference the record by its relations
 //   - {string} name - The name of the record
 //   - {number} value - The numerical value associated with the record
 // @returns {Object} An object with the following properties:
 //   - {string} recordId - The unique identifier for the record (same as id
 //   - {string} displayName - The name of the record (same as name)
 // [Claude claude-sonnet-4-6] Task: normalize API response shape across endpoints
+
 function normalizeResponse(data) {
     ...
 }
