@@ -146,7 +146,8 @@ describe("loadGraveyardCandidates", () => {
       { content: "Slightly newer but still valuable", createdAt: timestampFromDate("2025-08-17T15:00:00Z"), uuid: "near-newer", victoryValue: 9.5 },
       { content: "High value but years too old", createdAt: timestampFromDate("2023-08-10T15:00:00Z"), uuid: "far-old", victoryValue: 12 },
       { content: "Exactly target age with less value", createdAt: timestampFromDate("2025-08-10T15:00:00Z"), uuid: "lower-target", victoryValue: 7.6 },
-      { content: "Recent high value", createdAt: timestampFromDate("2026-05-10T15:00:00Z"), uuid: "far-new", victoryValue: 10 },
+      { content: "Mid value at target age", createdAt: timestampFromDate("2025-08-10T15:00:00Z"), uuid: "mid-target", victoryValue: 5 },
+      { content: "Recent high value, younger than one month", createdAt: timestampFromDate("2026-05-10T15:00:00Z"), uuid: "far-new", victoryValue: 10 },
       { content: "Low value at target age", createdAt: timestampFromDate("2025-08-10T15:00:00Z"), uuid: "low-target", victoryValue: 1 },
     ];
     const app = {
@@ -165,8 +166,10 @@ describe("loadGraveyardCandidates", () => {
     const { candidates } = await loadGraveyardCandidates(app, 5, "domain-1");
 
     expect(candidates).toHaveLength(5);
-    expect(candidates.map(task => task.uuid)).toEqual(["near-target", "near-newer", "lower-target", "far-old", "far-new"]);
+    expect(candidates.map(task => task.uuid)).toEqual(["near-target", "near-newer", "lower-target", "far-old", "mid-target"]);
     expect(candidates.every(task => Number.isFinite(task.graveyardHeuristicScore))).toBe(true);
     expect(candidates).not.toEqual(expect.arrayContaining([expect.objectContaining({ uuid: "low-target" })]));
+    // Tasks created less than a month ago are ineligible regardless of value, so the recent high-value task is dropped.
+    expect(candidates).not.toEqual(expect.arrayContaining([expect.objectContaining({ uuid: "far-new" })]));
   });
 });
