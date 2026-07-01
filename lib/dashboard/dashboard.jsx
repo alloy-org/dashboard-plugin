@@ -10,6 +10,7 @@ import AgendaWidget from 'agenda';
 import CalendarWidget from 'calendar';
 import { apiKeyBucketFromLlmProvider, apiKeyFromProvider, DASHBOARD_FOCUS, DEFAULT_DASHBOARD_COMPONENTS,
   IS_DEV_ENVIRONMENT, SETTING_KEYS, WIDGET_REGISTRY } from 'constants/settings';
+import { DashboardLoadContext, useDashboardLoadTracker, useReportWidgetLoaded } from 'dashboard-load-tracking';
 import DashboardLayoutPopup from 'dashboard-layout-popup';
 import DashboardSettingNote from "dashboard-setting-note";
 import DashboardSettingsPopup from 'dashboard-settings-popup';
@@ -72,6 +73,7 @@ function gridCellContainerProps(config, draggingWidgetId, focusedWidgetId, widge
 // [Claude claude-4.7-opus] Task: migrate WidgetErrorBoundary.render from createElement to JSX
 // Prompt: "translate this project to render components with JSX instead"
 class WidgetErrorBoundary extends Component {
+  static contextType = DashboardLoadContext;
   constructor(props) {
     super(props);
     this.state = { hasError: false, error: null };
@@ -81,6 +83,7 @@ class WidgetErrorBoundary extends Component {
   }
   componentDidCatch(error, info) {
     logIfEnabled(`[WidgetErrorBoundary] Widget "${ this.props.widgetId }" crashed:`, error, info);
+    this.context?.reportError(this.props.widgetId);
   }
   render() {
     if (this.state.hasError) {
@@ -101,6 +104,11 @@ class WidgetErrorBoundary extends Component {
   }
 }
 
+function WidgetLoadReporter({ widgetId }) {
+  useReportWidgetLoaded(widgetId);
+  return null;
+}
+
 // [Claude claude-4.7-opus] Task: convert createWidgetCell factory to JSX
 // Prompt: "translate this project to render components with JSX instead"
 function createWidgetCell(widgetId, WidgetComponent, buildWidgetProps) {
@@ -115,6 +123,7 @@ function createWidgetCell(widgetId, WidgetComponent, buildWidgetProps) {
       <div {...gridCellContainerProps(config, draggingWidgetId, focusedWidgetId, widgetFocusTransform)}>
         <WidgetErrorBoundary widgetId={widgetId}>
           <WidgetSizeContext.Provider value={widgetSizeValue}>
+            <WidgetLoadReporter widgetId={widgetId} />
             <WidgetComponent {...buildWidgetProps(cellProps)} />
           </WidgetSizeContext.Provider>
         </WidgetErrorBoundary>
@@ -157,8 +166,8 @@ const PlanningCell = createWidgetCell('planning', PlanningWidget, ({ app, config
   app, gridHeightSize: Number(config?.gridHeightSize) || 1, quarterlyPlans,
 }));
 const QuickActionsCell = createWidgetCell('quick-actions', QuickActionsWidget, pickProps('app'));
-const QuotesCell = createWidgetCell('quotes', QuotesWidget, ({ app, config, providerApiKey }) => ({
-  app, gridHeightSize: Number(config?.gridHeightSize) || 1, planContent: null, providerApiKey, quotes: null,
+const QuotesCell = createWidgetCell('quotes', QuotesWidget, ({ app, config }) => ({
+  app, gridHeightSize: Number(config?.gridHeightSize) || 1, planContent: null, quotes: null,
 }));
 const RecentNotesCell = createWidgetCell('recent-notes', RecentNotesWidget, ({ app, config, taskDomainUUID }) => ({
   app, gridHeightSize: Number(config?.gridHeightSize) || 1, taskDomainUUID,
@@ -468,6 +477,13 @@ export default function DashboardApp({ app, initPromise }) {
     []
   );
 
+  // Ids of the widget cells actually rendered this pass (unknown widgetIds render nothing and so
+  // never settle); the tracker fires one aggregate Plausible event once all of these have settled.
+  const renderedWidgetIds = displayedComponents
+    .map((config, index) => config?.widgetId || DEFAULT_DASHBOARD_COMPONENTS[index]?.widgetId)
+    .filter(id => CELL_COMPONENTS[id]);
+  const loadTracker = useDashboardLoadTracker(renderedWidgetIds);
+
   if (error) {
     return (
       <div className="dashboard-error">
@@ -575,6 +591,7 @@ export default function DashboardApp({ app, initPromise }) {
               onClick={clearFocusedWidget}
             />
           ) : null}
+          <DashboardLoadContext.Provider value={loadTracker}>
           <div
             className={`dashboard-grid${draggingWidgetId ? ' dashboard-grid--dragging' : ''}${isWidgetFocusMode ? ' dashboard-grid--focused' : ''}`}
           >
@@ -623,6 +640,7 @@ export default function DashboardApp({ app, initPromise }) {
               );
             }).filter(Boolean)}
           </div>
+          </DashboardLoadContext.Provider>
         </div>
       </div>
     </div>

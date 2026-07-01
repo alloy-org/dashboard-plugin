@@ -6,51 +6,30 @@
  */
 import { widgetTitleFromId } from "constants/settings";
 import { useEffect, useState } from "react";
-import { fetchQuotes as fetchQuotesFromLLM } from "data-service";
 import { getRandomQuotes } from "quotes-data";
 import { backgroundSplashUrl } from "util/background-splash-images";
 import WidgetWrapper from "widget-wrapper";
 import "styles/quotes.scss"
 
-// [Claude] Task: display inspirational quotes — local random pool or LLM when plan content present
-// Prompt: "add a set of 100 inspirational quotes randomly picked for the Inspiration component"
-// Date: 2026-03-05 | Model: claude-sonnet-4-6
-// [Claude] Task: accept gridHeightSize to show more quotes when widget is 2 vertical cells
-// Prompt: "more quotes are shown in the inspiration component when it is 2 units tall"
-// Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking
-// [Claude] Task: accept providerApiKey prop and pass to fetchQuotes instead of reading app.settings
-// Prompt: "for each widget that needs to call AI, use apiKeyFromProvider to pass a providerApiKey prop"
-// Date: 2026-04-04 | Model: claude-4.6-opus-high-thinking
-// [Claude claude-4.7-opus] Task: migrate QuotesWidget from createElement to JSX
-// Prompt: "translate this project to render components with JSX instead"
-export default function QuotesWidget({ app, gridHeightSize, planContent, providerApiKey, quotes }) {
+// --------------------------------------------------------------------------------------
+export default function QuotesWidget({ gridHeightSize, planContent, quotes }) {
   const quoteCount = (gridHeightSize || 1) >= 2 ? 4 : 2;
   const [displayQuotes, setDisplayQuotes] = useState(quotes || (!planContent ? getRandomQuotes(quoteCount) : []));
   const [loading, setLoading] = useState(!quotes && !!planContent);
   const [backgroundSeed] = useState(() => `${ Date.now() }-${ Math.random() }`);
 
   useEffect(() => {
-    if (!quotes && planContent) {
-      setLoading(true);
-      fetchQuotesFromLLM(app, planContent, { apiKey: providerApiKey }).then(q => {
-        setDisplayQuotes(q && q.length ? q : getRandomQuotes(quoteCount));
-        setLoading(false);
-      });
+    if (!quotes) {
+      setDisplayQuotes(getRandomQuotes(quoteCount));
     }
   }, []);
 
-  // [Claude] Task: refresh quote pool when quoteCount increases beyond what state holds
-  // Prompt: "when quotes.js has vertical height of 2, it still only shows two quotes"
-  // Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking
   useEffect(() => {
     if (!loading && displayQuotes.length < quoteCount) {
       setDisplayQuotes(getRandomQuotes(quoteCount));
     }
   }, [quoteCount]);
 
-  // [Claude] Task: add reseed button to refresh quotes from random pool
-  // Prompt: "Add a reseed button to the upper-right of the quotes widget"
-  // Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking
   const handleReseed = () => {
     setDisplayQuotes(getRandomQuotes(quoteCount));
   };
