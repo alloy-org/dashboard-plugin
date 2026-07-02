@@ -85,7 +85,7 @@ describe("findCollaboratorUpdatedNotes", () => {
     const { notes } = await findCollaboratorUpdatedNotes({ app, maxNotes: 5, onlyWithTasks: false, taskDomainUUID: TASK_DOMAIN_UUID });
 
     expect(app.filterNotes).toHaveBeenCalledWith({ group: "shared", taskDomainUUID: TASK_DOMAIN_UUID }, "updated");
-    expect(notes.map(entry => entry.noteHandle.uuid)).toEqual(["a", "c"]);
+    expect(notes.map(entry => entry.uuid)).toEqual(["a", "c"]);
     expect(notes[0].updatedMs).toBe(9000);
     // Each entry also carries when the current user last opened the note (`active`) for the 2nd datestamp.
     expect(notes[0].activeMs).toBe(4000);
@@ -128,9 +128,9 @@ describe("findCollaboratorUpdatedNotes", () => {
     const { notes, sharerNames } = await findCollaboratorUpdatedNotes({ app, maxNotes: 5, taskDomainUUID: TASK_DOMAIN_UUID });
 
     expect(sharerNames).toEqual(["Aaron", "Zoe"]);
-    const n1Names = notes.find(n => n.noteHandle.uuid === "n1").collaborators.map(c => c.name).sort();
+    const n1Names = notes.find(n => n.uuid === "n1").collaborators.map(c => c.name).sort();
     expect(n1Names).toEqual(["Aaron", "Zoe"]);
-    expect(notes.find(n => n.noteHandle.uuid === "n2").collaborators.map(c => c.name)).toEqual(["Aaron"]);
+    expect(notes.find(n => n.uuid === "n2").collaborators.map(c => c.name)).toEqual(["Aaron"]);
   });
 });
 
@@ -188,11 +188,11 @@ describe("parsePinnedNoteUuids", () => {
 describe("orderNotesPinnedFirst", () => {
   it("floats pinned notes to the front, preserving each group's relative order", () => {
     const notes = [
-      { noteHandle: { uuid: "a" } }, { noteHandle: { uuid: "b" } }, { noteHandle: { uuid: "c" } },
+      { uuid: "a" }, { uuid: "b" }, { uuid: "c" },
     ];
-    expect(orderNotesPinnedFirst(notes, new Set(["c"])).map(n => n.noteHandle.uuid)).toEqual(["c", "a", "b"]);
-    expect(orderNotesPinnedFirst(notes, ["b", "a"]).map(n => n.noteHandle.uuid)).toEqual(["a", "b", "c"]);
-    expect(orderNotesPinnedFirst(notes, new Set()).map(n => n.noteHandle.uuid)).toEqual(["a", "b", "c"]);
+    expect(orderNotesPinnedFirst(notes, new Set(["c"])).map(n => n.uuid)).toEqual(["c", "a", "b"]);
+    expect(orderNotesPinnedFirst(notes, ["b", "a"]).map(n => n.uuid)).toEqual(["a", "b", "c"]);
+    expect(orderNotesPinnedFirst(notes, new Set()).map(n => n.uuid)).toEqual(["a", "b", "c"]);
     expect(orderNotesPinnedFirst(null, new Set(["a"]))).toEqual([]);
   });
 });

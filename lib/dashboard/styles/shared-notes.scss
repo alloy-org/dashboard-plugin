@@ -150,11 +150,10 @@
 
   .shared-note-meta {
     align-items: center;
-    color: $color-text-muted;
+    color: $color-text;
     display: flex;
-    font-size: 0.75rem;
+    font-size: 12px;
     gap: $sp-sm;
-    justify-content: space-between;
   }
 
   /* Overlapping avatar stack: each avatar after the first tucks slightly under its left neighbor. */
@@ -199,28 +198,23 @@
     white-space: nowrap;
   }
 
-  /* Two stacked timestamps: the current user's last edit over the collaborator's last update, so an */
-  /* old "Updated" date is self-explanatory rather than looking like a stale row. */
-  /* [Claude claude-opus-4-8 (1M context)] Task: clarify the two datestamps on each shared-note row */
-  /* Prompt: "Clarify two datestamps: When current user last opened note, when last note was last updated" */
+  /* The two timestamps (opened-by-you, updated-by-them) sit on their own line below the collaborator */
+  /* names, sharing one font/color so they read as a matched pair rather than two mismatched labels. */
+  /* [Claude claude-opus-4-8 (1M context)] Task: move the datestamps onto a line below the sharer names */
+  /* Prompt: "cleaner to list the dates on a line below the list of sharer names" */
   .shared-note-dates {
-    align-items: flex-end;
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-    line-height: 1.25;
-    text-align: right;
-    white-space: nowrap;
-  }
-
-  .shared-note-opened {
     color: $color-text-secondary;
+    display: flex;
+    flex-wrap: wrap;
     font-size: 0.7rem;
+    gap: $sp-xs $sp-sm;
+    white-space: nowrap;
   }
 
-  .shared-note-updated {
-    flex-shrink: 0;
-    white-space: nowrap;
+  /* Middot separator between the two stamps when they share a line. */
+  .shared-note-updated::before {
+    color: $color-text-muted;
+    content: "·";
   }
 
   .note-loading,

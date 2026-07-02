@@ -42,9 +42,7 @@ function CollaboratorAvatar({ collaborator }) {
 // @desc Hook: fetch the collaborator-updated shared notes (and sharer names) for the current filter,
 //   re-querying whenever app/onlyWithTasks/taskDomainUUID change and ignoring stale resolutions.
 // @param {Object} params - { app, onlyWithTasks, taskDomainUUID }.
-// @returns {{notes: Array<Object>|null, sharerNames: Array<string>}} `notes` is null while loading.
-// [Claude claude-opus-4-8 (1M context)] Task: extract the note-fetching effect into a hook
-// Prompt: "Create local functions that split out modular functionality... focused on initializing state"
+// @returns {{notes: Array<noteHandle>|null, sharerNames: Array<string>}} `notes` is null while loading.
 function useCollaboratorUpdatedNotes({ app, onlyWithTasks, taskDomainUUID }) {
   const [notes, setNotes] = useState(null);
   const [sharerNames, setSharerNames] = useState([]);
@@ -178,32 +176,34 @@ function SharedNotesPagination({ currentPage, onPageChange, totalPages }) {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc A single shared-note row: a left-edge pin toggle plus a link opening the note, whose meta
-//   line carries collaborator avatars/names and the two datestamps (opened by you, updated by them).
+// @desc A single shared-note row: a left-edge pin toggle plus a link opening the note. Below the
+//   title, a meta line carries collaborator avatars/names, and a dates line beneath it carries the
+//   two datestamps (opened by you, updated by them) sharing one font so they read as a set.
 // @param {Object} props - { isPinned, note, nowMs, onNavigate, onTogglePin }. `note` is an
-//   { activeMs, collaborators, noteHandle, updatedMs } entry; `onNavigate` receives a note UUID.
+//   { activeMs, collaborators, openedAt, updatedMs, ...noteHandle } entry (the note's own attrs, e.g.
+//   `uuid`/`name`, are spread onto it); `onNavigate` receives a note UUID.
 // @returns {JSX.Element} The <li> row.
 // [Claude claude-opus-4-8 (1M context)] Task: extract one shared-note row into its own component
 // Prompt: "Create local functions that split out modular functionality"
 function SharedNoteRow({ isPinned, note, nowMs, onNavigate, onTogglePin }) {
-  const { activeMs, collaborators, noteHandle, updatedMs } = note;
+  const { activeMs, collaborators, name, openedAt, updatedMs, uuid } = note;
   return (
     <li className="shared-note-item">
       <button
         className={`shared-note-pin${ isPinned ? " shared-note-pin-active" : "" }`}
         type="button"
-        onClick={() => onTogglePin(noteHandle.uuid)}
+        onClick={() => onTogglePin(uuid)}
         title={isPinned ? "Unpin this note" : "Pin this note to the top"}
         aria-pressed={isPinned}
       >📌</button>
       <button
         className="shared-note-link"
         type="button"
-        onClick={() => onNavigate(noteHandle.uuid)}
-        title={`Open "${ noteHandle.name || "Untitled" }"`}
+        onClick={() => onNavigate(uuid)}
+        title={`Open "${ name || "Untitled" }"`}
       >
-        <span className="shared-note-title">{noteHandle.name || "Untitled"}</span>
-        <span className="shared-note-meta">
+        <span className="shared-note-title">{name || "Untitled"}</span>
+        <div className="shared-note-meta">
           {collaborators.length > 0 && (
             <span className="shared-note-avatars">
               {collaborators.slice(0, MAX_AVATARS).map((collaborator, index) => (
@@ -216,17 +216,17 @@ function SharedNoteRow({ isPinned, note, nowMs, onNavigate, onTogglePin }) {
               ? collaborators.map(collaborator => collaborator.name).join(", ")
               : "Shared with collaborators"}
           </span>
-          <span className="shared-note-dates">
-            <span
-              className="shared-note-opened"
-              title="When you last opened this note"
-            >Opened {lastUpdatedLabelFromMs(activeMs, nowMs) || "—"}</span>
-            <span
-              className="shared-note-updated"
-              title="When a collaborator last updated this note"
-            >Updated {lastUpdatedLabelFromMs(updatedMs, nowMs)}</span>
-          </span>
-        </span>
+        </div>
+        <div className="shared-note-dates">
+          <span
+            className="shared-note-updated"
+            title="When a collaborator last updated this note"
+          >Updated {lastUpdatedLabelFromMs(updatedMs, nowMs)}</span>
+          <span
+            className="shared-note-opened"
+            title={ `You last opened this note ${ openedAt }` }
+          >You last opened {lastUpdatedLabelFromMs(activeMs, nowMs) || "—"}</span>
+        </div>
       </button>
     </li>
   );
@@ -243,10 +243,10 @@ function SharedNoteRow({ isPinned, note, nowMs, onNavigate, onTogglePin }) {
 function SharedNotesBody({ currentPage, onNavigate, onPageChange, onTogglePin, pinnedUuids, sharerFilter,
     totalPages, visibleNotes }) {
   if (visibleNotes === null) {
-    return <>{sharerFilter}<p className="note-loading">Loading…</p></>;
+    return (<>{sharerFilter}<p className="note-loading">Loading…</p></>);
   }
   if (visibleNotes.length === 0) {
-    return <>{sharerFilter}<p className="note-empty">No notes recently updated by collaborators.</p></>;
+    return (<>{sharerFilter}<p className="note-empty">No notes recently updated by collaborators.</p></>);
   }
   const nowMs = Date.now();
   return (
@@ -254,8 +254,8 @@ function SharedNotesBody({ currentPage, onNavigate, onPageChange, onTogglePin, p
     {sharerFilter}
     <ul className="shared-note-list">
       {visibleNotes.map(note => (
-        <SharedNoteRow key={note.noteHandle.uuid} note={note} nowMs={nowMs}
-          isPinned={pinnedUuids.has(note.noteHandle.uuid)} onTogglePin={onTogglePin} onNavigate={onNavigate} />
+        <SharedNoteRow key={note.uuid} { ...{ note, nowMs, onTogglePin, onNavigate } }
+          isPinned={ pinnedUuids.has(note.uuid) }  />
       ))}
     </ul>
     <SharedNotesPagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} />
@@ -303,9 +303,8 @@ export default function SharedNotesWidget({ app, gridHeightSize = 1, taskDomainU
       title={widgetTitleFromId("shared-notes")}
       widgetId="shared-notes"
     >
-      <SharedNotesBody currentPage={currentPage} onNavigate={uuid => app.navigate(`https://www.amplenote.com/notes/${ uuid }`)}
-        onPageChange={setPage} onTogglePin={togglePin} pinnedUuids={pinnedUuids} sharerFilter={sharerFilter}
-        totalPages={totalPages} visibleNotes={visibleNotes} />
+      <SharedNotesBody { ...{ currentPage, pinnedUuids, sharerFilter, totalPages, visibleNotes } }
+        onNavigate={uuid => app.navigate(`https://www.amplenote.com/notes/${ uuid }`)} onPageChange={setPage} onTogglePin={togglePin} />
     </WidgetWrapper>
   );
 }
