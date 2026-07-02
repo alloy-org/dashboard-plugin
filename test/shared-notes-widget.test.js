@@ -6,6 +6,7 @@ import { createRoot } from "react-dom/client";
 const { default: SharedNotesWidget } = await import("shared-notes");
 
 const TASK_DOMAIN_UUID = "domain-1";
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 // ----------------------------------------------------------------------------------------------
 // @desc Build an ISO string from a millisecond offset for note `changed`/`updated` fixtures.
@@ -21,9 +22,9 @@ function iso(ms) {
 // Prompt: "Build an index of person.sharing.notes from the getPeople method"
 function buildMockApp() {
   const baseHandles = [
-    { changed: iso(1000), name: "Roadmap", updated: iso(Date.now()), uuid: "note-1" },
-    { changed: iso(8000), name: "Self Only", updated: iso(8000), uuid: "note-2" }, // not collaborator-updated
-    { changed: iso(2000), name: "Specs", updated: iso(Date.now() - 3 * 60 * 60 * 1000), uuid: "note-3" },
+    { active: iso(Date.now() - 2 * DAY_MS), changed: iso(1000), name: "Roadmap", updated: iso(Date.now()), uuid: "note-1" },
+    { active: iso(Date.now() - 20 * DAY_MS), changed: iso(8000), name: "Self Only", updated: iso(8000), uuid: "note-2" }, // not collaborator-updated
+    { active: iso(Date.now() - 5 * DAY_MS), changed: iso(2000), name: "Specs", updated: iso(Date.now() - 3 * 60 * 60 * 1000), uuid: "note-3" },
   ];
   const people = [
     { name: "Ada Lovelace", uuid: "p-ada", sharing: { notes: ["note-1"] } },
@@ -33,6 +34,11 @@ function buildMockApp() {
     filterNotes: jest.fn().mockResolvedValue(baseHandles),
     getPeople: jest.fn().mockResolvedValue(people),
     navigate: jest.fn().mockResolvedValue(undefined),
+    // Pins archive: no pins note exists yet, and writes are captured for assertions.
+    findNote: jest.fn().mockResolvedValue(null),
+    getNoteContent: jest.fn().mockResolvedValue(""),
+    createNote: jest.fn().mockResolvedValue({ uuid: "pins-note" }),
+    replaceNoteContent: jest.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -60,8 +66,10 @@ describe("SharedNotesWidget", () => {
     const collaborators = [...container.querySelectorAll(".shared-note-collaborators")].map(node => node.textContent);
     expect(collaborators).toEqual(["Ada Lovelace", "Grace Hopper"]);
     const lastUpdated = container.querySelectorAll(".shared-note-updated")[1];
-    expect(lastUpdated.textContent).toBe("3h ago");
-    expect(lastUpdated.getAttribute("title")).toBe("Last time a collaborator updated this note");
+    expect(lastUpdated.textContent).toBe("Updated 3h ago");
+    expect(lastUpdated.getAttribute("title")).toBe("When a collaborator last updated this note");
+    // When the current user last opened the note ("active", 5d ago) is shown as a second datestamp.
+    expect(container.querySelectorAll(".shared-note-opened")[1].textContent).toBe("Opened 5d ago");
   });
 
   it("shows the person filter (with the has-tasks toggle on the same row) when 2+ people have shared", async () => {
@@ -69,7 +77,7 @@ describe("SharedNotesWidget", () => {
     const filterRow = container.querySelector(".shared-notes-filter");
     expect(filterRow).not.toBeNull();
     const options = [...filterRow.querySelectorAll("option")].map(node => node.textContent);
-    expect(options).toEqual(["Filter on user...", "Ada Lovelace", "Grace Hopper"]);
+    expect(options).toEqual(["All collaborators", "Ada Lovelace", "Grace Hopper"]);
     // The toggle lives inside the filter row, not the widget header, when the filter is shown.
     expect(filterRow.querySelector(".shared-notes-toggle input")).not.toBeNull();
   });
@@ -77,10 +85,11 @@ describe("SharedNotesWidget", () => {
   it("hides the person filter and keeps the has-tasks toggle when only one person has shared", async () => {
     const app = {
       filterNotes: jest.fn().mockResolvedValue([
-        { changed: iso(1000), name: "Roadmap", updated: iso(Date.now()), uuid: "note-1" },
+        { active: iso(Date.now() - 5 * DAY_MS), changed: iso(1000), name: "Roadmap", updated: iso(Date.now()), uuid: "note-1" },
       ]),
       getPeople: jest.fn().mockResolvedValue([{ name: "Ada Lovelace", uuid: "p-ada", sharing: { notes: ["note-1"] } }]),
       navigate: jest.fn(),
+      findNote: jest.fn().mockResolvedValue(null),
     };
     const container = document.createElement("div");
     document.body.appendChild(container);
@@ -112,13 +121,14 @@ describe("SharedNotesWidget", () => {
     const recentIso = iso(Date.now());
     const app = {
       filterNotes: jest.fn().mockResolvedValue([
-        { changed: iso(1000), name: "Roadmap", updated: recentIso, uuid: "note-1" },
+        { active: iso(Date.now() - 5 * DAY_MS), changed: iso(1000), name: "Roadmap", updated: recentIso, uuid: "note-1" },
       ]),
       getPeople: jest.fn().mockResolvedValue([
         { uuid: "p1", name: "Ada Lovelace", avatar: { image: "https://example.com/ada.png" }, sharing: { notes: ["note-1"] } },
         { uuid: "p2", name: "Grace Hopper", avatar: { text: "GH" }, sharing: { notes: ["note-1"] } },
       ]),
       navigate: jest.fn(),
+      findNote: jest.fn().mockResolvedValue(null),
     };
     const container = document.createElement("div");
     document.body.appendChild(container);
@@ -131,8 +141,24 @@ describe("SharedNotesWidget", () => {
     expect(container.querySelector(".shared-note-collaborators").textContent).toBe("Ada Lovelace, Grace Hopper");
   });
 
+  it("pins a note atop the list and persists the pinned UUID to the archive note", async () => {
+    const { app, container } = await renderWidget();
+    // Second row's pin (Specs / note-3); clicking it should float note-3 above Roadmap (note-1).
+    const specsPin = container.querySelectorAll(".shared-note-pin")[1];
+    await act(async () => {
+      specsPin.click();
+    });
+    const titlesAfterPin = [...container.querySelectorAll(".shared-note-title")].map(node => node.textContent);
+    expect(titlesAfterPin).toEqual(["Specs", "Roadmap"]);
+    // The pinned button reflects its active state and the UUID was written to the archive note.
+    expect(container.querySelectorAll(".shared-note-pin")[0].classList.contains("shared-note-pin-active")).toBe(true);
+    const written = app.replaceNoteContent.mock.calls.at(-1)[1];
+    expect(written).toContain("note-3");
+  });
+
   it("shows an empty-state message when no notes were updated by collaborators", async () => {
-    const app = { filterNotes: jest.fn().mockResolvedValue([]), getPeople: jest.fn().mockResolvedValue([]), navigate: jest.fn() };
+    const app = { filterNotes: jest.fn().mockResolvedValue([]), getPeople: jest.fn().mockResolvedValue([]),
+      navigate: jest.fn(), findNote: jest.fn().mockResolvedValue(null) };
     const container = document.createElement("div");
     document.body.appendChild(container);
     await act(async () => {

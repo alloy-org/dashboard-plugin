@@ -91,8 +91,34 @@
   }
 
   .shared-note-item {
+    align-items: stretch;
+    display: flex;
+
     &:hover {
       background-color: $color-bg-page;
+    }
+  }
+
+  /* [Claude claude-opus-4-8 (1M context)] Pin toggle at the left of each row; muted until pinned. */
+  /* Prompt: "Add a pin icon to the left side of each note row... click the pin to persist that note" */
+  .shared-note-pin {
+    background: none;
+    border: none;
+    cursor: pointer;
+    filter: grayscale(1);
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    line-height: 1;
+    opacity: 0.4;
+    padding: $sp-sm 0 $sp-sm $sp-md;
+
+    &:hover {
+      opacity: 0.75;
+    }
+
+    &.shared-note-pin-active {
+      filter: none;
+      opacity: 1;
     }
   }
 
@@ -103,12 +129,13 @@
     color: inherit;
     cursor: pointer;
     display: flex;
+    flex: 1;
     flex-direction: column;
     font-family: inherit;
     gap: 2px;
-    padding: $sp-sm $sp-md;
+    min-width: 0;
+    padding: $sp-sm $sp-md $sp-sm $sp-sm;
     text-align: left;
-    width: 100%;
   }
 
   /* Title abbreviated to a single line when it would otherwise consume more than one. */
@@ -170,6 +197,25 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  /* Two stacked timestamps: the current user's last edit over the collaborator's last update, so an */
+  /* old "Updated" date is self-explanatory rather than looking like a stale row. */
+  /* [Claude claude-opus-4-8 (1M context)] Task: clarify the two datestamps on each shared-note row */
+  /* Prompt: "Clarify two datestamps: When current user last opened note, when last note was last updated" */
+  .shared-note-dates {
+    align-items: flex-end;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    line-height: 1.25;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .shared-note-opened {
+    color: $color-text-secondary;
+    font-size: 0.7rem;
   }
 
   .shared-note-updated {

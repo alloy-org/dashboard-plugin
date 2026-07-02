@@ -1,8 +1,9 @@
 // [Claude claude-opus-4-8] Generated tests for: Shared Notes service — collaborator-updated note discovery
 import { jest } from "@jest/globals";
 import { avatarTextFromName, buildPeopleIndexByNote, collaboratorsForNote, fetchPeopleIndexByNote,
-  findCollaboratorUpdatedNotes, lastUpdatedLabelFromMs, noteUpdatedByCollaborator,
-  sharedNotesGroupParam, sharerNamesFromIndex, timestampMsFromValue } from "shared-notes-service";
+  findCollaboratorUpdatedNotes, lastUpdatedLabelFromMs, noteUpdatedByCollaborator, orderNotesPinnedFirst,
+  parsePinnedNoteUuids, sharedNotesGroupParam, sharerNamesFromIndex, sharerNamesFromNotes,
+  timestampMsFromValue } from "shared-notes-service";
 
 const TASK_DOMAIN_UUID = "domain-all";
 const MINUTE_MS = 60 * 1000;
@@ -75,7 +76,7 @@ describe("lastUpdatedLabelFromMs", () => {
 describe("findCollaboratorUpdatedNotes", () => {
   it("queries filterNotes by shared group + task domain ordered by updated, keeping collaborator edits", async () => {
     const handles = [
-      buildNoteHandle({ uuid: "a", name: "Alpha", changed: new Date(1000).toISOString(), updated: new Date(9000).toISOString() }),
+      buildNoteHandle({ uuid: "a", name: "Alpha", active: new Date(4000).toISOString(), changed: new Date(1000).toISOString(), updated: new Date(9000).toISOString() }),
       buildNoteHandle({ uuid: "b", name: "Beta", changed: new Date(8000).toISOString(), updated: new Date(8000).toISOString() }), // self only
       buildNoteHandle({ uuid: "c", name: "Gamma", changed: new Date(2000).toISOString(), updated: new Date(7000).toISOString() }),
     ];
@@ -86,6 +87,8 @@ describe("findCollaboratorUpdatedNotes", () => {
     expect(app.filterNotes).toHaveBeenCalledWith({ group: "shared", taskDomainUUID: TASK_DOMAIN_UUID }, "updated");
     expect(notes.map(entry => entry.noteHandle.uuid)).toEqual(["a", "c"]);
     expect(notes[0].updatedMs).toBe(9000);
+    // Each entry also carries when the current user last opened the note (`active`) for the 2nd datestamp.
+    expect(notes[0].activeMs).toBe(4000);
   });
 
   it("includes the hasTasks group when onlyWithTasks is set and caps results at maxNotes", async () => {
@@ -140,6 +143,57 @@ describe("sharerNamesFromIndex", () => {
     ]);
     expect(sharerNamesFromIndex(peopleIndex)).toEqual(["Aaron", "bea", "zoe"]);
     expect(sharerNamesFromIndex(null)).toEqual([]);
+  });
+});
+
+describe("findCollaboratorUpdatedNotes sharer filter list", () => {
+  it("lists only collaborators who appear on a returned note (not everyone in getPeople)", async () => {
+    // "a" is collaborator-updated (kept); "b" is self-only (dropped). Bea shares only "b".
+    const handles = [
+      buildNoteHandle({ uuid: "a", changed: new Date(1000).toISOString(), updated: new Date(9000).toISOString() }),
+      buildNoteHandle({ uuid: "b", changed: new Date(8000).toISOString(), updated: new Date(8000).toISOString() }),
+    ];
+    const people = [
+      { name: "Ada", uuid: "p-ada", sharing: { notes: ["a"] } },
+      { name: "Bea", uuid: "p-bea", sharing: { notes: ["b"] } },
+    ];
+    const app = buildMockApp(handles, people);
+
+    const { sharerNames } = await findCollaboratorUpdatedNotes({ app, taskDomainUUID: TASK_DOMAIN_UUID });
+
+    expect(sharerNames).toEqual(["Ada"]);
+  });
+});
+
+describe("sharerNamesFromNotes", () => {
+  it("collects distinct collaborator names from the returned notes, sorted case-insensitively", () => {
+    const notes = [
+      { collaborators: [{ name: "zoe" }, { name: "Aaron" }] },
+      { collaborators: [{ name: "Aaron" }, { name: "bea" }] },
+      { collaborators: [] },
+    ];
+    expect(sharerNamesFromNotes(notes)).toEqual(["Aaron", "bea", "zoe"]);
+    expect(sharerNamesFromNotes(null)).toEqual([]);
+  });
+});
+
+describe("parsePinnedNoteUuids", () => {
+  it("de-duplicates and drops non-string/empty entries, returning [] for non-arrays", () => {
+    expect(parsePinnedNoteUuids(["a", "b", "a", "", null, 3])).toEqual(["a", "b"]);
+    expect(parsePinnedNoteUuids(null)).toEqual([]);
+    expect(parsePinnedNoteUuids("a,b")).toEqual([]);
+  });
+});
+
+describe("orderNotesPinnedFirst", () => {
+  it("floats pinned notes to the front, preserving each group's relative order", () => {
+    const notes = [
+      { noteHandle: { uuid: "a" } }, { noteHandle: { uuid: "b" } }, { noteHandle: { uuid: "c" } },
+    ];
+    expect(orderNotesPinnedFirst(notes, new Set(["c"])).map(n => n.noteHandle.uuid)).toEqual(["c", "a", "b"]);
+    expect(orderNotesPinnedFirst(notes, ["b", "a"]).map(n => n.noteHandle.uuid)).toEqual(["a", "b", "c"]);
+    expect(orderNotesPinnedFirst(notes, new Set()).map(n => n.noteHandle.uuid)).toEqual(["a", "b", "c"]);
+    expect(orderNotesPinnedFirst(null, new Set(["a"]))).toEqual([]);
   });
 });
 
