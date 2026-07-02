@@ -210,6 +210,26 @@ describe("findCollaboratorUpdatedNotes sharer filter list", () => {
 
     expect(sharerNames).toEqual(["Ada", "Bea"]);
   });
+
+  it("omits collaborators whose only shared note has not been updated in over 12 months", async () => {
+    // "a" was updated yesterday; "b" 13 months ago. Both notes are returned, but Bea (only on the
+    // year-stale note) drops out of the person-filter list while Ada stays.
+    const handles = [
+      buildNoteHandle({ uuid: "a", active: agoIso(2 * DAY_MS), changed: agoIso(2 * DAY_MS), updated: agoIso(DAY_MS) }),
+      buildNoteHandle({ uuid: "b", active: agoIso(400 * DAY_MS), changed: agoIso(400 * DAY_MS), updated: agoIso(400 * DAY_MS) }),
+    ];
+    const people = [
+      { name: "Ada", uuid: "p-ada", sharing: { notes: ["a"] } },
+      { name: "Bea", uuid: "p-bea", sharing: { notes: ["b"] } },
+    ];
+    const app = buildMockApp(handles, people);
+
+    const { notes, sharerNames } = await findCollaboratorUpdatedNotes({ app, taskDomainUUID: TASK_DOMAIN_UUID });
+
+    expect(sharerNames).toEqual(["Ada"]);
+    // The stale note itself is still returned (reachable by direct query), just not its collaborator.
+    expect(notes.map(note => note.uuid).sort()).toEqual(["a", "b"]);
+  });
 });
 
 describe("sharerNamesFromNotes", () => {
@@ -221,6 +241,16 @@ describe("sharerNamesFromNotes", () => {
     ];
     expect(sharerNamesFromNotes(notes)).toEqual(["Aaron", "bea", "zoe"]);
     expect(sharerNamesFromNotes(null)).toEqual([]);
+  });
+
+  it("skips notes updated before the sinceMs cutoff when one is supplied", () => {
+    const notes = [
+      { collaborators: [{ name: "Fresh" }], updatedMs: 5000 },
+      { collaborators: [{ name: "Stale" }], updatedMs: 1000 },
+    ];
+    expect(sharerNamesFromNotes(notes, 3000)).toEqual(["Fresh"]);
+    // With no cutoff (0) every note contributes, so both names appear.
+    expect(sharerNamesFromNotes(notes, 0)).toEqual(["Fresh", "Stale"]);
   });
 });
 
