@@ -16,29 +16,40 @@ function iso(ms) {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Build a mock Amplenote app whose filterNotes yields collaborator-updated shared notes and
-//   whose getPeople maps those notes to sharer names (the source of the "shared with" line).
-// [Claude claude-opus-4-8] Task: stub filterNotes/getPeople/navigate for Shared Notes widget rendering
-// Prompt: "Build an index of person.sharing.notes from the getPeople method"
+// @desc Build a findNote mock that resolves the given note handles by uuid (and the pins-archive
+//   lookup by name to null), so the widget's getPeople -> Promise.all(findNote) hydration works. Also
+//   forwards the pins-archive name lookup used by loadPinnedNoteUuids.
+// @param {Array<Object>} handles - Shared-note handles the widget will hydrate by uuid.
+// [Claude claude-opus-4-8 (1M context)] Task: resolve shared-note handles by uuid for the widget mock
+function findNoteFromHandles(handles) {
+  const byUuid = new Map(handles.map(handle => [handle.uuid, handle]));
+  return jest.fn(params => Promise.resolve((params?.uuid && byUuid.get(params.uuid)) || null));
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Build a mock Amplenote app whose getPeople + findNote surface collaborator-shared notes (the
+//   new sourcing) and whose getPeople maps those notes to sharer names. "Self Only" is a shared note we
+//   last changed/opened after its last update, so updatedSinceSeen drops it from the default view.
+// [Claude claude-opus-4-8 (1M context)] Task: stub getPeople/findNote/filterNotes/navigate for the widget
+// Prompt: "Promise.all findNote all notes shared with people and use that to build the index"
 function buildMockApp() {
   const now = Date.now();
-  // Ordered newest-updated first, matching how filterNotes("updated") returns them. "Self Only" is a
-  // shared note we last changed/opened after its last update, so updatedSinceSeen drops it.
   const baseHandles = [
     { active: iso(now - 2 * DAY_MS), changed: iso(now - 10 * DAY_MS), name: "Roadmap", updated: iso(now), uuid: "note-1" },
     { active: iso(now - 5 * DAY_MS), changed: iso(now - 10 * DAY_MS), name: "Specs", updated: iso(now - 3 * 60 * 60 * 1000), uuid: "note-3" },
     { active: iso(now - DAY_MS), changed: iso(now - DAY_MS), name: "Self Only", shared: true, updated: iso(now - 2 * DAY_MS), uuid: "note-2" },
   ];
   const people = [
-    { name: "Ada Lovelace", uuid: "p-ada", sharing: { notes: ["note-1"] } },
+    { name: "Ada Lovelace", uuid: "p-ada", sharing: { notes: ["note-1", "note-2"] } },
     { name: "Grace Hopper", uuid: "p-grace", sharing: { notes: ["note-3"] } },
   ];
   return {
+    // filterNotes is only used for the has-tasks intersection; return the task-bearing handles.
     filterNotes: jest.fn().mockResolvedValue(baseHandles),
     getPeople: jest.fn().mockResolvedValue(people),
     navigate: jest.fn().mockResolvedValue(undefined),
-    // Pins archive: no pins note exists yet, and writes are captured for assertions.
-    findNote: jest.fn().mockResolvedValue(null),
+    // Resolves shared-note handles by uuid; the pins-archive name lookup falls through to null.
+    findNote: findNoteFromHandles(baseHandles),
     getNoteContent: jest.fn().mockResolvedValue(""),
     createNote: jest.fn().mockResolvedValue({ uuid: "pins-note" }),
     replaceNoteContent: jest.fn().mockResolvedValue(undefined),
@@ -63,7 +74,9 @@ describe("SharedNotesWidget", () => {
   it("lists collaborator-updated notes with their titles, collaborators, and a last-updated label", async () => {
     const { app, container } = await renderWidget();
 
-    expect(app.filterNotes).toHaveBeenCalledWith({ taskDomainUUID: TASK_DOMAIN_UUID }, "updated");
+    // Notes are sourced from getPeople + findNote now, not the filterNotes "shared" group.
+    expect(app.getPeople).toHaveBeenCalled();
+    expect(app.findNote).toHaveBeenCalledWith({ uuid: "note-1" });
     const titles = [...container.querySelectorAll(".shared-note-title")].map(node => node.textContent);
     expect(titles).toEqual(["Roadmap", "Specs"]);
     const collaborators = [...container.querySelectorAll(".shared-note-collaborators")].map(node => node.textContent);
@@ -86,13 +99,14 @@ describe("SharedNotesWidget", () => {
   });
 
   it("hides the person filter and keeps the has-tasks toggle when only one person has shared", async () => {
+    const soloHandles = [
+      { active: iso(Date.now() - 5 * DAY_MS), changed: iso(1000), name: "Roadmap", updated: iso(Date.now()), uuid: "note-1" },
+    ];
     const app = {
-      filterNotes: jest.fn().mockResolvedValue([
-        { active: iso(Date.now() - 5 * DAY_MS), changed: iso(1000), name: "Roadmap", updated: iso(Date.now()), uuid: "note-1" },
-      ]),
+      filterNotes: jest.fn().mockResolvedValue(soloHandles),
       getPeople: jest.fn().mockResolvedValue([{ name: "Ada Lovelace", uuid: "p-ada", sharing: { notes: ["note-1"] } }]),
       navigate: jest.fn(),
-      findNote: jest.fn().mockResolvedValue(null),
+      findNote: findNoteFromHandles(soloHandles),
     };
     const container = document.createElement("div");
     document.body.appendChild(container);
@@ -122,16 +136,17 @@ describe("SharedNotesWidget", () => {
 
   it("renders getPeople avatars: an <img> when a person has an avatar image, a text badge otherwise", async () => {
     const recentIso = iso(Date.now());
+    const avatarHandles = [
+      { active: iso(Date.now() - 5 * DAY_MS), changed: iso(1000), name: "Roadmap", updated: recentIso, uuid: "note-1" },
+    ];
     const app = {
-      filterNotes: jest.fn().mockResolvedValue([
-        { active: iso(Date.now() - 5 * DAY_MS), changed: iso(1000), name: "Roadmap", updated: recentIso, uuid: "note-1" },
-      ]),
+      filterNotes: jest.fn().mockResolvedValue(avatarHandles),
       getPeople: jest.fn().mockResolvedValue([
         { uuid: "p1", name: "Ada Lovelace", avatar: { image: "https://example.com/ada.png" }, sharing: { notes: ["note-1"] } },
         { uuid: "p2", name: "Grace Hopper", avatar: { text: "GH" }, sharing: { notes: ["note-1"] } },
       ]),
       navigate: jest.fn(),
-      findNote: jest.fn().mockResolvedValue(null),
+      findNote: findNoteFromHandles(avatarHandles),
     };
     const container = document.createElement("div");
     document.body.appendChild(container);

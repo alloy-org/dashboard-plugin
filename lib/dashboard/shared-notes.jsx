@@ -49,7 +49,7 @@ function useCollaboratorUpdatedNotes({ app, onlyWithTasks, taskDomainUUID }) {
   useEffect(() => {
     let isActive = true;
     setNotes(null);
-    // Fetch the full collaborator-updated list (capped at MAX_SCAN); paging happens client-side.
+    // Fetch every shared note (getPeople + findNote); gating/paging happen client-side.
     findCollaboratorUpdatedNotes({ app, onlyWithTasks, taskDomainUUID }).then(({ notes: results, sharerNames: names }) => {
       if (!isActive) return;
       setNotes(results);
@@ -88,13 +88,16 @@ function usePinnedNotes(app) {
 
 // ----------------------------------------------------------------------------------------------
 // @desc Apply the person filter, float pinned notes to the top, then slice out the current page —
-//   returning null `visibleNotes` while notes are still loading. Pure (no hooks/state).
+//   returning null `visibleNotes` while notes are still loading. Pure (no hooks/state). The default
+//   "All collaborators" view keeps only notes a collaborator updated since we last saw them
+//   (`updatedSinceSeen`); filtering on one person shows EVERY note shared with them, regardless.
 // @param {Object} params - { notes, page, pageSize, pinnedUuids, selectedSharer }.
 // @returns {{currentPage: number, totalPages: number, visibleNotes: Array<Object>|null}}
-// [Claude claude-opus-4-8 (1M context)] Task: extract filter/pin-order/pagination math into a helper
-// Prompt: "Create local functions that split out modular functionality... focused on initializing state"
+// [Claude claude-opus-4-8 (1M context)] Task: gate the default view on updatedSinceSeen; show all of a person's notes when filtered
+// Prompt: "If the user filters on a user, show ALL notes shared with that user... 'more recent active than updated' should only be applied when the user has 'All collaborators' selected"
 function paginateSharedNotes({ notes, page, pageSize, pinnedUuids, selectedSharer }) {
-  const filtered = notes === null ? null : selectedSharer === ALL_SHARERS ? notes
+  const filtered = notes === null ? null : selectedSharer === ALL_SHARERS
+    ? notes.filter(note => note.updatedSinceSeen)
     : notes.filter(({ collaborators }) => collaborators.some(collaborator => collaborator.name === selectedSharer));
   const ordered = filtered === null ? null : orderNotesPinnedFirst(filtered, pinnedUuids);
   const totalPages = ordered === null ? 1 : Math.min(MAX_PAGES, Math.max(1, Math.ceil(ordered.length / pageSize)));

@@ -32,14 +32,21 @@ function buildNoteHandle(overrides = {}) {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Build a mock Amplenote app whose filterNotes returns the supplied handles and whose getPeople
-//   returns the supplied person objects, recording calls to both.
-// @param {Array<Object>} handles - noteHandles to return from filterNotes.
+// @desc Build a mock Amplenote app for the getPeople + findNote sourcing: getPeople returns the
+//   supplied people (whose sharing.notes drive which UUIDs get hydrated), findNote resolves a handle
+//   by uuid (null when absent, modelling a deleted/unreachable note), and filterNotes returns the
+//   has-tasks handles for the onlyWithTasks intersection.
+// @param {Array<Object>} handles - noteHandles findNote can resolve, keyed by uuid.
 // @param {Array<Object>} people - person objects to return from getPeople (defaults to none).
-// [Claude claude-opus-4-8] Task: capture filterNotes/getPeople calls for the shared-notes service
-function buildMockApp(handles, people = []) {
-  return { filterNotes: jest.fn().mockResolvedValue(handles),
-    getPeople: jest.fn().mockResolvedValue(people) };
+// @param {Array<Object>|null} taskHandles - handles filterNotes("taskLists") returns (defaults to handles).
+// [Claude claude-opus-4-8 (1M context)] Task: mock getPeople/findNote/filterNotes for the shared-notes service
+function buildMockApp(handles, people = [], taskHandles = null) {
+  const byUuid = new Map(handles.map(handle => [handle.uuid, handle]));
+  return {
+    getPeople: jest.fn().mockResolvedValue(people),
+    findNote: jest.fn(({ uuid }) => Promise.resolve(byUuid.get(uuid) || null)),
+    filterNotes: jest.fn().mockResolvedValue(taskHandles || handles),
+  };
 }
 
 describe("sharedNotesGroupParam", () => {
@@ -89,76 +96,74 @@ describe("lastUpdatedLabelFromMs", () => {
 });
 
 describe("findCollaboratorUpdatedNotes", () => {
-  it("queries filterNotes by task domain (no shared group) ordered by updated, keeping collaborator edits", async () => {
+  it("hydrates every getPeople-shared note via findNote and returns them newest-updated first, flagged updatedSinceSeen", async () => {
     const handles = [
       buildNoteHandle({ uuid: "a", name: "Alpha", active: agoIso(2 * DAY_MS), changed: agoIso(2 * DAY_MS), updated: agoIso(HOUR_MS) }),
       buildNoteHandle({ uuid: "b", name: "Beta", active: agoIso(2 * DAY_MS), changed: agoIso(2 * DAY_MS), updated: agoIso(2 * DAY_MS) }), // self only (updated==changed==active)
       buildNoteHandle({ uuid: "c", name: "Gamma", active: agoIso(2 * DAY_MS), changed: agoIso(2 * DAY_MS), updated: agoIso(3 * HOUR_MS) }),
     ];
-    const app = buildMockApp(handles);
+    const people = [{ name: "Ada", uuid: "p-ada", sharing: { notes: ["a", "b", "c"] } }];
+    const app = buildMockApp(handles, people);
 
     const { notes } = await findCollaboratorUpdatedNotes({ app, maxNotes: 5, onlyWithTasks: false, taskDomainUUID: TASK_DOMAIN_UUID });
 
-    expect(app.filterNotes).toHaveBeenCalledWith({ taskDomainUUID: TASK_DOMAIN_UUID }, "updated");
-    expect(notes.map(entry => entry.uuid)).toEqual(["a", "c"]);
+    // Each shared UUID is hydrated by findNote; the default view doesn't touch filterNotes.
+    expect(app.findNote).toHaveBeenCalledWith({ uuid: "a" });
+    expect(app.filterNotes).not.toHaveBeenCalled();
+    // ALL shared notes are returned (self-only "b" included, just flagged), sorted by updated desc.
+    expect(notes.map(entry => entry.uuid)).toEqual(["a", "c", "b"]);
+    expect(notes.find(entry => entry.uuid === "b").updatedSinceSeen).toBe(false);
+    expect(notes.find(entry => entry.uuid === "a").updatedSinceSeen).toBe(true);
     expect(notes[0].updatedMs).toBe(new Date(handles[0].updated).getTime());
     // Each entry also carries when the current user last opened the note (`active`) for the 2nd datestamp.
     expect(notes[0].activeMs).toBe(new Date(handles[0].active).getTime());
   });
 
-  it("stops scanning once notes fall outside the 3-month window", async () => {
-    const handles = [
-      buildNoteHandle({ uuid: "recent", changed: agoIso(10 * DAY_MS), updated: agoIso(2 * DAY_MS) }),
-      buildNoteHandle({ uuid: "old", changed: agoIso(200 * DAY_MS), updated: agoIso(120 * DAY_MS) }),
-      buildNoteHandle({ uuid: "also-recent", changed: agoIso(10 * DAY_MS), updated: agoIso(HOUR_MS) }), // never reached
-    ];
-    const app = buildMockApp(handles);
-
-    const { notes } = await findCollaboratorUpdatedNotes({ app, taskDomainUUID: TASK_DOMAIN_UUID });
-
-    expect(notes.map(entry => entry.uuid)).toEqual(["recent"]);
-  });
-
-  it("includes the taskLists group when onlyWithTasks is set and caps results at maxNotes", async () => {
+  it("intersects with the taskLists group when onlyWithTasks is set and caps results at maxNotes", async () => {
     const handles = Array.from({ length: 8 }, (_, index) => buildNoteHandle({
       changed: agoIso(10 * DAY_MS),
       updated: agoIso((index + 1) * HOUR_MS),
       uuid: `note-${ index }`,
     }));
-    const app = buildMockApp(handles);
+    const people = [{ name: "Ada", uuid: "p-ada", sharing: { notes: handles.map(handle => handle.uuid) } }];
+    // Only the first three notes carry tasks, per filterNotes("taskLists").
+    const app = buildMockApp(handles, people, handles.slice(0, 3));
 
-    const { notes } = await findCollaboratorUpdatedNotes({ app, maxNotes: 3, onlyWithTasks: true, taskDomainUUID: TASK_DOMAIN_UUID });
+    const { notes } = await findCollaboratorUpdatedNotes({ app, maxNotes: 2, onlyWithTasks: true, taskDomainUUID: TASK_DOMAIN_UUID });
 
     expect(app.filterNotes).toHaveBeenCalledWith({ group: "taskLists", taskDomainUUID: TASK_DOMAIN_UUID }, "updated");
-    expect(notes).toHaveLength(3);
+    // Intersection leaves note-0..note-2; maxNotes caps the (updated-desc) result at 2.
+    expect(notes.map(entry => entry.uuid)).toEqual(["note-0", "note-1"]);
   });
 
-  it("de-duplicates repeated uuids returned by filterNotes", async () => {
+  it("hydrates each shared uuid once even when several people share it", async () => {
     const handle = buildNoteHandle({ uuid: "dupe", changed: agoIso(10 * DAY_MS), updated: agoIso(HOUR_MS) });
-    const app = buildMockApp([handle, { ...handle }]);
+    const people = [
+      { name: "Ada", uuid: "p-ada", sharing: { notes: ["dupe"] } },
+      { name: "Bea", uuid: "p-bea", sharing: { notes: ["dupe"] } },
+    ];
+    const app = buildMockApp([handle], people);
 
     const { notes } = await findCollaboratorUpdatedNotes({ app, maxNotes: 5, taskDomainUUID: TASK_DOMAIN_UUID });
 
     expect(notes).toHaveLength(1);
+    expect(app.findNote).toHaveBeenCalledTimes(1);
   });
 
-  it("skips recent notes that are not shared with anyone", async () => {
-    const handles = [
-      buildNoteHandle({ uuid: "solo", shared: false, changed: agoIso(10 * DAY_MS), updated: agoIso(HOUR_MS) }),
-      buildNoteHandle({ uuid: "shared", shared: false, changed: agoIso(10 * DAY_MS), updated: agoIso(HOUR_MS) }),
-    ];
-    const people = [{ name: "Ada", uuid: "p-ada", sharing: { notes: ["shared"] } }];
+  it("drops shared notes that findNote cannot resolve", async () => {
+    const handles = [buildNoteHandle({ uuid: "a", changed: agoIso(10 * DAY_MS), updated: agoIso(HOUR_MS) })];
+    const people = [{ name: "Ada", uuid: "p-ada", sharing: { notes: ["a", "gone"] } }];
     const app = buildMockApp(handles, people);
 
     const { notes } = await findCollaboratorUpdatedNotes({ app, taskDomainUUID: TASK_DOMAIN_UUID });
 
-    expect(notes.map(entry => entry.uuid)).toEqual(["shared"]);
+    expect(notes.map(entry => entry.uuid)).toEqual(["a"]);
   });
 
   it("resolves collaborator names and the alphabetical sharer list from getPeople", async () => {
     const handles = [
       buildNoteHandle({ uuid: "n1", changed: agoIso(10 * DAY_MS), updated: agoIso(HOUR_MS) }),
-      buildNoteHandle({ uuid: "n2", changed: agoIso(10 * DAY_MS), updated: agoIso(HOUR_MS) }),
+      buildNoteHandle({ uuid: "n2", changed: agoIso(10 * DAY_MS), updated: agoIso(2 * HOUR_MS) }),
     ];
     const people = [
       { name: "Zoe", uuid: "p-zoe", sharing: { notes: ["n1"] } },
@@ -188,8 +193,9 @@ describe("sharerNamesFromIndex", () => {
 });
 
 describe("findCollaboratorUpdatedNotes sharer filter list", () => {
-  it("lists only collaborators who appear on a returned note (not everyone in getPeople)", async () => {
-    // "a" is collaborator-updated (kept); "b" is self-only (dropped). Bea shares only "b".
+  it("lists every collaborator with a resolvable shared note, so any can be filtered on", async () => {
+    // "a" is collaborator-updated; "b" is self-only. Both are returned (the widget gates the default
+    // view), so both Ada and Bea are offered in the filter — picking Bea will show her (self-only) note.
     const handles = [
       buildNoteHandle({ uuid: "a", active: agoIso(2 * DAY_MS), changed: agoIso(2 * DAY_MS), updated: agoIso(HOUR_MS) }),
       buildNoteHandle({ uuid: "b", active: agoIso(2 * DAY_MS), changed: agoIso(2 * DAY_MS), updated: agoIso(2 * DAY_MS) }),
@@ -202,7 +208,7 @@ describe("findCollaboratorUpdatedNotes sharer filter list", () => {
 
     const { sharerNames } = await findCollaboratorUpdatedNotes({ app, taskDomainUUID: TASK_DOMAIN_UUID });
 
-    expect(sharerNames).toEqual(["Ada"]);
+    expect(sharerNames).toEqual(["Ada", "Bea"]);
   });
 });
 
@@ -253,13 +259,15 @@ describe("findCollaboratorUpdatedNotes collaborator resolution", () => {
     const { notes } = await findCollaboratorUpdatedNotes({ app, maxNotes: 5, taskDomainUUID: TASK_DOMAIN_UUID });
 
     expect(app.getPeople).toHaveBeenCalled();
+    // "other" is shared (by p2/p3) but findNote can't resolve it, so only "a" is returned.
+    expect(notes.map(entry => entry.uuid)).toEqual(["a"]);
     expect(notes[0].collaborators).toEqual([
       { avatar: { image: "https://example.com/ada.png" }, name: "Ada Lovelace" },
       { avatar: { text: "GH" }, name: "Grace Hopper" },
     ]);
   });
 
-  it("returns [] collaborators for a note nobody is indexed against (but flagged shared)", async () => {
+  it("returns no notes when getPeople reports nobody (nothing is shared)", async () => {
     const handles = [
       buildNoteHandle({ uuid: "a", name: "Alpha", changed: agoIso(10 * DAY_MS), updated: agoIso(HOUR_MS) }),
     ];
@@ -267,7 +275,8 @@ describe("findCollaboratorUpdatedNotes collaborator resolution", () => {
 
     const { notes } = await findCollaboratorUpdatedNotes({ app, maxNotes: 5, taskDomainUUID: TASK_DOMAIN_UUID });
 
-    expect(notes[0].collaborators).toEqual([]);
+    expect(notes).toEqual([]);
+    expect(app.findNote).not.toHaveBeenCalled();
   });
 });
 
