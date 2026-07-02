@@ -21,10 +21,13 @@ function iso(ms) {
 // [Claude claude-opus-4-8] Task: stub filterNotes/getPeople/navigate for Shared Notes widget rendering
 // Prompt: "Build an index of person.sharing.notes from the getPeople method"
 function buildMockApp() {
+  const now = Date.now();
+  // Ordered newest-updated first, matching how filterNotes("updated") returns them. "Self Only" is a
+  // shared note we last changed/opened after its last update, so updatedSinceSeen drops it.
   const baseHandles = [
-    { active: iso(Date.now() - 2 * DAY_MS), changed: iso(1000), name: "Roadmap", updated: iso(Date.now()), uuid: "note-1" },
-    { active: iso(Date.now() - 20 * DAY_MS), changed: iso(8000), name: "Self Only", updated: iso(8000), uuid: "note-2" }, // not collaborator-updated
-    { active: iso(Date.now() - 5 * DAY_MS), changed: iso(2000), name: "Specs", updated: iso(Date.now() - 3 * 60 * 60 * 1000), uuid: "note-3" },
+    { active: iso(now - 2 * DAY_MS), changed: iso(now - 10 * DAY_MS), name: "Roadmap", updated: iso(now), uuid: "note-1" },
+    { active: iso(now - 5 * DAY_MS), changed: iso(now - 10 * DAY_MS), name: "Specs", updated: iso(now - 3 * 60 * 60 * 1000), uuid: "note-3" },
+    { active: iso(now - DAY_MS), changed: iso(now - DAY_MS), name: "Self Only", shared: true, updated: iso(now - 2 * DAY_MS), uuid: "note-2" },
   ];
   const people = [
     { name: "Ada Lovelace", uuid: "p-ada", sharing: { notes: ["note-1"] } },
@@ -60,7 +63,7 @@ describe("SharedNotesWidget", () => {
   it("lists collaborator-updated notes with their titles, collaborators, and a last-updated label", async () => {
     const { app, container } = await renderWidget();
 
-    expect(app.filterNotes).toHaveBeenCalledWith({ group: "shared", taskDomainUUID: TASK_DOMAIN_UUID }, "updated");
+    expect(app.filterNotes).toHaveBeenCalledWith({ taskDomainUUID: TASK_DOMAIN_UUID }, "updated");
     const titles = [...container.querySelectorAll(".shared-note-title")].map(node => node.textContent);
     expect(titles).toEqual(["Roadmap", "Specs"]);
     const collaborators = [...container.querySelectorAll(".shared-note-collaborators")].map(node => node.textContent);
@@ -69,7 +72,7 @@ describe("SharedNotesWidget", () => {
     expect(lastUpdated.textContent).toBe("Updated 3h ago");
     expect(lastUpdated.getAttribute("title")).toBe("When a collaborator last updated this note");
     // When the current user last opened the note ("active", 5d ago) is shown as a second datestamp.
-    expect(container.querySelectorAll(".shared-note-opened")[1].textContent).toBe("Opened 5d ago");
+    expect(container.querySelectorAll(".shared-note-opened")[1].textContent).toBe("You last opened 5d ago");
   });
 
   it("shows the person filter (with the has-tasks toggle on the same row) when 2+ people have shared", async () => {
@@ -114,7 +117,7 @@ describe("SharedNotesWidget", () => {
     await act(async () => {
       checkbox.click();
     });
-    expect(app.filterNotes).toHaveBeenLastCalledWith({ group: "shared,taskLists", taskDomainUUID: TASK_DOMAIN_UUID }, "updated");
+    expect(app.filterNotes).toHaveBeenLastCalledWith({ group: "taskLists", taskDomainUUID: TASK_DOMAIN_UUID }, "updated");
   });
 
   it("renders getPeople avatars: an <img> when a person has an avatar image, a text badge otherwise", async () => {
