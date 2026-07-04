@@ -4,8 +4,8 @@ import { _loadSeenUuidsMap, _maxTasksFromGrid, _recordSeenUuids, _taskGenerateCo
   applyDreamTaskAnalysisResult, fetchDreamTaskSuggestions, handleOpenSettings, handleTaskClick,
   requestDreamTaskRefreshExcludingRecent, shouldFetchMoreTasksAfterGridGrowth, updateDreamTaskTaskMetadata,
 } from "dream-task-internals";
-import { buildAvailableTimeSlots, fetchSchedulingOccupancy, scheduledDreamTaskResultFromStartAt,
-  startAtSecondsFromDateAndMinutes } from "dream-task-schedule";
+import { buildAvailableTimeSlots, buildFullDaySlots, fetchSchedulingOccupancy,
+  scheduledDreamTaskResultFromStartAt, startAtSecondsFromDateAndMinutes } from "dream-task-schedule";
 import LlmProviderSelector from "llm-provider-selector";
 import NoConfigUpsell from "no-config-upsell";
 import { pluginSettings } from "plugin-data";
@@ -75,6 +75,70 @@ function _ratingTier(rating) {
 
 function _taskKey(task) {
   return task?.suggestionId || task?.uuid || `${task?.title || 'untitled'}::${task?.rating || 0}::${task?.explanation || ''}`;
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Drive the "Pick when to schedule this task" dialog and resolve a chosen startAt (unix seconds).
+//   The primary prompt pins the date to Today (shown as a static field, not a picker) and lists only the
+//   free 30-minute slots still ahead today, plus a "Schedule for a future date" action button. Picking
+//   that action (or having no free slots left today) hands off to `_resolveFutureScheduleStartAt`. Returns
+//   null when the user cancels or the selection is invalid (an alert is shown for the latter).
+// @param {object} app - Amplenote app bridge.
+// @param {Date} now - Current local time, the basis for "Today".
+// @param {Array<{label: string, value: number}>} todaySlots - Free-and-future slots for today.
+// @returns {Promise<number|null>}
+async function _resolveScheduleStartAt(app, now, todaySlots) {
+  const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  const todayDateSec = Math.floor(localMidnight.getTime() / 1000);
+
+  if (todaySlots.length > 0) {
+    const todayResult = await app.prompt('Pick when to schedule this task. Only free times still ahead today '
+      + 'are listed — use the button below to choose a future date instead.', {
+      inputs: [
+        { label: 'Date', type: 'string', value: 'Today' },
+        { label: 'Time', options: todaySlots, type: 'select', value: todaySlots[0].value },
+      ],
+      actions: [{ icon: 'event', label: 'Schedule for a future date', value: 'future' }],
+    });
+    if (!todayResult) return null;
+    if (todayResult[todayResult.length - 1] !== 'future') {
+      const startAt = startAtSecondsFromDateAndMinutes(todayDateSec, todayResult[1]);
+      if (startAt == null) {
+        logIfEnabled('[DreamTask] Schedule: invalid today time returned by prompt', { todayResult });
+        await app.alert('Could not schedule: the selected time was invalid.');
+      }
+      return startAt;
+    }
+  }
+
+  return _resolveFutureScheduleStartAt(app, localMidnight);
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Secondary schedule prompt: a date picker (defaulting to tomorrow) plus every 30-minute slot from
+//   6am to 8pm. No occupancy filtering is applied here because the target day is not yet known. Returns
+//   the chosen startAt in unix seconds, or null on cancel/invalid selection.
+// @param {object} app - Amplenote app bridge.
+// @param {Date} localMidnight - Local midnight of the current day, used to derive the default (tomorrow).
+// @returns {Promise<number|null>}
+async function _resolveFutureScheduleStartAt(app, localMidnight) {
+  const tomorrow = new Date(localMidnight.getFullYear(), localMidnight.getMonth(), localMidnight.getDate() + 1, 0, 0, 0);
+  const slots = buildFullDaySlots();
+  const futureResult = await app.prompt('Pick a future date and time to schedule this task.', {
+    inputs: [
+      { label: 'Date', type: 'date', value: Math.floor(tomorrow.getTime() / 1000) },
+      { label: 'Time', options: slots, type: 'select', value: slots[0].value },
+    ],
+  });
+  if (!futureResult) return null;
+  const [dateSec, timeMinutes] = futureResult;
+  if (dateSec == null || timeMinutes == null) return null;
+  const startAt = startAtSecondsFromDateAndMinutes(dateSec, timeMinutes);
+  if (startAt == null) {
+    logIfEnabled('[DreamTask] Schedule: invalid future date/time returned by prompt', { dateSec, timeMinutes });
+    await app.alert('Could not schedule: the selected date or time was invalid.');
+  }
+  return startAt;
 }
 
 function widgetIcon() {
@@ -405,29 +469,9 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks) {
     event.preventDefault();
     const { events, tasks: scheduledTasks } = await fetchSchedulingOccupancy(app);
     const now = new Date();
-    const localMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-    const defaultDateSec = Math.floor(localMidnight.getTime() / 1000);
-    const slots = buildAvailableTimeSlots(now, events, scheduledTasks);
-    if (slots.length === 0) {
-      await app.alert('No available 30-minute slots today. Please schedule manually.');
-      return;
-    }
-    const promptResult = await app.prompt('Pick when to schedule this task. Times listed are free today; '
-      + 'choose a different date only if those conflicts are acceptable.', {
-      inputs: [
-        { label: 'Date', type: 'date', value: defaultDateSec },
-        { label: 'Time', options: slots, type: 'select', value: slots[0].value },
-      ],
-    });
-    if (!promptResult) return;
-    const [dateSec, timeMinutes] = promptResult;
-    if (dateSec == null || timeMinutes == null) return;
-    const startAt = startAtSecondsFromDateAndMinutes(dateSec, timeMinutes);
-    if (startAt == null) {
-      logIfEnabled('[DreamTask] Schedule: invalid date/time returned by prompt', { dateSec, timeMinutes });
-      await app.alert('Could not schedule: the selected date or time was invalid.');
-      return;
-    }
+    const todaySlots = buildAvailableTimeSlots(now, events, scheduledTasks);
+    const startAt = await _resolveScheduleStartAt(app, now, todaySlots);
+    if (startAt == null) return;
     const result = await scheduledDreamTaskResultFromStartAt(app, defaultNoteUUID, startAt, dreamTask);
     if (!result.taskUuid) {
       logIfEnabled('[DreamTask] Schedule failed', result);
