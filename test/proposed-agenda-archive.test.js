@@ -134,15 +134,19 @@ describe("proposed-agenda-archive", () => {
 function buildGenerationApp(activitiesFromCall = null) {
   setPluginData({ context: {}, settings: { [SETTING_KEYS.LLM_PROVIDER_MODEL]: PROVIDER } });
   let llmCalls = 0;
-  return buildNoteApp({
+  const now = Math.floor(DATE.getTime() / 1000);
+  // Live task state getTask reads from, so tests can complete/delete a task after it has been cached as a suggestion.
+  const taskState = new Map([
+    ["task-1", { content: "Ship the thing", noteUUID: "note-1", uuid: "task-1", updatedAt: now }],
+    ["task-2", { content: "Follow up with partner", noteUUID: "note-2", uuid: "task-2", updatedAt: now }],
+    ["task-3", { content: "Draft the proposal", noteUUID: "note-3", uuid: "task-3", updatedAt: now }],
+  ]);
+  const app = buildNoteApp({
     alert: jest.fn(),
     filterNotes: jest.fn(async () => []),
     getTaskDomains: jest.fn(async () => [{ name: "Work", uuid: "dom-work" }]),
-    getTaskDomainTasks: jest.fn(async () => [
-      { content: "Ship the thing", noteUUID: "note-1", uuid: "task-1", updatedAt: Math.floor(DATE.getTime() / 1000) },
-      { content: "Follow up with partner", noteUUID: "note-2", uuid: "task-2",
-        updatedAt: Math.floor(DATE.getTime() / 1000) },
-    ]),
+    getTaskDomainTasks: jest.fn(async () => [...taskState.values()].filter(task => !task.completedAt && !task.dismissedAt)),
+    getTask: jest.fn(async uuid => taskState.get(uuid) || null),
     callPlugin: jest.fn(async () => {
       llmCalls += 1;
       const activities = activitiesFromCall ? activitiesFromCall(llmCalls) : [
@@ -152,6 +156,9 @@ function buildGenerationApp(activitiesFromCall = null) {
       return { activities };
     }),
   });
+  app._completeTask = uuid => { const task = taskState.get(uuid); if (task) task.completedAt = now; };
+  app._deleteTask = uuid => taskState.delete(uuid);
+  return app;
 }
 
 // [Claude claude-opus-4-8 (1M context)] Generated tests for: cache-served vs. regenerated proposed agendas
@@ -225,5 +232,85 @@ describe("generateProposedAgenda caching + regeneration", () => {
     expect(consoleSpy).toHaveBeenCalledWith("[proposed-agenda] discarding LLM activity without extant taskUuid",
       { taskUuid: "made-up-task", title: "Fake task" });
     consoleSpy.mockRestore();
+  });
+});
+
+// Two-call schedule builder: the first generation caches these suggestions; the second (reconciliation) re-query
+// swaps in task-3 for the 09:00 slot so replacement wiring can be asserted.
+const TWO_CALL_SCHEDULES = call => call === 1
+  ? [{ durationMinutes: 60, reason: "ship", startTime: "09:00", taskUuid: "task-1", title: "Morning ship" },
+     { durationMinutes: 30, reason: "follow", startTime: "11:00", taskUuid: "task-2", title: "Midday follow" }]
+  : [{ durationMinutes: 60, reason: "draft", startTime: "09:00", taskUuid: "task-3", title: "Replacement draft" },
+     { durationMinutes: 30, reason: "follow", startTime: "11:00", taskUuid: "task-2", title: "Midday follow" }];
+
+// [Claude claude-opus-4-8 (1M context)] Generated tests for: revalidating cached suggestions against live tasks
+// A pinned targetDate keeps the resolved day (and thus the cache-record identity) deterministic regardless of the
+// 4pm cutoff / weekend-skip in resolveProposedAgendaDate.
+describe("generateProposedAgenda cached-suggestion revalidation", () => {
+  it("serves the cached agenda without a second LLM call while every suggestion's task is still open", async () => {
+    const app = buildGenerationApp();
+    await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+
+    const cached = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    expect(cached.fromCache).toBe(true);
+    expect(cached.activities.map(a => a.title)).toEqual(["Gen 1 morning", "Gen 1 midday"]);
+    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+    expect(app.getTask).toHaveBeenCalledWith("task-1");
+    expect(app.getTask).toHaveBeenCalledWith("task-2");
+  });
+
+  it("drops a completed suggestion and re-queries the LLM to replace it in the same slot", async () => {
+    const app = buildGenerationApp(TWO_CALL_SCHEDULES);
+    await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    app._completeTask("task-1"); // the user finished the 09:00 suggestion since it was proposed
+
+    const reconciled = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    expect(app.callPlugin).toHaveBeenCalledTimes(2);
+    expect(reconciled.activities.map(a => a.taskUuid)).toEqual(["task-3", "task-2"]);
+    expect(reconciled.activities.map(a => a.title)).toEqual(["Replacement draft", "Midday follow"]);
+    // The replacement inherits the vacated 09:00 slot; the completed task-1 is gone from the note.
+    expect(reconciled.activities[0]).toMatchObject({ startTime: "09:00", startMinutes: 540, durationMinutes: 60 });
+    const persisted = storedRecords(app, DATE)[0].proposedTasks;
+    expect(persisted.map(t => t.taskUuid)).toEqual(["task-3", "task-2"]);
+  });
+
+  it("drops a suggestion whose task no longer exists", async () => {
+    const app = buildGenerationApp(TWO_CALL_SCHEDULES);
+    await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    app._deleteTask("task-1"); // task was deleted entirely; getTask now resolves null
+
+    const reconciled = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    expect(app.callPlugin).toHaveBeenCalledTimes(2);
+    expect(reconciled.activities.map(a => a.taskUuid)).toEqual(["task-3", "task-2"]);
+  });
+
+  it("simply drops a completed suggestion when the LLM offers no usable replacement", async () => {
+    // The re-query only re-proposes task-2 (already kept) and the now-completed task-1, so nothing can fill the slot.
+    const app = buildGenerationApp(() => [
+      { durationMinutes: 60, reason: "ship", startTime: "09:00", taskUuid: "task-1", title: "Morning ship" },
+      { durationMinutes: 30, reason: "follow", startTime: "11:00", taskUuid: "task-2", title: "Midday follow" }]);
+    await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    app._completeTask("task-1");
+
+    const reconciled = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    expect(reconciled.activities.map(a => a.taskUuid)).toEqual(["task-2"]);
+    expect(storedRecords(app, DATE)[0].proposedTasks.map(t => t.taskUuid)).toEqual(["task-2"]);
+  });
+
+  it("does not revalidate or replace suggestions the user already scheduled, even if the task is completed",
+      async () => {
+    const app = buildGenerationApp(TWO_CALL_SCHEDULES);
+    const first = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    const scheduledKey = proposedTaskKey(first.activities.find(a => a.taskUuid === "task-1"));
+    await updateProposedTaskStatuses(app, { activityKeys: [scheduledKey], date: DATE, priorityKey: PRIORITY,
+      providerEm: PROVIDER, scheduledEm: PROPOSED_TASK_STATUS.SCHEDULED });
+    app._completeTask("task-1"); // scheduled-then-completed: it should remain, greyed, not be re-queried
+
+    const reconciled = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+    expect(reconciled.fromCache).toBe(true);
+    expect(reconciled.activities.map(a => a.taskUuid)).toEqual(["task-1", "task-2"]);
+    expect(reconciled.scheduledKeys).toEqual([scheduledKey]);
   });
 });
