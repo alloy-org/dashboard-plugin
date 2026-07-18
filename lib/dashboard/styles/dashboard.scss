@@ -28,6 +28,10 @@ html {
     background: $color-bg-page;
     color: $color-text;
     font-family: $font-sans;
+
+    button {
+      font-family: inherit;
+    }
   }
 }
 

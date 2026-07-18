@@ -44,8 +44,7 @@
     border: 1px solid $color-border;
     border-radius: $radius-sm;
     color: $color-text;
-    font-family: inherit;
-    font-size: 0.8rem;
+    font-size: 13px;
     min-width: 0;
     padding: 2px $sp-xs;
   }
@@ -131,7 +130,6 @@
     display: flex;
     flex: 1;
     flex-direction: column;
-    font-family: inherit;
     gap: 2px;
     min-width: 0;
     padding: $sp-sm $sp-md $sp-sm $sp-sm;
@@ -141,7 +139,7 @@
   /* Title abbreviated to a single line when it would otherwise consume more than one. */
   .shared-note-title {
     color: $color-text;
-    font-size: 0.85rem;
+    font-size: 13px;
     font-weight: 500;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -171,7 +169,7 @@
       border-radius: 50%;
       box-sizing: border-box;
       display: inline-flex;
-      font-size: 0.6rem;
+      font-size: 11px;
       font-weight: 600;
       height: 1.25rem;
       justify-content: center;

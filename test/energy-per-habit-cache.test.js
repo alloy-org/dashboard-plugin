@@ -42,21 +42,34 @@ function makeApp({ notes = {} } = {}) {
 }
 
 const ROWS = [
-  { label: "Morning exercise", count: 12, doneMoods: [1, 2, 0.5], offMoods: [-1, 0] },
-  { label: "Pipe | in name", count: 3, doneMoods: [1], offMoods: [2, -2] },
+  { label: "Morning exercise", count: 12, weekStreak: 7, doneMoods: [1, 2, 0.5], offMoods: [-1, 0] },
+  { label: "Pipe | in name", count: 3, weekStreak: 0, doneMoods: [1], offMoods: [2, -2] },
 ];
 
 describe("monthTableMarkdown + monthsFromNoteContent", () => {
-  test("round-trips rows through a rendered note section", () => {
+  test("round-trips rows (incl. the weeks-streak column) through a rendered note section", () => {
     const note = `# ${HABIT_CACHE_NOTE_NAME}\n\n## May 2026\n\n${monthTableMarkdown(ROWS)}\n`;
     const months = monthsFromNoteContent(note);
     const rows = months.get("2026-05").rows;
     expect(rows).toHaveLength(2);
     expect(rows[0].label).toBe("Morning exercise");
     expect(rows[0].count).toBe(12);
+    expect(rows[0].weekStreak).toBe(7);
     expect(rows[0].doneMoods).toEqual([1, 2, 0.5]);
     expect(rows[0].offMoods).toEqual([-1, 0]);
     expect(rows[1].label).toBe("Pipe | in name"); // pipe survives escape/unescape
+  });
+
+  test("parses legacy 4-column rows (pre weeks-streak) with weekStreak defaulting to 0", () => {
+    const legacy = `# x\n\n## May 2026\n\n| Task | Completions | Mood on done days | Mood on off days |\n`
+      + `| --- | --- | --- | --- |\n| Old habit | 6 | [1, 2] | [-1] |\n`;
+    const rows = monthsFromNoteContent(legacy).get("2026-05").rows;
+    expect(rows).toHaveLength(1);
+    expect(rows[0].label).toBe("Old habit");
+    expect(rows[0].count).toBe(6);
+    expect(rows[0].weekStreak).toBe(0);
+    expect(rows[0].doneMoods).toEqual([1, 2]);
+    expect(rows[0].offMoods).toEqual([-1]);
   });
 
   test("parses multiple month sections keyed by YYYY-MM", () => {

@@ -134,7 +134,7 @@ $planning-transition-duration: 0.15s;
   /* Date: 2026-03-08 | Model: claude-4.6-opus-high-thinking */
   .month-content-text {
     color: $color-text;
-    font-size: 0.8rem;
+    font-size: 13px;
     line-height: 1.4;
 
     p {
@@ -277,8 +277,6 @@ $planning-transition-duration: 0.15s;
     border: 1px solid $color-border;
     border-radius: $radius-sm;
     flex: 1;
-    font-family: monospace;
-    font-size: 0.8rem;
     line-height: 1.5;
     min-height: 180px;
     padding: $sp-md;

@@ -5,8 +5,8 @@
  *   and cache-backed monthly aggregation"
  */
 import {
-  aggregateMonthlyHabits, analyzeHabitMoodDeltas, computeMonthlyAggregates, formatDelta, isHabitTask,
-  monthKeyFromMonthLabel, monthLabelFromMonthKey, moodByDayFromRatings, trailingMonthKeys,
+  aggregateMonthlyHabits, analyzeHabitMoodDeltas, computeMonthlyAggregates, formatDelta, habitGroupKey,
+  isHabitTask, monthKeyFromMonthLabel, monthLabelFromMonthKey, moodByDayFromRatings, trailingMonthKeys,
 } from "energy-per-habit-analysis";
 import { dateKeyFromDateInput } from "util/date-utility";
 
@@ -156,6 +156,52 @@ describe("computeMonthlyAggregates + aggregateMonthlyHabits", () => {
     expect(habits[0].completions).toBe(5);                   // 2 (June) + 3 (July)
     expect(habits[0].avgMoodOnDone).toBeCloseTo(2);
     expect(habits[0].delta).toBeGreaterThan(0);
+  });
+});
+
+describe("consecutive-weeks streak", () => {
+  // 8 completions spaced exactly one week apart (same weekday) => 8 distinct, consecutive Monday-weeks.
+  const today = new Date(2026, 6, 15); // Jul 15 2026
+  const doneDays = [0, 7, 14, 21, 28, 35, 42, 49];
+
+  function weeklyWalk() {
+    const tasks = doneDays.map(d => task("Weekly walk", d, today));
+    const moods = doneDays.map(d => mood(1, d, today));
+    for (const d of [3, 10, 17, 24, 31, 38, 45]) moods.push(mood(-1, d, today)); // off-day moods for a delta
+    return { tasks, moods };
+  }
+
+  test("accumulates one per consecutive completed week across months", () => {
+    const { tasks, moods } = weeklyWalk();
+    const months = computeMonthlyAggregates({ completedTasks: tasks, moodRatings: moods,
+      monthKeys: trailingMonthKeys(today, 3), today });
+    const habits = aggregateMonthlyHabits(months);
+    // A day-based streak would read ~1; the week streak reflects the ~8-week run.
+    expect(habits[0].weekStreak).toBeGreaterThanOrEqual(7);
+  });
+
+  test("seeds from the prior cached month so streaks persist beyond the fetched window", () => {
+    // Only July is (re)computed; the streak continues from a seeded prior-month value.
+    const july = [0, 7, 14].map(d => task("Seeded walk", d, today));
+    const moods = [...[0, 7, 14].map(d => mood(1, d, today)), mood(-1, 3, today), mood(-1, 10, today)];
+    const seeded = computeMonthlyAggregates({ completedTasks: july, moodRatings: moods, monthKeys: ["2026-07"],
+      today, priorStreakByKey: new Map([[habitGroupKey("Seeded walk"), 5]]) });
+    const unseeded = computeMonthlyAggregates({ completedTasks: july, moodRatings: moods, monthKeys: ["2026-07"], today });
+    const seededStreak = seeded.get("2026-07").rows.find(r => r.label === "Seeded walk").weekStreak;
+    const baseStreak = unseeded.get("2026-07").rows.find(r => r.label === "Seeded walk").weekStreak;
+    expect(seededStreak).toBe(baseStreak + 5); // prior-month streak carried forward
+  });
+
+  test("a fully-elapsed week with no completion resets the streak", () => {
+    // Weeks completed then a gap week then resume: streak should reflect only the trailing run.
+    const days = [0, 7, 21, 28, 35]; // gap at ~14 days back (one missed week)
+    const tasks = days.map(d => task("Gappy walk", d, today));
+    const moods = [...days.map(d => mood(1, d, today)), mood(-1, 3, today), mood(-1, 10, today)];
+    const months = computeMonthlyAggregates({ completedTasks: tasks, moodRatings: moods,
+      monthKeys: trailingMonthKeys(today, 3), today });
+    const habits = aggregateMonthlyHabits(months, { minMoodDays: 1 });
+    // Trailing run is the two most-recent weeks (0 and 7 days back), the gap having reset the earlier run.
+    expect(habits[0].weekStreak).toBe(2);
   });
 });
 

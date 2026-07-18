@@ -27,7 +27,6 @@ $eph-row-gap: 14px;
 
   .eph-title {
     color: $color-text;
-    font-family: $font-serif;
     font-size: 1.6rem;
     font-weight: 600;
     line-height: 1.15;
@@ -100,16 +99,26 @@ $eph-row-gap: 14px;
 
   .eph-row-label {
     color: $color-text;
-    font-size: 0.95rem;
-    font-weight: 600;
+    font-size: 13px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
+  /* Clickable label (habit has a note reference) — navigates to the task's note on click. */
+  .eph-row-label--link {
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      color: $color-accent;
+      text-decoration: underline;
+    }
+  }
+
   .eph-row-meta {
     color: $color-text-muted;
-    font-size: 0.72rem;
+    font-size: 12px;
     margin-top: 1px;
   }
 

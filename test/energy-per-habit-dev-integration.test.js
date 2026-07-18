@@ -42,9 +42,9 @@ describe("Energy Per Habit end-to-end against the dev app", () => {
 
     const note = cacheNoteContent(path.join(tmp, "notes"));
     expect(note).not.toBeNull();
-    // Current month section + the prescribed 4-column table header.
+    // Current month section + the prescribed table header (now including the weeks-streak column).
     expect(note).toContain(`## ${monthLabelFromMonthKey(monthKeyFromDate(new Date()))}`);
-    expect(note).toContain("| Task | Completions | Mood on done days | Mood on off days |");
+    expect(note).toContain("| Task | Completions | Weeks streak | Mood on done days | Mood on off days |");
     // Multiple month sections across the trailing year.
     const monthSections = (note.match(/^##\s+\w+\s+\d{4}\s*$/gm) || []).length;
     expect(monthSections).toBeGreaterThanOrEqual(6);

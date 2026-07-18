@@ -43,7 +43,6 @@
     color: inherit;
     cursor: pointer;
     display: flex;
-    font-family: inherit;
     gap: $sp-sm;
     justify-content: space-between;
     padding: $sp-sm $sp-md;
@@ -54,7 +53,7 @@
   .note-name {
     color: $color-text;
     flex: 1;
-    font-size: 0.85rem;
+    font-size: 13px;
     font-weight: 500;
     overflow: hidden;
     text-overflow: ellipsis;

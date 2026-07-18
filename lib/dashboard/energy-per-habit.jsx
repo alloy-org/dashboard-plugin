@@ -4,8 +4,9 @@
  * Task: Energy Per Habit widget — mood delta per habit over the trailing ~365 days
  * Prompt summary: "new energy-per-habit component styled like the 'Mood delta per habit' mockup"
  */
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import WidgetWrapper from "widget-wrapper";
+import { noteUrlFromUUID } from "app-util";
 import { widgetTitleFromId } from "constants/settings";
 import { logIfEnabled } from "util/log";
 import { formatDelta, HABIT_ANALYSIS_WINDOW_DAYS } from "energy-per-habit-analysis";
@@ -46,21 +47,43 @@ function habitIcon(label) {
 }
 
 // ------------------------------------------------------------------------------------------
-// @desc Render a single habit row: icon, label, "N/window days · X-day streak" meta, a diverging
-//   bar (right of the zero axis for positive delta, left + magenta for negative), and the value.
-// @param {Object} props - { habit, windowDays, maxAbsDelta }
+// @desc Human "ongoing weeks completed" streak label. A live streak reads "N-week streak"; zero reads as no
+//   active streak so a stale row isn't mislabeled as a fresh one.
+// @param {number} weeks - Consecutive weeks the habit was completed at least once (ending now).
+// @returns {string}
+function weekStreakLabel(weeks) {
+  const count = Number(weeks) || 0;
+  if (count <= 0) return 'no active streak';
+  return `${count}-week streak`;
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc Render a single habit row: icon, label, "N/window days · X-week streak" meta, a diverging bar (right
+//   of the zero axis for positive delta, left + magenta for negative), and the value. When the habit carries
+//   a note reference the label is a click-through that opens the task's note, and its title shows the full
+//   task text on hover.
+// @param {Object} props - { habit, windowDays, maxAbsDelta, onOpen }
 // @returns {JSX.Element}
-function HabitRow({ habit, windowDays, maxAbsDelta }) {
+function HabitRow({ habit, windowDays, maxAbsDelta, onOpen }) {
   const positive = habit.delta >= 0;
   const widthPct = maxAbsDelta > 0 ? Math.min(100, (Math.abs(habit.delta) / maxAbsDelta) * 100) : 0;
-  const streakLabel = `${habit.streak}-day streak`;
+  const clickable = Boolean(habit.noteUUID);
+  const fullText = habit.fullText || habit.label;
+  const labelClass = `eph-row-label${clickable ? ' eph-row-label--link' : ''}`;
   return (
     <div className="eph-row">
       <div className="eph-row-lead">
         <span className="eph-row-icon" aria-hidden="true">{habitIcon(habit.label)}</span>
         <div className="eph-row-text">
-          <div className="eph-row-label" title={habit.label}>{habit.label}</div>
-          <div className="eph-row-meta">{`${habit.daysDone}/${windowDays} days · ${streakLabel}`}</div>
+          <div
+            className={labelClass}
+            title={fullText}
+            role={clickable ? 'link' : undefined}
+            tabIndex={clickable ? 0 : undefined}
+            onClick={clickable ? () => onOpen(habit) : undefined}
+            onKeyDown={clickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(habit); } } : undefined}
+          >{habit.label}</div>
+          <div className="eph-row-meta">{`${habit.daysDone}/${windowDays} days · ${weekStreakLabel(habit.weekStreak)}`}</div>
         </div>
       </div>
       <div className="eph-row-track">
@@ -124,6 +147,12 @@ export default function EnergyPerHabitWidget({ app }) {
     [rows]
   );
 
+  // Open the note containing the habit's most-recent completed task (matches graveyard's note navigation).
+  const onOpenHabit = useCallback((habit) => {
+    if (!app || !habit?.noteUUID) return;
+    app.navigate(noteUrlFromUUID(habit.noteUUID));
+  }, [app]);
+
   const windowDays = analysis?.windowDays || HABIT_ANALYSIS_WINDOW_DAYS;
 
   if (loading) {
@@ -154,7 +183,7 @@ export default function EnergyPerHabitWidget({ app }) {
         <div className="eph-zero-line"><span className="eph-zero-label">0</span></div>
         <div className="eph-rows">
           {rows.map(habit => (
-            <HabitRow key={habit.key} habit={habit} windowDays={windowDays} maxAbsDelta={maxAbsDelta} />
+            <HabitRow key={habit.key} habit={habit} windowDays={windowDays} maxAbsDelta={maxAbsDelta} onOpen={onOpenHabit} />
           ))}
         </div>
       </div>
