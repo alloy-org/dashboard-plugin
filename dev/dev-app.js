@@ -248,15 +248,115 @@ function _buildSampleTasks() {
     { uuid: "dev-old-29", content: "Automate database backup verification",          createdAt: nowSec - 260 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-7mo", victoryValue: 5  },
   ];
 
-  return [...completedTasks, ...newTasks, ...staleTasks].map(task => ({
+  return [...completedTasks, ...newTasks, ...staleTasks, ..._buildHabitTasks(nowSec)].map(task => ({
     important: false,
     urgent: false,
     completedAt: null,
     deadline: null,
     dismissedAt: null,
     startAt: null,
+    repeat: null,
     ...task,
   }));
+}
+
+// ---------------------------------------------------------------------------
+// Prompt: "generate ~365 days of recurring habit completions and correlated moods for energy-per-habit dev data"
+function _mulberry32(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// The recurring habits that drive the Energy Per Habit dev fixture. The fixture uses a "latent good
+// day" model rather than habits mechanically adding to mood: each day has a mood, and a habit is more
+// (or, for a bad habit, less) likely to be done on good-mood days per its `assoc` weight. The widget's
+// day-done-vs-day-not-done delta then recovers a value tracking `assoc` — mirroring the mockup's
+// "correlation isn't causation" framing (habits are correlates of good days, not proven causes).
+//   assoc > 0: done more on good days -> positive recovered mood delta
+//   assoc < 0: done more on bad days  -> negative recovered mood delta
+export const DEV_HABIT_DEFINITIONS = [
+  { key: "morning-exercise", content: "⚡ Morning exercise",  victoryValue: 6, repeat: "FREQ=DAILY",          assoc:  0.42 },
+  { key: "outside-walk",     content: "☀️ Outside / walk",    victoryValue: 4, repeat: "FREQ=DAILY",          assoc:  0.30 },
+  { key: "inbox-zero",       content: "📥 Inbox to zero",     victoryValue: 3, repeat: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR", assoc: 0.24 },
+  { key: "read-30",          content: "📖 Read 30 min",       victoryValue: 4, repeat: "FREQ=DAILY",          assoc:  0.20 },
+  { key: "deep-work",        content: "🎯 Deep work block",   victoryValue: 9, repeat: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR", assoc: 0.15 },
+  { key: "no-screen",        content: "🌙 No-screen evening", victoryValue: 3, repeat: "FREQ=DAILY",          assoc:  0.12 },
+  { key: "meditate",         content: "🧘 Meditate",          victoryValue: 3, repeat: "FREQ=DAILY",          assoc:  0.075 },
+  { key: "late-night-work",  content: "🌜 Late-night work",   victoryValue: 5, repeat: "FREQ=DAILY",          assoc: -0.26 },
+];
+
+// Days over which the dev fixture generates habit completions and correlated moods.
+const DEV_HABIT_WINDOW_DAYS = 365;
+const DEV_HABIT_BASE_PROB = 0.28;   // baseline daily done-probability before mood association
+// Fixed seeds chosen so the recovered deltas are cleanly ordered and mockup-like at the widget's
+// six-month (183-day) mood sample; changing them reshuffles the fixture but not its correctness.
+const DEV_MOOD_SEED = 336;
+const DEV_SCHED_SEED = 490;
+
+// ---------------------------------------------------------------------------
+// Prompt: "retrieve all completed tasks... 6 months of mood ratings... energy-per-habit widget"
+// Returns dayMood[daysBack] — a slightly-positive-centered mood in [-2, 2] (one-decimal resolution so
+// the correlation survives the six-month sample). Deterministic via DEV_MOOD_SEED.
+function _buildDailyMood() {
+  const rand = _mulberry32(DEV_MOOD_SEED);
+  const mood = [];
+  for (let d = DEV_HABIT_WINDOW_DAYS - 1; d >= 0; d--) {
+    const raw = (rand() + rand() + rand() + rand()) / 4;   // ~bell-shaped in [0,1]
+    const value = (raw - 0.5) * 4.4 + 0.25;
+    mood[d] = Math.max(-2, Math.min(2, Math.round(value * 10) / 10));
+  }
+  return mood;
+}
+
+// ---------------------------------------------------------------------------
+// For each day, a habit is done with probability base + assoc * (moodNorm − 0.5) * 3.2, so good-mood
+// days pull positive-assoc habits up and negative-assoc habits down. Shared by tasks + mood seeding.
+function _buildHabitSchedule(dayMood) {
+  const rand = _mulberry32(DEV_SCHED_SEED);
+  const schedule = [];
+  for (let d = DEV_HABIT_WINDOW_DAYS - 1; d >= 0; d--) {
+    const norm = (dayMood[d] + 2) / 4;
+    const doneKeys = new Set();
+    for (const habit of DEV_HABIT_DEFINITIONS) {
+      const p = Math.max(0.03, Math.min(0.92, DEV_HABIT_BASE_PROB + habit.assoc * (norm - 0.5) * 3.2));
+      if (rand() <= p) doneKeys.add(habit.key);
+    }
+    schedule[d] = doneKeys;
+  }
+  return schedule;
+}
+
+// ---------------------------------------------------------------------------
+// Builds one completed task per (habit, day-done) from the shared schedule over the trailing year.
+function _buildHabitTasks(nowSec) {
+  const day = 86400;
+  const hour = 3600;
+  const rand = _mulberry32(0x51CE);
+  const schedule = _buildHabitSchedule(_buildDailyMood());
+  const tasks = [];
+  for (let d = DEV_HABIT_WINDOW_DAYS - 1; d >= 0; d--) {
+    const dayMidnightSec = nowSec - d * day - ((nowSec - d * day) % day);
+    for (const habit of DEV_HABIT_DEFINITIONS) {
+      if (!schedule[d].has(habit.key)) continue;
+      const completedAt = dayMidnightSec + Math.floor(6 * hour + rand() * 12 * hour);
+      tasks.push({
+        uuid: `dev-habit-${habit.key}-${d}`,
+        content: habit.content,
+        victoryValue: habit.victoryValue,
+        repeat: habit.repeat,
+        completedAt,
+        startAt: completedAt - hour,
+        dismissedAt: null, deadline: null,
+        noteUUID: "note-habits",
+      });
+    }
+  }
+  return tasks;
 }
 
 // ---------------------------------------------------------------------------
@@ -305,34 +405,35 @@ export function writeMoodsFile(moods, moodsPath = DEFAULT_MOODS_PATH) {
   fs.writeFileSync(moodsPath, JSON.stringify(moods, null, 2), "utf-8");
 }
 
+// Six months of daily moods for the dev fixture, so the Energy Per Habit widget (which reads six
+// months of ratings) has full coverage.
+const DEV_MOOD_WINDOW_DAYS = 183;
+
+// [Claude claude-opus-4-8 (1M context)] Task: emit 6 months of the latent daily moods that drive the fixture
+// Prompt: "retrieve all completed tasks... 6 months of mood ratings... add logging... energy-per-habit widget"
+// Emits one rating per day over the trailing six months, taken directly from _buildDailyMood — the same
+// latent moods the habit schedule was drawn against, so the widget's per-habit deltas track each
+// habit's `assoc`. Ratings carry one-decimal resolution (dev-only) so the correlation survives the
+// six-month sample; the widget averages ratings and does not assume integers.
 function _seedMoodRatings() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const midnightSec = Math.floor(today.getTime() / 1000);
   const DAY = 86400;
-  const ratings = [1, -1, 2, 0, 1, -2, 2, -1, 0, 1];
-  const notes = [
-    'Slept well, feeling rested and ready to go',
-    'Stressful morning but afternoon was better',
-    'Productive day — knocked out the whole backlog. Managed to close out six tickets before lunch, then spent the afternoon pairing with Jamie on the auth refactor. We finally tracked down the session expiry bug that had been haunting us for weeks. Turns out the token refresh was racing with the logout handler. Documented the fix in the wiki and added a regression test. Feeling accomplished — this kind of deep focus day is exactly what I needed after a scattered start to the week.',
-    'Bit tired, low energy after lunch',
-    'Great coffee chat with a friend',
-    'Overwhelmed with meetings all day',
-    'Solid workout this morning, feeling strong',
-    'Quiet day, caught up on reading',
-    'Tricky bug took hours — finally squashed it',
-    'Relaxing weekend, recharged for the week ahead',
-  ];
-  return ratings.map((rating, i) => {
-    const daysBack = ratings.length - 1 - i;
-    const hour = 8 + (i % 5) * 2;
-    return {
-      rating,
-      timestamp: midnightSec - daysBack * DAY + hour * 3600,
-      uuid: `mock-mood-uuid-${i}`,
-      note: notes[i],
-    };
-  });
+  const dayMood = _buildDailyMood();
+  const rand = _mulberry32(0x9A73);
+  const ratings = [];
+
+  for (let d = DEV_MOOD_WINDOW_DAYS - 1; d >= 0; d--) {
+    const hour = 8 + Math.floor(rand() * 10);
+    ratings.push({
+      rating: dayMood[d],
+      timestamp: midnightSec - d * DAY + hour * 3600,
+      uuid: `mock-mood-uuid-${DEV_MOOD_WINDOW_DAYS - 1 - d}`,
+      note: null,
+    });
+  }
+  return ratings;
 }
 
 function _ensureMoodsFile(moodsPath = DEFAULT_MOODS_PATH) {

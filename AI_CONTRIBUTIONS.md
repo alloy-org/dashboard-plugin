@@ -3,6 +3,39 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-07-17 — Energy Per Habit widget (mood delta per recurring-task habit)
+
+**Model:** claude-opus-4-8[1m]
+**Files created/modified:**
+- `lib/dashboard/energy-per-habit.jsx` (created — self-fetching widget: retrieves ALL completed tasks over the
+  trailing 365 days and six months of mood ratings, each with `performance.now()` timing logs via `logIfEnabled`;
+  renders the "Mood delta per habit" diverging-bar list — icon, label, `N/365 days · X-day streak`, and signed
+  delta — matching the provided mockup, with a "Read with care" correlation caveat)
+- `lib/dashboard/energy-per-habit-analysis.js` (created — pure analysis: groups recurring tasks (`task.repeat`
+  RRULE present) into habits by normalized content, averages mood per day, and computes each habit's mood
+  delta = avg mood on days done − avg mood on days not done; plus streak, min-days filter, and delta formatting)
+- `lib/dashboard/styles/energy-per-habit.scss` (created — diverging olive/magenta bar layout around a zero axis,
+  theme-token driven for light/dark)
+- `lib/constants/settings.js` (modified — registered the `energy-per-habit` widget in `WIDGET_REGISTRY`)
+- `lib/dashboard/dashboard.jsx` (modified — import, `EnergyPerHabitCell`, and `CELL_COMPONENTS` wiring, passing `app`)
+- `dev/dev-app.js` (modified — dev fixture: a year of recurring habit completions with `repeat` RRULEs plus six
+  months of correlated daily mood ratings via a latent-good-day model, so the widget renders mockup-like, cleanly
+  ordered deltas; `task` shape now defaults `repeat: null`)
+- `test/energy-per-habit-analysis.test.js` (created — 9 tests: recurrence gating, normalized grouping, delta math,
+  streak, min-days filter, sort order, delta formatting)
+
+**Task:** Add an "energy-per-habit" component implementing the "Mood delta per habit" design
+**Prompt summary:** "new energy-per-habit component; retrieve all completed tasks (as victory-value) and 6 months of
+mood ratings (as mood.jsx); add logging to evaluate the timing of the task & mood retrieval; a habit task is
+differentiated by the presence of recurrence (`task.repeat`)"
+**Scope:** ~430 lines of new logic across 3 lib files + tests, plus dev fixture data
+**Notes:** Habit = a completed task with a non-null `repeat` RRULE (per the Amplenote task schema), grouped by
+emoji/punctuation/case-normalized content. The day-done-vs-day-not-done estimator is inherently confounded when
+habits co-occur (hence the mockup's "correlation isn't causation" note); the dev fixture uses a latent-mood model
+(habits more likely on good-mood days) so the widget recovers a clean, well-ordered gradient. Verified end-to-end
+in the running dev app (light + dark), timing logs firing (`completed tasks: 911 in 44ms`, `mood ratings: 183 in
+17ms`); the 5 unrelated pre-existing test failures (call-plugin-fallback, graveyard-widget) are untouched.
+
 ## 2026-06-29 — Honor any provider's dev LLM token (Grok/Anthropic/Gemini), not just OpenAI
 
 **Model:** claude-opus-4-8[1m]

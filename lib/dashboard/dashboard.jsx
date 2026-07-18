@@ -21,6 +21,7 @@ import LayoutPickerWidget, { saveLayoutWithProfile } from 'layout-picker';
 import { useDashboardDrag } from 'draggable-heading';
 import DaySketchWidget from 'day-sketch';
 import DebugConsoleWidget from 'debug-console';
+import EnergyPerHabitWidget from 'energy-per-habit';
 import useCompletedTasks from 'hooks/use-completed-tasks';
 import useDashboardLayout from 'hooks/use-dashboard-layout';
 import useDashboardTaskUpdates from 'hooks/use-dashboard-task-updates';
@@ -152,6 +153,7 @@ const CalendarCell = createWidgetCell('calendar', CalendarWidget, ({ app, comple
   onDateSelect, onOpenSettings, openTasks, selectedDate, weekFormat,
 }));
 const DebugConsoleCell = createWidgetCell('debug-console', DebugConsoleWidget, () => ({}));
+const EnergyPerHabitCell = createWidgetCell('energy-per-habit', EnergyPerHabitWidget, pickProps('app'));
 const DreamTaskCell = createWidgetCell('dream-task', DreamTaskWidget, ({ app, config, onOpenSettings, providerApiKey, providerEm }) => ({
   app, gridHeightSize: Number(config?.gridHeightSize) || 1, gridWidthSize: Number(config?.gridWidthSize) || 2,
   onOpenSettings, providerApiKey, providerEm,
@@ -190,6 +192,7 @@ const CELL_COMPONENTS = {
   'day-sketch': DaySketchCell,
   'debug-console': DebugConsoleCell,
   'dream-task': DreamTaskCell,
+  'energy-per-habit': EnergyPerHabitCell,
   graveyard: GraveyardCell,
   'layout-picker': LayoutPickerCell,
   mood: MoodCell,
