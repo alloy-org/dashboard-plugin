@@ -36,8 +36,6 @@ The block must follow JSDoc conventions, but most importantly, each line MUST be
 // @returns {Object} An object with the following properties:
 //   - {string} recordId - The unique identifier for the record (same as id
 //   - {string} displayName - The name of the record (same as name)
-// [Claude claude-sonnet-4-6] Task: normalize API response shape across endpoints
-
 function normalizeResponse(data) {
     ...
 }

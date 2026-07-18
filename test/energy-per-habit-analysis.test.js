@@ -130,6 +130,56 @@ describe("analyzeHabitMoodDeltas", () => {
   });
 });
 
+describe("short habits (exact whole-content match) + phrase fuzzy merge", () => {
+  const ref = new Date();
+  const offMoods = [3, 5, 7, 9, 11].map(d => mood(-1, d, ref)); // shared off-day moods for a delta
+
+  test("a genuinely-repeated short (<3-word) habit with identical text surfaces", () => {
+    // A one-word habit whose text is IDENTICAL every time is a real habit now (exact whole-content match).
+    const tasks = occurrences("Direction", [0, 2, 4, 6, 8, 10], ref);
+    const moods = [...[0, 2, 4].map(d => mood(1, d, ref)), ...offMoods];
+    const { habits } = analyzeHabitMoodDeltas({ completedTasks: tasks, moodRatings: moods, today: ref });
+    expect(habits).toHaveLength(1);
+    expect(habits[0].label).toBe("Direction");
+    expect(habits[0].completions).toBe(6);
+  });
+
+  test("does NOT collapse distinct tasks that merely share a short first line", () => {
+    // 6 incidental checkbox items whose FIRST LINE reduces to "Direction" but whose bodies below all differ:
+    // each is keyed by its whole content, so they stay distinct (1 completion each) and none is a habit.
+    const bodies = ["review the Q1 marketing plan", "call the plumber about the leak", "book the dentist appointment",
+      "renew the car insurance policy", "reply to the landlord email", "pick up the dry cleaning"];
+    const tasks = bodies.map((body, i) => task(`Direction\n${body} number ${i}`, i * 2, ref));
+    const moods = [...[0, 2, 4].map(d => mood(1, d, ref)), ...offMoods];
+    const { habits } = analyzeHabitMoodDeltas({ completedTasks: tasks, moodRatings: moods, today: ref });
+    expect(habits).toHaveLength(0); // no bogus 6-count "Direction" — the shared first line no longer groups them
+  });
+
+  test("merges two 3+-word phrasings sharing more than half their words", () => {
+    // "Write jokes and direction for video 20" vs "...21": 6 of 7 words shared -> one habit.
+    const tasks = [
+      ...occurrences("Write jokes and direction for video 20", [0, 4, 8], ref),
+      ...occurrences("Write jokes and direction for video 21", [2, 6, 10], ref),
+    ];
+    const moods = [...[0, 2, 4, 6].map(d => mood(1, d, ref)), ...offMoods];
+    const { habits } = analyzeHabitMoodDeltas({ completedTasks: tasks, moodRatings: moods, today: ref });
+    expect(habits).toHaveLength(1);
+    expect(habits[0].completions).toBe(6); // 3 + 3 merged
+  });
+
+  test("does NOT merge big blocks that merely share one incidental word", () => {
+    // Two long, distinct tasks that both contain "direction" but almost nothing else in common.
+    const tasks = [
+      ...occurrences("Plan the quarterly product direction review", [0, 4, 8], ref),
+      ...occurrences("Give the new hire clear onboarding direction", [2, 6, 10], ref),
+    ];
+    const moods = [...[0, 2, 4, 6].map(d => mood(1, d, ref)), ...offMoods];
+    const { habits } = analyzeHabitMoodDeltas({ completedTasks: tasks, moodRatings: moods, today: ref });
+    // Neither reaches 5 completions on its own -> both correctly filtered, not merged into a bogus habit.
+    expect(habits).toHaveLength(0);
+  });
+});
+
 describe("computeMonthlyAggregates + aggregateMonthlyHabits", () => {
   test("stores per-month rows only for tasks completed more than once, and aggregates them", () => {
     const ref = new Date(2026, 6, 18); // Jul 18 2026

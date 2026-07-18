@@ -70,7 +70,7 @@ describe("loadEnergyPerHabit", () => {
 
     const result = await loadEnergyPerHabit(app, { today });
     expect(result.habits).toHaveLength(1);
-    expect(result.habits[0].label).toBe("Exercise");
+    expect(result.habits[0].label).toBe("🏋️ Exercise");
     expect(result.habits[0].delta).toBeGreaterThan(0);
     expect(result.cached).toBe(false);
 

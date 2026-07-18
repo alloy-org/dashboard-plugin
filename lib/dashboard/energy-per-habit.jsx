@@ -4,13 +4,14 @@
  * Task: Energy Per Habit widget — mood delta per habit over the trailing ~365 days
  * Prompt summary: "new energy-per-habit component styled like the 'Mood delta per habit' mockup"
  */
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import WidgetWrapper from "widget-wrapper";
 import { noteUrlFromUUID } from "app-util";
 import { widgetTitleFromId } from "constants/settings";
 import { logIfEnabled } from "util/log";
 import { formatDelta, HABIT_ANALYSIS_WINDOW_DAYS } from "energy-per-habit-analysis";
 import { loadEnergyPerHabit } from "energy-per-habit-service";
+import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import "styles/energy-per-habit.scss";
 
 const WIDGET_ID = 'energy-per-habit';
@@ -21,17 +22,38 @@ const MAX_HABIT_ROWS = 8;
 // Fallback icon plus keyword→emoji hints so common habits get a recognizable glyph like the mockup.
 const HABIT_ICON_FALLBACK = '🔁';
 const HABIT_ICON_HINTS = [
-  { pattern: /exercise|workout|gym|jog|run|lift/, icon: '⚡' },
+  { pattern: /exercise|workout|gym/, icon: '💪' },
+  { pattern: /bike|cycling|cycle/, icon: '🚴' },
+  { pattern: /lift/, icon: '🏋️‍♀️' },
+  { pattern: /jog|run/, icon: '🏃' },
+  { pattern: /hike|trail/, icon: '🥾' },
   { pattern: /walk|outside|outdoor|steps/, icon: '☀️' },
-  { pattern: /inbox|email|zero/, icon: '📥' },
-  { pattern: /read|book|study/, icon: '📖' },
-  { pattern: /deep work|focus|write|writing/, icon: '🎯' },
+  { pattern: /inbox|email/, icon: '📥' },
+  { pattern: /read|book|study|homework/, icon: '📖' },
+  { pattern: /deep work|focus|review|reflect/, icon: '🧐' },
   { pattern: /screen|phone|social|digital/, icon: '🌙' },
   { pattern: /late.?night|night|midnight/, icon: '🌜' },
   { pattern: /meditat|breath|mindful|yoga/, icon: '🧘' },
   { pattern: /sleep|bed|rest/, icon: '😴' },
   { pattern: /water|hydrat|drink/, icon: '💧' },
   { pattern: /plan|review|journal/, icon: '📝' },
+  { pattern: /contact|email|journal|message|text|write|writing/, icon: '✍️' },
+  { pattern: /outreach|broadcast|advertise|distribution/, icon: '📢' },
+  { pattern: /gratitude|thank/, icon: '🙏' },
+  { pattern: /clean|tidy|organize/, icon: '🧹' },
+  { pattern: /cook|meal|recipe/, icon: '🍳' },
+  { pattern: /music|song|sing/, icon: '🎵' },
+  { pattern: /art|draw|paint/, icon: '🎨' },
+  { pattern: /game|play|fun/, icon: '🎮' },
+  { pattern: /family|friend|social/, icon: '👯‍♀️' },
+  { pattern: /volunteer|help|charity/, icon: '❤️' },
+  { pattern: /finance|budget|money/, icon: '💰' },
+  { pattern: /language|learn|study/, icon: '🈶' },
+  { pattern: /travel|trip|vacation/, icon: '✈️' },
+  { pattern: /garden|plant|nature/, icon: '🌱' },
+  { pattern: /movie|film|cinema/, icon: '🎬' },
+  { pattern: /cleaning|laundry|housework/, icon: '🧺' },
+  { pattern: /swim|pool|water/, icon: '🏊' },
 ];
 
 // ------------------------------------------------------------------------------------------
@@ -80,9 +102,12 @@ function barTooltip(habit) {
 
 // ------------------------------------------------------------------------------------------
 // @desc Render a single habit row: icon, label, "N/window days · X-week streak" meta, a diverging bar (right
-//   of the zero axis for positive delta, left + magenta for negative), and the value. When the habit carries
-//   a note reference the label is a click-through that opens the task's note, and its title shows the full
-//   task text on hover. Hovering the bar shows the avg + count of mood ratings on completed vs. off days.
+//   of the zero axis for positive delta, left + magenta for negative), and the value. The label is rendered
+//   as Amplenote markdown (bold/italic/highlight/rich-footnote links) — matching how the Agenda widget renders
+//   task content — so habit text formatting survives. When the habit carries a note reference the label is a
+//   click-through that opens the task's note (clicks on an inner link are left to the link), and its title
+//   shows the full task text on hover. Hovering the bar shows the avg + count of mood ratings on completed
+//   vs. off days.
 // @param {Object} props - { habit, windowDays, maxAbsDelta, onOpen }
 // @returns {JSX.Element}
 function HabitRow({ habit, windowDays, maxAbsDelta, onOpen }) {
@@ -102,10 +127,11 @@ function HabitRow({ habit, windowDays, maxAbsDelta, onOpen }) {
             title={fullText}
             role={clickable ? 'link' : undefined}
             tabIndex={clickable ? 0 : undefined}
-            onClick={clickable ? () => onOpen(habit) : undefined}
+            onClick={clickable ? (e) => { if (!e.target.closest('a')) onOpen(habit); } : undefined}
             onKeyDown={clickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(habit); } } : undefined}
-          >{habit.label}</div>
-          <div className="eph-row-meta">{`${habit.daysDone}/${windowDays} days · ${weekStreakLabel(habit.weekStreak)}`}</div>
+            dangerouslySetInnerHTML={{ __html: amplenoteMarkdownRender(habit.label) }}
+          />
+          <div className="eph-row-meta">Completed {`${habit.daysDone} of ${windowDays} days · ${weekStreakLabel(habit.weekStreak)}`}</div>
         </div>
       </div>
       <div className="eph-row-track">
@@ -144,6 +170,7 @@ function HabitRow({ habit, windowDays, maxAbsDelta, onOpen }) {
 export default function EnergyPerHabitWidget({ app }) {
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
+  const rowsRef = useRef(null);
 
   useEffect(() => {
     if (!app) return;
@@ -168,6 +195,11 @@ export default function EnergyPerHabitWidget({ app }) {
     () => rows.reduce((max, h) => Math.max(max, Math.abs(h.delta)), 0),
     [rows]
   );
+
+  // Wire up tippy popups for any Amplenote Rich Footnote links in the rendered habit labels (same as agenda.jsx).
+  useEffect(() => {
+    attachFootnotePopups(rowsRef.current);
+  }, [rows]);
 
   // Open the note containing the habit's most-recent completed task (matches graveyard's note navigation).
   const onOpenHabit = useCallback((habit) => {
@@ -203,7 +235,7 @@ export default function EnergyPerHabitWidget({ app }) {
       </div>
       <div className="eph-chart">
         <div className="eph-zero-line"><span className="eph-zero-label">0</span></div>
-        <div className="eph-rows">
+        <div className="eph-rows" ref={rowsRef}>
           {rows.map(habit => (
             <HabitRow key={habit.key} habit={habit} windowDays={windowDays} maxAbsDelta={maxAbsDelta} onOpen={onOpenHabit} />
           ))}
