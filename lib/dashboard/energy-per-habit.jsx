@@ -58,10 +58,31 @@ function weekStreakLabel(weeks) {
 }
 
 // ------------------------------------------------------------------------------------------
+// @desc Format one side of the bar's hover tooltip: the average mood and how many rated days it averages over.
+// @param {string} sideLabel - "completed" or "not completed".
+// @param {number} avg - Average mood rating on that side.
+// @param {number} count - Number of rated days on that side.
+// @returns {string}
+function barTooltipSide(sideLabel, avg, count) {
+  const days = count === 1 ? 'day' : 'days';
+  return `${sideLabel}: ${formatDelta(avg)} avg over ${count} rated ${days}`;
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc Build the hover tooltip for a habit's mood-delta bar: the average and rating count on days the habit
+//   was completed vs. days it was not.
+// @param {Object} habit - Habit with avgMoodOnDone, avgMoodOnOff, doneWithMood, offWithMood.
+// @returns {string}
+function barTooltip(habit) {
+  return `${barTooltipSide('When completed', habit.avgMoodOnDone, habit.doneWithMood)}\n`
+    + `${barTooltipSide('When not completed', habit.avgMoodOnOff, habit.offWithMood)}`;
+}
+
+// ------------------------------------------------------------------------------------------
 // @desc Render a single habit row: icon, label, "N/window days · X-week streak" meta, a diverging bar (right
 //   of the zero axis for positive delta, left + magenta for negative), and the value. When the habit carries
 //   a note reference the label is a click-through that opens the task's note, and its title shows the full
-//   task text on hover.
+//   task text on hover. Hovering the bar shows the avg + count of mood ratings on completed vs. off days.
 // @param {Object} props - { habit, windowDays, maxAbsDelta, onOpen }
 // @returns {JSX.Element}
 function HabitRow({ habit, windowDays, maxAbsDelta, onOpen }) {
@@ -70,6 +91,7 @@ function HabitRow({ habit, windowDays, maxAbsDelta, onOpen }) {
   const clickable = Boolean(habit.noteUUID);
   const fullText = habit.fullText || habit.label;
   const labelClass = `eph-row-label${clickable ? ' eph-row-label--link' : ''}`;
+  const barTitle = barTooltip(habit);
   return (
     <div className="eph-row">
       <div className="eph-row-lead">
@@ -88,7 +110,7 @@ function HabitRow({ habit, windowDays, maxAbsDelta, onOpen }) {
       </div>
       <div className="eph-row-track">
         <div className="eph-row-axis" />
-        <div className="eph-row-bar-half eph-row-bar-half--neg">
+        <div className="eph-row-bar-half eph-row-bar-half--neg" title={barTitle}>
           {!positive && (
             <div
               className="eph-row-bar eph-row-bar--neg"
@@ -96,7 +118,7 @@ function HabitRow({ habit, windowDays, maxAbsDelta, onOpen }) {
             />
           )}
         </div>
-        <div className="eph-row-bar-half eph-row-bar-half--pos">
+        <div className="eph-row-bar-half eph-row-bar-half--pos" title={barTitle}>
           {positive && (
             <div
               className="eph-row-bar eph-row-bar--pos"

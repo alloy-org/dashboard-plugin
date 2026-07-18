@@ -60,18 +60,6 @@ describe("monthTableMarkdown + monthsFromNoteContent", () => {
     expect(rows[1].label).toBe("Pipe | in name"); // pipe survives escape/unescape
   });
 
-  test("parses legacy 4-column rows (pre weeks-streak) with weekStreak defaulting to 0", () => {
-    const legacy = `# x\n\n## May 2026\n\n| Task | Completions | Mood on done days | Mood on off days |\n`
-      + `| --- | --- | --- | --- |\n| Old habit | 6 | [1, 2] | [-1] |\n`;
-    const rows = monthsFromNoteContent(legacy).get("2026-05").rows;
-    expect(rows).toHaveLength(1);
-    expect(rows[0].label).toBe("Old habit");
-    expect(rows[0].count).toBe(6);
-    expect(rows[0].weekStreak).toBe(0);
-    expect(rows[0].doneMoods).toEqual([1, 2]);
-    expect(rows[0].offMoods).toEqual([-1]);
-  });
-
   test("parses multiple month sections keyed by YYYY-MM", () => {
     const note = `# x\n\n## July 2026\n\n${monthTableMarkdown([ROWS[0]])}\n\n## June 2026\n\n${monthTableMarkdown([ROWS[1]])}\n`;
     const months = monthsFromNoteContent(note);

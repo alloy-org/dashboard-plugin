@@ -5,6 +5,8 @@
  */
 
 @use 'theme' as *;
+// Inlined Roboto @font-face — must ship in-bundle because the embed's data: URL origin blocks Google Fonts.
+@use 'roboto-font';
 
 // Layout & component constants
 $dashboard-maximum-width: 1200px;

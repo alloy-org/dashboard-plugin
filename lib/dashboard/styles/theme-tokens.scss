@@ -57,7 +57,9 @@ $radius-md: 10px;
 $radius-lg: 14px;
 
 // Fonts
-$font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+// Roboto is loaded on the dashboard page (see lib/embed-html.js); the system stack remains as a fallback
+// for the brief moment before the web font resolves and for any environment that blocks the font request.
+$font-sans: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 $font-serif: Georgia, 'Times New Roman', serif;
 
 // Mixins
