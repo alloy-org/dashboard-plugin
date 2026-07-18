@@ -1,22 +1,18 @@
 /**
  * [Claude-authored file]
  * Created: 2026-07-17 | Model: claude-opus-4-8 (1M context)
- * Task: Energy Per Habit widget — mood delta per recurring-task habit over the trailing ~365 days
- * Prompt summary: "new energy-per-habit component styled like the 'Mood delta per habit' mockup;
- *   fetch all completed tasks + 6 months of mood ratings with timing logs"
+ * Task: Energy Per Habit widget — mood delta per habit over the trailing ~365 days
+ * Prompt summary: "new energy-per-habit component styled like the 'Mood delta per habit' mockup"
  */
 import { useEffect, useMemo, useState } from "react";
 import WidgetWrapper from "widget-wrapper";
 import { widgetTitleFromId } from "constants/settings";
 import { logIfEnabled } from "util/log";
-import { analyzeHabitMoodDeltas, formatDelta, HABIT_ANALYSIS_WINDOW_DAYS } from "energy-per-habit-analysis";
+import { formatDelta, HABIT_ANALYSIS_WINDOW_DAYS } from "energy-per-habit-analysis";
+import { loadEnergyPerHabit } from "energy-per-habit-service";
 import "styles/energy-per-habit.scss";
 
 const WIDGET_ID = 'energy-per-habit';
-
-// Six months of trailing mood history, expressed in seconds, for the getMoodRatings `from` bound.
-const MOOD_WINDOW_DAYS = 183;
-const SECONDS_PER_DAY = 86400;
 
 // Number of habits to render (mockup shows the strongest handful; keeps the tile readable).
 const MAX_HABIT_ROWS = 8;
@@ -47,29 +43,6 @@ function habitIcon(label) {
     if (pattern.test(lower)) return icon;
   }
   return HABIT_ICON_FALLBACK;
-}
-
-// ------------------------------------------------------------------------------------------
-// @desc Fetch all completed tasks over the analysis window and six months of mood ratings,
-//   logging the wall-clock timing of each retrieval so the two fetches can be evaluated.
-// @param {Object} app - Amplenote app interface.
-// @returns {Promise<{completedTasks: Array, moodRatings: Array}>}
-async function fetchHabitData(app) {
-  const nowSec = Math.floor(Date.now() / 1000);
-  const tasksFrom = nowSec - HABIT_ANALYSIS_WINDOW_DAYS * SECONDS_PER_DAY;
-  const moodFrom = nowSec - MOOD_WINDOW_DAYS * SECONDS_PER_DAY;
-
-  const tasksStart = performance.now();
-  logIfEnabled(`[${WIDGET_ID}] fetching completed tasks from ${new Date(tasksFrom * 1000).toISOString()} to now`);
-  const completedTasks = await app.getCompletedTasks(tasksFrom, nowSec).then(r => Array.isArray(r) ? r : []);
-  logIfEnabled(`[${WIDGET_ID}] completed tasks: ${completedTasks.length} in ${(performance.now() - tasksStart).toFixed(1)}ms`);
-
-  const moodStart = performance.now();
-  logIfEnabled(`[${WIDGET_ID}] fetching mood ratings from ${new Date(moodFrom * 1000).toISOString()} (${MOOD_WINDOW_DAYS} days)`);
-  const moodRatings = await app.getMoodRatings(moodFrom).then(r => Array.isArray(r) ? r : []);
-  logIfEnabled(`[${WIDGET_ID}] mood ratings: ${moodRatings.length} in ${(performance.now() - moodStart).toFixed(1)}ms`);
-
-  return { completedTasks, moodRatings };
 }
 
 // ------------------------------------------------------------------------------------------
@@ -117,36 +90,33 @@ function HabitRow({ habit, windowDays, maxAbsDelta }) {
 }
 
 // ------------------------------------------------------------------------------------------
-// @desc Energy Per Habit widget. Self-fetches every completed task over the trailing analysis
-//   window plus six months of mood ratings, groups recurring tasks into habits, and charts each
-//   habit's mood delta (avg mood on days done vs. days not done) as a diverging bar list.
+// @desc Energy Per Habit widget. Loads its analysis via the cache-backed service (per-month completion
+//   tables in an archived note, only the current + un-cached months re-fetched), groups completed tasks
+//   into habits by text, and charts each habit's mood delta (avg mood on days done vs. days not done) as
+//   a diverging bar list.
 // @param {Object} props - { app }
 // @returns {JSX.Element}
 export default function EnergyPerHabitWidget({ app }) {
-  const [data, setData] = useState(null);
+  const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!app) return;
     let cancelled = false;
     setLoading(true);
-    const start = performance.now();
-    fetchHabitData(app).then(result => {
+    loadEnergyPerHabit(app).then(result => {
       if (cancelled) return;
-      logIfEnabled(`[${WIDGET_ID}] total data retrieval in ${(performance.now() - start).toFixed(1)}ms`);
-      setData(result);
+      setAnalysis(result);
       setLoading(false);
     }).catch(err => {
       logIfEnabled(`[${WIDGET_ID}] failed to load habit data`, err);
-      if (!cancelled) { setData({ completedTasks: [], moodRatings: [] }); setLoading(false); }
+      if (!cancelled) {
+        setAnalysis({ habits: [], windowDays: HABIT_ANALYSIS_WINDOW_DAYS });
+        setLoading(false);
+      }
     });
     return () => { cancelled = true; };
   }, [app]);
-
-  const analysis = useMemo(() => {
-    if (!data) return null;
-    return analyzeHabitMoodDeltas({ completedTasks: data.completedTasks, moodRatings: data.moodRatings });
-  }, [data]);
 
   const rows = useMemo(() => (analysis?.habits || []).slice(0, MAX_HABIT_ROWS), [analysis]);
   const maxAbsDelta = useMemo(
@@ -179,7 +149,6 @@ export default function EnergyPerHabitWidget({ app }) {
     <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon="⚡" widgetId={WIDGET_ID}>
       <div className="eph-header">
         <div className="eph-eyebrow">{`${windowDays} DAYS ANALYZED`}</div>
-        <div className="eph-title">Mood delta per habit</div>
       </div>
       <div className="eph-chart">
         <div className="eph-zero-line"><span className="eph-zero-label">0</span></div>
@@ -188,11 +157,6 @@ export default function EnergyPerHabitWidget({ app }) {
             <HabitRow key={habit.key} habit={habit} windowDays={windowDays} maxAbsDelta={maxAbsDelta} />
           ))}
         </div>
-      </div>
-      <div className="eph-footnote">
-        <strong>Read with care.</strong> Correlation isn't causation. A large sustained delta over
-        hundreds of days is a strong nudge — but a habit may be a <em>correlate</em> of already-good
-        days rather than a cause of them.
       </div>
     </WidgetWrapper>
   );

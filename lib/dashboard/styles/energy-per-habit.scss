@@ -41,10 +41,14 @@ $eph-row-gap: 14px;
   }
 
   /* Vertical zero-reference line + "0" label, aligned to the boundary between the two bar halves.
-     The row grid reserves 46% for the label column and splits the remaining 54% into two bar
-     halves; the axis therefore sits at 46% + 27% = 73% of the row width. */
+     The row grid reserves 46% for the label column and a fixed column for the value, then splits the
+     remaining width into two equal bar halves. The axis sits at the midpoint of that remaining width —
+     computed from the SAME variables the grid uses so the full-height zero line lands exactly on each
+     row's neg/pos divider (a fixed value column is what makes the boundary a knowable percentage; an
+     `auto` column shifted it, which drew the line through the middle of the bar). */
   $eph-label-col: 46%;
-  $eph-axis-pos: calc(#{$eph-label-col} + (100% - #{$eph-label-col}) / 2);
+  $eph-value-col: 3.6rem;
+  $eph-axis-pos: calc(#{$eph-label-col} + (100% - #{$eph-label-col} - #{$eph-value-col}) / 2);
 
   .eph-zero-line {
     border-left: 1px solid $color-border;
@@ -71,7 +75,7 @@ $eph-row-gap: 14px;
   .eph-row {
     align-items: center;
     display: grid;
-    grid-template-columns: $eph-label-col 1fr 1fr auto;
+    grid-template-columns: $eph-label-col 1fr 1fr $eph-value-col;
     gap: 0;
   }
 

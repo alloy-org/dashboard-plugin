@@ -405,16 +405,16 @@ export function writeMoodsFile(moods, moodsPath = DEFAULT_MOODS_PATH) {
   fs.writeFileSync(moodsPath, JSON.stringify(moods, null, 2), "utf-8");
 }
 
-// Six months of daily moods for the dev fixture, so the Energy Per Habit widget (which reads six
-// months of ratings) has full coverage.
-const DEV_MOOD_WINDOW_DAYS = 183;
+// A full year of daily moods for the dev fixture, so the Energy Per Habit widget (which now caches and
+// analyzes a trailing year of per-month data) has mood coverage on every cached month.
+const DEV_MOOD_WINDOW_DAYS = 365;
 
-// [Claude claude-opus-4-8 (1M context)] Task: emit 6 months of the latent daily moods that drive the fixture
-// Prompt: "retrieve all completed tasks... 6 months of mood ratings... add logging... energy-per-habit widget"
-// Emits one rating per day over the trailing six months, taken directly from _buildDailyMood — the same
+// [Claude claude-opus-4-8 (1M context)] Task: emit a full year of the latent daily moods that drive the fixture
+// Prompt: "cache per-month data from the past year... energy-per-habit widget"
+// Emits one rating per day over the trailing year, taken directly from _buildDailyMood — the same
 // latent moods the habit schedule was drawn against, so the widget's per-habit deltas track each
 // habit's `assoc`. Ratings carry one-decimal resolution (dev-only) so the correlation survives the
-// six-month sample; the widget averages ratings and does not assume integers.
+// sample; the widget averages ratings and does not assume integers.
 function _seedMoodRatings() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);

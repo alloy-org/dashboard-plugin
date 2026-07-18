@@ -3,6 +3,39 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-07-18 — Energy Per Habit: per-month caching, text-based habit discovery, axis fix
+
+**Model:** claude-opus-4-8[1m]
+**Files created/modified:**
+- `lib/dashboard/energy-per-habit-analysis.js` (modified — group completed tasks into habits by normalized text
+  instead of requiring an RRULE (`task.repeat`), so tasks re-completed many times surface; new eligibility is
+  ≥5 completions/year with mood on ≥3 done-days; added month-key helpers, a shared aggregation core, per-month
+  aggregate builder, and cache-row aggregator)
+- `lib/dashboard/energy-per-habit-cache.js` (created — archived "Energy Per Habit Data" note holding one table per
+  month (`## May 2026` …): `| Task | Completions | Mood on done days | Mood on off days |`; parse/serialize with
+  escaped-pipe handling, and section-scoped `replaceNoteContent` to refresh the current month in place)
+- `lib/dashboard/energy-per-habit-service.js` (created — cache-first orchestration: read the cache note before
+  fetching, fetch/recompute only the current + un-cached recent months (stop once a cached past month is reached),
+  persist changed months, then aggregate a full year of cached + fresh months into the widget's habit rows)
+- `lib/dashboard/energy-per-habit.jsx` (modified — load via the service; drop the old direct 6-month fetch)
+- `lib/dashboard/styles/energy-per-habit.scss` (modified — fixed the misplaced zero axis: a fixed-width value
+  column makes the neg/pos grid boundary a knowable percentage, and the full-height zero line now derives from
+  the same variables so it lands exactly on each row's divider)
+- `dev/dev-app.js` (modified — extend the dev mood fixture from 183 to 365 days so every cached month has coverage)
+- `test/energy-per-habit-analysis.test.js` (modified) + `test/energy-per-habit-cache.test.js`,
+  `test/energy-per-habit-service.test.js`, `test/energy-per-habit-dev-integration.test.js` (created — 20 tests:
+  content grouping, completion/mood eligibility, month keys, per-month tables, cache round-trip + in-place section
+  replace, cache-first fetch-window, and an end-to-end run against the real dev app)
+
+**Task:** Evolve the Energy Per Habit widget: discover all repeatedly-completed tasks, cache per-month data in an
+archived note to cut a ~20s load, and fix the misplaced habit-row border
+**Prompt summary:** "build a per-month, per-task completion table so any repeatedly-completed task shows up; cache
+per-month data from the past year in an archived note (look it up before fetching, stop at a cached month, refresh
+the current month via replaceNoteContent with a section); eligibility ≥5 completions with ≥3 mood ratings on done
+days; fix the misplaced border"
+
+---
+
 ## 2026-07-17 — Energy Per Habit widget (mood delta per recurring-task habit)
 
 **Model:** claude-opus-4-8[1m]
