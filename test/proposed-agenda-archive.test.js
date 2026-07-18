@@ -6,7 +6,7 @@ import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
 import { setPluginData } from "plugin-data";
 import { loadCachedProposedAgenda, PROPOSED_TASK_STATUS, proposedAgendaNoteNameFromDate, proposedTaskKey,
-  storeProposedAgenda, updateProposedTaskStatuses } from "proposed-agenda-archive";
+  recentProposedTaskHistory, storeProposedAgenda, updateProposedTaskStatuses } from "proposed-agenda-archive";
 import { generateProposedAgenda } from "proposed-agenda-service";
 import { setLoggingEnabled } from "util/log";
 
@@ -312,5 +312,107 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
     expect(reconciled.fromCache).toBe(true);
     expect(reconciled.activities.map(a => a.taskUuid)).toEqual(["task-1", "task-2"]);
     expect(reconciled.scheduledKeys).toEqual([scheduledKey]);
+  });
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc A minimal persisted proposal-activity for a given task, so tests can seed prior-day history records.
+// @param {string} taskUuid - Task the proposal points at.
+// @returns {object} Activity accepted by storeProposedAgenda.
+// [Claude claude-opus-4-8 (1M context)] Task: seed prior-day proposal-history records in tests
+function proposalActivity(taskUuid) {
+  return { durationMinutes: 60, isExisting: true, noteUuid: `note-${ taskUuid }`, reason: "", startMinutes: 540,
+    startTime: "09:00", taskUuid, title: `Proposal for ${ taskUuid }` };
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Seed a stored record marking `taskUuids` as proposed on `date` (default PRIORITY/PROVIDER identity).
+// @param {object} app - In-memory app stub.
+// @param {Date} date - The prior day to record proposals on.
+// @param {Array<string>} taskUuids - Tasks proposed that day.
+// @returns {Promise<void>}
+// [Claude claude-opus-4-8 (1M context)] Task: helper to record a day's proposals for recency tests
+function seedProposalsOn(app, date, taskUuids) {
+  return storeProposedAgenda(app, { activities: taskUuids.map(proposalActivity), date, priorityKey: PRIORITY,
+    providerEm: PROVIDER });
+}
+
+// LLM schedule offering all three fixture tasks, so a candidate excluded upstream is provably absent from output
+// (its suggestion is discarded at validation because its UUID is no longer in the candidate pool).
+const THREE_TASK_SCHEDULE = () => [
+  { durationMinutes: 60, reason: "a", startTime: "09:00", taskUuid: "task-1", title: "One" },
+  { durationMinutes: 30, reason: "b", startTime: "11:00", taskUuid: "task-2", title: "Two" },
+  { durationMinutes: 30, reason: "c", startTime: "13:00", taskUuid: "task-3", title: "Three" }];
+
+// [Claude claude-opus-4-8 (1M context)] Generated tests for: previous-week proposal log + recency de-duplication
+describe("recentProposedTaskHistory (previous-week proposal log)", () => {
+  it("maps each prior task to the distinct days it was proposed, excluding the target day itself", async () => {
+    const app = buildNoteApp();
+    await seedProposalsOn(app, new Date(2026, 5, 27), ["task-1"]);       // yesterday
+    await seedProposalsOn(app, new Date(2026, 5, 24), ["task-1", "task-2"]);
+    await seedProposalsOn(app, DATE, ["task-3"]);                        // the target day — must be excluded
+
+    const history = await recentProposedTaskHistory(app, { date: DATE });
+    expect([...history.get("task-1")].sort()).toEqual(["2026-06-24", "2026-06-27"]);
+    expect([...history.get("task-2")]).toEqual(["2026-06-24"]);
+    expect(history.has("task-3")).toBe(false);
+  });
+
+  it("counts a task proposed twice on one day (two priorities/LLMs) as a single day", async () => {
+    const app = buildNoteApp();
+    await storeProposedAgenda(app, { activities: [proposalActivity("task-1")], date: new Date(2026, 5, 26),
+      priorityKey: PRIORITY, providerEm: PROVIDER });
+    await storeProposedAgenda(app, { activities: [proposalActivity("task-1")], date: new Date(2026, 5, 26),
+      priorityKey: "low-energy", providerEm: "openai" });
+
+    const history = await recentProposedTaskHistory(app, { date: DATE });
+    expect([...history.get("task-1")]).toEqual(["2026-06-26"]);
+  });
+
+  it("reads across a month boundary and drops days older than the look-back window", async () => {
+    const app = buildNoteApp();
+    const target = new Date(2026, 6, 1); // July 1 — window reaches back into June
+    await seedProposalsOn(app, new Date(2026, 5, 29), ["task-1"]);       // June 29, inside the window
+    await seedProposalsOn(app, new Date(2026, 5, 20), ["task-2"]);       // June 20, older than 7 days — excluded
+
+    const history = await recentProposedTaskHistory(app, { date: target });
+    expect([...history.get("task-1")]).toEqual(["2026-06-29"]);
+    expect(history.has("task-2")).toBe(false);
+  });
+});
+
+// [Claude claude-opus-4-8 (1M context)] Generated tests for: recency rules gate the candidate pool sent to the LLM
+describe("generateProposedAgenda recency de-duplication", () => {
+  it("does not re-propose a task suggested the immediately preceding day (no two days in a row)", async () => {
+    const app = buildGenerationApp(THREE_TASK_SCHEDULE);
+    await seedProposalsOn(app, new Date(2026, 5, 27), ["task-1"]); // proposed yesterday
+
+    const result = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    expect(result.activities.map(a => a.taskUuid)).toEqual(["task-2", "task-3"]);
+  });
+
+  it("does not propose a task a third time within a 5-day window (proposed on two prior days)", async () => {
+    const app = buildGenerationApp(THREE_TASK_SCHEDULE);
+    await seedProposalsOn(app, new Date(2026, 5, 24), ["task-2"]);
+    await seedProposalsOn(app, new Date(2026, 5, 26), ["task-2"]); // two distinct days inside the trailing window
+
+    const result = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    expect(result.activities.map(a => a.taskUuid)).toEqual(["task-1", "task-3"]);
+  });
+
+  it("still proposes a task seen only once, and not on the preceding day, inside the window", async () => {
+    const app = buildGenerationApp(THREE_TASK_SCHEDULE);
+    await seedProposalsOn(app, new Date(2026, 5, 25), ["task-2"]); // once, three days back — allowed
+
+    const result = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    expect(result.activities.map(a => a.taskUuid)).toEqual(["task-1", "task-2", "task-3"]);
+  });
+
+  it("relaxes the recency rules rather than proposing nothing when they would empty the candidate pool", async () => {
+    const app = buildGenerationApp(THREE_TASK_SCHEDULE);
+    await seedProposalsOn(app, new Date(2026, 5, 27), ["task-1", "task-2", "task-3"]); // every candidate proposed yesterday
+
+    const result = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    expect(result.activities.map(a => a.taskUuid)).toEqual(["task-1", "task-2", "task-3"]);
   });
 });
