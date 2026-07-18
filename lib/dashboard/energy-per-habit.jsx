@@ -9,7 +9,7 @@ import WidgetWrapper from "widget-wrapper";
 import { noteUrlFromUUID } from "app-util";
 import { widgetTitleFromId } from "constants/settings";
 import { logIfEnabled } from "util/log";
-import { formatDelta, HABIT_ANALYSIS_WINDOW_DAYS } from "energy-per-habit-analysis";
+import { formatDelta, HABIT_ANALYSIS_WINDOW_DAYS, leadingEmoji, stripLeadingEmoji } from "energy-per-habit-analysis";
 import { loadEnergyPerHabit } from "energy-per-habit-service";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import "styles/energy-per-habit.scss";
@@ -54,14 +54,20 @@ const HABIT_ICON_HINTS = [
   { pattern: /movie|film|cinema/, icon: '🎬' },
   { pattern: /cleaning|laundry|housework/, icon: '🧺' },
   { pattern: /swim|pool|water/, icon: '🏊' },
+  { pattern: /networking|bizdev/, icon: '🤝' },
 ];
 
 // ------------------------------------------------------------------------------------------
-// @desc Pick a habit icon from its label using keyword hints, defaulting to a generic glyph.
-// @param {string} label - Habit display label.
+// @desc Pick a habit's icon. When the habit's own text begins with an emoji, that emoji IS the canonical
+//   icon (checked on the label, then the full task text as a fallback for habits last completed in a cached
+//   month whose stored label predates emoji retention). Only when the habit carries no leading emoji do we
+//   fall back to a keyword-hint glyph, then a generic default.
+// @param {Object} habit - Habit with { label, fullText }.
 // @returns {string} Emoji icon.
-function habitIcon(label) {
-  const lower = (label || '').toLowerCase();
+function habitIcon(habit) {
+  const ownEmoji = leadingEmoji(habit.label) || leadingEmoji(habit.fullText);
+  if (ownEmoji) return ownEmoji;
+  const lower = stripLeadingEmoji(habit.label).toLowerCase();
   for (const { pattern, icon } of HABIT_ICON_HINTS) {
     if (pattern.test(lower)) return icon;
   }
@@ -102,9 +108,11 @@ function barTooltip(habit) {
 
 // ------------------------------------------------------------------------------------------
 // @desc Render a single habit row: icon, label, "N/window days · X-week streak" meta, a diverging bar (right
-//   of the zero axis for positive delta, left + magenta for negative), and the value. The label is rendered
-//   as Amplenote markdown (bold/italic/highlight/rich-footnote links) — matching how the Agenda widget renders
-//   task content — so habit text formatting survives. When the habit carries a note reference the label is a
+//   of the zero axis for positive delta, left + magenta for negative), and the value. The icon is the habit's
+//   own leading emoji when it has one (else a keyword-derived glyph), and that leading emoji is stripped from
+//   the rendered label so it isn't doubled beside the icon. The label is rendered as Amplenote markdown
+//   (bold/italic/highlight/rich-footnote links) — matching how the Agenda widget renders task content — so
+//   habit text formatting survives. When the habit carries a note reference the label is a
 //   click-through that opens the task's note (clicks on an inner link are left to the link), and its title
 //   shows the full task text on hover. Hovering the bar shows the avg + count of mood ratings on completed
 //   vs. off days.
@@ -115,13 +123,13 @@ function HabitRow({ habit, windowDays, maxAbsDelta, onOpen }) {
   const widthPct = maxAbsDelta > 0 ? Math.min(100, (Math.abs(habit.delta) / maxAbsDelta) * 100) : 0;
   const clickable = Boolean(habit.noteUUID);
   const fullText = habit.fullText || habit.label;
-  const labelClass = `eph-row-label${clickable ? ' eph-row-label--link' : ''}`;
+  const labelClass = `habit-row-label${clickable ? ' habit-row-label--link' : ''}`;
   const barTitle = barTooltip(habit);
   return (
-    <div className="eph-row">
-      <div className="eph-row-lead">
-        <span className="eph-row-icon" aria-hidden="true">{habitIcon(habit.label)}</span>
-        <div className="eph-row-text">
+    <div className="habit-row">
+      <div className="habit-row-lead">
+        <span className="habit-row-icon" aria-hidden="true">{habitIcon(habit)}</span>
+        <div className="habit-row-text">
           <div
             className={labelClass}
             title={fullText}
@@ -129,31 +137,31 @@ function HabitRow({ habit, windowDays, maxAbsDelta, onOpen }) {
             tabIndex={clickable ? 0 : undefined}
             onClick={clickable ? (e) => { if (!e.target.closest('a')) onOpen(habit); } : undefined}
             onKeyDown={clickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(habit); } } : undefined}
-            dangerouslySetInnerHTML={{ __html: amplenoteMarkdownRender(habit.label) }}
+            dangerouslySetInnerHTML={{ __html: amplenoteMarkdownRender(stripLeadingEmoji(habit.label)) }}
           />
-          <div className="eph-row-meta">Completed {`${habit.daysDone} of ${windowDays} days · ${weekStreakLabel(habit.weekStreak)}`}</div>
+          <div className="habit-row-meta">Completed {`${habit.daysDone} of ${windowDays} days · ${weekStreakLabel(habit.weekStreak)}`}</div>
         </div>
       </div>
-      <div className="eph-row-track">
-        <div className="eph-row-axis" />
-        <div className="eph-row-bar-half eph-row-bar-half--neg" title={barTitle}>
+      <div className="habit-row-track">
+        <div className="habit-row-axis" />
+        <div className="habit-row-bar-half habit-row-bar-half--negative" title={barTitle}>
           {!positive && (
             <div
-              className="eph-row-bar eph-row-bar--neg"
+              className="habit-row-bar habit-row-bar--negative"
               style={{ width: `${widthPct}%` }}
             />
           )}
         </div>
-        <div className="eph-row-bar-half eph-row-bar-half--pos" title={barTitle}>
+        <div className="habit-row-bar-half habit-row-bar-half--positive" title={barTitle}>
           {positive && (
             <div
-              className="eph-row-bar eph-row-bar--pos"
+              className="habit-row-bar habit-row-bar--positive"
               style={{ width: `${widthPct}%` }}
             />
           )}
         </div>
       </div>
-      <div className={`eph-row-value ${positive ? 'eph-row-value--pos' : 'eph-row-value--neg'}`}>
+      <div className={`habit-row-value ${positive ? 'habit-row-value--positive' : 'habit-row-value--negative'}`}>
         {formatDelta(habit.delta)}
       </div>
     </div>
@@ -192,7 +200,7 @@ export default function EnergyPerHabitWidget({ app }) {
 
   const rows = useMemo(() => (analysis?.habits || []).slice(0, MAX_HABIT_ROWS), [analysis]);
   const maxAbsDelta = useMemo(
-    () => rows.reduce((max, h) => Math.max(max, Math.abs(h.delta)), 0),
+    () => rows.reduce((max, habit) => Math.max(max, Math.abs(habit.delta)), 0),
     [rows]
   );
 
@@ -212,7 +220,7 @@ export default function EnergyPerHabitWidget({ app }) {
   if (loading) {
     return (
       <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon="⚡" widgetId={WIDGET_ID}>
-        <div className="eph-empty">Analyzing your habits…</div>
+        <div className="habit-empty">Analyzing your habits…</div>
       </WidgetWrapper>
     );
   }
@@ -220,9 +228,9 @@ export default function EnergyPerHabitWidget({ app }) {
   if (!rows.length) {
     return (
       <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon="⚡" widgetId={WIDGET_ID}>
-        <div className="eph-empty">
+        <div className="habit-empty">
           <p>No recurring-task habits with enough mood history to correlate yet.</p>
-          <p className="eph-empty-hint">Set tasks to repeat and log your mood over time to see which habits lift your days.</p>
+          <p className="habit-empty-hint">Set tasks to repeat and log your mood over time to see which habits lift your days.</p>
         </div>
       </WidgetWrapper>
     );
@@ -230,12 +238,12 @@ export default function EnergyPerHabitWidget({ app }) {
 
   return (
     <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon="⚡" widgetId={WIDGET_ID}>
-      <div className="eph-header">
-        <div className="eph-eyebrow">{`${windowDays} DAYS ANALYZED`}</div>
+      <div className="habit-header">
+        <div className="habit-eyebrow">{`${windowDays} DAYS ANALYZED`}</div>
       </div>
-      <div className="eph-chart">
-        <div className="eph-zero-line"><span className="eph-zero-label">0</span></div>
-        <div className="eph-rows" ref={rowsRef}>
+      <div className="habit-chart">
+        <div className="habit-zero-line"><span className="habit-zero-label">0</span></div>
+        <div className="habit-rows" ref={rowsRef}>
           {rows.map(habit => (
             <HabitRow key={habit.key} habit={habit} windowDays={windowDays} maxAbsDelta={maxAbsDelta} onOpen={onOpenHabit} />
           ))}

@@ -27,7 +27,7 @@ describe("Energy Per Habit end-to-end against the dev app", () => {
   let tmp, app;
 
   beforeAll(() => {
-    tmp = fs.mkdtempSync(path.join(os.tmpdir(), "eph-e2e-"));
+    tmp = fs.mkdtempSync(path.join(os.tmpdir(), "energy-per-habit-e2e-"));
     fs.mkdirSync(path.join(tmp, "notes"));
     app = createDevApp(path.join(tmp, "settings.json"), path.join(tmp, "notes"), path.join(tmp, "moods.json"));
   });

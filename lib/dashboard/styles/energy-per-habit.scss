@@ -7,17 +7,17 @@
 @use 'theme-tokens' as *;
 
 /* Olive/green for positive mood deltas, magenta for negative — matching the mockup's palette. */
-$eph-pos: #a4b431;
-$eph-neg: #b0468a;
-$eph-bar-height: 18px;
-$eph-row-gap: 14px;
+$positive-delta-color: #a4b431;
+$negative-delta-color: #b0468a;
+$habit-bar-height: 18px;
+$habit-row-gap: 14px;
 
 .widget-energy-per-habit {
-  .eph-header {
+  .habit-header {
     margin-bottom: $sp-lg;
   }
 
-  .eph-eyebrow {
+  .habit-eyebrow {
     color: $color-text-muted;
     font-size: 0.7rem;
     font-weight: 600;
@@ -25,7 +25,7 @@ $eph-row-gap: 14px;
     text-transform: uppercase;
   }
 
-  .eph-title {
+  .habit-title {
     color: $color-text;
     font-size: 1.6rem;
     font-weight: 600;
@@ -35,7 +35,7 @@ $eph-row-gap: 14px;
 
   /* Chart body: rows on the left half, diverging bars on the right, with a shared zero axis
      positioned via the grid column boundary inside each row. */
-  .eph-chart {
+  .habit-chart {
     position: relative;
   }
 
@@ -45,19 +45,19 @@ $eph-row-gap: 14px;
      computed from the SAME variables the grid uses so the full-height zero line lands exactly on each
      row's neg/pos divider (a fixed value column is what makes the boundary a knowable percentage; an
      `auto` column shifted it, which drew the line through the middle of the bar). */
-  $eph-label-col: 46%;
-  $eph-value-col: 3.6rem;
-  $eph-axis-pos: calc(#{$eph-label-col} + (100% - #{$eph-label-col} - #{$eph-value-col}) / 2);
+  $habit-label-column: 46%;
+  $habit-value-column: 3.6rem;
+  $habit-axis-position: calc(#{$habit-label-column} + (100% - #{$habit-label-column} - #{$habit-value-column}) / 2);
 
-  .eph-zero-line {
+  .habit-zero-line {
     border-left: 1px solid $color-border;
     bottom: 0;
-    left: $eph-axis-pos;
+    left: $habit-axis-position;
     position: absolute;
     top: 18px;
   }
 
-  .eph-zero-label {
+  .habit-zero-label {
     color: $color-text-muted;
     font-size: 0.65rem;
     left: -3px;
@@ -65,20 +65,20 @@ $eph-row-gap: 14px;
     top: -14px;
   }
 
-  .eph-rows {
+  .habit-rows {
     display: flex;
     flex-direction: column;
-    gap: $eph-row-gap;
+    gap: $habit-row-gap;
   }
 
-  .eph-row {
+  .habit-row {
     align-items: center;
     display: grid;
-    grid-template-columns: $eph-label-col 1fr 1fr $eph-value-col;
+    grid-template-columns: $habit-label-column 1fr 1fr $habit-value-column;
     gap: 0;
   }
 
-  .eph-row-lead {
+  .habit-row-lead {
     align-items: center;
     display: flex;
     gap: $sp-sm;
@@ -86,18 +86,18 @@ $eph-row-gap: 14px;
     padding-right: $sp-md;
   }
 
-  .eph-row-icon {
+  .habit-row-icon {
     flex: 0 0 auto;
     font-size: 1rem;
     opacity: 0.85;
     width: 20px;
   }
 
-  .eph-row-text {
+  .habit-row-text {
     min-width: 0;
   }
 
-  .eph-row-label {
+  .habit-row-label {
     color: $color-text;
     font-size: 13px;
     overflow: hidden;
@@ -106,7 +106,7 @@ $eph-row-gap: 14px;
   }
 
   /* Clickable label (habit has a note reference) — navigates to the task's note on click. */
-  .eph-row-label--link {
+  .habit-row-label--link {
     cursor: pointer;
 
     &:hover,
@@ -116,54 +116,54 @@ $eph-row-gap: 14px;
     }
   }
 
-  .eph-row-meta {
+  .habit-row-meta {
     color: $color-text-muted;
     font-size: 12px;
     margin-top: 1px;
   }
 
   /* The two bar halves share a baseline; the negative half grows leftward (bar anchored right),
-     the positive half grows rightward (bar anchored left). eph-row-track spans both halves so a
+     the positive half grows rightward (bar anchored left). habit-row-track spans both halves so a
      per-row axis divider can be drawn between them. */
-  .eph-row-track {
+  .habit-row-track {
     display: contents;
   }
 
-  .eph-row-axis {
+  .habit-row-axis {
     display: none;
   }
 
-  .eph-row-bar-half {
+  .habit-row-bar-half {
     align-items: center;
     display: flex;
-    height: $eph-bar-height;
+    height: $habit-bar-height;
   }
 
-  .eph-row-bar-half--neg {
+  .habit-row-bar-half--negative {
     justify-content: flex-end;
     border-right: 1px solid $color-border;
     padding-right: 1px;
   }
 
-  .eph-row-bar-half--pos {
+  .habit-row-bar-half--positive {
     justify-content: flex-start;
     padding-left: 1px;
   }
 
-  .eph-row-bar {
+  .habit-row-bar {
     border-radius: 3px;
     height: 100%;
   }
 
-  .eph-row-bar--pos {
-    background: $eph-pos;
+  .habit-row-bar--positive {
+    background: $positive-delta-color;
   }
 
-  .eph-row-bar--neg {
-    background: $eph-neg;
+  .habit-row-bar--negative {
+    background: $negative-delta-color;
   }
 
-  .eph-row-value {
+  .habit-row-value {
     font-size: 0.95rem;
     font-variant-numeric: tabular-nums;
     font-weight: 600;
@@ -172,15 +172,15 @@ $eph-row-gap: 14px;
     white-space: nowrap;
   }
 
-  .eph-row-value--pos {
-    color: $eph-pos;
+  .habit-row-value--positive {
+    color: $positive-delta-color;
   }
 
-  .eph-row-value--neg {
-    color: $eph-neg;
+  .habit-row-value--negative {
+    color: $negative-delta-color;
   }
 
-  .eph-footnote {
+  .habit-footnote {
     background: $color-bg-page;
     border-radius: $radius-md;
     color: $color-text-secondary;
@@ -192,13 +192,13 @@ $eph-row-gap: 14px;
     strong { color: $color-text; }
   }
 
-  .eph-empty {
+  .habit-empty {
     color: $color-text-secondary;
     padding: $sp-xl $sp-md;
     text-align: center;
   }
 
-  .eph-empty-hint {
+  .habit-empty-hint {
     color: $color-text-muted;
     font-size: 0.82rem;
     margin-top: $sp-sm;

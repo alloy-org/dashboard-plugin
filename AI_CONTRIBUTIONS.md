@@ -3,6 +3,23 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-07-18 — Expand abbreviated energy-per-habit names
+
+**Model:** Cursor Grok 4.5
+**Files created/modified:**
+- `lib/dashboard/energy-per-habit-analysis.js` (modified — rename `agg*`/`rep`/`dk` locals to full words; add
+  `habitKeyFromLabel` so short full-content labels key by whole text)
+- `lib/dashboard/energy-per-habit-cache.js` (modified — re-derive row keys via `habitKeyFromLabel`)
+- `lib/dashboard/energy-per-habit.jsx` (modified — rename `eph-*` CSS class usage to multi-word `habit-*` names)
+- `lib/dashboard/styles/energy-per-habit.scss` (modified — same class/variable renames; `--pos`/`--neg` → `--positive`/`--negative`)
+- `test/energy-per-habit-dev-integration.test.js` (modified — temp-dir prefix)
+- `CLAUDE.md` / `AGENTS.md` (modified — add non-abbreviated naming + two-word class-name rule)
+
+**Task:** Remove abbreviated identifiers (`agg*`, `eph*`) from the Energy Per Habit analysis path and document the naming rule
+**Prompt summary:** "Fix abbreviated variable names like agg* and eph*; class names at least two words; add to AGENTS.md if missing"
+
+---
+
 ## 2026-07-18 — Energy Per Habit: per-month caching, text-based habit discovery, axis fix
 
 **Model:** claude-opus-4-8[1m]

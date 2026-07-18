@@ -91,7 +91,36 @@ export default function CounterCard({ title }) {
 }
 ```
 
-## 4. Running Jest (Javascript) Tests
+## 4. Prefer non-abbreviated names; class names need at least two words
+
+Use full words for variables, functions, CSS classes, and SCSS variables. Avoid truncated prefixes
+such as `agg`, `eph`, `rep`, or `dk` when a readable word fits (`aggregate`, `habit`, `representative`,
+`dayKey`).
+
+JavaScript and CSS class names must be at least two words (e.g. `HabitRow`, `habit-row-label`) so
+they stay distinct from single-token domain nouns and are easier to search for.
+
+```javascript
+// Bad
+const aggByKey = new Map();
+const eph = computeEph(agg);
+
+// Good
+const aggregateByKey = new Map();
+const habitAnalysis = computeHabitAnalysis(aggregate);
+```
+
+```css
+/* Bad */
+.eph-row { }
+.eph-row-value--pos { }
+
+/* Good */
+.habit-row { }
+.habit-row-value--positive { }
+```
+
+## 5. Running Jest (Javascript) Tests
 
 Tests use Jest with ECMAScript Modules. Always run with the `--experimental-vm-modules` flag:
 

@@ -284,7 +284,8 @@ export const DEV_HABIT_DEFINITIONS = [
   { key: "outside-walk",     content: "☀️ Outside / walk",    victoryValue: 4, repeat: "FREQ=DAILY",          assoc:  0.30 },
   { key: "inbox-zero",       content: "📥 Inbox to zero",     victoryValue: 3, repeat: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR", assoc: 0.24 },
   { key: "read-30",          content: "📖 Read 30 min",       victoryValue: 4, repeat: "FREQ=DAILY",          assoc:  0.20 },
-  { key: "deep-work",        content: "🎯 Deep work block",   victoryValue: 9, repeat: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR", assoc: 0.15 },
+  // Leading 🦆 (rubber-duck debugging) is deliberately NOT derivable from "deep work block"
+  { key: "deep-work",        content: "🦆 Deep work block",   victoryValue: 9, repeat: "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR", assoc: 0.15 },
   { key: "no-screen",        content: "🌙 No-screen evening", victoryValue: 3, repeat: "FREQ=DAILY",          assoc:  0.12 },
   { key: "meditate",         content: "🧘 Meditate",          victoryValue: 3, repeat: "FREQ=DAILY",          assoc:  0.075 },
   { key: "late-night-work",  content: "🌜 Late-night work",   victoryValue: 5, repeat: "FREQ=DAILY",          assoc: -0.26 },

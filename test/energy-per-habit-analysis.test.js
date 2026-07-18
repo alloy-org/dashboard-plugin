@@ -6,7 +6,8 @@
  */
 import {
   aggregateMonthlyHabits, analyzeHabitMoodDeltas, computeMonthlyAggregates, formatDelta, habitGroupKey,
-  isHabitTask, monthKeyFromMonthLabel, monthLabelFromMonthKey, moodByDayFromRatings, trailingMonthKeys,
+  isHabitTask, leadingEmoji, monthKeyFromMonthLabel, monthLabelFromMonthKey, moodByDayFromRatings,
+  stripLeadingEmoji, trailingMonthKeys,
 } from "energy-per-habit-analysis";
 import { dateKeyFromDateInput } from "util/date-utility";
 
@@ -88,8 +89,8 @@ describe("analyzeHabitMoodDeltas", () => {
     for (const d of [3, 5, 7]) moods.push(mood(-1, d, ref)); // off days
     const { habits } = analyzeHabitMoodDeltas({ completedTasks: tasks, moodRatings: moods, today: ref });
     expect(habits).toHaveLength(1);
-    expect(habits[0].key).toBe("jog");     // normalized grouping key drops emoji/case/punct
-    expect(habits[0].label).toBe("Jog");   // display label strips leading emoji (widget adds its own icon)
+    expect(habits[0].key).toBe("jog");         // normalized grouping key drops emoji/case/punct
+    expect(habits[0].label).toBe("🏃 Jog");    // label RETAINS the leading emoji (widget uses it as the icon, strips at render)
     expect(habits[0].completions).toBe(9);
   });
 
@@ -260,5 +261,23 @@ describe("formatDelta", () => {
     expect(formatDelta(0.35)).toBe("+0.35");
     expect(formatDelta(-0.19)).toBe("−0.19");
     expect(formatDelta(0)).toBe("0.00");
+  });
+});
+
+describe("leading-emoji helpers", () => {
+  test("leadingEmoji returns a habit's own leading emoji, or '' when there is none", () => {
+    expect(leadingEmoji("🦆 Deep work block")).toBe("🦆");
+    expect(leadingEmoji("☀️ Outside / walk")).toBe("☀️"); // emoji + variation selector kept whole
+    expect(leadingEmoji("🏋️‍♀️ Lift")).toBe("🏋️‍♀️");    // ZWJ sequence kept whole
+    expect(leadingEmoji("Deep work block")).toBe("");    // no leading emoji
+    expect(leadingEmoji("30 min read")).toBe("");        // a leading digit is not an emoji
+    expect(leadingEmoji("")).toBe("");
+  });
+
+  test("stripLeadingEmoji removes the leading emoji (and trailing space) for clean display text", () => {
+    expect(stripLeadingEmoji("🦆 Deep work block")).toBe("Deep work block");
+    expect(stripLeadingEmoji("☀️ Outside / walk")).toBe("Outside / walk");
+    expect(stripLeadingEmoji("Deep work block")).toBe("Deep work block"); // unchanged when no emoji
+    expect(stripLeadingEmoji("🦆")).toBe("🦆");                            // emoji-only falls back to itself
   });
 });
