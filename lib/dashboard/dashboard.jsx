@@ -9,24 +9,25 @@ import PlanningWidget from 'planning';
 import AgendaWidget from 'agenda';
 import CalendarWidget from 'calendar';
 import { apiKeyBucketFromLlmProvider, apiKeyFromProvider, DASHBOARD_FOCUS, DEFAULT_DASHBOARD_COMPONENTS,
-  IS_DEV_ENVIRONMENT, SETTING_KEYS, WIDGET_REGISTRY } from 'constants/settings';
+  IS_DEV_ENVIRONMENT, SETTING_KEYS } from 'constants/settings';
 import { DashboardLoadContext, useDashboardLoadTracker, useReportWidgetLoaded } from 'dashboard-load-tracking';
 import DashboardLayoutPopup from 'dashboard-layout-popup';
 import DashboardSettingNote from "dashboard-setting-note";
 import DashboardSettingsPopup from 'dashboard-settings-popup';
-import DreamTaskWidget from 'dream-task';
-import { gridCellFocusProps, useDashboardWidgetFocus } from 'focus-widget';
-import GraveyardWidget from 'graveyard';
-import LayoutPickerWidget, { saveLayoutWithProfile } from 'layout-picker';
-import { useDashboardDrag } from 'draggable-heading';
 import DaySketchWidget from 'day-sketch';
 import DebugConsoleWidget from 'debug-console';
+import { useDashboardDrag } from 'draggable-heading';
+import DreamTaskWidget from 'dream-task';
 import EnergyPerHabitWidget from 'energy-per-habit';
+import { gridCellFocusProps, useDashboardWidgetFocus } from 'focus-widget';
+import GraveyardWidget from 'graveyard';
 import useCompletedTasks from 'hooks/use-completed-tasks';
 import useDashboardLayout from 'hooks/use-dashboard-layout';
 import useDashboardTaskUpdates from 'hooks/use-dashboard-task-updates';
 import useDomainTasks from 'hooks/use-domain-tasks';
 import useExternalCalendarEvents from 'hooks/use-external-calendar-events';
+import LayoutPickerWidget, { saveLayoutWithProfile } from 'layout-picker';
+import { WIDGET_REGISTRY } from 'layout-profiles';
 import MoodWidget from 'mood';
 import PeakHoursWidget from 'peak-hours';
 import ProposedAgendaWidget from 'proposed-agenda';
@@ -42,14 +43,17 @@ import { logIfEnabled, setLoggingEnabled } from "util/log";
 import { useWidgetLoadTiming } from "util/widget-timing";
 import { WidgetSizeContext } from "widget-wrapper";
 import VictoryValueWidget from 'victory-value';
+
 import "styles/dashboard.scss"
 
+// ----------------------------------------------------------------------------------------------
 function gridCellClassName(config) {
   const w = Number(config?.gridWidthSize) > 0 ? Number(config.gridWidthSize) : 1;
   const h = Number(config?.gridHeightSize) > 0 ? Number(config.gridHeightSize) : 1;
   return `grid-cell horizontal-${w}-cell vertical-${h}-cell`;
 }
 
+// ----------------------------------------------------------------------------------------------
 function gridCellContainerProps(config, draggingWidgetId, focusedWidgetId, widgetFocusTransform) {
   const widgetId = config?.widgetId;
   const { classNames: focusClassNames, style } = gridCellFocusProps(focusedWidgetId, widgetFocusTransform, widgetId);

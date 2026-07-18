@@ -122,6 +122,30 @@ $habit-row-gap: 14px;
     margin-top: 1px;
   }
 
+  /* "N-week streak active" line, prefixed by a colored strength box. The box escalates
+     gray → blue → yellow → orange → red as the consecutive-week streak grows, giving an
+     at-a-glance read on how established each habit is. Tier classes come from weekStreakLabel(). */
+  .streak-label {
+    align-items: center;
+    display: flex;
+    gap: $sp-xs;
+
+    &::before {
+      background-color: #8a8f98;
+      border-radius: 3px;
+      content: '';
+      flex: 0 0 auto;
+      height: 11px;
+      width: 11px;
+    }
+
+    &.streak-week::before { background-color: #8a8f98; }
+    &.streak-alive::before { background-color: #5b7bbf; }
+    &.streak-month::before { background-color: #e2c541; }
+    &.streak-quarter::before { background-color: #e08a2f; }
+    &.streak-half-year::before { background-color: #cf3b2e; }
+  }
+
   /* The two bar halves share a baseline; the negative half grows leftward (bar anchored right),
      the positive half grows rightward (bar anchored left). habit-row-track spans both halves so a
      per-row axis divider can be drawn between them. */

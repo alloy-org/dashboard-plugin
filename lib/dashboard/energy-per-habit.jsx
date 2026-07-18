@@ -18,6 +18,7 @@ const WIDGET_ID = 'energy-per-habit';
 
 // Number of habits to render (mockup shows the strongest handful; keeps the tile readable).
 const MAX_HABIT_ROWS = 8;
+const ROUND_UP_TO_YEAR_ABOVE = 330;
 
 // Fallback icon plus keyword→emoji hints so common habits get a recognizable glyph like the mockup.
 const HABIT_ICON_FALLBACK = '🔁';
@@ -75,14 +76,21 @@ function habitIcon(habit) {
 }
 
 // ------------------------------------------------------------------------------------------
-// @desc Human "ongoing weeks completed" streak label. A live streak reads "N-week streak"; zero reads as no
-//   active streak so a stale row isn't mislabeled as a fresh one.
+// @desc Human "ongoing weeks completed" streak label. A live streak reads "N-week streak" preceded by a
+//   colored strength box; zero reads as no active streak so a stale row isn't mislabeled as a fresh one. The
+//   returned class drives the box color, which escalates gray → blue → yellow → orange → red as the streak
+//   lengthens (see .streak-label in energy-per-habit.scss).
 // @param {number} weeks - Consecutive weeks the habit was completed at least once (ending now).
-// @returns {string}
+// @returns {string|JSX.Element}
 function weekStreakLabel(weeks) {
   const count = Number(weeks) || 0;
   if (count <= 0) return 'no active streak';
-  return `${count}-week streak`;
+  let streakClass = 'streak-week';
+  if (count >= 2) streakClass = 'streak-alive';
+  if (count >= 4) streakClass = 'streak-month';
+  if (count >= 12) streakClass = 'streak-quarter';
+  if (count >= 26) streakClass = 'streak-half-year';
+  return (<div className={ `streak-label ${ streakClass }` }>{ count }-week streak active</div>);
 }
 
 // ------------------------------------------------------------------------------------------
@@ -139,7 +147,8 @@ function HabitRow({ habit, windowDays, maxAbsDelta, onOpen }) {
             onKeyDown={clickable ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen(habit); } } : undefined}
             dangerouslySetInnerHTML={{ __html: amplenoteMarkdownRender(stripLeadingEmoji(habit.label)) }}
           />
-          <div className="habit-row-meta">Completed {`${habit.daysDone} of ${windowDays} days · ${weekStreakLabel(habit.weekStreak)}`}</div>
+          <div className="habit-row-meta">Completed { habit.daysDone } of { windowDays } days</div>
+          <div className="habit-row-meta">{ weekStreakLabel(habit.weekStreak) }</div>
         </div>
       </div>
       <div className="habit-row-track">
@@ -215,7 +224,8 @@ export default function EnergyPerHabitWidget({ app }) {
     app.navigate(noteUrlFromUUID(habit.noteUUID));
   }, [app]);
 
-  const windowDays = analysis?.windowDays || HABIT_ANALYSIS_WINDOW_DAYS;
+  let windowDays = analysis?.windowDays || HABIT_ANALYSIS_WINDOW_DAYS;
+  windowDays = windowDays >= ROUND_UP_TO_YEAR_ABOVE ? 365 : windowDays;
 
   if (loading) {
     return (
@@ -244,9 +254,11 @@ export default function EnergyPerHabitWidget({ app }) {
       <div className="habit-chart">
         <div className="habit-zero-line"><span className="habit-zero-label">0</span></div>
         <div className="habit-rows" ref={rowsRef}>
-          {rows.map(habit => (
-            <HabitRow key={habit.key} habit={habit} windowDays={windowDays} maxAbsDelta={maxAbsDelta} onOpen={onOpenHabit} />
-          ))}
+          {
+            rows.map(habit => (
+              <HabitRow key={habit.key} habit={habit} windowDays={windowDays} maxAbsDelta={maxAbsDelta} onOpen={onOpenHabit} />
+            ))
+          }
         </div>
       </div>
     </WidgetWrapper>

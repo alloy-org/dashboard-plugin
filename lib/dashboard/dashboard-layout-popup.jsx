@@ -6,7 +6,7 @@
  */
 import { LAYOUT_PROFILES, getProfileById, sizingFromProfile } from "layout-profiles";
 import { useState, useRef } from "react";
-import { WIDGET_REGISTRY } from "constants/settings";
+import { WIDGET_REGISTRY } from "dashboard/layout-profiles";
 import { snapDashboardAction } from "util/plausible";
 import "styles/dashboard-layout-popup.scss"
 
