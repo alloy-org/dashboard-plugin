@@ -10,6 +10,7 @@ import AgendaWidget from 'agenda';
 import CalendarWidget from 'calendar';
 import { apiKeyBucketFromLlmProvider, apiKeyFromProvider, DASHBOARD_FOCUS, DEFAULT_DASHBOARD_COMPONENTS,
   IS_DEV_ENVIRONMENT, SETTING_KEYS } from 'constants/settings';
+import { reportPriorCrashIfAny, stampBreadcrumbSettled, writeRenderBreadcrumb } from "crash-breadcrumb";
 import { DashboardLoadContext, useDashboardLoadTracker, useReportWidgetLoaded } from 'dashboard-load-tracking';
 import DashboardLayoutPopup from 'dashboard-layout-popup';
 import DashboardSettingNote from "dashboard-setting-note";
@@ -28,6 +29,7 @@ import useDomainTasks from 'hooks/use-domain-tasks';
 import useExternalCalendarEvents from 'hooks/use-external-calendar-events';
 import LayoutPickerWidget, { saveLayoutWithProfile } from 'layout-picker';
 import { WIDGET_REGISTRY } from 'layout-profiles';
+import LazyWidgetMount from "lazy-widget-mount";
 import MoodWidget from 'mood';
 import PeakHoursWidget from 'peak-hours';
 import ProposedAgendaWidget from 'proposed-agenda';
@@ -43,6 +45,8 @@ import { logIfEnabled, setLoggingEnabled } from "util/log";
 import { useWidgetLoadTiming } from "util/widget-timing";
 import { WidgetSizeContext } from "widget-wrapper";
 import VictoryValueWidget from 'victory-value';
+import { deviceProfile as readDeviceProfile, isMemoryConstrainedDevice } from "util/device-profile";
+import { logMemorySample, startMemorySampling } from "util/memory-instrumentation";
 
 import "styles/dashboard.scss"
 
@@ -128,8 +132,10 @@ function createWidgetCell(widgetId, WidgetComponent, buildWidgetProps) {
       <div {...gridCellContainerProps(config, draggingWidgetId, focusedWidgetId, widgetFocusTransform)}>
         <WidgetErrorBoundary widgetId={widgetId}>
           <WidgetSizeContext.Provider value={widgetSizeValue}>
-            <WidgetLoadReporter widgetId={widgetId} />
-            <WidgetComponent {...buildWidgetProps(cellProps)} />
+            <LazyWidgetMount widgetId={widgetId}>
+              <WidgetLoadReporter widgetId={widgetId} />
+              <WidgetComponent {...buildWidgetProps(cellProps)} />
+            </LazyWidgetMount>
           </WidgetSizeContext.Provider>
         </WidgetErrorBoundary>
       </div>
@@ -209,6 +215,24 @@ const CELL_COMPONENTS = {
   'shared-notes': SharedNotesCell,
   'victory-value': VictoryValueCell,
 };
+
+// ------------------------------------------------------------------------------------------
+// @desc Resolve the widget ids the dashboard is about to render, from the persisted layout in the
+//   init settings snapshot, filtered to widgets that have a real cell component. Used to fingerprint
+//   the render in the crash breadcrumb before React mounts the (heavy) widget grid. Mirrors the
+//   filtering the render loop applies to displayedComponents.
+// @param {Object} settingsSnapshot - The settings map from the init payload.
+// @returns {string[]} Ordered widget ids that will be rendered.
+// [Claude claude-opus-4-8 (1M context)] Task: fingerprint the intended render for crash breadcrumbs
+function intendedWidgetIds(settingsSnapshot) {
+  const rawLayout = settingsSnapshot?.[SETTING_KEYS.DASHBOARD_COMPONENTS];
+  let layout = rawLayout;
+  if (typeof rawLayout === 'string') {
+    try { layout = JSON.parse(rawLayout); } catch { layout = null; }
+  }
+  if (!Array.isArray(layout)) layout = DEFAULT_DASHBOARD_COMPONENTS;
+  return layout.map(entry => entry?.widgetId).filter(widgetId => CELL_COMPONENTS[widgetId]);
+}
 
 // ------------------------------------------------------------------------------------------
 // @desc Push the plugin's initial payload into the dashboard's React state, hydrating every
@@ -372,6 +396,14 @@ export default function DashboardApp({ app, initPromise }) {
   const [weeklyVictoryValue, setWeeklyVictoryValue] = useState(null);
   const dashboardSettingNoteRef = useRef(null);
   const initDataFreshRef = useRef(false);
+  // Crash-breadcrumb session state: a stable device profile + start time for this dashboard load,
+  // the pending breadcrumb write promise (so the settle-stamp can be chained after it, avoiding a
+  // last-write-wins race), and a flag so we stamp at most once.
+  const deviceProfileRef = useRef(null);
+  if (deviceProfileRef.current === null) deviceProfileRef.current = readDeviceProfile();
+  const breadcrumbStartedAtRef = useRef(Date.now());
+  const breadcrumbWriteRef = useRef(null);
+  const breadcrumbStampedRef = useRef(false);
   const weekStartDay = weekStartDayFromFormat(weekFormat);
 
   useEffect(() => {
@@ -383,6 +415,16 @@ export default function DashboardApp({ app, initPromise }) {
         setError(data.error);
       } else {
         setPluginData(data);
+        // Instrumentation: surface a prior OOM crash (if the last session never settled), record a
+        // baseline heap sample, and — on memory-constrained devices only — persist a render
+        // breadcrumb BEFORE the heavy widget grid mounts so a crash this session is detectable next
+        // launch. The write promise is retained so the settle-stamp can be chained after it.
+        reportPriorCrashIfAny(data.settings);
+        logMemorySample('init');
+        if (isMemoryConstrainedDevice()) {
+          breadcrumbWriteRef.current = writeRenderBreadcrumb(app, { deviceProfile: deviceProfileRef.current,
+            startedAt: breadcrumbStartedAtRef.current, widgetIds: intendedWidgetIds(data.settings) });
+        }
         applyDashboardData(data, {
           initDataFreshRef, initializeDomainTasks, setConfigParams,
           setCurrentDate, setDailyVictoryValues, setMoodRatings, setPluginNoteUUID,
@@ -397,6 +439,16 @@ export default function DashboardApp({ app, initPromise }) {
       }
     }).catch(err => setError(err.message));
   }, []);
+
+  // Periodic heap sampling, active only when console logging is enabled (the DebugConsole is the
+  // surface for the samples). startMemorySampling no-ops on runtimes without performance.memory
+  // (e.g. iOS WKWebView), so this never spins uselessly there.
+  useEffect(() => {
+    const loggingEnabled = ['true', 'yes', '1', 'on', 'enabled'].includes(
+      String(configParams?.[SETTING_KEYS.CONSOLE_LOGGING] || '').trim().toLowerCase());
+    if (!loggingEnabled) return undefined;
+    return startMemorySampling();
+  }, [configParams]);
 
   const victoryReferenceDate = useMemo(() => {
     if (selectedDate) return selectedDate;
@@ -467,6 +519,23 @@ export default function DashboardApp({ app, initPromise }) {
     []
   );
 
+  // ------------------------------------------------------------------------------------------
+  // @desc Once the dashboard reaches a clean settle, stamp the crash breadcrumb as settled so the
+  //   next launch does not misread this session as an out-of-memory crash. Reaching settle at all
+  //   means the render survived (even if an individual widget's error boundary tripped), so we stamp
+  //   regardless of per-widget errors. Chained after the pending write to avoid a last-write-wins
+  //   race, and guarded to run at most once.
+  const handleDashboardSettled = useCallback(() => {
+    if (breadcrumbStampedRef.current || !breadcrumbWriteRef.current) return;
+    breadcrumbStampedRef.current = true;
+    logMemorySample('load-settle');
+    breadcrumbWriteRef.current.then(written => {
+      if (!written) return;
+      stampBreadcrumbSettled(app, { deviceProfile: deviceProfileRef.current, settledAt: Date.now(),
+        startedAt: breadcrumbStartedAtRef.current, widgetIds: written.widgetIds });
+    });
+  }, [app]);
+
   useDashboardTaskUpdates({ activeTaskDomain, app, onDomainChange, openTasks });
 
   const agendaTasks = useMemo(
@@ -489,7 +558,7 @@ export default function DashboardApp({ app, initPromise }) {
   const renderedWidgetIds = displayedComponents
     .map((config, index) => config?.widgetId || DEFAULT_DASHBOARD_COMPONENTS[index]?.widgetId)
     .filter(id => CELL_COMPONENTS[id]);
-  const loadTracker = useDashboardLoadTracker(renderedWidgetIds);
+  const loadTracker = useDashboardLoadTracker(renderedWidgetIds, { onSettle: handleDashboardSettled });
 
   if (error) {
     return (

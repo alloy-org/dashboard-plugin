@@ -5,7 +5,12 @@
 import { createRoot } from "react-dom/client";
 import { IS_DEV_ENVIRONMENT } from "constants/settings";
 import { createBrowserDevApp } from "util/browser-dev-app";
+import { publishDeviceProfileDiagnostic } from "util/device-profile";
 import DashboardApp from "./dashboard.jsx";
+
+// Publish device tier + viewport metrics before React mounts so the init-time read in dashboard.jsx
+// (window.__dashboardViewportDiag) surfaces real data instead of an unset stub.
+publishDeviceProfileDiagnostic();
 
 const LARGE_PHONE_BREAKPOINT_PIXELS = 430;
 const LARGE_PHONE_VIEWPORT_CLASS_NAME = 'dashboard-large-phone-viewport';
