@@ -6,6 +6,7 @@
  */
 import { useEffect, useRef, useMemo, useCallback, useState } from "react";
 import { widgetTitleFromId } from "constants/settings";
+import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { dateFromDateInput, formatHourLabel } from "util/date-utility";
 import { logIfEnabled } from "util/log";
 import WidgetWrapper from "widget-wrapper";
@@ -241,6 +242,8 @@ function LegendItem({ modifierClass, label }) {
 export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFormat }) {
   const canvasRef = useRef(null);
   const [tooltip, setTooltip] = useState(null);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState([]);
   const fetchedMonthRef = useRef(null);
 
@@ -255,12 +258,19 @@ export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFo
     if (fetchedMonthRef.current === monthKey) return;
     fetchedMonthRef.current = monthKey;
     let cancelled = false;
+    setError(null);
+    setLoading(true);
 
     app.getCompletedTasks(from, to).then(result => {
       if (!cancelled) setTasks(Array.isArray(result) ? result : []);
     }).catch(err => {
       logIfEnabled('[peak-hours] failed to fetch month tasks', err);
-      if (!cancelled) setTasks([]);
+      if (!cancelled) {
+        setError(err);
+        setTasks([]);
+      }
+    }).finally(() => {
+      if (!cancelled) setLoading(false);
     });
 
     return () => { cancelled = true; };
@@ -310,6 +320,17 @@ export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFo
   }, [createdByHour, completedByHour]);
 
   const handleMouseLeave = useCallback(() => setTooltip(null), []);
+  useWidgetLoadedEvent(WIDGET_ID, !loading && !error, !!error);
+
+  if (loading) {
+    return (
+      <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon="⏰" widgetId={WIDGET_ID} subtitle={monthSubtitle}>
+        <div className="peak-hours-empty">
+          <p>Loading monthly task history…</p>
+        </div>
+      </WidgetWrapper>
+    );
+  }
 
   if (totalTasks === 0) {
     return (

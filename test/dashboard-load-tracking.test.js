@@ -2,7 +2,7 @@ import { jest } from "@jest/globals";
 import { act, createElement, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 
-const { useDashboardLoadTracker } = await import("dashboard-load-tracking");
+const { DASHBOARD_WIDGET_LOADED_EVENT, useDashboardLoadTracker, useWidgetLoadedEvent } = await import("dashboard-load-tracking");
 
 // [Claude claude-opus-4-8 (1M context)] Task: harness that drives the tracker via a reporting script
 //   and surfaces the settle result to the test.
@@ -40,4 +40,35 @@ test("reports errors in the settle payload", () => {
   const onSettle = drive({ widgetIds: ["agenda", "calendar"],
     reports: [["reportLoaded", "agenda"], ["reportError", "calendar"]] });
   expect(onSettle).toHaveBeenCalledWith(expect.objectContaining({ errorCount: 1, erroredIds: ["calendar"] }));
+});
+
+function WidgetLoadedHarness({ hasError = false, isReady, widgetId }) {
+  useWidgetLoadedEvent(widgetId, isReady, hasError);
+  return null;
+}
+
+test("dispatches a widget loaded event once when initial readiness becomes true", () => {
+  const listener = jest.fn();
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  window.addEventListener(DASHBOARD_WIDGET_LOADED_EVENT, listener);
+  act(() => root.render(createElement(WidgetLoadedHarness, { isReady: false, widgetId: "agenda" })));
+  act(() => root.render(createElement(WidgetLoadedHarness, { isReady: true, widgetId: "agenda" })));
+  act(() => root.render(createElement(WidgetLoadedHarness, { isReady: true, widgetId: "agenda" })));
+  expect(listener).toHaveBeenCalledTimes(1);
+  expect(listener.mock.calls[0][0].detail).toEqual({ outcome: "loaded", widgetId: "agenda" });
+  window.removeEventListener(DASHBOARD_WIDGET_LOADED_EVENT, listener);
+  act(() => root.unmount());
+});
+
+test("dispatches an error outcome when a widget initial load settles with an error", () => {
+  const listener = jest.fn();
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  window.addEventListener(DASHBOARD_WIDGET_LOADED_EVENT, listener);
+  act(() => root.render(createElement(WidgetLoadedHarness, { hasError: true, isReady: false, widgetId: "graveyard" })));
+  expect(listener).toHaveBeenCalledTimes(1);
+  expect(listener.mock.calls[0][0].detail).toEqual({ outcome: "error", widgetId: "graveyard" });
+  window.removeEventListener(DASHBOARD_WIDGET_LOADED_EVENT, listener);
+  act(() => root.unmount());
 });

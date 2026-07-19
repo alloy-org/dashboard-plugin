@@ -2,6 +2,7 @@
 // Prompt summary: "new dashboard widget showing which notes have been recently updated by
 // collaborators, with a checkbox to limit results to notes that have tasks"
 import { widgetTitleFromId } from "constants/settings";
+import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { useCallback, useEffect, useState } from "react";
 import { loadPinnedNoteUuids, storePinnedNoteUuids } from "shared-notes-archive";
 import { avatarTextFromName, findCollaboratorUpdatedNotes, lastUpdatedLabelFromMs,
@@ -44,10 +45,12 @@ function CollaboratorAvatar({ collaborator }) {
 // @param {Object} params - { app, onlyWithTasks, taskDomainUUID }.
 // @returns {{notes: Array<noteHandle>|null, sharerNames: Array<string>}} `notes` is null while loading.
 function useCollaboratorUpdatedNotes({ app, onlyWithTasks, taskDomainUUID }) {
+  const [error, setError] = useState(null);
   const [notes, setNotes] = useState(null);
   const [sharerNames, setSharerNames] = useState([]);
   useEffect(() => {
     let isActive = true;
+    setError(null);
     setNotes(null);
     // Fetch every shared note (getPeople + findNote); gating/paging happen client-side.
     findCollaboratorUpdatedNotes({ app, onlyWithTasks, taskDomainUUID }).then(({ notes: results, sharerNames: names }) => {
@@ -55,10 +58,16 @@ function useCollaboratorUpdatedNotes({ app, onlyWithTasks, taskDomainUUID }) {
       setNotes(results);
       setSharerNames(names);
       logIfEnabled("[SharedNotes] notes:", results, "onlyWithTasks:", onlyWithTasks);
+    }).catch(err => {
+      if (!isActive) return;
+      logIfEnabled("[SharedNotes] fetch failed:", err);
+      setError(err);
+      setNotes([]);
+      setSharerNames([]);
     });
     return () => { isActive = false; };
   }, [app, onlyWithTasks, taskDomainUUID]);
-  return { notes, sharerNames };
+  return { error, notes, sharerNames };
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -283,7 +292,7 @@ export default function SharedNotesWidget({ app, gridHeightSize = 1, taskDomainU
   const [page, setPage] = useState(0);
   const pageSize = gridHeightSize >= 2 ? MAX_NOTES_TALL : MAX_NOTES_SHORT;
 
-  const { notes, sharerNames } = useCollaboratorUpdatedNotes({ app, onlyWithTasks, taskDomainUUID });
+  const { error, notes, sharerNames } = useCollaboratorUpdatedNotes({ app, onlyWithTasks, taskDomainUUID });
   const { pinnedUuids, togglePin } = usePinnedNotes(app);
   const { currentPage, totalPages, visibleNotes } = paginateSharedNotes({ notes, page, pageSize, pinnedUuids,
     selectedSharer });
@@ -295,6 +304,7 @@ export default function SharedNotesWidget({ app, gridHeightSize = 1, taskDomainU
   // there is nothing to filter on. When shown, the "Has tasks" toggle moves onto its row (right-
   // aligned via SharerFilter) instead of living in the widget header.
   const showSharerFilter = sharerNames.length >= 2;
+  useWidgetLoadedEvent("shared-notes", notes !== null && !error, !!error);
   const tasksToggle = inHeader => (<TasksToggle inHeader={inHeader} onChange={setOnlyWithTasks} onlyWithTasks={onlyWithTasks} />);
   const sharerFilter = !showSharerFilter ? null : (<SharerFilter onSelectSharer={setSelectedSharer}
     selectedSharer={selectedSharer} sharerNames={sharerNames} tasksToggle={tasksToggle} />);

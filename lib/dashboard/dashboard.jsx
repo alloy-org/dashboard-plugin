@@ -11,7 +11,7 @@ import CalendarWidget from 'calendar';
 import { apiKeyBucketFromLlmProvider, apiKeyFromProvider, DASHBOARD_FOCUS, DEFAULT_DASHBOARD_COMPONENTS,
   IS_DEV_ENVIRONMENT, SETTING_KEYS } from 'constants/settings';
 import { reportPriorCrashIfAny, stampBreadcrumbSettled, writeRenderBreadcrumb } from "crash-breadcrumb";
-import { DashboardLoadContext, useDashboardLoadTracker, useReportWidgetLoaded } from 'dashboard-load-tracking';
+import { DashboardLoadContext, useDashboardLoadTracker, useReportWidgetLoaded, useWidgetLoadedEvent } from 'dashboard-load-tracking';
 import DashboardLayoutPopup from 'dashboard-layout-popup';
 import DashboardSettingNote from "dashboard-setting-note";
 import DashboardSettingsPopup from 'dashboard-settings-popup';
@@ -119,6 +119,11 @@ function WidgetLoadReporter({ widgetId }) {
   return null;
 }
 
+function WidgetLoadedEventReporter({ hasError = false, isReady, widgetId }) {
+  useWidgetLoadedEvent(widgetId, isReady, hasError);
+  return null;
+}
+
 // ------------------------------------------------------------------------------------------
 // @desc Create a standard dashboard cell around one widget. Production grid cells defer work via
 //   LazyWidgetMount, while the memory-measurement panel can opt into an immediate mount so its heap
@@ -129,7 +134,8 @@ function WidgetLoadReporter({ widgetId }) {
 function createWidgetCell(widgetId, WidgetComponent, buildWidgetProps) {
   return memo(function DashboardWidgetCell(cellProps) {
     useWidgetLoadTiming(widgetId);
-    const { config, draggingWidgetId, focusedWidgetId, mountImmediately, widgetFocusTransform } = cellProps;
+    const { config, draggingWidgetId, focusedWidgetId, loadedEventError, loadedEventReady, mountImmediately,
+      widgetFocusTransform } = cellProps;
     const widgetSizeValue = {
       gridHeightSize: Number(config?.gridHeightSize) > 0 ? Number(config.gridHeightSize) : 1,
       gridWidthSize: Number(config?.gridWidthSize) > 0 ? Number(config.gridWidthSize) : 1,
@@ -137,6 +143,9 @@ function createWidgetCell(widgetId, WidgetComponent, buildWidgetProps) {
     const widgetContents = (
       <>
         <WidgetLoadReporter widgetId={widgetId} />
+        {loadedEventReady !== undefined || loadedEventError
+          ? <WidgetLoadedEventReporter hasError={!!loadedEventError} isReady={!!loadedEventReady} widgetId={widgetId} />
+          : null}
         <WidgetComponent {...buildWidgetProps(cellProps)} />
       </>
     );
@@ -388,7 +397,7 @@ function appendMoodRating(setMoodRatings, newRating) {
 export default function DashboardApp({ app, initPromise }) {
   const { activeTaskDomain, buildAgendaTasksByDate, initializeDomainTasks,
     onDomainChange, openTasks, taskDomains } = useDomainTasks();
-  const { completedTasksByDate, fetchCompletedTasks } = useCompletedTasks(app);
+  const { completedTasksByDate, completedTasksLoaded, fetchCompletedTasks } = useCompletedTasks(app);
 
   const { calendarEvents, calendarEventsLoaded } = useExternalCalendarEvents(app, activeTaskDomain);
   const [configParams, setConfigParams] = useState(null);
@@ -563,6 +572,25 @@ export default function DashboardApp({ app, initPromise }) {
   );
 
   // ------------------------------------------------------------------------------------------
+  // @desc Resolve parent-fed widget readiness for the one-shot widget-loaded CustomEvent. Widgets
+  //   with their own async loaders report from inside the widget instead, so this returns undefined.
+  // @param {string} widgetId - Dashboard widget id.
+  // @returns {boolean|undefined} Readiness for parent-fed/sync widgets, or undefined for self-reporters.
+  const loadedEventReadyFromWidgetId = (widgetId) => {
+    switch (widgetId) {
+      case 'agenda': return calendarEventsLoaded;
+      case 'calendar': return completedTasksLoaded;
+      case 'debug-console': return true;
+      case 'layout-picker': return true;
+      case 'mood': return moodRatings !== null;
+      case 'quick-actions': return true;
+      case 'quotes': return true;
+      case 'victory-value': return completedTasksLoaded && dailyVictoryValues !== null && moodRatings !== null;
+      default: return undefined;
+    }
+  };
+
+  // ------------------------------------------------------------------------------------------
   // @desc Render one selected widget with the same providers, shared data, and default grid size
   //   it receives in the dashboard. The measurement popup passes mountImmediately through the cell
   //   factory so LazyWidgetMount cannot postpone the measured work.
@@ -589,6 +617,7 @@ export default function DashboardApp({ app, initPromise }) {
         currentDate={currentDate}
         currentLayout={currentLayoutArray}
         dailyValues={dailyVictoryValues}
+        loadedEventReady={loadedEventReadyFromWidgetId(widgetId)}
         mountImmediately
         moodRatings={moodRatings}
         onDateSelect={setSelectedDate}
@@ -656,10 +685,10 @@ export default function DashboardApp({ app, initPromise }) {
   })() : undefined;
 
   const debugToolsEnabled = String(configParams[SETTING_KEYS.DEBUG_CONSOLE] || '').trim() === 'true';
-  const memoryMeasurementEnabled = debugToolsEnabled || IS_DEV_ENVIRONMENT;
   const debugConsoleEnabled = debugToolsEnabled || IS_DEV_ENVIRONMENT || pluginContext().pluginUUID === "6da03574-0f4b-11f1-ba9e-11ba9c716f59";
+  const memoryMeasurementEnabled = debugConsoleEnabled;
   if (debugConsoleEnabled) {
-    logIfEnabled(`[dashboard] Debug console enabled (configParams ${ configParams[SETTING_KEYS.DEBUG_CONSOLE] } app setting keys ${ Object.keys(app.settings) }, ${ pluginContext().pluginUUID }), including in layout popup`);
+    logIfEnabled(`[dashboard] Debug console enabled (configParams "${ configParams[SETTING_KEYS.DEBUG_CONSOLE] || "(empty)" }" app setting keys "${ Object.keys(app.settings) || "(empty)" }", ${ pluginContext().pluginUUID }), including in layout popup`);
   } else {
     logIfEnabled(`[dashboard] Debug console disabled (${ SETTING_KEYS.DEBUG_CONSOLE } is '${ configParams?.[SETTING_KEYS.DEBUG_CONSOLE] }', pluginUUID ${ pluginContext().pluginUUID }, context ${ JSON.stringify(pluginContext()) }), excluding from layout popup`);
   }
@@ -760,6 +789,7 @@ export default function DashboardApp({ app, initPromise }) {
                   dailyValues={dailyVictoryValues}
                   draggingWidgetId={draggingWidgetId}
                   focusedWidgetId={focusedWidgetId}
+                  loadedEventReady={loadedEventReadyFromWidgetId(widgetId)}
                   moodRatings={moodRatings}
                   onDateSelect={setSelectedDate}
                   currentLayout={currentLayoutArray}

@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import WidgetWrapper from "widget-wrapper";
 import { noteUrlFromUUID } from "app-util";
 import { widgetTitleFromId } from "constants/settings";
+import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { logIfEnabled } from "util/log";
 import { formatDelta, HABIT_ANALYSIS_WINDOW_DAYS, leadingEmoji, stripLeadingEmoji } from "energy-per-habit-analysis";
 import { loadEnergyPerHabit } from "energy-per-habit-service";
@@ -186,12 +187,14 @@ function HabitRow({ habit, windowDays, maxAbsDelta, onOpen }) {
 // @returns {JSX.Element}
 export default function EnergyPerHabitWidget({ app }) {
   const [analysis, setAnalysis] = useState(null);
+  const [loadError, setLoadError] = useState(false);
   const [loading, setLoading] = useState(true);
   const rowsRef = useRef(null);
 
   useEffect(() => {
     if (!app) return;
     let cancelled = false;
+    setLoadError(false);
     setLoading(true);
     loadEnergyPerHabit(app).then(result => {
       if (cancelled) return;
@@ -201,6 +204,7 @@ export default function EnergyPerHabitWidget({ app }) {
       logIfEnabled(`[${WIDGET_ID}] failed to load habit data`, err);
       if (!cancelled) {
         setAnalysis({ habits: [], windowDays: HABIT_ANALYSIS_WINDOW_DAYS });
+        setLoadError(true);
         setLoading(false);
       }
     });
@@ -208,6 +212,7 @@ export default function EnergyPerHabitWidget({ app }) {
   }, [app]);
 
   const rows = useMemo(() => (analysis?.habits || []).slice(0, MAX_HABIT_ROWS), [analysis]);
+  useWidgetLoadedEvent(WIDGET_ID, !loading && !!analysis, loadError);
   const maxAbsDelta = useMemo(
     () => rows.reduce((max, habit) => Math.max(max, Math.abs(habit.delta)), 0),
     [rows]

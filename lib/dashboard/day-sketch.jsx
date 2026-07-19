@@ -7,6 +7,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DASHBOARD_NOTE_TAG, widgetTitleFromId } from "constants/settings";
+import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { dateFromDateInput, dateKeyFromDateInput, formatHourLabel } from "util/date-utility";
 import WidgetWrapper from "widget-wrapper";
 import { logIfEnabled } from "util/log";
@@ -388,6 +389,7 @@ export default function DaySketchWidget({ agendaTasks, app, calendarEvents, curr
   useDaySketchAgendaPrefill({ agendaTasks, currentDate, humanEditedHours, loading, setEntries });
   useDaySketchCalendarPrefill({ calendarEvents, currentDate, humanEditedHours, loading, setEntries });
   useDaySketchCurrentHourScroll({ currentDate, loading, notebookRef });
+  useWidgetLoadedEvent(WIDGET_ID, !loading && calendarEvents !== null);
 
   const handleBlur = useCallback(() => {
     scheduleSave(BLUR_SAVE_DELAY_MS);

@@ -3,6 +3,31 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-07-19 — Widget load completion events for memory measurement
+
+**Model:** GPT-5.5
+**Files created/modified:**
+- `lib/dashboard/dashboard-load-tracking.js` (modified — add `dashboard:widget-loaded`, a one-shot
+  `useWidgetLoadedEvent` hook, and a dispatcher for structured widget load outcomes)
+- `lib/dashboard/dashboard.jsx` and `lib/hooks/use-completed-tasks.js` (modified — expose parent-fed
+  readiness for agenda/calendar/mood/victory-value/sync widgets while keeping existing mount-settle
+  analytics unchanged)
+- `lib/dashboard/day-sketch.jsx`, `lib/dashboard/dream-task.jsx`, `lib/dashboard/energy-per-habit.jsx`,
+  `lib/dashboard/graveyard.jsx`, `lib/dashboard/peak-hours.jsx`, `lib/dashboard/planning.jsx`,
+  `lib/dashboard/proposed-agenda.jsx`, `lib/dashboard/recent-notes.jsx`, and
+  `lib/dashboard/shared-notes.jsx` (modified — report first-load data readiness or handled error)
+- `lib/dashboard/widget-memory-measurement-popup.jsx` (modified — wait for the selected widget's
+  loaded event before post-load heap sampling)
+- `test/dashboard-load-tracking.test.js` (modified — verify one-shot loaded/error CustomEvent behavior)
+- `build/compiled.js` (rebuilt)
+
+**Task:** Emit a load-completion CustomEvent for each widget and use it to delay memory measurement
+until the selected widget's initial data load settles
+**Prompt summary:** "set up each widget to broadcast a CustomEvent upon finishing loading; use this
+event to only begin memory management after the component has finished loading"
+
+---
+
 ## 2026-07-18 — Expand abbreviated energy-per-habit names
 
 **Model:** Cursor Grok 4.5

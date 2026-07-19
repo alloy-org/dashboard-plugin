@@ -12,6 +12,7 @@ import { DEFAULT_PRIORITY_KEY, PROPOSED_AGENDA_PRIORITY_OPTIONS } from "proposed
 import { activityKey, approveAllProposed, mergedAgendaRows, pendingCount, recordProposedTaskStatus,
   runProposedAgendaGeneration, scheduleProposedRow } from "proposed-agenda-llm-generator";
 import { AMPLE_AGENT_PRO_NOTE_NAME } from "providers/ai-provider-settings";
+import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import { formatClockLabel } from "util/date-utility";
@@ -250,6 +251,8 @@ export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid
       .then(note => { if (!cancelled) setAmpleAgentProAvailable(!!note); });
     return () => { cancelled = true; };
   }, [app]);
+
+  useWidgetLoadedEvent(WIDGET_ID, !loading && !error, !!error);
 
   if (loading) return <LoadingState />;
   if (error) {

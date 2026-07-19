@@ -71,7 +71,9 @@
 
   .widget-memory-measurement-widget {
     border-top: 1px solid $color-border;
+    max-height: 30vh;
     margin-top: $sp-sm;
+    overflow-y: auto;
     padding-top: $sp-md;
 
     h4 {

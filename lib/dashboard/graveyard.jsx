@@ -9,6 +9,7 @@ import confetti from "canvas-confetti";
 import { widgetTitleFromId } from "constants/settings";
 import { appendTaskToRetiredNote, loadGraveyardCandidates } from "graveyard-service";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
+import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import "styles/graveyard.scss";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
@@ -322,6 +323,7 @@ export default function GraveyardWidget({ app, gridHeightSize = 1, gridWidthSize
   }, [app]);
 
   const headerActions = <RefreshLink isRefreshing={loading} onRefresh={onRefresh} />;
+  useWidgetLoadedEvent(WIDGET_ID, !loading && !error, !!error);
 
   if (loading) return <LoadingState headerActions={headerActions} />;
   if (error) return <ErrorState errorMessage={error} headerActions={headerActions} onRetry={loadCandidates} />;

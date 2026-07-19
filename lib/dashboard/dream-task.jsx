@@ -11,6 +11,7 @@ import NoConfigUpsell from "no-config-upsell";
 import { pluginSettings } from "plugin-data";
 import { AMPLE_AGENT_PRO_NOTE_NAME, providerNameFromProviderEm } from "providers/ai-provider-settings";
 import { useEffect, useState, useCallback, useRef } from "react";
+import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { DASHBOARD_TASKS_UPDATED_EVENT } from "hooks/use-dashboard-task-updates";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import { logIfEnabled } from "util/log";
@@ -654,6 +655,7 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   const isLlmFallbackFailure = !!error && NO_CONFIG_ERROR_CODES.has(error.errorCode);
   const shouldRenderNoConfig = !hasLlmConfig && !loading && (!tasks || tasks.length === 0)
     && (isInitialPreFetch || isLlmFallbackFailure);
+  useWidgetLoadedEvent(WIDGET_ID, !loading && (shouldRenderNoConfig || !!tasks || !!error), !!error);
 
   if (shouldRenderNoConfig) {
     logIfEnabled('[DreamTask] rendering no-config state', { providerName, hasError: !!error,

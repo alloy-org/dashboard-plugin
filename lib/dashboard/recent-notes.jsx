@@ -5,6 +5,7 @@
  * Prompt summary: "replace AI & Plugins widget with Recent Notes showing notes whose tasks have gone stale"
  */
 import { widgetTitleFromId } from "constants/settings";
+import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { useEffect, useMemo, useState } from "react";
 import { buildRecentNotesSeed, findStaleTaskNotes } from "recent-notes-service";
 import "styles/recent-notes.scss"
@@ -57,6 +58,7 @@ export default function RecentNotesWidget({ app, gridHeightSize = 1, taskDomainU
   }, [app, maxNotes, reseedCount, seed, taskDomainUUID]);
 
   const handleReseed = () => setReseedCount(c => c + 1);
+  useWidgetLoadedEvent('recent-notes', staleNotes !== null && !error, !!error);
 
   const reseedButton = (
     <button

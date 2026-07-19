@@ -2,9 +2,9 @@
 // Created: 2026-07-19 | Model: GPT-5.6 Terra
 // Task: Admin-only incremental heap measurement panel for dashboard widgets.
 // Prompt summary: "let an admin choose one component to load and display the memory consumed by it"
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { DashboardLoadContext, useDashboardLoadTracker } from "dashboard-load-tracking";
+import { DASHBOARD_WIDGET_LOADED_EVENT, DashboardLoadContext, useDashboardLoadTracker } from "dashboard-load-tracking";
 import ConfigPopup from "config-popup";
 import { WIDGET_REGISTRY } from "layout-profiles";
 import { collectGarbageIfAvailable, lowestMemorySample } from "util/memory-instrumentation";
@@ -27,27 +27,54 @@ export default function WidgetMemoryMeasurementPopup({ onClose, renderWidget }) 
   const [mountedWidgetId, setMountedWidgetId] = useState(null);
   const [selectedWidgetId, setSelectedWidgetId] = useState(supportedWidgets[0]?.widgetId || "");
   const [status, setStatus] = useState("idle");
+  const awaitingWidgetIdRef = useRef(null);
+  const baselineSampleRef = useRef(null);
   const measurementRunRef = useRef(0);
+  baselineSampleRef.current = baselineSample;
   const loadTracker = useDashboardLoadTracker(mountedWidgetId ? [mountedWidgetId] : [], {
     onSettle: ({ errorCount }) => {
-      const measurementRun = measurementRunRef.current;
       if (errorCount > 0) {
+        awaitingWidgetIdRef.current = null;
+        setStatus("error");
+      } else {
+        setStatus("waitingForLoadedEvent");
+      }
+    },
+  });
+
+  // ------------------------------------------------------------------------------------------
+  // @desc Start post-load heap sampling after the selected widget broadcasts its one-shot loaded
+  //   event. This waits for data readiness rather than React mount settlement.
+  const sampleAfterWidgetLoaded = useCallback((measurementRun) => {
+    setStatus("sampling");
+    setGarbageCollectionRequested(collectGarbageIfAvailable());
+    lowestMemorySample(SAMPLE_DURATION_MILLISECONDS).then(afterSample => {
+      const currentBaselineSample = baselineSampleRef.current;
+      if (measurementRun !== measurementRunRef.current) return;
+      if (!afterSample || !currentBaselineSample) {
+        setStatus("unsupported");
+        return;
+      }
+      setMeasurement({ afterSample, deltaMb: afterSample.usedMb - currentBaselineSample.usedMb });
+      setStatus("complete");
+    });
+  }, []);
+
+  useEffect(() => {
+    const handleWidgetLoaded = (event) => {
+      const detail = event.detail || {};
+      if (!awaitingWidgetIdRef.current || detail.widgetId !== awaitingWidgetIdRef.current) return;
+      const measurementRun = measurementRunRef.current;
+      awaitingWidgetIdRef.current = null;
+      if (detail.outcome === "error") {
         setStatus("error");
         return;
       }
-      setStatus("sampling");
-      setGarbageCollectionRequested(collectGarbageIfAvailable());
-      lowestMemorySample(SAMPLE_DURATION_MILLISECONDS).then(afterSample => {
-        if (measurementRun !== measurementRunRef.current) return;
-        if (!afterSample || !baselineSample) {
-          setStatus("unsupported");
-          return;
-        }
-        setMeasurement({ afterSample, deltaMb: afterSample.usedMb - baselineSample.usedMb });
-        setStatus("complete");
-      });
-    },
-  });
+      sampleAfterWidgetLoaded(measurementRun);
+    };
+    window.addEventListener(DASHBOARD_WIDGET_LOADED_EVENT, handleWidgetLoaded);
+    return () => window.removeEventListener(DASHBOARD_WIDGET_LOADED_EVENT, handleWidgetLoaded);
+  }, [sampleAfterWidgetLoaded]);
 
   // ------------------------------------------------------------------------------------------
   // @desc Unmount any prior measured widget, then observe a clean zero-widget baseline before
@@ -76,8 +103,9 @@ export default function WidgetMemoryMeasurementPopup({ onClose, renderWidget }) 
         window.requestAnimationFrame(() => {
           window.requestAnimationFrame(() => {
             if (measurementRun !== measurementRunRef.current) return;
-            setMountedWidgetId(selectedWidgetId);
+            awaitingWidgetIdRef.current = selectedWidgetId;
             setStatus("mounting");
+            setMountedWidgetId(selectedWidgetId);
           });
         });
       });
@@ -88,6 +116,7 @@ export default function WidgetMemoryMeasurementPopup({ onClose, renderWidget }) 
   // @desc Stop observing the mounted widget and invalidate any pending asynchronous heap sample.
   const unmountWidget = useCallback(() => {
     measurementRunRef.current += 1;
+    awaitingWidgetIdRef.current = null;
     setMountedWidgetId(null);
     setStatus("idle");
   }, []);
@@ -127,17 +156,14 @@ export default function WidgetMemoryMeasurementPopup({ onClose, renderWidget }) 
             {status === "complete" ? `Sampled for ${ SAMPLE_DURATION_MILLISECONDS / 1000 } seconds after mount.`
               : status === "error" ? "The widget failed to mount; no measurement was recorded."
                 : status === "unsupported" ? "This runtime does not expose performance.memory."
-                  : status === "sampling" ? "Widget mounted; sampling its heap footprint…"
+                  : status === "sampling" ? "Widget loaded; sampling its heap footprint…"
                     : status === "clearing" ? "Widget grid is cleared; sampling the zero-widget baseline…"
                       : status === "baselineReady" ? "Baseline captured before widget mount."
                       : status === "mounting" ? "Mounting selected widget…"
+                        : status === "waitingForLoadedEvent" ? "Widget mounted; waiting for its loaded event…"
                       : "Choose a widget, then mount it to measure."}
           </span>
         </div>
-        <p className="widget-memory-measurement-note">
-          This is an approximation: the production embed cannot force garbage collection. Use DevTools'
-          Collect garbage and heap snapshots for exact retained-size investigation.
-        </p>
         <p className="widget-memory-measurement-note">
           {garbageCollectionRequested ? "window.gc() was requested before sampling."
             : "window.gc() is unavailable; launch Chromium with --js-flags=--expose-gc to enable it."}

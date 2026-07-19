@@ -2,6 +2,7 @@
 import { getQuarterMonths, getUpcomingWeekMonday, formatWeekLabel } from "constants/quarters";
 import { IS_DEV_ENVIRONMENT, widgetTitleFromId } from "constants/settings";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
+import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import {
   createOrAppendMonthlyPlan,
   createOrAppendWeeklyPlan,
@@ -186,6 +187,37 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
   const [editingNoteUUID, setEditingNoteUUID] = useState(null);
 
   const isTwoTall = gridHeightSize >= 2;
+  const plansReady = !!(quarterlyPlans?.current && quarterlyPlans?.next);
+  const months = plansReady ? getQuarterMonths(quarterlyPlans.current, quarterlyPlans.next) : [];
+  const monthClickDeps = { activeTab, setActiveTab, setMonthLoading, setMonthContent };
+  const createPlanDeps = { setMonthLoading, setMonthContent };
+  const upcomingMonday = getUpcomingWeekMonday();
+  const weekLabel = formatWeekLabel(upcomingMonday);
+
+  useWidgetLoadedEvent('planning', plansReady && initialLoadDone && !monthLoading && (!isTwoTall || !weekLoading));
+
+  useEffect(() => {
+    if (!plansReady || initialLoadDone) return;
+    const currentMonth = months.find(m => m.current);
+    if (currentMonth) {
+      setInitialLoadDone(true);
+      handleMonthClick(app, currentMonth, monthClickDeps);
+    }
+  }, [initialLoadDone, plansReady]);
+
+  useEffect(() => {
+    if (!plansReady || !isTwoTall) return;
+    const noteUUID = quarterlyPlans.current?.noteUUID;
+    if (!noteUUID) return;
+    setWeekLoading(true);
+    getMonthlyPlanContent(app, noteUUID, weekLabel)
+      .then(result => {
+        logIfEnabled(`[Planning] Weekly section "${weekLabel}":`, result);
+        setWeekContent(result);
+      })
+      .catch(() => setWeekContent({ found: false, content: null }))
+      .finally(() => setWeekLoading(false));
+  }, [isTwoTall, plansReady, quarterlyPlans?.current?.noteUUID, weekLabel]);
 
   if (editingNoteUUID && IS_DEV_ENVIRONMENT) {
     return (
@@ -199,7 +231,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
     );
   }
 
-  if (!quarterlyPlans?.current || !quarterlyPlans?.next) {
+  if (!plansReady) {
     return (
       <WidgetWrapper title={widgetTitleFromId('planning')} icon="📋" widgetId="planning">
         <p className="planning-empty">Loading quarterly plans…</p>
@@ -207,41 +239,11 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
     );
   }
 
-  const months = getQuarterMonths(quarterlyPlans.current, quarterlyPlans.next);
-  const monthClickDeps = { activeTab, setActiveTab, setMonthLoading, setMonthContent };
-  const createPlanDeps = { setMonthLoading, setMonthContent };
-
   const handleDevEdit = (result) => {
     if (result?.devEdit && result.noteUUID) {
       setEditingNoteUUID(result.noteUUID);
     }
   };
-
-  const upcomingMonday = getUpcomingWeekMonday();
-  const weekLabel = formatWeekLabel(upcomingMonday);
-
-  useEffect(() => {
-    if (initialLoadDone) return;
-    const currentMonth = months.find(m => m.current);
-    if (currentMonth) {
-      setInitialLoadDone(true);
-      handleMonthClick(app, currentMonth, monthClickDeps);
-    }
-  }, [initialLoadDone]);
-
-  useEffect(() => {
-    if (!isTwoTall) return;
-    const noteUUID = quarterlyPlans.current?.noteUUID;
-    if (!noteUUID) return;
-    setWeekLoading(true);
-    getMonthlyPlanContent(app, noteUUID, weekLabel)
-      .then(result => {
-        logIfEnabled(`[Planning] Weekly section "${weekLabel}":`, result);
-        setWeekContent(result);
-      })
-      .catch(() => setWeekContent({ found: false, content: null }))
-      .finally(() => setWeekLoading(false));
-  }, [isTwoTall, quarterlyPlans.current?.noteUUID, weekLabel]);
 
   return (
     <WidgetWrapper title={widgetTitleFromId('planning')} icon="📋" widgetId="planning">
