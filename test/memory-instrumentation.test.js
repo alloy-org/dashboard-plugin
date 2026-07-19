@@ -4,13 +4,14 @@
  *   present, no-ops when absent (iOS WKWebView), and buckets pressure correctly.
  */
 import { jest } from "@jest/globals";
-import { logMemorySample, lowestMemorySample, memoryPressureBucket, readMemorySample,
+import { collectGarbageIfAvailable, logMemorySample, lowestMemorySample, memoryPressureBucket, readMemorySample,
   startMemorySampling } from "util/memory-instrumentation";
 
 const MB = 1024 * 1024;
 
 afterEach(() => {
   delete performance.memory;
+  delete window.gc;
   jest.restoreAllMocks();
 });
 
@@ -42,6 +43,18 @@ describe("memoryPressureBucket", () => {
     [0.92, "critical"],
   ])("maps ratio %p to %p", (ratio, bucket) => {
     expect(memoryPressureBucket(ratio)).toBe(bucket);
+  });
+});
+
+describe("collectGarbageIfAvailable", () => {
+  test("returns false when Chromium has not exposed window.gc", () => {
+    expect(collectGarbageIfAvailable()).toBe(false);
+  });
+
+  test("requests collection when window.gc is available", () => {
+    window.gc = jest.fn();
+    expect(collectGarbageIfAvailable()).toBe(true);
+    expect(window.gc).toHaveBeenCalledTimes(1);
   });
 });
 

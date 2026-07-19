@@ -701,7 +701,7 @@ export default function DashboardApp({ app, initPromise }) {
           renderWidget={renderMemoryMeasurementWidget}
         />
       ) : null}
-      <div className="dashboard-content">
+      {focusState !== DASHBOARD_FOCUS.MEMORY_MEASUREMENT ? <div className="dashboard-content">
         <div className="dashboard-toolbar">
           <TaskDomains
             activeTaskDomain={activeTaskDomain}
@@ -785,7 +785,7 @@ export default function DashboardApp({ app, initPromise }) {
           </div>
           </DashboardLoadContext.Provider>
         </div>
-      </div>
+      </div> : null}
     </div>
   );
 }

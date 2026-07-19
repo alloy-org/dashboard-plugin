@@ -3,24 +3,26 @@
 // Task: Admin-only incremental heap measurement panel for dashboard widgets.
 // Prompt summary: "let an admin choose one component to load and display the memory consumed by it"
 import { useCallback, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { DashboardLoadContext, useDashboardLoadTracker } from "dashboard-load-tracking";
 import ConfigPopup from "config-popup";
 import { WIDGET_REGISTRY } from "layout-profiles";
-import { lowestMemorySample, readMemorySample } from "util/memory-instrumentation";
+import { collectGarbageIfAvailable, lowestMemorySample } from "util/memory-instrumentation";
 import "styles/widget-memory-measurement-popup.scss";
 
 const SAMPLE_DURATION_MILLISECONDS = 3000;
 
 // ------------------------------------------------------------------------------------------
-// @desc Render an admin-only modal that establishes a heap baseline, mounts one real dashboard
-//   widget with the production data already loaded by DashboardApp, then reports its approximate
-//   retained JavaScript-heap delta. The host cannot force garbage collection, so the post-mount
-//   number is the lowest sample observed during a short settling window rather than an exact value.
+// @desc Render an admin-only modal that establishes a heap baseline after DashboardApp unmounts its
+//   normal widget grid, mounts one real dashboard widget with shared production data retained, then
+//   reports its approximate retained JavaScript-heap delta. The host cannot force garbage collection,
+//   so both baseline and post-mount values are minimums observed during short settling windows.
 // @param {function(string): React.ReactNode} renderWidget - Renders the selected real widget cell.
 // @param {function(): void} onClose - Closes the measurement panel.
 export default function WidgetMemoryMeasurementPopup({ onClose, renderWidget }) {
   const supportedWidgets = WIDGET_REGISTRY;
   const [baselineSample, setBaselineSample] = useState(null);
+  const [garbageCollectionRequested, setGarbageCollectionRequested] = useState(false);
   const [measurement, setMeasurement] = useState(null);
   const [mountedWidgetId, setMountedWidgetId] = useState(null);
   const [selectedWidgetId, setSelectedWidgetId] = useState(supportedWidgets[0]?.widgetId || "");
@@ -34,6 +36,7 @@ export default function WidgetMemoryMeasurementPopup({ onClose, renderWidget }) 
         return;
       }
       setStatus("sampling");
+      setGarbageCollectionRequested(collectGarbageIfAvailable());
       lowestMemorySample(SAMPLE_DURATION_MILLISECONDS).then(afterSample => {
         if (measurementRun !== measurementRunRef.current) return;
         if (!afterSample || !baselineSample) {
@@ -47,23 +50,37 @@ export default function WidgetMemoryMeasurementPopup({ onClose, renderWidget }) 
   });
 
   // ------------------------------------------------------------------------------------------
-  // @desc Unmount any previous widget before recording a fresh baseline and mounting the selected
-  //   widget. A new animation frame gives React a committed unmounted state before the next run.
+  // @desc Unmount any prior measured widget, then observe a clean zero-widget baseline before
+  //   mounting the selection. A synchronous baseline commit plus two animation frames ensures the
+  //   baseline is visible and the browser has had a paint opportunity before the widget mounts.
   const beginMeasurement = useCallback(() => {
     measurementRunRef.current += 1;
+    const measurementRun = measurementRunRef.current;
     setBaselineSample(null);
     setMeasurement(null);
     setMountedWidgetId(null);
-    setStatus("preparing");
+    setStatus("clearing");
     window.requestAnimationFrame(() => {
-      const nextBaselineSample = readMemorySample();
-      if (!nextBaselineSample) {
-        setStatus("unsupported");
-        return;
-      }
-      setBaselineSample(nextBaselineSample);
-      setMountedWidgetId(selectedWidgetId);
-      setStatus("mounting");
+      const requestedCollection = collectGarbageIfAvailable();
+      lowestMemorySample(SAMPLE_DURATION_MILLISECONDS).then(nextBaselineSample => {
+        if (measurementRun !== measurementRunRef.current) return;
+        if (!nextBaselineSample) {
+          setStatus("unsupported");
+          return;
+        }
+        flushSync(() => {
+          setBaselineSample(nextBaselineSample);
+          setGarbageCollectionRequested(requestedCollection);
+          setStatus("baselineReady");
+        });
+        window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(() => {
+            if (measurementRun !== measurementRunRef.current) return;
+            setMountedWidgetId(selectedWidgetId);
+            setStatus("mounting");
+          });
+        });
+      });
     });
   }, [selectedWidgetId]);
 
@@ -111,13 +128,19 @@ export default function WidgetMemoryMeasurementPopup({ onClose, renderWidget }) 
               : status === "error" ? "The widget failed to mount; no measurement was recorded."
                 : status === "unsupported" ? "This runtime does not expose performance.memory."
                   : status === "sampling" ? "Widget mounted; sampling its heap footprint…"
-                    : status === "mounting" || status === "preparing" ? "Preparing measurement…"
+                    : status === "clearing" ? "Widget grid is cleared; sampling the zero-widget baseline…"
+                      : status === "baselineReady" ? "Baseline captured before widget mount."
+                      : status === "mounting" ? "Mounting selected widget…"
                       : "Choose a widget, then mount it to measure."}
           </span>
         </div>
         <p className="widget-memory-measurement-note">
           This is an approximation: the production embed cannot force garbage collection. Use DevTools'
           Collect garbage and heap snapshots for exact retained-size investigation.
+        </p>
+        <p className="widget-memory-measurement-note">
+          {garbageCollectionRequested ? "window.gc() was requested before sampling."
+            : "window.gc() is unavailable; launch Chromium with --js-flags=--expose-gc to enable it."}
         </p>
         {mountedWidgetId ? (
           <div className="widget-memory-measurement-widget">
