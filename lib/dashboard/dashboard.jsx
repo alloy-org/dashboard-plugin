@@ -44,6 +44,7 @@ import { dateKeyFromDateInput, weekStartDayFromFormat, weekStartFromDateInput } 
 import { logIfEnabled, setLoggingEnabled } from "util/log";
 import { useWidgetLoadTiming } from "util/widget-timing";
 import { WidgetSizeContext } from "widget-wrapper";
+import WidgetMemoryMeasurementPopup from "widget-memory-measurement-popup";
 import VictoryValueWidget from 'victory-value';
 import { deviceProfile as readDeviceProfile, isMemoryConstrainedDevice } from "util/device-profile";
 import { logMemorySample, startMemorySampling } from "util/memory-instrumentation";
@@ -118,24 +119,32 @@ function WidgetLoadReporter({ widgetId }) {
   return null;
 }
 
-// [Claude claude-4.7-opus] Task: convert createWidgetCell factory to JSX
-// Prompt: "translate this project to render components with JSX instead"
+// ------------------------------------------------------------------------------------------
+// @desc Create a standard dashboard cell around one widget. Production grid cells defer work via
+//   LazyWidgetMount, while the memory-measurement panel can opt into an immediate mount so its heap
+//   sample includes the selected widget without a viewport-triggered delay.
+// @param {string} widgetId - Stable registry id for the widget.
+// @param {React.ComponentType} WidgetComponent - Concrete component rendered by the cell.
+// @param {function(Object): Object} buildWidgetProps - Selects widget-specific props from cell props.
 function createWidgetCell(widgetId, WidgetComponent, buildWidgetProps) {
   return memo(function DashboardWidgetCell(cellProps) {
     useWidgetLoadTiming(widgetId);
-    const { config, draggingWidgetId, focusedWidgetId, widgetFocusTransform } = cellProps;
+    const { config, draggingWidgetId, focusedWidgetId, mountImmediately, widgetFocusTransform } = cellProps;
     const widgetSizeValue = {
       gridHeightSize: Number(config?.gridHeightSize) > 0 ? Number(config.gridHeightSize) : 1,
       gridWidthSize: Number(config?.gridWidthSize) > 0 ? Number(config.gridWidthSize) : 1,
     };
+    const widgetContents = (
+      <>
+        <WidgetLoadReporter widgetId={widgetId} />
+        <WidgetComponent {...buildWidgetProps(cellProps)} />
+      </>
+    );
     return (
       <div {...gridCellContainerProps(config, draggingWidgetId, focusedWidgetId, widgetFocusTransform)}>
         <WidgetErrorBoundary widgetId={widgetId}>
           <WidgetSizeContext.Provider value={widgetSizeValue}>
-            <LazyWidgetMount widgetId={widgetId}>
-              <WidgetLoadReporter widgetId={widgetId} />
-              <WidgetComponent {...buildWidgetProps(cellProps)} />
-            </LazyWidgetMount>
+            {mountImmediately ? widgetContents : <LazyWidgetMount widgetId={widgetId}>{widgetContents}</LazyWidgetMount>}
           </WidgetSizeContext.Provider>
         </WidgetErrorBoundary>
       </div>
@@ -553,6 +562,55 @@ export default function DashboardApp({ app, initPromise }) {
     []
   );
 
+  // ------------------------------------------------------------------------------------------
+  // @desc Render one selected widget with the same providers, shared data, and default grid size
+  //   it receives in the dashboard. The measurement popup passes mountImmediately through the cell
+  //   factory so LazyWidgetMount cannot postpone the measured work.
+  // @param {string} widgetId - Id of the registry widget chosen by the administrator.
+  // @returns {React.ReactNode|null} The immediately mounted cell, or null for an unknown id.
+  const renderMemoryMeasurementWidget = (widgetId) => {
+    const CellComponent = CELL_COMPONENTS[widgetId];
+    const registryEntry = WIDGET_REGISTRY.find(widget => widget.widgetId === widgetId);
+    if (!CellComponent || !registryEntry) return null;
+    const providerEm = configParams?.[SETTING_KEYS.LLM_PROVIDER_MODEL];
+    const apiKeyBucket = apiKeyBucketFromLlmProvider(providerEm);
+    const providerSettingKey = apiKeyBucket ? apiKeyFromProvider(apiKeyBucket) : null;
+    const providerApiKey = providerSettingKey ? (configParams?.[providerSettingKey] || '') : '';
+    const providerEmForWidgets = apiKeyBucket || providerEm || null;
+    const config = { gridHeightSize: 1, gridWidthSize: registryEntry.defaultGridWidthSize || 1, settings: {}, widgetId };
+    return (
+      <CellComponent
+        agendaTasks={agendaTasks}
+        app={app}
+        calendarEvents={calendarEvents}
+        calendarEventsLoaded={calendarEventsLoaded}
+        completedTasksByDate={completedTasksByDate}
+        config={config}
+        currentDate={currentDate}
+        currentLayout={currentLayoutArray}
+        dailyValues={dailyVictoryValues}
+        mountImmediately
+        moodRatings={moodRatings}
+        onDateSelect={setSelectedDate}
+        onLayoutApply={handleLayoutPersist}
+        onMoodRecorded={handleMoodRecorded}
+        onOpenSettings={onOpenDreamTaskSettings}
+        onReferenceDateChange={setSelectedDate}
+        onSelectedProfileChange={handleSelectedProfileChange}
+        openTasks={openTasks}
+        providerApiKey={providerApiKey}
+        providerEm={providerEmForWidgets}
+        quarterlyPlans={quarterlyPlans}
+        referenceDate={victoryReferenceDate}
+        selectedDate={selectedDate}
+        taskDomainUUID={activeTaskDomain}
+        timeFormat={timeFormat}
+        weekFormat={weekFormat}
+        weeklyTotal={weeklyVictoryValue}
+      />
+    );
+  };
+
   // Ids of the widget cells actually rendered this pass (unknown widgetIds render nothing and so
   // never settle); the tracker fires one aggregate Plausible event once all of these have settled.
   const renderedWidgetIds = displayedComponents
@@ -597,7 +655,9 @@ export default function DashboardApp({ app, initPromise }) {
     };
   })() : undefined;
 
-  const debugConsoleEnabled = String(configParams[SETTING_KEYS.DEBUG_CONSOLE] || '').trim() === 'true' || IS_DEV_ENVIRONMENT || pluginContext().pluginUUID === "6da03574-0f4b-11f1-ba9e-11ba9c716f59";
+  const debugToolsEnabled = String(configParams[SETTING_KEYS.DEBUG_CONSOLE] || '').trim() === 'true';
+  const memoryMeasurementEnabled = debugToolsEnabled || IS_DEV_ENVIRONMENT;
+  const debugConsoleEnabled = debugToolsEnabled || IS_DEV_ENVIRONMENT || pluginContext().pluginUUID === "6da03574-0f4b-11f1-ba9e-11ba9c716f59";
   if (debugConsoleEnabled) {
     logIfEnabled(`[dashboard] Debug console enabled (configParams ${ configParams[SETTING_KEYS.DEBUG_CONSOLE] } app setting keys ${ Object.keys(app.settings) }, ${ pluginContext().pluginUUID }), including in layout popup`);
   } else {
@@ -627,6 +687,7 @@ export default function DashboardApp({ app, initPromise }) {
             app={app}
             configParams={configParams}
             onCancel={() => setFocusState(DASHBOARD_FOCUS.DEFAULT)}
+            onOpenMemoryMeasurement={memoryMeasurementEnabled ? () => setFocusState(DASHBOARD_FOCUS.MEMORY_MEASUREMENT) : null}
             onSave={handleSettingsSave}
             pluginNoteUUID={pluginNoteUUID}
             timeFormat={timeFormat}
@@ -634,6 +695,12 @@ export default function DashboardApp({ app, initPromise }) {
           />
         );
       })() : null}
+      {focusState === DASHBOARD_FOCUS.MEMORY_MEASUREMENT ? (
+        <WidgetMemoryMeasurementPopup
+          onClose={() => setFocusState(DASHBOARD_FOCUS.SETTINGS_CONFIG)}
+          renderWidget={renderMemoryMeasurementWidget}
+        />
+      ) : null}
       <div className="dashboard-content">
         <div className="dashboard-toolbar">
           <TaskDomains

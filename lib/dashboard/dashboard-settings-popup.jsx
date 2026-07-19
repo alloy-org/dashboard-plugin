@@ -190,6 +190,24 @@ function BackgroundSection({ backgroundImageUrl, backgroundMode, dragOver, fileI
 }
 
 // ------------------------------------------------------------------------------------------
+// @desc Render administrator-only diagnostics actions. The parent only supplies this section when
+//   the persisted DEBUG_CONSOLE setting is enabled, so regular users never see measurement tools.
+// @param {function(): void} onOpenMemoryMeasurement - Opens the widget memory measurement panel.
+function DebugToolsSection({ onOpenMemoryMeasurement }) {
+  return (
+    <div className="dashboard-settings-section section">
+      <div className="dashboard-settings-section-header">
+        <h4 className="dashboard-settings-section-title">Debug Tools</h4>
+        <p className="dashboard-settings-section-desc">Measure a widget's approximate incremental JavaScript heap footprint.</p>
+      </div>
+      <button className="dashboard-settings-debug-button" type="button" onClick={onOpenMemoryMeasurement}>
+        Open widget memory measurement
+      </button>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------------------------------
 // @desc Renders the Time & Date Format section: radio buttons for time format and week start.
 // [Claude claude-4.6-opus-high-thinking] Task: extract time/date format section into local render function
 // Prompt: "break the settings popup render into local functions per section"
@@ -248,7 +266,7 @@ function _storedKeyForProvider(configParams, apiKeyProvider) {
 // Prompt: "create local render functions per section to clarify the settings popup structure"
 // [Claude claude-4.7-opus] Task: migrate DashboardSettingsPopup from createElement to JSX
 // Prompt: "translate this project to render components with JSX instead"
-export default function DashboardSettingsPopup({ app, configParams, onCancel, onSave, pluginNoteUUID,
+export default function DashboardSettingsPopup({ app, configParams, onCancel, onOpenMemoryMeasurement, onSave, pluginNoteUUID,
     timeFormat: initialTimeFormat, weekFormat: initialWeekFormat }) {
   const [scrollTop] = useState(() => {
     if (typeof window === 'undefined') return 0;
@@ -342,6 +360,7 @@ export default function DashboardSettingsPopup({ app, configParams, onCancel, on
           timeFormat={timeFormatLocal}
           weekFormat={weekFormatLocal}
         />
+        {onOpenMemoryMeasurement ? <DebugToolsSection onOpenMemoryMeasurement={onOpenMemoryMeasurement} /> : null}
       </div>
     </ConfigPopup>
   );

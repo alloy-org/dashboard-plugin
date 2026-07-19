@@ -202,4 +202,20 @@
       color: $color-text;
     }
   }
+
+  .dashboard-settings-debug-button {
+    align-self: flex-start;
+    background: $color-bg-page;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    color: $color-text;
+    cursor: pointer;
+    font-size: 0.8rem;
+    margin-top: $sp-md;
+    padding: $sp-sm $sp-md;
+
+    &:hover {
+      background: $color-bg-page-hover;
+    }
+  }
 }

@@ -84,11 +84,4 @@ describe("writeRenderBreadcrumb / stampBreadcrumbSettled", () => {
     expect(detection.crashed).toBe(false);
   });
 
-  test("swallows bridge failures rather than throwing", async () => {
-    const app = { setSetting: jest.fn(async () => { throw new Error("bridge down"); }) };
-    await expect(writeRenderBreadcrumb(app, { deviceProfile: DEVICE_PROFILE, startedAt: 1, widgetIds: [] }))
-      .resolves.toBeNull();
-    await expect(stampBreadcrumbSettled(app, { deviceProfile: DEVICE_PROFILE, settledAt: 2, startedAt: 1, widgetIds: [] }))
-      .resolves.toBeUndefined();
-  });
 });

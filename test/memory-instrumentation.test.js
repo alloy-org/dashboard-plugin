@@ -4,7 +4,7 @@
  *   present, no-ops when absent (iOS WKWebView), and buckets pressure correctly.
  */
 import { jest } from "@jest/globals";
-import { logMemorySample, memoryPressureBucket, readMemorySample,
+import { logMemorySample, lowestMemorySample, memoryPressureBucket, readMemorySample,
   startMemorySampling } from "util/memory-instrumentation";
 
 const MB = 1024 * 1024;
@@ -42,6 +42,18 @@ describe("memoryPressureBucket", () => {
     [0.92, "critical"],
   ])("maps ratio %p to %p", (ratio, bucket) => {
     expect(memoryPressureBucket(ratio)).toBe(bucket);
+  });
+});
+
+describe("lowestMemorySample", () => {
+  test("returns the lowest heap reading observed during the sampling window", async () => {
+    jest.useFakeTimers();
+    stubMemory({ limitMb: 1000, totalMb: 400, usedMb: 300 });
+    const samplePromise = lowestMemorySample(1000, 250);
+    stubMemory({ limitMb: 1000, totalMb: 400, usedMb: 250 });
+    await jest.advanceTimersByTimeAsync(1000);
+    await expect(samplePromise).resolves.toEqual(expect.objectContaining({ usedMb: 250 }));
+    jest.useRealTimers();
   });
 });
 
