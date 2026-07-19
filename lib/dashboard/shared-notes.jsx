@@ -12,8 +12,8 @@ import { logIfEnabled } from "util/log";
 import WidgetWrapper from "widget-wrapper";
 
 const ALL_SHARERS = "";
-const MAX_NOTES_SHORT = 5;
-const MAX_NOTES_TALL = 10;
+const MAX_NOTES_SHORT = 4;
+const MAX_NOTES_TALL = 9;
 // Cap avatars rendered per note so a heavily-shared note doesn't crowd out the title/timestamp.
 const MAX_AVATARS = 4;
 // Pagination is bounded to at most this many pages of recently-updated shared notes.
