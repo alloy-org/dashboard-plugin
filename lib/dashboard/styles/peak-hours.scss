@@ -10,6 +10,41 @@
 /* Prompt: "rewrite peak-hours into a project-native widget with standalone stylesheet" */
 /* Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking */
 .widget-peak-hours {
+  .peak-hours-month-nav {
+    align-items: center;
+    display: inline-flex;
+    gap: $sp-xs;
+  }
+
+  .peak-hours-month-nav-label {
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .peak-hours-month-nav-arrow {
+    align-items: center;
+    background: transparent;
+    border: none;
+    border-radius: $radius-sm;
+    color: inherit;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: 1.05em;
+    justify-content: center;
+    line-height: 1;
+    padding: $sp-xs $sp-sm;
+
+    &:hover:not(:disabled) {
+      background: $color-bg-page-hover;
+      color: $color-navy;
+    }
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.3;
+    }
+  }
+
   .peak-hours-metrics-grid {
     display: grid;
     gap: $sp-md;
@@ -106,13 +141,6 @@
     }
   }
 
-  .peak-hours-footer {
-    color: $color-text-muted;
-    font-size: 0.75rem;
-    margin-top: $sp-md;
-    text-align: center;
-  }
-
   .peak-hours-empty {
     padding: $sp-xl;
     text-align: center;
@@ -149,10 +177,6 @@
 
   .peak-hours-chart-container {
     height: 160px;
-  }
-
-  .peak-hours-footer {
-    margin-top: $sp-sm;
   }
 }
 

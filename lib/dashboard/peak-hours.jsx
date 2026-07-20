@@ -7,7 +7,8 @@
 import { useEffect, useRef, useMemo, useCallback, useState } from "react";
 import { widgetTitleFromId } from "constants/settings";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
-import { dateFromDateInput, formatHourLabel } from "util/date-utility";
+import { dateFromDateInput, dateFromMonthKey, formatHourLabel, monthKeyFromDateInput,
+  monthStartFromDateInput } from "util/date-utility";
 import { logIfEnabled } from "util/log";
 import WidgetWrapper from "widget-wrapper";
 import "styles/peak-hours.scss";
@@ -228,6 +229,39 @@ function LegendItem({ modifierClass, label }) {
   );
 }
 
+// [Claude claude-opus-4-8 (1M context)] Task: month label flanked by prev/next arrows for month-to-month navigation
+// Prompt: "month label to have a left arrow and right arrow on each side of it ... the right caret is disabled since
+//   the user can't move forward from the present"
+// Date: 2026-07-19 | Model: claude-opus-4-8 (1M context)
+// @param {string} label - Display label for the currently viewed month (e.g. "July 2026").
+// @param {boolean} forwardDisabled - When true, the forward arrow is disabled (viewing the present month).
+// @param {function} onNavigate - Called with -1 (previous) or +1 (next) when an arrow is clicked.
+// @returns {JSX.Element} The month navigator control.
+function MonthNavigator({ label, forwardDisabled, onNavigate }) {
+  return (
+    <span className="peak-hours-month-nav">
+      <button
+        type="button"
+        className="peak-hours-month-nav-arrow"
+        aria-label="Previous month"
+        onClick={() => onNavigate(-1)}
+      >
+        ‹
+      </button>
+      <span className="peak-hours-month-nav-label">{label}</span>
+      <button
+        type="button"
+        className="peak-hours-month-nav-arrow"
+        aria-label="Next month"
+        disabled={forwardDisabled}
+        onClick={() => onNavigate(1)}
+      >
+        ›
+      </button>
+    </span>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -248,13 +282,51 @@ export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFo
   const fetchedMonthRef = useRef(null);
 
   const referenceDate = selectedDate || currentDate;
+  const referenceMonthKey = referenceDate ? monthKeyFromDateInput(referenceDate) : null;
+  const currentMonthKey = currentDate ? monthKeyFromDateInput(currentDate) : null;
+
+  // [Claude claude-opus-4-8 (1M context)] Task: track the viewed month as a stable `YYYY-MM` key, seeded from referenceDate
+  // Prompt: "clicking an arrow navigates from month to month, loading tasks for the month the user has selected"
+  // Date: 2026-07-19 | Model: claude-opus-4-8 (1M context)
+  // A primitive key (not a Date object) keeps this state referentially stable across renders so the fetch
+  // effect below fires exactly once per month rather than on every re-render.
+  const [viewMonthKey, setViewMonthKey] = useState(referenceMonthKey);
+
+  // [Claude claude-opus-4-8 (1M context)] Task: reset navigation to the dashboard's month when its month changes
+  // Prompt: "clicking an arrow navigates from month to month, loading tasks for the month the user has selected"
+  // Date: 2026-07-19 | Model: claude-opus-4-8 (1M context)
+  useEffect(() => {
+    if (referenceMonthKey) setViewMonthKey(referenceMonthKey);
+  }, [referenceMonthKey]);
+
+  const viewMonthDate = useMemo(() => (viewMonthKey ? dateFromMonthKey(viewMonthKey) : null), [viewMonthKey]);
+
+  // [Claude claude-opus-4-8 (1M context)] Task: forward navigation is disabled once viewing the present (current) month
+  // Prompt: "the right caret is disabled since the user can't move forward from the present"
+  // Date: 2026-07-19 | Model: claude-opus-4-8 (1M context)
+  const forwardDisabled = !viewMonthKey || !currentMonthKey || viewMonthKey >= currentMonthKey;
+
+  // [Claude claude-opus-4-8 (1M context)] Task: step the viewed month backward or forward, clamped to the present
+  // Prompt: "clicking an arrow navigates from month to month, loading tasks for the month the user has selected"
+  // Date: 2026-07-19 | Model: claude-opus-4-8 (1M context)
+  const navigateMonth = useCallback((offset) => {
+    setViewMonthKey(prev => {
+      const base = prev || referenceMonthKey;
+      if (!base) return prev;
+      const next = monthKeyFromDateInput(monthStartFromDateInput(dateFromMonthKey(base), offset));
+      if (offset > 0 && currentMonthKey && next > currentMonthKey) return prev;
+      return next;
+    });
+  }, [referenceMonthKey, currentMonthKey]);
 
   // [Claude] Task: fetch all completed tasks for the full month when month changes
   // Prompt: "peak-hours should retrieve ALL tasks completed during the currently selected month"
   // Date: 2026-03-15 | Model: claude-4.6-opus-high-thinking
+  // [Claude claude-opus-4-8 (1M context)] Task: fetch against the navigated viewMonthDate rather than referenceDate
+  // Prompt: "loading tasks for the month the user has selected"
   useEffect(() => {
-    if (!referenceDate || !app) return;
-    const { from, to, monthKey } = monthBoundaries(referenceDate);
+    if (!viewMonthDate || !app) return;
+    const { from, to, monthKey } = monthBoundaries(viewMonthDate);
     if (fetchedMonthRef.current === monthKey) return;
     fetchedMonthRef.current = monthKey;
     let cancelled = false;
@@ -274,7 +346,7 @@ export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFo
     });
 
     return () => { cancelled = true; };
-  }, [app, referenceDate]);
+  }, [app, viewMonthDate]);
 
   const hourLabels = hourLabelsFromFormat(timeFormat);
   const { completedByHour, createdByHour, peakCompleteHourIndex, peakCreateHourIndex, totalTasks } =
@@ -282,19 +354,10 @@ export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFo
   const peakCreateHour = hourLabels[peakCreateHourIndex];
   const peakCompleteHour = hourLabels[peakCompleteHourIndex];
 
-  const { monthSubtitle, dateRange } = useMemo(() => {
-    if (!referenceDate) return { monthSubtitle: null, dateRange: null };
-    const d = dateFromDateInput(referenceDate);
-    const year = d.getFullYear();
-    const month = d.getMonth();
-    return {
-      monthSubtitle: d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' }),
-      dateRange: {
-        start: new Date(year, month, 1),
-        end: new Date(year, month + 1, 0),
-      },
-    };
-  }, [referenceDate]);
+  const monthSubtitle = useMemo(() => {
+    if (!viewMonthDate) return null;
+    return dateFromDateInput(viewMonthDate).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  }, [viewMonthDate]);
 
   useEffect(() => {
     if (!canvasRef.current) return;
@@ -322,9 +385,13 @@ export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFo
   const handleMouseLeave = useCallback(() => setTooltip(null), []);
   useWidgetLoadedEvent(WIDGET_ID, !loading && !error, !!error);
 
+  const monthNavigator = (
+    <MonthNavigator label={monthSubtitle} forwardDisabled={forwardDisabled} onNavigate={navigateMonth} />
+  );
+
   if (loading) {
     return (
-      <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon="⏰" widgetId={WIDGET_ID} subtitle={monthSubtitle}>
+      <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon="⏰" widgetId={WIDGET_ID} subtitle={monthNavigator}>
         <div className="peak-hours-empty">
           <p>Loading monthly task history…</p>
         </div>
@@ -334,7 +401,7 @@ export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFo
 
   if (totalTasks === 0) {
     return (
-      <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon="⏰" widgetId={WIDGET_ID} subtitle={monthSubtitle}>
+      <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon="⏰" widgetId={WIDGET_ID} subtitle={monthNavigator}>
         <div className="peak-hours-empty">
           <p>No completed task data available yet.</p>
         </div>
@@ -343,7 +410,7 @@ export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFo
   }
 
   return (
-    <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon="⏰" widgetId={WIDGET_ID} subtitle={monthSubtitle}>
+    <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon="⏰" widgetId={WIDGET_ID} subtitle={monthNavigator}>
       <div className="peak-hours-metrics-grid">
         <MetricCard label="Tasks analyzed" value={totalTasks} />
         <MetricCard label="Peak create hour" value={peakCreateHour} />
@@ -377,7 +444,6 @@ export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFo
           </div>
         )}
       </div>
-      {dateRange && <div className="peak-hours-footer">{monthSubtitle}</div>}
     </WidgetWrapper>
   );
 }
