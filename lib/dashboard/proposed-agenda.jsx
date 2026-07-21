@@ -155,6 +155,7 @@ export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid
   const [dateLabel, setDateLabel] = useState(null);
   const [dismissedKeys, setDismissedKeys] = useState(() => new Set());
   const [error, setError] = useState(null);
+  const [isFutureDay, setIsFutureDay] = useState(false);
   const [loading, setLoading] = useState(true);
   const [modelProviderEm, setModelProviderEm] = useState(persistedProviderEm || providerEm || null);
   const [obligations, setObligations] = useState([]);
@@ -174,7 +175,7 @@ export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid
   // unchanged) still re-triggers generation, letting the widget recover from the no-provider state.
   const runGeneration = useCallback(({ forceRegenerate = false } = {}) => runProposedAgendaGeneration(app,
     { currentDate, domainUuid: taskDomainUUID, forceRegenerate, priorityKey, providerEm: modelProviderEm, setApproving,
-    setAttribution, setDateLabel, setDismissedKeys, setError, setLoading, setObligations, setProposed,
+    setAttribution, setDateLabel, setDismissedKeys, setError, setIsFutureDay, setLoading, setObligations, setProposed,
     setRecordProviderEm, setScheduledKeys }),
     [app, currentDate, modelProviderEm, priorityKey, providerApiKey, taskDomainUUID]);
 
@@ -267,7 +268,11 @@ export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid
     return <MessageState message={ error.error } onRetry={ () => runGeneration() } />;
   }
 
-  const rows = mergedAgendaRows(obligations, proposed, dismissedKeys);
+  // For today's agenda, hide proposed rows whose start time has already passed so the user only sees the part of
+  // the day still ahead (e.g. at noon, only 12pm onward). A future-day agenda has nothing elapsed, so show it all.
+  const now = new Date();
+  const hidePastBeforeMinutes = isFutureDay ? null : now.getHours() * 60 + now.getMinutes();
+  const rows = mergedAgendaRows(obligations, proposed, dismissedKeys, { hidePastBeforeMinutes });
   if (rows.length === 0) {
     return <MessageState message="No schedule could be proposed yet." onRetry={ () => runGeneration() } />;
   }

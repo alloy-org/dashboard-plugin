@@ -106,6 +106,38 @@ describe("generateProposedAgenda integration (requires OPEN_AI_ACCESS_TOKEN)", (
     expect(existingCount).toBeGreaterThanOrEqual(1);
   }, 60_000);
 
+  // ----------------------------------------------------------------------------------------------
+  // The day already has two committed calendar events. The real LLM is asked to schedule around them; whatever
+  // it returns, no portion of any proposed activity may intrude into either event's span. (The service also
+  // hard-enforces this after validation, so the guarantee holds even if the model slips.)
+  itIfKey("proposes no activity that intrudes into the day's already-scheduled events", async () => {
+    const app = buildProposedAgendaApp();
+    // Fixed weekday so targetDate resolution is deterministic; two events carved out of the middle of the day.
+    const targetDate = new Date(2026, 5, 24, 0, 0, 0);            // Wednesday
+    const morningEvent = { durationMinutes: 60, source: "event", startMinutes: 10 * 60, taskUuid: null,
+      title: "Design review" };                                  // 10:00–11:00
+    const afternoonEvent = { durationMinutes: 60, source: "event", startMinutes: 14 * 60, taskUuid: null,
+      title: "1:1 with manager" };                               // 14:00–15:00
+    const obligations = [morningEvent, afternoonEvent];
+
+    const result = await generateProposedAgenda(app, { aiModelOverride: "gpt-4o-mini",
+      now: new Date(2026, 5, 24, 6, 0, 0), obligations, targetDate });
+
+    expect(result.error).toBeUndefined();
+    expect(result.activities.length).toBeGreaterThanOrEqual(1);
+
+    const overlaps = (start, end, blockStart, blockEnd) => start < blockEnd && blockStart < end;
+    for (const activity of result.activities) {
+      const start = activity.startMinutes;
+      const end = activity.startMinutes + activity.durationMinutes;
+      for (const event of obligations) {
+        const blockStart = event.startMinutes;
+        const blockEnd = event.startMinutes + event.durationMinutes;
+        expect(overlaps(start, end, blockStart, blockEnd)).toBe(false);
+      }
+    }
+  }, 60_000);
+
   itIfKey("re-derives note UUIDs from candidate tasks so approved existing activities can be scheduled", async () => {
     const app = buildProposedAgendaApp();
     const result = await generateProposedAgenda(app, { aiModelOverride: "gpt-4o-mini" });
