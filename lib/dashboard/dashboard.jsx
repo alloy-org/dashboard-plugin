@@ -22,6 +22,7 @@ import DreamTaskWidget from 'dream-task';
 import EnergyPerHabitWidget from 'energy-per-habit';
 import { gridCellFocusProps, useDashboardWidgetFocus } from 'focus-widget';
 import GraveyardWidget from 'graveyard';
+import useBackgroundSwap, { BACKGROUND_FADE_ANIMATION_NAME, BACKGROUND_FADE_DURATION_MS } from 'hooks/use-background-swap';
 import useCompletedTasks from 'hooks/use-completed-tasks';
 import useDashboardLayout from 'hooks/use-dashboard-layout';
 import useDashboardTaskUpdates from 'hooks/use-dashboard-task-updates';
@@ -50,6 +51,21 @@ import { deviceProfile as readDeviceProfile, isMemoryConstrainedDevice } from "u
 import { logMemorySample, startMemorySampling } from "util/memory-instrumentation";
 
 import "styles/dashboard.scss"
+
+// ------------------------------------------------------------------------------------------
+// @desc Build the inline background properties for one background layer. Shared by the dashboard's
+//   base background and by the overlay that cross-fades in a swapped background, so both layers crop,
+//   tile, and anchor identically and the fade reads as one image dissolving into another.
+// @param {string} url - Image URL to paint; an empty value means this layer paints nothing
+// @param {string} backgroundMode - A BACKGROUND_MODE_OPTIONS value: 'cover', 'contain', or a 'repeat*' variant
+// @returns {Object|undefined} React style object for the layer, or undefined when there is no image
+function backgroundLayerStyle(url, backgroundMode) {
+  if (!url) return undefined;
+  const isTiling = backgroundMode.startsWith('repeat');
+
+  return { backgroundAttachment: 'fixed', backgroundImage: `url(${ url })`, backgroundPosition: 'center',
+    backgroundRepeat: isTiling ? backgroundMode : 'no-repeat', backgroundSize: isTiling ? 'auto' : backgroundMode };
+}
 
 // ----------------------------------------------------------------------------------------------
 function gridCellClassName(config) {
@@ -195,7 +211,7 @@ const ProposedAgendaCell = createWidgetCell('proposed-agenda', ProposedAgendaWid
 const PlanningCell = createWidgetCell('planning', PlanningWidget, ({ app, config, quarterlyPlans }) => ({
   app, gridHeightSize: Number(config?.gridHeightSize) || 1, quarterlyPlans,
 }));
-const QuickActionsCell = createWidgetCell('quick-actions', QuickActionsWidget, pickProps('app'));
+const QuickActionsCell = createWidgetCell('quick-actions', QuickActionsWidget, pickProps('app', 'onSwapBackground'));
 const QuotesCell = createWidgetCell('quotes', QuotesWidget, ({ app, config }) => ({
   app, gridHeightSize: Number(config?.gridHeightSize) || 1, planContent: null, quotes: null,
 }));
@@ -566,6 +582,7 @@ export default function DashboardApp({ app, initPromise }) {
   const { draggingWidgetId, displayedComponents } = useDashboardDrag(activeComponents, handleLayoutPersist);
   const { clearFocusedWidget, focusedWidgetId, isWidgetFocusMode, widgetFocusTransforms } =
     useDashboardWidgetFocus(draggingWidgetId, focusState);
+  const { incomingBackgroundUrl, swapBackground, swappedBackgroundUrl } = useBackgroundSwap();
   const onOpenDreamTaskSettings = useCallback(
     () => setFocusState(DASHBOARD_FOCUS.SETTINGS_CONFIG),
     []
@@ -669,20 +686,17 @@ export default function DashboardApp({ app, initPromise }) {
 
   const backgroundUrl = configParams?.[SETTING_KEYS.BACKGROUND_IMAGE_URL];
   const backgroundMode = configParams?.[SETTING_KEYS.BACKGROUND_IMAGE_MODE] || 'cover';
-  const effectiveBackgroundUrl = backgroundUrl || backgroundSplashUrl('large', dateKeyFromDateInput(currentDate || new Date()));
+  const configuredBackgroundUrl = backgroundUrl || backgroundSplashUrl('large', dateKeyFromDateInput(currentDate || new Date()));
   if (backgroundUrl) {
     logIfEnabled('[dashboard] background image URL from settings:', backgroundUrl, 'mode:', backgroundMode);
   }
-  const backgroundStyle = effectiveBackgroundUrl ? (() => {
-    const isTiling = backgroundMode.startsWith('repeat');
-    return {
-      backgroundImage: `url(${ effectiveBackgroundUrl })`,
-      backgroundSize: isTiling ? 'auto' : backgroundMode,
-      backgroundRepeat: isTiling ? backgroundMode : 'no-repeat',
-      backgroundPosition: 'center',
-      backgroundAttachment: 'fixed',
-    };
-  })() : undefined;
+  // A swapped background wins for the rest of the session; it is never persisted, so reloading the dashboard returns to the configured (or date-seeded) image.
+  const backgroundStyle = backgroundLayerStyle(swappedBackgroundUrl || configuredBackgroundUrl, backgroundMode);
+  // The animation shorthand is inline so the fade length has exactly one definition (the hook's BACKGROUND_FADE_DURATION_MS), which the commit timer reuses; only the keyframes live in SCSS.
+  const backgroundFadeStyle = incomingBackgroundUrl
+    ? { ...backgroundLayerStyle(incomingBackgroundUrl, backgroundMode),
+        animation: `${ BACKGROUND_FADE_ANIMATION_NAME } ${ BACKGROUND_FADE_DURATION_MS }ms ease-in-out forwards` }
+    : null;
 
   const debugToolsEnabled = String(configParams[SETTING_KEYS.DEBUG_CONSOLE] || '').trim() === 'true';
   const debugConsoleEnabled = debugToolsEnabled || IS_DEV_ENVIRONMENT || pluginContext().pluginUUID === "6da03574-0f4b-11f1-ba9e-11ba9c716f59";
@@ -700,6 +714,7 @@ export default function DashboardApp({ app, initPromise }) {
 
   return (
     <div className="dashboard-outer-container" style={backgroundStyle}>
+      {backgroundFadeStyle ? <div className="dashboard-background-fade" style={backgroundFadeStyle} /> : null}
       {focusState === DASHBOARD_FOCUS.LAYOUT_CONFIG ? (
         <DashboardLayoutPopup
           currentLayout={currentLayoutArray}
@@ -798,6 +813,7 @@ export default function DashboardApp({ app, initPromise }) {
                   onMoodRecorded={handleMoodRecorded}
                   onOpenSettings={onOpenDreamTaskSettings}
                   onReferenceDateChange={setSelectedDate}
+                  onSwapBackground={swapBackground}
                   openTasks={openTasks}
                   providerApiKey={providerApiKey}
                   providerEm={providerEmForWidgets}

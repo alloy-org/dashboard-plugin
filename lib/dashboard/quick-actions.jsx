@@ -12,7 +12,40 @@ const QUICK_ACTION_URLS = {
   dailyJot: "https://www.amplenote.com/notes/jots",
   journal:  "https://www.amplenote.com/notes/jots",
   calendar: "https://www.amplenote.com/notes/calendar",
+  leaveFeedback: "https://www.amplenote.com/plugins/HXRa7ADW88bnyfA7hDwbXSLY",
 };
+
+// ------------------------------------------------------------------------------------------
+// @desc Run one quick action. Most actions are plain navigations resolved through QUICK_ACTION_URLS;
+//   randomNote and swapBackground carry their own behavior instead of a destination URL.
+// @param {Object} params - An object with the following properties:
+// - {string} action - Action key taken from a quickActionDescriptors entry
+// - {Object} app - Amplenote app object, used for app.navigate and task-domain lookups
+// - {function(): void} [onSwapBackground] - Dashboard-supplied background cross-fade trigger, when available
+async function performQuickAction({ action, app, onSwapBackground }) {
+  if (action === 'randomNote') return randomNote(app);
+  if (action === 'swapBackground') return onSwapBackground?.();
+  const url = QUICK_ACTION_URLS[action];
+  if (url) await app.navigate(url);
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc Build the ordered button list for the widget. The background swap is only offered when the
+//   dashboard passed down a swap handler, so surfaces that render this widget outside the dashboard grid
+//   (the memory-measurement popup, which has no background of its own) do not show an inert button.
+// @param {boolean} canSwapBackground - Whether an onSwapBackground handler was supplied
+// @returns {Array<Object>} Button descriptors, each with { action, icon, label }
+function quickActionDescriptors(canSwapBackground) {
+  const descriptors = [
+    { label: 'Daily Jot',    icon: '📝', action: 'dailyJot' },
+    { label: 'Journal',      icon: '📓', action: 'journal' },
+    { label: 'Calendar',     icon: '📅', action: 'calendar' },
+    { label: 'Random Note',  icon: '🎲', action: 'randomNote' },
+  ];
+  if (canSwapBackground) descriptors.push({ label: 'Swap Background', icon: '🖼️', action: 'swapBackground' });
+  descriptors.push({ label: 'Leave Feedback', icon: '💬', action: 'leaveFeedback' });
+  return descriptors;
+}
 
 // [Claude] Task: pick a random note from user's task domains and navigate to it
 // Prompt: "non-API methods on app should be standalone functions using only real API methods"
@@ -35,27 +68,20 @@ async function randomNote(app) {
   if (pick?.uuid) await app.navigate(`https://www.amplenote.com/notes/${pick.uuid}`);
 }
 
+// ------------------------------------------------------------------------------------------
+// @desc Grid of dashboard shortcut buttons. Action routing and the button list live in module-level
+//   helpers so this stays a render-only component.
+// @param {Object} app - Amplenote app object, forwarded to the action handlers
+// @param {function(): void} [onSwapBackground] - Dashboard background cross-fade trigger; when omitted,
+//   the Swap Background button is left out of the grid entirely
 // [Claude] Task: use app.navigate (real API) instead of non-API convenience methods
 // Prompt: "non-API methods on app should be standalone functions"
 // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
 // [Claude claude-4.7-opus] Task: migrate QuickActionsWidget from createElement to JSX
 // Prompt: "translate this project to render components with JSX instead"
-export default function QuickActionsWidget({ app }) {
-  const actions = [
-    { label: 'Daily Jot',    icon: '📝', action: 'dailyJot' },
-    { label: 'Journal',      icon: '📓', action: 'journal' },
-    { label: 'Calendar',     icon: '📅', action: 'calendar' },
-    { label: 'Random Note',  icon: '🎲', action: 'randomNote' }
-  ];
-
-  const handleAction = async (action) => {
-    if (action === 'randomNote') {
-      await randomNote(app);
-      return;
-    }
-    const url = QUICK_ACTION_URLS[action];
-    if (url) await app.navigate(url);
-  };
+export default function QuickActionsWidget({ app, onSwapBackground }) {
+  const actions = quickActionDescriptors(typeof onSwapBackground === 'function');
+  const handleAction = (action) => performQuickAction({ action, app, onSwapBackground });
 
   return (
     <WidgetWrapper title={widgetTitleFromId('quick-actions')} icon="⚡" widgetId="quick-actions">

@@ -3,6 +3,37 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-07-30 — Swap Background and Leave Feedback quick actions
+
+**Model:** opus-5
+**Files created/modified:**
+- `lib/hooks/use-background-swap.js` (created — session-only background override plus the preload,
+  cross-fade, and commit state machine; picks a splash index guaranteed to differ from the current one)
+- `lib/util/background-splash-images.js` (modified — add `SPLASH_IMAGE_COUNT` and
+  `backgroundSplashUrlFromIndex`, and refactor `backgroundSplashUrl` to delegate to it)
+- `lib/dashboard/quick-actions.jsx` (modified — add Swap Background and Leave Feedback buttons; move
+  action routing and the button list into `performQuickAction`/`quickActionDescriptors`)
+- `lib/dashboard/dashboard.jsx` (modified — extract `backgroundLayerStyle`, render the cross-fade
+  overlay layer, and pass `onSwapBackground` down to the quick-actions cell)
+- `lib/dashboard/styles/dashboard.scss` (modified — `.dashboard-background-fade` overlay,
+  `dashboard-background-fade-in` keyframes, and a `prefers-reduced-motion` opt-out)
+- `test/background-splash-images.test.js` (created — index wrap-around, distinctness, size fallback)
+- `test/app.test.js` (modified — assert both new buttons render, that Leave Feedback navigates to the
+  plugin homepage, and that a swap fades in an overlay then commits it as the base background)
+- `build/compiled.js` (rebuilt)
+
+**Task:** Add a "Swap background" quick action that animates a transition to another image from the
+curated splash array, and a "Leave feedback" quick action that navigates to the plugin's homepage
+**Prompt summary:** "Add two new items to the lib/dashboard/quick-actions.js: one for 'Swap
+background', which animates a transition to a new background from our array. The other should be
+'Leave feedback,' which uses 'app.navigate' to send the user to the homepage for the plugin"
+**Notes:** The swap is intentionally NOT persisted to `SETTING_KEYS.BACKGROUND_IMAGE_URL`, so it never
+clobbers a user-uploaded background; reloading the dashboard restores the configured image. The fade
+duration has a single definition (`BACKGROUND_FADE_DURATION_MS`) that is applied inline as the CSS
+animation shorthand and reused by the timer that promotes the overlay to the base layer.
+
+---
+
 ## 2026-07-19 — Widget load completion events for memory measurement
 
 **Model:** GPT-5.5

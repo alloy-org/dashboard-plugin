@@ -11,6 +11,7 @@ import { createRoot } from "react-dom/client";
 // No jest.unstable_mockModule calls — hooks AND widgets both run for real.
 // The Amplenote app object is mocked; widgets receive it directly via the app prop.
 import DashboardApp from 'dashboard/dashboard';
+import { BACKGROUND_FADE_ANIMATION_NAME, BACKGROUND_FADE_DURATION_MS } from 'hooks/use-background-swap';
 import { mockPlugin } from "./test-helpers.js";
 import { dateKeyFromDateInput, weekStartFromDateInput } from "util/date-utility";
 import {
@@ -58,6 +59,7 @@ function buildMockApp(plugin) {
   app.attachNoteMedia = jest.fn().mockResolvedValue('https://example.com/image.png');
 
   app.filterNotes = jest.fn().mockResolvedValue([]);
+  app.navigate    = jest.fn().mockResolvedValue();
   app.setSetting  = jest.fn().mockImplementation((k, v) => { app.settings[k] = v; });
   app.getExternalCalendarEvents = jest.fn().mockResolvedValue(null);
 
@@ -77,6 +79,37 @@ function buildMockApp(plugin) {
 // --------------------------------------------------
 const flushAsync = () =>
   act(async () => { await new Promise(r => setTimeout(r, 0)); });
+
+// Advance real time inside act() so timer- and rAF-driven effects (the background cross-fade) can run.
+const settleFor = (milliseconds) =>
+  act(async () => { await new Promise(r => setTimeout(r, milliseconds)); });
+
+// ------------------------------------------------------------------------------------------
+// @desc Find a Quick Actions button by its visible label.
+// @param {HTMLElement} container - Mounted dashboard container to search.
+// @param {string} label - Button label text, e.g. "Swap Background".
+// @returns {HTMLElement|undefined} The matching button element, or undefined when absent.
+// [Cursor opus-5] Task: locate quick-action buttons by label for the new action tests
+// Prompt: "Add two new items ... one for 'Swap background' ... the other should be 'Leave feedback'"
+function quickActionButton(container, label) {
+  return Array.from(container.querySelectorAll('.widget-quick-actions .qa-button'))
+    .find(button => button.textContent.includes(label));
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc Replace window.Image with a stub that reports a successful load on the next tick. jsdom never
+//   fetches images, so without this the background swap's preload would sit until its 4s timeout.
+// @returns {function(): void} Restores the original Image constructor.
+// [Cursor opus-5] Task: let the background-swap preload resolve under jsdom
+// Prompt: "which animates a transition to a new background from our array"
+function stubImmediateImageLoading() {
+  const OriginalImage = global.Image;
+  global.Image = class StubbedImage {
+    set src(value) { this._src = value; setTimeout(() => { if (this.onload) this.onload(); }, 0); }
+    get src() { return this._src; }
+  };
+  return () => { global.Image = OriginalImage; };
+}
 
 function mondayWeekStartKey(date) {
   return dateKeyFromDateInput(weekStartFromDateInput(date));
@@ -269,6 +302,47 @@ describe('DashboardApp', () => {
       expect(widget).not.toBeNull();
       expect(widget.textContent).toContain('Daily Jot');
       expect(widget.textContent).toContain('Journal');
+      expect(widget.textContent).toContain('Swap Background');
+      expect(widget.textContent).toContain('Leave Feedback');
+    });
+
+    it('navigates to the plugin homepage from the Leave Feedback quick action', async () => {
+      const feedbackButton = quickActionButton(container, 'Leave Feedback');
+      expect(feedbackButton).not.toBeUndefined();
+
+      await act(async () => { feedbackButton.click(); });
+      await flushAsync();
+
+      expect(mockApp.navigate).toHaveBeenCalledWith('https://www.amplenote.com/plugins/HXRa7ADW88bnyfA7hDwbXSLY');
+    });
+
+    it('cross-fades to a new background image from the Swap Background quick action', async () => {
+      const restoreImageLoading = stubImmediateImageLoading();
+      try {
+        const outerContainer = container.querySelector('.dashboard-outer-container');
+        const swapButton = quickActionButton(container, 'Swap Background');
+        expect(swapButton).not.toBeUndefined();
+        expect(container.querySelector('.dashboard-background-fade')).toBeNull();
+
+        await act(async () => { swapButton.click(); });
+        await settleFor(60);
+
+        // Mid-swap: the incoming image is painted into an overlay running the cross-fade animation.
+        const fadeLayer = container.querySelector('.dashboard-background-fade');
+        expect(fadeLayer).not.toBeNull();
+        expect(fadeLayer.style.animation).toContain(BACKGROUND_FADE_ANIMATION_NAME);
+        expect(fadeLayer.style.animation).toContain(`${ BACKGROUND_FADE_DURATION_MS }ms`);
+        expect(fadeLayer.style.backgroundImage).toContain('images.unsplash.com');
+        const incomingBackgroundImage = fadeLayer.style.backgroundImage;
+
+        await settleFor(BACKGROUND_FADE_DURATION_MS + 100);
+
+        // After the fade the overlay is gone and its image has become the dashboard's base background.
+        expect(container.querySelector('.dashboard-background-fade')).toBeNull();
+        expect(outerContainer.style.backgroundImage).toBe(incomingBackgroundImage);
+      } finally {
+        restoreImageLoading();
+      }
     });
 
     it('renders the TaskDomains selector showing both configured domains', () => {
