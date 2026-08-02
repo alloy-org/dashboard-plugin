@@ -13,7 +13,7 @@ await jest.unstable_mockModule("providers/fetch-ai-provider", async () => ({
   llmPromptWithPluginFallback: (...args) => llmMock(...args),
 }));
 
-const { generateProposedAgenda } = await import("proposed-agenda-service");
+const { generateProposedAgenda, scheduleProposedActivity } = await import("proposed-agenda-service");
 
 // ----------------------------------------------------------------------------------------------
 // @desc Resolve the plan-note name the service looks up ("QN YYYY Plan") so the filterNotes stub matches it.
@@ -36,11 +36,13 @@ function buildApp() {
   return {
     alert: jest.fn(),
     callPlugin: jest.fn().mockResolvedValue(undefined),
+    createNote: jest.fn().mockResolvedValue("travel-note-uuid"),
     filterNotes: jest.fn().mockResolvedValue([{ name: planName, uuid: PLAN_NOTE_UUID }]),
     findNote: jest.fn().mockResolvedValue(null),
     getNoteContent: jest.fn().mockResolvedValue("# Plan\n- Ship things"),
     getTaskDomains: jest.fn().mockResolvedValue([{ name: "Work", uuid: "dom-work" }]),
     getTaskDomainTasks: jest.fn().mockResolvedValue(openTasks),
+    insertTask: jest.fn().mockResolvedValue("inserted-travel-task"),
     updateTask: jest.fn().mockResolvedValue(true),
   };
 }
@@ -126,6 +128,49 @@ describe("proposed-agenda occupied-times prompt", () => {
     await generateProposedAgenda(app, { now: new Date(2026, 5, 24, 9, 0, 0),
       targetDate: new Date(2026, 5, 24, 0, 0, 0), obligations: [] });
     expect(lastPromptSent).toContain("Already occupied times: [ none ]");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // All-day travel context should influence the day without creating an occupied clock range. In that mode,
+  // Proposed Agenda may keep a null-taskUuid invented local activity.
+  // [OpenAI GPT-5.5] Task: assert all-day travel override permits invented agenda activities
+  it("passes all-day travel context and keeps invented travel activities with null taskUuid", async () => {
+    const app = buildApp();
+    llmMock.mockImplementation(async (_app, prompt) => {
+      lastPromptSent = prompt;
+      return { activities: [{ startTime: "13:00", durationMinutes: 90, title: "Visit Nishiki Market",
+        taskUuid: null, reason: "Fits the Kyoto vacation day" }] };
+    });
+
+    const result = await generateProposedAgenda(app, {
+      calendarEvents: [{ allDay: true, end: new Date(2026, 5, 25), start: new Date(2026, 5, 24),
+        title: "Vacation in Kyoto" }],
+      now: new Date(2026, 5, 24, 9, 0, 0),
+      obligations: [],
+      targetDate: new Date(2026, 5, 24, 0, 0, 0),
+    });
+
+    expect(lastPromptSent).toContain("All-day event override");
+    expect(lastPromptSent).toContain("Vacation in Kyoto");
+    expect(lastPromptSent).toContain("Already occupied times: [ none ]");
+    expect(result.activities).toHaveLength(1);
+    expect(result.activities[0]).toMatchObject({ isExisting: false, taskUuid: null, title: "Visit Nishiki Market" });
+  });
+
+  it("schedules invented travel activities into a lazily-created travel recommendations note", async () => {
+    const app = buildApp();
+    const activity = { durationMinutes: 90, isExisting: false, noteUuid: null, startMinutes: 13 * 60,
+      startTime: "13:00", targetMidnightSeconds: Math.floor(new Date(2026, 5, 24).getTime() / 1000),
+      taskUuid: null, title: "Visit Nishiki Market" };
+
+    const result = await scheduleProposedActivity(app, activity, null);
+
+    expect(app.createNote).toHaveBeenCalledWith("Dashboard travel recommendations", expect.any(Array),
+      { archive: false });
+    expect(app.insertTask).toHaveBeenCalledWith({ uuid: "travel-note-uuid" }, expect.objectContaining({
+      content: "Visit Nishiki Market",
+    }));
+    expect(result).toMatchObject({ noteUuid: "travel-note-uuid", taskUuid: "inserted-travel-task" });
   });
 });
 

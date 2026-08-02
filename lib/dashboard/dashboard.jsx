@@ -205,8 +205,10 @@ const DreamTaskCell = createWidgetCell('dream-task', DreamTaskWidget, ({ app, co
 const MoodCell = createWidgetCell('mood', MoodWidget, pickProps('app', 'moodRatings', 'onMoodRecorded'));
 const PeakHoursCell = createWidgetCell('peak-hours', PeakHoursWidget,
   pickProps('app', 'currentDate', 'selectedDate', 'timeFormat'));
-const ProposedAgendaCell = createWidgetCell('proposed-agenda', ProposedAgendaWidget, ({ app, currentDate, providerApiKey, providerEm, taskDomainUUID, timeFormat }) => ({
-  app, currentDate, defaultNoteUuid: null, providerApiKey, providerEm, taskDomainUUID, timeFormat,
+const ProposedAgendaCell = createWidgetCell('proposed-agenda', ProposedAgendaWidget, ({ app, calendarEvents,
+    calendarEventsLoaded, currentDate, providerApiKey, providerEm, taskDomainUUID, timeFormat }) => ({
+  app, calendarEvents: calendarEventsLoaded ? calendarEvents : null, currentDate, defaultNoteUuid: null,
+  providerApiKey, providerEm, taskDomainUUID, timeFormat,
 }));
 const PlanningCell = createWidgetCell('planning', PlanningWidget, ({ app, config, quarterlyPlans }) => ({
   app, gridHeightSize: Number(config?.gridHeightSize) || 1, quarterlyPlans,

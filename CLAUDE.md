@@ -62,6 +62,23 @@ return { description, displayName, headerActions, isActive, justTooMuch, recordI
   somePeopleJustWantALongVariable };
 ```
 
+## Avoid Dense Transformation Returns
+
+Return statements should not compound multiple transformations such as `filter().map().sort()` in one expression.
+Apply each transformation to a named intermediate variable that describes the current shape of the data, then return
+the final variable.
+
+```javascript
+// Bad
+return tasks.filter(task => task.completedAt).map(task => task.noteUUID).sort();
+
+// Good
+const completedTasks = tasks.filter(task => task.completedAt);
+const completedNoteUuids = completedTasks.map(task => task.noteUUID);
+const sortedNoteUuids = completedNoteUuids.sort();
+return sortedNoteUuids;
+```
+
 # 3. New File Headers
 
 When you create a new file entirely, add a header block at the very top before any

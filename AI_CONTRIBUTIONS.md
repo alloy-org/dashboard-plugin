@@ -3,6 +3,50 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-08-02 — Shared recommendation context for Goal Coach and Proposed Agenda
+
+**Model:** GPT-5.5
+**Files created/modified:**
+- `lib/recommendation-context/day-recommendation-context.js` (created — shared derivation of prior same-weekday
+  completion patterns, all-day event context, travel/conference/vacation classification, research-note snippets,
+  date-named note exclusion, and cache fingerprints)
+- `lib/recommendation-context/recommendation-instructions.js` (created — converts shared context into LLM prompt
+  instructions with all-day travel overrides taking precedence over routine completion patterns)
+- `lib/util/calendar-utility.js`, `lib/util/json-utility.js`, and `lib/util/task-domain-utility.js` (created —
+  reusable target-date calendar lookup, stable JSON serialization, and task-domain UUID helpers extracted from the
+  recommendation context)
+- `lib/util/date-utility.js` (modified — add reusable `localMidnightFromDateInput`)
+- `lib/dream-task-service.js` (modified — sends source-note UUIDs and shared day recommendation instructions to
+  the Goal Coach LLM on fresh generation)
+- `lib/dashboard/proposed-agenda.jsx`, `lib/dashboard/dashboard.jsx`, and
+  `lib/dashboard/proposed-agenda-llm-generator.js` (modified — pass dashboard calendar events through and resolve
+  the actual schedule target date before deriving obligations/context)
+- `lib/dashboard/proposed-agenda-obligations.js` (modified — derive target-date obligations from supplied calendar
+  events and fetch enough external-calendar days for non-today fallback targets)
+- `lib/dashboard/proposed-agenda-service.js` (modified — adds shared prompt instructions, source-note signals,
+  context-aware cache identity, and travel-mode null-UUID invented activities that can be scheduled into a research
+  or fallback travel note)
+- `lib/dashboard/proposed-agenda-archive.js` (modified — persist and match recommendation-context fingerprints)
+- `test/recommendation-context.test.js` and `test/dream-task-recommendation-context.test.js` (created — focused
+  shared-context and Goal Coach prompt coverage)
+- `test/proposed-agenda-llm-generator.test.js` (created — confirms unexpected Proposed Agenda generation errors
+  propagate while loading state is cleared)
+- `test/proposed-agenda-occupied-times.test.js` and `test/proposed-agenda-archive.test.js` (modified — all-day
+  travel prompt/validation/scheduling coverage and structured context-key cache miss coverage)
+- `CLAUDE.md` (modified — add guidance against dense return statements that compound array/hash transformations;
+  `AGENTS.md` already carries the matching guidance)
+- `build/compiled.js` (rebuilt)
+
+**Task:** Add shared recommendation context that lets Goal Coach and Proposed Agenda consider prior same-weekday
+source-note completions plus all-day travel/vacation/conference events when choosing today's recommendations.
+**Prompt summary:** "Update dream-task-service and proposed-agenda so recommendations consider tasks completed
+from each non-date-named note on the past two matching weekdays, and all-day travel/conference/vacation context."
+**Notes:** Proposed Agenda keeps the existing existing-task-only validation by default; null-UUID invented
+activities are accepted only when all-day travel/vacation/conference context is active. Generic date/calendar/task
+domain helpers now live in `lib/util/` instead of the recommendation-specific module.
+
+---
+
 ## 2026-07-30 — Swap Background and Leave Feedback quick actions
 
 **Model:** opus-5

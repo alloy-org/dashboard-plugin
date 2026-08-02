@@ -141,10 +141,10 @@ function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, ti
 // ----------------------------------------------------------------------------------------------
 // @desc Proposed Agenda widget — derives today's immovable obligations, asks the configured LLM to fill the
 //   gaps for the selected "Today's priority", and lets the user schedule/dismiss each proposal or the whole set.
-// @param {object} props - { app, currentDate, defaultNoteUuid, providerApiKey, providerEm, taskDomainUUID,
-//   timeFormat }.
-export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid, providerApiKey, providerEm,
-    taskDomainUUID, timeFormat }) {
+// @param {object} props - { app, calendarEvents, currentDate, defaultNoteUuid, providerApiKey, providerEm,
+//   taskDomainUUID, timeFormat }.
+export default function ProposedAgendaWidget({ app, calendarEvents, currentDate, defaultNoteUuid, providerApiKey,
+    providerEm, taskDomainUUID, timeFormat }) {
   // The widget's persisted "Today's priority" and AI-provider choices, seeded from the same SETTING_KEYS
   const persistedPriorityKey = pluginSettings()[SETTING_KEYS.PROPOSED_AGENDA_PRIORITY] || null;
   const persistedProviderEm = pluginSettings()[SETTING_KEYS.PROPOSED_AGENDA_LLM] || null;
@@ -174,10 +174,10 @@ export default function ProposedAgendaWidget({ app, currentDate, defaultNoteUuid
   // providerApiKey is included so that adding an API key in Dashboard Settings (which leaves providerEm
   // unchanged) still re-triggers generation, letting the widget recover from the no-provider state.
   const runGeneration = useCallback(({ forceRegenerate = false } = {}) => runProposedAgendaGeneration(app,
-    { currentDate, domainUuid: taskDomainUUID, forceRegenerate, priorityKey, providerEm: modelProviderEm, setApproving,
-    setAttribution, setDateLabel, setDismissedKeys, setError, setIsFutureDay, setLoading, setObligations, setProposed,
-    setRecordProviderEm, setScheduledKeys }),
-    [app, currentDate, modelProviderEm, priorityKey, providerApiKey, taskDomainUUID]);
+    { calendarEvents, currentDate, domainUuid: taskDomainUUID, forceRegenerate, priorityKey,
+    providerEm: modelProviderEm, setApproving, setAttribution, setDateLabel, setDismissedKeys, setError,
+    setIsFutureDay, setLoading, setObligations, setProposed, setRecordProviderEm, setScheduledKeys }),
+    [app, calendarEvents, currentDate, modelProviderEm, priorityKey, providerApiKey, taskDomainUUID]);
 
   const onChangeModel = useCallback(() => setProviderPopupOpen(true), []);
 

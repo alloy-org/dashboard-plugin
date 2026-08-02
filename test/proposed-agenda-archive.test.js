@@ -109,6 +109,21 @@ describe("proposed-agenda-archive", () => {
     expect(storedRecords(app, DATE)).toHaveLength(3);
   });
 
+  it("misses the cache when the recommendation-context fingerprint changes", async () => {
+    const app = buildNoteApp();
+    const contextA = { allDayEvents: [], completionPatterns: [{ completedCount: 2, noteName: "Project A",
+      noteUuid: "note-project" }], eventCategories: [], researchNotes: [], targetDateKey: "2026-06-28" };
+    const contextB = { ...contextA, completionPatterns: [{ completedCount: 1, noteName: "Project B",
+      noteUuid: "note-project-b" }] };
+    await storeProposedAgenda(app, { activities: [ACT_A], date: DATE, recommendationContextKey: contextA,
+      priorityKey: PRIORITY, providerEm: PROVIDER });
+
+    expect(await loadCachedProposedAgenda(app, { date: DATE, recommendationContextKey: contextA,
+      priorityKey: PRIORITY, providerEm: PROVIDER })).not.toBeNull();
+    expect(await loadCachedProposedAgenda(app, { date: DATE, recommendationContextKey: contextB,
+      priorityKey: PRIORITY, providerEm: PROVIDER })).toBeNull();
+  });
+
   it("records scheduled/dismissed statuses back onto the stored proposals", async () => {
     const app = buildNoteApp();
     await storeProposedAgenda(app, { activities: [ACT_A, ACT_B], date: DATE, priorityKey: PRIORITY,
