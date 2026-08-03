@@ -3,6 +3,38 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-08-03 — Note Peek widget
+
+**Model:** claude-opus-5[1m]
+**Files created/modified:**
+- `lib/dashboard/note-peek.jsx` (created — widget: whole-body note chooser before a note is picked, the
+  host-rendered note HTML afterwards, plus a title-bar settings icon that changes the note)
+- `lib/dashboard/note-peek-service.js` (created — note selection read/write through the widget's setting,
+  the `type: "note"` selector prompt, and note HTML resolved via `app.htmlFromContent`)
+- `lib/dashboard/styles/note-peek.scss` (created — min width/height floors keyed off the
+  `horizontal-N-cell`/`vertical-N-cell` classes, `overflow: hidden` clipping, and element styles for the
+  host's `ample-editor` markup, whose editor stylesheet is not present inside the embed)
+- `lib/dashboard/layout-profiles.js` (modified — `note-peek` registry entry, up to 4x2 tiles)
+- `lib/dashboard/dashboard.jsx` (modified — Note Peek cell wired into the widget grid)
+- `lib/data-service.js` (modified — include the Note Peek selection in the init settings snapshot so the
+  widget can read its note synchronously on mount)
+- `lib/util/browser-dev-app.js` (modified — dev shims for `htmlFromContent` and the `type: "note"` prompt
+  input, plus Note Peek config parsing at init)
+- `test/note-peek-widget.test.js` (created — chooser/prompt/persistence, stored-note render on mount, note
+  switching, cancellation, host render failure, and empty-note coverage)
+- `build/compiled.js` (rebuilt)
+
+**Task:** Add a Note Peek dashboard widget that displays the rendered contents of a note the user chooses.
+**Prompt summary:** "new NotePeek component that displays the markdown-rendered contents of a note; use
+app.htmlFromContent; overflow: hidden what does not fit; use the automatically applied module class names
+to define min height/width; clicking an unconfigured widget pops an app.prompt with a note selector, and
+afterwards a settings icon in the title bar changes the note; store the choice in app.setSetting."
+**Notes:** All rendering is the host's — `app.htmlFromContent` returns HTML, so no markdown is parsed
+plugin-side. The dev app has no host to ask, so its `htmlFromContent` shim approximates it with marked.
+The selection lives in `widgetConfigKey("note-peek")` as `[noteUUID, noteName]`.
+
+---
+
 ## 2026-08-02 — Shared recommendation context for Goal Coach and Proposed Agenda
 
 **Model:** GPT-5.5

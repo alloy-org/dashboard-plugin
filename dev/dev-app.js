@@ -6,7 +6,8 @@
  */
 import fs from "fs";
 import crypto from "crypto";
-import { noteHandleMatchesGroups, SAMPLE_NOTE_HANDLES, SAMPLE_PEOPLE, withAsyncIterator } from "../lib/util/dev-sample-notes.js";
+import { noteHandleMatchesGroups, SAMPLE_NOTE_HANDLES, SAMPLE_PEOPLE, sampleNoteContentFromUUID,
+  withAsyncIterator } from "../lib/util/dev-sample-notes.js";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -845,7 +846,9 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       const uuid = typeof noteHandle === "string" ? noteHandle : noteHandle?.uuid;
       const filePath = path.join(notesDir, `${uuid}.md`);
       if (!fs.existsSync(filePath)) {
-        return "# Sample Note\n\nThis is dev-mode placeholder content.";
+        // Only the fixture notes get generated content; a widget's own state note keeps the neutral
+        // placeholder it has always received, since widgets parse those bodies themselves.
+        return sampleNoteContentFromUUID(uuid) || "# Sample Note\n\nThis is dev-mode placeholder content.";
       }
       const raw = fs.readFileSync(filePath, "utf-8");
       const parsed = _parseFrontmatter(raw);

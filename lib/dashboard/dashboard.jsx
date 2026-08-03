@@ -32,6 +32,7 @@ import LayoutPickerWidget, { saveLayoutWithProfile } from 'layout-picker';
 import { WIDGET_REGISTRY } from 'layout-profiles';
 import LazyWidgetMount from "lazy-widget-mount";
 import MoodWidget from 'mood';
+import NotePeekWidget from 'note-peek';
 import PeakHoursWidget from 'peak-hours';
 import ProposedAgendaWidget from 'proposed-agenda';
 import { pluginContext, setPluginData, updatePluginSetting } from "plugin-data";
@@ -203,6 +204,7 @@ const DreamTaskCell = createWidgetCell('dream-task', DreamTaskWidget, ({ app, co
   onOpenSettings, providerApiKey, providerEm,
 }));
 const MoodCell = createWidgetCell('mood', MoodWidget, pickProps('app', 'moodRatings', 'onMoodRecorded'));
+const NotePeekCell = createWidgetCell('note-peek', NotePeekWidget, pickProps('app'));
 const PeakHoursCell = createWidgetCell('peak-hours', PeakHoursWidget,
   pickProps('app', 'currentDate', 'selectedDate', 'timeFormat'));
 const ProposedAgendaCell = createWidgetCell('proposed-agenda', ProposedAgendaWidget, ({ app, calendarEvents,
@@ -242,6 +244,7 @@ const CELL_COMPONENTS = {
   graveyard: GraveyardCell,
   'layout-picker': LayoutPickerCell,
   mood: MoodCell,
+  'note-peek': NotePeekCell,
   'peak-hours': PeakHoursCell,
   planning: PlanningCell,
   'proposed-agenda': ProposedAgendaCell,

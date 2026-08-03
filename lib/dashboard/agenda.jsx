@@ -4,7 +4,7 @@
  * Task: Agenda widget — today's tasks with priority colors and durations
  * Prompt summary: "widget listing today's scheduled tasks with time, priority indicator, and duration"
  */
-import { widgetTitleFromId } from "constants/settings"
+import { widgetIconFromId, widgetTitleFromId } from "constants/settings"
 import { obligationsFromTasksAndEvents, TODAY_OBLIGATIONS_EVENT, TODAY_OBLIGATIONS_REQUEST_EVENT } from "proposed-agenda-obligations"
 import { useState, useEffect, useRef } from "react"
 import WidgetWrapper from "widget-wrapper"
@@ -251,7 +251,7 @@ export default function AgendaWidget({ app, calendarEvents, currentDate, selecte
   return (
     <WidgetWrapper
       title={widgetTitleFromId('agenda')}
-      icon="📋"
+      icon={widgetIconFromId('agenda')}
       widgetId="agenda"
       headerActions={paginationControls}
     >
