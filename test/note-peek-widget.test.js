@@ -30,6 +30,7 @@ function buildMockApp({ chosenNote = { name: "Roadmap", uuid: "note-1" }, htmlFr
   return {
     getNoteContent: jest.fn().mockResolvedValue(NOTE_MARKDOWN),
     htmlFromContent: htmlFromContent || jest.fn().mockResolvedValue(NOTE_HTML),
+    navigate: jest.fn().mockResolvedValue(undefined),
     prompt: jest.fn().mockResolvedValue(chosenNote),
     setSetting: jest.fn().mockResolvedValue(undefined),
   };
@@ -94,6 +95,23 @@ describe("NotePeekWidget", () => {
     expect(app.prompt).not.toHaveBeenCalled();
     expect(app.getNoteContent).toHaveBeenCalledWith({ uuid: "note-1" });
     expect(container.querySelector(".note-peek-content").innerHTML).toBe(NOTE_HTML);
+  });
+
+  it("navigates to the chosen note when the title or note-name subtitle is clicked", async () => {
+    const { app, container } = await renderWidget({ settings: storedRoadmapSettings() });
+    const noteUrl = "https://www.amplenote.com/notes/note-1";
+    const titleLink = container.querySelector(".widget-title__label .note-peek-title-link");
+    const subtitleLink = container.querySelector(".widget-title__subtitle .note-peek-title-link");
+    expect(titleLink.textContent).toBe("Note Peek");
+    expect(subtitleLink.textContent).toBe("Roadmap");
+    expect(titleLink.getAttribute("href")).toBe(noteUrl);
+
+    await act(async () => { titleLink.click(); });
+    expect(app.navigate).toHaveBeenCalledWith(noteUrl);
+
+    await act(async () => { subtitleLink.click(); });
+    expect(app.navigate).toHaveBeenCalledTimes(2);
+    expect(app.navigate).toHaveBeenLastCalledWith(noteUrl);
   });
 
   it("switches to the newly chosen note when the header Configure link is used", async () => {

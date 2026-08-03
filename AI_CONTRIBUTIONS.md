@@ -3,6 +3,24 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-08-03 — Note Peek list styling and clickable title
+
+**Model:** Cursor Grok 4.5
+**Files created/modified:**
+- `lib/dashboard/styles/note-peek.scss` (modified — `bullet-list-item` / `number-list-item` /
+  `check-list-item` with `indent-N` markers and counters matching ample-editor-app; hide
+  material-icon heading anchors and link icons that otherwise render as raw text; title-link hover)
+- `lib/dashboard/note-peek.jsx` (modified — widget title and note-name subtitle become
+  `app.navigate` links to the chosen note once a selection exists)
+- `test/note-peek-widget.test.js` (modified — cover title/subtitle navigation)
+- `AI_CONTRIBUTIONS.md` (modified — this entry)
+
+**Task:** Make Note Peek render host list HTML like the editor, and open the note from the header.
+**Prompt summary:** "ensure bullet-list-item and indent-n are interpreted akin to ample-editor-app;
+update the title of the note-peek widget to be a clickable link that navigates to the note"
+
+---
+
 ## 2026-08-03 — Registry-derived widget headers and a shared source of truth for widget sizing
 
 **Model:** claude-opus-5[1m]

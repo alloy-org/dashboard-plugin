@@ -4,7 +4,8 @@
  *   pipe escaping, and the load/persist flow (create note, in-place current-month section replace, full rewrite)"
  */
 import {
-  HABIT_CACHE_NOTE_NAME, loadHabitCache, monthsFromNoteContent, monthTableMarkdown, persistHabitCache,
+  HABIT_CACHE_FORMAT_VERSION, HABIT_CACHE_NOTE_NAME, loadHabitCache, monthsFromNoteContent, monthTableMarkdown,
+  persistHabitCache,
 } from "energy-per-habit-cache";
 
 // Minimal in-memory app double backing findNote/getNoteContent/createNote/replaceNoteContent.
@@ -73,6 +74,7 @@ describe("loadHabitCache", () => {
     const cache = await loadHabitCache(app);
     expect(cache.noteHandle).toBeNull();
     expect(cache.monthsByKey.size).toBe(0);
+    expect(cache.formatVersion).toBe(0);
   });
 
   test("loads and parses an existing cache note", async () => {
@@ -81,6 +83,7 @@ describe("loadHabitCache", () => {
     const cache = await loadHabitCache(app);
     expect(cache.noteHandle.uuid).toBe("n1");
     expect(cache.monthsByKey.get("2026-05").rows).toHaveLength(2);
+    expect(cache.formatVersion).toBe(0);
   });
 });
 
@@ -93,10 +96,11 @@ describe("persistHabitCache", () => {
     const written = Object.values(app.store)[0].content;
     expect(written).toContain("## July 2026");
     expect(written).toContain("Morning exercise");
+    expect(written).toContain(`Cache format: ${HABIT_CACHE_FORMAT_VERSION}`);
   });
 
   test("replaces only the current-month section in place when it already exists", async () => {
-    const existing = `# ${HABIT_CACHE_NOTE_NAME}\n\n## July 2026\n\n${monthTableMarkdown([ROWS[1]])}\n\n## June 2026\n\n${monthTableMarkdown([ROWS[1]])}\n`;
+    const existing = `# ${HABIT_CACHE_NOTE_NAME}\n\nCache format: ${HABIT_CACHE_FORMAT_VERSION}\n\n## July 2026\n\n${monthTableMarkdown([ROWS[1]])}\n\n## June 2026\n\n${monthTableMarkdown([ROWS[1]])}\n`;
     const app = makeApp({ notes: { "n1": { name: HABIT_CACHE_NOTE_NAME, content: existing } } });
     const monthsByKey = monthsFromNoteContent(existing);
     monthsByKey.set("2026-07", { monthKey: "2026-07", rows: [ROWS[0]] }); // change July

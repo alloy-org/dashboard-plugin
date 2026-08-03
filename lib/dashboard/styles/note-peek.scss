@@ -101,6 +101,28 @@
   }
 }
 
+/* Title / note-name links in the header open the chosen note; they inherit the widget-title
+ * typography and only pick up a link color on hover so the bar still reads as a title. */
+.widget-note-peek .note-peek-title-link {
+  color: inherit;
+  cursor: pointer;
+  text-decoration: none;
+
+  &:hover {
+    color: $color-link;
+    text-decoration: underline;
+  }
+}
+
+/* Spacing and indent steps mirror ample-editor-app's nodes/_bullet-list-item.scss (and the number-
+ * list sibling). The host HTML is sibling `div.bullet-list-item.indent-N` nodes — not ul/li — and
+ * the marker is drawn on `.visible-list-item::before`, so without these rules the peek shows a flat
+ * stack of paragraphs. Expander/drag chrome is omitted; only the readonly visual contract remains. */
+$list-item-margin: 4px;
+$list-item-indent-step: 16px;
+$list-item-marker-gutter: 21px;
+$check-list-indent-step: 20px;
+
 /* Content rendered by app.htmlFromContent arrives wrapped in the host's readonly ample-editor
  * container, whose own editor stylesheet is not present inside this embed — so the element styles the
  * note relies on are defined here, and apply equally to the local markdown-render fallback. */
@@ -112,16 +134,32 @@
   min-height: 0;
   overflow: hidden;
 
-  h1, h2, h3, h4, h5, h6 {
+  /* HeadingView injects a material-icons "link" anchor, and note links carry an .icon whose
+   * ::after content is a material ligature — neither font is available in the embed, so hide them
+   * rather than letting the raw words "link" / "description" appear inline. */
+  .heading-anchor,
+  .link > .icon {
+    display: none;
+  }
+
+  h1, h2, h3, h4, h5, h6,
+  .heading {
     color: $color-navy;
     line-height: 1.25;
     margin: 0 0 $sp-xs;
+    position: relative;
   }
 
-  h1 { font-size: 1.25rem; }
-  h2 { font-size: 1.1rem; }
-  h3 { font-size: 1rem; }
+  h1, h1.heading { font-size: 1.25rem; }
+  h2, h2.heading { font-size: 1.1rem; }
+  h3, h3.heading { font-size: 1rem; }
   h4, h5, h6 { font-size: 0.9rem; }
+
+  /* Headings wrap their text in an <a> for deep-linking; keep them looking like headings. */
+  .heading > a:not(.link):not(.heading-anchor) {
+    color: inherit;
+    text-decoration: none;
+  }
 
   p, blockquote, pre, table {
     margin: 0 0 $sp-sm;
@@ -187,6 +225,128 @@
     border: none;
     border-top: 1px solid $color-border;
     margin: $sp-sm 0;
+  }
+
+  .bullet-list-item,
+  .number-list-item {
+    margin: 0 0 $list-item-margin;
+    position: relative;
+
+    @for $indent from 0 through 9 {
+      &.indent-#{$indent} {
+        padding-left: #{($indent * $list-item-indent-step) + $list-item-marker-gutter};
+      }
+    }
+
+    .visible-list-item {
+      display: block;
+      position: relative;
+
+      p {
+        margin: 0;
+      }
+
+      &::before {
+        left: -$list-item-marker-gutter;
+        position: absolute;
+        text-align: center;
+        width: $list-item-marker-gutter;
+      }
+    }
+  }
+
+  /* Solid bullets at even indents, hollow circles at odd — same pairing as ample-editor. */
+  .bullet-list-item {
+    &.indent-0 .visible-list-item::before,
+    &.indent-2 .visible-list-item::before {
+      content: "\2022";
+      font-size: 1.35em;
+      line-height: 1;
+      top: -0.15em;
+    }
+
+    &.indent-1,
+    &.indent-3,
+    &.indent-4,
+    &.indent-5,
+    &.indent-6,
+    &.indent-7,
+    &.indent-8,
+    &.indent-9 {
+      .visible-list-item::before {
+        content: "\26AC";
+        font-size: 0.9em;
+        line-height: 1;
+        top: 0.1em;
+      }
+    }
+
+    &[data-crossed-out-at] .visible-list-item {
+      opacity: 0.55;
+      text-decoration: line-through;
+    }
+  }
+
+  .number-list-item {
+    @for $indent from 0 through 9 {
+      &.indent-#{$indent} .visible-list-item {
+        counter-increment: number-list-items-#{$indent};
+      }
+    }
+
+    &.indent-0 .visible-list-item::before { content: counter(number-list-items-0) ". "; }
+    &.indent-1 .visible-list-item::before { content: counter(number-list-items-1, lower-alpha) ". "; }
+    &.indent-2 .visible-list-item::before { content: counter(number-list-items-2, lower-roman) ". "; }
+    &.indent-3 .visible-list-item::before { content: counter(number-list-items-3, upper-alpha) ". "; }
+    &.indent-4 .visible-list-item::before { content: counter(number-list-items-4, upper-roman) ". "; }
+    &.indent-5 .visible-list-item::before { content: counter(number-list-items-5) ". "; }
+    &.indent-6 .visible-list-item::before { content: counter(number-list-items-6, lower-alpha) ". "; }
+    &.indent-7 .visible-list-item::before { content: counter(number-list-items-7, lower-roman) ". "; }
+    &.indent-8 .visible-list-item::before { content: counter(number-list-items-8, upper-alpha) ". "; }
+    &.indent-9 .visible-list-item::before { content: counter(number-list-items-9, upper-roman) ". "; }
+
+    .visible-list-item::before {
+      text-align: right;
+    }
+  }
+
+  :not(.number-list-item) + .number-list-item,
+  .number-list-item:first-child {
+    counter-reset: number-list-items-0 number-list-items-1 number-list-items-2 number-list-items-3
+      number-list-items-4 number-list-items-5 number-list-items-6 number-list-items-7
+      number-list-items-8 number-list-items-9;
+  }
+
+  /* Host toDOM for check-list-item is a flex row of checkbox + content — indent steps match
+   * ample-editor's check-list-item--indents mixin ($check-list-margin-delta). */
+  .check-list-item {
+    align-items: flex-start;
+    display: flex;
+    gap: $sp-sm;
+    margin: 0 0 $list-item-margin;
+    position: relative;
+
+    @for $indent from 1 through 9 {
+      &.indent-#{$indent} {
+        padding-left: #{$indent * $check-list-indent-step};
+      }
+    }
+
+    > input[type="checkbox"] {
+      flex-shrink: 0;
+      margin-top: 0.2em;
+      pointer-events: none;
+    }
+
+    &[data-completedat],
+    &[data-dismissedat] {
+      opacity: 0.65;
+
+      > .content-container,
+      > p {
+        text-decoration: line-through;
+      }
+    }
   }
 
   > :last-child {

@@ -1,11 +1,11 @@
 /**
  * [Claude claude-opus-4-8 (1M context)-authored file]
  * Prompt summary: "integration-test the Energy Per Habit service: first load fetches a full year + creates the
- *   cache note; a second load fetches only the current month (cached past months are not re-fetched) yet returns
- *   the same habits; a re-completed non-RRULE task still surfaces"
+ *   cache note; a second load refreshes complete months covering at least four weeks yet returns the same habits;
+ *   a re-completed non-RRULE task still surfaces"
  */
 import { loadEnergyPerHabit } from "energy-per-habit-service";
-import { HABIT_CACHE_NOTE_NAME } from "energy-per-habit-cache";
+import { HABIT_CACHE_FORMAT_VERSION, HABIT_CACHE_NOTE_NAME } from "energy-per-habit-cache";
 import { monthKeyFromDate } from "energy-per-habit-analysis";
 
 const DAY = 86400;
@@ -82,7 +82,8 @@ describe("loadEnergyPerHabit", () => {
     expect(note.content).toContain("## July 2026");
   });
 
-  test("second load only fetches the current month, cached past months are not re-fetched", async () => {
+  // [GPT-5.6 Sol] Task: verify cached loads still refresh at least four weeks of complete-month history
+  test("second load fetches complete months covering at least four recent weeks", async () => {
     // Each of July/June/May has >= 2 completions (so no once-a-month row is pruned) and none land on an off-day.
     const daysDone = [1, 2, 3, 10, 40, 41, 42, 70, 71, 72]; // Jul: 1,2,3,10 · Jun: 40,41,42 · May: 70,71,72
     const { tasks, moods } = buildFixture(today, daysDone, 2);
@@ -95,13 +96,27 @@ describe("loadEnergyPerHabit", () => {
     expect(secondResult.habits).toHaveLength(1);
     expect(secondResult.habits[0].completions).toBe(daysDone.length);
 
-    // The second fetch window starts at the current month, not a year back.
+    // July 18's four-week floor reaches June, so June is safely recomputed from its month boundary.
     const secondFrom = app.calls.tasks[1].fromSec;
-    const julyStart = Math.floor(new Date(2026, 6, 1).getTime() / 1000);
-    expect(secondFrom).toBe(julyStart);
+    const juneStart = Math.floor(new Date(2026, 5, 1).getTime() / 1000);
+    expect(secondFrom).toBe(juneStart);
   });
 
   test("current month key matches today's month", () => {
     expect(monthKeyFromDate(today)).toBe("2026-07");
+  });
+
+  // [GPT-5.6 Sol] Task: verify lossy pre-v2 caches receive a one-time full-window sparse-habit backfill
+  test("backfills the full analysis window when an existing cache predates sparse monthly rows", async () => {
+    const { tasks, moods } = buildFixture(today, [1, 2, 3, 40, 70], 2);
+    const app = makeApp(tasks, moods);
+    app.store.legacy = { name: HABIT_CACHE_NOTE_NAME,
+      content: `# ${HABIT_CACHE_NOTE_NAME}\n\n## June 2026\n\n| Task | Completions | Weeks streak | Mood on done days | Mood on off days |\n| --- | --- | --- | --- | --- |` };
+
+    await loadEnergyPerHabit(app, { today });
+
+    const nowSec = Math.floor(today.getTime() / 1000);
+    expect((nowSec - app.calls.tasks[0].fromSec) / DAY).toBeGreaterThan(365);
+    expect(app.store.legacy.content).toContain(`Cache format: ${HABIT_CACHE_FORMAT_VERSION}`);
   });
 });

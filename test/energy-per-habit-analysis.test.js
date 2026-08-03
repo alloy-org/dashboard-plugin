@@ -182,10 +182,10 @@ describe("short habits (exact whole-content match) + phrase fuzzy merge", () => 
 });
 
 describe("computeMonthlyAggregates + aggregateMonthlyHabits", () => {
-  test("stores per-month rows only for tasks completed more than once, and aggregates them", () => {
+  test("stores every monthly occurrence and aggregates repeated habits across months", () => {
     const ref = new Date(2026, 6, 18); // Jul 18 2026
     const monthKeys = ["2026-06", "2026-07"];
-    // "Walk": done twice in June, thrice in July. "Onceoff": done once each month (should be dropped).
+    // "Walk": done twice in June, thrice in July. Sparse occurrences remain cached for yearly discovery.
     const tasks = [
       task("Walk", 40, ref), task("Walk", 41, ref),                 // June (≈ Jun 8, Jun 7)
       task("Walk", 1, ref), task("Walk", 2, ref), task("Walk", 3, ref), // July
@@ -198,7 +198,7 @@ describe("computeMonthlyAggregates + aggregateMonthlyHabits", () => {
     const months = computeMonthlyAggregates({ completedTasks: tasks, moodRatings: moods, monthKeys });
     const june = months.get("2026-06");
     const july = months.get("2026-07");
-    expect(june.rows.map(r => r.label)).toEqual(["Walk"]);   // Onceoff dropped (only 1/month)
+    expect(june.rows.map(r => r.label)).toEqual(["Walk", "Onceoff"]);
     expect(july.rows.find(r => r.label === "Walk").count).toBe(3);
 
     const habits = aggregateMonthlyHabits(months, { minCompletions: 5, minMoodDays: 3 });
@@ -207,6 +207,24 @@ describe("computeMonthlyAggregates + aggregateMonthlyHabits", () => {
     expect(habits[0].completions).toBe(5);                   // 2 (June) + 3 (July)
     expect(habits[0].avgMoodOnDone).toBeCloseTo(2);
     expect(habits[0].delta).toBeGreaterThan(0);
+  });
+
+  test("shows a habit completed once per month more than 10 times in the trailing year", () => {
+    const today = new Date(2026, 7, 3);
+    const monthKeys = trailingMonthKeys(today, 13);
+    const completedTasks = [];
+    const moodRatings = [];
+    for (let monthsBack = 0; monthsBack < 11; monthsBack++) {
+      const doneDate = new Date(2026, 7 - monthsBack, 2, 10);
+      const offDate = new Date(2026, 7 - monthsBack, 12, 10);
+      completedTasks.push({ content: "Monthly planning review", completedAt: Math.floor(doneDate.getTime() / 1000) });
+      moodRatings.push({ rating: 2, timestamp: Math.floor(doneDate.getTime() / 1000) });
+      moodRatings.push({ rating: -1, timestamp: Math.floor(offDate.getTime() / 1000) });
+    }
+    const months = computeMonthlyAggregates({ completedTasks, moodRatings, monthKeys, today });
+    const habits = aggregateMonthlyHabits(months);
+    expect(habits).toHaveLength(1);
+    expect(habits[0].completions).toBe(11);
   });
 });
 
