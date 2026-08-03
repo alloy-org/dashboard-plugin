@@ -6,7 +6,7 @@
  */
 import { useEffect, useRef, useState } from "react"
 import WidgetWrapper from "./widget-wrapper"
-import { widgetTitleFromId, parseWidgetConfig, widgetConfigKey } from "../constants/settings"
+import { parseWidgetConfig, widgetConfigKey } from "../constants/settings"
 import { pluginSettings } from "plugin-data"
 import ConfigPopup from "./config-popup"
 import { useCanvasTippy } from "./dashboard-tooltip-tippy.jsx"
@@ -385,13 +385,7 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
   }, [hoveredBar]);
 
   return (
-    <WidgetWrapper
-      title={widgetTitleFromId('victory-value')}
-      icon="🏆"
-      widgetId="victory-value"
-      configurable={true}
-      onConfigure={onConfigure}
-    >
+    <WidgetWrapper configurable={true} onConfigure={onConfigure} widgetId="victory-value">
       {configOpen ? (
         <ConfigPopup
           title="Configure Victory Value"

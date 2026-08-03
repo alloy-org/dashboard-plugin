@@ -7,6 +7,8 @@
 @use 'theme' as *;
 // Inlined Roboto @font-face — must ship in-bundle because the embed's data: URL origin blocks Google Fonts.
 @use 'roboto-font';
+// Grid geometry per unit of the size the user picked, shared with the widget stylesheets that read it.
+@use 'widget-sizings' as *;
 
 // Layout & component constants
 $dashboard-maximum-width: 1200px;
@@ -98,7 +100,7 @@ html {
     .dashboard-grid {
       display: grid;
       gap: $sp-lg;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat($dashboard-grid-column-count, 1fr);
       position: relative;
     }
 
@@ -128,20 +130,10 @@ html {
         --grid-cell-base-opacity: 1;
       }
 
-      &.horizontal-2-cell { grid-column: span 2; }
-      &.horizontal-3-cell { grid-column: span 3; }
-      &.horizontal-4-cell { grid-column: span 4; }
-
-      &.vertical-1-cell {
-        max-height: 420px;
-        min-height: 320px;
-      }
-
-      &.vertical-2-cell {
-        grid-row: span 2;
-        max-height: 800px;
-        min-height: 600px;
-      }
+      /* [Claude claude-opus-5 (1M context)] Task: read the per-cell geometry from widget-sizings.scss */
+      /* Prompt: "DRY the stylesheet to use the existing sources of truth for how large a widget becomes */
+      /*   per unit of height & width specified by user" */
+      @include widget-cell-size-classes;
 
       /* [Claude] Task: dashboard drag visual states for long-press widget reordering */
       /* Prompt: "apply wobble when ready to drag and slide neighbors out of the way" */
@@ -186,18 +178,7 @@ html {
       }
 
       .grid-cell {
-        &.horizontal-2-cell,
-        &.horizontal-3-cell,
-        &.horizontal-4-cell {
-          grid-column: span 1;
-        }
-
-        &.vertical-1-cell,
-        &.vertical-2-cell {
-          grid-row: span 1;
-          max-height: none;
-          min-height: auto;
-        }
+        @include widget-mobile-cell-size-classes;
       }
     }
   }

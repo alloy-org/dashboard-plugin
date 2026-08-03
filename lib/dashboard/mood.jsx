@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import ConfigPopup from "config-popup";
 import { useCanvasTippy } from "dashboard/dashboard-tooltip-tippy";
 import WidgetWrapper from "widget-wrapper";
-import { widgetTitleFromId, parseWidgetConfig, widgetConfigKey } from "constants/settings";
+import { parseWidgetConfig, widgetConfigKey } from "constants/settings";
 import { pluginSettings } from "plugin-data";
 import { logIfEnabled } from "util/log";
 import { snapDashboardAction } from "util/plausible";
@@ -781,7 +781,7 @@ export default function MoodWidget({ app, moodRatings, onMoodRecorded }) {
 
   if (submitted) {
     return (
-      <WidgetWrapper title={widgetTitleFromId('mood')} icon="🎭" widgetId="mood">
+      <WidgetWrapper widgetId="mood">
         {configurationPopup}
         <div className="mood-confirmation">
           <div className="mood-confirmation-icon">{selectedMood.emoji}</div>
@@ -793,7 +793,7 @@ export default function MoodWidget({ app, moodRatings, onMoodRecorded }) {
   }
 
   return (
-    <WidgetWrapper title={widgetTitleFromId('mood')} icon="🎭" widgetId="mood">
+    <WidgetWrapper widgetId="mood">
       {configurationPopup}
       <div className="mood-selector">
         {MOODS.map(mood => (

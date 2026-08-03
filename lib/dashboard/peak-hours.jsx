@@ -5,7 +5,6 @@
  * Prompt summary: "rewrite peak-hours as a project-native widget consuming completed tasks from dashboard"
  */
 import { useEffect, useRef, useMemo, useCallback, useState } from "react";
-import { widgetTitleFromId } from "constants/settings";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { dateFromDateInput, dateFromMonthKey, formatHourLabel, monthKeyFromDateInput,
   monthStartFromDateInput } from "util/date-utility";
@@ -391,7 +390,7 @@ export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFo
 
   if (loading) {
     return (
-      <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon="⏰" widgetId={WIDGET_ID} subtitle={monthNavigator}>
+      <WidgetWrapper subtitle={monthNavigator} widgetId={WIDGET_ID}>
         <div className="peak-hours-empty">
           <p>Loading monthly task history…</p>
         </div>
@@ -401,7 +400,7 @@ export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFo
 
   if (totalTasks === 0) {
     return (
-      <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon="⏰" widgetId={WIDGET_ID} subtitle={monthNavigator}>
+      <WidgetWrapper subtitle={monthNavigator} widgetId={WIDGET_ID}>
         <div className="peak-hours-empty">
           <p>No completed task data available yet.</p>
         </div>
@@ -410,7 +409,7 @@ export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFo
   }
 
   return (
-    <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon="⏰" widgetId={WIDGET_ID} subtitle={monthNavigator}>
+    <WidgetWrapper subtitle={monthNavigator} widgetId={WIDGET_ID}>
       <div className="peak-hours-metrics-grid">
         <MetricCard label="Tasks analyzed" value={totalTasks} />
         <MetricCard label="Peak create hour" value={peakCreateHour} />

@@ -6,7 +6,7 @@
  *   notebook-paper background, persisted to a Day Sketch note with dashboard tags"
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { DASHBOARD_NOTE_TAG, widgetTitleFromId } from "constants/settings";
+import { DASHBOARD_NOTE_TAG } from "constants/settings";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { dateFromDateInput, dateKeyFromDateInput, formatHourLabel } from "util/date-utility";
 import WidgetWrapper from "widget-wrapper";
@@ -402,13 +402,8 @@ export default function DaySketchWidget({ agendaTasks, app, calendarEvents, curr
   }, [scheduleSave, setEntries, setHumanEditedHours]);
 
   return (
-    <WidgetWrapper
-      title={widgetTitleFromId(WIDGET_ID)}
-      subtitle={formatDateForNoteName(today)}
-      icon="🗒️"
-      widgetId={WIDGET_ID}
-      headerActions={<SaveButton isDirty={isDirty} onSaveClick={saveNow} />}
-    >
+    <WidgetWrapper headerActions={<SaveButton isDirty={isDirty} onSaveClick={saveNow} />}
+        subtitle={formatDateForNoteName(today)} widgetId={WIDGET_ID}>
       <div className="day-sketch-notebook" ref={notebookRef}>
         {loading ? (
           <div className="day-sketch-loading">Loading…</div>

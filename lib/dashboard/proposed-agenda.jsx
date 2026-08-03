@@ -3,7 +3,7 @@
 //   hour-by-hour list that interleaves already-scheduled obligations with LLM proposals (Add to schedule /
 //   dismiss), and an Approve schedule / Dismiss all footer with a pending count"
 import { PROVIDER_DEFAULT_MODEL } from "constants/llm-providers";
-import { configuredProviderEms, SETTING_KEYS, widgetTitleFromId } from "constants/settings";
+import { configuredProviderEms, SETTING_KEYS } from "constants/settings";
 import LlmProviderSelector from "llm-provider-selector";
 import NoConfigUpsell from "no-config-upsell";
 import { pluginSettings, updatePluginSetting } from "plugin-data";
@@ -53,7 +53,7 @@ function _modelName(providerEm) {
 // [Claude claude-opus-4-8 (1M context)] Task: proposed-agenda loading state
 function LoadingState() {
   return (
-    <WidgetWrapper title={ widgetTitleFromId(WIDGET_ID) } icon="🗓️" widgetId={ WIDGET_ID }>
+    <WidgetWrapper widgetId={ WIDGET_ID }>
       <div className="proposed-agenda-loading">
         <div className="proposed-agenda-spinner" />
         <p>Drafting your hour-by-hour schedule …</p>
@@ -68,7 +68,7 @@ function LoadingState() {
 // [Claude claude-opus-4-8 (1M context)] Task: proposed-agenda error/empty state
 function MessageState({ message, onRetry }) {
   return (
-    <WidgetWrapper title={ widgetTitleFromId(WIDGET_ID) } icon="🗓️" widgetId={ WIDGET_ID }>
+    <WidgetWrapper widgetId={ WIDGET_ID }>
       <div className="proposed-agenda-message">
         <p>{ message }</p>
         <button className="proposed-agenda-retry" onClick={ onRetry }>Try again</button>
@@ -261,8 +261,8 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
     const hasLlmConfig = !!(envApiKey || providerApiKey);
     if (!hasLlmConfig && NO_CONFIG_ERROR_CODES.has(error.errorCode)) {
       return (
-        <NoConfigUpsell app={ app } features={ NO_CONFIG_FEATURES } icon="🗓️"
-          moreFeaturesLabel="+ 15 more features included" title={ widgetTitleFromId(WIDGET_ID) } widgetId={ WIDGET_ID } />
+        <NoConfigUpsell app={ app } features={ NO_CONFIG_FEATURES }
+          moreFeaturesLabel="+ 15 more features included" widgetId={ WIDGET_ID } />
       );
     }
     return <MessageState message={ error.error } onRetry={ () => runGeneration() } />;
@@ -284,8 +284,7 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
 
   return (
     <>
-      <WidgetWrapper title={ widgetTitleFromId(WIDGET_ID) } subtitle={ dateLabel } icon="🗓️"
-          widgetId={ WIDGET_ID } headerActions={ reseedAction }>
+      <WidgetWrapper subtitle={ dateLabel } widgetId={ WIDGET_ID } headerActions={ reseedAction }>
         <PriorityModelBar modelName={ _modelName(modelProviderEm) } onChangeModel={ onChangeModel }
           onPriorityChange={ onPriorityChange } priorityKey={ priorityKey } />
         <div className="proposed-agenda-list" ref={ listRef }>

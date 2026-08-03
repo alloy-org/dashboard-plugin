@@ -5,7 +5,7 @@
  * Prompt summary: "add layout-picker widget with three clickable profile buttons that immediately rearrange all dashboard components"
  */
 
-import { SETTING_KEYS, widgetTitleFromId } from "constants/settings";
+import { SETTING_KEYS } from "constants/settings";
 import { LAYOUT_PROFILES, layoutMatchesProfile, sizingFromProfile } from "layout-profiles";
 import { useState } from "react";
 import "styles/layout-picker.scss";
@@ -90,7 +90,7 @@ export default function LayoutPickerWidget({ app, currentLayout, onLayoutApply, 
   );
 
   return (
-    <WidgetWrapper headerActions={headerActions} icon="🗂️" title={widgetTitleFromId(WIDGET_ID)} widgetId={WIDGET_ID}>
+    <WidgetWrapper headerActions={headerActions} widgetId={WIDGET_ID}>
       {anyMatch ? null : (
         <p className="layout-picker-warning">⚠️ Clicking a profile reorders all dashboard widgets.</p>
       )}

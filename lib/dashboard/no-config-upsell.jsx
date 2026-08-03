@@ -12,22 +12,22 @@ const DEFAULT_SUBHEAD = "Amplenote provides free access to frontier models for w
 
 // ----------------------------------------------------------------------------------------------
 // @desc Marketing/no-config card shown when a widget can't reach an LLM (no API key configured). Promotes
-//   Ample Agent Pro and is shared by every widget that needs an AI provider; each caller supplies the icon,
-//   title, widgetId, and the feature list it wants to highlight, so the same card sells different features.
-// @param {object} props - { app, features, headline, icon, moreFeaturesLabel, subhead, title, widgetId }.
+//   Ample Agent Pro and is shared by every widget that needs an AI provider; each caller supplies the
+//   widgetId and the feature list it wants to highlight, so the same card sells different features.
+// @param {object} props - { app, features, headline, moreFeaturesLabel, subhead, widgetId }.
 //   - {object} app - Amplenote app bridge (used to navigate to the Ample Agent Pro listing).
 //   - {Array<{icon: string, label: string}>} features - Feature pills to highlight for this widget.
 //   - {string} [headline] - Override the default headline.
-//   - {string} icon - Widget icon shown in the WidgetWrapper header.
 //   - {string|null} [moreFeaturesLabel] - Optional "+ N more features" line beneath the pills.
 //   - {string} [subhead] - Override the default subhead copy.
-//   - {string} title - Widget title shown in the WidgetWrapper header.
-//   - {string} widgetId - Widget id for WidgetWrapper styling/telemetry.
+//   - {string} widgetId - Widget id, which is also where WidgetWrapper reads the header icon and title.
 // [Claude claude-opus-4-8 (1M context)] Task: shared, feature-parameterized no-config upsell card
-export default function NoConfigUpsell({ app, features = [], headline = DEFAULT_HEADLINE, icon,
-    moreFeaturesLabel = null, subhead = DEFAULT_SUBHEAD, title, widgetId }) {
+// [Claude claude-opus-5 (1M context)] Task: drop the forwarded icon/title now that WidgetWrapper
+//   resolves both from widgetId
+export default function NoConfigUpsell({ app, features = [], headline = DEFAULT_HEADLINE,
+    moreFeaturesLabel = null, subhead = DEFAULT_SUBHEAD, widgetId }) {
   return (
-    <WidgetWrapper title={ title } icon={ icon } widgetId={ widgetId }>
+    <WidgetWrapper widgetId={ widgetId }>
       <div className="no-config-upsell">
         <div className="no-config-upsell-badges">
           <span className="no-config-upsell-badge no-config-upsell-badge--brand">Ample Agent Pro</span>

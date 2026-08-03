@@ -1,4 +1,3 @@
-import { widgetTitleFromId } from "constants/settings";
 import { useEffect, useRef, useState } from "react";
 import { addLogListener, getLogBuffer, removeLogListener } from "util/log";
 import WidgetWrapper from "widget-wrapper";
@@ -58,7 +57,7 @@ export default function DebugConsoleWidget() {
   );
 
   return (
-    <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} widgetId={WIDGET_ID} headerActions={clearButton}>
+    <WidgetWrapper widgetId={WIDGET_ID} headerActions={clearButton}>
       <div className="debug-console" ref={scrollRef}>
         {entries.length === 0
           ? <div className="debug-console__empty">No log messages yet. Enable Console Logging in Settings to start capturing messages.</div>

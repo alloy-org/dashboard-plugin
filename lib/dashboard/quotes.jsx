@@ -4,7 +4,6 @@
  * Task: Quotes widget — LLM-generated inspirational quotes with background images
  * Prompt summary: "widget that fetches quotes via callPlugin and displays on image tiles"
  */
-import { widgetTitleFromId } from "constants/settings";
 import { useEffect, useState } from "react";
 import { getRandomQuotes } from "quotes-data";
 import { backgroundSplashUrl } from "util/background-splash-images";
@@ -42,14 +41,14 @@ export default function QuotesWidget({ gridHeightSize, planContent, quotes }) {
 
   if (loading) {
     return (
-      <WidgetWrapper title={widgetTitleFromId('quotes')} icon="💡" widgetId="quotes">
+      <WidgetWrapper widgetId="quotes">
         <div className="quotes-loading">Generating quotes...</div>
       </WidgetWrapper>
     );
   }
 
   return (
-    <WidgetWrapper title={widgetTitleFromId('quotes')} icon="💡" widgetId="quotes" headerActions={reseedButton}>
+    <WidgetWrapper widgetId="quotes" headerActions={reseedButton}>
       <div className="quotes-grid">
         {displayQuotes.slice(0, quoteCount).map((q, i) => (
           <div

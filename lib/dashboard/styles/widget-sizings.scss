@@ -1,0 +1,79 @@
+/* [Claude claude-opus-5 (1M context)-authored file]
+ * Created: 2026-08-03 | Model: claude-opus-5[1m]
+ * Task: Single source of truth for how large a widget becomes per unit of the width/height the user
+ *   picked in the layout popup, shared by dashboard.scss's grid cells and by widget stylesheets
+ * Prompt summary: "DRY the stylesheet to use the existing sources of truth for how large a widget
+ *   becomes per unit of height & width specified by user ... a good home for such data that could be
+ *   found & reused by components might be widget-sizings.scss"
+ */
+
+@use 'sass:map';
+
+/* The dashboard grid's column count. A widget's gridWidthSize is a span of these equal columns, which
+ * is why there is no per-cell pixel width: a one-cell widget is a quarter of the grid, whatever the
+ * window is worth. Any widget needing a width floor should express it as a share, not a pixel count. */
+$dashboard-grid-column-count: 4;
+
+/* Height a grid cell takes per unit of the user's vertical size setting. These are the numbers the
+ * whole dashboard sizes itself by: the cell carries them and `.widget { height: 100% }` passes them to
+ * the widget, so a widget stylesheet reads from here instead of restating a floor of its own. */
+$widget-height-per-vertical-cell: (
+  1: (maximum: 420px, minimum: 320px),
+  2: (maximum: 800px, minimum: 600px),
+);
+
+$widget-vertical-cell-counts: map.keys($widget-height-per-vertical-cell);
+
+// ------------------------------------------------------------------------------------------
+// @desc The tallest a widget grows at the given vertical size, for a widget that needs to bound
+//   something itself (content it clips) rather than inherit the cell's own bound.
+// @param {number} $verticalCells - Vertical cell count the user assigned to the widget.
+// @returns {length} Maximum height for that many cells.
+@function widget-maximum-height($verticalCells) {
+  @return map.get(map.get($widget-height-per-vertical-cell, $verticalCells), maximum);
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc The shortest a widget stays at the given vertical size.
+// @param {number} $verticalCells - Vertical cell count the user assigned to the widget.
+// @returns {length} Minimum height for that many cells.
+@function widget-minimum-height($verticalCells) {
+  @return map.get(map.get($widget-height-per-vertical-cell, $verticalCells), minimum);
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc Emit the horizontal-N-cell / vertical-N-cell rules that turn a user's chosen widget size into
+//   real geometry: column spans across the grid, and the row span plus height bounds per vertical cell.
+//   Included by the grid cell, which is the element the dashboard grid lays out.
+@mixin widget-cell-size-classes {
+  @for $columns from 2 through $dashboard-grid-column-count {
+    &.horizontal-#{$columns}-cell { grid-column: span $columns; }
+  }
+
+  @each $cells in $widget-vertical-cell-counts {
+    &.vertical-#{$cells}-cell {
+      @if $cells > 1 {
+        grid-row: span $cells;
+      }
+      max-height: widget-maximum-height($cells);
+      min-height: widget-minimum-height($cells);
+    }
+  }
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc Undo those spans and height bounds for a single-column viewport, where every widget is one
+//   cell wide and as tall as its own content. Included inside the caller's mobile media query.
+@mixin widget-mobile-cell-size-classes {
+  @for $columns from 2 through $dashboard-grid-column-count {
+    &.horizontal-#{$columns}-cell { grid-column: span 1; }
+  }
+
+  @each $cells in $widget-vertical-cell-counts {
+    &.vertical-#{$cells}-cell {
+      grid-row: span 1;
+      max-height: none;
+      min-height: auto;
+    }
+  }
+}

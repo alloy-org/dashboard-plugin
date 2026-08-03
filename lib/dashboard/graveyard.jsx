@@ -6,7 +6,6 @@
  */
 
 import confetti from "canvas-confetti";
-import { widgetTitleFromId } from "constants/settings";
 import { appendTaskToRetiredNote, loadGraveyardCandidates } from "graveyard-service";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
@@ -32,7 +31,7 @@ const WIDGET_ID = 'graveyard';
 // Prompt: "translate this project to render components with JSX instead"
 function EmptyState({ headerActions }) {
   return (
-    <WidgetWrapper headerActions={headerActions} icon="👵" title={widgetTitleFromId(WIDGET_ID)} widgetId={WIDGET_ID}>
+    <WidgetWrapper headerActions={headerActions} widgetId={WIDGET_ID}>
       <p className="graveyard-empty">No neglected tasks found — everything looks current!</p>
     </WidgetWrapper>
   );
@@ -42,7 +41,7 @@ function EmptyState({ headerActions }) {
 // @desc Error state with retry action.
 function ErrorState({ errorMessage, headerActions, onRetry }) {
   return (
-    <WidgetWrapper headerActions={headerActions} icon="👵" title={widgetTitleFromId(WIDGET_ID)} widgetId={WIDGET_ID}>
+    <WidgetWrapper headerActions={headerActions} widgetId={WIDGET_ID}>
       <div className="graveyard-error">
         <p>{errorMessage || 'Failed to load tasks.'}</p>
         <button className="graveyard-retry" onClick={onRetry} type="button">Retry</button>
@@ -55,7 +54,7 @@ function ErrorState({ errorMessage, headerActions, onRetry }) {
 // @desc Loading placeholder while candidates are being fetched.
 function LoadingState({ headerActions }) {
   return (
-    <WidgetWrapper headerActions={headerActions} icon="👵" title={widgetTitleFromId(WIDGET_ID)} widgetId={WIDGET_ID}>
+    <WidgetWrapper headerActions={headerActions} widgetId={WIDGET_ID}>
       <p className="graveyard-loading">Searching for forgotten tasks…</p>
     </WidgetWrapper>
   );
@@ -231,7 +230,7 @@ function TaskCard({ isDismissing, isSingleColumn, taskIndex, onOpenNote, onGrave
 function TaskList({ dismissingUuids, headerActions, isSingleColumn, meadowOpacity, meadowUrl, onOpenNote,
     onGraveyard, onKeep, tasks }) {
   return (
-    <WidgetWrapper headerActions={headerActions} icon="👵" title={widgetTitleFromId(WIDGET_ID)} widgetId={WIDGET_ID}>
+    <WidgetWrapper headerActions={headerActions} widgetId={WIDGET_ID}>
       <div className="graveyard-meadow-wrapper">
         <img
           alt=""

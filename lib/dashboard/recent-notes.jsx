@@ -4,7 +4,6 @@
  * Task: Recent Notes widget — notes with tasks where no task was created in the past week
  * Prompt summary: "replace AI & Plugins widget with Recent Notes showing notes whose tasks have gone stale"
  */
-import { widgetTitleFromId } from "constants/settings";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { useEffect, useMemo, useState } from "react";
 import { buildRecentNotesSeed, findStaleTaskNotes } from "recent-notes-service";
@@ -104,12 +103,7 @@ export default function RecentNotesWidget({ app, gridHeightSize = 1, taskDomainU
   };
 
   return (
-    <WidgetWrapper
-      headerActions={reseedButton}
-      icon="📝"
-      title={widgetTitleFromId('recent-notes')}
-      widgetId="recent-notes"
-    >
+    <WidgetWrapper headerActions={reseedButton} widgetId="recent-notes">
       {renderBody()}
     </WidgetWrapper>
   );

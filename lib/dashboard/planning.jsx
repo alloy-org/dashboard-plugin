@@ -1,6 +1,6 @@
 // Quarterly Planning widget
 import { getQuarterMonths, getUpcomingWeekMonday, formatWeekLabel } from "constants/quarters";
-import { IS_DEV_ENVIRONMENT, widgetTitleFromId } from "constants/settings";
+import { IS_DEV_ENVIRONMENT } from "constants/settings";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import {
@@ -221,7 +221,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
 
   if (editingNoteUUID && IS_DEV_ENVIRONMENT) {
     return (
-      <WidgetWrapper title={widgetTitleFromId('planning')} icon="📋" widgetId="planning">
+      <WidgetWrapper widgetId="planning">
         <NoteEditor
           app={app}
           noteUUID={editingNoteUUID}
@@ -233,7 +233,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
 
   if (!plansReady) {
     return (
-      <WidgetWrapper title={widgetTitleFromId('planning')} icon="📋" widgetId="planning">
+      <WidgetWrapper widgetId="planning">
         <p className="planning-empty">Loading quarterly plans…</p>
       </WidgetWrapper>
     );
@@ -246,7 +246,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
   };
 
   return (
-    <WidgetWrapper title={widgetTitleFromId('planning')} icon="📋" widgetId="planning">
+    <WidgetWrapper widgetId="planning">
       <div className="planning-quarters">
         {[quarterlyPlans.current, quarterlyPlans.next].map(plan => (
           <QuarterCard

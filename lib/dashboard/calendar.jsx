@@ -6,7 +6,6 @@
  */
 import { useState } from "react";
 import WidgetWrapper from "widget-wrapper";
-import { widgetTitleFromId } from "constants/settings";
 import "styles/calendar.scss"
 
 // [Claude] Task: accept openTasks + completedTasks grouped objects instead of flat tasks array
@@ -86,15 +85,8 @@ export default function CalendarWidget({ app, completedTasksByDate, currentDate,
   }
 
   return (
-    <WidgetWrapper
-      configurable={true}
-      gridHeightSize={gridHeightSize}
-      gridWidthSize={gridWidthSize}
-      icon="📅"
-      onConfigure={onOpenSettings}
-      title={widgetTitleFromId('calendar')}
-      widgetId="calendar"
-    >
+    <WidgetWrapper configurable={true} gridHeightSize={gridHeightSize} gridWidthSize={gridWidthSize}
+        onConfigure={onOpenSettings} widgetId="calendar">
       <div className="cal-nav">
         <button onClick={prevMonth} className="cal-arrow">◀</button>
         <span className="cal-month">{monthName}</span>

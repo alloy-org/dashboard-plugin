@@ -1,4 +1,3 @@
-import { widgetIconFromId, widgetTitleFromId } from "constants/settings";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { fetchNotePeekHtml, NOTE_PEEK_WIDGET_ID, notePeekSelectionFromSettings, promptForNotePeekNote,
   storeNotePeekSelection } from "note-peek-service";
@@ -105,14 +104,8 @@ export default function NotePeekWidget({ app }) {
   // Once a note is chosen, the note is changed from the header's standard "⚙ Configure" link, the same
   // control every other configurable widget offers. Before then the body's own button is the way in.
   return (
-    <WidgetWrapper
-      configurable={!!selection}
-      icon={widgetIconFromId(NOTE_PEEK_WIDGET_ID)}
-      onConfigure={chooseNote}
-      subtitle={selection?.noteName || null}
-      title={widgetTitleFromId(NOTE_PEEK_WIDGET_ID)}
-      widgetId={NOTE_PEEK_WIDGET_ID}
-    >
+    <WidgetWrapper configurable={!!selection} onConfigure={chooseNote} subtitle={selection?.noteName || null}
+        widgetId={NOTE_PEEK_WIDGET_ID}>
       <NotePeekBody error={error} html={html} onChoose={chooseNote} selection={selection} />
     </WidgetWrapper>
   );

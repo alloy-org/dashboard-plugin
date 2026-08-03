@@ -4,6 +4,7 @@
  * Task: Reusable widget wrapper with header, icon, and optional configure button
  * Prompt summary: "shared widget chrome component used by all dashboard widgets"
  */
+import { widgetIconFromId, widgetSubtitleFromId, widgetTitleFromId } from "constants/settings";
 import { createContext, useContext } from "react"
 import DraggableHeading from "draggable-heading";
 
@@ -30,9 +31,20 @@ export const WidgetSizeContext = createContext(null);
 // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
 // [Claude claude-4.7-opus] Task: migrate WidgetWrapper from createElement to JSX
 // Prompt: "translate this project to render components with JSX instead"
+// ------------------------------------------------------------------------------------------
+// @desc The header's icon, title, and subtitle all default to what WIDGET_REGISTRY says about
+//   widgetId, so a widget only names them when it needs something the registry cannot know (a
+//   state-dependent icon, a subtitle carrying today's date or a chosen note's name). A widgetId
+//   missing from the registry falls back to no icon and the id itself as the title.
+// [Claude claude-opus-5 (1M context)] Task: default icon/title/subtitle from the widget registry
+// Prompt: "sets default title, icon and subtitle props based on the widgetId that is passed to the
+//   component ... so they don't need to include icon/title/subtitle"
 export default function WidgetWrapper({ app, children, configurable, gridHeightSize, gridWidthSize, headerActions,
     icon, onConfigure, subtitle, title, widgetId }) {
   const cellSizing = useContext(WidgetSizeContext);
+  const resolvedIcon = icon ?? widgetIconFromId(widgetId);
+  const resolvedSubtitle = subtitle ?? widgetSubtitleFromId(widgetId);
+  const resolvedTitle = title ?? widgetTitleFromId(widgetId);
   const handleConfigure = async () => {
     if (onConfigure) {
       onConfigure();
@@ -51,9 +63,9 @@ export default function WidgetWrapper({ app, children, configurable, gridHeightS
       <DraggableHeading
         configurable={configurable}
         headerActions={headerActions}
-        icon={icon}
-        subtitle={subtitle}
-        title={title}
+        icon={resolvedIcon}
+        subtitle={resolvedSubtitle}
+        title={resolvedTitle}
         widgetId={widgetId}
         onConfigure={handleConfigure}
       />

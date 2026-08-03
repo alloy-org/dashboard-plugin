@@ -3,6 +3,46 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-08-03 — Registry-derived widget headers and a shared source of truth for widget sizing
+
+**Model:** claude-opus-5[1m]
+**Files created/modified:**
+- `lib/dashboard/styles/widget-sizings.scss` (created — the grid's column count and the height a cell
+  takes per unit of the user's vertical size setting, plus `widget-minimum-height()` /
+  `widget-maximum-height()` and the mixins that emit the `horizontal-N-cell`/`vertical-N-cell` geometry)
+- `lib/dashboard/widget-wrapper.jsx` (modified — `icon`, `title`, and `subtitle` now default to what
+  `WIDGET_REGISTRY` says about `widgetId`; an explicit prop still wins)
+- `lib/constants/settings.js` (modified — `widgetIconFromId` tolerates an unregistered id instead of
+  throwing; new `widgetSubtitleFromId` for a widget's fixed tagline)
+- `lib/dashboard/layout-profiles.js` (modified — `visibleSubtitle` on the Goal Coach entry, and the
+  Revisit Candidate icon set to the 📝 its header was already showing rather than a second 📌)
+- `lib/dashboard/styles/dashboard.scss` (modified — `.grid-cell` and the mobile reset include the shared
+  sizing mixins; the grid's `repeat()` reads the shared column count)
+- `lib/dashboard/styles/note-peek.scss` (modified — dropped its own per-cell width/height floors, which
+  restated the cell's; its mobile clipping bound now reads the shared per-cell heights)
+- `lib/dashboard/{agenda,calendar,day-sketch,debug-console,dream-task,energy-per-habit,graveyard,`
+  `layout-picker,mood,no-config-upsell,note-peek,peak-hours,planning,proposed-agenda,quick-actions,`
+  `quotes,recent-notes,shared-notes,victory-value}.jsx` (modified — 32 `WidgetWrapper` calls no longer
+  pass `icon`/`title`, `NoConfigUpsell` no longer forwards them, and Goal Coach's local `widgetIcon()`
+  registry lookup is gone; calls short enough to fit one line were collapsed)
+- `test/widget-wrapper-defaults.test.js` (created — registry icon/title/subtitle defaults, `visibleTitle`
+  preference, per-prop overrides, and the unregistered-widgetId fallback)
+- `build/compiled.js` (rebuilt)
+
+**Task:** Default the widget header from the registry, and give per-cell sizing one home.
+**Prompt summary:** "Update WidgetWrapper so that it sets default title, icon and subtitle props based on
+the widgetId ... so they don't need to include icon/title/subtitle, only the props that are unique to a
+particular widget"; "note-peek.scss looks to be setting CSS variables for height & other
+component-sizing properties that I expect already have a source of truth in another stylesheet ... a good
+home for such data that could be found & reused by components might be widget-sizings.scss"
+**Notes:** The compiled `.grid-cell` geometry is byte-identical after the SCSS refactor, so no widget
+changed size. Two header icons move to what the registry says: Debug Console gains 🐛 (it passed none)
+and Energy Per Habit shows 🔋 rather than ⚡, which also stops it colliding with Quick Actions in the
+layout popup. Note Peek's old mobile floor had leaked outside its media query (the large-phone fallback
+prefixed only the last selector of a comma list, so 260px applied at every width); the rewrite ends that.
+
+---
+
 ## 2026-08-03 — Note Peek widget
 
 **Model:** claude-opus-5[1m]

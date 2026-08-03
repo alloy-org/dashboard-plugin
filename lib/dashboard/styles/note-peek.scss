@@ -1,20 +1,19 @@
 /* [Claude claude-opus-5 (1M context)-authored file]
  * Created: 2026-08-03 | Model: claude-opus-5[1m]
- * Task: Note Peek widget styles — size floors from the cell classes, clipped note content
+ * Task: Note Peek widget styles — clipped note content, sized by its grid cell
  * Prompt summary: "overflow: hidden whatever content does not fit, and use the class names that are
  *   automatically applied to each module to define its min height and width for the chosen size"
+ * Revised: 2026-08-03 — per-cell width/height floors deleted as duplicates of the grid cell's own, and
+ *   the mobile clipping bound now reads widget-sizings.scss, per "DRY the stylesheet to use the existing
+ *   sources of truth for how large a widget becomes per unit of height & width specified by user"
  */
 
 @use 'theme-tokens' as *;
+@use 'widget-sizings' as sizings;
 
-/* Size floors keyed off the horizontal-N-cell / vertical-N-cell classes WidgetWrapper applies from the
- * size the user picked in the layout popup. They are floors only: the grid still gets to make the cell
- * wider, and the tablet breakpoint drops them because every widget collapses to one column there. */
-$note-peek-width-per-cell: 230px;
-$note-peek-height-1-cell: 300px;
-$note-peek-height-2-cell: 580px;
-$note-peek-height-mobile: 260px;
-
+/* The size the user picked is already geometry by the time it reaches this widget: the grid cell spans
+ * its columns and carries the per-cell height bounds from widget-sizings.scss, and `.widget` is
+ * height: 100% of that cell — so this stylesheet states no width or height of its own. */
 .widget-note-peek {
   /* Note content is clipped, never scrolled: the widget stays exactly the size the user chose, and
    * whatever does not fit within that height/width is simply not shown. */
@@ -24,17 +23,6 @@ $note-peek-height-mobile: 260px;
     overflow: hidden;
   }
 
-  /* Each floor is capped at the cell's own width, so a wide widget in a narrow window shrinks with the
-   * grid instead of pushing the dashboard into a horizontal scroll (min-width would otherwise win over
-   * the .widget max-width: 100%). */
-  &.horizontal-1-cell { min-width: min(#{$note-peek-width-per-cell}, 100%); }
-  &.horizontal-2-cell { min-width: min(#{$note-peek-width-per-cell * 2}, 100%); }
-  &.horizontal-3-cell { min-width: min(#{$note-peek-width-per-cell * 3}, 100%); }
-  &.horizontal-4-cell { min-width: min(#{$note-peek-width-per-cell * 4}, 100%); }
-
-  &.vertical-1-cell { min-height: $note-peek-height-1-cell; }
-  &.vertical-2-cell { min-height: $note-peek-height-2-cell; }
-
   /* The note name is the widget's subtitle; a one-cell-wide header has no room for it. */
   &.horizontal-1-cell {
     .widget-title__subtitle {
@@ -42,12 +30,18 @@ $note-peek-height-mobile: 260px;
     }
   }
 
-  /* Mobile collapses every widget to one column and drops the grid cell's own height floors, so the
-   * two-cell-tall floor would leave a phone scrolling through one enormous widget. */
+  /* Mobile releases every widget from the cell's height bounds so each one is as tall as its content —
+   * but this widget's whole contract is that the note is clipped to the size that was chosen, so it
+   * keeps the shared per-cell bounds on a phone, read from the same source the grid cell reads. */
   @include breakpoint($breakpoint-tablet) {
-    &.vertical-1-cell,
+    &.vertical-1-cell {
+      max-height: sizings.widget-maximum-height(1);
+      min-height: sizings.widget-minimum-height(1);
+    }
+
     &.vertical-2-cell {
-      min-height: $note-peek-height-mobile;
+      max-height: sizings.widget-maximum-height(2);
+      min-height: sizings.widget-minimum-height(2);
     }
   }
 

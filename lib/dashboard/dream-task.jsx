@@ -1,5 +1,5 @@
 import confetti from "canvas-confetti";
-import { apiKeyFromProvider, configuredProviderEms, devTokenPresent, SETTING_KEYS, widgetDataFromId, widgetTitleFromId } from "constants/settings";
+import { apiKeyFromProvider, configuredProviderEms, devTokenPresent, SETTING_KEYS } from "constants/settings";
 import { _loadSeenUuidsMap, _maxTasksFromGrid, _recordSeenUuids, _taskGenerateCount, _todayProposedTasksNoteName,
   applyDreamTaskAnalysisResult, fetchDreamTaskSuggestions, handleOpenSettings, handleTaskClick,
   requestDreamTaskRefreshExcludingRecent, shouldFetchMoreTasksAfterGridGrowth, updateDreamTaskTaskMetadata,
@@ -142,10 +142,6 @@ async function _resolveFutureScheduleStartAt(app, localMidnight) {
   return startAt;
 }
 
-function widgetIcon() {
-  return widgetDataFromId(WIDGET_ID).icon;
-}
-
 // [Claude claude-4.7-opus] Task: convert kind badge render fn to JSX component
 // Prompt: "translate this project to render components with JSX instead"
 function DreamTaskKindBadge({ isClickable, task }) {
@@ -188,7 +184,7 @@ function ReseedLink({ onReseed }) {
 
 function LoadingState() {
   return (
-    <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon={widgetIcon()} widgetId={WIDGET_ID}>
+    <WidgetWrapper widgetId={WIDGET_ID}>
       <div className="dream-task-loading">
         <div className="dream-task-spinner" />
         <p>Analyzing the finest tasks …</p>
@@ -248,7 +244,7 @@ function ErrorState({ errorInfo, noteLink, onRetry, onSettingsClick }) {
       content = <p>{error || 'An unexpected error occurred.'}</p>;
   }
   return (
-    <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon={widgetIcon()} widgetId={WIDGET_ID} headerActions={noteLink}>
+    <WidgetWrapper widgetId={WIDGET_ID} headerActions={noteLink}>
       <div className="dream-task-error">
         {content}
         <button className="dream-task-retry" onClick={onRetry}>Retry</button>
@@ -259,7 +255,7 @@ function ErrorState({ errorInfo, noteLink, onRetry, onSettingsClick }) {
 
 function EmptyState({ noteLink, onRetry }) {
   return (
-    <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon={widgetIcon()} widgetId={WIDGET_ID} headerActions={noteLink}>
+    <WidgetWrapper widgetId={WIDGET_ID} headerActions={noteLink}>
       <div className="dream-task-empty">
         <p>No task suggestions available.</p>
         <button className="dream-task-retry" onClick={onRetry}>Refresh</button>
@@ -280,13 +276,7 @@ function TaskList({ dreamTasks, maxTasks, headerActions, onTaskClick, listRef, l
   } = actionHandlers;
 
   return (
-    <WidgetWrapper
-      headerActions={headerActions}
-      subtitle="What if you did it today?"
-      title={widgetTitleFromId(WIDGET_ID)}
-      icon={widgetIcon()}
-      widgetId={WIDGET_ID}
-    >
+    <WidgetWrapper headerActions={headerActions} widgetId={WIDGET_ID}>
       <div className="dream-task-list" ref={listRef}>
         {displayDreamTasks.map((dreamTask, i) => {
           const isClickable = !!onTaskClick;
@@ -660,8 +650,8 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   if (shouldRenderNoConfig) {
     logIfEnabled('[DreamTask] rendering no-config state', { providerName, hasError: !!error,
       errorCode: error?.errorCode ?? null, taskCount: tasks?.length ?? 0 });
-    return <NoConfigUpsell app={ app } features={ NO_CONFIG_FEATURES } icon={ widgetIcon() }
-      moreFeaturesLabel="+ 15 more features included" title={ widgetTitleFromId(WIDGET_ID) } widgetId={ WIDGET_ID } />;
+    return <NoConfigUpsell app={ app } features={ NO_CONFIG_FEATURES }
+      moreFeaturesLabel="+ 15 more features included" widgetId={ WIDGET_ID } />;
   }
 
   const headerActions = <DreamTaskHeaderActions noteUUID={noteUUID} onOpenNote={onOpenNote} onReseed={onReseed} />;

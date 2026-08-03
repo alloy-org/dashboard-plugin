@@ -7,7 +7,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import WidgetWrapper from "widget-wrapper";
 import { noteUrlFromUUID } from "app-util";
-import { widgetTitleFromId } from "constants/settings";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { logIfEnabled } from "util/log";
 import { formatDelta, HABIT_ANALYSIS_WINDOW_DAYS, leadingEmoji, stripLeadingEmoji } from "energy-per-habit-analysis";
@@ -234,7 +233,7 @@ export default function EnergyPerHabitWidget({ app }) {
 
   if (loading) {
     return (
-      <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon="⚡" widgetId={WIDGET_ID}>
+      <WidgetWrapper widgetId={WIDGET_ID}>
         <div className="habit-empty">Analyzing your habits…</div>
       </WidgetWrapper>
     );
@@ -242,7 +241,7 @@ export default function EnergyPerHabitWidget({ app }) {
 
   if (!rows.length) {
     return (
-      <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon="⚡" widgetId={WIDGET_ID}>
+      <WidgetWrapper widgetId={WIDGET_ID}>
         <div className="habit-empty">
           <p>No recurring-task habits with enough mood history to correlate yet.</p>
           <p className="habit-empty-hint">Set tasks to repeat and log your mood over time to see which habits lift your days.</p>
@@ -252,7 +251,7 @@ export default function EnergyPerHabitWidget({ app }) {
   }
 
   return (
-    <WidgetWrapper title={widgetTitleFromId(WIDGET_ID)} icon="⚡" widgetId={WIDGET_ID}>
+    <WidgetWrapper widgetId={WIDGET_ID}>
       <div className="habit-header">
         <div className="habit-eyebrow">{`${windowDays} DAYS ANALYZED`}</div>
       </div>

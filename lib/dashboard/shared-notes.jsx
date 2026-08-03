@@ -1,7 +1,6 @@
 // [Claude claude-opus-4-8-authored file]
 // Prompt summary: "new dashboard widget showing which notes have been recently updated by
 // collaborators, with a checkbox to limit results to notes that have tasks"
-import { widgetTitleFromId } from "constants/settings";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { useCallback, useEffect, useState } from "react";
 import { loadPinnedNoteUuids, storePinnedNoteUuids } from "shared-notes-archive";
@@ -310,12 +309,7 @@ export default function SharedNotesWidget({ app, gridHeightSize = 1, taskDomainU
     selectedSharer={selectedSharer} sharerNames={sharerNames} tasksToggle={tasksToggle} />);
 
   return (
-    <WidgetWrapper
-      headerActions={showSharerFilter ? null : tasksToggle(true)}
-      icon="🤝"
-      title={widgetTitleFromId("shared-notes")}
-      widgetId="shared-notes"
-    >
+    <WidgetWrapper headerActions={showSharerFilter ? null : tasksToggle(true)} widgetId="shared-notes">
       <SharedNotesBody { ...{ currentPage, pinnedUuids, sharerFilter, totalPages, visibleNotes } }
         onNavigate={uuid => app.navigate(`https://www.amplenote.com/notes/${ uuid }`)} onPageChange={setPage} onTogglePin={togglePin} />
     </WidgetWrapper>

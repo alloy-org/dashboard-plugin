@@ -4,7 +4,6 @@
  * Task: Quick actions widget — grid of shortcut buttons
  * Prompt summary: "widget with a 2x2 grid of quick-action buttons (Daily Jot, Journal, etc.)"
  */
-import { widgetTitleFromId } from "constants/settings";
 import WidgetWrapper from "widget-wrapper";
 import "styles/quick-actions.scss"
 
@@ -84,7 +83,7 @@ export default function QuickActionsWidget({ app, onSwapBackground }) {
   const handleAction = (action) => performQuickAction({ action, app, onSwapBackground });
 
   return (
-    <WidgetWrapper title={widgetTitleFromId('quick-actions')} icon="⚡" widgetId="quick-actions">
+    <WidgetWrapper widgetId="quick-actions">
       <div className="qa-grid">
         {actions.map(a => (
           <button
