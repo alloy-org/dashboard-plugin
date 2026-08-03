@@ -81,6 +81,7 @@ function localDateKey(date) {
 
 // [OpenAI gpt-5.4] Task: build a cached graveyard app stub for tooltip, date-label, and refresh interaction tests
 // Prompt: "update graveyard.js so that its title bar includes a refresh link that will repopulate the five task slots in the component"
+// [GPT-5.6 Sol] Task: expose per-UUID task hydration used by the production graveyard cache loader
 function buildMockApp(taskOverrides = {}, options = {}) {
   const baseTask = {
     content: "**Finish** the proposal",
@@ -134,6 +135,8 @@ function buildMockApp(taskOverrides = {}, options = {}) {
     }),
     getNoteContent: jest.fn().mockImplementation(async () => graveyardNoteContent),
     getNoteTasks: jest.fn().mockImplementation(async ({ uuid }) => noteTasksByUuid.get(uuid) || []),
+    getTask: jest.fn().mockImplementation(async uuid =>
+      [...initialTasks, ...refreshTasks].find(task => task.uuid === uuid) || null),
     getTaskDomainTasks: jest.fn().mockResolvedValue(initialTasks),
     navigate: jest.fn().mockResolvedValue(undefined),
     replaceNoteContent: jest.fn().mockImplementation(async (_noteHandle, content) => {

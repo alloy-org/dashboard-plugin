@@ -588,11 +588,16 @@ describe('DashboardApp', () => {
       const monthIndex = new Date(`${monthName} 1, ${yearString}`).getMonth();
       const year = Number(yearString);
       const currentWeek = mondayWeekStartKey(new Date());
+      const previousWeekDate = new Date();
+      previousWeekDate.setDate(previousWeekDate.getDate() - 7);
+      const previousWeek = mondayWeekStartKey(previousWeekDate);
 
+      // [GPT-5.6 Sol] Task: select a week not already prefetched by the early-week Victory Value view
       const targetDayCell = dayCells.find((cell) => {
         const day = Number(cell.textContent.trim());
         const candidateDate = new Date(year, monthIndex, day);
-        return mondayWeekStartKey(candidateDate) !== currentWeek;
+        const candidateWeek = mondayWeekStartKey(candidateDate);
+        return candidateWeek !== currentWeek && candidateWeek !== previousWeek;
       });
       expect(targetDayCell).toBeDefined();
 

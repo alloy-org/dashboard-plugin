@@ -226,6 +226,24 @@ describe("computeMonthlyAggregates + aggregateMonthlyHabits", () => {
     expect(habits).toHaveLength(1);
     expect(habits[0].completions).toBe(11);
   });
+
+  // [GPT-5.6 Sol] Task: enforce active streaks for sparse habits and 60-day recency for established habits
+  test("filters habits by completion count, active streak, and latest completion date", () => {
+    const today = new Date(2026, 7, 3);
+    const rows = [
+      { label: "Active sparse habit", count: 8, weekStreak: 2, doneMoods: [1, 1, 1],
+        mostRecentDayKey: "2026-08-02", offMoods: [0] },
+      { label: "Stale direction grouping", count: 12, weekStreak: 4, doneMoods: [1, 1, 1],
+        mostRecentDayKey: "2026-06-01", offMoods: [0] },
+      { label: "Recent exercise routine", count: 16, weekStreak: 0, doneMoods: [1, 1, 1],
+        mostRecentDayKey: "2026-07-01", offMoods: [0] },
+      { label: "Old archived practice", count: 20, weekStreak: 0, doneMoods: [1, 1, 1],
+        mostRecentDayKey: "2026-05-01", offMoods: [0] },
+    ];
+    const months = new Map([["2026-08", { monthKey: "2026-08", rows }]]);
+    const habits = aggregateMonthlyHabits(months, { enforceActivityEligibility: true, today });
+    expect(habits.map(habit => habit.label).sort()).toEqual(["Active sparse habit", "Recent exercise routine"]);
+  });
 });
 
 describe("consecutive-weeks streak", () => {

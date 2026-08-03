@@ -43,8 +43,10 @@ function makeApp({ notes = {} } = {}) {
 }
 
 const ROWS = [
-  { label: "Morning exercise", count: 12, weekStreak: 7, doneMoods: [1, 2, 0.5], offMoods: [-1, 0] },
-  { label: "Pipe | in name", count: 3, weekStreak: 0, doneMoods: [1], offMoods: [2, -2] },
+  { label: "Morning exercise", count: 12, weekStreak: 7, doneMoods: [1, 2, 0.5],
+    mostRecentDayKey: "2026-05-28", offMoods: [-1, 0] },
+  { label: "Pipe | in name", count: 3, weekStreak: 0, doneMoods: [1],
+    mostRecentDayKey: "2026-05-17", offMoods: [2, -2] },
 ];
 
 describe("monthTableMarkdown + monthsFromNoteContent", () => {
@@ -58,6 +60,7 @@ describe("monthTableMarkdown + monthsFromNoteContent", () => {
     expect(rows[0].weekStreak).toBe(7);
     expect(rows[0].doneMoods).toEqual([1, 2, 0.5]);
     expect(rows[0].offMoods).toEqual([-1, 0]);
+    expect(rows[0].mostRecentDayKey).toBe("2026-05-28");
     expect(rows[1].label).toBe("Pipe | in name"); // pipe survives escape/unescape
   });
 
