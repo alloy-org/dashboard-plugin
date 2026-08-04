@@ -186,11 +186,14 @@ html {
       }
 
       &.grid-cell--focus-overlay-host {
-        /* Transform and filter would make a fixed descendant use this cell instead of the viewport
-         * as its containing block, so disable both while the surface is detached from grid flow. */
+        /* Any non-none transform/filter on this cell makes position:fixed descendants resolve against
+         * the cell instead of the viewport. The base .grid-cell and .grid-cell--focused rules both
+         * transition transform, so without transition:none the containing block would linger for
+         * the whole animation and send right-column widgets off to the right edge of the page. */
         filter: none;
         pointer-events: none;
         transform: none;
+        transition: none;
         will-change: auto;
       }
 
