@@ -330,7 +330,6 @@ $check-list-indent-step: 20px;
     border-radius: 4px;
     margin: 0 0 6px;
     min-height: 44px;
-    padding: 0 $sp-sm 0 10px;
     position: relative;
   }
 
@@ -343,7 +342,9 @@ $check-list-indent-step: 20px;
   }
 
   li:has(input[type="checkbox"]) {
+    column-gap: 7px;
     display: flex;
+    padding: 0 $sp-sm 0 10px;
 
     > p {
       align-items: center;
@@ -358,9 +359,7 @@ $check-list-indent-step: 20px;
   }
 
   .check-list-item {
-    column-gap: 10px;
-    display: grid;
-    grid-template-columns: 16px minmax(0, 1fr);
+    display: block;
 
     @for $indent from 1 through 9 {
       &.indent-#{$indent} {
@@ -372,17 +371,97 @@ $check-list-indent-step: 20px;
     &.task-score-bucket-2 { border-left-color: $color-warning; }
     &.task-score-bucket-3 { border-left-color: $color-agenda-priority-urgent; }
 
-    /* Production HTML includes the Material Icons checkbox fallback after the real input. Since the
-     * embed does not load that icon font, hide its raw ligature text and draw the state on the input. */
-    > .checkbox,
-    > .material-icons {
+    /* The production renderer supplies this full row around the nested input and content containers.
+     * It must own the horizontal layout; putting the wrapper itself in a checkbox-sized grid column
+     * compresses the whole task to one word per line. */
+    > .row-wrapper {
+      align-items: center;
+      display: flex;
+      min-height: 44px;
+      width: 100%;
+
+      > .input-container {
+        flex: 0 0 16px;
+        height: 16px;
+        margin: 0 10px;
+        position: relative;
+
+        > input[type="checkbox"] {
+          height: 16px;
+          margin: 0;
+          opacity: 0;
+          position: absolute;
+          width: 16px;
+        }
+
+        > .checkbox {
+          border: 2px solid $color-text-muted;
+          border-radius: 2px;
+          box-sizing: border-box;
+          display: block;
+          font-size: 0;
+          height: 16px;
+          position: relative;
+          width: 16px;
+        }
+
+        > input[type="checkbox"]:checked + .checkbox {
+          background: $color-success;
+          border-color: $color-success;
+
+          &::after {
+            border: solid $color-text-on-accent;
+            border-width: 0 2px 2px 0;
+            content: "";
+            height: 7px;
+            left: 4px;
+            position: absolute;
+            top: 1px;
+            transform: rotate(45deg);
+            width: 4px;
+          }
+        }
+      }
+
+      > .content-container {
+        flex: 1;
+        line-height: 20px;
+        min-width: 0;
+        padding: 10px 0;
+        word-break: break-word;
+
+        p {
+          margin: 0;
+        }
+      }
+
+      > .expander,
+      > .inline-details,
+      > .task-expander-container,
+      > .widget-popup-container,
+      > .widgets-bar-container {
+        display: none;
+      }
+    }
+
+    > .details-container {
       display: none;
+    }
+
+    /* The host can also return its compact serializer form without a row-wrapper. Keep that shape on
+     * the same two-column layout while the full production row above remains a normal flex row. */
+    &:not(:has(> .row-wrapper)) {
+      column-gap: 10px;
+      display: grid;
+      grid-template-columns: 16px minmax(0, 1fr);
+      padding: 0 $sp-sm 0 10px;
     }
   }
 
-  .check-list-item,
+  .check-list-item:not(:has(> .row-wrapper)),
   li:has(input[type="checkbox"]) {
-    input[type="checkbox"] {
+    > input[type="checkbox"],
+    > p > input[type="checkbox"] {
       appearance: none;
       background: transparent;
       border: 2px solid $color-text-muted;
@@ -416,7 +495,7 @@ $check-list-indent-step: 20px;
     }
   }
 
-  .check-list-item {
+  .check-list-item:not(:has(> .row-wrapper)) {
     > .content-container,
     > p {
       flex: 1;
@@ -443,7 +522,8 @@ $check-list-indent-step: 20px;
       opacity: 0.65;
 
       > .content-container,
-      > p {
+      > p,
+      > .row-wrapper > .content-container {
         text-decoration: line-through;
       }
     }

@@ -15,7 +15,7 @@ describe("sampleNoteContentFromUUID", () => {
     expect(goalReview).toContain("Q1 Goal Review");
     expect(standUp).toContain("Stand-up Notes");
     expect(standUp).toContain("- [ ] Review the next action for Stand-up Notes");
-    expect(featureImplementation).toContain("- [x] Capture the current state");
+    expect(featureImplementation).toContain("- [ ] Capture the [current state](https://amplenote.com)");
     expect(standUp).not.toBe(goalReview);
   });
 
@@ -33,9 +33,10 @@ describe("sampleNoteContentFromUUID", () => {
 
 describe("amplenoteMarkdownRenderBlock", () => {
   it("renders block elements, unlike the inline renderer a task line uses", () => {
-    const html = amplenoteMarkdownRenderBlock("# Roadmap\n\n- First\n- Second\n");
+    const html = amplenoteMarkdownRenderBlock("# Roadmap\n\n- [ ] [First](https://amplenote.com)\n\n- Second\n");
     expect(html).toContain("<h1");
-    expect(html).toContain("<li>First</li>");
+    expect(html).toContain('<a href="https://amplenote.com"');
+    expect(html).toContain(">First</a>");
   });
 
   it("turns a note's Rich Footnote into a link carrying its picture and description", () => {
