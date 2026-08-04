@@ -322,16 +322,45 @@ $check-list-indent-step: 20px;
   /* app.htmlFromContent serializes each task as a checkbox followed by either a content-container or
    * its paragraph children. Recreate ample-editor's readonly task-card surface without its interactive
    * row-wrapper, widgets, expander, or Material Icons dependencies. */
-  .check-list-item {
+  .check-list-item,
+  li:has(input[type="checkbox"]) {
     align-items: center;
     background: $color-bg-page;
     border-left: 4px solid $color-border;
     border-radius: 4px;
-    display: flex;
     margin: 0 0 6px;
     min-height: 44px;
     padding: 0 $sp-sm 0 10px;
     position: relative;
+  }
+
+  /* Marked wraps Amplenote's exported task form (`- [ ] task`, with blank lines between tasks) in
+   * checkbox-bearing list items and paragraphs. Remove list chrome and keep that paragraph on one
+   * checkbox/text grid row so dev fixtures exercise the same visual contract as production HTML. */
+  ul:has(> li input[type="checkbox"]) {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  li:has(input[type="checkbox"]) {
+    display: flex;
+
+    > p {
+      align-items: center;
+      column-gap: 10px;
+      display: grid;
+      grid-template-columns: 16px minmax(0, 1fr);
+      line-height: 20px;
+      margin: 0;
+      padding: 10px 0;
+      width: 100%;
+    }
+  }
+
+  .check-list-item {
+    column-gap: 10px;
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr);
 
     @for $indent from 1 through 9 {
       &.indent-#{$indent} {
@@ -343,15 +372,27 @@ $check-list-indent-step: 20px;
     &.task-score-bucket-2 { border-left-color: $color-warning; }
     &.task-score-bucket-3 { border-left-color: $color-agenda-priority-urgent; }
 
-    > input[type="checkbox"] {
+    /* Production HTML includes the Material Icons checkbox fallback after the real input. Since the
+     * embed does not load that icon font, hide its raw ligature text and draw the state on the input. */
+    > .checkbox,
+    > .material-icons {
+      display: none;
+    }
+  }
+
+  .check-list-item,
+  li:has(input[type="checkbox"]) {
+    input[type="checkbox"] {
       appearance: none;
       background: transparent;
       border: 2px solid $color-text-muted;
       border-radius: 2px;
       box-sizing: border-box;
       flex-shrink: 0;
+      grid-column: 1;
+      grid-row: 1;
       height: 16px;
-      margin: 0 10px 0 0;
+      margin: 0;
       pointer-events: none;
       position: relative;
       width: 16px;
@@ -373,10 +414,14 @@ $check-list-indent-step: 20px;
         }
       }
     }
+  }
 
+  .check-list-item {
     > .content-container,
     > p {
       flex: 1;
+      grid-column: 2;
+      grid-row: 1;
       line-height: 20px;
       margin: 0;
       min-width: 0;
@@ -389,7 +434,9 @@ $check-list-indent-step: 20px;
         margin: 0;
       }
     }
+  }
 
+  .check-list-item {
     &.done,
     &[data-completedat],
     &[data-dismissedat] {

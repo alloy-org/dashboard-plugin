@@ -11,8 +11,11 @@ describe("sampleNoteContentFromUUID", () => {
   it("gives each sample note its own body, naming the note it belongs to", () => {
     const goalReview = sampleNoteContentFromUUID("note-work-1");
     const standUp = sampleNoteContentFromUUID("note-work-2");
+    const featureImplementation = sampleNoteContentFromUUID("note-work-3");
     expect(goalReview).toContain("Q1 Goal Review");
     expect(standUp).toContain("Stand-up Notes");
+    expect(standUp).toContain("- [ ] Review the next action for Stand-up Notes");
+    expect(featureImplementation).toContain("- [x] Capture the current state");
     expect(standUp).not.toBe(goalReview);
   });
 
