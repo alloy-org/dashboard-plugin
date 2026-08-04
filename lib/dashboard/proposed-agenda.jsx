@@ -142,9 +142,9 @@ function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, ti
 // @desc Proposed Agenda widget — derives today's immovable obligations, asks the configured LLM to fill the
 //   gaps for the selected "Today's priority", and lets the user schedule/dismiss each proposal or the whole set.
 // @param {object} props - { app, calendarEvents, currentDate, defaultNoteUuid, providerApiKey, providerEm,
-//   taskDomainUUID, timeFormat }.
+//   taskDomainName, taskDomainUUID, timeFormat }.
 export default function ProposedAgendaWidget({ app, calendarEvents, currentDate, defaultNoteUuid, providerApiKey,
-    providerEm, taskDomainUUID, timeFormat }) {
+    providerEm, taskDomainName, taskDomainUUID, timeFormat }) {
   // The widget's persisted "Today's priority" and AI-provider choices, seeded from the same SETTING_KEYS
   const persistedPriorityKey = pluginSettings()[SETTING_KEYS.PROPOSED_AGENDA_PRIORITY] || null;
   const persistedProviderEm = pluginSettings()[SETTING_KEYS.PROPOSED_AGENDA_LLM] || null;
@@ -162,22 +162,27 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   const [priorityKey, setPriorityKey] = useState(persistedPriorityKey || DEFAULT_PRIORITY_KEY);
   const [proposed, setProposed] = useState([]);
   const [providerPopupOpen, setProviderPopupOpen] = useState(false);
+  const [recordDomainName, setRecordDomainName] = useState(taskDomainName || "All Notes");
+  const [recordDomainUuid, setRecordDomainUuid] = useState(taskDomainUUID || null);
   const [recordProviderEm, setRecordProviderEm] = useState(null);
   const [scheduledKeys, setScheduledKeys] = useState(() => new Set());
   const listRef = useRef(null);
 
-  // Identifies the stored monthly line for the agenda currently on screen (the llmDateRecord: which date,
-  // priority, and LLM), so schedule/dismiss decisions are written back to the right entry.
-  const llmDateRecord = useMemo(() => ({ date: currentDate, priorityKey, providerEm: recordProviderEm }),
-    [currentDate, priorityKey, recordProviderEm]);
+  // Identifies the domain-specific stored monthly line currently on screen so status changes cannot mutate
+  // another Task Domain's cache record.
+  // [OpenAI GPT-5.6] Task: include Task Domain identity in Proposed Agenda lifecycle writes.
+  const llmDateRecord = useMemo(() => ({ date: currentDate, domainName: recordDomainName,
+    domainUuid: recordDomainUuid, priorityKey, providerEm: recordProviderEm }),
+    [currentDate, priorityKey, recordDomainName, recordDomainUuid, recordProviderEm]);
 
   // providerApiKey is included so that adding an API key in Dashboard Settings (which leaves providerEm
   // unchanged) still re-triggers generation, letting the widget recover from the no-provider state.
   const runGeneration = useCallback(({ forceRegenerate = false } = {}) => runProposedAgendaGeneration(app,
-    { calendarEvents, currentDate, domainUuid: taskDomainUUID, forceRegenerate, priorityKey,
+    { calendarEvents, currentDate, domainName: taskDomainName, domainUuid: taskDomainUUID, forceRegenerate, priorityKey,
     providerEm: modelProviderEm, setApproving, setAttribution, setDateLabel, setDismissedKeys, setError,
-    setIsFutureDay, setLoading, setObligations, setProposed, setRecordProviderEm, setScheduledKeys }),
-    [app, calendarEvents, currentDate, modelProviderEm, priorityKey, providerApiKey, taskDomainUUID]);
+    setIsFutureDay, setLoading, setObligations, setProposed, setRecordDomainName, setRecordDomainUuid,
+    setRecordProviderEm, setScheduledKeys }),
+    [app, calendarEvents, currentDate, modelProviderEm, priorityKey, providerApiKey, taskDomainName, taskDomainUUID]);
 
   const onChangeModel = useCallback(() => setProviderPopupOpen(true), []);
 

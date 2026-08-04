@@ -5,19 +5,68 @@
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
 import { setPluginData } from "plugin-data";
-import { loadCachedProposedAgenda, PROPOSED_TASK_STATUS, proposedAgendaNoteNameFromDate, proposedTaskKey,
-  recentProposedTaskHistory, storeProposedAgenda, updateProposedTaskStatuses } from "proposed-agenda-archive";
+import { loadCachedProposedAgenda as loadCachedProposedAgendaRecord, PROPOSED_TASK_STATUS,
+  proposedAgendaNoteNameFromDate as proposedAgendaNoteName, proposedTaskKey,
+  recentProposedTaskHistory as recentProposedTaskHistoryRecord,
+  storeProposedAgenda as storeProposedAgendaRecord,
+  updateProposedTaskStatuses as updateProposedTaskStatusesRecord } from "proposed-agenda-archive";
 import { generateProposedAgenda } from "proposed-agenda-service";
 import { setLoggingEnabled } from "util/log";
 
 const PRIORITY = "goal-progress";
 const PROVIDER = "anthropic";
 const DATE = new Date(2026, 5, 28); // June 28, 2026 (local)
+const DOMAIN_NAME = "Work";
+const DOMAIN_UUID = "dom-work";
 
 const ACT_A = { durationMinutes: 60, isExisting: true, noteUuid: "note-1", reason: "advances Q plan",
   startMinutes: 540, startTime: "09:00", taskUuid: "task-1", title: "Deep work block" };
 const ACT_B = { durationMinutes: 30, isExisting: false, noteUuid: null, reason: "recovery",
   startMinutes: 660, startTime: "11:00", taskUuid: null, title: "Walk break" };
+
+// ----------------------------------------------------------------------------------------------
+// @desc Load a Work-domain cache record while allowing a test to override either domain identity field.
+// @param {object} app - In-memory app stub.
+// @param {object} options - Archive lookup options.
+// @returns {Promise<object|null>}
+function loadCachedProposedAgenda(app, options) {
+  return loadCachedProposedAgendaRecord(app, { domainName: DOMAIN_NAME, domainUuid: DOMAIN_UUID, ...options });
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Derive the Work-domain monthly archive note name used by most assertions.
+// @param {Date} date - Month-bearing date.
+// @returns {string}
+function proposedAgendaNoteNameFromDate(date) {
+  return proposedAgendaNoteName(date, DOMAIN_NAME);
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Read Work-domain proposal history while allowing explicit domain overrides.
+// @param {object} app - In-memory app stub.
+// @param {object} options - History options.
+// @returns {Promise<Map<string, Set<string>>>}
+function recentProposedTaskHistory(app, options) {
+  return recentProposedTaskHistoryRecord(app, { domainName: DOMAIN_NAME, domainUuid: DOMAIN_UUID, ...options });
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Store a Work-domain proposal record while allowing explicit domain overrides.
+// @param {object} app - In-memory app stub.
+// @param {object} options - Archive storage options.
+// @returns {Promise<void>}
+function storeProposedAgenda(app, options) {
+  return storeProposedAgendaRecord(app, { domainName: DOMAIN_NAME, domainUuid: DOMAIN_UUID, ...options });
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Update Work-domain proposal statuses while allowing explicit domain overrides.
+// @param {object} app - In-memory app stub.
+// @param {object} options - Status update options.
+// @returns {Promise<void>}
+function updateProposedTaskStatuses(app, options) {
+  return updateProposedTaskStatusesRecord(app, { domainName: DOMAIN_NAME, domainUuid: DOMAIN_UUID, ...options });
+}
 
 afterEach(() => {
   setLoggingEnabled(false);
@@ -60,8 +109,8 @@ function storedRecords(app, date) {
 
 // [Claude claude-opus-4-8 (1M context)] Generated tests for: monthly proposed-agenda record store/cache
 describe("proposed-agenda-archive", () => {
-  it("names the monthly data note '[Month] [Year] Dashboard Proposed Tasks'", () => {
-    expect(proposedAgendaNoteNameFromDate(DATE)).toBe("June 2026 Dashboard Proposed Tasks");
+  it("includes the Task Domain in the monthly data-note name", () => {
+    expect(proposedAgendaNoteNameFromDate(DATE)).toBe("June 2026 Work Dashboard Proposed Tasks");
   });
 
   it("stores a generated set and loads it back as pending activities", async () => {
@@ -107,6 +156,25 @@ describe("proposed-agenda-archive", () => {
       providerEm: PROVIDER });
     await storeProposedAgenda(app, { activities: [ACT_B], date: DATE, priorityKey: PRIORITY, providerEm: "openai" });
     expect(storedRecords(app, DATE)).toHaveLength(3);
+  });
+
+  it("keeps different Task Domains in different notes and cache identities", async () => {
+    const app = buildNoteApp();
+    await storeProposedAgenda(app, { activities: [ACT_A], date: DATE, priorityKey: PRIORITY,
+      providerEm: PROVIDER });
+    await storeProposedAgenda(app, { activities: [ACT_B], date: DATE, domainName: "Personal",
+      domainUuid: "dom-personal", priorityKey: PRIORITY, providerEm: PROVIDER });
+
+    const workCache = await loadCachedProposedAgenda(app, { date: DATE, priorityKey: PRIORITY,
+      providerEm: PROVIDER });
+    const personalCache = await loadCachedProposedAgenda(app, { date: DATE, domainName: "Personal",
+      domainUuid: "dom-personal", priorityKey: PRIORITY, providerEm: PROVIDER });
+    expect(workCache.activities.map(activity => activity.title)).toEqual(["Deep work block"]);
+    expect(personalCache.activities.map(activity => activity.title)).toEqual(["Walk break"]);
+    expect(app._notes.map(note => note.name).sort()).toEqual([
+      "June 2026 Personal Dashboard Proposed Tasks",
+      "June 2026 Work Dashboard Proposed Tasks",
+    ]);
   });
 
   it("misses the cache when the recommendation-context fingerprint changes", async () => {

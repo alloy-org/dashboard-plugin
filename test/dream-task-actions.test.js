@@ -281,10 +281,14 @@ describe("DreamTask action links", () => {
         await act(async () => {
           root.render(createElement(DreamTaskWidget, {
             app, gridHeightSize: 1, gridWidthSize: 2, onOpenSettings: jest.fn(), providerApiKey: "test-key",
+            taskDomainName: "Work", taskDomainUUID: "dom-work",
           }));
         });
         const cards = await waitForDreamTaskCards(container);
 
+        const todayLabel = new Date().toLocaleString([], { day: "numeric", month: "long", year: "numeric" });
+        expect(app.findNote).toHaveBeenCalledWith({ name: `Dashboard proposed tasks for Work on ${ todayLabel }`,
+          tags: ["plugins/dashboard"] });
         expect(cards).toHaveLength(2);
         expect(cards[0].textContent).toContain("Message one luminary or press");
         expect(cards[0].textContent).not.toContain("Schedule");

@@ -3,6 +3,31 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-08-04 — Task Domain-specific Goal Coach and Proposed Agenda caches
+
+**Model:** OpenAI GPT-5.6
+**Files created/modified:**
+- `lib/dashboard/dashboard.jsx` and `lib/dashboard/dream-task.jsx` (modified — pass the active Task
+  Domain name/UUID into Goal Coach, include the domain name in its daily data-note title, reload on
+  domain changes, and ignore stale async results from the prior domain)
+- `lib/dashboard/dream-task-internals.js` (modified — remove the single-caller date-only note-name helper)
+- `lib/dashboard/proposed-agenda.jsx`, `lib/dashboard/proposed-agenda-llm-generator.js`, and
+  `lib/dashboard/proposed-agenda-service.js` (modified — carry domain identity through generation,
+  cache reads/writes, and scheduled/dismissed lifecycle updates)
+- `lib/dashboard/proposed-agenda-archive.js` (modified — include Task Domain name in monthly note
+  titles and Task Domain UUID in each cache-record identity and proposal-history lookup)
+- `test/dream-task-actions.test.js` and `test/proposed-agenda-archive.test.js` (modified — verify
+  domain-specific Goal Coach naming and cross-domain Proposed Agenda cache isolation)
+- `build/compiled.js` (rebuilt)
+- `AI_CONTRIBUTIONS.md` (modified — this entry)
+
+**Task:** Prevent Goal Coach and Proposed Agenda from reading cached results generated for a different
+Task Domain.
+**Prompt summary:** "Since quarterly-plan is task domain-specific, Goal Coach and Proposed Agenda are
+as well; incorporate the Task Domain name into their data notes so caches cannot cross domains."
+
+---
+
 ## 2026-08-04 — Domain-scoped quarterly plans + Goal Coach completed-task filter
 
 **Model:** Cursor Grok 4.5

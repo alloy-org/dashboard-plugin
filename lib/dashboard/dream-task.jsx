@@ -1,6 +1,6 @@
 import confetti from "canvas-confetti";
 import { apiKeyFromProvider, configuredProviderEms, devTokenPresent, SETTING_KEYS } from "constants/settings";
-import { _loadSeenUuidsMap, _maxTasksFromGrid, _recordSeenUuids, _taskGenerateCount, _todayProposedTasksNoteName,
+import { _loadSeenUuidsMap, _maxTasksFromGrid, _recordSeenUuids, _taskGenerateCount,
   applyDreamTaskAnalysisResult, fetchDreamTaskSuggestions, handleOpenSettings, handleTaskClick,
   requestDreamTaskRefreshExcludingRecent, shouldFetchMoreTasksAfterGridGrowth, updateDreamTaskTaskMetadata,
 } from "dream-task-internals";
@@ -502,10 +502,9 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks) {
     onScheduleTask, onToggleExplanation, resetActionState };
 }
 
-// [Claude claude-4.7-opus] Task: migrate DreamTaskWidget from createElement to JSX
-// Prompt: "translate this project to render components with JSX instead"
+// ------------------------------------------------------------------------------------------
 export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, onOpenSettings, providerApiKey,
-    providerEm }) {
+    providerEm, taskDomainName, taskDomainUUID }) {
   const [loading, setLoading] = useState(false);
   const [tasks, setTasks] = useState(null);
   const [error, setError] = useState(null);
@@ -515,6 +514,7 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   const [providerPopupOpen, setProviderPopupOpen] = useState(false);
   const [ampleAgentProAvailable, setAmpleAgentProAvailable] = useState(false);
   const [, setSeenUuidsMap] = useState(() => _loadSeenUuidsMap());
+  const analysisRunIdRef = useRef(0);
   const listRef = useRef(null);
   const renderCountRef = useRef(0);
   renderCountRef.current += 1;
@@ -522,12 +522,14 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   // [Claude claude-opus-4-8 (1M context)] Task: treat any dev provider token (not just OpenAI) as a configured LLM
   // Prompt: "dev environment isn't showing suggestions in spite of having GROK_AI_ACCESS_TOKEN present"
   const hasDevToken = devTokenPresent();
-  const hasLlmConfig = !!(hasDevToken || providerApiKey);
+  const hasLlmConfig = hasDevToken || providerApiKey;
   const providerName = providerEm ? providerNameFromProviderEm(providerEm) : null;
 
   const maxTasks = _maxTasksFromGrid(gridWidthSize, gridHeightSize);
   const taskGenerateCount = _taskGenerateCount(gridWidthSize, gridHeightSize);
-  const proposedTasksNoteName = _todayProposedTasksNoteName();
+  const domainName = taskDomainName || "All Notes";
+  const todayLabel = (new Date()).toLocaleString([], { day: "numeric", month: "long", year: "numeric" });
+  const proposedTasksNoteName = `Dashboard proposed tasks for ${ domainName } on ${ todayLabel }`;
   const previousTaskGenerateCountRef = useRef(taskGenerateCount);
 
   const { dismissingTaskKeys, expandedExplanationKeys, onCompleteTask, onPreserveTask, onRemoveTask,
@@ -542,6 +544,8 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   }, [app]);
 
   const runAnalysis = useCallback(async (excludeUuids, options = {}) => {
+    const analysisRunId = analysisRunIdRef.current + 1;
+    analysisRunIdRef.current = analysisRunId;
     const providerNameForRun = options.providerEmOverride
       ? providerNameFromProviderEm(options.providerEmOverride)
       : providerName;
@@ -560,6 +564,7 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
       if (!result?.cached && !result?.errorCode && result?.tasks?.length) {
         snapDashboardAction("generateDreamTasks", { count: result.tasks.length });
       }
+      if (analysisRunId !== analysisRunIdRef.current) return;
       const applyStart = performance.now();
       await applyDreamTaskAnalysisResult(result, {
         providerName: providerNameForRun,
@@ -567,10 +572,11 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
       });
       logIfEnabled(`[DreamTask] applyDreamTaskAnalysisResult took ${(performance.now() - applyStart).toFixed(1)}ms`);
     } catch (err) {
+      if (analysisRunId !== analysisRunIdRef.current) return;
       logIfEnabled('[DreamTask] runAnalysis caught unexpected error', err);
       setError({ error: err.message || 'Analysis failed', errorCode: 'llm_error', providerName: providerNameForRun });
     } finally {
-      setLoading(false);
+      if (analysisRunId === analysisRunIdRef.current) setLoading(false);
     }
   }, [recordTaskUuids, taskGenerateCount, proposedTasksNoteName, providerName, hasLlmConfig]);
 
@@ -579,10 +585,13 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   }, []);
 
   useEffect(() => {
-    if (loading || tasks?.length) return;
+    resetActionState();
+    setDefaultNoteUUID(null);
+    setNoteUUID(null);
+    setTasks(null);
     runAnalysis(null, { minimumTaskCount: taskGenerateCount });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasLlmConfig]);
+  }, [hasLlmConfig, proposedTasksNoteName, taskDomainUUID]);
 
   useEffect(() => {
     const snapshot = _describeDreamTaskConfigSnapshot(app, providerEm, providerApiKey, hasDevToken);

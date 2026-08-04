@@ -199,18 +199,19 @@ const CalendarCell = createWidgetCell('calendar', CalendarWidget, ({ app, comple
 }));
 const DebugConsoleCell = createWidgetCell('debug-console', DebugConsoleWidget, () => ({}));
 const EnergyPerHabitCell = createWidgetCell('energy-per-habit', EnergyPerHabitWidget, pickProps('app'));
-const DreamTaskCell = createWidgetCell('dream-task', DreamTaskWidget, ({ app, config, onOpenSettings, providerApiKey, providerEm }) => ({
+const DreamTaskCell = createWidgetCell('dream-task', DreamTaskWidget, ({ app, config, onOpenSettings, providerApiKey,
+    providerEm, taskDomainName, taskDomainUUID }) => ({
   app, gridHeightSize: Number(config?.gridHeightSize) || 1, gridWidthSize: Number(config?.gridWidthSize) || 2,
-  onOpenSettings, providerApiKey, providerEm,
+  onOpenSettings, providerApiKey, providerEm, taskDomainName, taskDomainUUID,
 }));
 const MoodCell = createWidgetCell('mood', MoodWidget, pickProps('app', 'moodRatings', 'onMoodRecorded'));
 const NotePeekCell = createWidgetCell('note-peek', NotePeekWidget, pickProps('app'));
 const PeakHoursCell = createWidgetCell('peak-hours', PeakHoursWidget,
   pickProps('app', 'currentDate', 'selectedDate', 'timeFormat'));
 const ProposedAgendaCell = createWidgetCell('proposed-agenda', ProposedAgendaWidget, ({ app, calendarEvents,
-    calendarEventsLoaded, currentDate, providerApiKey, providerEm, taskDomainUUID, timeFormat }) => ({
+    calendarEventsLoaded, currentDate, providerApiKey, providerEm, taskDomainName, taskDomainUUID, timeFormat }) => ({
   app, calendarEvents: calendarEventsLoaded ? calendarEvents : null, currentDate, defaultNoteUuid: null,
-  providerApiKey, providerEm, taskDomainUUID, timeFormat,
+  providerApiKey, providerEm, taskDomainName, taskDomainUUID, timeFormat,
 }));
 const PlanningCell = createWidgetCell('planning', PlanningWidget, ({ app, config, quarterlyPlans }) => ({
   app, gridHeightSize: Number(config?.gridHeightSize) || 1, quarterlyPlans,
@@ -424,6 +425,7 @@ function appendMoodRating(setMoodRatings, newRating) {
 export default function DashboardApp({ app, initPromise }) {
   const { activeTaskDomain, buildAgendaTasksByDate, initializeDomainTasks,
     onDomainChange, openTasks, taskDomains } = useDomainTasks();
+  const activeTaskDomainName = taskDomains.find(domain => domain.uuid === activeTaskDomain)?.name || "All Notes";
   const { completedTasksByDate, completedTasksLoaded, fetchCompletedTasks } = useCompletedTasks(app);
 
   const { calendarEvents, calendarEventsLoaded } = useExternalCalendarEvents(app, activeTaskDomain);
@@ -660,6 +662,7 @@ export default function DashboardApp({ app, initPromise }) {
         quarterlyPlans={quarterlyPlans}
         referenceDate={victoryReferenceDate}
         selectedDate={selectedDate}
+        taskDomainName={activeTaskDomainName}
         taskDomainUUID={activeTaskDomain}
         timeFormat={timeFormat}
         weekFormat={weekFormat}
@@ -835,6 +838,7 @@ export default function DashboardApp({ app, initPromise }) {
                   quarterlyPlans={quarterlyPlans}
                   referenceDate={victoryReferenceDate}
                   selectedDate={selectedDate}
+                  taskDomainName={activeTaskDomainName}
                   taskDomainUUID={activeTaskDomain}
                   timeFormat={timeFormat}
                   weekFormat={weekFormat}
