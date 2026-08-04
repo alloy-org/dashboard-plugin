@@ -55,7 +55,9 @@ function buildMockApp(providerConfig) {
   setPluginData({
     settings: {
       ...providerSettings,
-      [SETTING_KEYS.TASK_DOMAINS]: JSON.stringify({ selectedDomainUuid: "dom-work" }),
+      [SETTING_KEYS.TASK_DOMAINS]: JSON.stringify({
+        domains: [{ name: "Work", uuid: "dom-work" }], selectedDomainUuid: "dom-work",
+      }),
       [SETTING_KEYS.LLM_PROVIDER_MODEL]: providerConfig.providerEm,
     },
     context: {},
@@ -83,6 +85,7 @@ function buildMockApp(providerConfig) {
       dreamNoteContent = content;
       return Promise.resolve(true);
     }),
+    setNoteName: jest.fn().mockResolvedValue(true),
   };
 
   return app;

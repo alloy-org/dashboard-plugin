@@ -3,6 +3,34 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-08-04 — Domain-scoped quarterly plans + Goal Coach completed-task filter
+
+**Model:** Cursor Grok 4.5
+**Files created/modified:**
+- `lib/util/quarterly-plan-notes.js` (created — `${label} ${domain} Plan` naming, legacy
+  `${label} Plan` lookup, and `setNoteName` migration onto the default/Work domain)
+- `lib/util/task-domain-utility.js` (modified — `activeTaskDomainInfo`, `defaultDomainUuid`,
+  `migrationDomainNameFromDomains`)
+- `lib/dream-task-service.js` (modified — skip cached suggestions whose Amplenote task is already
+  completed/dismissed/missing; load the domain-scoped quarterly plan; dedupe by task UUID/title and
+  exclude still-open cached UUIDs from regeneration candidates so Complete top-ups cannot double-card)
+- `lib/data-service.js` (modified — `_findQuarterlyPlans` / create-plan helpers are Task Domain-
+  specific; `switchTaskDomain` returns refreshed `quarterlyPlans`)
+- `lib/dashboard/proposed-agenda-service.js` (modified — domain-scoped quarterly plan load)
+- `lib/dashboard/planning.jsx` (modified — widget/card labels include the Task Domain; reset month
+  UI when the domain changes)
+- `lib/dashboard/dashboard.jsx` (modified — apply domain-switch quarterly plan payload)
+- `test/quarterly-plan-notes.test.js`, `test/dream-task-completed-filter.test.js` (created)
+- Related proposed-agenda / DreamTask test stubs updated for `QN YYYY Work Plan` names
+- `AI_CONTRIBUTIONS.md` (modified — this entry)
+
+**Task:** Stop Goal Coach from re-suggesting completed tasks, and scope quarterly planning notes
+(and their consumers) to the active Task Domain with one-time legacy rename.
+**Prompt summary:** "ensure Goal Coach confirms the task has not already been completed; update
+Goal Coach, proposed-agenda, and quarterly goals to be Task Domain-specific; migrate legacy plans"
+
+---
+
 ## 2026-08-03 — Note Peek list styling and clickable title
 
 **Model:** Cursor Grok 4.5

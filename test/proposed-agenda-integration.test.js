@@ -34,13 +34,12 @@ const TEST_QUARTERLY_CONTENT = `# Q2 2026 Plan
     1. Launch Task Agent Pro`;
 
 // ----------------------------------------------------------------------------------------------
-// @desc Resolve the plan-note name the service looks up ("QN YYYY Plan") so filterNotes/getNoteContent
-//   stubs can match it without duplicating the quarter-label logic.
+// @desc Resolve the domain-scoped plan-note name the service looks up ("QN YYYY Work Plan").
 // [Claude claude-opus-4-8 (1M context)] Task: derive the current quarter's plan note name for the stub
 function currentQuarterPlanName() {
   const now = new Date();
   const quarter = Math.floor(now.getMonth() / 3) + 1;
-  return `Q${ quarter } ${ now.getFullYear() } Plan`;
+  return `Q${ quarter } ${ now.getFullYear() } Work Plan`;
 }
 
 // ----------------------------------------------------------------------------------------------

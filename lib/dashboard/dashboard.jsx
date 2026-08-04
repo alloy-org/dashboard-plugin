@@ -94,11 +94,6 @@ function gridCellContainerProps(config, draggingWidgetId, focusedWidgetId, widge
 }
 
 // ------------------------------------------------------------------------------------------
-// [Claude] Task: add error boundary so one widget crash doesn't take down the dashboard
-// Prompt: "wrap each component load in try...catch so failure to render one widget does not disrupt others"
-// Date: 2026-03-21 | Model: claude-4.6-opus-high-thinking
-// [Claude claude-4.7-opus] Task: migrate WidgetErrorBoundary.render from createElement to JSX
-// Prompt: "translate this project to render components with JSX instead"
 class WidgetErrorBoundary extends Component {
   static contextType = DashboardLoadContext;
   constructor(props) {
@@ -310,12 +305,14 @@ function applyDashboardData(initialPayload, { initDataFreshRef, initializeDomain
   initDataFreshRef.current = true;
 }
 
+// ------------------------------------------------------------------------------------------
 function isCurrentWeekEarlyForWeekStart(weekStartDay) {
   const now = new Date();
   const weekStart = weekStartFromDateInput(now, weekStartDay);
   return now.getTime() - weekStart.getTime() < 3 * 24 * 60 * 60 * 1000;
 }
 
+// ------------------------------------------------------------------------------------------
 function mergeMoodRatingsByIdentity(currentRatings, fetchedRatings) {
   const ratingsByKey = new Map();
   for (const rating of [...(currentRatings || []), ...(fetchedRatings || [])]) {
@@ -326,6 +323,7 @@ function mergeMoodRatingsByIdentity(currentRatings, fetchedRatings) {
   return Array.from(ratingsByKey.values()).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
 }
 
+// ------------------------------------------------------------------------------------------
 async function fetchMoodRatingsForDate(app, referenceDate, setMoodRatings, weekStartDay) {
   let weekStart = weekStartFromDateInput(referenceDate, weekStartDay);
   if (isCurrentWeekEarlyForWeekStart(weekStartDay)) {
@@ -343,14 +341,18 @@ async function fetchMoodRatingsForDate(app, referenceDate, setMoodRatings, weekS
   }
 }
 
-function applyDomainChange(onDomainChange, setDailyVictoryValues, setWeeklyVictoryValue, newDomains, newActiveDomain, taskData) {
+// ------------------------------------------------------------------------------------------
+function applyDomainChange(onDomainChange, setDailyVictoryValues, setQuarterlyPlans, setWeeklyVictoryValue, newDomains,
+    newActiveDomain, taskData) {
   onDomainChange(newDomains, newActiveDomain, taskData);
   if (taskData) {
     setDailyVictoryValues(taskData.dailyVictoryValues);
     setWeeklyVictoryValue(taskData.weeklyVictoryValue);
+    if (taskData.quarterlyPlans) setQuarterlyPlans(taskData.quarterlyPlans);
   }
 }
 
+// ------------------------------------------------------------------------------------------
 async function saveLayout(app, currentConfigParams, setConfigParams, newRenderedWidgetIds, isReset = false,
     sizing = null) {
   const existingLayout = Array.isArray(currentConfigParams?.[SETTING_KEYS.DASHBOARD_COMPONENTS])
@@ -375,6 +377,7 @@ async function saveLayout(app, currentConfigParams, setConfigParams, newRendered
   setConfigParams(prev => ({ ...prev, [SETTING_KEYS.DASHBOARD_COMPONENTS]: newLayout }));
 }
 
+// ------------------------------------------------------------------------------------------
 async function saveSettings(app, dashboardSettingNoteRef, setConfigParams, setFocusState, setTimeFormat, setWeekFormat,
     { apiKey, apiKeyProvider, backgroundImageUrl, backgroundMode, llmProvider, timeFormat, weekFormat }) {
   logIfEnabled('[dashboard] handleSettingsSave called with:', { llmProvider, apiKeyProvider, backgroundMode, backgroundImageUrl: backgroundImageUrl != null ? '(set)' : '(unchanged)', timeFormat, weekFormat });
@@ -418,8 +421,6 @@ function appendMoodRating(setMoodRatings, newRating) {
 
 // ------------------------------------------------------------------------------------------
 // @description Root dashboard component. Manages shared state and renders the widget grid.
-// [Claude claude-4.7-opus] Task: migrate DashboardApp from createElement to JSX
-// Prompt: "translate this project to render components with JSX instead"
 export default function DashboardApp({ app, initPromise }) {
   const { activeTaskDomain, buildAgendaTasksByDate, initializeDomainTasks,
     onDomainChange, openTasks, taskDomains } = useDomainTasks();
@@ -529,7 +530,7 @@ export default function DashboardApp({ app, initPromise }) {
 
   const handleDomainChange = useCallback(
     (newDomains, newActiveDomain, taskData) =>
-      applyDomainChange(onDomainChange, setDailyVictoryValues, setWeeklyVictoryValue,
+      applyDomainChange(onDomainChange, setDailyVictoryValues, setQuarterlyPlans, setWeeklyVictoryValue,
         newDomains, newActiveDomain, taskData),
     [onDomainChange]
   );

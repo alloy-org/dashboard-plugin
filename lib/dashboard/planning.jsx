@@ -94,6 +94,7 @@ function QuarterCard({ plan, onCardClick }) {
   const hasNote = !!plan.noteUUID;
   const allMonths = !!plan.hasAllMonthlyDetails;
   const cardClass = 'quarter-card' + (hasNote ? ' quarter-card--has-plan' : '');
+  const quarterLabel = plan.domainName ? `${ plan.label } · ${ plan.domainName }` : plan.label;
 
   const indicatorIcon = allMonths ? '✅' : '🚧';
   const indicatorTip = allMonths
@@ -102,7 +103,7 @@ function QuarterCard({ plan, onCardClick }) {
 
   return (
     <div className={cardClass} onClick={onCardClick}>
-      <span className="quarter-label">{plan.label}</span>
+      <span className="quarter-label">{quarterLabel}</span>
       <div className="quarter-status-row">
         <span className="quarter-status">{hasNote ? '📝 Open Plan' : '+ Create Plan'}</span>
         {hasNote ? (
@@ -188,13 +189,23 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
 
   const isTwoTall = gridHeightSize >= 2;
   const plansReady = !!(quarterlyPlans?.current && quarterlyPlans?.next);
+  const domainName = quarterlyPlans?.current?.domainName || quarterlyPlans?.next?.domainName || null;
   const months = plansReady ? getQuarterMonths(quarterlyPlans.current, quarterlyPlans.next) : [];
   const monthClickDeps = { activeTab, setActiveTab, setMonthLoading, setMonthContent };
   const createPlanDeps = { setMonthLoading, setMonthContent };
   const upcomingMonday = getUpcomingWeekMonday();
   const weekLabel = formatWeekLabel(upcomingMonday);
+  const widgetTitle = domainName ? `Quarterly Planning · ${ domainName }` : undefined;
 
   useWidgetLoadedEvent('planning', plansReady && initialLoadDone && !monthLoading && (!isTwoTall || !weekLoading));
+
+  // Reset month/week UI when the Task Domain (and therefore the plan note set) changes.
+  useEffect(() => {
+    setActiveTab(null);
+    setMonthContent(null);
+    setWeekContent(null);
+    setInitialLoadDone(false);
+  }, [domainName]);
 
   useEffect(() => {
     if (!plansReady || initialLoadDone) return;
@@ -203,7 +214,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
       setInitialLoadDone(true);
       handleMonthClick(app, currentMonth, monthClickDeps);
     }
-  }, [initialLoadDone, plansReady]);
+  }, [domainName, initialLoadDone, plansReady]);
 
   useEffect(() => {
     if (!plansReady || !isTwoTall) return;
@@ -221,7 +232,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
 
   if (editingNoteUUID && IS_DEV_ENVIRONMENT) {
     return (
-      <WidgetWrapper widgetId="planning">
+      <WidgetWrapper title={widgetTitle} widgetId="planning">
         <NoteEditor
           app={app}
           noteUUID={editingNoteUUID}
@@ -233,7 +244,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
 
   if (!plansReady) {
     return (
-      <WidgetWrapper widgetId="planning">
+      <WidgetWrapper title={widgetTitle} widgetId="planning">
         <p className="planning-empty">Loading quarterly plans…</p>
       </WidgetWrapper>
     );
@@ -246,7 +257,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
   };
 
   return (
-    <WidgetWrapper widgetId="planning">
+    <WidgetWrapper title={widgetTitle} widgetId="planning">
       <div className="planning-quarters">
         {[quarterlyPlans.current, quarterlyPlans.next].map(plan => (
           <QuarterCard

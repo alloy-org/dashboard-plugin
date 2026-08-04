@@ -16,11 +16,11 @@ await jest.unstable_mockModule("providers/fetch-ai-provider", async () => ({
 const { generateProposedAgenda, scheduleProposedActivity } = await import("proposed-agenda-service");
 
 // ----------------------------------------------------------------------------------------------
-// @desc Resolve the plan-note name the service looks up ("QN YYYY Plan") so the filterNotes stub matches it.
+// @desc Resolve the domain-scoped plan-note name the service looks up ("QN YYYY Work Plan").
 // @returns {string}
 function currentQuarterPlanName() {
   const now = new Date();
-  return `Q${ Math.floor(now.getMonth() / 3) + 1 } ${ now.getFullYear() } Plan`;
+  return `Q${ Math.floor(now.getMonth() / 3) + 1 } ${ now.getFullYear() } Work Plan`;
 }
 
 // ----------------------------------------------------------------------------------------------

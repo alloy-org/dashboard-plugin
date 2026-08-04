@@ -24,7 +24,7 @@ function buildDreamTaskContextApp() {
     context: {},
     settings: { [SETTING_KEYS.LLM_API_KEY_OPENAI]: "test-key",
       [SETTING_KEYS.LLM_PROVIDER_MODEL]: "openai", [SETTING_KEYS.TASK_DOMAINS]: JSON.stringify({
-      selectedDomainUuid: "dom-work" }) },
+      domains: [{ name: "Work", uuid: "dom-work" }], selectedDomainUuid: "dom-work" }) },
   });
   return {
     createNote: jest.fn(async () => "dream-note-uuid"),
@@ -39,12 +39,17 @@ function buildDreamTaskContextApp() {
     getExternalCalendarEvents: jest.fn(async () => [{ allDay: true, end: new Date(Date.now() + 86400000),
       start: new Date(), title: "Conference travel to Portland" }]),
     getNoteContent: jest.fn(async ({ uuid }) => uuid === "plan-note-uuid" ? "# Plan\n- Launch dashboard polish" : ""),
+    getTask: jest.fn(async uuid => uuid === "task-1"
+      ? { content: "Draft launch email", noteUUID: "project-note", score: 10, uuid: "task-1" }
+      : null),
+    getTaskDomains: jest.fn(async () => [{ name: "Work", uuid: "dom-work" }]),
     getTaskDomainTasks: jest.fn(async () => [
       { content: "Draft launch email", noteUUID: "project-note", score: 10, uuid: "task-1" },
       { completedAt: Math.floor(Date.now() / 1000), content: "Ship campaign", noteUUID: "project-note",
         uuid: "done-1" },
     ]),
     replaceNoteContent: jest.fn(async () => true),
+    setNoteName: jest.fn(async () => true),
   };
 }
 
