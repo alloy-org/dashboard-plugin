@@ -147,9 +147,7 @@ html {
         height: 100%;
         width: 100%;
 
-        /* The move and resize are driven by a scripted animation with an explicitly measured start
-         * rectangle, so no CSS transition is declared here; a transition would race the position
-         * change from grid item to viewport-positioned element. */
+        /* Focus move/resize is WAAPI FLIP; a CSS transition here would race that animation. */
         &--focused {
           pointer-events: auto;
           position: fixed;
@@ -181,15 +179,12 @@ html {
       &.grid-cell--focused {
         --grid-cell-base-opacity: 1;
         pointer-events: auto;
-        transition: filter 0.32s ease, opacity 0.32s ease, transform 0.5s ease-in-out;
         z-index: 4;
       }
 
       &.grid-cell--focus-overlay-host {
-        /* Any non-none transform/filter on this cell makes position:fixed descendants resolve against
-         * the cell instead of the viewport. The base .grid-cell and .grid-cell--focused rules both
-         * transition transform, so without transition:none the containing block would linger for
-         * the whole animation and send right-column widgets off to the right edge of the page. */
+        /* Non-none transform/filter makes position:fixed resolve against this cell; drop both
+         * immediately (no transition) so the overlay uses the viewport containing block. */
         filter: none;
         pointer-events: none;
         transform: none;
