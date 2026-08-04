@@ -92,9 +92,19 @@ html {
       background: rgba($color-bg-page, 0.18);
       border: none;
       cursor: zoom-out;
-      inset: -$sp-md;
-      position: absolute;
+      inset: 0;
+      position: fixed;
       z-index: 2;
+    }
+
+    .dashboard-toolbar {
+      transition: opacity 0.32s ease, transform 0.32s ease;
+    }
+
+    &--widget-focused .dashboard-toolbar {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-$sp-lg);
     }
 
     .dashboard-grid {
@@ -113,7 +123,8 @@ html {
       --flip-y: 0px;
       --focus-blur: 0px;
       --focus-opacity: 1;
-      --focus-scale: 1;
+      --focus-scale-x: 1;
+      --focus-scale-y: 1;
       --focus-x: 0px;
       --focus-y: 0px;
       --grid-cell-base-opacity: 0.95;
@@ -122,7 +133,7 @@ html {
       opacity: calc(var(--grid-cell-base-opacity) * var(--focus-opacity));
       position: relative;
       transform: translate(var(--flip-x), var(--flip-y)) translate(var(--focus-x), var(--focus-y))
-        scale(var(--drag-scale)) scale(var(--focus-scale));
+        scale(var(--drag-scale)) scale(var(--focus-scale-x), var(--focus-scale-y));
       transition: filter 0.32s ease, opacity 0.32s ease, transform 0.32s ease;
       will-change: transform;
 
@@ -130,10 +141,21 @@ html {
         --grid-cell-base-opacity: 1;
       }
 
-      /* [Claude claude-opus-5 (1M context)] Task: read the per-cell geometry from widget-sizings.scss */
-      /* Prompt: "DRY the stylesheet to use the existing sources of truth for how large a widget becomes */
-      /*   per unit of height & width specified by user" */
       @include widget-cell-size-classes;
+
+      .grid-cell-surface {
+        height: 100%;
+        width: 100%;
+
+        /* The move and resize are driven by a scripted animation with an explicitly measured start
+         * rectangle, so no CSS transition is declared here; a transition would race the position
+         * change from grid item to viewport-positioned element. */
+        &--focused {
+          pointer-events: auto;
+          position: fixed;
+          z-index: 5;
+        }
+      }
 
       /* [Claude] Task: dashboard drag visual states for long-press widget reordering */
       /* Prompt: "apply wobble when ready to drag and slide neighbors out of the way" */
@@ -159,7 +181,17 @@ html {
       &.grid-cell--focused {
         --grid-cell-base-opacity: 1;
         pointer-events: auto;
+        transition: filter 0.32s ease, opacity 0.32s ease, transform 0.5s ease-in-out;
         z-index: 4;
+      }
+
+      &.grid-cell--focus-overlay-host {
+        /* Transform and filter would make a fixed descendant use this cell instead of the viewport
+         * as its containing block, so disable both while the surface is detached from grid flow. */
+        filter: none;
+        pointer-events: none;
+        transform: none;
+        will-change: auto;
       }
 
       &.grid-cell--focus-hidden {
@@ -204,10 +236,6 @@ html {
 
       &.widget-heading-bar--drag-ready {
         cursor: grabbing;
-      }
-
-       &.widget-heading-bar--focusable .widget-icon-button:hover {
-        transform: scale(1.06);
       }
     }
 

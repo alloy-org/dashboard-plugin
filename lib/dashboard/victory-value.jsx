@@ -341,6 +341,7 @@ function TimeRangeOptions({ timeRange, setTimeRange }) {
 export default function VictoryValueWidget({ app, completedTasksByDate, dailyValues, moodRatings,
     onReferenceDateChange, referenceDate, weekFormat, weeklyTotal }) {
   const canvasRef = useRef(null);
+  const redrawChartRef = useRef(null);
   const weekStartDay = weekStartDayFromFormat(weekFormat);
   const chartDailyValues = buildDailyValuesForWeek(referenceDate, dailyValues, completedTasksByDate, weekStartDay);
   const maxValue = Math.max(...chartDailyValues.map((entry) => entry.value), 1);
@@ -362,8 +363,23 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
   const onCanvasMouseLeave = () => tip.scheduleHide(300, () => setHoveredBar(null));
 
   useEffect(() => {
-    drawChart(canvasRef, chartDailyValues, maxValue, moodByDay, showMood);
+    redrawChartRef.current = () => drawChart(canvasRef, chartDailyValues, maxValue, moodByDay, showMood);
+    redrawChartRef.current();
   }, [chartDailyValues, maxValue, moodByDay, showMood]);
+
+  // ------------------------------------------------------------------------------------------
+  // @desc Redraw whenever the canvas box changes size. drawChart sizes the bitmap from the element's
+  //   own pixel dimensions, so a resize with no accompanying data change (the layout popup, or the
+  //   widget-focus animation that grows the widget to four cells wide) would otherwise leave the
+  //   previous bitmap stretched across the new box until something unrelated triggered a redraw.
+  // [OpenAI GPT-5.6 Sol] Task: keep the chart bitmap in step with the canvas size
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || typeof ResizeObserver === 'undefined') return undefined;
+    const sizeObserver = new ResizeObserver(() => redrawChartRef.current?.());
+    sizeObserver.observe(canvas);
+    return () => sizeObserver.disconnect();
+  }, []);
 
   useEffect(() => {
     if (hoveredBar === null) { tip.hide(); return; }

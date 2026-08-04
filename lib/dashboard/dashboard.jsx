@@ -20,7 +20,7 @@ import DebugConsoleWidget from 'debug-console';
 import { useDashboardDrag } from 'draggable-heading';
 import DreamTaskWidget from 'dream-task';
 import EnergyPerHabitWidget from 'energy-per-habit';
-import { gridCellFocusProps, useDashboardWidgetFocus } from 'focus-widget';
+import { gridCellFocusProps, useDashboardWidgetFocus, widgetConfigForFocus } from 'focus-widget';
 import GraveyardWidget from 'graveyard';
 import useBackgroundSwap, { BACKGROUND_FADE_ANIMATION_NAME, BACKGROUND_FADE_DURATION_MS } from 'hooks/use-background-swap';
 import useCompletedTasks from 'hooks/use-completed-tasks';
@@ -151,12 +151,15 @@ function WidgetLoadedEventReporter({ hasError = false, isReady, widgetId }) {
 function createWidgetCell(widgetId, WidgetComponent, buildWidgetProps) {
   return memo(function DashboardWidgetCell(cellProps) {
     useWidgetLoadTiming(widgetId);
-    const { config, draggingWidgetId, focusedWidgetId, loadedEventError, loadedEventReady, mountImmediately,
-      widgetFocusTransform } = cellProps;
+    const { config, draggingWidgetId, focusedWidgetId, focusedWidgetSurfaceStyle, layoutConfig, loadedEventError,
+      loadedEventReady, mountImmediately, widgetFocusTransform } = cellProps;
     const widgetSizeValue = {
       gridHeightSize: Number(config?.gridHeightSize) > 0 ? Number(config.gridHeightSize) : 1,
       gridWidthSize: Number(config?.gridWidthSize) > 0 ? Number(config.gridWidthSize) : 1,
     };
+    const containerProps = gridCellContainerProps(layoutConfig || config, draggingWidgetId, focusedWidgetId, widgetFocusTransform);
+    if (focusedWidgetSurfaceStyle) containerProps.className += ' grid-cell--focus-overlay-host';
+    const surfaceClassName = focusedWidgetSurfaceStyle ? 'grid-cell-surface grid-cell-surface--focused' : 'grid-cell-surface';
     const widgetContents = (
       <>
         <WidgetLoadReporter widgetId={widgetId} />
@@ -167,12 +170,14 @@ function createWidgetCell(widgetId, WidgetComponent, buildWidgetProps) {
       </>
     );
     return (
-      <div {...gridCellContainerProps(config, draggingWidgetId, focusedWidgetId, widgetFocusTransform)}>
-        <WidgetErrorBoundary widgetId={widgetId}>
-          <WidgetSizeContext.Provider value={widgetSizeValue}>
-            {mountImmediately ? widgetContents : <LazyWidgetMount widgetId={widgetId}>{widgetContents}</LazyWidgetMount>}
-          </WidgetSizeContext.Provider>
-        </WidgetErrorBoundary>
+      <div {...containerProps}>
+        <div className={surfaceClassName} style={focusedWidgetSurfaceStyle || undefined}>
+          <WidgetErrorBoundary widgetId={widgetId}>
+            <WidgetSizeContext.Provider value={widgetSizeValue}>
+              {mountImmediately ? widgetContents : <LazyWidgetMount widgetId={widgetId}>{widgetContents}</LazyWidgetMount>}
+            </WidgetSizeContext.Provider>
+          </WidgetErrorBoundary>
+        </div>
       </div>
     );
   });
@@ -585,8 +590,8 @@ export default function DashboardApp({ app, initPromise }) {
   const { activeComponents } = useDashboardLayout({ configParams });
 
   const { draggingWidgetId, displayedComponents } = useDashboardDrag(activeComponents, handleLayoutPersist);
-  const { clearFocusedWidget, focusedWidgetId, isWidgetFocusMode, widgetFocusTransforms } =
-    useDashboardWidgetFocus(draggingWidgetId, focusState);
+  const { clearFocusedWidget, expandedWidgetId, focusedWidgetId, focusedWidgetSurfaceStyle, isWidgetFocusMode,
+    widgetFocusTransforms } = useDashboardWidgetFocus(draggingWidgetId, focusState);
   const { incomingBackgroundUrl, swapBackground, swappedBackgroundUrl } = useBackgroundSwap();
   const onOpenDreamTaskSettings = useCallback(
     () => setFocusState(DASHBOARD_FOCUS.SETTINGS_CONFIG),
@@ -750,7 +755,8 @@ export default function DashboardApp({ app, initPromise }) {
           renderWidget={renderMemoryMeasurementWidget}
         />
       ) : null}
-      {focusState !== DASHBOARD_FOCUS.MEMORY_MEASUREMENT ? <div className="dashboard-content">
+      {focusState !== DASHBOARD_FOCUS.MEMORY_MEASUREMENT ? (
+      <div className={`dashboard-content${isWidgetFocusMode ? ' dashboard-content--widget-focused' : ''}`}>
         <div className="dashboard-toolbar">
           <TaskDomains
             activeTaskDomain={activeTaskDomain}
@@ -796,6 +802,7 @@ export default function DashboardApp({ app, initPromise }) {
               const providerSettingKey = apiKeyBucket ? apiKeyFromProvider(apiKeyBucket) : null;
               const providerApiKey = providerSettingKey ? (configParams?.[providerSettingKey] || '') : '';
               const providerEmForWidgets = apiKeyBucket || providerEm || null;
+              const renderedConfig = widgetConfigForFocus(config, expandedWidgetId);
               return (
                 <CellComponent
                   key={widgetId}
@@ -804,11 +811,13 @@ export default function DashboardApp({ app, initPromise }) {
                   calendarEvents={calendarEvents}
                   calendarEventsLoaded={calendarEventsLoaded}
                   completedTasksByDate={completedTasksByDate}
-                  config={config}
+                  config={renderedConfig}
                   currentDate={currentDate}
                   dailyValues={dailyVictoryValues}
                   draggingWidgetId={draggingWidgetId}
                   focusedWidgetId={focusedWidgetId}
+                  focusedWidgetSurfaceStyle={focusedWidgetId === widgetId ? focusedWidgetSurfaceStyle : null}
+                  layoutConfig={config}
                   loadedEventReady={loadedEventReadyFromWidgetId(widgetId)}
                   moodRatings={moodRatings}
                   onDateSelect={setSelectedDate}
@@ -836,7 +845,7 @@ export default function DashboardApp({ app, initPromise }) {
           </div>
           </DashboardLoadContext.Provider>
         </div>
-      </div> : null}
+      </div>) : null}
     </div>
   );
 }

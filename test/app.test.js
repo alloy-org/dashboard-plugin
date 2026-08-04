@@ -11,6 +11,7 @@ import { createRoot } from "react-dom/client";
 // No jest.unstable_mockModule calls — hooks AND widgets both run for real.
 // The Amplenote app object is mocked; widgets receive it directly via the app prop.
 import DashboardApp from 'dashboard/dashboard';
+import { FOCUS_EXPANSION_DELAY_MS, FOCUS_RESIZE_TRANSITION_MS } from 'focus-widget';
 import { BACKGROUND_FADE_ANIMATION_NAME, BACKGROUND_FADE_DURATION_MS } from 'hooks/use-background-swap';
 import { mockPlugin } from "./test-helpers.js";
 import { dateKeyFromDateInput, weekStartFromDateInput } from "util/date-utility";
@@ -358,10 +359,14 @@ describe('DashboardApp', () => {
       expect(agendaWidget.textContent).toContain('Update budget');
     });
 
+    // [OpenAI GPT-5.6 Sol] Task: verify eligible focus sizing, restoration, and registry restrictions
     it('focuses a widget from its icon and restores the grid from the backdrop click', async () => {
       const planningIconButton = container.querySelector('.widget-planning .widget-icon-button');
       const planningCell = container.querySelector('.grid-cell[data-widget-id="planning"]');
+      const planningWidget = container.querySelector('.widget-planning');
       const moodCell = container.querySelector('.grid-cell[data-widget-id="mood"]');
+      const usualPlanningCellClassName = planningCell.className;
+      const usualPlanningWidgetClassName = planningWidget.className;
       expect(planningIconButton).not.toBeNull();
       expect(planningCell).not.toBeNull();
       expect(moodCell).not.toBeNull();
@@ -371,18 +376,55 @@ describe('DashboardApp', () => {
 
       const focusBackdrop = container.querySelector('.dashboard-grid-focus-backdrop');
       expect(container.querySelector('.dashboard-grid--focused')).not.toBeNull();
+      expect(container.querySelector('.dashboard-content--widget-focused')).not.toBeNull();
       expect(focusBackdrop).not.toBeNull();
       expect(planningCell.className).toContain('grid-cell--focused');
       expect(moodCell.className).toContain('grid-cell--focus-hidden');
       expect(planningCell.style.getPropertyValue('--focus-x')).not.toBe('');
+      expect(planningCell.className).not.toContain('horizontal-4-cell');
+      expect(planningWidget.className).toBe(usualPlanningWidgetClassName);
+
+      await settleFor(FOCUS_EXPANSION_DELAY_MS + 80);
+
+      expect(planningCell.className).not.toContain('horizontal-4-cell');
+      expect(planningCell.className).toContain('grid-cell--focus-overlay-host');
+      expect(planningWidget.className).toContain('horizontal-4-cell');
+      expect(planningWidget.className).toContain('vertical-2-cell');
+      const focusedSurface = planningWidget.closest('.grid-cell-surface');
+      expect(focusedSurface.className).toContain('grid-cell-surface--focused');
+      expect(focusedSurface.style.left).toBe('0px');
+      expect(focusedSurface.style.top).toBe(`${window.innerHeight * 0.2}px`);
+      expect(moodCell.style.getPropertyValue('--focus-opacity')).toBe('0');
 
       await act(async () => { focusBackdrop.click(); });
       await flushAsync();
+
+      expect(container.querySelector('.dashboard-grid--focused')).not.toBeNull();
+      expect(planningCell.className).not.toContain('horizontal-4-cell');
+      expect(planningWidget.className).toContain('horizontal-4-cell');
+
+      await settleFor(FOCUS_RESIZE_TRANSITION_MS + 40);
 
       expect(container.querySelector('.dashboard-grid--focused')).toBeNull();
       expect(container.querySelector('.dashboard-grid-focus-backdrop')).toBeNull();
       expect(planningCell.className).not.toContain('grid-cell--focused');
       expect(moodCell.className).not.toContain('grid-cell--focus-hidden');
+      expect(planningCell.className).toBe(usualPlanningCellClassName);
+      expect(planningWidget.className).toBe(usualPlanningWidgetClassName);
+    });
+
+    it('keeps a focused widget at its usual size when the registry restricts 4-by-2 sizing', async () => {
+      const moodCell = container.querySelector('.grid-cell[data-widget-id="mood"]');
+      const moodIconButton = container.querySelector('.widget-mood .widget-icon-button');
+      const moodWidget = container.querySelector('.widget-mood');
+      const usualMoodWidgetClassName = moodWidget.className;
+
+      await act(async () => { moodIconButton.click(); });
+      await settleFor(FOCUS_EXPANSION_DELAY_MS + 80);
+
+      expect(moodCell.className).toContain('grid-cell--focused');
+      expect(moodCell.className).not.toContain('horizontal-4-cell');
+      expect(moodWidget.className).toBe(usualMoodWidgetClassName);
     });
 
     it('keeps widget focus mode unavailable below the desktop breakpoint', async () => {
