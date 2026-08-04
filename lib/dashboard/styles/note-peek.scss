@@ -6,6 +6,8 @@
  * Revised: 2026-08-03 — per-cell width/height floors deleted as duplicates of the grid cell's own, and
  *   the mobile clipping bound now reads widget-sizings.scss, per "DRY the stylesheet to use the existing
  *   sources of truth for how large a widget becomes per unit of height & width specified by user"
+ * Revised: 2026-08-04 | Model: GPT-5.6 Sol — checklist rows now mirror Amplenote's readonly task cards
+ *   with score rails, custom checkbox states, content spacing, completion styling, and nested indents.
  */
 
 @use 'theme-tokens' as *;
@@ -317,27 +319,78 @@ $check-list-indent-step: 20px;
       number-list-items-8 number-list-items-9;
   }
 
-  /* Host toDOM for check-list-item is a flex row of checkbox + content — indent steps match
-   * ample-editor's check-list-item--indents mixin ($check-list-margin-delta). */
+  /* app.htmlFromContent serializes each task as a checkbox followed by either a content-container or
+   * its paragraph children. Recreate ample-editor's readonly task-card surface without its interactive
+   * row-wrapper, widgets, expander, or Material Icons dependencies. */
   .check-list-item {
-    align-items: flex-start;
+    align-items: center;
+    background: $color-bg-page;
+    border-left: 4px solid $color-border;
+    border-radius: 4px;
     display: flex;
-    gap: $sp-sm;
-    margin: 0 0 $list-item-margin;
+    margin: 0 0 6px;
+    min-height: 44px;
+    padding: 0 $sp-sm 0 10px;
     position: relative;
 
     @for $indent from 1 through 9 {
       &.indent-#{$indent} {
-        padding-left: #{$indent * $check-list-indent-step};
+        margin-left: #{$indent * $check-list-indent-step};
       }
     }
 
+    &.task-score-bucket-1 { border-left-color: $color-blue; }
+    &.task-score-bucket-2 { border-left-color: $color-warning; }
+    &.task-score-bucket-3 { border-left-color: $color-agenda-priority-urgent; }
+
     > input[type="checkbox"] {
+      appearance: none;
+      background: transparent;
+      border: 2px solid $color-text-muted;
+      border-radius: 2px;
+      box-sizing: border-box;
       flex-shrink: 0;
-      margin-top: 0.2em;
+      height: 16px;
+      margin: 0 10px 0 0;
       pointer-events: none;
+      position: relative;
+      width: 16px;
+
+      &:checked {
+        background: $color-success;
+        border-color: $color-success;
+
+        &::after {
+          border: solid $color-text-on-accent;
+          border-width: 0 2px 2px 0;
+          content: "";
+          height: 7px;
+          left: 4px;
+          position: absolute;
+          top: 1px;
+          transform: rotate(45deg);
+          width: 4px;
+        }
+      }
     }
 
+    > .content-container,
+    > p {
+      flex: 1;
+      line-height: 20px;
+      margin: 0;
+      min-width: 0;
+      padding: 10px 0;
+      word-break: break-word;
+    }
+
+    > .content-container {
+      p {
+        margin: 0;
+      }
+    }
+
+    &.done,
     &[data-completedat],
     &[data-dismissedat] {
       opacity: 0.65;

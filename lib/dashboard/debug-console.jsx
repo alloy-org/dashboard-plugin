@@ -5,16 +5,25 @@ import WidgetWrapper from "widget-wrapper";
 import "styles/debug-console.scss";
 
 const WIDGET_ID = "debug-console";
+// Cap each rendered message so a single oversized log (e.g. a large object dump) cannot dominate the
+// scrollable console. 5 KB is enough for useful diagnostics without multi-page walls of text.
+const MAX_MESSAGE_CHARS = 5 * 1024;
 
 // ------------------------------------------------------------------------------------------
+// @desc Format a log entry's args array into a readable string, truncating when the joined result
+//   exceeds MAX_MESSAGE_CHARS so one dump cannot flood the Debug Console.
+// @param {Array<*>} args - The logIfEnabled argument list stored on the buffer entry.
+// @returns {string} A single display string, possibly truncated with a length marker.
 // [Claude claude-sonnet-4-6] Task: format a log entry's args array into a readable string
 // Prompt: "capture all logIfEnabled messages and show them in a scrollable DebugConsole widget"
 function formatArgs(args) {
-  return args.map(a => {
+  const formatted = args.map(a => {
     if (typeof a === 'string') return a;
-    if (a instanceof Error) return `${a.name}: ${a.message}`;
+    if (a instanceof Error) return `${ a.name }: ${ a.message }`;
     try { return JSON.stringify(a); } catch { return String(a); }
   }).join(' ');
+  if (formatted.length <= MAX_MESSAGE_CHARS) return formatted;
+  return `${ formatted.slice(0, MAX_MESSAGE_CHARS) }… [truncated, ${ formatted.length } chars]`;
 }
 
 // ------------------------------------------------------------------------------------------

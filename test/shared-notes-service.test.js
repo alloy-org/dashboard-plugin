@@ -1,7 +1,7 @@
 // [Claude claude-opus-4-8] Generated tests for: Shared Notes service — collaborator-updated note discovery
 import { jest } from "@jest/globals";
-import { avatarTextFromName, buildPeopleIndexByNote, collaboratorsForNote, fetchPeopleIndexByNote,
-  findCollaboratorUpdatedNotes, lastUpdatedLabelFromMs, orderNotesPinnedFirst,
+import { avatarTextFromName, buildPeopleIndexByNote, collaboratorNoteCounts, collaboratorsForNote,
+  fetchPeopleIndexByNote, findCollaboratorUpdatedNotes, lastUpdatedLabelFromMs, orderNotesPinnedFirst,
   parsePinnedNoteUuids, sharedNotesGroupParam, sharerNamesFromIndex, sharerNamesFromNotes,
   timestampMsFromValue, updatedSinceSeen } from "shared-notes-service";
 
@@ -341,6 +341,23 @@ describe("avatarTextFromName", () => {
     expect(avatarTextFromName("madonna")).toBe("MA");
     expect(avatarTextFromName("")).toBe("?");
     expect(avatarTextFromName(null)).toBe("?");
+  });
+});
+
+describe("collaboratorNoteCounts", () => {
+  it("returns name/count per collaborator sorted by descending count, then name", () => {
+    const notes = [
+      { collaborators: [{ name: "Aaron" }, { name: "Zoe" }] },
+      { collaborators: [{ name: "Aaron" }, { name: "bea" }] },
+      { collaborators: [{ name: "Aaron" }] },
+      { collaborators: [] },
+    ];
+    expect(collaboratorNoteCounts(notes)).toEqual([
+      { count: 3, name: "Aaron" },
+      { count: 1, name: "bea" },
+      { count: 1, name: "Zoe" },
+    ]);
+    expect(collaboratorNoteCounts(null)).toEqual([]);
   });
 });
 
