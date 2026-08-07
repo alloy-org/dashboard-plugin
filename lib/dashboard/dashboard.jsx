@@ -44,6 +44,8 @@ import TaskDomains from 'task-domains';
 import { backgroundSplashUrl } from 'util/background-splash-images';
 import { dateKeyFromDateInput, weekStartDayFromFormat, weekStartFromDateInput } from 'util/date-utility';
 import { logIfEnabled, setLoggingEnabled } from "util/log";
+import { snapDashboardAction } from "util/plausible";
+import { captureDashboardException, captureDashboardMessage, capturePluginFailure } from "util/sentry-reporting";
 import { useWidgetLoadTiming } from "util/widget-timing";
 import { WidgetSizeContext } from "widget-wrapper";
 import WidgetMemoryMeasurementPopup from "widget-memory-measurement-popup";
@@ -52,6 +54,10 @@ import { deviceProfile as readDeviceProfile, isMemoryConstrainedDevice } from "u
 import { logMemorySample, startMemorySampling } from "util/memory-instrumentation";
 
 import "styles/dashboard.scss"
+
+// How long init may run before we report that it has stalled. Generous on purpose: a memory-constrained phone with a
+// large account can legitimately still be fetching, and this reports a warning without touching what the user sees.
+const INIT_WATCHDOG_MILLISECONDS = 30000;
 
 // ------------------------------------------------------------------------------------------
 // @desc Build the inline background properties for one background layer. Shared by the dashboard's
@@ -105,6 +111,8 @@ class WidgetErrorBoundary extends Component {
   }
   componentDidCatch(error, info) {
     logIfEnabled(`[WidgetErrorBoundary] Widget "${ this.props.widgetId }" crashed:`, error, info);
+    captureDashboardException(error, { componentStack: info?.componentStack, source: "widget-boundary",
+      widgetId: this.props.widgetId });
     this.context?.reportError(this.props.widgetId);
   }
   render() {
@@ -456,35 +464,68 @@ export default function DashboardApp({ app, initPromise }) {
   useEffect(() => {
     const t0 = Date.now();
     logIfEnabled('[dashboard] awaiting init data');
+    // An init call the host never settles is the failure mode the Amplenote mobile app exhibited: no data, no error,
+    // an indefinite spinner, and nothing reported anywhere. This cannot repair that, but it makes it visible. It stays
+    // a warning and leaves the spinner alone because a slow device with a large account may still be loading.
+    const initWatchdogTimer = setTimeout(() => {
+      captureDashboardMessage(`Dashboard init has not settled after ${ INIT_WATCHDOG_MILLISECONDS / 1000 }s`, {
+        action: "init", level: "warning", mobile: !!deviceProfileRef.current?.mobile, source: "init-watchdog",
+        tier: deviceProfileRef.current?.tier });
+      snapDashboardAction("dashboardInitStalled", { tier: deviceProfileRef.current?.tier ?? "unknown" });
+    }, INIT_WATCHDOG_MILLISECONDS);
     initPromise.then(async (data) => {
-      logIfEnabled(`[dashboard] init data received in ${Date.now() - t0}ms`);
+      clearTimeout(initWatchdogTimer);
+      logIfEnabled(`[dashboard] init data received in ${ Date.now() - t0 }ms`);
+      // onEmbedCall resolves an error envelope instead of rejecting, because mobile hosts do not reliably deliver a
+      // rejection to the embed — so this, rather than the .catch below, is where most init failures actually arrive.
       if (data?.error) {
-        setError(data.error);
-      } else {
-        setPluginData(data);
-        // Instrumentation: surface a prior OOM crash (if the last session never settled), record a
-        // baseline heap sample, and — on memory-constrained devices only — persist a render
-        // breadcrumb BEFORE the heavy widget grid mounts so a crash this session is detectable next
-        // launch. The write promise is retained so the settle-stamp can be chained after it.
-        reportPriorCrashIfAny(data.settings);
-        logMemorySample('init');
-        if (isMemoryConstrainedDevice()) {
-          breadcrumbWriteRef.current = writeRenderBreadcrumb(app, { deviceProfile: deviceProfileRef.current,
-            startedAt: breadcrumbStartedAtRef.current, widgetIds: intendedWidgetIds(data.settings) });
-        }
-        applyDashboardData(data, {
-          initDataFreshRef, initializeDomainTasks, setConfigParams,
-          setCurrentDate, setDailyVictoryValues, setMoodRatings, setPluginNoteUUID,
-          setQuarterlyPlans, setWeeklyVictoryValue });
-        dashboardSettingNoteRef.current = new DashboardSettingNote(app);
-        const t1 = Date.now();
-        logIfEnabled('[dashboard] loading DashboardSettingNote');
-        const { timeFormat: loadedTime, weekFormat: loadedWeek } = await dashboardSettingNoteRef.current.load();
-        logIfEnabled(`[dashboard] DashboardSettingNote loaded in ${Date.now() - t1}ms`);
-        if (loadedTime) setTimeFormat(loadedTime);
-        if (loadedWeek) setWeekFormat(loadedWeek);
+        const message = String(data.error);
+        capturePluginFailure(data, { action: data.errorAction || "init", source: "init-payload-error" });
+        snapDashboardAction("dashboardInitError", { path: "payload" });
+        setError(message);
+        return;
       }
-    }).catch(err => setError(err.message));
+      if (!data || typeof data !== "object") {
+        const message = "Dashboard init returned no data";
+        captureDashboardMessage(message, { action: "init", source: "init-empty" });
+        snapDashboardAction("dashboardInitError", { path: "empty" });
+        setError(message);
+        return;
+      }
+      setPluginData(data);
+      // Branches that soft-failed still produce a usable dashboard, so they never reach the error banner. Reporting
+      // them is what turns a plugin-side log nobody reads into a per-branch failure rate we can actually watch.
+      for (const failure of Array.isArray(data.initFailures) ? data.initFailures : []) {
+        capturePluginFailure(failure, { action: failure?.source || "init", source: "init-soft-fail" });
+      }
+      // Instrumentation: surface a prior OOM crash (if the last session never settled), record a
+      // baseline heap sample, and — on memory-constrained devices only — persist a render
+      // breadcrumb BEFORE the heavy widget grid mounts so a crash this session is detectable next
+      // launch. The write promise is retained so the settle-stamp can be chained after it.
+      reportPriorCrashIfAny(data.settings);
+      logMemorySample('init');
+      if (isMemoryConstrainedDevice()) {
+        breadcrumbWriteRef.current = writeRenderBreadcrumb(app, { deviceProfile: deviceProfileRef.current,
+          startedAt: breadcrumbStartedAtRef.current, widgetIds: intendedWidgetIds(data.settings) });
+      }
+      applyDashboardData(data, {
+        initDataFreshRef, initializeDomainTasks, setConfigParams,
+        setCurrentDate, setDailyVictoryValues, setMoodRatings, setPluginNoteUUID,
+        setQuarterlyPlans, setWeeklyVictoryValue });
+      dashboardSettingNoteRef.current = new DashboardSettingNote(app);
+      const t1 = Date.now();
+      logIfEnabled('[dashboard] loading DashboardSettingNote');
+      const { timeFormat: loadedTime, weekFormat: loadedWeek } = await dashboardSettingNoteRef.current.load();
+      logIfEnabled(`[dashboard] DashboardSettingNote loaded in ${ Date.now() - t1 }ms`);
+      if (loadedTime) setTimeFormat(loadedTime);
+      if (loadedWeek) setWeekFormat(loadedWeek);
+    }).catch(err => {
+      clearTimeout(initWatchdogTimer);
+      captureDashboardException(err, { action: "init", source: "init-promise-reject" });
+      snapDashboardAction("dashboardInitError", { path: "reject" });
+      setError(err?.message || String(err));
+    });
+    return () => clearTimeout(initWatchdogTimer);
   }, []);
 
   // Periodic heap sampling, active only when console logging is enabled (the DebugConsole is the

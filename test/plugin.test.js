@@ -198,6 +198,48 @@ describe('Dashboard Plugin', () => {
       expect(result.tasks).toBeDefined();
       expect(result.taskDomains).toEqual([]);
     });
+
+    it('should soft-fail mood fetch and still return init data', async () => {
+      const flakyMoodApp = {
+        ...mockApp,
+        getMoodRatings: async () => { throw new Error('mood unavailable'); },
+      };
+
+      const result = await plugin.onEmbedCall(flakyMoodApp, 'init');
+
+      expect(result.error).toBeUndefined();
+      expect(result.moodRatings).toEqual([]);
+      expect(Array.isArray(result.tasks)).toBe(true);
+      expect(result.initFailures).toMatchObject([{ message: 'mood unavailable', source: 'init-mood' }]);
+      // The stack rides along because the embed reports these to Sentry and cannot reconstruct plugin-side frames.
+      expect(typeof result.initFailures[0].stack).toBe('string');
+    });
+
+    // Soft-fail handling covers domains/mood/tasks/plans; this asserts the outer try/catch still resolves an error
+    // envelope when something throws past those guards. Mobile hosts do not reliably reject callAmplenotePlugin, so
+    // resolving is what gets the failure to the embed's error banner (and to Sentry) rather than hanging on a spinner.
+    it('should resolve an error envelope when init throws past soft-fail guards', async () => {
+      const brokenApp = {
+        ...mockApp,
+        get settings() { throw new Error('settings boom'); },
+      };
+
+      const result = await plugin.onEmbedCall(brokenApp, 'init');
+
+      expect(result).toMatchObject({ embedCallFailed: true, error: 'settings boom', errorAction: 'init' });
+      expect(typeof result.errorStack).toBe('string');
+      expect(result.tasks).toBeUndefined();
+    });
+
+    // The embed's app Proxy watches for this envelope to report per-method bridge failures, so pass-through actions
+    // must carry the same marker and action name that init does.
+    it('should resolve an error envelope naming the action when a pass-through call throws', async () => {
+      const brokenApp = { ...mockApp, navigate: async () => { throw new Error('navigate boom'); } };
+
+      const result = await plugin.onEmbedCall(brokenApp, 'navigate', 'https://www.amplenote.com/notes/abc');
+
+      expect(result).toMatchObject({ embedCallFailed: true, error: 'navigate boom', errorAction: 'navigate' });
+    });
   });
 
   describe('appOption', () => {

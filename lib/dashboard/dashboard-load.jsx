@@ -6,7 +6,12 @@ import { createRoot } from "react-dom/client";
 import { IS_DEV_ENVIRONMENT } from "constants/settings";
 import { createBrowserDevApp } from "util/browser-dev-app";
 import { publishDeviceProfileDiagnostic } from "util/device-profile";
+import { installDashboardSentryReporting, observeEmbedCall } from "util/sentry-reporting";
 import DashboardApp from "./dashboard.jsx";
+
+// Adopt the queue of any errors the loader snippet in embed-html.js recorded while this bundle was still evaluating,
+// and flush them as soon as the SDK is ready.
+installDashboardSentryReporting();
 
 // Publish device tier + viewport metrics before React mounts so the init-time read in dashboard.jsx
 // (window.__dashboardViewportDiag) surfaces real data instead of an unset stub.
@@ -50,12 +55,17 @@ if (IS_DEV_ENVIRONMENT) {
   app = createBrowserDevApp();
   initPromise = app.init();
 } else {
+  // Every widget's Amplenote API call routes through here, so this is the one place that can see a bridge call fail.
+  // observeEmbedCall watches the result and hands it straight back untouched — most callers never inspect the
+  // `{ embedCallFailed }` envelope onEmbedCall returns, and would otherwise fail silently.
   app = new Proxy({}, {
     get(_target, prop) {
       if (typeof prop === 'symbol') return undefined;
-      return (...args) => window.callAmplenotePlugin(prop, ...args);
+      return (...args) => observeEmbedCall(prop, window.callAmplenotePlugin(prop, ...args));
     },
   });
+  // init is deliberately not observed here: DashboardApp inspects and reports its payload, so wrapping it would
+  // report the same failure twice.
   initPromise = window.callAmplenotePlugin("init");
 }
 

@@ -3,6 +3,65 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-08-07 — Close the remaining embed reporting gaps (boot, bridge calls, stalled init)
+
+**Model:** Cursor Opus 5
+**Files created/modified:**
+- `lib/embed-html.js` (modified — the Sentry loader now installs window error listeners synchronously, ahead of the
+  client bundle, and queues events until `Sentry.init` runs, so a failure during module evaluation or first mount is
+  reported rather than dropped; it drains that queue itself when the client bundle is what failed)
+- `lib/util/sentry-reporting.js` (revised — queue-aware capture with tag/extra separation, `capturePluginFailure` which
+  rebuilds an Error from plugin-side frames, `observeEmbedCall` for passive bridge-call observation, and
+  `installDashboardSentryReporting`/`drainSentryQueue` to adopt and flush the loader's queue)
+- `lib/plugin.js` (modified — `onEmbedCall` resolves an `{ embedCallFailed, error, errorAction, errorStack }` envelope so
+  the embed can tell a real bridge failure from a service result carrying an `error` key, and can report a useful stack;
+  dropped the unconditional `console.error` that duplicated `logIfEnabled`)
+- `lib/dashboard/dashboard-load.jsx` (modified — the production `app` Proxy routes every call through `observeEmbedCall`,
+  giving per-method failure counts for calls whose results widgets never inspect)
+- `lib/dashboard/dashboard.jsx` (modified — init failures report with plugin-side stacks, and a 30s watchdog reports an
+  init that never settles, which previously produced an indefinite spinner and no telemetry at all)
+- `lib/data-service.js` (modified — `initFailures` records carry the stack; removed a defensive try/catch around
+  `setLoggingEnabled` that could only swallow, never help)
+- `test/sentry-reporting.test.js`, `test/plugin.test.js` (modified — cover queueing before init, stack preservation,
+  bridge observation including the "result merely has an error key" case, and the error envelope shape)
+- `build/compiled.js` (rebuilt), `AI_CONTRIBUTIONS.md` (modified — this entry)
+
+**Task:** Review the preceding Sentry work for coverage gaps, report anything that could plausibly fail without wrapping
+calls that have no failure mode, and bring comment/JSDoc width back in line with `doc/code_conventions.md`.
+**Prompt summary:** "Are there any ways you would improve the changeset — use Sentry to report any errors that could
+plausibly occur, but not wrap calls where there is no known opportunity to fail."
+**Notes:** Amplenote's `renderEmbed` fallback stays unreported on purpose: it returns static HTML with no JavaScript, and
+string concatenation has no plausible failure mode worth instrumenting. Default Sentry integrations remain disabled so
+the SDK does not wrap console/DOM/fetch on the memory-constrained devices where OOM kills already occur.
+
+---
+
+## 2026-08-07 — Mobile embed error handling + Sentry reporting
+
+**Model:** Cursor Grok 4.5
+**Files created/modified:**
+- `lib/plugin.js` (modified — keep all of `onEmbedCall` inside try/catch and always resolve
+  `{ error }` so mobile hosts that do not reject `callAmplenotePlugin` still surface failures)
+- `lib/data-service.js` (modified — soft-fail mood/tasks/plans/settings branches during init so a
+  single Amplenote API failure cannot take down the whole dashboard load)
+- `lib/util/sentry-reporting.js` (created — embed-side capture helpers over `window.Sentry`)
+- `lib/embed-html.js` (modified — optional async Sentry CDN loader when `SENTRY_DSN` is set)
+- `lib/dashboard/dashboard-load.jsx` (modified — install window error / rejection handlers)
+- `lib/dashboard/dashboard.jsx` (modified — report init `{ error }` / rejects and widget boundary
+  crashes to Sentry + Plausible `dashboardInitError`)
+- `esbuild.js`, `dev/dev-server.js`, `.env.example` (modified — inject optional `SENTRY_DSN`)
+- `test/plugin.test.js`, `test/sentry-reporting.test.js` (modified/created — soft-fail + `{ error }`
+  return path and Sentry helper coverage)
+- `AI_CONTRIBUTIONS.md` (modified — this entry)
+
+**Task:** Follow Amplenote plugin-API author guidance for mobile: never rely on thrown
+`onEmbedCall` exceptions rejecting the embed bridge; return `{ error }` and add embed-side Sentry
+for visibility into exceptions inside the plugin iframe.
+**Prompt summary:** "Adjust our mobile error handling & reporting per the suggestions from the
+author of the plugin API we are integrating with"
+
+---
+
 ## 2026-08-04 — Task Domain-specific Goal Coach and Proposed Agenda caches
 
 **Model:** OpenAI GPT-5.6

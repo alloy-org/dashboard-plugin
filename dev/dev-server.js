@@ -345,6 +345,7 @@ async function main() {
     entryNames: "bundle",
     define: {
       "process.env.NODE_ENV": '"development"',
+      "process.env.SENTRY_DSN": JSON.stringify(process.env.SENTRY_DSN || ""),
       ...devTokenDefines(),
     },
     target: ["chrome91", "firefox90", "safari15", "edge91"],

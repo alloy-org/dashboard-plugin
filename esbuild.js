@@ -19,6 +19,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const absoluteImportsPlugin = createLibImportsPlugin(path.join(__dirname, 'lib'));
 const scssPlugin = createScssPlugin({ style: "compressed" });
 
+// ------------------------------------------------------------------------------------------
+// @desc Build-time defines shared by the client IIFE and the plugin bundle (embed HTML reads
+//   SENTRY_DSN when assembling the optional CDN loader).
+// @returns {Object<string, string>} esbuild define map
+function productionDefines() {
+  return {
+    "process.env.NODE_ENV": '"production"',
+    "process.env.SENTRY_DSN": JSON.stringify(process.env.SENTRY_DSN || ""),
+  };
+}
+
 // [Claude] Task: bundle client JS + CSS in one esbuild pass; widgets import their own SCSS
 // Prompt: "refactor so widgets load their own scss instead of dashboard.scss importing everything"
 // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
@@ -29,9 +40,7 @@ const clientBuild = await esbuild.build({
   minify: true,
   write: false,
   outdir: path.join(__dirname, 'build/client'),
-  define: {
-    "process.env.NODE_ENV": '"production"',
-  },
+  define: productionDefines(),
   target: ["chrome91", "firefox90", "safari15", "edge91"],
   jsx: 'automatic',
   jsxImportSource: 'react',
@@ -84,9 +93,7 @@ const result = await esbuild.build({
   outfile: "build/compiled.js",
   packages: "external",
   platform: "browser",
-  define: {
-    "process.env.NODE_ENV": '"production"',
-  },
+  define: productionDefines(),
   jsx: 'automatic',
   jsxImportSource: 'react',
   loader: { '.jsx': 'jsx' },
