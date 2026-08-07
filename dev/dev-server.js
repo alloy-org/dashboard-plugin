@@ -12,6 +12,7 @@ import http from "http";
 import { fileURLToPath } from "url";
 import { createLibImportsPlugin } from "../lib-imports-plugin.js";
 import { createScssPlugin } from "../scss-plugin.js";
+import { buildSentryLoaderScripts } from "../lib/util/sentry-loader.js";
 import { readSettingsFile, writeSettingsFile, DEFAULT_SETTINGS_PATH, createDevApp } from "./dev-app.js";
 
 dotenv.config();
@@ -336,6 +337,35 @@ function handleNoteFindApi(req, res) {
   return true;
 }
 
+// ----------------------------------------------------------------------------------------------
+// @desc Serve dev/index.html with the shared Sentry loader injected into <head>, so the dev dashboard reports
+//   through the same path as the production embed rather than silently no-opping every capture. The snippet cannot
+//   simply live in index.html: it interpolates the DSN, which comes from .env and does not belong in a committed
+//   static file. Handled here rather than proxied to esbuild because esbuild's servedir would return the raw file.
+//   Re-read per request so edits to index.html land without restarting the server.
+// @param {http.ServerResponse} res - Response to write the assembled dev shell HTML to
+// @returns {boolean} True once the response has been handled
+// [Claude claude-opus-5[1m]] Task: load Sentry in the dev environment so it can be tested alongside everything else
+// Prompt: "Does development environment load Sentry? It seems like it should so we can test it along with the rest"
+function handleDevShell(res) {
+  const shellPath = path.join(devDir, "index.html");
+  let html;
+  try {
+    html = fs.readFileSync(shellPath, "utf8");
+  } catch (readError) {
+    console.error(`[dev] could not read ${ shellPath }:`, readError.message);
+    res.writeHead(500, { "Content-Type": "text/plain" });
+    res.end("Failed to read dev/index.html");
+    return true;
+  }
+  // Dev events land in the same Sentry project as production; the environment tag is what keeps them filterable.
+  const loaderScripts = buildSentryLoaderScripts({ dsn: process.env.SENTRY_DSN || "", environment: "dashboard-dev" });
+  const injectedHtml = loaderScripts ? html.replace("</head>", `${ loaderScripts }\n</head>`) : html;
+  res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
+  res.end(injectedHtml);
+  return true;
+}
+
 async function main() {
   const ctx = await esbuild.context({
     entryPoints: [path.join(rootDir, "lib/dashboard/dashboard-load.jsx")],
@@ -376,6 +406,11 @@ async function main() {
       sseClients.add(res);
       req.on("close", () => sseClients.delete(res));
       return;
+    }
+
+    const requestPath = req.url.split("?")[0];
+    if (requestPath === "/" || requestPath === "/index.html") {
+      if (handleDevShell(res)) return;
     }
 
     if (req.url === "/api/settings") {
@@ -440,6 +475,8 @@ async function main() {
   proxyServer.listen(3000, () => {
     console.log("[dev] server running at http://localhost:3000");
     console.log("[reload] live reload enabled");
+    if (process.env.SENTRY_DSN) console.log('[sentry] reporting enabled, environment "dashboard-dev"');
+    else console.log("[sentry] no SENTRY_DSN in .env; dashboard exceptions will not be reported");
   });
 }
 
