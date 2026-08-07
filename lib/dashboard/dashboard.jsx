@@ -45,7 +45,7 @@ import { backgroundSplashUrl } from 'util/background-splash-images';
 import { dateKeyFromDateInput, weekStartDayFromFormat, weekStartFromDateInput } from 'util/date-utility';
 import { logIfEnabled, setLoggingEnabled } from "util/log";
 import { snapDashboardAction } from "util/plausible";
-import { captureDashboardException, captureDashboardMessage, capturePluginFailure } from "util/sentry-reporting";
+import { captureDashboardException, captureDashboardMessage, capturePluginFailure, logSentryStatus } from "util/sentry-reporting";
 import { useWidgetLoadTiming } from "util/widget-timing";
 import { WidgetSizeContext } from "widget-wrapper";
 import WidgetMemoryMeasurementPopup from "widget-memory-measurement-popup";
@@ -300,6 +300,7 @@ function applyDashboardData(initialPayload, { initDataFreshRef, initializeDomain
     setCurrentDate, setDailyVictoryValues, setMoodRatings, setPluginNoteUUID,
     setQuarterlyPlans, setWeeklyVictoryValue }) {
   setLoggingEnabled(initialPayload.settings?.[SETTING_KEYS.CONSOLE_LOGGING]);
+  logSentryStatus();
   logIfEnabled(`[dashboard] applyDashboardData — tasks:${ initialPayload.tasks?.length ?? 0 } moodRatings: ${ initialPayload.moodRatings?.length ?? 0 }`);
   // [Claude claude-opus-4-8] Task: surface captured device width metrics to the on-device DebugConsole
   if (window.__dashboardViewportDiag) logIfEnabled(`[viewport] ${ JSON.stringify(window.__dashboardViewportDiag) }`);

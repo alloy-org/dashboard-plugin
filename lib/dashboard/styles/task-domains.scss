@@ -94,10 +94,6 @@ $task-domain-transition-duration: 0.15s;
     padding: $sp-xs $sp-sm;
     white-space: nowrap;
 
-    @media (max-width: 800px) {
-      display: none;
-    }
-
     &:hover {
       color: $color-navy;
     }
@@ -105,6 +101,34 @@ $task-domain-transition-duration: 0.15s;
     &:disabled {
       cursor: default;
       opacity: 0.5;
+    }
+  }
+
+  /* The icon spelling of refresh only exists for the mobile bar; wide viewports keep the worded label. */
+  .task-domains-refresh-icon {
+    display: none;
+  }
+
+  /* Reads as a button rather than a bare glyph, since on mobile it is the only way to reach the domains
+   * that collapsed out of the bar. Font size, padding, and border mirror `.task-domain-item` so the
+   * toggle stands exactly as tall as the selected domain pill beside it; the extra min-width is what
+   * makes it comfortable to tap without making it taller. */
+  .task-domains-expand {
+    align-items: center;
+    background: $color-blue-light;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    color: $color-navy;
+    cursor: pointer;
+    display: none;
+    font-size: 0.8rem;
+    justify-content: center;
+    min-width: 34px;
+    padding: $sp-xs $sp-sm;
+
+    &:hover {
+      background: $color-navy;
+      color: $color-bg-card;
     }
   }
 
@@ -120,6 +144,44 @@ $task-domain-transition-duration: 0.15s;
     .task-domains-empty {
       flex: 1 1 100%;
       font-weight: 500;
+    }
+  }
+
+  /* [Claude claude-opus-5] Task: mobile domain bar shows only the selected domain, an expand toggle, and a refresh icon */
+  /* Prompt: "hide all Task Domains behind an 'Expand' icon, besides the selected Task Domain" */
+  /* Date: 2026-08-07 | Model: claude-opus-5 */
+  /* The pills all stay in the DOM so expanding is a class flip rather than a re-render, and so the */
+  /* wide-viewport bar is untouched by these rules. */
+  @include breakpoint($breakpoint-tablet) {
+    .task-domains {
+      gap: $sp-xs;
+    }
+
+    .task-domains-list {
+      flex-wrap: wrap;
+    }
+
+    .task-domains:not(.task-domains--expanded) .task-domain-item:not(.task-domain-item--mobile-visible) {
+      display: none;
+    }
+
+    .task-domains-expand {
+      display: inline-flex;
+    }
+
+    /* Refresh is the least-reached-for control here, so it stays a muted glyph beside the bolder toggle. */
+    .task-domains-refresh {
+      font-size: 0.85rem;
+      opacity: 0.55;
+      padding: $sp-xs;
+    }
+
+    .task-domains-refresh-label {
+      display: none;
+    }
+
+    .task-domains-refresh-icon {
+      display: inline;
     }
   }
 }

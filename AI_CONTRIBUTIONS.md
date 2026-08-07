@@ -3,6 +3,30 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-08-07 — Collapse the mobile Task Domain bar behind an expand toggle
+
+**Model:** claude-opus-5[1m]
+**Files created/modified:**
+- `lib/dashboard/task-domains.jsx` (modified — an `expanded` state plus a `RefreshDomainsButton` helper; every pill
+  still renders, with the selected one (or the first, when the active uuid matches nothing) marked
+  `task-domain-item--mobile-visible`, so collapsing is a class flip rather than a conditional render. Picking a
+  domain collapses the bar again)
+- `lib/dashboard/styles/task-domains.scss` (modified — a `breakpoint($breakpoint-tablet)` block hides the unselected
+  pills, reveals the expand toggle, and swaps the worded refresh label for a muted glyph. The toggle mirrors
+  `.task-domain-item` font size, padding, and border so it is exactly as tall as the pill beside it)
+- `test/task-domains-mobile.test.js` (created — mobile-visible marking and its fallback, the expand/collapse class
+  flip, collapse-on-select, no toggle for a single domain, and both refresh spellings)
+- `build/compiled.js` (rebuilt), `AI_CONTRIBUTIONS.md` (modified — this entry)
+
+**Task:** On mobile, show only the selected Task Domain, an expand icon that reveals the rest, and a refresh icon as
+the least prominent of the three.
+**Prompt summary:** "hide all Task Domains behind an 'Expand' icon, besides the selected Task Domain" — followed by
+"that expand icon is very tiny indeed" and "make it the same height as the selected task domain next to it".
+**Notes:** Verified in the dev server at a 400px viewport: collapsed bar, expanded bar, collapse-on-select, and an
+unchanged 1400px desktop bar.
+
+---
+
 ## 2026-08-07 — Close the remaining embed reporting gaps (boot, bridge calls, stalled init)
 
 **Model:** Cursor Opus 5
