@@ -32,7 +32,7 @@ $proposed-agenda-transition: 0.12s;
   .proposed-agenda-mobile-date {
     color: $color-text-muted;
     display: none;
-    font-size: 12px;
+    font-size: 14px;
     margin: 0 0 8px;
   }
 
@@ -146,16 +146,12 @@ $proposed-agenda-transition: 0.12s;
   }
 
   .proposed-agenda-title-line {
-    align-items: flex-start;
-    display: flex;
-    gap: 5px;
+    display: block;
   }
 
   .proposed-agenda-text {
     color: $color-text;
-    flex: 1 1 auto;
     font-weight: 600;
-    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
   }
@@ -194,12 +190,16 @@ $proposed-agenda-transition: 0.12s;
   }
 
   .proposed-agenda-add {
+    align-items: center;
     background: $color-bg-card;
     border: 1px solid $color-border;
     border-radius: $proposed-agenda-radius;
     color: $color-text;
     cursor: pointer;
+    display: flex;
+    flex-direction: column;
     font-size: 0.8em;
+    gap: 1px;
     padding: 5px 10px;
     white-space: nowrap;
 
@@ -207,6 +207,14 @@ $proposed-agenda-transition: 0.12s;
       border-color: $color-link;
       color: $color-link;
     }
+  }
+
+  /* [GPT-5.6 Sol] Task: group proposal duration with its scheduling action instead of floating it in the row */
+  .proposed-agenda-add-duration {
+    color: $color-text-secondary;
+    font-size: 0.9em;
+    font-weight: 400;
+    line-height: 1;
   }
 
   .proposed-agenda-dismiss {
@@ -339,7 +347,13 @@ $proposed-agenda-transition: 0.12s;
     }
 
     .proposed-agenda-mobile-date {
-      display: block;
+      align-items: center;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .proposed-agenda-controls .proposed-agenda-model-change {
+      display: none;
     }
 
     .proposed-agenda-item-main {
@@ -364,10 +378,11 @@ $proposed-agenda-transition: 0.12s;
       color: $color-link;
       cursor: pointer;
       display: inline-flex;
-      flex: 0 0 auto;
       font-size: 14px;
       line-height: 1;
+      margin-left: 5px;
       padding: 1px;
+      vertical-align: middle;
     }
   }
 

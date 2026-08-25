@@ -141,11 +141,13 @@ function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, ti
               <span className="proposed-agenda-scheduled-badge" title="Already scheduled today">Scheduled</span>
             </span>
           : <>
-              { row.durationMinutes
-                ? <span className="proposed-agenda-duration">{ `${ row.durationMinutes }m` }</span> : null }
               <span className="proposed-agenda-actions">
                 <button className="proposed-agenda-add" title={ `Schedule for ${ row.startTime } today` }
-                  onClick={ (event) => onSchedule(event, row) }>📅 Add to schedule</button>
+                  onClick={ (event) => onSchedule(event, row) }>
+                  <span>📅 &nbsp;Add to schedule</span>
+                  { row.durationMinutes
+                    ? <span className="proposed-agenda-add-duration">{ `${ row.durationMinutes }m` } duration</span> : null }
+                </button>
                 <button className="proposed-agenda-dismiss" title="Dismiss this suggestion"
                   onClick={ (event) => onDismiss(event, row) }>×</button>
               </span>
@@ -310,7 +312,13 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   return (
     <>
       <WidgetWrapper headerActions={ reseedAction } subtitle={ dateLabel } widgetId={ WIDGET_ID }>
-        { dateLabel ? <p className="proposed-agenda-mobile-date">{ dateLabel }</p> : null }
+        { dateLabel
+          ? <div className="proposed-agenda-mobile-date">
+              <span>{ dateLabel }</span>
+              <button className="proposed-agenda-model-change" onClick={ onChangeModel }
+                title="Change AI provider" type="button">⇅</button>
+            </div>
+          : null }
         <PriorityModelBar modelName={ _modelName(modelProviderEm) } onChangeModel={ onChangeModel }
           onPriorityChange={ onPriorityChange } priorityKey={ priorityKey } />
         <div className="proposed-agenda-list" ref={ listRef }>
