@@ -104,36 +104,56 @@ function PriorityModelBar({ modelName, onChangeModel, onPriorityChange, priority
 // @param {object} props - { onDismiss, onOpenNote, onSchedule, row, scheduledKeys, timeFormat }.
 // [Claude claude-opus-4-8 (1M context)] Task: render an obligation or proposed-activity row
 function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, timeFormat }) {
+  const [reasonExpanded, setReasonExpanded] = useState(false);
   const isScheduled = row.isObligation || scheduledKeys.has(activityKey(row));
   const titleHtml = amplenoteMarkdownRender(row.title) || row.title;
   const hasNote = !!(row.noteUuid || row.taskUuid);
+  const hasReason = !row.isObligation && !!row.reason;
   return (
     <div className={ `proposed-agenda-item${ isScheduled ? " proposed-agenda-item--scheduled" : "" }` }>
-      <span className="proposed-agenda-time-col">
-        <span className={ `proposed-agenda-time${ isScheduled ? " proposed-agenda-time--muted" : "" }` }>
-          { formatClockLabel(row.startMinutes, timeFormat) }</span>
-        {
-          hasNote
-          ? <a href="#" className="proposed-agenda-note-link" title="Open the note for this task" onClick={ (event) => onOpenNote(event, row) }>Note</a>
-          : null
-        }
-      </span>
-      <div className="proposed-agenda-content">
-        <span className="proposed-agenda-text" dangerouslySetInnerHTML={ { __html: titleHtml } } />
-        { !row.isObligation && row.reason
-          ? <span className="proposed-agenda-reason">{ row.reason }</span> : null }
-      </div>
-      { row.durationMinutes
-        ? <span className="proposed-agenda-duration">{ `${ row.durationMinutes }m` }</span> : null }
-      { isScheduled
-        ? <span className="proposed-agenda-scheduled-badge" title="Already scheduled today">Scheduled</span>
-        : <span className="proposed-agenda-actions">
-            <button className="proposed-agenda-add" title={ `Schedule for ${ row.startTime } today` }
-              onClick={ (event) => onSchedule(event, row) }>📅 Add to schedule</button>
-            <button className="proposed-agenda-dismiss" title="Dismiss this suggestion"
-              onClick={ (event) => onDismiss(event, row) }>×</button>
+      <div className="proposed-agenda-item-main">
+        <span className="proposed-agenda-time-col">
+          <span className={ `proposed-agenda-time${ isScheduled ? " proposed-agenda-time--muted" : "" }` }>
+            { formatClockLabel(row.startMinutes, timeFormat) }</span>
+          {
+            hasNote
+            ? <a href="#" className="proposed-agenda-note-link" title="Open the note for this task" onClick={ (event) => onOpenNote(event, row) }>Note</a>
+            : null
+          }
+        </span>
+        <div className="proposed-agenda-content">
+          <span className="proposed-agenda-title-line">
+            <span className="proposed-agenda-text" dangerouslySetInnerHTML={ { __html: titleHtml } } />
+            { hasReason
+              ? <button aria-expanded={ reasonExpanded }
+                  aria-label={ `${ reasonExpanded ? "Hide" : "Show" } why this task was proposed` }
+                  className="proposed-agenda-reason-toggle" onClick={ () => setReasonExpanded(expanded => !expanded) }
+                  title={ `${ reasonExpanded ? "Hide" : "Show" } why this task was proposed` }
+                  type="button">ⓘ</button>
+              : null }
           </span>
-      }
+          { hasReason ? <span className="proposed-agenda-reason proposed-agenda-reason--desktop">{ row.reason }</span> : null }
+        </div>
+        { isScheduled
+          ? <span className="proposed-agenda-scheduled-meta">
+              { row.durationMinutes
+                ? <span className="proposed-agenda-duration">{ `${ row.durationMinutes }m` }</span> : null }
+              <span className="proposed-agenda-scheduled-badge" title="Already scheduled today">Scheduled</span>
+            </span>
+          : <>
+              { row.durationMinutes
+                ? <span className="proposed-agenda-duration">{ `${ row.durationMinutes }m` }</span> : null }
+              <span className="proposed-agenda-actions">
+                <button className="proposed-agenda-add" title={ `Schedule for ${ row.startTime } today` }
+                  onClick={ (event) => onSchedule(event, row) }>📅 Add to schedule</button>
+                <button className="proposed-agenda-dismiss" title="Dismiss this suggestion"
+                  onClick={ (event) => onDismiss(event, row) }>×</button>
+              </span>
+            </>
+        }
+      </div>
+      { hasReason && reasonExpanded
+        ? <div className="proposed-agenda-reason proposed-agenda-reason--mobile">{ row.reason }</div> : null }
     </div>
   );
 }
@@ -289,7 +309,8 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
 
   return (
     <>
-      <WidgetWrapper subtitle={ dateLabel } widgetId={ WIDGET_ID } headerActions={ reseedAction }>
+      <WidgetWrapper headerActions={ reseedAction } subtitle={ dateLabel } widgetId={ WIDGET_ID }>
+        { dateLabel ? <p className="proposed-agenda-mobile-date">{ dateLabel }</p> : null }
         <PriorityModelBar modelName={ _modelName(modelProviderEm) } onChangeModel={ onChangeModel }
           onPriorityChange={ onPriorityChange } priorityKey={ priorityKey } />
         <div className="proposed-agenda-list" ref={ listRef }>

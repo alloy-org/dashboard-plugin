@@ -3,6 +3,7 @@
  *   schedule links and a bottom approve button"
  */
 
+@use 'breakpoints' as *;
 @use 'theme-tokens' as *;
 
 $proposed-agenda-radius: 6px;
@@ -25,6 +26,14 @@ $proposed-agenda-transition: 0.12s;
     display: flex;
     gap: 8px;
     padding-bottom: 10px;
+  }
+
+  /* [GPT-5.6 Sol] Task: place the agenda date in the body on phone-sized screens */
+  .proposed-agenda-mobile-date {
+    color: $color-text-muted;
+    display: none;
+    font-size: 12px;
+    margin: 0 0 8px;
   }
 
   .proposed-agenda-priority-label {
@@ -80,16 +89,19 @@ $proposed-agenda-transition: 0.12s;
 
   /* [Claude claude-opus-4-8 (1M context)] Task: hairline-separated row layout (time, content, duration, actions) */
   .proposed-agenda-item {
-    align-items: flex-start;
     border-bottom: 1px solid $color-border;
-    display: flex;
-    gap: 10px;
     padding: 10px 2px;
     transition: opacity $proposed-agenda-transition ease;
 
     &--scheduled {
       opacity: 0.6;
     }
+  }
+
+  .proposed-agenda-item-main {
+    align-items: flex-start;
+    display: flex;
+    gap: 10px;
   }
 
   /* [Claude claude-opus-4-8 (1M context)] Task: stack the timestamp and its "Note" link in one column */
@@ -133,9 +145,17 @@ $proposed-agenda-transition: 0.12s;
     min-width: 0;
   }
 
+  .proposed-agenda-title-line {
+    align-items: flex-start;
+    display: flex;
+    gap: 5px;
+  }
+
   .proposed-agenda-text {
     color: $color-text;
+    flex: 1 1 auto;
     font-weight: 600;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
   }
@@ -146,11 +166,23 @@ $proposed-agenda-transition: 0.12s;
     line-height: 1.35;
   }
 
+  .proposed-agenda-reason--mobile,
+  .proposed-agenda-reason-toggle {
+    display: none;
+  }
+
   .proposed-agenda-duration {
     color: $color-text-secondary;
     flex: 0 0 auto;
     font-size: 0.8em;
-    padding-top: 8px;
+  }
+
+  /* [GPT-5.6 Sol] Task: align scheduled-task duration and status labels on one centerline */
+  .proposed-agenda-scheduled-meta {
+    align-items: center;
+    display: flex;
+    flex: 0 0 auto;
+    gap: 8px;
   }
 
   /* [Claude claude-opus-4-8 (1M context)] Task: per-row Add-to-schedule + dismiss controls */
@@ -198,7 +230,7 @@ $proposed-agenda-transition: 0.12s;
     color: $color-text-secondary;
     flex: 0 0 auto;
     font-size: 0.76em;
-    padding: 5px 10px;
+    padding: 0 10px;
     white-space: nowrap;
   }
 
@@ -293,6 +325,50 @@ $proposed-agenda-transition: 0.12s;
     border-top-color: $color-link;
     height: 28px;
     width: 28px;
+  }
+
+  /* [GPT-5.6 Sol] Task: use compact, expandable proposal explanations on mobile */
+  @include breakpoint($breakpoint-large-phone) {
+    .widget-title__label {
+      overflow: visible;
+      text-overflow: clip;
+    }
+
+    .widget-title__subtitle {
+      display: none;
+    }
+
+    .proposed-agenda-mobile-date {
+      display: block;
+    }
+
+    .proposed-agenda-item-main {
+      gap: 8px;
+    }
+
+    .proposed-agenda-reason--desktop {
+      display: none;
+    }
+
+    .proposed-agenda-reason--mobile {
+      background: rgba($color-bg-page, 0.55);
+      border-radius: $proposed-agenda-radius;
+      display: block;
+      margin: 8px 0 0 60px;
+      padding: 8px 10px;
+    }
+
+    .proposed-agenda-reason-toggle {
+      background: transparent;
+      border: 0;
+      color: $color-link;
+      cursor: pointer;
+      display: inline-flex;
+      flex: 0 0 auto;
+      font-size: 14px;
+      line-height: 1;
+      padding: 1px;
+    }
   }
 
   @keyframes proposed-agenda-spin {
