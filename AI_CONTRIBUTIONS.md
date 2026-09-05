@@ -3,6 +3,34 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-09-05 — Record Proposed Agenda approvals/rejections and feed them back to the LLM
+
+**Model:** Claude claude-opus-5[1m]
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda-decision-log.js` (created) — Archived, Task-Domain-scoped note holding one month
+  heading + table per month (`| DateTime | Approved/rejected | Task suggested | Proposed agenda theme or prompt |`),
+  with append (de-duplicated), parse, and a trailing-two-month markdown read for the prompt.
+- `lib/dashboard/proposed-agenda-archive.js` — `updateProposedTaskStatuses` now returns the keys whose status
+  actually changed, so a decision is logged exactly once per real transition.
+- `lib/dashboard/proposed-agenda-llm-generator.js` — Every widget schedule/approve/dismiss writes its decision rows.
+- `lib/dashboard/proposed-agenda-service.js` — Replays the last two months of decisions into the schedule prompt,
+  and detects suggestions accepted outside the widget (the calendar reports no accept callback) by noticing a
+  still-pending cached suggestion whose task has since been committed to the day.
+- `lib/util/date-utility.js`, `lib/dashboard/energy-per-habit-analysis.js` — Moved `monthKeyFromMonthLabel` /
+  `monthLabelFromMonthKey` into the shared date utility (re-exported for habit callers) so the host-side decision
+  log does not import the habit analysis module.
+- `test/proposed-agenda-decision-log.test.js`, `test/proposed-agenda-decision-prompt.test.js` (created) — Note
+  naming/format, monthly sections, de-duplication, pipe escaping, the two-month look-back in the prompt, and
+  calendar-side approval detection.
+
+**Task:** Keep a durable record of which Proposed Agenda suggestions the user approved and rejected, and let the
+LLM learn from the last two months of it.
+**Validation:** `npm run build` succeeded; the full Jest suite passed 428/429 (the one failure, a live-LLM
+`dream-task-service` plan-name assertion, fails identically on the unmodified tree), plus the host-boundary and
+production-bundle smoke tests.
+
+---
+
 ## 2026-09-05 — Remove the production React require and log calendar suggestion requests
 
 **Model:** OpenAI GPT-6
