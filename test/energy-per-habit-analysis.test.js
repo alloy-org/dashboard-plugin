@@ -6,10 +6,9 @@
  */
 import {
   aggregateMonthlyHabits, analyzeHabitMoodDeltas, computeMonthlyAggregates, formatDelta, habitGroupKey,
-  isHabitTask, leadingEmoji, monthKeyFromMonthLabel, monthLabelFromMonthKey, moodByDayFromRatings,
-  stripLeadingEmoji, trailingMonthKeys,
+  isHabitTask, leadingEmoji, moodByDayFromRatings, stripLeadingEmoji, trailingMonthKeys,
 } from "energy-per-habit-analysis";
-import { dateKeyFromDateInput } from "util/date-utility";
+import { dateKeyFromDateInput, monthKeyFromMonthLabel, monthLabelFromMonthKey } from "util/date-utility";
 
 const DAY = 86400;
 

@@ -11,7 +11,8 @@ import { fileURLToPath } from "url";
 import { createDevApp } from "../dev/dev-app.js";
 import { loadEnergyPerHabit } from "energy-per-habit-service";
 import { HABIT_CACHE_NOTE_NAME } from "energy-per-habit-cache";
-import { monthLabelFromMonthKey, monthKeyFromDate } from "energy-per-habit-analysis";
+import { monthKeyFromDate } from "energy-per-habit-analysis";
+import { monthLabelFromMonthKey } from "util/date-utility";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
