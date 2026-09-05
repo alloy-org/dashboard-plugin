@@ -16,6 +16,10 @@ conventions and best practices, **You MUST also follow the standards outlined in
 
 ---
 
+# 0. Don't make commits
+
+After changing code, leave it to the human to review and craft an appropriate commit message.
+
 # 1. Document ALL Non-Trivial Functions with JSDoc
 
 Add a structured comment directly above every function, class, method, or meaningful
@@ -150,6 +154,25 @@ To run a specific test file or pattern:
 ```bash
 NODE_OPTIONS=--experimental-vm-modules npx jest --testPathPattern='dream-task' --no-coverage
 ```
+
+## 6. Keep React out of the host plugin
+
+`lib/plugin.js` runs in Amplenote's host environment, which has no `require`, React, or browser DOM.
+Every module it imports, including indirect dependencies of plugin actions, must be host-compatible.
+
+- NEVER import from `lib/hooks/`, JSX/TSX components, `react`, or `react-dom` into the host dependency graph.
+  This also applies when importing only a plain helper exported from a hook or component file.
+- Put shared logic in React-free utilities or service modules. Hooks and components may import those modules;
+  shared modules must not import hooks or components. Pass required data and the app interface explicitly.
+- Plain `.js` services under `lib/dashboard/` may be shared if their entire dependency graph is host-compatible.
+  The React client reaches the host only as the prebuilt `client-bundle` payload used by the embed HTML.
+- Do not silence boundary errors by bundling React into the host, adding a `require` shim, stripping generated
+  helper text, or disabling the guard. Move the shared logic to the correct layer.
+- After changing host imports or shared services, run `npm run build` and the production bundle smoke test:
+  `NODE_OPTIONS=--experimental-vm-modules npx jest --runInBand --runTestsByPath test/production-plugin.test.js --no-coverage`.
+
+`host-plugin-boundary.js` checks the full esbuild dependency graph before writing `build/compiled.js`, including
+inputs removed by tree shaking. See `doc/code_conventions.md` for an import example.
 
 ---
 
