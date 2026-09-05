@@ -9,8 +9,9 @@ import NoConfigUpsell from "no-config-upsell";
 import { pluginSettings, updatePluginSetting } from "plugin-data";
 import { PROPOSED_TASK_STATUS } from "proposed-agenda-archive";
 import { DEFAULT_PRIORITY_KEY, PROPOSED_AGENDA_PRIORITY_OPTIONS } from "proposed-agenda-priority";
-import { activityKey, approveAllProposed, mergedAgendaRows, pendingCount, recordProposedTaskStatus,
+import { activityKey, approveAllProposed, mergedAgendaRows, pendingCount, recordProposedRowStatuses,
   runProposedAgendaGeneration, scheduleProposedRow } from "proposed-agenda-llm-generator";
+import { agendaRowsGroupedByDay } from "proposed-agenda-range";
 import { AMPLE_AGENT_PRO_NOTE_NAME } from "providers/ai-provider-settings";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -161,15 +162,18 @@ function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, ti
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Proposed Agenda widget — derives today's immovable obligations, asks the configured LLM to fill the
-//   gaps for the selected "Today's priority", and lets the user schedule/dismiss each proposal or the whole set.
-// @param {object} props - { app, calendarEvents, currentDate, defaultNoteUuid, providerApiKey, providerEm,
-//   taskDomainName, taskDomainUUID, timeFormat }.
-export default function ProposedAgendaWidget({ app, calendarEvents, currentDate, defaultNoteUuid, providerApiKey,
-    providerEm, taskDomainName, taskDomainUUID, timeFormat }) {
+// @desc Render obligations and LLM proposals for one day or an optional calendar range.
+// @param {object} props - { app, calendarEvents, currentDate, dateRange, defaultNoteUuid, providerApiKey,
+//   providerEm, taskDomainName, taskDomainUUID, timeFormat }.
+//   - {object|null} dateRange - Optional { endAt, startAt } unix-second window.
+export default function ProposedAgendaWidget({ app, calendarEvents, currentDate, dateRange = null, defaultNoteUuid,
+    providerApiKey, providerEm, taskDomainName, taskDomainUUID, timeFormat }) {
   // The widget's persisted "Today's priority" and AI-provider choices, seeded from the same SETTING_KEYS
   const persistedPriorityKey = pluginSettings()[SETTING_KEYS.PROPOSED_AGENDA_PRIORITY] || null;
   const persistedProviderEm = pluginSettings()[SETTING_KEYS.PROPOSED_AGENDA_LLM] || null;
+
+  // Key the range by value so equivalent object literals do not regenerate.
+  const dateRangeKey = dateRange ? `${ dateRange.startAt }-${ dateRange.endAt }` : null;
 
   const [approving, setApproving] = useState(false);
   const [ampleAgentProAvailable, setAmpleAgentProAvailable] = useState(false);
@@ -200,11 +204,12 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   // providerApiKey is included so that adding an API key in Dashboard Settings (which leaves providerEm
   // unchanged) still re-triggers generation, letting the widget recover from the no-provider state.
   const runGeneration = useCallback(({ forceRegenerate = false } = {}) => runProposedAgendaGeneration(app,
-    { calendarEvents, currentDate, domainName: taskDomainName, domainUuid: taskDomainUUID, forceRegenerate, priorityKey,
-    providerEm: modelProviderEm, setApproving, setAttribution, setDateLabel, setDismissedKeys, setError,
+    { calendarEvents, currentDate, dateRange, domainName: taskDomainName, domainUuid: taskDomainUUID, forceRegenerate,
+    priorityKey, providerEm: modelProviderEm, setApproving, setAttribution, setDateLabel, setDismissedKeys, setError,
     setIsFutureDay, setLoading, setObligations, setProposed, setRecordDomainName, setRecordDomainUuid,
     setRecordProviderEm, setScheduledKeys }),
-    [app, calendarEvents, currentDate, modelProviderEm, priorityKey, providerApiKey, taskDomainName, taskDomainUUID]);
+    [app, calendarEvents, currentDate, dateRangeKey, modelProviderEm, priorityKey, providerApiKey, taskDomainName,
+    taskDomainUUID]);
 
   const onChangeModel = useCallback(() => setProviderPopupOpen(true), []);
 
@@ -231,13 +236,14 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   const onDismiss = useCallback((event, row) => {
     event.preventDefault();
     setDismissedKeys(previous => new Set(previous).add(activityKey(row)));
-    recordProposedTaskStatus(app, llmDateRecord, [activityKey(row)], PROPOSED_TASK_STATUS.DISMISSED);
+    recordProposedRowStatuses(app, llmDateRecord, [row], PROPOSED_TASK_STATUS.DISMISSED);
   }, [app, llmDateRecord]);
 
   const onDismissAll = useCallback(() => {
-    const dismissing = proposed.filter(a => !scheduledKeys.has(activityKey(a))).map(activityKey);
-    setDismissedKeys(previous => { const next = new Set(previous); dismissing.forEach(key => next.add(key)); return next; });
-    recordProposedTaskStatus(app, llmDateRecord, dismissing, PROPOSED_TASK_STATUS.DISMISSED);
+    const dismissing = proposed.filter(a => !scheduledKeys.has(activityKey(a)));
+    const dismissingKeys = dismissing.map(activityKey);
+    setDismissedKeys(previous => new Set([...previous, ...dismissingKeys]));
+    recordProposedRowStatuses(app, llmDateRecord, dismissing, PROPOSED_TASK_STATUS.DISMISSED);
   }, [app, llmDateRecord, proposed, scheduledKeys]);
 
   const onSchedule = useCallback((event, row) => {
@@ -295,11 +301,13 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
     return <MessageState message={ error.error } onRetry={ () => runGeneration() } />;
   }
 
-  // For today's agenda, hide proposed rows whose start time has already passed so the user only sees the part of
-  // the day still ahead (e.g. at noon, only 12pm onward). A future-day agenda has nothing elapsed, so show it all.
+  // Hide elapsed proposals only on today; the midnight value also orders legacy rows without a day stamp.
   const now = new Date();
+  const todayMidnightSeconds = Math.floor(new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() / 1000);
   const hidePastBeforeMinutes = isFutureDay ? null : now.getHours() * 60 + now.getMinutes();
-  const rows = mergedAgendaRows(obligations, proposed, dismissedKeys, { hidePastBeforeMinutes });
+  const rows = mergedAgendaRows(obligations, proposed, dismissedKeys, { fallbackMidnightSeconds: todayMidnightSeconds,
+    hidePastBeforeMinutes, hidePastOnMidnightSeconds: todayMidnightSeconds });
+  const dayGroups = agendaRowsGroupedByDay(rows);
   if (rows.length === 0) {
     return <MessageState message="No schedule could be proposed yet." onRetry={ () => runGeneration() } />;
   }
@@ -322,9 +330,15 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
         <PriorityModelBar modelName={ _modelName(modelProviderEm) } onChangeModel={ onChangeModel }
           onPriorityChange={ onPriorityChange } priorityKey={ priorityKey } />
         <div className="proposed-agenda-list" ref={ listRef }>
-          { rows.map(row => (
-            <ActivityRow key={ activityKey(row) } onDismiss={ onDismiss } onOpenNote={ onOpenNote }
-              onSchedule={ onSchedule } row={ row } scheduledKeys={ scheduledKeys } timeFormat={ timeFormat } />
+          { dayGroups.map(dayGroup => (
+            <div className="proposed-agenda-day-group" key={ dayGroup.targetMidnightSeconds ?? "undated" }>
+              { dayGroups.length > 1 && dayGroup.dayHeading
+                ? <h4 className="proposed-agenda-day-heading">{ dayGroup.dayHeading }</h4> : null }
+              { dayGroup.rows.map(row => (
+                <ActivityRow key={ activityKey(row) } onDismiss={ onDismiss } onOpenNote={ onOpenNote }
+                  onSchedule={ onSchedule } row={ row } scheduledKeys={ scheduledKeys } timeFormat={ timeFormat } />
+              )) }
+            </div>
           )) }
         </div>
         <div className="proposed-agenda-footer">

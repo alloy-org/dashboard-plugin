@@ -3,6 +3,74 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-09-05 — Simplify Proposed Agenda calendar-range integration
+
+**Model:** OpenAI GPT-5.6
+**Files modified:**
+- `lib/dashboard/proposed-agenda-range.js` — Reused shared date parsing/midnight helpers, applied the day cap after
+  weekend filtering, inlined the single-use heading formatter, and shortened method documentation.
+- `lib/dashboard/proposed-agenda-suggest-action.js` — Inlined single-use priority/result helpers, removed an
+  unnecessary merge, and prevented a supplied past-only range from falling back outside the visible window.
+- `lib/dashboard/proposed-agenda-llm-generator.js` — Made `proposedTaskKey` the shared row-key implementation and
+  inlined single-use status-writing and state-application helpers.
+- `lib/dashboard/proposed-agenda-archive.js`, `lib/dashboard/proposed-agenda-service.js`,
+  `lib/dashboard/proposed-agenda.jsx`, and `lib/plugin.js` — Trimmed duplicated implementation commentary.
+- `test/proposed-agenda-date-range.test.js` — Added regressions for weekend-aware capping and past-only ranges.
+- `build/compiled.js` — Rebuilt generated plugin output.
+
+**Task:** Reduce duplication and commentary without changing the Proposed Agenda calendar integration's features.
+
+---
+
+## 2026-09-05 — Expose the Proposed Agenda through Amplenote's `suggestScheduledTasks` action
+
+**Model:** claude-opus-5[1m]
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda-range.js` (created — turns a `{ endAt, startAt }` calendar window into the days
+  worth planning (`proposedAgendaDaysInRange`: past days dropped, weekends skipped unless the window holds nothing
+  else, capped), drives `generateProposedAgenda` once per day with an `onDayComplete` hook, stamps each day's
+  obligations with `targetMidnightSeconds`, and merges the per-day results back into the single shape the widget
+  renders. Also groups merged rows into per-day blocks for the widget's day headings)
+- `lib/dashboard/proposed-agenda-suggest-action.js` (created — the plugin-side action body: seeds the settings
+  singleton from plugin-side `app.settings`, reads the "Today's priority" theme the user last chose on the
+  Dashboard, builds each day's immovable obligations from the host's `scheduledTasks`, publishes each day through
+  `app.context.setScheduledTasks` as it lands, and returns `{ endAt, explanation, startAt, taskUUID|task }`)
+- `lib/plugin.js` (modified — the `suggestScheduledTasks` action, which never throws: a failure degrades to no
+  suggestions rather than surfacing an error inside the user's calendar)
+- `lib/dashboard/proposed-agenda.jsx` (modified — an optional `dateRange` prop threaded into generation, keyed off a
+  primitive so a fresh object literal cannot re-trigger a range of LLM calls; rows render as per-day blocks, headed
+  only when more than one day is planned; schedule/dismiss decisions route to the record for the row's own day)
+- `lib/dashboard/proposed-agenda-llm-generator.js` (modified — `activityKey` is day-aware, `mergedAgendaRows` orders
+  by day before time and confines the "already elapsed" cutoff to today, `runProposedAgendaGeneration` plans every
+  day of an optional range, and `recordProposedRowStatuses` writes each row's status to its own day's record. Also
+  adds the `logIfEnabled` import the file used but never imported)
+- `lib/dashboard/proposed-agenda-archive.js` (modified — `proposedTaskKey` gained the same day prefix, so restored
+  scheduled/dismissed decisions still line up with the rows on screen)
+- `lib/dashboard/proposed-agenda-service.js` (modified — every validated activity now carries a duration (30m when
+  the model omits one) and a one-sentence explanation (a slot-based sentence when the model omits one), and the
+  prompt marks `startTime`, `durationMinutes`, and `reason` as required)
+- `lib/dashboard/styles/proposed-agenda.scss` (modified — day-block spacing and the uppercase day heading)
+- `test/proposed-agenda-date-range.test.js` (created — window expansion (weekday/weekend/past/cap/absent), the
+  suggestion contract (start, duration-derived end, task, explanation), theme selection and its default, progressive
+  publishing, obligation avoidance, the duration/explanation fallbacks, and day-aware keying/ordering/grouping)
+- `test/proposed-agenda-widget-range.test.js` (created — the widget renders one un-headed block without a range,
+  one headed block per day with one, a duration-bearing row per day, and does not regenerate on an equivalent range)
+- `build/compiled.js` (rebuilt), `AI_CONTRIBUTIONS.md` (modified — this entry)
+
+**Task:** Integrate the Proposed Agenda with `suggestScheduledTasks` so Amplenote's calendar can ask the plugin what
+to do with the days it is showing.
+**Prompt summary:** "Adapt the proposed-agenda.jsx to accept an optional date range, which is passed from
+suggestScheduledTasks; use the theme as was last specified on the Dashboard to inform the nature of the suggestions;
+ensure that each suggested task has both a start time and duration; include a one-sentence explanation for why the
+suggestion is worth affirming; use app.context.setScheduledTasks to progressively add the tasks."
+**Notes:** The calendar and the widget share one generator, so they cannot drift on theme, obligation avoidance, or
+the archived record of what was proposed. The window is planned at most 3 days deep from the action (one LLM round
+trip per day, with the host waiting), which is why the progressive publish matters: day one reaches the calendar
+while later days are still drafting. Full suite: 403 passing; the one failure
+(`dream-task-service.test.js` plan-note name pattern) predates this change and is unrelated.
+
+---
+
 ## 2026-08-07 — Collapse the mobile Task Domain bar behind an expand toggle
 
 **Model:** claude-opus-5[1m]

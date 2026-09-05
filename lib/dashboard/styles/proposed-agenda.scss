@@ -87,6 +87,19 @@ $proposed-agenda-transition: 0.12s;
     margin-top: 4px;
   }
 
+  .proposed-agenda-day-group + .proposed-agenda-day-group {
+    margin-top: 10px;
+  }
+
+  .proposed-agenda-day-heading {
+    color: $color-text-secondary;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    margin: 6px 0 2px;
+    text-transform: uppercase;
+  }
+
   /* [Claude claude-opus-4-8 (1M context)] Task: hairline-separated row layout (time, content, duration, actions) */
   .proposed-agenda-item {
     border-bottom: 1px solid $color-border;
