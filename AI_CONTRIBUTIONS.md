@@ -3,6 +3,28 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-09-05 — Remove the production React require and log calendar suggestion requests
+
+**Model:** OpenAI GPT-6
+**Files created/modified:**
+- `lib/util/calendar-utility.js`, `lib/hooks/use-external-calendar-events.js` — Moved calendar normalization
+  helpers out of the React hook so host-side services can use them without importing React.
+- `lib/dashboard/proposed-agenda-obligations.js`, `lib/recommendation-context/day-recommendation-context.js`,
+  `test/calendar-events.test.js` — Updated normalization imports to the shared utility.
+- `esbuild.js` — Reject external runtime imports in the host bundle before writing the production artifact.
+- `lib/plugin.js` — Log incoming suggestion ranges, task domain, and task counts through the console logging setting.
+- `test/production-plugin.test.js` (created) — Evaluate the shipped bundle without a module loader and verify
+  suggestion request logging with logging enabled and disabled.
+- `build/compiled.js` — Rebuilt the production plugin without the dynamic require helper.
+
+**Cause:** Commit `766ee89` introduced the host-side suggestion action, which transitively imported calendar
+normalization from a React hook. The host build externalizes packages, so esbuild emitted `__require("react")`.
+**Task:** Remove the production-breaking dynamic require at its source and add suggestion request diagnostics.
+**Validation:** Production build succeeded; 103 tests passed across 11 related suites, including isolated bundle
+evaluation without `require`. The existing live-LLM integration suite was excluded.
+
+---
+
 ## 2026-09-05 — Simplify Proposed Agenda calendar-range integration
 
 **Model:** OpenAI GPT-5.6

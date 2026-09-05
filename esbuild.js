@@ -9,6 +9,7 @@ import esbuild from "esbuild"
 import fs from "fs"
 import path from "path"
 import { fileURLToPath } from "url"
+import { assertHostPluginBoundary } from "./host-plugin-boundary.js"
 import { createLibImportsPlugin } from "./lib-imports-plugin.js"
 import { createScssPlugin } from "./scss-plugin.js"
 
@@ -91,6 +92,7 @@ const result = await esbuild.build({
   format: "iife",
   minify: false,
   outfile: "build/compiled.js",
+  metafile: true,
   packages: "external",
   platform: "browser",
   define: productionDefines(),
@@ -101,8 +103,13 @@ const result = await esbuild.build({
   write: false,
 });
 
+// ------------------------------------------------------------------------------------------
+// @desc Validate the full host dependency graph before writing the production artifact.
+// [OpenAI GPT-6] Reject hooks and components even when tree shaking removes their client-only code.
+assertHostPluginBoundary(result.metafile);
+
 let code = result.outputFiles[0].text;
 code = code.replace(/\n(\s*)var plugin_default = plugin;\n/, "\n$1return plugin;\n");
 code = code.replace(/\}\)\(\);\s*$/, "})()\n");
 fs.writeFileSync("build/compiled.js", code);
-console.log("Result was", result)
+console.log("Built build/compiled.js")
