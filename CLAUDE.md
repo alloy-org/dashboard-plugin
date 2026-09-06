@@ -9,10 +9,18 @@ This project implements a plugin that utilized the Amplenote Plugin API:
 # Purpose
 
 This project tracks AI-generated code for attribution, auditing, and code quality research. 
-**You MUST document your authorship in every applicable way whenever you write or significantly modify code.**
+**Record authorship only in `AI_CONTRIBUTIONS.md` whenever you write or significantly modify code.**
+Do not add model names, agent identities, prompt histories, or other LLM attribution to source files,
+function comments, file headers, tests, or other documentation. Comments should explain the code's behavior.
 
 This document is primarily concerned with documentation standards. For equally important guidelines on code 
 conventions and best practices, **You MUST also follow the standards outlined in `doc/code_conventions.md`**.
+
+## Persistent project context: Rich Footnotes
+
+Bill often stores essential specifications in Amplenote Rich Footnotes. Resolve their full markdown definitions,
+including multiline prose and code blocks, before interpreting a linked note. Follow
+[`doc/amplenote-rich-footnotes.md`](doc/amplenote-rich-footnotes.md) for the reading and preservation rules.
 
 ---
 
@@ -85,8 +93,8 @@ return sortedNoteUuids;
 
 # 3. New File Headers
 
-When you create a new file entirely, add a header block at the very top before any
-imports or code.
+When you create a new file entirely, add a short purpose comment at the very top before any
+imports or code. Keep authorship information exclusively in `AI_CONTRIBUTIONS.md`.
 
 ### JavaScript / JSX
 
@@ -180,8 +188,8 @@ inputs removed by tree shaking. See `doc/code_conventions.md` for an import exam
 
 | Situation | Required documentation                             |
 |-----------|----------------------------------------------------|
-| Write a new function or method | Inline `[Agent Identity]` comment above it         |
-| Create a new file | File header block + `AI_CONTRIBUTIONS.md` entry    |
+| Write a new function or method | Behavioral JSDoc + `AI_CONTRIBUTIONS.md` entry |
+| Create a new file | Purpose comment + `AI_CONTRIBUTIONS.md` entry |
 | Substantially modify an existing function | Add function documentation as specified in item #1 |
 
 When in doubt, over-document. These records are used for ongoing research into AI's

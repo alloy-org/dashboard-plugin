@@ -88,7 +88,7 @@ const message = `Hello, ${ name }, welcome to the dashboard!`;
 3. If any of the function arguments are not of an obvious type, include a `// @param {type} argName - description` comment 
    for each such argument. 
    e.g., `// @param {Array<String>} userRoles - An array of strings representing the user's roles, e.g., ["admin", "editor"]`
-4. After the divider and JSDoc, then we can include the model-based documentation discussed in AGENTS.md
+4. Keep authorship attribution exclusively in `AI_CONTRIBUTIONS.md`; source comments describe behavior only.
 
 ### Don't use "to" in function or variable names, use "from" instead
 

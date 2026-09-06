@@ -3,6 +3,46 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-09-06 — Implement first-pass goal storage and retrieval
+
+**Model:** OpenAI GPT-6
+**Files created:**
+- `lib/plan-wizard/plan-models.js` — Native `GoalSet` and `IntentPossibility` classes with validating constructors,
+  JSON serialization checks, record UUIDs, and explicit/default planning periods.
+- `lib/plan-wizard/plan-wizard-service.js` — Read goals, upsert timestamped human choices, and save independent
+  category-specific suggestion snapshots using the existing host app or generic embed proxy.
+- `lib/plan-wizard/vision-guide-markdown.js` — Heading/fence-aware JSON storage, annual skeletons, and preservation
+  of prose surrounding owned payloads; no duplicated markdown table parser.
+- `lib/plan-wizard/vision-guide-merge.js` — Ranked goal uniqueness, stable identities, newest-capture wins,
+  deletion tombstones, and independent inference snapshots.
+- `lib/plan-wizard/vision-guide-notes.js` — Archived guide discovery by metadata, stable scope tags for interrupted
+  initialization, and exclusively section-targeted writes.
+- `lib/plan-wizard/vision-guide-repository.js` — Serialized local read/merge/write operations, ancestor recovery,
+  validation, and write verification.
+- `lib/plan-wizard/README.md` — Consumer API examples, current scope, storage semantics, and concurrency limits.
+- `test/fixtures/plan-wizard-app.js` and four `test/plan-wizard-*.test.js` suites — Model, markdown, repository,
+  generic embed bridge, and standalone host compatibility coverage.
+
+**Files modified:**
+- `CLAUDE.md`, `doc/code_conventions.md` — Updated the attribution convention at the user's direction: authorship
+  belongs only in this log. Removed attribution labels from this task's new files and methods.
+- `doc/plan-wizard-implementation-plan.md` — Recorded the implemented first slice, validating native classes,
+  and generic bridge integration; `doc/amplenote-rich-footnotes.md` retains its guidance without attribution labels.
+- `lib/plugin.js` — Documentation cleanup only; no new `onEmbedCall` cases or runtime imports.
+- `build/compiled.js` — Rebuilt with the existing production build and host-boundary guard.
+
+**Validation:** All 28 datastore tests and 21 plugin/production smoke tests passed. `npm run build` succeeded.
+The standalone service was bundled, checked with the host dependency guard, and exercised in a VM without React,
+browser globals, or a module loader. A dedicated archived Amplenote API-verification note confirmed headingless
+initialization, parent/child replacement, sibling preservation, and literal JSON round trips. `git diff --check`
+passed. No commits were made.
+
+**Scope:** Top-level chosen goals and supplied intent possibilities. Project/task lifecycle persistence, inference
+generation, wizard UI, history rollover, and template population are subsequent work. Local queues do not provide
+cross-device transactions; malformed/ambiguous storage throws instead of being overwritten.
+
+---
+
 ## 2026-09-05 — Record Proposed Agenda approvals/rejections and feed them back to the LLM
 
 **Model:** Claude claude-opus-5[1m]
