@@ -8,14 +8,17 @@ import { jest } from "@jest/globals";
 // Exercise real persistence flows rather than mock the repository under test.
 export function createPlanWizardApp() {
   const notes = [];
+  const tasks = [];
   return {
     notes,
+    tasks,
+    getTaskDomainTasks: jest.fn(async () => tasks.slice()),
     createNote: jest.fn(async (name, tags, options) => {
       const uuid = `note-${ notes.length + 1 }`;
       notes.push({ archived: options?.archive ?? false, content: "", name, tags, uuid });
       return uuid;
     }),
-    filterNotes: jest.fn(async options => notes.filter(note => note.tags.includes(options.tag)
+    filterNotes: jest.fn(async (options = {}) => notes.filter(note => (!options.tag || note.tags.includes(options.tag))
       && (options.group === "archived" ? note.archived : !note.archived))),
     findNote: jest.fn(async ({ uuid }) => notes.find(note => note.uuid === uuid) ?? null),
     getNoteContent: jest.fn(async ({ uuid }) => notes.find(note => note.uuid === uuid)?.content ?? null),

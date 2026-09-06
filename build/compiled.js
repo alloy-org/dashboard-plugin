@@ -3491,7 +3491,7 @@ Return ONLY valid JSON (no markdown fences) in exactly this shape:
   }
 
   // lib/embed-html.js
-  var SENTRY_DSN = typeof process !== "undefined" && "https://b1dd823d244c16072367ab0370c32add@o8640.ingest.us.sentry.io/4511870555521024" || "";
+  var SENTRY_DSN = typeof process !== "undefined" && "" || "";
   function buildEmbedHTML() {
     return `<!DOCTYPE html>
 <html lang="en">

@@ -13,7 +13,8 @@ see [`lib/plan-wizard/README.md`](../lib/plan-wizard/README.md) for its API and 
 
 ## Progress as of September 6, 2026
 
-**The goal/intent persistence subsystem is implemented and tested. The user-facing wizard is not implemented.**
+**Goal/intent persistence, evidence collection, and intent inference are implemented and tested. The
+user-facing wizard is not implemented.**
 
 Completed:
 
@@ -30,19 +31,21 @@ Completed:
   round trips. All 28 datastore tests and 21 plugin/production smoke tests passed; production build succeeded.
 - [x] Usage documentation and persistent Rich Footnote reading guidance. Attribution remains only in
   `AI_CONTRIBUTIONS.md`.
+- [x] Evidence collection and intent inference: bounded task/note/calendar retrieval, the shared Rich Footnote
+  parser, window widening with recorded coverage, personal-tag boundaries, defaults for sparse evidence, and
+  `refreshPlanIntentPossibilities` orchestration. Suggestions are now generated rather than only accepted.
 
 Remaining, in recommended order:
 
-1. Collect evidence and generate intent suggestions: task/note/calendar retrieval, shared Rich Footnote parsing,
-   bounded inference, explanations, and sparse-evidence defaults. Storage currently accepts supplied suggestions.
-2. Build the first wizard page, hook, and planning-card entry point, including development app support,
+1. Build the first wizard page, hook, and planning-card entry point, including development app support,
    loading/error/retry behavior, saving, and resuming. The service APIs already exist for these operations.
-3. Implement `ActionProspect` and `ProspectTask` classes/persistence, project discovery, human endorsement,
+2. Implement `ActionProspect` and `ProspectTask` classes/persistence, project discovery, human endorsement,
    proposal counting, scheduling/completion/rejection transitions, and monthly history rollover.
-4. Connect ongoing discovery and read-only planning context to Proposed Agenda and calendar recommendations.
-5. Implement the remaining wizard steps and populate the Quarterly Goals template from confirmed choices.
+3. Connect ongoing discovery and read-only planning context to Proposed Agenda and calendar recommendations.
+4. Implement the remaining wizard steps and populate the Quarterly Goals template from confirmed choices.
 
-Current limits: project headings are placeholders; no project/task records are managed yet. Horizontal rules
+Current limits: the wizard UI does not exist, so inference is reachable only through the service API.
+Project headings are placeholders; no project/task records are managed yet. Horizontal rules
 inside a section being rewritten are rejected. Local queues do not provide transactions across embeds/devices.
 The design sections below include planned behavior beyond the implemented first pass; file statuses identify
 which parts are still pending.
@@ -174,11 +177,11 @@ only when actual implementation size warrants it.
 | `lib/plan-wizard/vision-guide-notes.js` | Implemented | Archived discovery, metadata identity, interrupted initialization, and targeted API writes; extracted from the proposed repository responsibility. |
 | `lib/plan-wizard/vision-guide-repository.js` | Implemented for intents/goals | Validated reads, serialized updates, ancestor recovery, and write verification using an explicit `app`. |
 | `lib/plan-wizard/vision-guide-merge.js` | Implemented for intents/goals | Ranked uniqueness, timestamps, stable IDs, deletions, and separate suggestion snapshots. Prospect evidence/events/transitions remain. |
-| `lib/plan-wizard/plan-wizard-service.js` | Persistence API implemented | Read goals, save chosen goals, and save supplied suggestions. Evidence collection and inference refresh orchestration remain. |
+| `lib/plan-wizard/plan-wizard-service.js` | Implemented for intents/goals | Read goals, save chosen goals, save supplied suggestions, and refresh generated suggestions end to end. |
 | `lib/plan-wizard/README.md` | Implemented | Consumer API examples, storage semantics, validation, and current limitations. |
-| `lib/plan-wizard/intent-evidence.js` | Not started | Bounded task/note/calendar collection, completion filtering, personal tags, and evidence references. |
-| `lib/plan-wizard/intent-inference.js` | Not started | Prompt construction, provider invocation, response validation, three suggestions per category, and defaults. |
-| `lib/util/amplenote-rich-footnotes.js` | Not started | Shared host-compatible parser for evidence. The reading guide exists, but this parser does not. |
+| `lib/plan-wizard/intent-evidence.js` | Implemented | Bounded task/note/calendar collection, completion filtering, personal tags, and evidence references. |
+| `lib/plan-wizard/intent-inference.js` | Implemented | Prompt construction, provider invocation, response validation, up to three suggestions per category, and defaults. |
+| `lib/util/amplenote-rich-footnotes.js` | Implemented | Shared host-compatible parser: multiline definitions, fenced content, nested references, and missing-definition reporting. |
 | `lib/hooks/use-plan-wizard.js` | Not started | Loading/saving/retry state, stale-response protection, and service calls with the existing app proxy. |
 | `lib/dashboard/plan-wizard/plan-wizard.jsx` | Not started | Wizard shell, selected quarter/domain, close/resume behavior, and routing. |
 | `lib/dashboard/plan-wizard/intent-step.jsx` | Not started | Intent fields, suggestion buttons, secondary goals, and save/continue interaction. |
@@ -274,9 +277,11 @@ milestone, but it does not block this datastore design.
    `test/plan-wizard-markdown.test.js`, `test/plan-wizard-repository.test.js`, and
    `test/plan-wizard-host.test.js`, supported by `test/fixtures/plan-wizard-app.js`. All 28 tests passed, plus
    21 plugin/production smoke tests and the production build. No separate merge test file was needed.
-2. **Next:** implement evidence/inference and service orchestration, then the first page and planning entry point. Add
-   `test/amplenote-rich-footnotes.test.js`, `test/plan-wizard-intents.test.js`, and
-   `test/plan-wizard-ui.test.js`. Use deterministic provider responses; do not require a live LLM.
+2. **Completed for evidence/inference:** `test/amplenote-rich-footnotes.test.js` and
+   `test/plan-wizard-intents.test.js` cover footnote resolution, window widening, outcome filtering, personal-tag
+   boundaries, sparse-evidence defaults, provider failure, and end-to-end refresh, using deterministic provider
+   responses rather than a live LLM. **Next:** the first page, its hook, and the planning entry point, with
+   `test/plan-wizard-ui.test.js`.
 3. **Later:** add prospect/task classes and persistence, ongoing discovery, task transitions, history rollover,
    and consumer integration with focused
    lifecycle/history tests. Implement the remaining wizard steps and template projection after those contracts.

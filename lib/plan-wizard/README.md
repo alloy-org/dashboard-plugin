@@ -7,7 +7,8 @@ Import the service and pass the existing Amplenote `app` interface or embed app 
 `onEmbedCall` cases or new app methods are required.
 
 ```javascript
-import { readPlanGoals, savePlanGoals, savePlanIntentPossibilities } from "plan-wizard/plan-wizard-service";
+import { readPlanGoals, refreshPlanIntentPossibilities, savePlanGoals,
+  savePlanIntentPossibilities } from "plan-wizard/plan-wizard-service";
 
 const scope = { domainName: "Work", domainUuid: "domain-uuid", quarter: 4, year: 2026 };
 const planningContext = await readPlanGoals(app, scope);
@@ -20,6 +21,15 @@ await savePlanGoals(app, { ...scope, goals: [
 await savePlanIntentPossibilities(app, { ...scope, generatedAt: new Date().toISOString(), possibilities: [
   { confidence: 6, intent: "Grow revenue", sourceKind: "inferred", substantiation: "Several recent product tasks" },
 ], userCategoryEm: "work" });
+```
+
+`refreshPlanIntentPossibilities` is the generating counterpart: it collects evidence, calls the shared AI
+provider, and persists a snapshot per category, returning the planning context plus `failureReason` and
+`occupationHypothesis`. Pass `promptRunner` to substitute a deterministic provider and `referenceDate` to fix
+the evidence window.
+
+```javascript
+const context = await refreshPlanIntentPossibilities(app, scope);
 ```
 
 `readPlanGoals` returns `{ generatedAt, goalRecords, goals, noteUuid, possibilities, scope }`:
@@ -54,6 +64,31 @@ Suggestion saves replace one category's snapshot, with up to three possibilities
 ignore older/tied snapshots, and reuse UUIDs when suggestion text matches. `sourceKind: "default"` identifies
 generic advice and cannot carry personal evidence. Saving suggestions never picks a goal or alters human choices.
 
+# Evidence and inference
+
+`intent-evidence.js` collects the material inference reasons over, all host-compatible. Completion evidence
+starts at one month of genuinely completed tasks in the selected domain and widens a month at a time, up to
+three, until 50 exist; below that it is supplemented with up to 100 of the most recently created tasks, sorted
+by actual creation time. Dismissed and crossed-out items are excluded, because completed-task retrieval returns
+them alongside real completions. The window actually used is recorded in `coverage`, so a stored snapshot never
+implies coverage it did not have.
+
+Notes tagged `me` or `personal` at any level of a tag hierarchy — the boundary is `(^|/)(me|personal)(/|$)`, so
+`mentoring` does not match — supply personal evidence. When the selected domain holds none, the collector falls
+back to the calendar's available upcoming window rather than expanding into other domains or inventing a
+historical event feed. Notes tagged for this subsystem are always excluded, so a generated guide never becomes
+the evidence for regenerating itself. A bounded sample of source notes is rendered through
+`util/amplenote-rich-footnotes.js`, which resolves `[^1]:` definitions — including multiline prose and fenced
+code — so specifications stored in footnotes reach the prompt instead of just their visible labels.
+
+`intent-inference.js` sends that evidence as clearly delimited data, never as instructions, and validates the
+response into `IntentPossibility` instances, discarding entries that fail the contract rather than repairing
+them. Thin evidence caps confidence. When personal evidence is absent it returns the documented defaults —
+"Get outdoors more", "Connect with family/friends", "Improve my diet" — as `sourceKind: "default"` with no
+evidence and minimal confidence, so the UI can present them as starting points rather than inferred conclusions.
+A provider failure or unusable response degrades to those defaults instead of throwing; the caller decides
+whether to persist a degraded snapshot.
+
 # Note format and write behavior
 
 The note is named `[Task domain] Mission Builder Vision Guide [year]`, tagged `plugins/dashboard` and
@@ -80,9 +115,9 @@ Failed writes throw, allowing the eventual UI to retain the user's input and off
 
 # Scope and validation
 
-This first pass stores/retrieves top-level goals and supplied intent possibilities. It reserves project headings;
-project discovery, `ActionProspect`/`ProspectTask` persistence, inference generation, wizard UI, monthly history,
-and Quarterly Goals template population remain subsequent milestones.
+This pass stores/retrieves top-level goals, generates and stores intent possibilities, and reserves project
+headings. Project discovery, `ActionProspect`/`ProspectTask` persistence, the wizard UI, monthly history, and
+Quarterly Goals template population remain subsequent milestones.
 
 Run the focused suites with:
 

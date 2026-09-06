@@ -3,6 +3,41 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-09-06 — Implement intent evidence collection and inference
+
+**Model:** Claude Opus 5 (1M context)
+**Files created:**
+- `lib/util/amplenote-rich-footnotes.js` — Host-compatible Rich Footnote parser: definitions with multiline prose
+  and fenced code, empty description links, nested references with cycle protection, and reported missing
+  identifiers. Kept independent of the browser-only markdown renderer.
+- `lib/plan-wizard/intent-evidence.js` — Bounded evidence collection: genuinely completed domain tasks with a
+  window that widens from one month to three, recent-task supplementation, dismissed/crossed-out filtering,
+  personal-tag path-segment matching, calendar fallback, planning-note exclusion, and recorded coverage.
+- `lib/plan-wizard/intent-inference.js` — Prompt construction that quotes evidence as data, provider invocation
+  through the existing `fetch-ai-provider`, response validation into `IntentPossibility` instances, confidence
+  ceilings for thin evidence, and the documented evidence-free personal defaults.
+- `test/amplenote-rich-footnotes.test.js`, `test/plan-wizard-intents.test.js` — Footnote resolution, window
+  widening, outcome filtering, personal-tag boundaries, sparse-evidence defaults, provider failure and malformed
+  responses, and end-to-end refresh, all with deterministic provider responses.
+
+**Files modified:**
+- `lib/plan-wizard/plan-wizard-service.js` — Added `refreshPlanIntentPossibilities`, which collects evidence,
+  infers both categories, and persists each snapshot through the existing merge path.
+- `test/fixtures/plan-wizard-app.js` — Supported tag-less `filterNotes` queries and task-domain task retrieval.
+- `lib/plan-wizard/README.md`, `doc/plan-wizard-implementation-plan.md` — Documented the new API, evidence and
+  inference semantics, and the updated milestone status.
+- `build/compiled.js` — Rebuilt with the existing production build and host-boundary guard.
+
+**Validation:** 38 plan-wizard and footnote tests passed, plus the production bundle smoke test; `npm run build`
+succeeded, so the new modules stay inside the host dependency boundary. Two failures in
+`test/dream-task-service.test.js` and `test/proposed-agenda-widget-range.test.js` were confirmed pre-existing on
+a clean `main` and are unrelated to this work. No commits were made.
+
+**Scope:** Evidence collection and suggestion generation. The wizard UI, its hook, and the planning-card entry
+point remain the next milestone, so inference is currently reachable only through the service API.
+
+---
+
 ## 2026-09-06 — Implement first-pass goal storage and retrieval
 
 **Model:** OpenAI GPT-6
