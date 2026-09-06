@@ -28,7 +28,7 @@ await jest.unstable_mockModule("providers/fetch-ai-provider", () => ({
   }),
 }));
 
-const { default: PlanWizard } = await import("dashboard/plan-wizard/plan-wizard");
+const { default: PlanWizard, WIZARD_STEPS } = await import("dashboard/plan-wizard/plan-wizard");
 const { readPlanGoals, savePlanGoals } = await import("plan-wizard/plan-wizard-service");
 
 // ----------------------------------------------------------------------------------------------
@@ -278,6 +278,54 @@ describe("PlanWizard intent step", () => {
   it("leaves Find my projects disabled until project discovery exists", async () => {
     const { cleanup, container } = await renderPlanWizard();
     expect(container.querySelector(".intent-step-continue").disabled).toBe(true);
+    await cleanup();
+  });
+});
+
+describe("PlanWizard step navigation", () => {
+  beforeEach(() => {
+    inferenceCalls.length = 0;
+    inferenceImplementation = null;
+  });
+
+  it("opens on the intent step and reports its position in the sequence", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    expect(container.querySelector(".plan-wizard-progress").textContent).toBe(`1 of ${ WIZARD_STEPS.length }`);
+    expect(container.querySelector(".intent-step-page")).not.toBe(null);
+    expect(container.querySelector(".plan-wizard-back").disabled).toBe(true);
+    await cleanup();
+  });
+
+  it("advances to the next step and names the milestone that is not built", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+
+    expect(container.querySelector(".plan-wizard-progress").textContent).toBe(`2 of ${ WIZARD_STEPS.length }`);
+    expect(container.querySelector(".intent-step-page")).toBe(null);
+    expect(container.querySelector(".pending-step-notice").textContent).toContain("not built yet");
+    await cleanup();
+  });
+
+  it("returns to the intent step with the user's saved answers intact", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    await typeInto(workFields(container)[0], "Ship the analytics offering");
+    await clickAndSettle(container.querySelector(".intent-step-save"));
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+    await clickAndSettle(container.querySelector(".plan-wizard-back"));
+
+    expect(workFields(container)[0].value).toBe("Ship the analytics offering");
+    await cleanup();
+  });
+
+  it("stops at the last step rather than running past the end of the sequence", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    for (let step = 1; step < WIZARD_STEPS.length; step += 1) {
+      await clickAndSettle(container.querySelector(".plan-wizard-next"));
+    }
+
+    expect(container.querySelector(".plan-wizard-progress").textContent)
+      .toBe(`${ WIZARD_STEPS.length } of ${ WIZARD_STEPS.length }`);
+    expect(container.querySelector(".plan-wizard-next").disabled).toBe(true);
     await cleanup();
   });
 });

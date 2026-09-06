@@ -199,6 +199,14 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
   const upcomingMonday = getUpcomingWeekMonday();
   const weekLabel = formatWeekLabel(upcomingMonday);
   const widgetTitle = domainName ? `Quarterly Planning · ${ domainName }` : undefined;
+  const wizardQuarterPlan = quarterlyPlans?.next ?? quarterlyPlans?.current ?? null;
+  const canStartWizard = !!(wizardQuarterPlan?.quarter && wizardQuarterPlan?.year);
+  const headerActions = canStartWizard ? (
+    <button className="widget-header-action" onClick={ () => setWizardPlan({ quarter: wizardQuarterPlan.quarter,
+      year: wizardQuarterPlan.year }) } title="Gather your intents and build a plan for the quarter" type="button">
+      ✨ Build plan
+    </button>
+  ) : null;
 
   useWidgetLoadedEvent('planning', plansReady && initialLoadDone && !monthLoading && (!isTwoTall || !weekLoading));
 
@@ -270,7 +278,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
   };
 
   return (
-    <WidgetWrapper title={widgetTitle} widgetId="planning">
+    <WidgetWrapper headerActions={headerActions} title={widgetTitle} widgetId="planning">
       <div className="planning-quarters">
         {[quarterlyPlans.current, quarterlyPlans.next].map(plan => (
           <QuarterCard

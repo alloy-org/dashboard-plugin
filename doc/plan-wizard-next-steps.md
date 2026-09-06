@@ -43,6 +43,22 @@ Visual styling of the built page is still outstanding — see "What remains in s
 Items 2a, 2b, 2c, 2e, and 2f are **implemented and tested**; 2d (styles) is not. The subsections below are kept
 as written for reference, annotated with what was actually built.
 
+### Added after step 2: entry point and step scaffolding
+
+The planning widget's top bar now carries a "✨ Build plan" action (the shared `headerActions` prop and
+`widget-header-action` class), so the wizard no longer opens only as a side effect of clicking a quarter card that
+has no plan note. It targets the next quarter and appears only in the populated state.
+
+`lib/dashboard/plan-wizard/wizard-steps.js` declares the five-page sequence — intent, projects, quarter-name,
+themed-weekdays, enough-for-today — with each unbuilt step naming the milestone it waits on. The shell routes
+between them, shows "N of 5", and offers Back/Next. Unbuilt steps render
+`lib/dashboard/plan-wizard/pending-step.jsx`, which states the milestone is not built rather than showing inputs
+that record nothing; this keeps the plan's rule that the UI must not imply unimplemented work has run.
+
+The last four steps are scaffolding only. `projects` needs the discovery milestone; the other three correspond to
+the three mockups that were reviewed but not built. Their step definitions are the place to attach components as
+those milestones land — no other file needs to change to add a page.
+
 ### What remains in step 2
 
 **2d — `lib/dashboard/plan-wizard/plan-wizard.scss` is not written.** The components render with their class
@@ -62,7 +78,7 @@ check `theme-dark.scss` / `theme-light.scss` before committing to either.
 NODE_OPTIONS=--experimental-vm-modules npx jest --runInBand --runTestsByPath test/plan-wizard-ui.test.js --no-coverage
 ```
 
-Eleven tests pass. The two guards most likely to rot — discarding a superseded scope's response, and not
+Fifteen tests pass (eleven for the intent page, four for step navigation). The two guards most likely to rot — discarding a superseded scope's response, and not
 overwriting text the user is typing — were mutation-checked: each test fails when its guard is removed. The full
 suite leaves only the two pre-existing failures named above; no new ones.
 

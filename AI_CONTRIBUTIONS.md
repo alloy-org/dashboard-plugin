@@ -3,6 +3,43 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-09-06 — Add the plan wizard entry button and scaffold its remaining steps
+
+**Model:** Claude Opus 5 (1M context)
+**Files created:**
+- `lib/dashboard/plan-wizard/wizard-steps.js` — The ordered five-step sequence a user passes through to populate a
+  Quarterly Plan, each step carrying its title, one-line summary, and (for the four unbuilt ones) the milestone
+  that has not shipped. Declaring the sequence in one place lets the shell show honest progress and gives each
+  future milestone an obvious place to attach its component.
+- `lib/dashboard/plan-wizard/pending-step.jsx` — Placeholder page for a step whose milestone is not implemented.
+  It names the missing milestone rather than showing empty inputs, so a user is never led to believe an answer was
+  recorded or that unbuilt work already ran.
+
+**Files modified:**
+- `lib/dashboard/planning.jsx` — Add a "✨ Build plan" action to the widget's top bar, using the shared
+  `headerActions` prop and `widget-header-action` class, so the wizard has an explicit entry point instead of only
+  opening implicitly when a quarter card without a plan note is clicked. The button targets the next quarter and
+  is offered only in the populated state, so the wizard cannot relaunch itself.
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` — Route between steps: hold the current step key, render `IntentStep`
+  for the intent step and `PendingStep` otherwise, show an "N of 5" progress indicator, and add Back/Next controls
+  that stop at either end. `WIZARD_STEPS` changed from a string array to the step definitions and is re-exported
+  from here; no consumer outside the wizard read it.
+- `test/plan-wizard-ui.test.js` — Four tests covering step navigation: the opening position and disabled Back, an
+  advance that names the unbuilt milestone, returning to the intent step with saved answers intact, and Next
+  stopping at the final step.
+
+**Task:** Add a Quarterly Goals top-bar button to begin intent gathering, and scaffold the pages a user passes
+through, per `doc/plan-wizard-implementation-plan.md` and `doc/plan-wizard-next-steps.md`
+**Prompt summary:** "add a button to the top bar of Quarterly Goals component to begin the Intent Gather & Plan
+building process. Ensure that we have the pages scaffolded that the user should pass through"
+**Scope:** Two new files (~60 lines), step routing in the shell, one header action, four new tests
+**Notes:** 15 plan-wizard UI tests pass, the production build and bundle smoke test pass, and the full suite leaves
+only the two pre-existing failures (`dream-task-service.test.js:185`, `proposed-agenda-widget-range.test.js`).
+Styling remains outstanding: no plan-wizard stylesheet exists yet, so the new step chrome is unstyled like the
+intent page.
+
+---
+
 ## 2026-09-06 — Build the plan wizard's first page
 
 **Model:** Claude Opus 5 (1M context)

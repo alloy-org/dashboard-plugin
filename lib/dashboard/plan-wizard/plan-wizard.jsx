@@ -3,9 +3,12 @@
 // user who leaves mid-answer loses nothing.
 
 import IntentStep from "dashboard/plan-wizard/intent-step";
+import PendingStep from "dashboard/plan-wizard/pending-step";
+import { WIZARD_STEPS, wizardStepIndexFromKey } from "dashboard/plan-wizard/wizard-steps";
 import usePlanWizard, { planScopeKey } from "hooks/use-plan-wizard";
+import { useState } from "react";
 
-export const WIZARD_STEPS = ["intent"];
+export { WIZARD_STEPS };
 
 // ----------------------------------------------------------------------------------------------
 // @desc Render the wizard for one domain and quarter.
@@ -20,9 +23,22 @@ export const WIZARD_STEPS = ["intent"];
 export default function PlanWizard({ app, domainName = null, domainUuid = null, onClose, quarter, year }) {
   const { error, isLoading, isRefreshing, isSaving, planningContext, reload, saveError,
     saveGoals } = usePlanWizard({ app, domainName, domainUuid, quarter, year });
+  const [stepKey, setStepKey] = useState(WIZARD_STEPS[0].key);
   const scopeKey = planScopeKey({ domainName, domainUuid, quarter, year });
   const quarterLabel = planningContext.scope ? planningContext.scope.quarterKey : `${ year }-Q${ quarter }`;
   const domainLabel = domainName ?? "All Notes";
+  const stepIndex = wizardStepIndexFromKey(stepKey);
+  const step = WIZARD_STEPS[stepIndex];
+  const isFirstStep = stepIndex === 0;
+  const isLastStep = stepIndex === WIZARD_STEPS.length - 1;
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Move the given number of steps through the sequence, stopping at either end.
+  // @param {number} stepDelta - Positive to advance, negative to go back.
+  const handleStepChange = stepDelta => {
+    const nextIndex = Math.min(Math.max(stepIndex + stepDelta, 0), WIZARD_STEPS.length - 1);
+    setStepKey(WIZARD_STEPS[nextIndex].key);
+  };
 
   return (
     <div className="plan-wizard-page">
@@ -31,6 +47,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
           <h1 className="plan-wizard-title">Plan your quarter</h1>
           <p className="plan-wizard-scope">{ `${ quarterLabel } · ${ domainLabel }` }</p>
         </div>
+        <span className="plan-wizard-progress">{ `${ stepIndex + 1 } of ${ WIZARD_STEPS.length }` }</span>
         <button className="plan-wizard-close" onClick={ onClose } type="button">Close</button>
       </header>
       { isLoading ? <p className="plan-wizard-status">Loading your plan…</p> : null }
@@ -40,9 +57,22 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
           <button className="plan-wizard-retry" onClick={ reload } type="button">Try again</button>
         </div>
       ) : null }
-      { !isLoading && !error ? (
+      { !isLoading && !error && step.key === "intent" ? (
         <IntentStep isRefreshing={ isRefreshing } isSaving={ isSaving } onSave={ saveGoals }
           planningContext={ planningContext } saveError={ saveError } scopeKey={ scopeKey } />
+      ) : null }
+      { !isLoading && !error && step.key !== "intent" ? <PendingStep step={ step } /> : null }
+      { !isLoading && !error ? (
+        <nav className="plan-wizard-navigation">
+          <button className="plan-wizard-back" disabled={ isFirstStep } onClick={ () => handleStepChange(-1) }
+            type="button">
+            Back
+          </button>
+          <button className="plan-wizard-next" disabled={ isLastStep } onClick={ () => handleStepChange(1) }
+            type="button">
+            Next
+          </button>
+        </nav>
       ) : null }
     </div>
   );
