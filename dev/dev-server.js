@@ -283,9 +283,9 @@ function handleNoteCreateApi(req, res) {
   req.on("data", chunk => { body += chunk; });
   req.on("end", async () => {
     try {
-      const { name, tags } = JSON.parse(body);
+      const { archive, name, tags } = JSON.parse(body);
       const app = createDevApp();
-      const uuid = await app.createNote(name, tags || []);
+      const uuid = await app.createNote(name, tags || [], { archive: archive === true });
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ uuid }));
     } catch (err) {
@@ -311,6 +311,31 @@ function handleNoteAppendApi(req, res) {
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: err.message }));
     }
+  });
+  return true;
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Answer filterNotes queries against the file-backed dev notes, so a browser client can find notes it
+//   created through /api/note-create by tag and archive group rather than only through the in-memory samples.
+// @param {object} req - Node request; tag and group arrive as query parameters.
+// @param {object} res - Node response, answered with an array of note handles.
+// @returns {boolean} Whether this handler took the request.
+function handleNoteFilterApi(req, res) {
+  if (req.method !== "GET") return false;
+  const parsedUrl = new URL(req.url, "http://localhost");
+  const group = parsedUrl.searchParams.get("group");
+  const tag = parsedUrl.searchParams.get("tag");
+  const app = createDevApp();
+  const options = {};
+  if (group) options.group = group;
+  if (tag) options.tag = tag;
+  Promise.resolve(app.filterNotes(options)).then(handles => {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify([...handles]));
+  }).catch(err => {
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: err.message }));
   });
   return true;
 }
@@ -439,6 +464,10 @@ async function main() {
 
     if (req.url === "/api/note-append") {
       if (handleNoteAppendApi(req, res)) return;
+    }
+
+    if (req.url.startsWith("/api/note-filter")) {
+      if (handleNoteFilterApi(req, res)) return;
     }
 
     if (req.url.startsWith("/api/note-find")) {

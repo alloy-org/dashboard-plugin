@@ -221,8 +221,8 @@ const ProposedAgendaCell = createWidgetCell('proposed-agenda', ProposedAgendaWid
   app, calendarEvents: calendarEventsLoaded ? calendarEvents : null, currentDate, defaultNoteUuid: null,
   providerApiKey, providerEm, taskDomainName, taskDomainUUID, timeFormat,
 }));
-const PlanningCell = createWidgetCell('planning', PlanningWidget, ({ app, config, quarterlyPlans }) => ({
-  app, gridHeightSize: Number(config?.gridHeightSize) || 1, quarterlyPlans,
+const PlanningCell = createWidgetCell('planning', PlanningWidget, ({ app, config, quarterlyPlans, taskDomainName, taskDomainUUID }) => ({
+  app, gridHeightSize: Number(config?.gridHeightSize) || 1, quarterlyPlans, taskDomainName, taskDomainUUID,
 }));
 const QuickActionsCell = createWidgetCell('quick-actions', QuickActionsWidget, pickProps('app', 'onSwapBackground'));
 const QuotesCell = createWidgetCell('quotes', QuotesWidget, ({ app, config }) => ({

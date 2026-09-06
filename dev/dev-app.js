@@ -459,7 +459,15 @@ function _ensureNotesDir(dir = NOTES_DIR) {
   }
 }
 
-function _buildFrontmatter(title, uuid, tags = []) {
+// ----------------------------------------------------------------------------------------------
+// @desc Build a note file's YAML frontmatter, recording the archived flag so that filterNotes can honor the
+//   group argument the way the live API does.
+// @param {string} title - Note name.
+// @param {string} uuid - Note identity.
+// @param {Array<string>} tags - Tag names applied to the note.
+// @param {boolean} isArchived - Whether createNote was asked to archive the note.
+// @returns {string} Frontmatter block.
+function _buildFrontmatter(title, uuid, tags = [], isArchived = false) {
   const now = new Date().toISOString();
   const tagLines = tags.map(t => `  - ${t}`).join("\n");
   return [
@@ -469,9 +477,33 @@ function _buildFrontmatter(title, uuid, tags = []) {
     `version: 1`,
     `created: '${now}'`,
     `updated: '${now}'`,
+    `archived: ${isArchived}`,
     tagLines ? `tags:\n${tagLines}` : "tags: []",
     "---",
   ].join("\n");
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Decide whether a note file belongs in a filterNotes group. The live API excludes archived notes from
+//   an unqualified query and returns only archived notes for the archived group.
+// @param {object} note - Parsed note file record.
+// @param {string} group - Requested group, or undefined for the default visible set.
+// @returns {boolean} Whether the note belongs in the requested group.
+function _noteFileMatchesGroup(note, group) {
+  const isArchived = note.meta.archived === true || note.meta.archived === "true";
+  if (group === "archived") return isArchived;
+  return !isArchived;
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Decide whether a note file carries a tag, matching nested tags the way the live API does.
+// @param {object} note - Parsed note file record.
+// @param {string} tag - Tag being sought.
+// @returns {boolean} Whether the note carries the tag.
+function _noteFileHasTag(note, tag) {
+  const tags = note.meta.tags;
+  if (!Array.isArray(tags)) return false;
+  return tags.includes(tag);
 }
 
 function _parseFrontmatter(raw) {
@@ -738,19 +770,24 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
         noteHandles = _sortFilteredNotes(domainHandles, query, sortOrder);
       } else {
         const matchingNotes = _readAllNoteFiles(notesDir)
-          .filter(note => !query || note.meta.title === query);
+          .filter(note => !query || note.meta.title === query)
+          .filter(note => !options.tag || _noteFileHasTag(note, options.tag))
+          .filter(note => _noteFileMatchesGroup(note, group));
         noteHandles = _sortFilteredNotes(matchingNotes, query, sortOrder).map(_noteHandleFromRecord);
       }
       return withAsyncIterator(noteHandles);
     },
 
-    // [Claude] Task: create a markdown file with frontmatter in the /notes directory
-    // Prompt: "when app.createNote is called in dev environment, create a file with a random uuid in the /notes directory"
-    // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
-    async createNote(name, tags = []) {
+    // ----------------------------------------------------------------------------------------------
+    // @desc Create a note file, honoring the archive option the live API accepts as its third argument.
+    // @param {string} name - Note name.
+    // @param {Array<string>} tags - Tag names.
+    // @param {object} options - { archive }; an archived note is hidden from an unqualified filterNotes.
+    // @returns {Promise<string>} New note UUID.
+    async createNote(name, tags = [], options = {}) {
       _ensureNotesDir(notesDir);
       const uuid = crypto.randomUUID();
-      const frontmatter = _buildFrontmatter(name, uuid, tags);
+      const frontmatter = _buildFrontmatter(name, uuid, tags, options.archive === true);
       const filePath = path.join(notesDir, `${uuid}.md`);
       fs.writeFileSync(filePath, frontmatter + "\n", "utf-8");
       console.log(`[dev-app] createNote "${name}" -> ${uuid}`);

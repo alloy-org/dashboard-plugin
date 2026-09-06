@@ -3,6 +3,51 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-09-06 — Build the plan wizard's first page
+
+**Model:** Claude Opus 5 (1M context)
+**Files created:**
+- `lib/hooks/use-plan-wizard.js` — Embed-side adapter over `plan-wizard-service`: reads stored goals and cached
+  suggestions on mount and only runs inference when nothing is cached or the user asks, discards responses whose
+  scope the user has since left by comparing a request token held in a ref, and retains user input on a save
+  failure so the caller can offer a retry.
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` — Wizard shell: names the quarter and domain being planned, routes
+  to the current step, and offers reload on a load failure. Resuming shows persisted answers.
+- `lib/dashboard/plan-wizard/intent-step.jsx` — The first page. Suggestions fill the focused field but become a
+  chosen intent only on save; personal is optional; secondary goals take the next rank in their category. Draft
+  text is reseeded only on a scope change or a successful save, so a background inference response cannot discard
+  what the user is typing. A single `capturedAt` is held across a retry, since the merge treats an older or tied
+  timestamp as a no-op. "Find my projects" stays disabled because project discovery does not exist yet.
+- `lib/dashboard/plan-wizard/intent-step-fields.js` — Draft-field ↔ `GoalSet` mapping (ranks, tombstones for
+  cleared answers, optional personal category), kept out of the component so it is testable without rendering.
+- `test/plan-wizard-ui.test.js` — Eleven tests over the real persistence stack, substituting only the provider:
+  suggestion selection, optional personal answers, secondary ranks, save failure and retry, reopening, cached
+  suggestions not re-running inference, a superseded domain's response being discarded, and a late response not
+  overwriting typed text. The last two were confirmed to fail when their guards are removed.
+
+**Files modified:**
+- `lib/dashboard/planning.jsx` — Launch the wizard for a quarter with no plan note yet; an existing plan keeps its
+  navigation path. Reset the wizard when the task domain changes.
+- `lib/dashboard/dashboard.jsx` — Pass `taskDomainName`/`taskDomainUUID` to `PlanningCell` so the wizard receives
+  the domain identity it persists under.
+- `dev/dev-app.js` — Honor `filterNotes` tag and archived-group arguments for file-backed notes, and accept
+  `createNote`'s third `options` argument so `{ archive: true }` is recorded in frontmatter.
+- `dev/dev-server.js` — Forward the archive flag through `/api/note-create`, and add `/api/note-filter` so a
+  browser client can find notes it created by tag and group.
+- `lib/util/browser-dev-app.js` — Forward the archive option, and answer a tag query through the dev server, since
+  tagged notes the client creates live in the notes directory rather than in the in-memory samples.
+
+**Task:** Step 2 of `doc/plan-wizard-next-steps.md` — the wizard's first page, its hook, entry point, and tests
+**Prompt summary:** "let's continue implementing the plan-wizard-next-steps"
+**Scope:** ~4 new modules plus a test suite; dev-app changes confined to standard note APIs
+**Notes:** Built against the plan's prose description rather than the brainstorming note's `1 of 5` mockup, which
+shows a different interaction (card triage, "Sort them, don't write them") than the free-text page the
+implementation plan and persistence layer describe. Confirmed with the user before building. The mockup's "Still
+part of your plans?" stale-item section was deferred. `plan-wizard.scss` is deliberately not written yet: the
+visual pass awaits the design. Full suite leaves only the two pre-existing failures the handoff doc names.
+
+---
+
 ## 2026-09-06 — Implement intent evidence collection and inference
 
 **Model:** Claude Opus 5 (1M context)

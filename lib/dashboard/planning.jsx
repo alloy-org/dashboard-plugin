@@ -2,6 +2,7 @@
 import { getQuarterMonths, getUpcomingWeekMonday, formatWeekLabel } from "constants/quarters";
 import { IS_DEV_ENVIRONMENT } from "constants/settings";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
+import PlanWizard from "dashboard/plan-wizard/plan-wizard";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import {
   createOrAppendMonthlyPlan,
@@ -178,8 +179,10 @@ function WeeklyPlanSection({ weekLabel, year, weekLoading, weekContent, onCreate
 
 // [Claude claude-4.7-opus] Task: migrate PlanningWidget from createElement to JSX
 // Prompt: "translate this project to render components with JSX instead"
-export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans }) {
+export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans, taskDomainName = null,
+    taskDomainUUID = null }) {
   const [activeTab, setActiveTab] = useState(null);
+  const [wizardPlan, setWizardPlan] = useState(null);
   const [monthContent, setMonthContent] = useState(null);
   const [monthLoading, setMonthLoading] = useState(false);
   const [weekContent, setWeekContent] = useState(null);
@@ -205,6 +208,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
     setMonthContent(null);
     setWeekContent(null);
     setInitialLoadDone(false);
+    setWizardPlan(null);
   }, [domainName]);
 
   useEffect(() => {
@@ -242,6 +246,15 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
     );
   }
 
+  if (wizardPlan) {
+    return (
+      <WidgetWrapper title={widgetTitle} widgetId="planning">
+        <PlanWizard app={app} domainName={taskDomainName} domainUuid={taskDomainUUID}
+          onClose={() => setWizardPlan(null)} quarter={wizardPlan.quarter} year={wizardPlan.year} />
+      </WidgetWrapper>
+    );
+  }
+
   if (!plansReady) {
     return (
       <WidgetWrapper title={widgetTitle} widgetId="planning">
@@ -264,6 +277,10 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
             key={plan.label}
             plan={plan}
             onCardClick={async () => {
+              if (!plan.noteUUID && plan.quarter && plan.year) {
+                setWizardPlan({ quarter: plan.quarter, year: plan.year });
+                return;
+              }
               const result = await handleOpenPlan(app, plan);
               handleDevEdit(result);
             }}
