@@ -115,20 +115,52 @@ $plan-wizard-z-index: 1100;
   }
 
   .plan-wizard-title-group {
+    align-items: center;
+    display: flex;
     flex: 1;
+    gap: $sp-sm;
     min-width: 0;
   }
 
+  .plan-wizard-title-icon {
+    color: $color-success;
+    fill: none;
+    flex: 0 0 20px;
+    height: 20px;
+    stroke: currentColor;
+    stroke-width: 2;
+    width: 20px;
+  }
+
+  .plan-wizard-title-icon-center {
+    fill: currentColor;
+    stroke: none;
+  }
+
   .plan-wizard-title {
-    font-size: 1.2rem;
+    font-size: 0.9rem;
     font-weight: 700;
     margin: 0;
   }
 
-  .plan-wizard-scope {
-    color: $color-text-secondary;
-    font-size: 0.8rem;
-    margin: $sp-xs 0 0;
+  .plan-wizard-step-track {
+    align-items: center;
+    display: flex;
+    gap: 5px;
+  }
+
+  .plan-wizard-step-dot {
+    background: $color-text-muted;
+    border-radius: 999px;
+    height: 7px;
+    opacity: 0.7;
+    width: 7px;
+
+    &--current {
+      background: $color-success;
+      opacity: 1;
+      width: 24px;
+    }
   }
 
   .plan-wizard-progress {
@@ -158,6 +190,19 @@ $plan-wizard-z-index: 1100;
   .plan-wizard-error-message {
     color: $color-danger;
     font-size: 0.85rem;
+    margin: 0 0 $sp-sm;
+  }
+
+  .plan-wizard-error-title {
+    color: $color-danger;
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin: 0 0 $sp-xs;
+  }
+
+  .plan-wizard-error-guidance {
+    color: $color-text-secondary;
+    font-size: 0.8rem;
     margin: 0 0 $sp-sm;
   }
 

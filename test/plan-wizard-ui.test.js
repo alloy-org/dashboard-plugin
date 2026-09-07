@@ -324,6 +324,20 @@ describe("PlanWizard intent step", () => {
     expect(container.querySelector(".intent-step-continue")).toBeNull();
     await cleanup();
   });
+
+  it("separates a load failure summary, record detail, and recovery guidance", async () => {
+    const app = createPlanWizardApp();
+    app.filterNotes = jest.fn(async () => { throw new Error("Vision Guide lookup was unavailable"); });
+    const { cleanup, container } = await renderPlanWizard({ app });
+
+    expect(container.querySelector(".plan-wizard-error-title").textContent)
+      .toBe("Plan Builder could not read its saved Vision Guide.");
+    expect(container.querySelector(".plan-wizard-error-message").textContent)
+      .toBe("Vision Guide lookup was unavailable");
+    expect(container.querySelector(".plan-wizard-error-guidance").textContent)
+      .toContain("No planning data was changed");
+    await cleanup();
+  });
 });
 
 describe("PlanWizard step navigation", () => {
@@ -340,7 +354,12 @@ describe("PlanWizard step navigation", () => {
 
   it("opens on the intent step and reports its position in the sequence", async () => {
     const { cleanup, container } = await renderPlanWizard();
+    const stepDots = [...container.querySelectorAll(".plan-wizard-step-dot")];
+    expect(container.querySelector(".plan-wizard-title").textContent).toBe("Plan Builder");
     expect(container.querySelector(".plan-wizard-progress").textContent).toBe(`1 of ${ WIZARD_STEPS.length }`);
+    expect(stepDots).toHaveLength(WIZARD_STEPS.length);
+    expect(stepDots[0].classList).toContain("plan-wizard-step-dot--current");
+    expect(stepDots.slice(1).some(dot => dot.classList.contains("plan-wizard-step-dot--current"))).toBe(false);
     expect(container.querySelector(".intent-step-page")).not.toBe(null);
     expect(container.querySelector(".plan-wizard-back")).toBeNull();
     await cleanup();
@@ -597,6 +616,47 @@ describe("PlanWizard project discovery", () => {
     expect(affirmed.approvalStatusEm).toBe("humanAffirmed");
     expect(affirmed.substantiations[0]).toContain("without writing either one");
     expect(affirmed.evidence.map(citation => citation.taskUuid)).toEqual(["task-a", "task-b"]);
+    await cleanup();
+  });
+
+  it("keeps sibling project cards interactive while one priority decision saves", async () => {
+    const app = createPlanWizardApp();
+    pushRecentCompletions(app);
+    inferenceImplementation = respondToBothPrompts({ workIntent: "Ship the analytics offering",
+      proposals: [
+        { focusMonths: [], resolvedTaskUuids: ["task-a", "task-b"], substantiations: ["Automates both reports."],
+          summary: "Automate the weekly report", userCategoryEm: "work" },
+        { focusMonths: [], resolvedTaskUuids: ["task-a", "task-b"], substantiations: ["Prevents both report failures."],
+          summary: "Harden report delivery", userCategoryEm: "work" },
+      ] });
+    const { cleanup, container } = await renderPlanWizard({ app });
+    await typeInto(workFields(container)[0], "Ship the analytics offering");
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+    const projectCards = [...container.querySelectorAll(".projects-step-category--work .project-row--proposed")];
+    const workingReplace = app.replaceNoteContent;
+    let releaseWrite = null;
+    app.replaceNoteContent = jest.fn((...args) => new Promise(resolve => {
+      releaseWrite = async () => resolve(await workingReplace(...args));
+    }));
+
+    await act(async () => {
+      projectCards[0].querySelector(".project-row-priority-button").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }));
+      await Promise.resolve();
+    });
+    await settle();
+
+    expect([...projectCards[0].querySelectorAll(".project-row-priority-button")]
+      .every(button => button.disabled)).toBe(true);
+    expect([...projectCards[1].querySelectorAll(".project-row-priority-button")]
+      .every(button => button.disabled === false)).toBe(true);
+    expect(container.querySelector(".plan-wizard-next").disabled).toBe(false);
+
+    await act(async () => { await releaseWrite(); });
+    await settle();
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.prospects.find(prospect => prospect.summary === "Automate the weekly report").priorityEm)
+      .toBe("quarterFocus");
     await cleanup();
   });
 

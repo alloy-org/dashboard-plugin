@@ -7,9 +7,10 @@
 // those are saved, and it costs a provider call — so the page offers it as an action and reports what a pass
 // found, rather than firing on mount and presenting an empty list as though a search had already run.
 
-import { PROJECT_PRIORITY_OPTIONS, draftRowsFromProspects, emptyProjectRow, priorityRecordFromRow,
-  prospectRecordsFromDraftRows, rejectionRecordFromRow } from "dashboard/plan-wizard/projects-step-fields";
-import { useEffect, useRef, useState } from "react";
+import ProjectCard from "dashboard/plan-wizard/project-card";
+import { draftRowsFromProspects, emptyProjectRow, priorityRecordFromRow, prospectRecordsFromDraftRows,
+  rejectionRecordFromRow } from "dashboard/plan-wizard/projects-step-fields";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const CATEGORY_HEADINGS = { personal: "Personal projects (optional)", work: "Professional projects" };
 export const PROJECTS_STEP_FORM_ID = "plan-wizard-projects-form";
@@ -33,51 +34,6 @@ function discoveryNoticeText({ discoveryFailureReason, hasChosenIntent, isDiscov
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc One editable project card: its name, discovery reasons, priority decision, and removal control.
-// @param {object} params - An object with the following properties:
-//   - {boolean} isDisabled - True while a save is in flight.
-//   - {Function} onChangeSummary - Receives the row's new name.
-//   - {Function} onReject - Removes a stored project from the plan.
-//   - {Function} onSetPriority - Persists Focus, Keep warm, or Not now.
-//   - {object} row - Draft row being edited.
-// @returns {JSX.Element} A project row.
-function ProjectRow({ isDisabled, onChangeSummary, onReject, onSetPriority, row }) {
-  const wasProposed = row.approvalStatusEm === "awaitingJudgement";
-  const wasSuggested = row.approvalStatusEm !== "humanProvided";
-  const rowClass = `project-row ${ wasProposed ? "project-row--proposed" : "project-row--chosen" }`;
-  return (
-    <div className={ rowClass }>
-      <div className="project-row-header">
-        <input className="project-row-name" disabled={ isDisabled } onChange={ event => onChangeSummary(event.target.value) }
-          placeholder="Name a project that moves an intent forward" type="text" value={ row.summary } />
-        { row.isStored ? (
-          <button className="project-row-reject" disabled={ isDisabled } onClick={ onReject }
-            title="Remove this project from the plan" type="button">
-            Remove
-          </button>
-        ) : null }
-      </div>
-      { wasSuggested ? (
-        <div className="project-row-provenance">
-          { row.substantiations.map(reason => <p key={ reason }>{ reason }</p>) }
-        </div>
-      ) : null }
-      { row.summary.trim() ? (
-        <div aria-label={ `Priority for ${ row.summary }` } className="project-row-priority">
-          { PROJECT_PRIORITY_OPTIONS.map(option => (
-            <button aria-pressed={ row.priorityEm === option.value }
-              className={ `project-row-priority-button${ row.priorityEm === option.value ? " project-row-priority-button--selected" : "" }` }
-              disabled={ isDisabled } key={ option.value } onClick={ () => onSetPriority(option.value) } type="button">
-              { option.label }
-            </button>
-          )) }
-        </div>
-      ) : null }
-    </div>
-  );
-}
-
-// ----------------------------------------------------------------------------------------------
 // @desc Render the projects page and save changed custom projects before Back or Next changes the page.
 // @param {object} params - An object with the following properties:
 //   - {string|null} discoveryFailureReason - Why the last discovery pass proposed nothing, when it proposed none.
@@ -86,12 +42,13 @@ function ProjectRow({ isDisabled, onChangeSummary, onReject, onSetPriority, row 
 //   - {Function} onDiscover - Runs a discovery pass for the current scope.
 //   - {Function} onNavigate - Changes wizard page after pending project edits save successfully.
 //   - {Function} onSave - Receives prospect records and resolves true when the write succeeded.
+//   - {Function} onSaveDecision - Persists one card decision without entering page-wide saving state.
 //   - {object} planningContext - Stored goals and prospects for the scope.
 //   - {Error|null} saveError - Last save failure; its presence turns the action into a retry.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 // @returns {JSX.Element} The projects page.
 export default function ProjectsStep({ discoveryFailureReason = null, isDiscovering = false, isSaving, onDiscover,
-    onNavigate, onSave, planningContext, saveError, scopeKey }) {
+    onNavigate, onSave, onSaveDecision, planningContext, saveError, scopeKey }) {
   const [draftRows, setDraftRows] = useState(() => draftRowsFromProspects(planningContext.prospects,
     planningContext.goals));
   const capturedAtRef = useRef(null);
@@ -113,33 +70,34 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
   // @desc Record an edit and stamp the capture time this edit will be saved under.
   // @param {string} rowUuid - Row being edited.
   // @param {object} rowChanges - Fields to merge into that row.
-  const handleChangeRow = (rowUuid, rowChanges) => {
+  const handleChangeRow = useCallback((rowUuid, rowChanges) => {
     capturedAtRef.current = capturedAtRef.current ?? new Date().toISOString();
     setDraftRows(previous => previous.map(row => (row.uuid === rowUuid ? { ...row, ...rowChanges, isDirty: true } : row)));
-  };
+  }, []);
 
   // ----------------------------------------------------------------------------------------------
   // @desc Remove a stored project from the plan, recording the rejection so it is not proposed again.
   // @param {object} row - Row being rejected.
-  const handleReject = async row => {
+  const handleReject = useCallback(async row => {
     const capturedAt = new Date().toISOString();
     const didSave = await onSave([rejectionRecordFromRow(row, capturedAt)]);
     if (!didSave) return;
     setDraftRows(previous => previous.filter(candidate => candidate.uuid !== row.uuid));
-  };
+  }, [onSave]);
 
   // ----------------------------------------------------------------------------------------------
   // @desc Persist one card's Focus, Keep warm, or Not now decision immediately and reflect it on that card.
   // @param {object} row - Stored project being judged.
   // @param {string} priorityEm - ActionProspect priority enum represented by the selected button.
-  const handleSetPriority = async (row, priorityEm) => {
+  const handleSetPriority = useCallback(async (row, priorityEm) => {
     const capturedAt = new Date().toISOString();
-    const didSave = await onSave([priorityRecordFromRow(row, priorityEm, capturedAt)]);
-    if (!didSave) return;
+    const didSave = await onSaveDecision([priorityRecordFromRow(row, priorityEm, capturedAt)]);
+    if (!didSave) return false;
     setDraftRows(previous => previous.map(candidate => (candidate.uuid === row.uuid
       ? { ...candidate, approvalStatusEm: candidate.approvalStatusEm === "awaitingJudgement" ? "humanAffirmed"
         : candidate.approvalStatusEm, isDirty: false, isStored: true, priorityEm } : candidate)));
-  };
+    return true;
+  }, [onSaveDecision]);
 
   // ----------------------------------------------------------------------------------------------
   // @desc Save changed rows carrying names, keeping the draft intact on failure so navigation can retry.
@@ -192,10 +150,8 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
             ) }
             <div className="projects-step-card-grid">
               { categoryRows.map(row => (
-                <ProjectRow isDisabled={ isSaving } key={ row.uuid }
-                  onChangeSummary={ summary => handleChangeRow(row.uuid, { summary }) }
-                  onReject={ () => handleReject(row) } onSetPriority={ priorityEm => handleSetPriority(row, priorityEm) }
-                  row={ row } />
+                <ProjectCard { ...{ row } } isDisabled={ isSaving } key={ row.uuid }
+                  onChangeSummary={ handleChangeRow } onReject={ handleReject } onSetPriority={ handleSetPriority } />
               )) }
             </div>
             <button className="projects-step-add" disabled={ isSaving }

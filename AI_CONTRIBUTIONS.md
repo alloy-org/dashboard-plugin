@@ -10,6 +10,9 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 - `lib/plan-wizard/action-prospect.js`, `lib/plan-wizard/goal-set.js`,
   `lib/plan-wizard/intent-possibility.js`, `lib/plan-wizard/prospect-task.js` — Give each persisted planning model
   its own module and behavioral contract instead of colocating all four classes in `plan-models.js`.
+- `lib/dashboard/plan-wizard/project-card.jsx` — Isolate each project card behind `memo`, stable rendered-field
+  comparison, and card-local optimistic priority/save state so choosing one priority does not redraw or disable
+  sibling cards.
 
 **Files modified:**
 - `doc/plan-wizard-implementation-plan.md` — Updated the implementation inventory to list the four dedicated
@@ -20,7 +23,8 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
   results. Headingless initialization now logs safely, and failed file writes propagate back to the wizard instead
   of being reported as saved.
 - `lib/dashboard/plan-wizard/projects-step-fields.js`, `lib/dashboard/plan-wizard/projects-step.jsx`,
-  `lib/dashboard/styles/plan-wizard.scss` — Present stored project proposals in a responsive two-column card grid.
+  `lib/dashboard/plan-wizard/plan-wizard.jsx`, `lib/dashboard/styles/plan-wizard.scss`,
+  `lib/hooks/use-plan-wizard.js` — Present stored project proposals in a responsive two-column card grid.
   Each card has persisted Focus, Keep warm, and Not now controls; choosing one records the corresponding priority
   and affirms a proposal awaiting judgement. The intent page now uses the wizard's shared Next button as its form
   submission: Next persists changed answers, advances into project discovery only after a successful write, and
@@ -30,6 +34,12 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
   text, and save through Back or Next instead of a separate Save projects action. Discovery controls now sit
   below each category's cards, with spacing between the grid and add-project control. Returning from Projects now
   enables Next immediately from the persisted intents, even while the project discovery request is still running.
+  The wizard header now follows the supplied progress design with a bullseye and Plan Builder label, one dot per
+  step, and an elongated success-colored marker for the current step. Load failures now separate the summary,
+  record-specific validation detail, and recovery guidance instead of concatenating a bare assertion. Priority
+  decisions use a card-local save path that does not toggle the page-wide saving state; stable callbacks and
+  rendered-field memoization prevent unchanged sibling cards from rendering during the resulting context update.
+  Same-named props forwarded to wizard subcomponents use concise `{ ...{ propName } }` spreads.
 - `lib/plan-wizard/plan-models.js`, `lib/plan-wizard/plan-wizard-service.js`,
   `lib/plan-wizard/prospect-discovery.js` — Added the source-note priority and retirement spellings, and ask
   discovery for at least six supported projects across categories without relaxing the two-task evidence
@@ -39,13 +49,17 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
   the undeployed unsuffixed variants and temporary enum values were removed outright. Discovery persists its
   explanation as a substantiations array for direct card rendering. `plan-models.js` now contains only shared
   constants and validation utilities; repository, inference, discovery, merge, and tests import model classes from
-  their dedicated modules.
+  their dedicated modules. Stored prospect validation identifies the Professional/Personal category and project
+  title when reporting an invalid record.
 - `test/browser-dev-app-prompt.test.js`, `test/dev-app.test.js`, `test/plan-wizard-prospects.test.js`,
   `test/plan-wizard-ui.test.js` — Added coverage for rejected browser writes, personal-intent restoration from an
   archived Vision Guide file after recreating the dev app, the six-project discovery target, and durable card
   priority decisions. Added UI coverage for Next-based intent persistence, first-page navigation, removed actions,
   the reduced intent-page tab order, category discovery placement, custom-project priorities, source-field
-  explanations, hidden intent links, Back/Next project saves, and returning to stored intents during discovery.
+  explanations, hidden intent links, Back/Next project saves, returning to stored intents during discovery, and
+  the five-dot header progression. Added coverage for contextual stored-project errors and structured load-failure
+  messaging, plus a deferred-write check proving sibling cards and wizard navigation remain interactive while one
+  priority decision saves.
 
 ## 2026-09-06 — Present the plan wizard as a modal, and style its five pages
 

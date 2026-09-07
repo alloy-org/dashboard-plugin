@@ -59,7 +59,7 @@ function currentDocumentScrollTop() {
 // @returns {JSX.Element} The wizard.
 export default function PlanWizard({ app, domainName = null, domainUuid = null, onClose, quarter, year }) {
   const { discoverProspects, discoveryFailureReason, error, isDiscovering, isLoading, isRefreshing, isSaving,
-    planningContext, reload, saveError, saveGoals, saveProspects,
+    planningContext, reload, saveError, saveGoals, saveProspectDecision, saveProspects,
     saveQuarterAnswer } = usePlanWizard({ app, domainName, domainUuid, quarter, year });
   const [stepKey, setStepKey] = useState(WIZARD_STEPS[0].key);
   const [hasIntentAnswer, setHasIntentAnswer] = useState(false);
@@ -127,9 +127,20 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
       style={ { top: overlayTop } }>
       <div aria-label="Plan your quarter" aria-modal="true" className="plan-wizard-page" role="dialog">
         <header className="plan-wizard-header">
-          <div className="plan-wizard-title-group">
-            <h1 className="plan-wizard-title">Plan your quarter</h1>
-            <p className="plan-wizard-scope">{ `${ quarterLabel } · ${ domainLabel }` }</p>
+          <div className="plan-wizard-title-group" title={ `${ quarterLabel } · ${ domainLabel }` }>
+            <svg aria-hidden="true" className="plan-wizard-title-icon" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="8" />
+              <circle cx="12" cy="12" r="4" />
+              <circle className="plan-wizard-title-icon-center" cx="12" cy="12" r="1.5" />
+            </svg>
+            <h1 className="plan-wizard-title">Plan Builder</h1>
+          </div>
+          <div aria-label={ `Step ${ stepIndex + 1 } of ${ WIZARD_STEPS.length }` } className="plan-wizard-step-track">
+            { WIZARD_STEPS.map((wizardStep, wizardStepIndex) => (
+              <span aria-hidden="true"
+                className={ `plan-wizard-step-dot${ wizardStepIndex === stepIndex ? " plan-wizard-step-dot--current" : "" }` }
+                key={ wizardStep.key } />
+            )) }
           </div>
           <span className="plan-wizard-progress">{ `${ stepIndex + 1 } of ${ WIZARD_STEPS.length }` }</span>
           <button className="plan-wizard-close" onClick={ onClose } tabIndex={ isFirstStep ? -1 : 0 }
@@ -138,28 +149,28 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
         { isLoading ? <p className="plan-wizard-status">Loading your plan…</p> : null }
         { error && !isLoading ? (
           <div className="plan-wizard-error" role="alert">
-            <p className="plan-wizard-error-message">Your plan could not be loaded. { error.message }</p>
+            <p className="plan-wizard-error-title">Plan Builder could not read its saved Vision Guide.</p>
+            <p className="plan-wizard-error-message">{ error.message }</p>
+            <p className="plan-wizard-error-guidance">No planning data was changed. Correct the named record or
+              retry after a temporary connection problem.</p>
             <button className="plan-wizard-retry" onClick={ reload } type="button">Try again</button>
           </div>
         ) : null }
         { !isLoading && !error && step.key === "intent" ? (
-          <IntentStep isRefreshing={ isRefreshing } isSaving={ isSaving } onAnswerStateChange={ setHasIntentAnswer }
-            onFindProjects={ handleFindProjects } onSave={ saveGoals } planningContext={ planningContext }
-            saveError={ saveError } scopeKey={ scopeKey } />
+          <IntentStep { ...{ isRefreshing, isSaving, planningContext, saveError, scopeKey } }
+            onAnswerStateChange={ setHasIntentAnswer } onFindProjects={ handleFindProjects } onSave={ saveGoals } />
         ) : null }
         { !isLoading && !error && step.key === "projects" ? (
-          <ProjectsStep discoveryFailureReason={ discoveryFailureReason } isDiscovering={ isDiscovering }
-            isSaving={ isSaving } onDiscover={ discoverProspects } onNavigate={ handleProjectNavigation }
-            onSave={ saveProspects } planningContext={ planningContext } saveError={ saveError } scopeKey={ scopeKey } />
+          <ProjectsStep { ...{ discoveryFailureReason, isDiscovering, isSaving, planningContext, saveError, scopeKey } }
+            onDiscover={ discoverProspects } onNavigate={ handleProjectNavigation } onSave={ saveProspects }
+            onSaveDecision={ saveProspectDecision } />
         ) : null }
         { !isLoading && !error && step.key === "themed-weekdays" ? (
-          <ThemedWeekdaysStep isSaving={ isSaving } onSave={ saveProspects } planningContext={ planningContext }
-            saveError={ saveError } scopeKey={ scopeKey } />
+          <ThemedWeekdaysStep { ...{ isSaving, planningContext, saveError, scopeKey } } onSave={ saveProspects } />
         ) : null }
         { !isLoading && !error && QUARTER_ANSWER_COPY[step.key] ? (
-          <QuarterAnswerStep { ...QUARTER_ANSWER_COPY[step.key] }
-            answer={ planningContext[QUARTER_ANSWER_COPY[step.key].answerKey] } isSaving={ isSaving }
-            onSave={ saveQuarterAnswer } saveError={ saveError } scopeKey={ scopeKey } />
+          <QuarterAnswerStep { ...QUARTER_ANSWER_COPY[step.key] } { ...{ isSaving, saveError, scopeKey } }
+            answer={ planningContext[QUARTER_ANSWER_COPY[step.key].answerKey] } onSave={ saveQuarterAnswer } />
         ) : null }
         { !isLoading && !error ? (
           <nav className="plan-wizard-navigation">

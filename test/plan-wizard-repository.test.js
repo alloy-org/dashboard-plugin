@@ -3,6 +3,7 @@
 import { createPlanWizardApp } from "./fixtures/plan-wizard-app.js";
 import { readPlanGoals, savePlanGoals, savePlanIntentPossibilities } from "plan-wizard/plan-wizard-service";
 import { guideSectionRange } from "plan-wizard/vision-guide-markdown";
+import { validatedSectionPayload } from "plan-wizard/vision-guide-repository";
 import plugin from "plugin";
 
 const scope = { domainName: "Work", domainUuid: "domain-work", quarter: 4, year: 2026 };
@@ -31,6 +32,16 @@ test("reads missing guides without creating them and rejects invalid input befor
   await expect(savePlanIntentPossibilities(app, { ...scope, ...inference, generatedAt: "bad date" })).rejects.toThrow();
   expect(app.createNote).not.toHaveBeenCalled();
   expect(app.replaceNoteContent).not.toHaveBeenCalled();
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Identify the category and project title when one stored ActionProspect fails validation.
+test("adds project context to stored prospect validation errors", () => {
+  const payload = { prospectTasks: [], prospects: [{ capturedAt: "2026-09-07T18:08:27.184Z",
+    quarterKey: "2026-Q4", substantiations: ["Worth considering"], summary: "Broken project",
+    userCategoryEm: "work", uuid: "broken-project" }] };
+  expect(() => validatedSectionPayload("workProspects", payload, { quarterKey: "2026-Q4" }))
+    .toThrow('Professional project "Broken project" is invalid: approvalStatusEm');
 });
 
 // ----------------------------------------------------------------------------------------------
