@@ -149,6 +149,41 @@ const habitAnalysis = computeHabitAnalysis(aggregate);
 .habit-row-value--positive { }
 ```
 
+## Stylesheets: one wrapping class per file
+
+Every stylesheet in `lib/dashboard/styles/` is wrapped in a single selector, and that selector is the
+class on the root element of the component the stylesheet styles. Nothing sits at the top level beside
+it, so a rule can only reach the component it was written for and a reader can tell from the first line
+what the file is allowed to touch.
+
+```scss
+// Bad — three top-level selectors, any of which can match somewhere else on the dashboard
+.widget-note-peek { ... }
+.widget-note-peek .note-peek-title-link { ... }
+.note-peek-content { ... }
+
+// Good — one wrapper, matching the class WidgetWrapper puts on the widget root
+.widget-note-peek {
+  .note-peek-title-link { ... }
+  .note-peek-content { ... }
+}
+```
+
+Notes on the parts that do not fit the pattern by nesting alone:
+
+- SCSS variables and `@use` stay above the wrapper: a variable declared inside it is scoped to it.
+- `@keyframes` may be nested for tidiness — Sass lifts it to the top level of the output, and animation
+  names are document-global either way.
+- A rule that depends on an ancestor class the component does not own keeps the ancestor through the
+  parent selector, so the compiled output is unchanged: `.vertical-1-cell & { ... }`.
+- `config-popup.scss` scopes its descendants through `:where(&)` because four other stylesheets extend
+  the popup by class, and their overrides are balanced against the weight those selectors had before
+  they were nested. Reach for this only when a file's classes are extended from outside it.
+- Four stylesheets have no component to scope to and say so in their own header comment:
+  `global-reset.scss` and `theme-light.scss` style the document, `dashboard-tippy.scss` is the vendored
+  replacement for tippy.css, and `amplenote-markdown-render.scss` needs two wrappers because tippy
+  moves the footnote popup out of the note it belongs to.
+
 ## 5. Running Jest (Javascript) Tests
 
 Tests use Jest with ECMAScript Modules. Always run with the `--experimental-vm-modules` flag:
