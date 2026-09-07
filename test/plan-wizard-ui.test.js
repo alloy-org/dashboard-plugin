@@ -139,6 +139,17 @@ describe("PlanWizard intent step", () => {
     await cleanup();
   });
 
+  it("focuses a newly added secondary goal field", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    await clickAndSettle(container.querySelector(".intent-step-category--work .intent-step-add-secondary"));
+    expect(document.activeElement).toBe(workFields(container)[1]);
+    await clickAndSettle(container.querySelector(".intent-step-category--personal .intent-step-add-secondary"));
+    expect(document.activeElement).toBe(personalFields(container)[1]);
+    await clickAndSettle(container.querySelector(".intent-step-category--work .intent-step-add-secondary"));
+    expect(document.activeElement).toBe(workFields(container)[2]);
+    await cleanup();
+  });
+
   it("saves without a personal answer and records added secondary goals at the next rank", async () => {
     const { app, cleanup, container } = await renderPlanWizard();
     await typeInto(workFields(container)[0], "Ship the rewrite");

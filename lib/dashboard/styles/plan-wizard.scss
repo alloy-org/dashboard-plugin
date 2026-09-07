@@ -40,6 +40,7 @@ $plan-wizard-z-index: 1100;
   .plan-wizard-page {
     @include card;
 
+    background: $color-bg-secondary;
     box-shadow: 0 $plan-wizard-shadow-y $plan-wizard-shadow-blur $color-overlay-shadow;
     color: $color-text;
     display: flex;
@@ -60,7 +61,7 @@ $plan-wizard-z-index: 1100;
 
     /* Every page's inputs share one look, so a question added later needs no new field styling. */
     input[type="text"] {
-      background: $color-bg-page;
+      background: $color-bg-primary;
       border: 1px solid $color-border;
       border-radius: $radius-sm;
       color: $color-text;
@@ -273,10 +274,42 @@ $plan-wizard-z-index: 1100;
     grid-column: 1 / -1;
   }
 
+  /* Each category is a card of its own, so the two parallel questions read as two places to answer rather than
+   * as one undifferentiated form. The fill is primary against the form's secondary ground; the category color is
+   * a thick top stripe, as in the original layout, with a quiet grey edge on the remaining sides. */
   .intent-step-category {
+    background: $color-bg-primary;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
     display: flex;
     flex-direction: column;
     gap: $sp-sm;
+    padding: $sp-md;
+
+    .intent-step-add-secondary {
+      align-self: flex-start;
+      border-style: dashed;
+      font-size: 0.75rem;
+      margin-top: auto;
+    }
+
+    &--work {
+      border-top: 4px solid $color-intent-work;
+
+      .intent-step-add-secondary {
+        border-color: $color-intent-work;
+        color: $color-intent-work;
+      }
+    }
+
+    &--personal {
+      border-top: 4px solid $color-intent-personal;
+
+      .intent-step-add-secondary {
+        border-color: $color-intent-personal;
+        color: $color-intent-personal;
+      }
+    }
   }
 
   .intent-step-category-heading {
@@ -287,29 +320,23 @@ $plan-wizard-z-index: 1100;
     text-transform: uppercase;
   }
 
-  .intent-step-add-secondary {
-    align-self: flex-start;
-    border-style: dashed;
-    font-size: 0.75rem;
-  }
-
   .intent-step-suggestion-list {
     display: flex;
     flex-wrap: wrap;
     gap: $sp-xs;
   }
 
-  /* An inferred suggestion is tinted to read as drawn from the user's own notes; a generic default stays plain,
-   * so the two are never mistaken for each other. */
-  .intent-step-suggestion {
+  /* Suggested intents are starting points, not chosen answers. They sit on the secondary fill with
+   * medium-contrast text so they read as chips on the primary card, inferred and default alike. */
+  .intent-step-category .intent-step-suggestion {
+    background: $color-bg-secondary;
+    color: $color-text-secondary;
     font-size: 0.75rem;
     font-weight: 500;
     text-align: left;
 
-    &--inferred {
-      background: $color-blue-light;
-      border-color: $color-blue;
-      color: $color-blue;
+    &:hover:not(:disabled) {
+      background: $color-bg-page-hover;
     }
   }
 
