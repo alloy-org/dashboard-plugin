@@ -34,21 +34,31 @@ const { readPlanGoals, savePlanGoals } = await import("plan-wizard/plan-wizard-s
 
 // ----------------------------------------------------------------------------------------------
 // @desc Mount the wizard and settle the initial read plus any inference it triggers.
-// @param {object} params - { app, scope } overrides; a fresh fixture app is created when none is supplied.
-// @returns {Promise<object>} { app, cleanup, container, rerender }.
-async function renderPlanWizard({ app = createPlanWizardApp(), scope = SCOPE } = {}) {
-  const container = document.createElement("div");
-  document.body.appendChild(container);
-  const root = createRoot(container);
+// @param {object} params - { app, onClose, scope } overrides; a fresh fixture app is created when none is
+//   supplied, and onClose defaults to a no-op for the tests that never dismiss the wizard.
+// @returns {Promise<object>} An object with the following properties:
+//   - {object} app - The fixture app the wizard was mounted against.
+//   - {Function} cleanup - Unmounts the wizard and removes its mount point.
+//   - {HTMLElement} container - Element to query the rendered wizard through. The wizard portals itself to
+//     document.body to escape the planning widget's stacking context, so its markup is not inside the mount
+//     point; the body is therefore the element that contains it.
+//   - {Function} rerender - Re-renders the wizard with a new scope.
+async function renderPlanWizard({ app = createPlanWizardApp(), onClose = () => {}, scope = SCOPE } = {}) {
+  const mountPoint = document.createElement("div");
+  document.body.appendChild(mountPoint);
+  const root = createRoot(mountPoint);
   const rerender = async nextScope => {
     await act(async () => {
-      root.render(createElement(PlanWizard, { app, onClose: () => {}, ...nextScope }));
+      root.render(createElement(PlanWizard, { app, onClose, ...nextScope }));
     });
     await settle();
   };
   await rerender(scope);
-  return { app, cleanup: async () => { await act(async () => { root.unmount(); }); container.remove(); }, container,
-    rerender };
+  const cleanup = async () => {
+    await act(async () => { root.unmount(); });
+    mountPoint.remove();
+  };
+  return { app, cleanup, container: document.body, rerender };
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -60,14 +70,15 @@ async function settle() {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Type into a textarea the way React's onChange expects.
-// @param {HTMLTextAreaElement} textarea - Field to edit.
+// @desc Type into a text field the way React's onChange expects. React installs its own value setter on the
+//   element, so assigning to .value directly would not notify it; calling the prototype's setter does.
+// @param {HTMLInputElement} input - Field to edit.
 // @param {string} text - New value.
-async function typeInto(textarea, text) {
+async function typeInto(input, text) {
   await act(async () => {
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, "value").set;
-    setter.call(textarea, text);
-    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+    setter.call(input, text);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
   });
 }
 
@@ -207,9 +218,11 @@ describe("PlanWizard intent step", () => {
     });
 
     const app = createPlanWizardApp();
-    const container = document.createElement("div");
-    document.body.appendChild(container);
-    const root = createRoot(container);
+    const mountPoint = document.createElement("div");
+    document.body.appendChild(mountPoint);
+    const root = createRoot(mountPoint);
+    // The wizard renders through a portal, so its markup is in the body rather than under the mount point.
+    const container = document.body;
     await act(async () => {
       root.render(createElement(PlanWizard, { app, onClose: () => {}, ...SCOPE }));
     });
@@ -231,7 +244,7 @@ describe("PlanWizard intent step", () => {
     expect(suggestionTexts).toContain("Current domain suggestion");
 
     await act(async () => { root.unmount(); });
-    container.remove();
+    mountPoint.remove();
   });
 
   it("does not overwrite text the user is typing when a refresh lands", async () => {
@@ -242,9 +255,11 @@ describe("PlanWizard intent step", () => {
     });
 
     const app = createPlanWizardApp();
-    const container = document.createElement("div");
-    document.body.appendChild(container);
-    const root = createRoot(container);
+    const mountPoint = document.createElement("div");
+    document.body.appendChild(mountPoint);
+    const root = createRoot(mountPoint);
+    // The wizard renders through a portal, so its markup is in the body rather than under the mount point.
+    const container = document.body;
     await act(async () => {
       root.render(createElement(PlanWizard, { app, onClose: () => {}, ...SCOPE }));
     });
@@ -261,7 +276,7 @@ describe("PlanWizard intent step", () => {
       .toContain("Late suggestion");
 
     await act(async () => { root.unmount(); });
-    container.remove();
+    mountPoint.remove();
   });
 
   it("shows suggestions and stored goals before inference is requested", async () => {
@@ -333,18 +348,6 @@ describe("PlanWizard step navigation", () => {
 });
 
 // ----------------------------------------------------------------------------------------------
-// @desc Type into a text input the way React's onChange expects.
-// @param {HTMLInputElement} input - Field to edit.
-// @param {string} text - New value.
-async function typeIntoInput(input, text) {
-  await act(async () => {
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
-    setter.call(input, text);
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-  });
-}
-
-// ----------------------------------------------------------------------------------------------
 // @desc Advance the wizard to a named step from wherever it currently sits, so a test does not depend on the
 //   sequence's numeric positions or on how many steps an earlier helper already traversed.
 // @param {HTMLElement} container - Mounted wizard.
@@ -365,7 +368,7 @@ async function advanceToStep(container, stepKey) {
 // @param {string} summary - Project name to enter.
 async function saveFirstProject(container, summary) {
   const nameField = container.querySelector(".projects-step-category--work .project-row-name");
-  await typeIntoInput(nameField, summary);
+  await typeInto(nameField, summary);
   await clickAndSettle(container.querySelector(".projects-step-save"));
 }
 
@@ -403,7 +406,7 @@ describe("PlanWizard projects step", () => {
       goalText: "Ship the analytics offering", userCategoryEm: "work" }] });
     const { cleanup, container } = await renderPlanWizard({ app });
     await advanceToStep(container, "projects");
-    await typeIntoInput(container.querySelector(".projects-step-category--work .project-row-name"), "Instrument the funnel");
+    await typeInto(container.querySelector(".projects-step-category--work .project-row-name"), "Instrument the funnel");
 
     const goalCheckbox = container.querySelector(".projects-step-category--work .project-row-goal input");
     await clickAndSettle(goalCheckbox);
@@ -518,6 +521,62 @@ describe("PlanWizard quarter-wide answers", () => {
 
     await clickAndSettle(container.querySelector(".quarter-answer-save"));
     expect(container.querySelector(".quarter-answer-saved")).not.toBe(null);
+    await cleanup();
+  });
+});
+
+describe("PlanWizard modal presentation", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("portals the modal to the document body, out of the planning widget's stacking context", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    const overlay = container.querySelector(".plan-wizard-overlay");
+    expect(overlay.parentElement).toBe(document.body);
+    const dialog = overlay.querySelector(".plan-wizard-page");
+    expect(dialog.getAttribute("role")).toBe("dialog");
+    expect(dialog.getAttribute("aria-modal")).toBe("true");
+    await cleanup();
+  });
+
+  it("removes the portaled modal when the wizard unmounts", async () => {
+    const { cleanup } = await renderPlanWizard();
+    expect(document.querySelector(".plan-wizard-overlay")).not.toBeNull();
+    await cleanup();
+    expect(document.querySelector(".plan-wizard-overlay")).toBeNull();
+  });
+
+  it("closes on a backdrop click but not on a click inside the dialog", async () => {
+    const closeCalls = [];
+    const { cleanup, container } = await renderPlanWizard({ onClose: () => closeCalls.push("closed") });
+    await clickAndSettle(container.querySelector(".plan-wizard-page"));
+    expect(closeCalls).toHaveLength(0);
+    await clickAndSettle(container.querySelector(".plan-wizard-overlay"));
+    expect(closeCalls).toEqual(["closed"]);
+    await cleanup();
+  });
+
+  it("closes on Escape", async () => {
+    const closeCalls = [];
+    const { cleanup } = await renderPlanWizard({ onClose: () => closeCalls.push("closed") });
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Escape" }));
+    });
+    expect(closeCalls).toEqual(["closed"]);
+    await cleanup();
+  });
+
+  it("captures each answer in a one-line text input, since every wizard answer is a phrase", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    expect(container.querySelectorAll("textarea")).toHaveLength(0);
+    const intentField = container.querySelector(".intent-step-input");
+    expect(intentField.tagName).toBe("INPUT");
+    expect(intentField.getAttribute("type")).toBe("text");
+    await advanceToStep(container, "quarter-name");
+    const answerField = container.querySelector(".quarter-answer-input");
+    expect(answerField.tagName).toBe("INPUT");
+    expect(answerField.getAttribute("type")).toBe("text");
     await cleanup();
   });
 });

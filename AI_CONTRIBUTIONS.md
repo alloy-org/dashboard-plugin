@@ -3,6 +3,36 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-09-06 — Present the plan wizard as a modal, and style its five pages
+
+**Model:** Claude Opus 5 (1M context)
+**Files created:**
+- `lib/dashboard/styles/plan-wizard.scss` — The wizard's first stylesheet. Covers the modal shell and all five
+  pages; until now every page rendered with browser default styling. Shared rules cover the four page roots
+  together so the sequence reads as one form rather than five separately-built ones, and the two distinctions the
+  UI must not lose are carried visually: an inferred suggestion is tinted apart from a generic default, and a
+  proposed project is drawn as provisional next to a chosen one.
+
+**Files modified:**
+- `lib/dashboard/planning.jsx` — The wizard no longer replaces the planning widget's body. It renders as a fixed
+  overlay in both the ready and still-loading branches, so the widget stays visible underneath and opening the
+  wizard does not wait on the quarterly plans having loaded.
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` — Wrapped the page in a backdrop and marked it up as a dialog
+  (`role`, `aria-modal`, label). Added Escape-to-close and backdrop-click-to-close, matching the other dashboard
+  popups. A click inside the dialog is ignored, so editing a field cannot dismiss the wizard. The modal is
+  portaled to `document.body`: `position: fixed` is contained by any ancestor carrying a transform, filter, or
+  will-change, so rendered in place the modal stayed trapped in the planning widget's stacking context and the
+  neighboring widgets painted over it regardless of z-index.
+- `lib/dashboard/plan-wizard/intent-step.jsx`, `lib/dashboard/plan-wizard/quarter-answer-step.jsx` — Goal lines
+  and the two quarter-wide answers are one-line text inputs rather than textareas. Each of these answers is a
+  phrase — a goal, a quarter's name, a daily bar — and a box sized for paragraphs invited more than the question
+  wants; Enter also no longer inserts a newline into a goal.
+- `test/plan-wizard-ui.test.js` — Added a modal-presentation block: that the modal is portaled to the body and
+  torn down with the wizard, the dialog markup, Escape and backdrop dismissal, that a click inside does not
+  dismiss, and that no answer is captured in a textarea. Because the wizard portals out of its mount point,
+  tests now query the document body and the mount point is only what gets unmounted. Consolidated the two typing
+  helpers into one now that every wizard field is an input.
+
 ## 2026-09-06 — Build the plan wizard's four remaining pages on ActionProspect persistence
 
 **Model:** Claude Opus 5 (1M context)

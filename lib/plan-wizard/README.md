@@ -136,10 +136,12 @@ Failed writes throw, allowing the eventual UI to retain the user's input and off
 # Scope and validation
 
 This pass stores/retrieves top-level goals, generates and stores intent possibilities, persists `ActionProspect`
-and `ProspectTask` records, and stores the two quarter-wide answers. All five wizard pages are built. Project
-discovery (`prospect-discovery.js`), `prospect-task-service.js`, monthly history, and Quarterly Goals template
-population remain subsequent milestones — the projects page therefore captures projects the user names and states
-plainly that nothing was derived from their notes.
+and `ProspectTask` records, and stores the two quarter-wide answers. All five wizard pages are built and styled;
+the wizard opens as a modal over the dashboard (`lib/dashboard/styles/plan-wizard.scss`) rather than inside the
+planning widget's cell, since a widget column cannot hold a five-page form. Project discovery
+(`prospect-discovery.js`), `prospect-task-service.js`, monthly history, and Quarterly Goals template population
+remain subsequent milestones — the projects page therefore captures projects the user names and states plainly
+that nothing was derived from their notes.
 
 Run the focused suites with:
 

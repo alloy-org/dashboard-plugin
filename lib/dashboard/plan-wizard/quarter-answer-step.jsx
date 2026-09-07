@@ -1,6 +1,9 @@
 // The wizard page shape shared by "Name the quarter" and "When have you done enough for today?": one question,
 // one text answer that belongs to the whole quarter, and the same save/retry behavior as the intent page. Both
 // questions are optional — a user who skips them still has a usable plan — so the page never blocks Next.
+//
+// The answer is a one-line input: a quarter's name and a daily bar are each a short phrase, and a box sized for
+// paragraphs would ask for more than either question wants.
 
 import { answerTextFromRecord, hasUnsavedAnswer, quarterAnswerFromDraft } from "dashboard/plan-wizard/quarter-answer-fields";
 import { useEffect, useRef, useState } from "react";
@@ -16,7 +19,7 @@ import { useEffect, useRef, useState } from "react";
 //   - {Array<string>} hints - Short examples that show the kind of answer expected, without proposing one.
 //   - {boolean} isSaving - True while a save is in flight.
 //   - {Function} onSave - Receives { answerKey, capturedAt, text } and resolves true when the write succeeded.
-//   - {string} placeholder - Prompt shown in the empty textarea.
+//   - {string} placeholder - Prompt shown in the empty input.
 //   - {Error|null} saveError - Last save failure; its presence turns the action into a retry.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 //   - {string} summary - One line explaining what the answer is used for.
@@ -69,8 +72,8 @@ export default function QuarterAnswerStep({ answer, answerKey, heading, hints = 
     <div className={ `quarter-answer-page quarter-answer-page--${ answerKey }` }>
       <h2 className="quarter-answer-heading">{ heading }</h2>
       <p className="quarter-answer-summary">{ summary }</p>
-      <textarea className="quarter-answer-input" disabled={ isSaving } onChange={ event => handleChangeText(event.target.value) }
-        placeholder={ placeholder } rows={ 3 } value={ draftText } />
+      <input className="quarter-answer-input" disabled={ isSaving } onChange={ event => handleChangeText(event.target.value) }
+        placeholder={ placeholder } type="text" value={ draftText } />
       { hints.length ? (
         <ul className="quarter-answer-hint-list">
           { hints.map(hint => <li className="quarter-answer-hint" key={ hint }>{ hint }</li>) }

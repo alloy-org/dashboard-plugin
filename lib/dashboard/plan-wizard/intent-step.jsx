@@ -8,21 +8,22 @@ import { CATEGORY_LABELS, PRIMARY_GOAL_RANK, draftFieldsFromGoals, goalRecordsFr
 import { useEffect, useRef, useState } from "react";
 
 // ----------------------------------------------------------------------------------------------
-// @desc One editable goal line: the textarea plus, for a primary field, the suggestions that can fill it.
+// @desc One editable goal line. A goal is a single sentence, so this is a one-line text input rather than a
+//   textarea: the box should not invite a paragraph, and Enter should not insert a newline into a goal.
 // @param {object} params - An object with the following properties:
 //   - {object} field - Draft field: { goalRank, goalText, userCategoryEm, uuid }.
 //   - {boolean} isDisabled - True while a save is in flight.
 //   - {Function} onChangeText - Receives the field's new text.
 //   - {Function} onFocus - Marks this field as the suggestion target.
-//   - {string} placeholder - Prompt shown in the empty textarea.
+//   - {string} placeholder - Prompt shown in the empty input.
 // @returns {JSX.Element} A labeled field row.
 function IntentStepField({ field, isDisabled, onChangeText, onFocus, placeholder }) {
   const isPrimary = field.goalRank === PRIMARY_GOAL_RANK;
   const fieldClass = `intent-step-field ${ isPrimary ? "intent-step-field--primary" : "intent-step-field--secondary" }`;
   return (
     <div className={ fieldClass }>
-      <textarea className="intent-step-input" disabled={ isDisabled } onChange={ event => onChangeText(event.target.value) }
-        onFocus={ onFocus } placeholder={ placeholder } rows={ 2 } value={ field.goalText } />
+      <input className="intent-step-input" disabled={ isDisabled } onChange={ event => onChangeText(event.target.value) }
+        onFocus={ onFocus } placeholder={ placeholder } type="text" value={ field.goalText } />
     </div>
   );
 }

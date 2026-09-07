@@ -1,6 +1,12 @@
 // Shell for the quarterly plan wizard: names the quarter being planned, loads its stored state through
 // usePlanWizard, and routes to the current step. Closing and reopening resumes from what was persisted, so a
 // user who leaves mid-answer loses nothing.
+//
+// The wizard renders as a fixed modal over the whole dashboard rather than inside the planning widget's cell,
+// since five pages of questions need far more room than a widget column offers. It is portaled to document.body
+// because `position: fixed` is contained by any ancestor carrying a transform, filter, or will-change: rendered
+// in place, the modal is trapped in the planning widget's stacking context and neighboring widgets paint over
+// it no matter how high its z-index goes.
 
 import IntentStep from "dashboard/plan-wizard/intent-step";
 import ProjectsStep from "dashboard/plan-wizard/projects-step";
@@ -8,7 +14,9 @@ import QuarterAnswerStep from "dashboard/plan-wizard/quarter-answer-step";
 import ThemedWeekdaysStep from "dashboard/plan-wizard/themed-weekdays-step";
 import { WIZARD_STEPS, wizardStepIndexFromKey } from "dashboard/plan-wizard/wizard-steps";
 import usePlanWizard, { planScopeKey } from "hooks/use-plan-wizard";
-import { useState } from "react";
+import { createPortal } from "react-dom";
+import { useEffect, useState } from "react";
+import "dashboard/styles/plan-wizard.scss";
 
 // Copy for the two pages that capture a single quarter-wide answer, kept beside the routing that renders them.
 const QUARTER_ANSWER_COPY = {
@@ -54,52 +62,71 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
     setStepKey(WIZARD_STEPS[nextIndex].key);
   };
 
-  return (
-    <div className="plan-wizard-page">
-      <header className="plan-wizard-header">
-        <div className="plan-wizard-title-group">
-          <h1 className="plan-wizard-title">Plan your quarter</h1>
-          <p className="plan-wizard-scope">{ `${ quarterLabel } · ${ domainLabel }` }</p>
-        </div>
-        <span className="plan-wizard-progress">{ `${ stepIndex + 1 } of ${ WIZARD_STEPS.length }` }</span>
-        <button className="plan-wizard-close" onClick={ onClose } type="button">Close</button>
-      </header>
-      { isLoading ? <p className="plan-wizard-status">Loading your plan…</p> : null }
-      { error && !isLoading ? (
-        <div className="plan-wizard-error" role="alert">
-          <p className="plan-wizard-error-message">Your plan could not be loaded. { error.message }</p>
-          <button className="plan-wizard-retry" onClick={ reload } type="button">Try again</button>
-        </div>
-      ) : null }
-      { !isLoading && !error && step.key === "intent" ? (
-        <IntentStep isRefreshing={ isRefreshing } isSaving={ isSaving } onSave={ saveGoals }
-          planningContext={ planningContext } saveError={ saveError } scopeKey={ scopeKey } />
-      ) : null }
-      { !isLoading && !error && step.key === "projects" ? (
-        <ProjectsStep isSaving={ isSaving } onSave={ saveProspects } planningContext={ planningContext }
-          saveError={ saveError } scopeKey={ scopeKey } />
-      ) : null }
-      { !isLoading && !error && step.key === "themed-weekdays" ? (
-        <ThemedWeekdaysStep isSaving={ isSaving } onSave={ saveProspects } planningContext={ planningContext }
-          saveError={ saveError } scopeKey={ scopeKey } />
-      ) : null }
-      { !isLoading && !error && QUARTER_ANSWER_COPY[step.key] ? (
-        <QuarterAnswerStep { ...QUARTER_ANSWER_COPY[step.key] }
-          answer={ planningContext[QUARTER_ANSWER_COPY[step.key].answerKey] } isSaving={ isSaving }
-          onSave={ saveQuarterAnswer } saveError={ saveError } scopeKey={ scopeKey } />
-      ) : null }
-      { !isLoading && !error ? (
-        <nav className="plan-wizard-navigation">
-          <button className="plan-wizard-back" disabled={ isFirstStep } onClick={ () => handleStepChange(-1) }
-            type="button">
-            Back
-          </button>
-          <button className="plan-wizard-next" disabled={ isLastStep } onClick={ () => handleStepChange(1) }
-            type="button">
-            Next
-          </button>
-        </nav>
-      ) : null }
+  // Escape closes the wizard, as it does for every other dashboard modal. Answers already saved are stored, and
+  // an unsaved draft is deliberately not confirmed away here: reopening restores each step from what was saved.
+  useEffect(() => {
+    const handleKeyDown = event => { if (event.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Close when the backdrop itself is clicked, ignoring clicks that bubble up from inside the dialog.
+  // @param {object} event - The click event.
+  const handleBackdropClick = event => {
+    if (event.target === event.currentTarget) onClose();
+  };
+
+  const wizardModal = (
+    <div className="plan-wizard-overlay" onClick={ handleBackdropClick }>
+      <div aria-label="Plan your quarter" aria-modal="true" className="plan-wizard-page" role="dialog">
+        <header className="plan-wizard-header">
+          <div className="plan-wizard-title-group">
+            <h1 className="plan-wizard-title">Plan your quarter</h1>
+            <p className="plan-wizard-scope">{ `${ quarterLabel } · ${ domainLabel }` }</p>
+          </div>
+          <span className="plan-wizard-progress">{ `${ stepIndex + 1 } of ${ WIZARD_STEPS.length }` }</span>
+          <button className="plan-wizard-close" onClick={ onClose } type="button">Close</button>
+        </header>
+        { isLoading ? <p className="plan-wizard-status">Loading your plan…</p> : null }
+        { error && !isLoading ? (
+          <div className="plan-wizard-error" role="alert">
+            <p className="plan-wizard-error-message">Your plan could not be loaded. { error.message }</p>
+            <button className="plan-wizard-retry" onClick={ reload } type="button">Try again</button>
+          </div>
+        ) : null }
+        { !isLoading && !error && step.key === "intent" ? (
+          <IntentStep isRefreshing={ isRefreshing } isSaving={ isSaving } onSave={ saveGoals }
+            planningContext={ planningContext } saveError={ saveError } scopeKey={ scopeKey } />
+        ) : null }
+        { !isLoading && !error && step.key === "projects" ? (
+          <ProjectsStep isSaving={ isSaving } onSave={ saveProspects } planningContext={ planningContext }
+            saveError={ saveError } scopeKey={ scopeKey } />
+        ) : null }
+        { !isLoading && !error && step.key === "themed-weekdays" ? (
+          <ThemedWeekdaysStep isSaving={ isSaving } onSave={ saveProspects } planningContext={ planningContext }
+            saveError={ saveError } scopeKey={ scopeKey } />
+        ) : null }
+        { !isLoading && !error && QUARTER_ANSWER_COPY[step.key] ? (
+          <QuarterAnswerStep { ...QUARTER_ANSWER_COPY[step.key] }
+            answer={ planningContext[QUARTER_ANSWER_COPY[step.key].answerKey] } isSaving={ isSaving }
+            onSave={ saveQuarterAnswer } saveError={ saveError } scopeKey={ scopeKey } />
+        ) : null }
+        { !isLoading && !error ? (
+          <nav className="plan-wizard-navigation">
+            <button className="plan-wizard-back" disabled={ isFirstStep } onClick={ () => handleStepChange(-1) }
+              type="button">
+              Back
+            </button>
+            <button className="plan-wizard-next" disabled={ isLastStep } onClick={ () => handleStepChange(1) }
+              type="button">
+              Next
+            </button>
+          </nav>
+        ) : null }
+      </div>
     </div>
   );
+
+  return typeof document !== "undefined" && document.body ? createPortal(wizardModal, document.body) : wizardModal;
 }

@@ -1,0 +1,476 @@
+/* Styles for the quarterly plan wizard: the fixed modal it opens in, and the five question pages inside it.
+ * The wizard is a full-screen task rather than a widget view, so it is styled as a dialog over the dashboard
+ * instead of inheriting the widget card's cramped column. */
+
+@use 'theme-tokens' as *;
+
+$plan-wizard-edge-inset: 10%;
+$plan-wizard-input-min-height: 38px;
+$plan-wizard-shadow-blur: 40px;
+$plan-wizard-shadow-y: 12px;
+$plan-wizard-z-index: 1100;
+
+/* `position: fixed` escapes the JS body-width clamp applied for the iOS WKWebView viewport bug, so the overlay
+ * is pinned to the real usable width published by dashboard-load.jsx rather than to 100vw, exactly as
+ * config-popup.scss does. Without it the modal sits half off the right edge on a phone. */
+.plan-wizard-overlay {
+  background: $color-overlay-backdrop;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  left: 0;
+  padding: $plan-wizard-edge-inset;
+  position: fixed;
+  top: 0;
+  width: var(--dashboard-viewport-width, 100vw);
+  z-index: $plan-wizard-z-index;
+}
+
+/* The dialog fills what the overlay's 10% padding leaves it, and scrolls internally so a long page never
+ * pushes the header or the Back/Next controls off screen. */
+.plan-wizard-page {
+  @include card;
+
+  box-shadow: 0 $plan-wizard-shadow-y $plan-wizard-shadow-blur $color-overlay-shadow;
+  color: $color-text;
+  display: flex;
+  flex-direction: column;
+  font-family: $font-sans;
+  overflow-y: auto;
+  padding: $sp-xl;
+  width: 100%;
+
+  @include breakpoint($breakpoint-large-phone) {
+    padding: $sp-lg;
+  }
+
+  h1,
+  h2,
+  h3 {
+    color: $color-navy;
+  }
+
+  /* Every page's inputs share one look, so a question added later needs no new field styling. */
+  input[type="text"] {
+    background: $color-bg-page;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    color: $color-text;
+    font-family: inherit;
+    font-size: 0.9rem;
+    min-height: $plan-wizard-input-min-height;
+    padding: $sp-sm $sp-md;
+    width: 100%;
+
+    &:focus {
+      border-color: $color-accent;
+      outline: none;
+    }
+
+    &::placeholder {
+      color: $color-text-muted;
+    }
+  }
+
+  /* Buttons default to the quiet secondary treatment; each page promotes its own primary action below. */
+  button {
+    background: transparent;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    color: $color-text-secondary;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: $sp-sm $sp-md;
+
+    &:hover:not(:disabled) {
+      background: $color-bg-page-hover;
+    }
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.5;
+    }
+  }
+}
+
+// ── Wizard chrome ────────────────────────────────────────────────────────────────────────
+
+.plan-wizard-header {
+  align-items: center;
+  border-bottom: 1px solid $color-border;
+  display: flex;
+  gap: $sp-md;
+  padding-bottom: $sp-lg;
+}
+
+.plan-wizard-title-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.plan-wizard-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.plan-wizard-scope {
+  color: $color-text-secondary;
+  font-size: 0.8rem;
+  margin: $sp-xs 0 0;
+}
+
+.plan-wizard-progress {
+  color: $color-text-muted;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.plan-wizard-status {
+  color: $color-text-secondary;
+  font-size: 0.85rem;
+  padding: $sp-xl 0;
+  text-align: center;
+}
+
+.plan-wizard-error {
+  background: $color-bg-warning;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  margin-top: $sp-lg;
+  padding: $sp-md;
+}
+
+.plan-wizard-error-message {
+  color: $color-danger;
+  font-size: 0.85rem;
+  margin: 0 0 $sp-sm;
+}
+
+/* The page body grows to fill the dialog so Back/Next stay at the bottom even on a short page. */
+.plan-wizard-navigation {
+  border-top: 1px solid $color-border;
+  display: flex;
+  gap: $sp-sm;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: $sp-lg;
+}
+
+// ── Shared page layout ───────────────────────────────────────────────────────────────────
+
+/* Each step's root element is laid out identically, so the pages read as one sequence rather than five
+ * separately-built forms. */
+.intent-step-page,
+.projects-step-page,
+.quarter-answer-page,
+.themed-weekdays-page {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: $sp-md;
+  padding: $sp-lg 0;
+}
+
+.intent-step-heading,
+.projects-step-heading,
+.quarter-answer-heading,
+.themed-weekdays-heading {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.intent-step-status,
+.projects-step-summary,
+.quarter-answer-summary,
+.themed-weekdays-summary {
+  color: $color-text-secondary;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* The primary action on every page is the save, so it is the one button carrying the accent. */
+.intent-step-save,
+.projects-step-save,
+.quarter-answer-save,
+.themed-weekdays-save {
+  background: $color-accent;
+  border-color: $color-accent;
+  color: $color-text-on-accent;
+
+  &:hover:not(:disabled) {
+    background: $color-accent;
+    opacity: 0.9;
+  }
+}
+
+.intent-step-actions,
+.projects-step-actions,
+.quarter-answer-actions,
+.themed-weekdays-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $sp-md;
+}
+
+.intent-step-error,
+.projects-step-error,
+.quarter-answer-error,
+.themed-weekdays-error {
+  color: $color-danger;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.intent-step-saved,
+.projects-step-saved,
+.quarter-answer-saved,
+.themed-weekdays-saved {
+  color: $color-success;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.quarter-answer-optional,
+.themed-weekdays-optional {
+  color: $color-text-muted;
+  font-size: 0.75rem;
+  margin: 0;
+}
+
+// ── Intent step ──────────────────────────────────────────────────────────────────────────
+
+/* The two categories sit side by side where there is room, since they are parallel questions rather than
+ * sequential ones, and stack on a phone. */
+.intent-step-page {
+  display: grid;
+  gap: $sp-lg;
+  grid-template-columns: 1fr 1fr;
+
+  @include breakpoint($breakpoint-tablet) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.intent-step-heading,
+.intent-step-status,
+.intent-step-actions,
+.intent-step-error,
+.intent-step-saved {
+  grid-column: 1 / -1;
+}
+
+.intent-step-category {
+  display: flex;
+  flex-direction: column;
+  gap: $sp-sm;
+}
+
+.intent-step-category-heading {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.intent-step-add-secondary {
+  align-self: flex-start;
+  border-style: dashed;
+  font-size: 0.75rem;
+}
+
+.intent-step-suggestion-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $sp-xs;
+}
+
+/* An inferred suggestion is tinted to read as drawn from the user's own notes; a generic default stays plain,
+ * so the two are never mistaken for each other. */
+.intent-step-suggestion {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-align: left;
+
+  &--inferred {
+    background: $color-blue-light;
+    border-color: $color-blue;
+    color: $color-blue;
+  }
+}
+
+.intent-step-suggestion-note {
+  color: $color-text-muted;
+  font-size: 0.7rem;
+  font-style: italic;
+  margin: 0;
+}
+
+// ── Projects step ────────────────────────────────────────────────────────────────────────
+
+.projects-step-discovery-notice {
+  background: $color-bg-warning;
+  border-radius: $radius-sm;
+  color: $color-text-secondary;
+  font-size: 0.8rem;
+  margin: 0;
+  padding: $sp-sm $sp-md;
+}
+
+.projects-step-category-heading {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  margin: $sp-sm 0 0;
+  text-transform: uppercase;
+}
+
+.project-row {
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  display: flex;
+  flex-direction: column;
+  gap: $sp-sm;
+  margin-bottom: $sp-sm;
+  padding: $sp-md;
+}
+
+/* A discovered project the user has not yet judged is visually provisional, so an inference is never mistaken
+ * for a decision the user made. */
+.project-row--proposed {
+  background: $color-bg-page;
+  border-style: dashed;
+}
+
+.project-row-header {
+  align-items: center;
+  display: flex;
+  gap: $sp-sm;
+}
+
+.project-row-provenance {
+  color: $color-text-muted;
+  font-size: 0.7rem;
+  font-style: italic;
+  margin: 0;
+}
+
+.project-row-goal-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $sp-md;
+}
+
+.project-row-goal {
+  align-items: center;
+  color: $color-text-secondary;
+  cursor: pointer;
+  display: flex;
+  font-size: 0.78rem;
+  gap: $sp-xs;
+
+  input[type="checkbox"] {
+    accent-color: $color-accent;
+  }
+}
+
+.project-row-reject {
+  color: $color-danger;
+  flex-shrink: 0;
+  font-size: 0.72rem;
+}
+
+.projects-step-add {
+  align-self: flex-start;
+  border-style: dashed;
+}
+
+.projects-step-empty-goals {
+  color: $color-text-muted;
+  font-size: 0.82rem;
+  margin: 0;
+}
+
+// ── Themed weekdays step ─────────────────────────────────────────────────────────────────
+
+.themed-weekdays-grid {
+  display: flex;
+  flex-direction: column;
+  gap: $sp-sm;
+}
+
+.themed-weekdays-row {
+  align-items: center;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  display: flex;
+  flex-wrap: wrap;
+  gap: $sp-md;
+  justify-content: space-between;
+  padding: $sp-sm $sp-md;
+}
+
+.themed-weekdays-row-label {
+  flex: 1;
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-width: 0;
+}
+
+.themed-weekdays-row-options {
+  display: flex;
+  gap: $sp-xs;
+}
+
+.themed-weekdays-option {
+  font-size: 0.72rem;
+  min-width: 44px;
+  padding: $sp-xs $sp-sm;
+  text-align: center;
+
+  &--selected {
+    background: $color-accent;
+    border-color: $color-accent;
+    color: $color-text-on-accent;
+
+    &:hover:not(:disabled) {
+      background: $color-accent;
+      opacity: 0.9;
+    }
+  }
+}
+
+.themed-weekdays-empty {
+  color: $color-text-muted;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+// ── Quarter answer steps ─────────────────────────────────────────────────────────────────
+
+/* Hints are examples of the kind of answer wanted, not options to pick, so they are set as quiet prose rather
+ * than as the tappable chips the intent page uses for real suggestions. */
+.quarter-answer-hint-list {
+  color: $color-text-muted;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  gap: $sp-md;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.quarter-answer-hint {
+  font-style: italic;
+}

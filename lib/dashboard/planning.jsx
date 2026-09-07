@@ -254,19 +254,21 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
     );
   }
 
-  if (wizardPlan) {
-    return (
-      <WidgetWrapper title={widgetTitle} widgetId="planning">
-        <PlanWizard app={app} domainName={taskDomainName} domainUuid={taskDomainUUID}
-          onClose={() => setWizardPlan(null)} quarter={wizardPlan.quarter} year={wizardPlan.year} />
-      </WidgetWrapper>
-    );
-  }
+  // ----------------------------------------------------------------------------------------------
+  // @desc The wizard, when one is open. It renders as a fixed overlay above the whole dashboard rather than
+  //   inside the widget body, since a widget cell is far too narrow for a five-page form. Both render branches
+  //   below include it so opening the wizard does not depend on the quarterly plans having finished loading.
+  // @returns {JSX.Element|null} The wizard overlay, or null when no plan is being edited.
+  const planWizardOverlay = wizardPlan ? (
+    <PlanWizard app={app} domainName={taskDomainName} domainUuid={taskDomainUUID}
+      onClose={() => setWizardPlan(null)} quarter={wizardPlan.quarter} year={wizardPlan.year} />
+  ) : null;
 
   if (!plansReady) {
     return (
       <WidgetWrapper title={widgetTitle} widgetId="planning">
         <p className="planning-empty">Loading quarterly plans…</p>
+        {planWizardOverlay}
       </WidgetWrapper>
     );
   }
@@ -328,6 +330,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
           }}
         />
       ) : null}
+      {planWizardOverlay}
     </WidgetWrapper>
   );
 }
