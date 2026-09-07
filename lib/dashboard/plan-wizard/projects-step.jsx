@@ -12,6 +12,7 @@ import { PROJECT_PRIORITY_OPTIONS, draftRowsFromProspects, emptyProjectRow, prio
 import { useEffect, useRef, useState } from "react";
 
 const CATEGORY_HEADINGS = { personal: "Personal projects (optional)", work: "Professional projects" };
+export const PROJECTS_STEP_FORM_ID = "plan-wizard-projects-form";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Say what discovery is doing or has done, so the page never leaves the user guessing why the list holds
@@ -32,18 +33,17 @@ function discoveryNoticeText({ discoveryFailureReason, hasChosenIntent, isDiscov
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc One editable project row: its name, the intents it advances, and the control that drops it.
+// @desc One editable project card: its name, discovery reasons, priority decision, and removal control.
 // @param {object} params - An object with the following properties:
-//   - {Array<object>} goals - The quarter's saved goals for this row's category, offered as links.
 //   - {boolean} isDisabled - True while a save is in flight.
 //   - {Function} onChangeSummary - Receives the row's new name.
 //   - {Function} onReject - Removes a stored project from the plan.
 //   - {Function} onSetPriority - Persists Focus, Keep warm, or Not now.
-//   - {Function} onToggleGoal - Receives a goal UUID to link or unlink.
 //   - {object} row - Draft row being edited.
 // @returns {JSX.Element} A project row.
-function ProjectRow({ goals, isDisabled, onChangeSummary, onReject, onSetPriority, onToggleGoal, row }) {
-  const wasProposed = row.approvalStatus === "awaitingJudgement";
+function ProjectRow({ isDisabled, onChangeSummary, onReject, onSetPriority, row }) {
+  const wasProposed = row.approvalStatusEm === "awaitingJudgement";
+  const wasSuggested = row.approvalStatusEm !== "humanProvided";
   const rowClass = `project-row ${ wasProposed ? "project-row--proposed" : "project-row--chosen" }`;
   return (
     <div className={ rowClass }>
@@ -57,27 +57,16 @@ function ProjectRow({ goals, isDisabled, onChangeSummary, onReject, onSetPriorit
           </button>
         ) : null }
       </div>
-      { wasProposed ? (
-        <p className="project-row-provenance">
-          { row.substantiation || "Suggested from your notes" } — edit or remove it.
-        </p>
-      ) : null }
-      { goals.length && row.summary.trim() ? (
-        <div className="project-row-goal-list">
-          { goals.map(goal => (
-            <label className="project-row-goal" key={ goal.uuid }>
-              <input checked={ row.linkedGoalUuids.includes(goal.uuid) } disabled={ isDisabled }
-                onChange={ () => onToggleGoal(goal.uuid) } type="checkbox" />
-              { goal.goalText }
-            </label>
-          )) }
+      { wasSuggested ? (
+        <div className="project-row-provenance">
+          { row.substantiations.map(reason => <p key={ reason }>{ reason }</p>) }
         </div>
       ) : null }
-      { row.isStored ? (
+      { row.summary.trim() ? (
         <div aria-label={ `Priority for ${ row.summary }` } className="project-row-priority">
           { PROJECT_PRIORITY_OPTIONS.map(option => (
-            <button aria-pressed={ row.priority === option.value }
-              className={ `project-row-priority-button${ row.priority === option.value ? " project-row-priority-button--selected" : "" }` }
+            <button aria-pressed={ row.priorityEm === option.value }
+              className={ `project-row-priority-button${ row.priorityEm === option.value ? " project-row-priority-button--selected" : "" }` }
               disabled={ isDisabled } key={ option.value } onClick={ () => onSetPriority(option.value) } type="button">
               { option.label }
             </button>
@@ -89,22 +78,22 @@ function ProjectRow({ goals, isDisabled, onChangeSummary, onReject, onSetPriorit
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Render and save the projects page. Draft rows are local state seeded from stored prospects and reseeded
-//   only when the plan scope changes or a save succeeds, so a project the user is naming survives a refresh.
+// @desc Render the projects page and save changed custom projects before Back or Next changes the page.
 // @param {object} params - An object with the following properties:
 //   - {string|null} discoveryFailureReason - Why the last discovery pass proposed nothing, when it proposed none.
 //   - {boolean} isDiscovering - True while a discovery pass is in flight.
 //   - {boolean} isSaving - True while a save is in flight.
 //   - {Function} onDiscover - Runs a discovery pass for the current scope.
+//   - {Function} onNavigate - Changes wizard page after pending project edits save successfully.
 //   - {Function} onSave - Receives prospect records and resolves true when the write succeeded.
 //   - {object} planningContext - Stored goals and prospects for the scope.
 //   - {Error|null} saveError - Last save failure; its presence turns the action into a retry.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 // @returns {JSX.Element} The projects page.
 export default function ProjectsStep({ discoveryFailureReason = null, isDiscovering = false, isSaving, onDiscover,
-    planningContext, saveError, onSave, scopeKey }) {
-  const [draftRows, setDraftRows] = useState(() => draftRowsFromProspects(planningContext.prospects));
-  const [hasSaved, setHasSaved] = useState(false);
+    onNavigate, onSave, planningContext, saveError, scopeKey }) {
+  const [draftRows, setDraftRows] = useState(() => draftRowsFromProspects(planningContext.prospects,
+    planningContext.goals));
   const capturedAtRef = useRef(null);
   const seededScopeRef = useRef(scopeKey);
 
@@ -112,14 +101,13 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
     if (seededScopeRef.current === scopeKey && !capturedAtRef.current) return;
     seededScopeRef.current = scopeKey;
     capturedAtRef.current = null;
-    setDraftRows(draftRowsFromProspects(planningContext.prospects));
-    setHasSaved(false);
+    setDraftRows(draftRowsFromProspects(planningContext.prospects, planningContext.goals));
   }, [scopeKey]);
 
   useEffect(() => {
     if (capturedAtRef.current) return;
-    setDraftRows(draftRowsFromProspects(planningContext.prospects));
-  }, [planningContext.prospects]);
+    setDraftRows(draftRowsFromProspects(planningContext.prospects, planningContext.goals));
+  }, [planningContext.goals, planningContext.prospects]);
 
   // ----------------------------------------------------------------------------------------------
   // @desc Record an edit and stamp the capture time this edit will be saved under.
@@ -127,21 +115,7 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
   // @param {object} rowChanges - Fields to merge into that row.
   const handleChangeRow = (rowUuid, rowChanges) => {
     capturedAtRef.current = capturedAtRef.current ?? new Date().toISOString();
-    setHasSaved(false);
-    setDraftRows(previous => previous.map(row => (row.uuid === rowUuid ? { ...row, ...rowChanges } : row)));
-  };
-
-  // ----------------------------------------------------------------------------------------------
-  // @desc Link or unlink one intent from a project, so the plan records which outcome the work serves.
-  // @param {string} rowUuid - Row being edited.
-  // @param {string} goalUuid - Intent being toggled.
-  const handleToggleGoal = (rowUuid, goalUuid) => {
-    const row = draftRows.find(candidate => candidate.uuid === rowUuid);
-    if (!row) return;
-    const isLinked = row.linkedGoalUuids.includes(goalUuid);
-    const remainingGoalUuids = row.linkedGoalUuids.filter(uuid => uuid !== goalUuid);
-    const linkedGoalUuids = isLinked ? remainingGoalUuids : row.linkedGoalUuids.concat(goalUuid);
-    handleChangeRow(rowUuid, { linkedGoalUuids });
+    setDraftRows(previous => previous.map(row => (row.uuid === rowUuid ? { ...row, ...rowChanges, isDirty: true } : row)));
   };
 
   // ----------------------------------------------------------------------------------------------
@@ -157,56 +131,57 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
   // ----------------------------------------------------------------------------------------------
   // @desc Persist one card's Focus, Keep warm, or Not now decision immediately and reflect it on that card.
   // @param {object} row - Stored project being judged.
-  // @param {string} priority - ActionProspect priority enum represented by the selected button.
-  const handleSetPriority = async (row, priority) => {
+  // @param {string} priorityEm - ActionProspect priority enum represented by the selected button.
+  const handleSetPriority = async (row, priorityEm) => {
     const capturedAt = new Date().toISOString();
-    const didSave = await onSave([priorityRecordFromRow(row, priority, capturedAt)]);
+    const didSave = await onSave([priorityRecordFromRow(row, priorityEm, capturedAt)]);
     if (!didSave) return;
     setDraftRows(previous => previous.map(candidate => (candidate.uuid === row.uuid
-      ? { ...candidate, approvalStatus: candidate.approvalStatus === "awaitingJudgement" ? "humanAffirmed"
-        : candidate.approvalStatus, priority } : candidate)));
+      ? { ...candidate, approvalStatusEm: candidate.approvalStatusEm === "awaitingJudgement" ? "humanAffirmed"
+        : candidate.approvalStatusEm, isDirty: false, isStored: true, priorityEm } : candidate)));
   };
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Save every row that carries a name, keeping the draft intact on failure so a retry reuses its timestamp.
+  // @desc Save changed rows carrying names, keeping the draft intact on failure so navigation can retry.
+  // @returns {Promise<boolean>} Whether navigation may proceed.
   const handleSave = async () => {
+    if (!capturedAtRef.current) return true;
     const capturedAt = capturedAtRef.current ?? new Date().toISOString();
     capturedAtRef.current = capturedAt;
     const prospectRecords = prospectRecordsFromDraftRows(draftRows, capturedAt);
-    if (!prospectRecords.length) return;
+    if (!prospectRecords.length) {
+      capturedAtRef.current = null;
+      return true;
+    }
     const didSave = await onSave(prospectRecords);
-    if (!didSave) return;
+    if (!didSave) return false;
     capturedAtRef.current = null;
-    setHasSaved(true);
+    return true;
   };
 
-  const hasNamedProject = draftRows.some(row => row.summary.trim());
-  const saveLabel = saveError ? "Retry saving" : "Save projects";
-  const hasChosenIntent = planningContext.goals.length > 0;
-  const proposedCount = draftRows.filter(row => row.approvalStatus === "awaitingJudgement").length;
+  // ----------------------------------------------------------------------------------------------
+  // @desc Save pending custom project text before honoring the Back or Next submit button.
+  // @param {object} event - Form submission event from the wizard navigation.
+  const handleNavigate = async event => {
+    event.preventDefault();
+    const didSave = await handleSave();
+    if (!didSave) return;
+    onNavigate();
+  };
 
   return (
-    <div className="projects-step-page">
+    <form className="projects-step-page" id={ PROJECTS_STEP_FORM_ID } onSubmit={ handleNavigate }>
       <h2 className="projects-step-heading">Which projects carry those intents?</h2>
       <p className="projects-step-summary">
         Which one to three things deserve your best hours over the next 90 days? Sort the proposed projects into
         Focus, Keep warm, or Not now.
       </p>
-      <div className="projects-step-discovery">
-        <button className="projects-step-discover" disabled={ isDiscovering || isSaving || !hasChosenIntent }
-          onClick={ onDiscover }
-          title={ hasChosenIntent ? "Read your recent tasks for projects that would carry these intents"
-            : "Save an intent on the previous page first, so there is something for a project to advance" }
-          type="button">
-          { isDiscovering ? "Reading your tasks…" : "Suggest projects from my tasks" }
-        </button>
-        <p className="projects-step-discovery-notice" role="status">
-          { discoveryNoticeText({ discoveryFailureReason, hasChosenIntent, isDiscovering, proposedCount }) }
-        </p>
-      </div>
       { ["work", "personal"].map(userCategoryEm => {
         const categoryRows = draftRows.filter(row => row.userCategoryEm === userCategoryEm);
         const categoryGoals = planningContext.goals.filter(goal => goal.userCategoryEm === userCategoryEm);
+        const categoryGoalUuids = categoryGoals.map(goal => goal.uuid);
+        const hasChosenIntent = categoryGoals.length > 0;
+        const proposedCount = categoryRows.filter(row => row.approvalStatusEm === "awaitingJudgement").length;
         return (
           <section className={ `projects-step-category projects-step-category--${ userCategoryEm }` } key={ userCategoryEm }>
             <h3 className="projects-step-category-heading">{ CATEGORY_HEADINGS[userCategoryEm] }</h3>
@@ -217,28 +192,35 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
             ) }
             <div className="projects-step-card-grid">
               { categoryRows.map(row => (
-                <ProjectRow goals={ categoryGoals } isDisabled={ isSaving } key={ row.uuid }
+                <ProjectRow isDisabled={ isSaving } key={ row.uuid }
                   onChangeSummary={ summary => handleChangeRow(row.uuid, { summary }) }
-                  onReject={ () => handleReject(row) } onSetPriority={ priority => handleSetPriority(row, priority) }
-                  onToggleGoal={ goalUuid => handleToggleGoal(row.uuid, goalUuid) } row={ row } />
+                  onReject={ () => handleReject(row) } onSetPriority={ priorityEm => handleSetPriority(row, priorityEm) }
+                  row={ row } />
               )) }
             </div>
             <button className="projects-step-add" disabled={ isSaving }
-              onClick={ () => setDraftRows(previous => previous.concat(emptyProjectRow(userCategoryEm))) } type="button">
+              onClick={ () => setDraftRows(previous => previous.concat(emptyProjectRow(userCategoryEm,
+                categoryGoalUuids))) } type="button">
               Add another project
             </button>
+            <div className="projects-step-discovery">
+              <button className="projects-step-discover" disabled={ isDiscovering || isSaving || !hasChosenIntent }
+                onClick={ onDiscover }
+                title={ hasChosenIntent ? "Read your recent tasks for projects that would carry these intents"
+                  : "Save an intent in this category first, so there is something for a project to advance" }
+                type="button">
+                { isDiscovering ? "Reading your tasks…" : "Suggest projects from my tasks" }
+              </button>
+              <p className="projects-step-discovery-notice" role="status">
+                { discoveryNoticeText({ discoveryFailureReason, hasChosenIntent, isDiscovering, proposedCount }) }
+              </p>
+            </div>
           </section>
         );
       }) }
       { saveError ? (
         <p className="projects-step-error" role="alert">Your projects were not saved. { saveError.message }</p>
       ) : null }
-      { hasSaved ? <p className="projects-step-saved">Saved.</p> : null }
-      <div className="projects-step-actions">
-        <button className="projects-step-save" disabled={ isSaving || !hasNamedProject } onClick={ handleSave } type="button">
-          { isSaving ? "Saving…" : saveLabel }
-        </button>
-      </div>
-    </div>
+    </form>
   );
 }

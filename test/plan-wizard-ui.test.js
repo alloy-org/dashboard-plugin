@@ -362,6 +362,29 @@ describe("PlanWizard step navigation", () => {
     await clickAndSettle(container.querySelector(".plan-wizard-back"));
 
     expect(workFields(container)[0].value).toBe("Ship the analytics offering");
+    expect(container.querySelector(".plan-wizard-next").disabled).toBe(false);
+    await cleanup();
+  });
+
+  it("keeps Next enabled when returning to stored intents while discovery is still running", async () => {
+    let releaseDiscovery = null;
+    inferenceImplementation = prompt => {
+      if (!prompt.includes('"prospects"')) {
+        return { occupationHypothesis: "Builds developer tools", personal: [], work: [] };
+      }
+      return new Promise(resolve => { releaseDiscovery = () => resolve({ prospects: [] }); });
+    };
+    const { cleanup, container } = await renderPlanWizard();
+    await typeInto(workFields(container)[0], "Ship the analytics offering");
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+    expect(container.querySelector(".projects-step-page")).not.toBeNull();
+
+    await clickAndSettle(container.querySelector(".plan-wizard-back"));
+    expect(workFields(container)[0].value).toBe("Ship the analytics offering");
+    expect(container.querySelector(".plan-wizard-next").disabled).toBe(false);
+
+    await act(async () => { releaseDiscovery?.(); });
+    await settle();
     await cleanup();
   });
 
@@ -405,7 +428,8 @@ async function advanceToStep(container, stepKey) {
 async function saveFirstProject(container, summary) {
   const nameField = container.querySelector(".projects-step-category--work .project-row-name");
   await typeInto(nameField, summary);
-  await clickAndSettle(container.querySelector(".projects-step-save"));
+  const projectCard = nameField.closest(".project-row");
+  await clickAndSettle(projectCard.querySelector(".project-row-priority-button"));
 }
 
 describe("PlanWizard projects step", () => {
@@ -421,12 +445,13 @@ describe("PlanWizard projects step", () => {
   it("saves a named project as a human-provided prospect and restores it on reopening", async () => {
     const { app, cleanup, container } = await renderPlanWizard();
     await advanceToStep(container, "projects");
-    await saveFirstProject(container, "Rebuild the ingestion pipeline");
+    await typeInto(container.querySelector(".projects-step-category--work .project-row-name"),
+      "Rebuild the ingestion pipeline");
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
-    expect(container.querySelector(".projects-step-saved")).not.toBe(null);
     const stored = await readPlanGoals(app, SCOPE);
     expect(stored.prospects.map(prospect => prospect.summary)).toEqual(["Rebuild the ingestion pipeline"]);
-    expect(stored.prospects[0].approvalStatus).toBe("humanProvided");
+    expect(stored.prospects[0].approvalStatusEm).toBe("humanProvided");
     await cleanup();
 
     const reopened = await renderPlanWizard({ app });
@@ -436,20 +461,35 @@ describe("PlanWizard projects step", () => {
     await reopened.cleanup();
   });
 
-  it("ties a project to the intent it advances", async () => {
+  it("automatically ties a custom project to its category intent when Back saves it", async () => {
     const app = createPlanWizardApp();
     await savePlanGoals(app, { ...SCOPE, goals: [{ capturedAt: "2026-09-06T12:00:00Z", goalRank: 1,
       goalText: "Ship the analytics offering", userCategoryEm: "work" }] });
     const { cleanup, container } = await renderPlanWizard({ app });
     await advanceToStep(container, "projects");
     await typeInto(container.querySelector(".projects-step-category--work .project-row-name"), "Instrument the funnel");
-
-    const goalCheckbox = container.querySelector(".projects-step-category--work .project-row-goal input");
-    await clickAndSettle(goalCheckbox);
-    await clickAndSettle(container.querySelector(".projects-step-save"));
+    expect(container.querySelector(".project-row-goal")).toBeNull();
+    await clickAndSettle(container.querySelector(".plan-wizard-back"));
 
     const stored = await readPlanGoals(app, SCOPE);
     expect(stored.prospects[0].linkedGoalUuids).toEqual([stored.goals[0].uuid]);
+    await cleanup();
+  });
+
+  it("shows priority choices as soon as a custom project has text", async () => {
+    const { app, cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "projects");
+    const nameField = container.querySelector(".projects-step-category--work .project-row-name");
+    const projectCard = nameField.closest(".project-row");
+    expect(projectCard.querySelector(".project-row-priority")).toBeNull();
+
+    await typeInto(nameField, "Instrument the funnel");
+    const priorityButtons = [...projectCard.querySelectorAll(".project-row-priority-button")];
+    expect(priorityButtons.map(button => button.textContent)).toEqual(["Focus", "Keep warm", "Not now"]);
+    await clickAndSettle(priorityButtons[0]);
+
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.prospects[0]).toMatchObject({ approvalStatusEm: "humanProvided", priorityEm: "quarterFocus" });
     await cleanup();
   });
 
@@ -461,7 +501,7 @@ describe("PlanWizard projects step", () => {
 
     const stored = await readPlanGoals(app, SCOPE);
     expect(stored.prospects).toEqual([]);
-    expect(stored.prospectRecords.map(record => record.approvalStatus)).toEqual(["humanRejected"]);
+    expect(stored.prospectRecords.map(record => record.approvalStatusEm)).toEqual(["humanRejected"]);
     await cleanup();
   });
 });
@@ -518,14 +558,22 @@ describe("PlanWizard project discovery", () => {
     expect(proposedRow.querySelector(".project-row-name").value).toBe("Automate the weekly report");
     expect(proposedRow.querySelector(".project-row-provenance").textContent).toContain("without writing either one");
     expect(container.querySelector(".projects-step-discovery-notice").textContent).toContain("waiting on you");
+    expect(container.querySelector(".projects-step-page > .projects-step-discovery")).toBeNull();
+    expect(container.querySelectorAll(".projects-step-category .projects-step-discover")).toHaveLength(2);
+    expect(proposedRow.querySelector(".project-row-goal")).toBeNull();
     const stored = await readPlanGoals(app, SCOPE);
-    expect(stored.prospects[0]).toMatchObject({ approvalStatus: "awaitingJudgement", summary: "Automate the weekly report" });
+    expect(stored.prospects[0]).toMatchObject({ approvalStatusEm: "awaitingJudgement", summary: "Automate the weekly report" });
+    expect(stored.prospects[0].substantiations[0]).toContain("without writing either one");
+    expect(stored.prospects[0]).toMatchObject({ approvalStatusEm: "awaitingJudgement",
+      preferredDows: [], priorityEm: null, relatedTasks: ["task-a", "task-b"] });
+    expect(stored.prospects[0].refreshedProspectAt).toBeTruthy();
+    expect(stored.prospects[0].refreshedTasksAt).toBeTruthy();
 
     const priorityButtons = [...proposedRow.querySelectorAll(".project-row-priority-button")];
     expect(priorityButtons.map(button => button.textContent)).toEqual(["Focus", "Keep warm", "Not now"]);
     await clickAndSettle(priorityButtons[1]);
     const prioritized = await readPlanGoals(app, SCOPE);
-    expect(prioritized.prospects[0]).toMatchObject({ approvalStatus: "humanAffirmed", priority: "stayWarm" });
+    expect(prioritized.prospects[0]).toMatchObject({ approvalStatusEm: "humanAffirmed", priorityEm: "stayWarm" });
     expect(proposedRow.querySelector('[aria-pressed="true"]').textContent).toBe("Keep warm");
     await cleanup();
   });
@@ -542,12 +590,12 @@ describe("PlanWizard project discovery", () => {
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
     const proposedName = container.querySelector(".projects-step-category--work .project-row--proposed .project-row-name");
     await typeInto(proposedName, "Automate the weekly report end to end");
-    await clickAndSettle(container.querySelector(".projects-step-save"));
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
     const stored = await readPlanGoals(app, SCOPE);
     const affirmed = stored.prospects.find(prospect => prospect.summary === "Automate the weekly report end to end");
-    expect(affirmed.approvalStatus).toBe("humanAffirmed");
-    expect(affirmed.substantiation).toContain("without writing either one");
+    expect(affirmed.approvalStatusEm).toBe("humanAffirmed");
+    expect(affirmed.substantiations[0]).toContain("without writing either one");
     expect(affirmed.evidence.map(citation => citation.taskUuid)).toEqual(["task-a", "task-b"]);
     await cleanup();
   });
@@ -598,7 +646,7 @@ describe("PlanWizard themed weekdays step", () => {
 
     const stored = await readPlanGoals(app, SCOPE);
     expect(stored.prospects[0].preferredWeekdays).toEqual(["monday"]);
-    expect(stored.prospects[0].approvalStatus).toBe("humanProvided");
+    expect(stored.prospects[0].approvalStatusEm).toBe("humanProvided");
     await cleanup();
   });
 });

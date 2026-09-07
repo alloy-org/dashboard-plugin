@@ -106,7 +106,7 @@ test("names the months a planning quarter contains", () => {
 test("collects scoped evidence with the chosen intents and the rejected history", async () => {
   const app = createPlanWizardApp();
   await savePlanGoals(app, { ...scope, goals: [workGoal] });
-  await savePlanProspects(app, { ...scope, prospects: [{ approvalStatus: "humanRejected",
+  await savePlanProspects(app, { ...scope, prospects: [{ approvalStatusEm: "humanRejected",
     capturedAt: "2026-09-06T11:30:00Z", decidedAt: "2026-09-06T11:30:00Z", substantiation: "Not this quarter",
     summary: "Rewrite the billing stack", userCategoryEm: "work", uuid: "prospect-rejected" }] });
   const guideNoteUuid = app.notes[0].uuid;
@@ -150,7 +150,7 @@ test("stores a supported candidate as a proposal citing the tasks it would resol
   const discovery = await discoverActionProspects({}, evidenceBundle(), scope, { promptRunner });
   expect(discovery.failureReason).toBe(null);
   expect(discovery.prospects).toHaveLength(1);
-  expect(discovery.prospects[0]).toMatchObject({ approvalStatus: "awaitingJudgement", focusMonths: ["2026-10"],
+  expect(discovery.prospects[0]).toMatchObject({ approvalStatusEm: "awaitingJudgement", focusMonths: ["2026-10"],
     linkedGoalUuids: ["goal-1"], quarterKey: "2026-Q4", summary: "Automate support ticket triage",
     userCategoryEm: "work" });
   expect(discovery.prospects[0].evidence).toEqual([{ noteUuid: "note-support", taskUuid: "task-a" },
@@ -249,10 +249,10 @@ test("persists proposals and keeps a rejected idea rejected across a later pass"
   const discovered = await refreshPlanActionProspects(app, { ...scope, promptRunner, referenceDate });
   expect(discovered.failureReason).toBe(null);
   expect(discovered.prospects.map(prospect => prospect.summary)).toEqual(["Automate support ticket triage"]);
-  expect(discovered.prospects[0].approvalStatus).toBe("awaitingJudgement");
+  expect(discovered.prospects[0].approvalStatusEm).toBe("awaitingJudgement");
   const proposedUuid = discovered.prospects[0].uuid;
 
-  await savePlanProspects(app, { ...scope, prospects: [{ approvalStatus: "humanRejected",
+  await savePlanProspects(app, { ...scope, prospects: [{ approvalStatusEm: "humanRejected",
     capturedAt: "2026-09-07T09:00:00Z", decidedAt: "2026-09-07T09:00:00Z", substantiation: "Not this quarter",
     summary: "Automate support ticket triage", userCategoryEm: "work", uuid: proposedUuid }] });
 
@@ -261,5 +261,5 @@ test("persists proposals and keeps a rejected idea rejected across a later pass"
   expect(rerun.prospects).toEqual([]);
   const stored = await readPlanGoals(app, scope);
   const rejectedRecord = stored.prospectRecords.find(record => record.uuid === proposedUuid);
-  expect(rejectedRecord.approvalStatus).toBe("humanRejected");
+  expect(rejectedRecord.approvalStatusEm).toBe("humanRejected");
 });

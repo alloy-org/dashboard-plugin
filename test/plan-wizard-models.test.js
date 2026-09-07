@@ -1,8 +1,11 @@
 // Verify scoped goal validation, timestamp merges, inference independence, and the project records that carry a
 // quarter's intents into concrete work.
 
-import { ActionProspect, GoalSet, IntentPossibility, ProspectTask, copyJsonValue, normalizedTimestamp,
-  resolvePlanScope } from "plan-wizard/plan-models";
+import ActionProspect from "plan-wizard/action-prospect";
+import GoalSet from "plan-wizard/goal-set";
+import IntentPossibility from "plan-wizard/intent-possibility";
+import { copyJsonValue, normalizedTimestamp, resolvePlanScope } from "plan-wizard/plan-models";
+import ProspectTask from "plan-wizard/prospect-task";
 import { mergeActionProspects, mergeGoalSets, mergeIntentPossibilities,
   mergeQuarterAnswer } from "plan-wizard/vision-guide-merge";
 
@@ -11,7 +14,7 @@ const goal = { capturedAt: "2026-09-06", domainUuid: scope.domainUuid, goalRank:
   quarterKey: scope.quarterKey, taskDomain: "Work", userCategoryEm: "work", uuid: "goal-1" };
 const possibility = { confidence: 6, intent: "Grow revenue", sourceKind: "inferred", substantiation: "Recent product tasks",
   userCategoryEm: "work", uuid: "possibility-1" };
-const prospect = { approvalStatus: "humanProvided", capturedAt: "2026-09-06", quarterKey: scope.quarterKey,
+const prospect = { approvalStatusEm: "humanProvided", capturedAt: "2026-09-06", quarterKey: scope.quarterKey,
   substantiation: "Named while planning", summary: "Rebuild the ingestion pipeline", userCategoryEm: "work", uuid: "prospect-1" };
 const prospectTask = { approvalStatus: "awaitingJudgement", matchScore: 7, prospectUuid: "prospect-1",
   substantiation: "Follows from the project", taskText: "Draft the ingestion schema", uuid: "prospect-task-1" };
@@ -104,13 +107,20 @@ test("merges one inference snapshot with bounded, unique suggestions", () => {
 // A prospect is the bridge between an intent and the work that serves it, so its links must stay unambiguous.
 test("validates prospect enums, links, and user-provided provenance", () => {
   const stored = new ActionProspect(prospect, scope);
-  expect(stored.priority).toBe("opportunistic");
+  expect(stored.priorityEm).toBe(null);
   expect(stored.preferredWeekdays).toEqual([]);
   expect(stored.decidedAt).toBe(null);
+  expect(stored).toMatchObject({ approvalStatusEm: "humanProvided", preferredDows: [], primaryNote: null,
+    priorityEm: null, relatedNotes: [], relatedTasks: [],
+    substantiations: ["Named while planning"] });
+  expect(stored.refreshedProspectAt).toBe("2026-09-06T00:00:00.000Z");
+  expect(stored.refreshedTasksAt).toBe("2026-09-06T00:00:00.000Z");
   expect(new ActionProspect(copyJsonValue(stored), scope).summary).toBe("Rebuild the ingestion pipeline");
 
-  expect(() => new ActionProspect({ ...prospect, approvalStatus: "maybe" }, scope)).toThrow("approvalStatus");
-  expect(() => new ActionProspect({ ...prospect, priority: "urgent" }, scope)).toThrow("priority");
+  expect(stored.approvalStatus).toBeUndefined();
+  expect(stored.priority).toBeUndefined();
+  expect(() => new ActionProspect({ ...prospect, approvalStatusEm: "maybe" }, scope)).toThrow("approvalStatusEm");
+  expect(() => new ActionProspect({ ...prospect, priorityEm: "urgent" }, scope)).toThrow("priorityEm");
   expect(() => new ActionProspect({ ...prospect, preferredWeekdays: ["Monday"] }, scope)).toThrow("preferredWeekdays");
   expect(() => new ActionProspect({ ...prospect, preferredWeekdays: ["monday", "monday"] }, scope)).toThrow("unique");
   expect(() => new ActionProspect({ ...prospect, focusMonths: ["2026-13"] }, scope)).toThrow("focusMonths");
@@ -152,12 +162,13 @@ test("merges prospects by identity without letting inference overwrite a decisio
   const stale = mergeActionProspects(renamed, [{ ...prospect, capturedAt: "2026-09-07", summary: "Stale name" }], scope, "work");
   expect(stale[0].summary).toBe("Rebuild ingestion");
 
-  const proposal = { ...prospect, approvalStatus: "awaitingJudgement", capturedAt: "2026-09-09", substantiation: "Inferred later" };
-  expect(mergeActionProspects(renamed, [proposal], scope, "work")[0].approvalStatus).toBe("humanProvided");
+  const proposal = { ...prospect, approvalStatusEm: "awaitingJudgement", capturedAt: "2026-09-09", substantiation: "Inferred later" };
+  expect(mergeActionProspects(renamed, [proposal], scope, "work")[0].approvalStatusEm).toBe("humanProvided");
 
-  const rejected = mergeActionProspects(renamed, [{ ...prospect, approvalStatus: "humanRejected", capturedAt: "2026-09-10" }], scope, "work");
-  expect(rejected[0].approvalStatus).toBe("humanRejected");
-  expect(mergeActionProspects(rejected, [proposal], scope, "work")[0].approvalStatus).toBe("humanRejected");
+  const rejected = mergeActionProspects(renamed, [{ ...prospect, approvalStatusEm: "humanRejected",
+    capturedAt: "2026-09-10" }], scope, "work");
+  expect(rejected[0].approvalStatusEm).toBe("humanRejected");
+  expect(mergeActionProspects(rejected, [proposal], scope, "work")[0].approvalStatusEm).toBe("humanRejected");
 });
 
 // ----------------------------------------------------------------------------------------------

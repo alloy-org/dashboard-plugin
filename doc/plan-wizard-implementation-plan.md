@@ -172,7 +172,11 @@ only when actual implementation size warrants it.
 
 | File | Status | Responsibility / remaining work |
 | --- | --- | --- |
-| `lib/plan-wizard/plan-models.js` | Implemented for intents/goals | Validating classes, stable identities, JSON validation, planning periods. Add prospect/task classes later. |
+| `lib/plan-wizard/plan-models.js` | Implemented | Shared model constants, strict JSON validation, stable identities, and planning periods. |
+| `lib/plan-wizard/goal-set.js` | Implemented | Validating `GoalSet` class for ranked chosen intents. |
+| `lib/plan-wizard/intent-possibility.js` | Implemented | Validating `IntentPossibility` class for inferred/default suggestions. |
+| `lib/plan-wizard/action-prospect.js` | Implemented | Validating `ActionProspect` class for proposed and user-provided projects. |
+| `lib/plan-wizard/prospect-task.js` | Implemented | Validating `ProspectTask` class for candidate actions within projects. |
 | `lib/plan-wizard/vision-guide-markdown.js` | Implemented for intents/goals | Annual skeleton, heading/fence parsing, JSON payload updates. Dynamic prospect/month headings remain. |
 | `lib/plan-wizard/vision-guide-notes.js` | Implemented | Archived discovery, metadata identity, interrupted initialization, and targeted API writes; extracted from the proposed repository responsibility. |
 | `lib/plan-wizard/vision-guide-repository.js` | Implemented for intents/goals | Validated reads, serialized updates, ancestor recovery, and write verification using an explicit `app`. |

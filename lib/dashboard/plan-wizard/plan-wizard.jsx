@@ -15,7 +15,7 @@
 // reach the rest when the viewport cannot show it all at once.
 
 import IntentStep, { INTENT_STEP_FORM_ID } from "dashboard/plan-wizard/intent-step";
-import ProjectsStep from "dashboard/plan-wizard/projects-step";
+import ProjectsStep, { PROJECTS_STEP_FORM_ID } from "dashboard/plan-wizard/projects-step";
 import QuarterAnswerStep from "dashboard/plan-wizard/quarter-answer-step";
 import ThemedWeekdaysStep from "dashboard/plan-wizard/themed-weekdays-step";
 import { WIZARD_STEPS, wizardStepIndexFromKey } from "dashboard/plan-wizard/wizard-steps";
@@ -65,6 +65,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const [hasIntentAnswer, setHasIntentAnswer] = useState(false);
   const [overlayTop] = useState(currentDocumentScrollTop);
   const overlayRef = useRef(null);
+  const projectNavigationDirectionRef = useRef(1);
   const scopeKey = planScopeKey({ domainName, domainUuid, quarter, year });
   const quarterLabel = planningContext.scope ? planningContext.scope.quarterKey : `${ year }-Q${ quarter }`;
   const domainLabel = domainName ?? "All Notes";
@@ -72,6 +73,8 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const step = WIZARD_STEPS[stepIndex];
   const isFirstStep = stepIndex === 0;
   const isLastStep = stepIndex === WIZARD_STEPS.length - 1;
+  const isProjectsStep = step.key === "projects";
+  const hasPersistedIntent = planningContext.goals.length > 0;
 
   // ----------------------------------------------------------------------------------------------
   // @desc Move the given number of steps through the sequence, stopping at either end.
@@ -84,10 +87,18 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   // ----------------------------------------------------------------------------------------------
   // @desc Move to the projects page and discover the projects that carry the quarter's intents. The step change
   //   comes first so the user watches discovery run on the page whose list it fills, rather than waiting on the
-  //   intent page for something to happen elsewhere.
+  //   intent page for something to happen elsewhere. Returning while an earlier discovery is still running
+  //   reopens that same project page without starting a duplicate request.
   const handleFindProjects = async () => {
     setStepKey("projects");
+    if (isDiscovering) return;
     await discoverProspects();
+  };
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Apply the project page direction selected by Back or Next after that page confirms its draft saved.
+  const handleProjectNavigation = () => {
+    handleStepChange(projectNavigationDirectionRef.current);
   };
 
   useEffect(() => {
@@ -138,8 +149,8 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
         ) : null }
         { !isLoading && !error && step.key === "projects" ? (
           <ProjectsStep discoveryFailureReason={ discoveryFailureReason } isDiscovering={ isDiscovering }
-            isSaving={ isSaving } onDiscover={ discoverProspects } onSave={ saveProspects }
-            planningContext={ planningContext } saveError={ saveError } scopeKey={ scopeKey } />
+            isSaving={ isSaving } onDiscover={ discoverProspects } onNavigate={ handleProjectNavigation }
+            onSave={ saveProspects } planningContext={ planningContext } saveError={ saveError } scopeKey={ scopeKey } />
         ) : null }
         { !isLoading && !error && step.key === "themed-weekdays" ? (
           <ThemedWeekdaysStep isSaving={ isSaving } onSave={ saveProspects } planningContext={ planningContext }
@@ -153,14 +164,20 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
         { !isLoading && !error ? (
           <nav className="plan-wizard-navigation">
             { isFirstStep ? null : (
-              <button className="plan-wizard-back" onClick={ () => handleStepChange(-1) } type="button">Back</button>
+              <button className="plan-wizard-back" disabled={ isProjectsStep && isSaving }
+                form={ isProjectsStep ? PROJECTS_STEP_FORM_ID : undefined }
+                onClick={ isProjectsStep ? () => { projectNavigationDirectionRef.current = -1; }
+                  : () => handleStepChange(-1) }
+                type={ isProjectsStep ? "submit" : "button" } value="-1">Back</button>
             ) }
             <button className="plan-wizard-next"
-              disabled={ isLastStep || (isFirstStep && (!hasIntentAnswer || isDiscovering || isSaving)) }
-              form={ isFirstStep ? INTENT_STEP_FORM_ID : undefined }
-              onClick={ isFirstStep ? undefined : () => handleStepChange(1) }
-              type={ isFirstStep ? "submit" : "button" }>
-              { isFirstStep && (isDiscovering || isSaving) ? "Saving…" : "Next" }
+              disabled={ isLastStep || (isFirstStep && ((!hasIntentAnswer && !hasPersistedIntent) || isSaving))
+                || (isProjectsStep && isSaving) }
+              form={ isFirstStep ? INTENT_STEP_FORM_ID : isProjectsStep ? PROJECTS_STEP_FORM_ID : undefined }
+              onClick={ isFirstStep ? undefined : isProjectsStep
+                ? () => { projectNavigationDirectionRef.current = 1; } : () => handleStepChange(1) }
+              type={ isFirstStep || isProjectsStep ? "submit" : "button" } value="1">
+              { (isFirstStep || isProjectsStep) && isSaving ? "Saving…" : "Next" }
             </button>
           </nav>
         ) : null }

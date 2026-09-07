@@ -77,7 +77,7 @@ export default function ThemedWeekdaysStep({ isSaving, onSave, planningContext, 
   const handleSave = async () => {
     const capturedAt = capturedAtRef.current ?? new Date().toISOString();
     capturedAtRef.current = capturedAt;
-    const prospectRecords = planningContext.prospects.map(prospect => ({ approvalStatus: prospect.approvalStatus, capturedAt,
+    const prospectRecords = planningContext.prospects.map(prospect => ({ approvalStatusEm: prospect.approvalStatusEm, capturedAt,
       linkedGoalUuids: prospect.linkedGoalUuids, preferredWeekdays: weekdaysByProspect[prospect.uuid] ?? [],
       substantiation: prospect.substantiation, summary: prospect.summary, userCategoryEm: prospect.userCategoryEm,
       uuid: prospect.uuid }));

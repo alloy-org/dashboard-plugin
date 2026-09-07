@@ -207,7 +207,6 @@ $plan-wizard-z-index: 1100;
   }
 
   /* The primary action on every page is the save, so it is the one button carrying the accent. */
-  .projects-step-save,
   .quarter-answer-save,
   .themed-weekdays-save {
     background: $color-accent;
@@ -220,7 +219,6 @@ $plan-wizard-z-index: 1100;
     }
   }
 
-  .projects-step-actions,
   .quarter-answer-actions,
   .themed-weekdays-actions {
     align-items: center;
@@ -238,7 +236,6 @@ $plan-wizard-z-index: 1100;
     margin: 0;
   }
 
-  .projects-step-saved,
   .quarter-answer-saved,
   .themed-weekdays-saved {
     color: $color-success;
@@ -384,6 +381,12 @@ $plan-wizard-z-index: 1100;
     text-transform: uppercase;
   }
 
+  .projects-step-category {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-md;
+  }
+
   /* Project proposals are choices to sort, not form rows to process sequentially. A two-column card grid matches
    * that mental model and collapses to one column before labels and decision buttons become cramped. */
   .projects-step-card-grid {
@@ -426,24 +429,9 @@ $plan-wizard-z-index: 1100;
     font-size: 0.7rem;
     font-style: italic;
     margin: 0;
-  }
 
-  .project-row-goal-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: $sp-md;
-  }
-
-  .project-row-goal {
-    align-items: center;
-    color: $color-text-secondary;
-    cursor: pointer;
-    display: flex;
-    font-size: 0.78rem;
-    gap: $sp-xs;
-
-    input[type="checkbox"] {
-      accent-color: $color-accent;
+    p {
+      margin: 0;
     }
   }
 

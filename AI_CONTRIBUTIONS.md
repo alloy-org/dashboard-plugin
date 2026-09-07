@@ -6,7 +6,14 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 ## 2026-09-07 — Persist development intents and turn project proposals into sortable cards
 
 **Model:** GPT-5.6 Sol
+**Files created:**
+- `lib/plan-wizard/action-prospect.js`, `lib/plan-wizard/goal-set.js`,
+  `lib/plan-wizard/intent-possibility.js`, `lib/plan-wizard/prospect-task.js` — Give each persisted planning model
+  its own module and behavioral contract instead of colocating all four classes in `plan-models.js`.
+
 **Files modified:**
+- `doc/plan-wizard-implementation-plan.md` — Updated the implementation inventory to list the four dedicated
+  model modules and describe `plan-models.js` as shared validation infrastructure.
 - `dev/dev-app.js`, `dev/dev-server.js`, `lib/util/browser-dev-app.js` — Fixed the file-backed note initialization
   path used in development. A Vision Guide bootstrap intentionally passes `section.heading: null`; the Node dev
   app wrote the file and then threw while logging `heading.text`, while the HTTP layer also discarded false write
@@ -18,15 +25,27 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
   and affirms a proposal awaiting judgement. The intent page now uses the wizard's shared Next button as its form
   submission: Next persists changed answers, advances into project discovery only after a successful write, and
   replaces the removed Save answers and Find my projects actions. The first-page Back action is omitted, and its
-  suggestion and Close controls are excluded from keyboard tab order.
-- `lib/plan-wizard/plan-models.js`, `lib/plan-wizard/prospect-discovery.js` — Added the source-note priority spellings
-  while retaining compatibility with already-stored values, and ask discovery for at least six supported projects
-  across categories without relaxing the two-task evidence requirement.
+  suggestion and Close controls are excluded from keyboard tab order. Project cards no longer show intent
+  checkboxes; custom projects inherit their category's intent links, reveal priority choices as soon as they have
+  text, and save through Back or Next instead of a separate Save projects action. Discovery controls now sit
+  below each category's cards, with spacing between the grid and add-project control. Returning from Projects now
+  enables Next immediately from the persisted intents, even while the project discovery request is still running.
+- `lib/plan-wizard/plan-models.js`, `lib/plan-wizard/plan-wizard-service.js`,
+  `lib/plan-wizard/prospect-discovery.js` — Added the source-note priority and retirement spellings, and ask
+  discovery for at least six supported projects across categories without relaxing the two-task evidence
+  requirement. ActionProspect now normalizes and
+  validates all original source fields—including plural substantiations, related note/task identities, source enum
+  columns, and both refresh timestamps. `approvalStatusEm` and `priorityEm` are the sole status/priority columns;
+  the undeployed unsuffixed variants and temporary enum values were removed outright. Discovery persists its
+  explanation as a substantiations array for direct card rendering. `plan-models.js` now contains only shared
+  constants and validation utilities; repository, inference, discovery, merge, and tests import model classes from
+  their dedicated modules.
 - `test/browser-dev-app-prompt.test.js`, `test/dev-app.test.js`, `test/plan-wizard-prospects.test.js`,
   `test/plan-wizard-ui.test.js` — Added coverage for rejected browser writes, personal-intent restoration from an
   archived Vision Guide file after recreating the dev app, the six-project discovery target, and durable card
   priority decisions. Added UI coverage for Next-based intent persistence, first-page navigation, removed actions,
-  and the reduced intent-page tab order.
+  the reduced intent-page tab order, category discovery placement, custom-project priorities, source-field
+  explanations, hidden intent links, Back/Next project saves, and returning to stored intents during discovery.
 
 ## 2026-09-06 — Present the plan wizard as a modal, and style its five pages
 
