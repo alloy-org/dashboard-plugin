@@ -30,6 +30,7 @@ await jest.unstable_mockModule("providers/fetch-ai-provider", () => ({
 }));
 
 const { default: PlanWizard, WIZARD_STEPS } = await import("dashboard/plan-wizard/plan-wizard");
+const { draftPacesFromProspects } = await import("dashboard/plan-wizard/pace-cards-step-fields");
 const { readPlanGoals, savePlanGoals } = await import("plan-wizard/plan-wizard-service");
 
 // ----------------------------------------------------------------------------------------------
@@ -538,6 +539,7 @@ describe("PlanWizard projects step", () => {
     const stored = await readPlanGoals(app, SCOPE);
     expect(stored.prospects).toEqual([]);
     expect(stored.prospectRecords.map(record => record.approvalStatusEm)).toEqual(["humanRejected"]);
+    expect(app.notes[0].content).toContain(`${ stored.prospectRecords[0].uuid } Rejected`);
     await cleanup();
   });
 });
@@ -712,6 +714,42 @@ describe("PlanWizard pace cards step", () => {
     expect(container.querySelector(".pace-cards-list")).toBe(null);
     expect(container.querySelector(".pace-cards-empty").textContent).toContain("Name a project");
     await cleanup();
+  });
+
+  it("omits Not now projects from the pace page", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "projects");
+    await saveFirstProject(container, "Park this project");
+    const notNow = [...container.querySelectorAll(".project-row-priority-button")]
+      .find(button => button.textContent === "Not now");
+    await clickAndSettle(notNow);
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+
+    expect(container.querySelector(".pace-cards-list")).toBe(null);
+    expect(container.querySelector(".pace-cards-empty").textContent).toContain("Name a project");
+    await cleanup();
+  });
+
+  it("shows an unvalidated project on pace when fewer than three Focus or Keep warm projects exist", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "projects");
+    await typeInto(container.querySelector(".projects-step-category--work .project-row-name"), "Sketch the API");
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+
+    expect(container.querySelector(".project-pace-title").textContent).toBe("Sketch the API");
+    await cleanup();
+  });
+
+  it("hides unvalidated projects on pace once three Focus or Keep warm projects exist", () => {
+    const paceDraft = (priorityEm, summary) => ({ approvalStatusEm: "humanProvided", priorityEm, summary,
+      userCategoryEm: "work", uuid: summary });
+    const withUnvalidated = [paceDraft("quarterFocus", "Focus one"), paceDraft("stayWarm", "Keep warm"),
+      paceDraft(null, "Still unchosen")];
+    expect(draftPacesFromProspects(withUnvalidated).map(draft => draft.summary))
+      .toEqual(["Focus one", "Keep warm", "Still unchosen"]);
+    const withThreeValidated = [...withUnvalidated, paceDraft("quarterFocus", "Focus two")];
+    expect(draftPacesFromProspects(withThreeValidated).map(draft => draft.summary))
+      .toEqual(["Focus one", "Keep warm", "Focus two"]);
   });
 
   it("stores the chosen pace, its default days, and preferredDows on the project", async () => {

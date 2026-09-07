@@ -3,6 +3,44 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-09-07 — Place unchosen projects in Awaiting approval and gate pace cards
+
+**Model:** Cursor Grok 4.6
+**Files created:** none
+**Files modified:**
+- `lib/plan-wizard/plan-models.js` — `isValidatedActionProspect` recognizes Focus and Keep warm.
+- `lib/plan-wizard/vision-guide-markdown.js` — Month headings reuse `monthLabelFromMonthKey` /
+  `monthKeyFromDateInput`; placement chooses Awaiting approval or Rejected.
+- `lib/plan-wizard/vision-guide-repository.js`, `lib/plan-wizard/plan-wizard-service.js` —
+  `savePlanProspects` writes every task bucket for a saved project, including empty ones, so a UUID cannot remain
+  in a previous section after it moves.
+- `lib/dashboard/plan-wizard/pace-cards-step-fields.js` — Pace cards include unvalidated projects only while
+  fewer than three Focus or Keep warm projects exist.
+- `test/plan-wizard-markdown.test.js`, `test/plan-wizard-models.test.js`, `test/plan-wizard-prospects.test.js`,
+  `test/plan-wizard-ui.test.js` — Cover placement moves, empty sibling buckets, and pace gating.
+
+**Prompt summary:** "Use [uuid] Awaiting approval for projects with no focus level; write every section even if
+empty so one UUID cannot occur in multiple sections; show unvalidated pace cards only when there are fewer than
+three Focus/Keep warm projects; reuse date-utility month helpers"
+
+## 2026-09-07 — Keep declined projects off the pace page and in Rejected
+
+**Model:** Cursor Grok 4.6
+**Files created:** none
+**Files modified:**
+- `lib/plan-wizard/plan-models.js`, `lib/plan-wizard/vision-guide-markdown.js`,
+  `lib/plan-wizard/vision-guide-repository.js`, `lib/plan-wizard/plan-wizard-service.js` — Not now and Remove write
+  the ActionProspect into a `[uuid] Rejected` Vision Guide bucket, creating the month/project tree with the four
+  task headings the brainstorming note specified.
+- `lib/dashboard/plan-wizard/pace-cards-step-fields.js` — Pace cards omit declined projects so they are not paced.
+- `lib/plan-wizard/prospect-evidence.js` — Discovery treats Not now like other declined projects and will not
+  repropose them.
+- `test/plan-wizard-markdown.test.js`, `test/plan-wizard-prospects.test.js`, `test/plan-wizard-ui.test.js` —
+  Cover heading names, the Rejected payload, and the pace page omitting a Not now project.
+
+**Prompt summary:** "When the user chooses Not now or Remove, it should not be present on the pace-cards page;
+it should be written to the [prospect uuid] Rejected section"
+
 ## 2026-09-07 — Give the plan wizard more width on a phone
 
 **Model:** Cursor Grok 4.6

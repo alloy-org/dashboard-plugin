@@ -8,7 +8,34 @@ import { MAXIMUM_SUMMARY_LENGTH, discoverActionProspects, normalizedSummaryKey, 
   prospectPromptFromEvidence, shortenedSummary } from "plan-wizard/prospect-discovery";
 import { activeNoteSummaries, collectProspectEvidence, completedTasksWithinMonth, importantTasksWithinWindow,
   monthLabelsForQuarter } from "plan-wizard/prospect-evidence";
+import { PROSPECT_TASK_BUCKET_LABELS, guideSectionRange, parseJsonPayload,
+  prospectTaskBucketHeadingText } from "plan-wizard/vision-guide-markdown";
 import { createPlanWizardApp } from "./fixtures/plan-wizard-app.js";
+
+// ----------------------------------------------------------------------------------------------
+// @desc Read the JSON stored under one of a project's task-bucket headings, or null when that heading is absent.
+// @param {string} content - Vision Guide markdown.
+// @param {string} bucketLabel - Awaiting approval, Scheduled, Completed, or Rejected.
+// @param {string} prospectUuid - Project identity named in the heading.
+// @returns {object|null} Decoded payload, or null.
+function prospectBucketPayload(bucketLabel, content, prospectUuid) {
+  const heading = prospectTaskBucketHeadingText(bucketLabel, prospectUuid);
+  const range = guideSectionRange(content, heading);
+  return range ? parseJsonPayload(content.slice(range.bodyStart, range.end)).payload : null;
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Collect which task-bucket headings currently list this ActionProspect, so a placement move can be
+//   checked for leftover copies of the same UUID.
+// @param {string} content - Vision Guide markdown.
+// @param {string} prospectUuid - Project identity.
+// @returns {Array<string>} Bucket labels whose prospects array contains this UUID.
+function prospectPlacementBuckets(content, prospectUuid) {
+  return PROSPECT_TASK_BUCKET_LABELS.filter(bucketLabel => {
+    const payload = prospectBucketPayload(bucketLabel, content, prospectUuid);
+    return (payload?.prospects ?? []).some(prospect => prospect.uuid === prospectUuid);
+  });
+}
 
 const referenceDate = new Date("2026-09-06T12:00:00.000Z");
 const scope = resolvePlanScope({ domainName: "Work", domainUuid: "domain-work", quarter: 4, year: 2026 });
@@ -251,6 +278,7 @@ test("persists proposals and keeps a rejected idea rejected across a later pass"
   expect(discovered.prospects.map(prospect => prospect.summary)).toEqual(["Automate support ticket triage"]);
   expect(discovered.prospects[0].approvalStatusEm).toBe("awaitingJudgement");
   const proposedUuid = discovered.prospects[0].uuid;
+  expect(prospectPlacementBuckets(app.notes[0].content, proposedUuid)).toEqual(["Awaiting approval"]);
 
   await savePlanProspects(app, { ...scope, prospects: [{ approvalStatusEm: "humanRejected",
     capturedAt: "2026-09-07T09:00:00Z", decidedAt: "2026-09-07T09:00:00Z", substantiation: "Not this quarter",
@@ -262,4 +290,32 @@ test("persists proposals and keeps a rejected idea rejected across a later pass"
   const stored = await readPlanGoals(app, scope);
   const rejectedRecord = stored.prospectRecords.find(record => record.uuid === proposedUuid);
   expect(rejectedRecord.approvalStatusEm).toBe("humanRejected");
+  expect(prospectPlacementBuckets(app.notes[0].content, proposedUuid)).toEqual(["Rejected"]);
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Confirm an unchosen project lives in Awaiting approval, Not now moves it to Rejected (clearing the
+//   previous bucket), and Focus leaves it in none of the task buckets.
+test("places unchosen projects in Awaiting approval and moves the UUID when the decision changes", async () => {
+  const app = createPlanWizardApp();
+  await savePlanProspects(app, { ...scope, prospects: [{ approvalStatusEm: "humanProvided",
+    capturedAt: "2026-09-07T12:00:00Z", substantiation: "Named while planning",
+    summary: "Rewrite the billing stack", userCategoryEm: "work", uuid: "prospect-parked" }] });
+  expect(prospectPlacementBuckets(app.notes[0].content, "prospect-parked")).toEqual(["Awaiting approval"]);
+  expect(prospectBucketPayload("Rejected", app.notes[0].content, "prospect-parked").prospects).toEqual([]);
+
+  await savePlanProspects(app, { ...scope, prospects: [{ approvalStatusEm: "humanProvided",
+    capturedAt: "2026-09-07T12:05:00Z", priorityEm: "notNow", substantiation: "Named while planning",
+    summary: "Rewrite the billing stack", userCategoryEm: "work", uuid: "prospect-parked" }] });
+  expect(prospectPlacementBuckets(app.notes[0].content, "prospect-parked")).toEqual(["Rejected"]);
+  expect(prospectBucketPayload("Awaiting approval", app.notes[0].content, "prospect-parked").prospects).toEqual([]);
+  expect(prospectBucketPayload("Rejected", app.notes[0].content, "prospect-parked").prospects[0])
+    .toMatchObject({ priorityEm: "notNow", uuid: "prospect-parked" });
+
+  await savePlanProspects(app, { ...scope, prospects: [{ approvalStatusEm: "humanProvided",
+    capturedAt: "2026-09-07T12:10:00Z", priorityEm: "quarterFocus", substantiation: "Named while planning",
+    summary: "Rewrite the billing stack", userCategoryEm: "work", uuid: "prospect-parked" }] });
+  expect(prospectPlacementBuckets(app.notes[0].content, "prospect-parked")).toEqual([]);
+  expect(prospectBucketPayload("Awaiting approval", app.notes[0].content, "prospect-parked").prospects).toEqual([]);
+  expect(prospectBucketPayload("Rejected", app.notes[0].content, "prospect-parked").prospects).toEqual([]);
 });

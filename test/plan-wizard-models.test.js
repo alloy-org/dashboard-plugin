@@ -4,7 +4,8 @@
 import ActionProspect from "plan-wizard/action-prospect";
 import GoalSet from "plan-wizard/goal-set";
 import IntentPossibility from "plan-wizard/intent-possibility";
-import { copyJsonValue, normalizedTimestamp, resolvePlanScope } from "plan-wizard/plan-models";
+import { copyJsonValue, isDeclinedActionProspect, isValidatedActionProspect, normalizedTimestamp,
+  resolvePlanScope } from "plan-wizard/plan-models";
 import ProspectTask from "plan-wizard/prospect-task";
 import { mergeActionProspects, mergeGoalSets, mergeIntentPossibilities,
   mergeQuarterAnswer } from "plan-wizard/vision-guide-merge";
@@ -177,6 +178,19 @@ test("merges prospects by identity without letting inference overwrite a decisio
     capturedAt: "2026-09-10" }], scope, "work");
   expect(rejected[0].approvalStatusEm).toBe("humanRejected");
   expect(mergeActionProspects(rejected, [proposal], scope, "work")[0].approvalStatusEm).toBe("humanRejected");
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Classify Not now / Remove as declined and Focus / Keep warm as validated, so placement and pace can
+//   treat an unchosen project as still awaiting a decision.
+test("classifies declined and validated prospects for placement and pace", () => {
+  expect(isDeclinedActionProspect({ approvalStatusEm: "humanRejected" })).toBe(true);
+  expect(isDeclinedActionProspect({ approvalStatusEm: "humanProvided", priorityEm: "notNow" })).toBe(true);
+  expect(isDeclinedActionProspect({ approvalStatusEm: "humanProvided", priorityEm: "quarterFocus" })).toBe(false);
+  expect(isValidatedActionProspect({ priorityEm: "quarterFocus" })).toBe(true);
+  expect(isValidatedActionProspect({ priorityEm: "stayWarm" })).toBe(true);
+  expect(isValidatedActionProspect({ priorityEm: null })).toBe(false);
+  expect(isValidatedActionProspect({ priorityEm: "notNow" })).toBe(false);
 });
 
 // ----------------------------------------------------------------------------------------------

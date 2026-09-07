@@ -1,6 +1,7 @@
 // Verify markdown structure, exact JSON round trips, and prose preservation.
 
-import { guideHeadingRanges, guideSectionRange, initialVisionGuideMarkdown, parseJsonPayload, replaceJsonPayload } from "plan-wizard/vision-guide-markdown";
+import { guideHeadingRanges, guideSectionRange, initialVisionGuideMarkdown, parseJsonPayload,
+  prospectMonthHeadingText, prospectTaskBucketHeadingText, replaceJsonPayload } from "plan-wizard/vision-guide-markdown";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Ignore heading-looking code while retaining hierarchy and metadata attributes.
@@ -48,4 +49,13 @@ test("initializes all quarters within a domain/year guide", () => {
   expect(guideSectionRange(markdown, "Q4 2026 Picked intents")).not.toBeNull();
   const metadata = guideSectionRange(markdown, "Guide metadata");
   expect(parseJsonPayload(markdown.slice(metadata.bodyStart, metadata.end)).payload).toEqual({ domainName: "Work", domainUuid: "work", schemaVersion: 1, year: 2026 });
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Name month/project trees and task-bucket headings the way the planning note specified them.
+test("names a project's month tree and task-bucket headings from its UUID", () => {
+  expect(prospectMonthHeadingText("2026-10", "Rebuild billing", "uuid-1"))
+    .toBe("October 2026 Rebuild billing uuid-1");
+  expect(prospectTaskBucketHeadingText("Awaiting approval", "uuid-1")).toBe("uuid-1 Awaiting approval");
+  expect(prospectTaskBucketHeadingText("Rejected", "uuid-1")).toBe("uuid-1 Rejected");
 });
