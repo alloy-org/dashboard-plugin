@@ -319,3 +319,16 @@ test("places unchosen projects in Awaiting approval and moves the UUID when the 
   expect(prospectBucketPayload("Awaiting approval", app.notes[0].content, "prospect-parked").prospects).toEqual([]);
   expect(prospectBucketPayload("Rejected", app.notes[0].content, "prospect-parked").prospects).toEqual([]);
 });
+
+// ----------------------------------------------------------------------------------------------
+// @desc A pace-only write updates the canonical ideas leaf without rewriting month-tree buckets, which is what
+//   overflowed the section size bound after several projects already had placement trees.
+test("skips placement-bucket writes when a pace-only save asks not to update placement", async () => {
+  const app = createPlanWizardApp();
+  await savePlanProspects(app, { ...scope, updatePlacement: false, prospects: [{ approvalStatusEm: "humanProvided",
+    capturedAt: "2026-09-07T12:00:00Z", paceEm: "twoFocusedBlocks", preferredWeekdays: ["tuesday", "thursday"],
+    substantiation: "Named while planning", summary: "Rewrite the billing stack", userCategoryEm: "work",
+    uuid: "prospect-pace" }] });
+  expect(app.notes[0].content).toContain("Rewrite the billing stack");
+  expect(app.notes[0].content).not.toContain("prospect-pace Awaiting approval");
+});

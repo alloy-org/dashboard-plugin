@@ -3,6 +3,7 @@
 import { createPlanWizardApp } from "./fixtures/plan-wizard-app.js";
 import { readPlanGoals, savePlanGoals, savePlanIntentPossibilities } from "plan-wizard/plan-wizard-service";
 import { guideSectionRange } from "plan-wizard/vision-guide-markdown";
+import { MAXIMUM_GUIDE_SECTION_CHARACTERS, replaceGuideSection } from "plan-wizard/vision-guide-notes";
 import { validatedSectionPayload } from "plan-wizard/vision-guide-repository";
 import plugin from "plugin";
 
@@ -207,4 +208,23 @@ test("service works with the generic embed bridge and surfaces mobile errors", a
   expect(await readPlanGoals(bridge, scope)).toEqual(saved);
   app.getNoteContent.mockRejectedValueOnce(new Error("Content unavailable"));
   await expect(readPlanGoals(bridge, scope)).rejects.toThrow("Content unavailable");
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc A size-bound failure must name the heading and character count so a five-project pace save is not
+//   mistaken for an archive/split problem when a specific section replacement is too large.
+test("names the overflowing Vision Guide section and its character count", async () => {
+  const recordedErrors = [];
+  const originalConsoleError = console.error;
+  console.error = (...args) => recordedErrors.push(args);
+  const oversizedContent = "x".repeat(MAXIMUM_GUIDE_SECTION_CHARACTERS + 1);
+  try {
+    await expect(replaceGuideSection({}, oversizedContent, { uuid: "guide-note" },
+      { heading: { level: 1, text: "Professional projects and goals" } }))
+      .rejects.toThrow("Professional projects and goals");
+    expect(recordedErrors[0][1]).toMatchObject({ headingText: "Professional projects and goals",
+      sectionCharacters: MAXIMUM_GUIDE_SECTION_CHARACTERS + 1 });
+  } finally {
+    console.error = originalConsoleError;
+  }
 });

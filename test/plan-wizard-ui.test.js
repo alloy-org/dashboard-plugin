@@ -366,6 +366,18 @@ describe("PlanWizard step navigation", () => {
     await cleanup();
   });
 
+  it("renders each step's title and summary from WIZARD_STEPS", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    const headingSelector = ".intent-step-heading, .pace-cards-heading, .projects-step-heading, .quarter-answer-heading";
+    const summarySelector = ".intent-step-summary, .pace-cards-summary, .projects-step-summary, .quarter-answer-summary";
+    for (const step of WIZARD_STEPS) {
+      await advanceToStep(container, step.key);
+      expect(container.querySelector(headingSelector).textContent).toBe(step.title);
+      expect(container.querySelector(summarySelector).textContent).toBe(step.summary);
+    }
+    await cleanup();
+  });
+
   it("does not advance to projects until an intent is supplied", async () => {
     const { cleanup, container } = await renderPlanWizard();
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
@@ -779,6 +791,8 @@ describe("PlanWizard pace cards step", () => {
 
     await clickAndSettle(paceChoice(container, "One substantial block per week"));
     expect(pressedPaceDays(container)).toEqual(["Wed"]);
+    await clickAndSettle(container.querySelectorAll(".project-pace-day")[4]);
+    expect(pressedPaceDays(container)).toEqual(["Fri"]);
     await clickAndSettle(paceChoice(container, "Deadline sprint"));
     expect(pressedPaceDays(container)).toEqual([]);
     await clickAndSettle(container.querySelectorAll(".project-pace-day")[1]);
@@ -929,6 +943,17 @@ describe("PlanWizard modal presentation", () => {
     await clickAndSettle(container.querySelector(".plan-wizard-page"));
     expect(closeCalls).toHaveLength(0);
     await clickAndSettle(container.querySelector(".plan-wizard-overlay"));
+    expect(closeCalls).toEqual(["closed"]);
+    await cleanup();
+  });
+
+  it("dims the rest of the viewport with a fixed layer below the dialog", async () => {
+    const closeCalls = [];
+    const { cleanup, container } = await renderPlanWizard({ onClose: () => closeCalls.push("closed") });
+    const overlay = container.querySelector(".plan-wizard-overlay");
+    const backdrop = overlay.querySelector(".plan-wizard-backdrop");
+    expect(backdrop).not.toBeNull();
+    await clickAndSettle(backdrop);
     expect(closeCalls).toEqual(["closed"]);
     await cleanup();
   });

@@ -16,7 +16,10 @@ $plan-wizard-z-index: 1100;
  * to the scroll offset the wizard opened at, so the dialog appears at the top of what the user was looking at
  * and is free to be taller than the screen, with the page scrolling to reach the rest. An absolutely positioned
  * box extends its containing block's scrollable area, so no separate spacer is needed to scroll that far.
- * `min-height` keeps the backdrop covering the whole screen behind a page that is shorter than one.
+ *
+ * That overlay box is only as tall as the dialog plus padding, so a nested `position: fixed` layer carries the
+ * dim through the bottom of the screen. `min-height: 100vh` on the overlay itself only covers one screen from
+ * `top`, which left widgets and the Day Sketcher below the form undimmed.
  *
  * The width comes from the real usable width published by dashboard-load.jsx rather than 100vw, exactly as
  * config-popup.scss does: the iOS WKWebView viewport bug inflates the layout viewport past the visible area,
@@ -40,6 +43,16 @@ $plan-wizard-z-index: 1100;
     padding: $plan-wizard-edge-inset-vertical $plan-wizard-edge-inset-horizontal-phone;
   }
 
+  .plan-wizard-backdrop {
+    background: $color-overlay-backdrop;
+    bottom: 0;
+    left: 0;
+    position: fixed;
+    top: 0;
+    width: var(--dashboard-viewport-width, 100vw);
+    z-index: 0;
+  }
+
   /* The dialog fills the width the overlay's inset leaves it and takes exactly the height its page asks for.
    * `align-items: flex-start` on the overlay is what keeps that height: as a flex item the dialog would otherwise
    * stretch to the overlay's full height, which is what spread a five-field page over an entire tall screen. */
@@ -53,7 +66,9 @@ $plan-wizard-z-index: 1100;
     flex-direction: column;
     font-family: $font-sans;
     padding: $sp-xl;
+    position: relative;
     width: 100%;
+    z-index: 1;
 
     @include breakpoint($breakpoint-large-phone) {
       padding: $sp-lg;
@@ -249,6 +264,7 @@ $plan-wizard-z-index: 1100;
   }
 
   .intent-step-status,
+  .intent-step-summary,
   .pace-cards-summary,
   .projects-step-summary,
   .quarter-answer-summary {
@@ -315,6 +331,7 @@ $plan-wizard-z-index: 1100;
 
   .intent-step-heading,
   .intent-step-status,
+  .intent-step-summary,
   .intent-step-error {
     grid-column: 1 / -1;
   }

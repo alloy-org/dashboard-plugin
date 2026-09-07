@@ -4,9 +4,11 @@
 import { PACE_CARDS_STEP_FORM_ID, draftFromPaceSelection, draftPacesFromProspects, paceRecordsFromDrafts,
   toggledWeekdaysFromSelection } from "dashboard/plan-wizard/pace-cards-step-fields";
 import ProjectPace from "dashboard/plan-wizard/project-pace";
+import { wizardStepFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export { PACE_CARDS_STEP_FORM_ID };
+const PACE_CARDS_STEP_COPY = wizardStepFromKey("pace-cards");
 
 // ----------------------------------------------------------------------------------------------
 // @desc Render the pace page and save changed rhythms before Back or Next changes the page.
@@ -66,7 +68,7 @@ export default function PaceCardsStep({ isSaving, onNavigate, onSave, planningCo
   // @param {string} weekday - Weekday being toggled.
   const handleToggleWeekday = useCallback((prospectUuid, weekday) => {
     changeDraft(prospectUuid, draft => ({ ...draft,
-      preferredWeekdays: toggledWeekdaysFromSelection(draft.preferredWeekdays, weekday) }));
+      preferredWeekdays: toggledWeekdaysFromSelection(draft.paceEm, draft.preferredWeekdays, weekday) }));
   }, [changeDraft]);
 
   // ----------------------------------------------------------------------------------------------
@@ -98,10 +100,8 @@ export default function PaceCardsStep({ isSaving, onNavigate, onSave, planningCo
 
   return (
     <form className="pace-cards-page" id={ PACE_CARDS_STEP_FORM_ID } onSubmit={ handleNavigate }>
-      <h2 className="pace-cards-heading">What pace can you realistically protect?</h2>
-      <p className="pace-cards-summary">
-        A rhythm per project, then at most two constraints. One screen, not one form per field.
-      </p>
+      <h2 className="pace-cards-heading">{ PACE_CARDS_STEP_COPY.title }</h2>
+      <p className="pace-cards-summary">{ PACE_CARDS_STEP_COPY.summary }</p>
       { drafts.length ? (
         <div className="pace-cards-list">
           { drafts.map(draft => (

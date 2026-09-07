@@ -3,6 +3,24 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-09-07 — Drive wizard step titles and summaries from WIZARD_STEPS
+
+**Model:** Cursor Grok 4.6
+**Files created:** none
+**Files modified:**
+- `lib/dashboard/plan-wizard/intent-step.jsx`, `lib/dashboard/plan-wizard/projects-step.jsx`,
+  `lib/dashboard/plan-wizard/pace-cards-step.jsx`, `lib/dashboard/plan-wizard/quarter-answer-step.jsx` —
+  Each page reads `title` and `summary` from `wizardStepFromKey` instead of hardcoding them.
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` — Quarter-answer routing keeps field copy (hints, placeholder)
+  and passes `stepKey` so that page can look up heading copy.
+- `lib/dashboard/styles/plan-wizard.scss` — Intent summary uses the shared muted paragraph style and spans
+  the two-column grid like the heading.
+- `test/plan-wizard-ui.test.js` — Each step renders the WIZARD_STEPS title and summary.
+
+**Prompt summary:** "Update the various step components to consume WIZARD_STEPS from
+lib/dashboard/plan-wizard/wizard-steps.js for its title (\"title\") & the paragraph text below the title
+(\"summary\")"
+
 ## 2026-09-07 — Place unchosen projects in Awaiting approval and gate pace cards
 
 **Model:** Cursor Grok 4.6

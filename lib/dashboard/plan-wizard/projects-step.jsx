@@ -10,10 +10,12 @@
 import ProjectCard from "dashboard/plan-wizard/project-card";
 import { draftRowsFromProspects, emptyProjectRow, priorityRecordFromRow, prospectRecordsFromDraftRows,
   rejectionRecordFromRow } from "dashboard/plan-wizard/projects-step-fields";
+import { wizardStepFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const CATEGORY_HEADINGS = { personal: "Personal projects (optional)", work: "Professional projects" };
 export const PROJECTS_STEP_FORM_ID = "plan-wizard-projects-form";
+const PROJECTS_STEP_COPY = wizardStepFromKey("projects");
 
 // ----------------------------------------------------------------------------------------------
 // @desc Say what discovery is doing or has done, so the page never leaves the user guessing why the list holds
@@ -129,10 +131,8 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
 
   return (
     <form className="projects-step-page" id={ PROJECTS_STEP_FORM_ID } onSubmit={ handleNavigate }>
-      <h2 className="projects-step-heading">Which projects carry those intents?</h2>
-      <p className="projects-step-summary">
-        Which 3-6 prospects deserve your precious attention over the quarter?
-      </p>
+      <h2 className="projects-step-heading">{ PROJECTS_STEP_COPY.title }</h2>
+      <p className="projects-step-summary">{ PROJECTS_STEP_COPY.summary }</p>
       { ["work", "personal"].map(userCategoryEm => {
         const categoryRows = draftRows.filter(row => row.userCategoryEm === userCategoryEm);
         const categoryGoals = planningContext.goals.filter(goal => goal.userCategoryEm === userCategoryEm);

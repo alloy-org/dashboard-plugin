@@ -6,6 +6,7 @@
 // paragraphs would ask for more than either question wants.
 
 import { answerTextFromRecord, hasUnsavedAnswer, quarterAnswerFromDraft } from "dashboard/plan-wizard/quarter-answer-fields";
+import { wizardStepFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useEffect, useRef, useState } from "react";
 
 // ----------------------------------------------------------------------------------------------
@@ -15,17 +16,17 @@ import { useEffect, useRef, useState } from "react";
 // @param {object} params - An object with the following properties:
 //   - {object|null} answer - Stored { capturedAt, text } for this question, or null when unanswered.
 //   - {string} answerKey - quarterName or dailySufficiency; identifies which answer is being written.
-//   - {string} heading - The question, shown as the page heading.
 //   - {Array<string>} hints - Short examples that show the kind of answer expected, without proposing one.
 //   - {boolean} isSaving - True while a save is in flight.
 //   - {Function} onSave - Receives { answerKey, capturedAt, text } and resolves true when the write succeeded.
 //   - {string} placeholder - Prompt shown in the empty input.
 //   - {Error|null} saveError - Last save failure; its presence turns the action into a retry.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
-//   - {string} summary - One line explaining what the answer is used for.
+//   - {string} stepKey - WIZARD_STEPS key; supplies this page's title and summary.
 // @returns {JSX.Element} The page.
-export default function QuarterAnswerStep({ answer, answerKey, heading, hints = [], isSaving, onSave, placeholder,
-    saveError, scopeKey, summary }) {
+export default function QuarterAnswerStep({ answer, answerKey, hints = [], isSaving, onSave, placeholder, saveError,
+    scopeKey, stepKey }) {
+  const { summary, title } = wizardStepFromKey(stepKey);
   const [draftText, setDraftText] = useState(() => answerTextFromRecord(answer));
   const [hasSaved, setHasSaved] = useState(false);
   const capturedAtRef = useRef(null);
@@ -70,7 +71,7 @@ export default function QuarterAnswerStep({ answer, answerKey, heading, hints = 
 
   return (
     <div className={ `quarter-answer-page quarter-answer-page--${ answerKey }` }>
-      <h2 className="quarter-answer-heading">{ heading }</h2>
+      <h2 className="quarter-answer-heading">{ title }</h2>
       <p className="quarter-answer-summary">{ summary }</p>
       <input className="quarter-answer-input" disabled={ isSaving } onChange={ event => handleChangeText(event.target.value) }
         placeholder={ placeholder } type="text" value={ draftText } />

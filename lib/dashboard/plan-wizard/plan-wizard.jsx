@@ -12,7 +12,8 @@
 // rather than pinned to the viewport. A viewport-pinned dialog has to fit the viewport, so on a tall screen the
 // shortest page's handful of fields were stretched across the whole height with the navigation stranded at the
 // bottom. Anchored in the document the dialog takes the height its questions ask for, and the page scrolls to
-// reach the rest when the viewport cannot show it all at once.
+// reach the rest when the viewport cannot show it all at once. A nested fixed layer keeps the dim covering the
+// rest of the screen, since the overlay box itself only wraps the dialog.
 
 import IntentStep, { INTENT_STEP_FORM_ID } from "dashboard/plan-wizard/intent-step";
 import PaceCardsStep, { PACE_CARDS_STEP_FORM_ID } from "dashboard/plan-wizard/pace-cards-step";
@@ -24,16 +25,14 @@ import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import "dashboard/styles/plan-wizard.scss";
 
-// Copy for the two pages that capture a single quarter-wide answer, kept beside the routing that renders them.
+// Field copy for the two pages that capture a single quarter-wide answer. Title and summary live on WIZARD_STEPS;
+// this keeps the input hints and placeholder beside the routing that renders them.
 const QUARTER_ANSWER_COPY = {
-  "enough-for-today": { answerKey: "dailySufficiency", heading: "When have you done enough for today?",
+  "enough-for-today": { answerKey: "dailySufficiency",
     hints: ["Two hours of focused project work", "Every task I marked important yesterday", "One thing that moves a quarterly intent"],
-    placeholder: "What has to be true before the day counts as a good one?",
-    summary: "A day that meets this bar is a day you can stop working with a clear conscience." },
-  "quarter-name": { answerKey: "quarterName", heading: "Name the quarter",
-    hints: ["The Shipping Quarter", "Rebuild the Foundations", "Fewer, Bigger Things"],
-    placeholder: "Give this stretch of months a name you will recognize later.",
-    summary: "A name makes the quarter easy to refer to later, when you are looking back at what it was for." },
+    placeholder: "What has to be true before the day counts as a good one?" },
+  "quarter-name": { answerKey: "quarterName", hints: ["The Shipping Quarter", "Rebuild the Foundations", "Fewer, Bigger Things"],
+    placeholder: "Give this stretch of months a name you will recognize later." },
 };
 
 export { WIZARD_STEPS };
@@ -127,6 +126,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const wizardModal = (
     <div className="plan-wizard-overlay" onClick={ handleBackdropClick } ref={ overlayRef }
       style={ { top: overlayTop } }>
+      <div aria-hidden="true" className="plan-wizard-backdrop" onClick={ onClose } />
       <div aria-label="Plan your quarter" aria-modal="true" className="plan-wizard-page" role="dialog">
         <header className="plan-wizard-header">
           <div className="plan-wizard-title-group" title={ `${ quarterLabel } · ${ domainLabel }` }>
@@ -167,11 +167,12 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
         ) : null }
         { !isLoading && !error && step.key === "pace-cards" ? (
           <PaceCardsStep { ...{ isSaving, planningContext, saveError, scopeKey } }
-            onNavigate={ handleProjectNavigation } onSave={ saveProspects } />
+            onNavigate={ handleProjectNavigation } onSave={ records => saveProspects(records, { updatePlacement: false }) } />
         ) : null }
         { !isLoading && !error && QUARTER_ANSWER_COPY[step.key] ? (
           <QuarterAnswerStep { ...QUARTER_ANSWER_COPY[step.key] } { ...{ isSaving, saveError, scopeKey } }
-            answer={ planningContext[QUARTER_ANSWER_COPY[step.key].answerKey] } onSave={ saveQuarterAnswer } />
+            answer={ planningContext[QUARTER_ANSWER_COPY[step.key].answerKey] } onSave={ saveQuarterAnswer }
+            stepKey={ step.key } />
         ) : null }
         { !isLoading && !error ? (
           <nav className="plan-wizard-navigation">

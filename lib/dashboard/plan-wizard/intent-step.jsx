@@ -5,9 +5,11 @@
 
 import { CATEGORY_LABELS, PRIMARY_GOAL_RANK, draftFieldsFromGoals, goalRecordsFromDraftFields,
   nextSecondaryRank } from "dashboard/plan-wizard/intent-step-fields";
+import { wizardStepFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 export const INTENT_STEP_FORM_ID = "plan-wizard-intent-form";
+const INTENT_STEP_COPY = wizardStepFromKey("intent");
 
 // ----------------------------------------------------------------------------------------------
 // @desc One editable goal line. A goal is a single sentence, so this is a one-line text input rather than a
@@ -197,7 +199,8 @@ export default function IntentStep({ isRefreshing, isSaving, onAnswerStateChange
 
   return (
     <form className="intent-step-page" id={ INTENT_STEP_FORM_ID } onSubmit={ handleNext }>
-      <h2 className="intent-step-heading">This quarter will be a success if…</h2>
+      <h2 className="intent-step-heading">{ INTENT_STEP_COPY.title }</h2>
+      <p className="intent-step-summary">{ INTENT_STEP_COPY.summary }</p>
       { isRefreshing ? <p className="intent-step-status">Looking through your recent work for suggestions…</p> : null }
       <IntentStepCategory { ...categoryProps } fields={ workFields } onAddSecondary={ () => handleAddSecondary("work") }
         possibilities={ planningContext.possibilities.work } userCategoryEm="work" />
