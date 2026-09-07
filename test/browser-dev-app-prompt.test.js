@@ -5,6 +5,22 @@
 import { jest } from "@jest/globals";
 import { createBrowserDevApp } from "util/browser-dev-app";
 
+// ----------------------------------------------------------------------------------------------
+// @desc Verify that a browser-side note write is successful only when the file-backed development server
+//   confirms it, matching the boolean contract used by production persistence.
+describe("browser dev app note writes", () => {
+  it("returns false when the development server rejects a note replacement", async () => {
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn(async () => ({ json: async () => ({ error: "Note content was not written", ok: false }),
+      ok: false }));
+    const app = createBrowserDevApp();
+
+    await expect(app.replaceNoteContent("missing-note", "response")).resolves.toBe(false);
+
+    global.fetch = originalFetch;
+  });
+});
+
 // [Claude gpt-5.3-codex] Generated tests for: browser dev app prompt modal behavior
 describe("browser dev app prompt modal", () => {
   beforeEach(() => {

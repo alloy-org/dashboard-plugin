@@ -504,6 +504,13 @@ describe("PlanWizard project discovery", () => {
     expect(container.querySelector(".projects-step-discovery-notice").textContent).toContain("waiting on you");
     const stored = await readPlanGoals(app, SCOPE);
     expect(stored.prospects[0]).toMatchObject({ approvalStatus: "awaitingJudgement", summary: "Automate the weekly report" });
+
+    const priorityButtons = [...proposedRow.querySelectorAll(".project-row-priority-button")];
+    expect(priorityButtons.map(button => button.textContent)).toEqual(["Focus", "Keep warm", "Not now"]);
+    await clickAndSettle(priorityButtons[1]);
+    const prioritized = await readPlanGoals(app, SCOPE);
+    expect(prioritized.prospects[0]).toMatchObject({ approvalStatus: "humanAffirmed", priority: "stayWarm" });
+    expect(proposedRow.querySelector('[aria-pressed="true"]').textContent).toBe("Keep warm");
     await cleanup();
   });
 

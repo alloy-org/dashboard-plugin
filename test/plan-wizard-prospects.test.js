@@ -135,6 +135,7 @@ test("states the discovery method in the prompt and quotes evidence as data", ()
   expect(prompt).toContain("resolve the greatest number of the tasks above");
   expect(prompt).toContain("without anyone doing that specific work");
   expect(prompt).toContain("at least 2 of the tasks above concern it");
+  expect(prompt).toContain("Aim for at least 6 projects across both categories");
   expect(prompt).toContain("never propose these again");
   expect(prompt).toContain("Rewrite the billing stack");
   expect(prompt).toContain("[goal-1] (work) Cut support load in half");

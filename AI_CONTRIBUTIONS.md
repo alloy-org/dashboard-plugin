@@ -3,6 +3,27 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-09-07 — Persist development intents and turn project proposals into sortable cards
+
+**Model:** GPT-5.6 Sol
+**Files modified:**
+- `dev/dev-app.js`, `dev/dev-server.js`, `lib/util/browser-dev-app.js` — Fixed the file-backed note initialization
+  path used in development. A Vision Guide bootstrap intentionally passes `section.heading: null`; the Node dev
+  app wrote the file and then threw while logging `heading.text`, while the HTTP layer also discarded false write
+  results. Headingless initialization now logs safely, and failed file writes propagate back to the wizard instead
+  of being reported as saved.
+- `lib/dashboard/plan-wizard/projects-step-fields.js`, `lib/dashboard/plan-wizard/projects-step.jsx`,
+  `lib/dashboard/styles/plan-wizard.scss` — Present stored project proposals in a responsive two-column card grid.
+  Each card has persisted Focus, Keep warm, and Not now controls; choosing one records the corresponding priority
+  and affirms a proposal awaiting judgement.
+- `lib/plan-wizard/plan-models.js`, `lib/plan-wizard/prospect-discovery.js` — Added the source-note priority spellings
+  while retaining compatibility with already-stored values, and ask discovery for at least six supported projects
+  across categories without relaxing the two-task evidence requirement.
+- `test/browser-dev-app-prompt.test.js`, `test/dev-app.test.js`, `test/plan-wizard-prospects.test.js`,
+  `test/plan-wizard-ui.test.js` — Added coverage for rejected browser writes, personal-intent restoration from an
+  archived Vision Guide file after recreating the dev app, the six-project discovery target, and durable card
+  priority decisions.
+
 ## 2026-09-06 — Present the plan wizard as a modal, and style its five pages
 
 **Model:** Claude Opus 5 (1M context)

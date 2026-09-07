@@ -234,6 +234,12 @@ function handleAttachMediaApi(req, res) {
 // Note API — read/write/create note files via dev-app
 // ────────────────────────────────────────────────────────────────
 
+// ----------------------------------------------------------------------------------------------
+// @desc Read or replace file-backed note content for the browser development app, preserving the underlying
+//   app's boolean write result so the client cannot report a failed section replacement as saved.
+// @param {object} req - Node HTTP request carrying a note UUID or replacement payload.
+// @param {object} res - Node HTTP response receiving note content or the write result.
+// @returns {boolean} Whether this handler accepted the request method.
 function handleNoteContentApi(req, res) {
   const parsedUrl = new URL(req.url, "http://localhost");
 
@@ -263,9 +269,10 @@ function handleNoteContentApi(req, res) {
         const { uuid, content, section } = JSON.parse(body);
         const app = createDevApp();
         const options = section ? { section } : {};
-        await app.replaceNoteContent({ uuid }, content, options);
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ ok: true }));
+        const didReplace = await app.replaceNoteContent({ uuid }, content, options);
+        const statusCode = didReplace === true ? 200 : 409;
+        res.writeHead(statusCode, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: didReplace === true ? null : "Note content was not written", ok: didReplace === true }));
       } catch (err) {
         res.writeHead(500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: err.message }));

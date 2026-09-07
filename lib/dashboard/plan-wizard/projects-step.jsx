@@ -7,8 +7,8 @@
 // those are saved, and it costs a provider call — so the page offers it as an action and reports what a pass
 // found, rather than firing on mount and presenting an empty list as though a search had already run.
 
-import { draftRowsFromProspects, emptyProjectRow, prospectRecordsFromDraftRows,
-  rejectionRecordFromRow } from "dashboard/plan-wizard/projects-step-fields";
+import { PROJECT_PRIORITY_OPTIONS, draftRowsFromProspects, emptyProjectRow, priorityRecordFromRow,
+  prospectRecordsFromDraftRows, rejectionRecordFromRow } from "dashboard/plan-wizard/projects-step-fields";
 import { useEffect, useRef, useState } from "react";
 
 const CATEGORY_HEADINGS = { personal: "Personal projects (optional)", work: "Professional projects" };
@@ -38,10 +38,11 @@ function discoveryNoticeText({ discoveryFailureReason, hasChosenIntent, isDiscov
 //   - {boolean} isDisabled - True while a save is in flight.
 //   - {Function} onChangeSummary - Receives the row's new name.
 //   - {Function} onReject - Removes a stored project from the plan.
+//   - {Function} onSetPriority - Persists Focus, Keep warm, or Not now.
 //   - {Function} onToggleGoal - Receives a goal UUID to link or unlink.
 //   - {object} row - Draft row being edited.
 // @returns {JSX.Element} A project row.
-function ProjectRow({ goals, isDisabled, onChangeSummary, onReject, onToggleGoal, row }) {
+function ProjectRow({ goals, isDisabled, onChangeSummary, onReject, onSetPriority, onToggleGoal, row }) {
   const wasProposed = row.approvalStatus === "awaitingJudgement";
   const rowClass = `project-row ${ wasProposed ? "project-row--proposed" : "project-row--chosen" }`;
   return (
@@ -69,6 +70,17 @@ function ProjectRow({ goals, isDisabled, onChangeSummary, onReject, onToggleGoal
                 onChange={ () => onToggleGoal(goal.uuid) } type="checkbox" />
               { goal.goalText }
             </label>
+          )) }
+        </div>
+      ) : null }
+      { row.isStored ? (
+        <div aria-label={ `Priority for ${ row.summary }` } className="project-row-priority">
+          { PROJECT_PRIORITY_OPTIONS.map(option => (
+            <button aria-pressed={ row.priority === option.value }
+              className={ `project-row-priority-button${ row.priority === option.value ? " project-row-priority-button--selected" : "" }` }
+              disabled={ isDisabled } key={ option.value } onClick={ () => onSetPriority(option.value) } type="button">
+              { option.label }
+            </button>
           )) }
         </div>
       ) : null }
@@ -143,6 +155,19 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
   };
 
   // ----------------------------------------------------------------------------------------------
+  // @desc Persist one card's Focus, Keep warm, or Not now decision immediately and reflect it on that card.
+  // @param {object} row - Stored project being judged.
+  // @param {string} priority - ActionProspect priority enum represented by the selected button.
+  const handleSetPriority = async (row, priority) => {
+    const capturedAt = new Date().toISOString();
+    const didSave = await onSave([priorityRecordFromRow(row, priority, capturedAt)]);
+    if (!didSave) return;
+    setDraftRows(previous => previous.map(candidate => (candidate.uuid === row.uuid
+      ? { ...candidate, approvalStatus: candidate.approvalStatus === "awaitingJudgement" ? "humanAffirmed"
+        : candidate.approvalStatus, priority } : candidate)));
+  };
+
+  // ----------------------------------------------------------------------------------------------
   // @desc Save every row that carries a name, keeping the draft intact on failure so a retry reuses its timestamp.
   const handleSave = async () => {
     const capturedAt = capturedAtRef.current ?? new Date().toISOString();
@@ -164,7 +189,8 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
     <div className="projects-step-page">
       <h2 className="projects-step-heading">Which projects carry those intents?</h2>
       <p className="projects-step-summary">
-        Name the concrete work behind each intent, then tie it to the outcomes it moves forward.
+        Which one to three things deserve your best hours over the next 90 days? Sort the proposed projects into
+        Focus, Keep warm, or Not now.
       </p>
       <div className="projects-step-discovery">
         <button className="projects-step-discover" disabled={ isDiscovering || isSaving || !hasChosenIntent }
@@ -189,12 +215,14 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
                 You have not saved an intent in this category, so there is nothing here to tie a project to yet.
               </p>
             ) }
-            { categoryRows.map(row => (
-              <ProjectRow goals={ categoryGoals } isDisabled={ isSaving } key={ row.uuid }
-                onChangeSummary={ summary => handleChangeRow(row.uuid, { summary }) }
-                onReject={ () => handleReject(row) } onToggleGoal={ goalUuid => handleToggleGoal(row.uuid, goalUuid) }
-                row={ row } />
-            )) }
+            <div className="projects-step-card-grid">
+              { categoryRows.map(row => (
+                <ProjectRow goals={ categoryGoals } isDisabled={ isSaving } key={ row.uuid }
+                  onChangeSummary={ summary => handleChangeRow(row.uuid, { summary }) }
+                  onReject={ () => handleReject(row) } onSetPriority={ priority => handleSetPriority(row, priority) }
+                  onToggleGoal={ goalUuid => handleToggleGoal(row.uuid, goalUuid) } row={ row } />
+              )) }
+            </div>
             <button className="projects-step-add" disabled={ isSaving }
               onClick={ () => setDraftRows(previous => previous.concat(emptyProjectRow(userCategoryEm))) } type="button">
               Add another project

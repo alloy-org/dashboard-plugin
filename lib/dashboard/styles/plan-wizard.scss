@@ -385,13 +385,27 @@ $plan-wizard-z-index: 1100;
     text-transform: uppercase;
   }
 
+  /* Project proposals are choices to sort, not form rows to process sequentially. A two-column card grid matches
+   * that mental model and collapses to one column before labels and decision buttons become cramped. */
+  .projects-step-card-grid {
+    display: grid;
+    gap: $sp-md;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    @include breakpoint($breakpoint-tablet) {
+      grid-template-columns: 1fr;
+    }
+  }
+
   .project-row {
+    background: $color-bg-primary;
     border: 1px solid $color-border;
     border-radius: $radius-md;
     display: flex;
     flex-direction: column;
     gap: $sp-sm;
-    margin-bottom: $sp-sm;
+    justify-content: flex-start;
+    min-height: 156px;
     padding: $sp-md;
   }
 
@@ -438,6 +452,30 @@ $plan-wizard-z-index: 1100;
     color: $color-danger;
     flex-shrink: 0;
     font-size: 0.72rem;
+  }
+
+  .project-row-priority {
+    display: grid;
+    gap: $sp-xs;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: auto;
+  }
+
+  .plan-wizard-page .project-row-priority-button {
+    font-size: 0.72rem;
+    padding: $sp-sm $sp-xs;
+    text-align: center;
+
+    &[aria-pressed="true"] {
+      background: $color-navy;
+      border-color: $color-navy;
+      color: $color-text-on-accent;
+
+      &:hover:not(:disabled) {
+        background: $color-navy;
+        opacity: 0.9;
+      }
+    }
   }
 
   .projects-step-add {

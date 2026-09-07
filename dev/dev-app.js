@@ -810,9 +810,13 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       return null;
     },
 
-    // [Claude] Task: replace note content with optional section-targeted replacement
-    // Prompt: "implementing replaceNoteContent with the 'section' object will require a regular expression"
-    // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
+    // ----------------------------------------------------------------------------------------------
+    // @desc Replace a file-backed note or one markdown section, including the headingless section used to
+    //   initialize a new Vision Guide, and return whether the write reached disk.
+    // @param {object|string} noteHandle - Note handle or UUID to update.
+    // @param {string} content - Replacement markdown.
+    // @param {object} options - Optional Amplenote section descriptor; heading may be null for initial content.
+    // @returns {Promise<boolean>} Whether the replacement was written.
     async replaceNoteContent(noteHandle, content, options = {}) {
       const uuid = typeof noteHandle === "string" ? noteHandle : noteHandle?.uuid;
       const filePath = path.join(notesDir, `${uuid}.md`);
@@ -845,7 +849,8 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       } else {
         fs.writeFileSync(filePath, updatedFrontmatter + "\n" + content, "utf-8");
       }
-      console.log(`[dev-app] replaceNoteContent for ${uuid} (${content.length} chars${options.section ? ', section: ' + options.section.heading.text : ''})`);
+      const sectionLabel = options.section?.heading?.text ?? (options.section ? "initial content" : null);
+      console.log(`[dev-app] replaceNoteContent for ${uuid} (${content.length} chars${sectionLabel ? `, section: ${ sectionLabel }` : ""})`);
       return true;
     },
 

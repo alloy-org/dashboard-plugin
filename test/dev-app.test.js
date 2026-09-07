@@ -8,6 +8,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { createDevApp, readSettingsFile } from "../dev/dev-app.js";
+import { readPlanGoals, savePlanGoals } from "plan-wizard/plan-wizard-service";
 import { SETTING_KEYS, widgetConfigKey } from "constants/settings";
 
 // [Claude] Generated tests for: dev-mode app harness settings persistence
@@ -81,6 +82,29 @@ describe("Dev App Harness", () => {
 
       const reloaded = createDevApp(tmpSettingsPath, tmpNotesDir);
       expect(reloaded.settings["counter"]).toBe("42");
+    });
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Verify that planning writes use the same file-backed note lifecycle as every other development note,
+  //   including archive discovery after the app object is recreated for a subsequent dashboard load.
+  describe("plan wizard note persistence", () => {
+    it("restores a personal intent from the archived Vision Guide file after restart", async () => {
+      const scope = { domainName: "Work", domainUuid: "domain-work-uuid", quarter: 4, year: 2026 };
+      const firstApp = createDevApp(tmpSettingsPath, tmpNotesDir);
+      await savePlanGoals(firstApp, { ...scope, goals: [{ capturedAt: "2026-09-07T17:00:00.000Z", goalRank: 1,
+        goalText: "Run three times each week", userCategoryEm: "personal" }] });
+
+      const secondApp = createDevApp(tmpSettingsPath, tmpNotesDir);
+      const restored = await readPlanGoals(secondApp, scope);
+      const noteFiles = fs.readdirSync(tmpNotesDir).filter(fileName => fileName.endsWith(".md"));
+      const storedMarkdown = fs.readFileSync(path.join(tmpNotesDir, noteFiles[0]), "utf8");
+
+      expect(restored.goals.map(goal => [goal.userCategoryEm, goal.goalText]))
+        .toEqual([["personal", "Run three times each week"]]);
+      expect(storedMarkdown).toContain("title: Work Mission Builder Vision Guide 2026");
+      expect(storedMarkdown).toContain("archived: true");
+      expect(storedMarkdown).toContain('"goalText": "Run three times each week"');
     });
   });
 
