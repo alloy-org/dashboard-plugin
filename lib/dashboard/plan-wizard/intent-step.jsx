@@ -7,6 +7,8 @@ import { CATEGORY_LABELS, PRIMARY_GOAL_RANK, draftFieldsFromGoals, goalRecordsFr
   nextSecondaryRank } from "dashboard/plan-wizard/intent-step-fields";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
+export const INTENT_STEP_FORM_ID = "plan-wizard-intent-form";
+
 // ----------------------------------------------------------------------------------------------
 // @desc One editable goal line. A goal is a single sentence, so this is a one-line text input rather than a
 //   textarea: the box should not invite a paragraph, and Enter should not insert a newline into a goal.
@@ -67,7 +69,7 @@ function IntentStepCategory({ fields, isDisabled, onAddSecondary, onApplySuggest
           { possibilities.map(possibility => (
             <button className={ `intent-step-suggestion intent-step-suggestion--${ possibility.sourceKind }` }
               disabled={ isDisabled } key={ possibility.uuid } onClick={ () => onApplySuggestion(possibility) }
-              title={ possibility.substantiation } type="button">
+              tabIndex={ -1 } title={ possibility.substantiation } type="button">
               { possibility.intent }
             </button>
           )) }
@@ -88,38 +90,41 @@ function IntentStepCategory({ fields, isDisabled, onAddSecondary, onApplySuggest
 //   reseeded only when the plan scope changes or a save succeeds, so suggestions arriving from a background
 //   refresh cannot discard what the user is in the middle of writing.
 // @param {object} params - An object with the following properties:
-//   - {boolean} isDiscovering - True while project discovery runs, so "Find my projects" cannot be double-run.
 //   - {boolean} isRefreshing - True while inference runs; fields stay editable throughout.
 //   - {boolean} isSaving - True while a save is in flight.
+//   - {Function} onAnswerStateChange - Reports whether Next should be enabled.
 //   - {Function} onFindProjects - Moves to the projects page and runs discovery there.
 //   - {object} planningContext - Stored goals, goalRecords, and possibilities for the scope.
 //   - {Function} onSave - Receives goal records and resolves true when the write succeeded.
 //   - {Error|null} saveError - Last save failure; its presence turns the action into a retry.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 // @returns {JSX.Element} The intent page.
-// "Find my projects" saves first: discovery reads the stored intents, so an unsaved answer would be invisible
-// to it and the user would be shown projects chosen for the intents they had before this edit.
-export default function IntentStep({ isDiscovering = false, isRefreshing, onFindProjects, onSave, planningContext,
-    isSaving, saveError, scopeKey }) {
+// The wizard's shared Next button submits this form: discovery reads stored intents, so an unsaved answer would
+// otherwise be invisible and the user would be shown projects chosen for the prior answer.
+export default function IntentStep({ isRefreshing, isSaving, onAnswerStateChange, onFindProjects, onSave,
+    planningContext, saveError, scopeKey }) {
   const [draftFields, setDraftFields] = useState(() => draftFieldsFromGoals(planningContext.goals));
   const [focusedFieldUuid, setFocusedFieldUuid] = useState(null);
-  const [hasSaved, setHasSaved] = useState(false);
   const capturedAtRef = useRef(null);
   const seededScopeRef = useRef(scopeKey);
+  const hasAnswer = draftFields.some(field => field.goalText.trim());
 
   useEffect(() => {
-    if (seededScopeRef.current === scopeKey && hasSaved === false && capturedAtRef.current) return;
+    if (seededScopeRef.current === scopeKey && capturedAtRef.current) return;
     seededScopeRef.current = scopeKey;
     capturedAtRef.current = null;
     setDraftFields(draftFieldsFromGoals(planningContext.goals));
     setFocusedFieldUuid(null);
-    setHasSaved(false);
   }, [scopeKey]);
 
   useEffect(() => {
     if (capturedAtRef.current) return;
     setDraftFields(draftFieldsFromGoals(planningContext.goals));
   }, [planningContext.goals]);
+
+  useEffect(() => {
+    onAnswerStateChange(hasAnswer);
+  }, [hasAnswer, onAnswerStateChange]);
 
   // ----------------------------------------------------------------------------------------------
   // @desc Append an empty field in a category, taking the next rank after that category's existing fields.
@@ -133,6 +138,7 @@ export default function IntentStep({ isDiscovering = false, isRefreshing, onFind
   //   when nothing is focused. The suggestion is only a starting point until the user saves.
   // @param {object} possibility - Stored IntentPossibility.
   const handleApplySuggestion = possibility => {
+    capturedAtRef.current = capturedAtRef.current ?? new Date().toISOString();
     setDraftFields(previous => {
       const categoryFields = previous.filter(field => field.userCategoryEm === possibility.userCategoryEm);
       const focusedField = categoryFields.find(field => field.uuid === focusedFieldUuid);
@@ -150,7 +156,6 @@ export default function IntentStep({ isDiscovering = false, isRefreshing, onFind
   // A retry reuses the stamp, since the merge treats an older or tied timestamp as a no-op.
   const handleChangeText = (fieldUuid, goalText) => {
     capturedAtRef.current = capturedAtRef.current ?? new Date().toISOString();
-    setHasSaved(false);
     setDraftFields(previous => previous.map(field => (field.uuid === fieldUuid ? { ...field, goalText } : field)));
   };
 
@@ -166,30 +171,32 @@ export default function IntentStep({ isDiscovering = false, isRefreshing, onFind
     const didSave = await onSave(goalRecords);
     if (!didSave) return false;
     capturedAtRef.current = null;
-    setHasSaved(true);
     return true;
   };
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Save the answers, then hand off to project discovery. A failed save stops the handoff unless intents
-  //   were already stored, since discovery reasoning over a stale intent would propose projects for a goal the
-  //   user has just changed.
-  const handleFindProjects = async () => {
-    const hadStoredIntent = planningContext.goals.length > 0;
+  // @desc Submit the shared Next button: persist changed answers before project discovery, while an unchanged
+  //   stored answer can proceed without adding another note revision.
+  // @param {object} event - Form submission event from the navigation's associated Next button.
+  // A failed changed-answer save keeps the user on this page so discovery cannot reason over stale intent text.
+  const handleNext = async event => {
+    event.preventDefault();
+    if (!capturedAtRef.current && planningContext.goals.length) {
+      await onFindProjects();
+      return;
+    }
     const didSave = await handleSave();
-    if (!didSave && !hadStoredIntent) return;
+    if (!didSave) return;
     await onFindProjects();
   };
 
   const workFields = draftFields.filter(field => field.userCategoryEm === "work");
   const personalFields = draftFields.filter(field => field.userCategoryEm === "personal");
-  const hasAnswer = draftFields.some(field => field.goalText.trim());
-  const saveLabel = saveError ? "Retry saving" : "Save answers";
   const categoryProps = { isDisabled: isSaving, onApplySuggestion: handleApplySuggestion, onChangeText: handleChangeText,
     onFocusField: setFocusedFieldUuid };
 
   return (
-    <div className="intent-step-page">
+    <form className="intent-step-page" id={ INTENT_STEP_FORM_ID } onSubmit={ handleNext }>
       <h2 className="intent-step-heading">This quarter will be a success if…</h2>
       { isRefreshing ? <p className="intent-step-status">Looking through your recent work for suggestions…</p> : null }
       <IntentStepCategory { ...categoryProps } fields={ workFields } onAddSecondary={ () => handleAddSecondary("work") }
@@ -200,18 +207,6 @@ export default function IntentStep({ isDiscovering = false, isRefreshing, onFind
       { saveError ? (
         <p className="intent-step-error" role="alert">Your answers were not saved. { saveError.message }</p>
       ) : null }
-      { hasSaved ? <p className="intent-step-saved">Saved.</p> : null }
-      <div className="intent-step-actions">
-        <button className="intent-step-save" disabled={ isSaving || !hasAnswer } onClick={ handleSave } type="button">
-          { isSaving ? "Saving…" : saveLabel }
-        </button>
-        <button className="intent-step-continue" disabled={ isSaving || isDiscovering || !hasAnswer }
-          onClick={ handleFindProjects }
-          title="Save these intents and read your recent tasks for the projects that would carry them"
-          type="button">
-          { isDiscovering ? "Finding projects…" : "Find my projects" }
-        </button>
-      </div>
-    </div>
+    </form>
   );
 }

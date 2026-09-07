@@ -15,14 +15,18 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 - `lib/dashboard/plan-wizard/projects-step-fields.js`, `lib/dashboard/plan-wizard/projects-step.jsx`,
   `lib/dashboard/styles/plan-wizard.scss` — Present stored project proposals in a responsive two-column card grid.
   Each card has persisted Focus, Keep warm, and Not now controls; choosing one records the corresponding priority
-  and affirms a proposal awaiting judgement.
+  and affirms a proposal awaiting judgement. The intent page now uses the wizard's shared Next button as its form
+  submission: Next persists changed answers, advances into project discovery only after a successful write, and
+  replaces the removed Save answers and Find my projects actions. The first-page Back action is omitted, and its
+  suggestion and Close controls are excluded from keyboard tab order.
 - `lib/plan-wizard/plan-models.js`, `lib/plan-wizard/prospect-discovery.js` — Added the source-note priority spellings
   while retaining compatibility with already-stored values, and ask discovery for at least six supported projects
   across categories without relaxing the two-task evidence requirement.
 - `test/browser-dev-app-prompt.test.js`, `test/dev-app.test.js`, `test/plan-wizard-prospects.test.js`,
   `test/plan-wizard-ui.test.js` — Added coverage for rejected browser writes, personal-intent restoration from an
   archived Vision Guide file after recreating the dev app, the six-project discovery target, and durable card
-  priority decisions.
+  priority decisions. Added UI coverage for Next-based intent persistence, first-page navigation, removed actions,
+  and the reduced intent-page tab order.
 
 ## 2026-09-06 — Present the plan wizard as a modal, and style its five pages
 

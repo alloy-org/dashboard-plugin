@@ -122,20 +122,20 @@ describe("PlanWizard intent step", () => {
     await cleanup();
   });
 
-  it("fills the field from a clicked suggestion and only persists it on save", async () => {
+  it("fills the field from a clicked suggestion and persists it when Next is clicked", async () => {
     const { app, cleanup, container } = await renderPlanWizard();
     const firstSuggestion = container.querySelector(".intent-step-category--work .intent-step-suggestion");
 
     await clickAndSettle(firstSuggestion);
     expect(workFields(container)[0].value).toBe("Ship the analytics offering");
 
-    const beforeSave = await readPlanGoals(app, SCOPE);
-    expect(beforeSave.goals).toEqual([]);
+    const beforeNext = await readPlanGoals(app, SCOPE);
+    expect(beforeNext.goals).toEqual([]);
 
-    await clickAndSettle(container.querySelector(".intent-step-save"));
-    const afterSave = await readPlanGoals(app, SCOPE);
-    expect(afterSave.goals.map(goal => goal.goalText)).toEqual(["Ship the analytics offering"]);
-    expect(container.querySelector(".intent-step-saved")).not.toBeNull();
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+    const afterNext = await readPlanGoals(app, SCOPE);
+    expect(afterNext.goals.map(goal => goal.goalText)).toEqual(["Ship the analytics offering"]);
+    expect(container.querySelector(".projects-step-page")).not.toBeNull();
     await cleanup();
   });
 
@@ -155,7 +155,7 @@ describe("PlanWizard intent step", () => {
     await typeInto(workFields(container)[0], "Ship the rewrite");
     await clickAndSettle(container.querySelector(".intent-step-category--work .intent-step-add-secondary"));
     await typeInto(workFields(container)[1], "Cut the support backlog");
-    await clickAndSettle(container.querySelector(".intent-step-save"));
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
     const stored = await readPlanGoals(app, SCOPE);
     const workGoals = stored.goals.filter(goal => goal.userCategoryEm === "work");
@@ -169,7 +169,7 @@ describe("PlanWizard intent step", () => {
     const { app, cleanup, container } = await renderPlanWizard();
     await typeInto(workFields(container)[0], "Ship the rewrite");
     await typeInto(personalFields(container)[0], "Run three times a week");
-    await clickAndSettle(container.querySelector(".intent-step-save"));
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
     const stored = await readPlanGoals(app, SCOPE);
     const personalGoals = stored.goals.filter(goal => goal.userCategoryEm === "personal");
@@ -184,14 +184,13 @@ describe("PlanWizard intent step", () => {
 
     const workingReplace = app.replaceNoteContent;
     app.replaceNoteContent = jest.fn(async () => { throw new Error("Note write rejected"); });
-    await clickAndSettle(container.querySelector(".intent-step-save"));
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
     expect(container.querySelector(".intent-step-error")).not.toBeNull();
     expect(workFields(container)[0].value).toBe("Ship the rewrite");
-    expect(container.querySelector(".intent-step-save").textContent).toContain("Retry");
 
     app.replaceNoteContent = workingReplace;
-    await clickAndSettle(container.querySelector(".intent-step-save"));
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
     const stored = await readPlanGoals(app, SCOPE);
     expect(stored.goals.map(goal => goal.goalText)).toEqual(["Ship the rewrite"]);
     await cleanup();
@@ -201,7 +200,7 @@ describe("PlanWizard intent step", () => {
     const app = createPlanWizardApp();
     const first = await renderPlanWizard({ app });
     await typeInto(workFields(first.container)[0], "Ship the rewrite");
-    await clickAndSettle(first.container.querySelector(".intent-step-save"));
+    await clickAndSettle(first.container.querySelector(".plan-wizard-next"));
     await first.cleanup();
 
     const second = await renderPlanWizard({ app });
@@ -302,11 +301,27 @@ describe("PlanWizard intent step", () => {
     await cleanup();
   });
 
-  it("leaves Find my projects disabled until an intent exists for a project to advance", async () => {
+  it("leaves Next disabled until an intent exists for a project to advance", async () => {
     const { cleanup, container } = await renderPlanWizard();
-    expect(container.querySelector(".intent-step-continue").disabled).toBe(true);
+    expect(container.querySelector(".plan-wizard-next").disabled).toBe(true);
     await typeInto(workFields(container)[0], "Ship the analytics offering");
-    expect(container.querySelector(".intent-step-continue").disabled).toBe(false);
+    expect(container.querySelector(".plan-wizard-next").disabled).toBe(false);
+    await cleanup();
+  });
+
+  it("keeps suggestions and Close out of the intent page tab order", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    await typeInto(workFields(container)[0], "Ship the analytics offering");
+    const suggestions = [...container.querySelectorAll(".intent-step-suggestion")];
+    const tabbableControls = [...container.querySelectorAll(".plan-wizard-page input, .plan-wizard-page button")]
+      .filter(element => !element.disabled && element.tabIndex >= 0);
+
+    expect(suggestions.every(button => button.tabIndex === -1)).toBe(true);
+    expect(container.querySelector(".plan-wizard-close").tabIndex).toBe(-1);
+    expect(tabbableControls.every(element => element.matches(
+      ".intent-step-input, .intent-step-add-secondary, .plan-wizard-next"))).toBe(true);
+    expect(container.querySelector(".intent-step-save")).toBeNull();
+    expect(container.querySelector(".intent-step-continue")).toBeNull();
     await cleanup();
   });
 });
@@ -327,26 +342,22 @@ describe("PlanWizard step navigation", () => {
     const { cleanup, container } = await renderPlanWizard();
     expect(container.querySelector(".plan-wizard-progress").textContent).toBe(`1 of ${ WIZARD_STEPS.length }`);
     expect(container.querySelector(".intent-step-page")).not.toBe(null);
-    expect(container.querySelector(".plan-wizard-back").disabled).toBe(true);
+    expect(container.querySelector(".plan-wizard-back")).toBeNull();
     await cleanup();
   });
 
-  it("advances to the projects step and asks for an intent before offering to suggest projects", async () => {
+  it("does not advance to projects until an intent is supplied", async () => {
     const { cleanup, container } = await renderPlanWizard();
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
-    expect(container.querySelector(".plan-wizard-progress").textContent).toBe(`2 of ${ WIZARD_STEPS.length }`);
-    expect(container.querySelector(".intent-step-page")).toBe(null);
-    expect(container.querySelector(".projects-step-page")).not.toBe(null);
-    expect(container.querySelector(".projects-step-discover").disabled).toBe(true);
-    expect(container.querySelector(".projects-step-discovery-notice").textContent).toContain("Save an intent");
+    expect(container.querySelector(".plan-wizard-progress").textContent).toBe(`1 of ${ WIZARD_STEPS.length }`);
+    expect(container.querySelector(".intent-step-page")).not.toBeNull();
     await cleanup();
   });
 
   it("returns to the intent step with the user's saved answers intact", async () => {
     const { cleanup, container } = await renderPlanWizard();
     await typeInto(workFields(container)[0], "Ship the analytics offering");
-    await clickAndSettle(container.querySelector(".intent-step-save"));
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
     await clickAndSettle(container.querySelector(".plan-wizard-back"));
 
@@ -356,6 +367,7 @@ describe("PlanWizard step navigation", () => {
 
   it("stops at the last step rather than running past the end of the sequence", async () => {
     const { cleanup, container } = await renderPlanWizard();
+    await typeInto(workFields(container)[0], "Ship the analytics offering");
     for (let step = 1; step < WIZARD_STEPS.length; step += 1) {
       await clickAndSettle(container.querySelector(".plan-wizard-next"));
     }
@@ -368,8 +380,8 @@ describe("PlanWizard step navigation", () => {
 });
 
 // ----------------------------------------------------------------------------------------------
-// @desc Advance the wizard to a named step from wherever it currently sits, so a test does not depend on the
-//   sequence's numeric positions or on how many steps an earlier helper already traversed.
+// @desc Advance the wizard to a named step from wherever it currently sits, supplying a minimal intent when
+//   leaving the first page so tests of later pages satisfy the same Next precondition as a user.
 // @param {HTMLElement} container - Mounted wizard.
 // @param {string} stepKey - Step to land on.
 async function advanceToStep(container, stepKey) {
@@ -377,6 +389,10 @@ async function advanceToStep(container, stepKey) {
   for (let guard = 0; guard < WIZARD_STEPS.length; guard += 1) {
     const [position] = container.querySelector(".plan-wizard-progress").textContent.split(" of ");
     if (Number(position) - 1 === targetIndex) return;
+    const nextButton = container.querySelector(".plan-wizard-next");
+    if (nextButton.disabled && container.querySelector(".intent-step-page")) {
+      await typeInto(workFields(container)[0], "Advance through the wizard");
+    }
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
   }
   throw new Error(`Could not reach the ${ stepKey } step`);
@@ -495,7 +511,7 @@ describe("PlanWizard project discovery", () => {
         userCategoryEm: "work" }] });
     const { cleanup, container } = await renderPlanWizard({ app });
     await typeInto(workFields(container)[0], "Ship the analytics offering");
-    await clickAndSettle(container.querySelector(".intent-step-continue"));
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
     expect(container.querySelector(".plan-wizard-progress").textContent).toBe(`2 of ${ WIZARD_STEPS.length }`);
     const proposedRow = container.querySelector(".projects-step-category--work .project-row--proposed");
@@ -523,7 +539,7 @@ describe("PlanWizard project discovery", () => {
         userCategoryEm: "work" }] });
     const { cleanup, container } = await renderPlanWizard({ app });
     await typeInto(workFields(container)[0], "Ship the analytics offering");
-    await clickAndSettle(container.querySelector(".intent-step-continue"));
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
     const proposedName = container.querySelector(".projects-step-category--work .project-row--proposed .project-row-name");
     await typeInto(proposedName, "Automate the weekly report end to end");
     await clickAndSettle(container.querySelector(".projects-step-save"));
@@ -541,11 +557,9 @@ describe("PlanWizard project discovery", () => {
     inferenceImplementation = respondToBothPrompts({ proposals: [], workIntent: "Ship the analytics offering" });
     const { cleanup, container } = await renderPlanWizard({ app });
     await typeInto(workFields(container)[0], "Ship the analytics offering");
-    await clickAndSettle(container.querySelector(".intent-step-save"));
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
     expect(container.querySelector(".projects-step-discover").disabled).toBe(false);
 
-    await clickAndSettle(container.querySelector(".projects-step-discover"));
     expect(container.querySelector(".projects-step-discovery-notice").textContent)
       .toContain("no candidate the evidence supports");
     expect(container.querySelector(".project-row--proposed")).toBe(null);
@@ -688,6 +702,7 @@ describe("PlanWizard modal presentation", () => {
     };
     const { cleanup, container } = await renderPlanWizard();
     scrollRequests.length = 0;
+    await typeInto(workFields(container)[0], "Ship the analytics offering");
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
     expect(scrollRequests).toHaveLength(1);
     expect(scrollRequests[0].element).toBe(container.querySelector(".plan-wizard-overlay"));

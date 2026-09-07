@@ -14,7 +14,7 @@
 // bottom. Anchored in the document the dialog takes the height its questions ask for, and the page scrolls to
 // reach the rest when the viewport cannot show it all at once.
 
-import IntentStep from "dashboard/plan-wizard/intent-step";
+import IntentStep, { INTENT_STEP_FORM_ID } from "dashboard/plan-wizard/intent-step";
 import ProjectsStep from "dashboard/plan-wizard/projects-step";
 import QuarterAnswerStep from "dashboard/plan-wizard/quarter-answer-step";
 import ThemedWeekdaysStep from "dashboard/plan-wizard/themed-weekdays-step";
@@ -62,6 +62,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
     planningContext, reload, saveError, saveGoals, saveProspects,
     saveQuarterAnswer } = usePlanWizard({ app, domainName, domainUuid, quarter, year });
   const [stepKey, setStepKey] = useState(WIZARD_STEPS[0].key);
+  const [hasIntentAnswer, setHasIntentAnswer] = useState(false);
   const [overlayTop] = useState(currentDocumentScrollTop);
   const overlayRef = useRef(null);
   const scopeKey = planScopeKey({ domainName, domainUuid, quarter, year });
@@ -120,7 +121,8 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
             <p className="plan-wizard-scope">{ `${ quarterLabel } · ${ domainLabel }` }</p>
           </div>
           <span className="plan-wizard-progress">{ `${ stepIndex + 1 } of ${ WIZARD_STEPS.length }` }</span>
-          <button className="plan-wizard-close" onClick={ onClose } type="button">Close</button>
+          <button className="plan-wizard-close" onClick={ onClose } tabIndex={ isFirstStep ? -1 : 0 }
+            type="button">Close</button>
         </header>
         { isLoading ? <p className="plan-wizard-status">Loading your plan…</p> : null }
         { error && !isLoading ? (
@@ -130,7 +132,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
           </div>
         ) : null }
         { !isLoading && !error && step.key === "intent" ? (
-          <IntentStep isDiscovering={ isDiscovering } isRefreshing={ isRefreshing } isSaving={ isSaving }
+          <IntentStep isRefreshing={ isRefreshing } isSaving={ isSaving } onAnswerStateChange={ setHasIntentAnswer }
             onFindProjects={ handleFindProjects } onSave={ saveGoals } planningContext={ planningContext }
             saveError={ saveError } scopeKey={ scopeKey } />
         ) : null }
@@ -150,13 +152,15 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
         ) : null }
         { !isLoading && !error ? (
           <nav className="plan-wizard-navigation">
-            <button className="plan-wizard-back" disabled={ isFirstStep } onClick={ () => handleStepChange(-1) }
-              type="button">
-              Back
-            </button>
-            <button className="plan-wizard-next" disabled={ isLastStep } onClick={ () => handleStepChange(1) }
-              type="button">
-              Next
+            { isFirstStep ? null : (
+              <button className="plan-wizard-back" onClick={ () => handleStepChange(-1) } type="button">Back</button>
+            ) }
+            <button className="plan-wizard-next"
+              disabled={ isLastStep || (isFirstStep && (!hasIntentAnswer || isDiscovering || isSaving)) }
+              form={ isFirstStep ? INTENT_STEP_FORM_ID : undefined }
+              onClick={ isFirstStep ? undefined : () => handleStepChange(1) }
+              type={ isFirstStep ? "submit" : "button" }>
+              { isFirstStep && (isDiscovering || isSaving) ? "Saving…" : "Next" }
             </button>
           </nav>
         ) : null }

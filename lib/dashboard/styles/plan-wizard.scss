@@ -169,6 +169,10 @@ $plan-wizard-z-index: 1100;
     padding-top: $sp-lg;
   }
 
+  .plan-wizard-next {
+    margin-left: auto;
+  }
+
   // ── Shared page layout ───────────────────────────────────────────────────────────────────
 
   /* Each step's root element is laid out identically, so the pages read as one sequence rather than five
@@ -203,7 +207,6 @@ $plan-wizard-z-index: 1100;
   }
 
   /* The primary action on every page is the save, so it is the one button carrying the accent. */
-  .intent-step-save,
   .projects-step-save,
   .quarter-answer-save,
   .themed-weekdays-save {
@@ -217,7 +220,6 @@ $plan-wizard-z-index: 1100;
     }
   }
 
-  .intent-step-actions,
   .projects-step-actions,
   .quarter-answer-actions,
   .themed-weekdays-actions {
@@ -236,7 +238,6 @@ $plan-wizard-z-index: 1100;
     margin: 0;
   }
 
-  .intent-step-saved,
   .projects-step-saved,
   .quarter-answer-saved,
   .themed-weekdays-saved {
@@ -268,9 +269,7 @@ $plan-wizard-z-index: 1100;
 
   .intent-step-heading,
   .intent-step-status,
-  .intent-step-actions,
-  .intent-step-error,
-  .intent-step-saved {
+  .intent-step-error {
     grid-column: 1 / -1;
   }
 
