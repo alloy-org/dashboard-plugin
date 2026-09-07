@@ -577,8 +577,11 @@ describe("PlanWizard project discovery", () => {
     expect(proposedRow.querySelector(".project-row-name").value).toBe("Automate the weekly report");
     expect(proposedRow.querySelector(".project-row-provenance").textContent).toContain("without writing either one");
     expect(container.querySelector(".projects-step-discovery-notice").textContent).toContain("waiting on you");
-    expect(container.querySelector(".projects-step-page > .projects-step-discovery")).toBeNull();
+    expect(container.querySelector(".projects-step-page > .projects-step-actions")).toBeNull();
     expect(container.querySelectorAll(".projects-step-category .projects-step-discover")).toHaveLength(2);
+    const workActions = container.querySelector(".projects-step-category--work .projects-step-actions");
+    expect(workActions.querySelector(".projects-step-add")).not.toBeNull();
+    expect(workActions.querySelector(".projects-step-discover")).not.toBeNull();
     expect(proposedRow.querySelector(".project-row-goal")).toBeNull();
     const stored = await readPlanGoals(app, SCOPE);
     expect(stored.prospects[0]).toMatchObject({ approvalStatusEm: "awaitingJudgement", summary: "Automate the weekly report" });
@@ -675,7 +678,7 @@ describe("PlanWizard project discovery", () => {
   });
 });
 
-describe("PlanWizard themed weekdays step", () => {
+describe("PlanWizard pace cards step", () => {
   beforeEach(() => {
     inferenceCalls.length = 0;
     inferenceImplementation = null;
@@ -685,28 +688,53 @@ describe("PlanWizard themed weekdays step", () => {
     document.body.innerHTML = "";
   });
 
-  it("asks for a project before offering weekdays to assign", async () => {
+  it("asks for a project before offering a pace to protect", async () => {
     const { cleanup, container } = await renderPlanWizard();
-    await advanceToStep(container, "themed-weekdays");
+    await advanceToStep(container, "pace-cards");
 
-    expect(container.querySelector(".themed-weekdays-grid")).toBe(null);
-    expect(container.querySelector(".themed-weekdays-empty").textContent).toContain("Name a project");
+    expect(container.querySelector(".pace-cards-list")).toBe(null);
+    expect(container.querySelector(".pace-cards-empty").textContent).toContain("Name a project");
     await cleanup();
   });
 
-  it("stores a weekday emphasis on the project it belongs to", async () => {
+  it("stores the chosen pace, its default days, and preferredDows on the project", async () => {
     const { app, cleanup, container } = await renderPlanWizard();
     await advanceToStep(container, "projects");
     await saveFirstProject(container, "Rebuild the ingestion pipeline");
-    await advanceToStep(container, "themed-weekdays");
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
-    const [monday] = [...container.querySelectorAll(".themed-weekdays-option")];
-    await clickAndSettle(monday);
-    await clickAndSettle(container.querySelector(".themed-weekdays-save"));
+    const twoBlocks = [...container.querySelectorAll(".project-pace-choice")]
+      .find(button => button.textContent === "Two focused blocks per week");
+    await clickAndSettle(twoBlocks);
+    expect([...container.querySelectorAll(".project-pace-day[aria-pressed='true']")].map(button => button.textContent))
+      .toEqual(["Tue", "Thu"]);
+    expect(container.querySelector(".project-pace-hint").textContent).toContain("Thursday");
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
     const stored = await readPlanGoals(app, SCOPE);
-    expect(stored.prospects[0].preferredWeekdays).toEqual(["monday"]);
-    expect(stored.prospects[0].approvalStatusEm).toBe("humanProvided");
+    expect(stored.prospects[0]).toMatchObject({ paceEm: "twoFocusedBlocks", preferredDows: ["tuesday", "thursday"],
+      preferredWeekdays: ["tuesday", "thursday"] });
+    await cleanup();
+  });
+
+  it("opens a deadline field for a sprint and stores the chosen date", async () => {
+    const { app, cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "projects");
+    await saveFirstProject(container, "Rebuild the ingestion pipeline");
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+
+    expect(container.querySelector(".project-pace-deadline-input")).toBe(null);
+    const deadlineSprint = [...container.querySelectorAll(".project-pace-choice")]
+      .find(button => button.textContent === "Deadline sprint");
+    await clickAndSettle(deadlineSprint);
+    const deadlineField = container.querySelector(".project-pace-deadline-input");
+    expect(deadlineField).not.toBe(null);
+    await typeInto(deadlineField, "2026-10-15");
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.prospects[0]).toMatchObject({ deadlineOn: "2026-10-15", paceEm: "deadlineSprint",
+      preferredWeekdays: [] });
     await cleanup();
   });
 });

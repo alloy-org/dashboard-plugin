@@ -110,8 +110,8 @@ test("validates prospect enums, links, and user-provided provenance", () => {
   expect(stored.priorityEm).toBe(null);
   expect(stored.preferredWeekdays).toEqual([]);
   expect(stored.decidedAt).toBe(null);
-  expect(stored).toMatchObject({ approvalStatusEm: "humanProvided", preferredDows: [], primaryNote: null,
-    priorityEm: null, relatedNotes: [], relatedTasks: [],
+  expect(stored).toMatchObject({ approvalStatusEm: "humanProvided", deadlineOn: null, paceEm: null,
+    preferredDows: [], primaryNote: null, priorityEm: null, relatedNotes: [], relatedTasks: [],
     substantiations: ["Named while planning"] });
   expect(stored.refreshedProspectAt).toBe("2026-09-06T00:00:00.000Z");
   expect(stored.refreshedTasksAt).toBe("2026-09-06T00:00:00.000Z");
@@ -121,6 +121,14 @@ test("validates prospect enums, links, and user-provided provenance", () => {
   expect(stored.priority).toBeUndefined();
   expect(() => new ActionProspect({ ...prospect, approvalStatusEm: "maybe" }, scope)).toThrow("approvalStatusEm");
   expect(() => new ActionProspect({ ...prospect, priorityEm: "urgent" }, scope)).toThrow("priorityEm");
+  expect(() => new ActionProspect({ ...prospect, paceEm: "sprint" }, scope)).toThrow("paceEm");
+  expect(() => new ActionProspect({ ...prospect, paceEm: "deadlineSprint", deadlineOn: "2026-13-40" }, scope))
+    .toThrow("deadlineOn");
+  expect(new ActionProspect({ ...prospect, paceEm: "twoFocusedBlocks", deadlineOn: "2026-10-15",
+    preferredWeekdays: ["tuesday", "thursday"] }, scope)).toMatchObject({ deadlineOn: null, paceEm: "twoFocusedBlocks",
+    preferredDows: ["tuesday", "thursday"] });
+  expect(new ActionProspect({ ...prospect, deadlineOn: "2026-10-15", paceEm: "deadlineSprint" }, scope).deadlineOn)
+    .toBe("2026-10-15");
   expect(() => new ActionProspect({ ...prospect, preferredWeekdays: ["Monday"] }, scope)).toThrow("preferredWeekdays");
   expect(() => new ActionProspect({ ...prospect, preferredWeekdays: ["monday", "monday"] }, scope)).toThrow("unique");
   expect(() => new ActionProspect({ ...prospect, focusMonths: ["2026-13"] }, scope)).toThrow("focusMonths");

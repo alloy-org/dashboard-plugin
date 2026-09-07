@@ -15,9 +15,9 @@
 // reach the rest when the viewport cannot show it all at once.
 
 import IntentStep, { INTENT_STEP_FORM_ID } from "dashboard/plan-wizard/intent-step";
+import PaceCardsStep, { PACE_CARDS_STEP_FORM_ID } from "dashboard/plan-wizard/pace-cards-step";
 import ProjectsStep, { PROJECTS_STEP_FORM_ID } from "dashboard/plan-wizard/projects-step";
 import QuarterAnswerStep from "dashboard/plan-wizard/quarter-answer-step";
-import ThemedWeekdaysStep from "dashboard/plan-wizard/themed-weekdays-step";
 import { WIZARD_STEPS, wizardStepIndexFromKey } from "dashboard/plan-wizard/wizard-steps";
 import usePlanWizard, { planScopeKey } from "hooks/use-plan-wizard";
 import { createPortal } from "react-dom";
@@ -73,7 +73,9 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const step = WIZARD_STEPS[stepIndex];
   const isFirstStep = stepIndex === 0;
   const isLastStep = stepIndex === WIZARD_STEPS.length - 1;
-  const isProjectsStep = step.key === "projects";
+  const isPaceCardsStep = step.key === "pace-cards";
+  const isProspectFormStep = isPaceCardsStep || step.key === "projects";
+  const prospectFormId = isPaceCardsStep ? PACE_CARDS_STEP_FORM_ID : PROJECTS_STEP_FORM_ID;
   const hasPersistedIntent = planningContext.goals.length > 0;
 
   // ----------------------------------------------------------------------------------------------
@@ -165,8 +167,9 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
             onDiscover={ discoverProspects } onNavigate={ handleProjectNavigation } onSave={ saveProspects }
             onSaveDecision={ saveProspectDecision } />
         ) : null }
-        { !isLoading && !error && step.key === "themed-weekdays" ? (
-          <ThemedWeekdaysStep { ...{ isSaving, planningContext, saveError, scopeKey } } onSave={ saveProspects } />
+        { !isLoading && !error && step.key === "pace-cards" ? (
+          <PaceCardsStep { ...{ isSaving, planningContext, saveError, scopeKey } }
+            onNavigate={ handleProjectNavigation } onSave={ saveProspects } />
         ) : null }
         { !isLoading && !error && QUARTER_ANSWER_COPY[step.key] ? (
           <QuarterAnswerStep { ...QUARTER_ANSWER_COPY[step.key] } { ...{ isSaving, saveError, scopeKey } }
@@ -175,20 +178,20 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
         { !isLoading && !error ? (
           <nav className="plan-wizard-navigation">
             { isFirstStep ? null : (
-              <button className="plan-wizard-back" disabled={ isProjectsStep && isSaving }
-                form={ isProjectsStep ? PROJECTS_STEP_FORM_ID : undefined }
-                onClick={ isProjectsStep ? () => { projectNavigationDirectionRef.current = -1; }
+              <button className="plan-wizard-back" disabled={ isProspectFormStep && isSaving }
+                form={ isProspectFormStep ? prospectFormId : undefined }
+                onClick={ isProspectFormStep ? () => { projectNavigationDirectionRef.current = -1; }
                   : () => handleStepChange(-1) }
-                type={ isProjectsStep ? "submit" : "button" } value="-1">Back</button>
+                type={ isProspectFormStep ? "submit" : "button" } value="-1">Back</button>
             ) }
             <button className="plan-wizard-next"
               disabled={ isLastStep || (isFirstStep && ((!hasIntentAnswer && !hasPersistedIntent) || isSaving))
-                || (isProjectsStep && isSaving) }
-              form={ isFirstStep ? INTENT_STEP_FORM_ID : isProjectsStep ? PROJECTS_STEP_FORM_ID : undefined }
-              onClick={ isFirstStep ? undefined : isProjectsStep
+                || (isProspectFormStep && isSaving) }
+              form={ isFirstStep ? INTENT_STEP_FORM_ID : isProspectFormStep ? prospectFormId : undefined }
+              onClick={ isFirstStep ? undefined : isProspectFormStep
                 ? () => { projectNavigationDirectionRef.current = 1; } : () => handleStepChange(1) }
-              type={ isFirstStep || isProjectsStep ? "submit" : "button" } value="1">
-              { (isFirstStep || isProjectsStep) && isSaving ? "Saving…" : "Next" }
+              type={ isFirstStep || isProspectFormStep ? "submit" : "button" } value="1">
+              { (isFirstStep || isProspectFormStep) && isSaving ? "Saving…" : "Next" }
             </button>
           </nav>
         ) : null }

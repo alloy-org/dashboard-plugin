@@ -60,7 +60,8 @@ $plan-wizard-z-index: 1100;
     }
 
     /* Every page's inputs share one look, so a question added later needs no new field styling. */
-    input[type="text"] {
+    input[type="text"],
+    input[type="date"] {
       background: $color-bg-primary;
       border: 1px solid $color-border;
       border-radius: $radius-sm;
@@ -223,9 +224,9 @@ $plan-wizard-z-index: 1100;
   /* Each step's root element is laid out identically, so the pages read as one sequence rather than five
    * separately-built forms. No `flex: 1` here: a page sizes to its own content, and the dialog to the page. */
   .intent-step-page,
+  .pace-cards-page,
   .projects-step-page,
-  .quarter-answer-page,
-  .themed-weekdays-page {
+  .quarter-answer-page {
     display: flex;
     flex-direction: column;
     gap: $sp-md;
@@ -233,18 +234,18 @@ $plan-wizard-z-index: 1100;
   }
 
   .intent-step-heading,
+  .pace-cards-heading,
   .projects-step-heading,
-  .quarter-answer-heading,
-  .themed-weekdays-heading {
+  .quarter-answer-heading {
     font-size: 1.05rem;
     font-weight: 700;
     margin: 0;
   }
 
   .intent-step-status,
+  .pace-cards-summary,
   .projects-step-summary,
-  .quarter-answer-summary,
-  .themed-weekdays-summary {
+  .quarter-answer-summary {
     color: $color-text-secondary;
     font-size: 0.85rem;
     line-height: 1.5;
@@ -252,8 +253,7 @@ $plan-wizard-z-index: 1100;
   }
 
   /* The primary action on every page is the save, so it is the one button carrying the accent. */
-  .quarter-answer-save,
-  .themed-weekdays-save {
+  .quarter-answer-save {
     background: $color-accent;
     border-color: $color-accent;
     color: $color-text-on-accent;
@@ -264,8 +264,8 @@ $plan-wizard-z-index: 1100;
     }
   }
 
-  .quarter-answer-actions,
-  .themed-weekdays-actions {
+  .projects-step-actions,
+  .quarter-answer-actions {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
@@ -273,23 +273,21 @@ $plan-wizard-z-index: 1100;
   }
 
   .intent-step-error,
+  .pace-cards-error,
   .projects-step-error,
-  .quarter-answer-error,
-  .themed-weekdays-error {
+  .quarter-answer-error {
     color: $color-danger;
     font-size: 0.8rem;
     margin: 0;
   }
 
-  .quarter-answer-saved,
-  .themed-weekdays-saved {
+  .quarter-answer-saved {
     color: $color-success;
     font-size: 0.8rem;
     margin: 0;
   }
 
-  .quarter-answer-optional,
-  .themed-weekdays-optional {
+  .quarter-answer-optional {
     color: $color-text-muted;
     font-size: 0.75rem;
     margin: 0;
@@ -390,20 +388,9 @@ $plan-wizard-z-index: 1100;
 
   // ── Projects step ────────────────────────────────────────────────────────────────────────
 
-  /* The discovery action and the sentence reporting what it found belong together: the notice is the button's
-   * result, and separating them would leave the user reading a status with no visible cause. The ground is the
-   * neutral page tint rather than the warning tint the old fixed notice used: this row now reports success as
-   * often as anything else, and a red panel around "4 projects were suggested" reads as a failure. */
-  .projects-step-discovery {
-    align-items: center;
-    background: $color-bg-page;
-    border-radius: $radius-sm;
-    display: flex;
-    flex-wrap: wrap;
-    gap: $sp-md;
-    padding: $sp-sm $sp-md;
-  }
-
+  /* Add-project and discovery share one row so the two dashed actions stay adjacent instead of stacking under a
+   * column category. The notice still sits with the discovery button: it is that button's result, and separating
+   * them would leave the user reading a status with no visible cause. */
   .projects-step-discover {
     border-style: dashed;
     flex-shrink: 0;
@@ -415,7 +402,7 @@ $plan-wizard-z-index: 1100;
     flex: 1;
     font-size: 0.8rem;
     margin: 0;
-    min-width: 0;
+    min-width: 12rem;
   }
 
   .projects-step-category-heading {
@@ -511,8 +498,8 @@ $plan-wizard-z-index: 1100;
   }
 
   .projects-step-add {
-    align-self: flex-start;
     border-style: dashed;
+    flex-shrink: 0;
   }
 
   .projects-step-empty-goals {
@@ -521,59 +508,104 @@ $plan-wizard-z-index: 1100;
     margin: 0;
   }
 
-  // ── Themed weekdays step ─────────────────────────────────────────────────────────────────
+  // ── Pace cards step ──────────────────────────────────────────────────────────────────────
 
-  .themed-weekdays-grid {
+  .pace-cards-list {
     display: flex;
     flex-direction: column;
-    gap: $sp-sm;
+    gap: $sp-md;
   }
 
-  .themed-weekdays-row {
-    align-items: center;
+  .pace-cards-empty {
+    color: $color-text-muted;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .project-pace {
+    background: $color-bg-primary;
     border: 1px solid $color-border;
     border-radius: $radius-md;
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: $sp-md;
-    justify-content: space-between;
-    padding: $sp-sm $sp-md;
+    padding: $sp-md;
   }
 
-  .themed-weekdays-row-label {
-    flex: 1;
-    font-size: 0.85rem;
-    font-weight: 600;
-    min-width: 0;
+  .project-pace-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0;
   }
 
-  .themed-weekdays-row-options {
+  .project-pace-options {
+    display: grid;
+    gap: $sp-sm;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+
+    @include breakpoint($breakpoint-tablet) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  .project-pace-choice {
+    font-size: 0.72rem;
+    line-height: 1.3;
+    min-height: 52px;
+    padding: $sp-sm;
+    text-align: center;
+
+    &--selected {
+      border-color: $color-blue;
+      box-shadow: 0 0 0 1px $color-blue;
+      color: $color-navy;
+    }
+  }
+
+  .project-pace-deadline {
+    align-items: center;
+    color: $color-text-secondary;
     display: flex;
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    font-weight: 600;
+    gap: $sp-sm;
+  }
+
+  .project-pace-deadline-input {
+    flex: 1;
+    min-width: 10rem;
+  }
+
+  .project-pace-days {
+    display: flex;
+    flex-wrap: wrap;
     gap: $sp-xs;
   }
 
-  .themed-weekdays-option {
+  .project-pace-day {
     font-size: 0.72rem;
     min-width: 44px;
     padding: $sp-xs $sp-sm;
     text-align: center;
 
     &--selected {
-      background: $color-accent;
-      border-color: $color-accent;
+      background: $color-success;
+      border-color: $color-success;
       color: $color-text-on-accent;
 
       &:hover:not(:disabled) {
-        background: $color-accent;
+        background: $color-success;
         opacity: 0.9;
       }
     }
   }
 
-  .themed-weekdays-empty {
+  .project-pace-hint {
     color: $color-text-muted;
-    font-size: 0.82rem;
-    line-height: 1.5;
+    font-size: 0.78rem;
+    line-height: 1.4;
     margin: 0;
   }
 

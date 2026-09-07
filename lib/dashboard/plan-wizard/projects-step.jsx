@@ -131,8 +131,7 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
     <form className="projects-step-page" id={ PROJECTS_STEP_FORM_ID } onSubmit={ handleNavigate }>
       <h2 className="projects-step-heading">Which projects carry those intents?</h2>
       <p className="projects-step-summary">
-        Which one to three things deserve your best hours over the next 90 days? Sort the proposed projects into
-        Focus, Keep warm, or Not now.
+        Which 3-6 prospects deserve your precious attention over the quarter?
       </p>
       { ["work", "personal"].map(userCategoryEm => {
         const categoryRows = draftRows.filter(row => row.userCategoryEm === userCategoryEm);
@@ -154,12 +153,12 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
                   onChangeSummary={ handleChangeRow } onReject={ handleReject } onSetPriority={ handleSetPriority } />
               )) }
             </div>
-            <button className="projects-step-add" disabled={ isSaving }
-              onClick={ () => setDraftRows(previous => previous.concat(emptyProjectRow(userCategoryEm,
-                categoryGoalUuids))) } type="button">
-              Add another project
-            </button>
-            <div className="projects-step-discovery">
+            <div className="projects-step-actions">
+              <button className="projects-step-add" disabled={ isSaving }
+                onClick={ () => setDraftRows(previous => previous.concat(emptyProjectRow(userCategoryEm,
+                  categoryGoalUuids))) } type="button">
+                Add another project
+              </button>
               <button className="projects-step-discover" disabled={ isDiscovering || isSaving || !hasChosenIntent }
                 onClick={ onDiscover }
                 title={ hasChosenIntent ? "Read your recent tasks for projects that would carry these intents"
