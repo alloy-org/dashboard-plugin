@@ -5,6 +5,7 @@
 @use 'theme-tokens' as *;
 
 $plan-wizard-edge-inset-horizontal: 10%;
+$plan-wizard-edge-inset-horizontal-phone: 10px;
 $plan-wizard-edge-inset-vertical: $sp-xl;
 $plan-wizard-input-min-height: 38px;
 $plan-wizard-shadow-blur: 40px;
@@ -20,7 +21,8 @@ $plan-wizard-z-index: 1100;
  * The width comes from the real usable width published by dashboard-load.jsx rather than 100vw, exactly as
  * config-popup.scss does: the iOS WKWebView viewport bug inflates the layout viewport past the visible area,
  * and without this the modal sits half off the right edge on a phone. `left: 0` plus an explicit width (rather
- * than `inset`) keeps it anchored to the visible left edge. */
+ * than `inset`) keeps it anchored to the visible left edge. On a phone the overlay keeps a 10px gutter so the
+ * dialog can use the rest of the width. */
 .plan-wizard-overlay {
   align-items: flex-start;
   background: $color-overlay-backdrop;
@@ -33,6 +35,10 @@ $plan-wizard-z-index: 1100;
   top: 0;
   width: var(--dashboard-viewport-width, 100vw);
   z-index: $plan-wizard-z-index;
+
+  @include breakpoint($breakpoint-tablet) {
+    padding: $plan-wizard-edge-inset-vertical $plan-wizard-edge-inset-horizontal-phone;
+  }
 
   /* The dialog fills the width the overlay's inset leaves it and takes exactly the height its page asks for.
    * `align-items: flex-start` on the overlay is what keeps that height: as a flex item the dialog would otherwise
@@ -118,9 +124,8 @@ $plan-wizard-z-index: 1100;
   .plan-wizard-title-group {
     align-items: center;
     display: flex;
-    flex: 1;
+    flex: 1 0 auto;
     gap: $sp-sm;
-    min-width: 0;
   }
 
   .plan-wizard-title-icon {
@@ -142,6 +147,7 @@ $plan-wizard-z-index: 1100;
     font-size: 0.9rem;
     font-weight: 700;
     margin: 0;
+    white-space: nowrap;
   }
 
   .plan-wizard-step-track {
@@ -471,6 +477,10 @@ $plan-wizard-z-index: 1100;
     color: $color-danger;
     flex-shrink: 0;
     font-size: 0.72rem;
+
+    @include breakpoint($breakpoint-tablet) {
+      display: none;
+    }
   }
 
   .project-row-priority {
@@ -584,13 +594,15 @@ $plan-wizard-z-index: 1100;
     gap: $sp-xs;
   }
 
-  .project-pace-day {
+  /* Beat the overlay's transparent button default the same way priority chips do, so a chosen day stays a
+     filled success chip rather than a quiet outlined control. */
+  .plan-wizard-page .project-pace-day {
     font-size: 0.72rem;
     min-width: 44px;
     padding: $sp-xs $sp-sm;
     text-align: center;
 
-    &--selected {
+    &[aria-pressed="true"] {
       background: $color-success;
       border-color: $color-success;
       color: $color-text-on-accent;

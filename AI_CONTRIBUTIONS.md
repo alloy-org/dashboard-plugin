@@ -3,6 +3,35 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-09-07 — Give the plan wizard more width on a phone
+
+**Model:** Cursor Grok 4.6
+**Files modified:**
+- `lib/dashboard/styles/plan-wizard.scss` — Phone and tablet viewports keep a 10px overlay gutter, keep Plan Builder
+  on one line, and hide each project's Remove control so the name field can use the full card width.
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` — Removed the header Close button; tapping the backdrop or pressing
+  Escape still dismisses the wizard.
+- `test/plan-wizard-ui.test.js` — Asserts the Close control is gone and the intent page tab order no longer
+  accounts for it.
+
+**Prompt summary:** "on mobile leave 10px on each side of the popup; Plan Builder must not wrap; remove Close from
+the header; hide Remove on projects on mobile"
+
+## 2026-09-07 — Highlight default weekdays from the chosen project pace
+
+**Model:** Cursor Grok 4.6
+**Files modified:**
+- `lib/dashboard/plan-wizard/pace-cards-step-fields.js` — Choosing Two focused blocks per week starts with Tuesday
+  and Thursday highlighted; One substantial block per week starts with Wednesday. Deadline sprint and Maintenance
+  only start with no days highlighted. Clicking a day still toggles it on or off from that starting set.
+- `lib/dashboard/plan-wizard/project-pace.jsx`, `lib/dashboard/styles/plan-wizard.scss` — Pressed weekday chips use
+  the same filled success treatment as other selected wizard controls so the default days read as highlighted.
+- `test/plan-wizard-ui.test.js` — Covers default highlights, click overrides, and clearing days when switching to a
+  sprint or maintenance rhythm.
+
+**Prompt summary:** "when Two focused blocks or One substantial block per week are chosen, highlight one or two days
+which can be changed by user clicks; Deadline sprint and Maintenance only start with no days highlighted"
+
 ## 2026-09-07 — Persist development intents and turn project proposals into sortable cards
 
 **Model:** GPT-5.6 Sol

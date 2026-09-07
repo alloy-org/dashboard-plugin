@@ -40,10 +40,8 @@ function ProjectPace({ draft, isDisabled, onChangeDeadline, onSelectPace, onTogg
         { PACE_WORKDAYS.map(weekday => {
           const isSelected = draft.preferredWeekdays.includes(weekday);
           return (
-            <button aria-pressed={ isSelected }
-              className={ `project-pace-day${ isSelected ? " project-pace-day--selected" : "" }` }
-              disabled={ isDisabled } key={ weekday } onClick={ () => onToggleWeekday(draft.uuid, weekday) }
-              type="button">
+            <button aria-pressed={ isSelected } className="project-pace-day" disabled={ isDisabled } key={ weekday }
+              onClick={ () => onToggleWeekday(draft.uuid, weekday) } type="button">
               { weekdayLabel(weekday).slice(0, 3) }
             </button>
           );

@@ -53,7 +53,7 @@ export default function PaceCardsStep({ isSaving, onNavigate, onSave, planningCo
   }, [changeDraft]);
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Apply a pace and the days that rhythm starts with.
+  // @desc Apply a pace and the days that rhythm starts highlighted, leaving a re-click of the same pace unchanged.
   // @param {string} prospectUuid - Project being edited.
   // @param {string} paceEm - Selected ActionProspect pace enum.
   const handleSelectPace = useCallback((prospectUuid, paceEm) => {

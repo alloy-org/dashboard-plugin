@@ -145,8 +145,6 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
             )) }
           </div>
           <span className="plan-wizard-progress">{ `${ stepIndex + 1 } of ${ WIZARD_STEPS.length }` }</span>
-          <button className="plan-wizard-close" onClick={ onClose } tabIndex={ isFirstStep ? -1 : 0 }
-            type="button">Close</button>
         </header>
         { isLoading ? <p className="plan-wizard-status">Loading your plan…</p> : null }
         { error && !isLoading ? (

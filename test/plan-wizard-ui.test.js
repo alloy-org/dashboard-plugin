@@ -309,15 +309,15 @@ describe("PlanWizard intent step", () => {
     await cleanup();
   });
 
-  it("keeps suggestions and Close out of the intent page tab order", async () => {
+  it("keeps suggestions out of the intent page tab order", async () => {
     const { cleanup, container } = await renderPlanWizard();
     await typeInto(workFields(container)[0], "Ship the analytics offering");
     const suggestions = [...container.querySelectorAll(".intent-step-suggestion")];
     const tabbableControls = [...container.querySelectorAll(".plan-wizard-page input, .plan-wizard-page button")]
       .filter(element => !element.disabled && element.tabIndex >= 0);
 
+    expect(container.querySelector(".plan-wizard-close")).toBeNull();
     expect(suggestions.every(button => button.tabIndex === -1)).toBe(true);
-    expect(container.querySelector(".plan-wizard-close").tabIndex).toBe(-1);
     expect(tabbableControls.every(element => element.matches(
       ".intent-step-input, .intent-step-add-secondary, .plan-wizard-next"))).toBe(true);
     expect(container.querySelector(".intent-step-save")).toBeNull();
@@ -449,6 +449,23 @@ async function saveFirstProject(container, summary) {
   await typeInto(nameField, summary);
   const projectCard = nameField.closest(".project-row");
   await clickAndSettle(projectCard.querySelector(".project-row-priority-button"));
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Find a pace option by its visible label on the current pace card.
+// @param {HTMLElement} container - Mounted wizard.
+// @param {string} label - Button text.
+// @returns {HTMLElement} Matching pace choice button.
+function paceChoice(container, label) {
+  return [...container.querySelectorAll(".project-pace-choice")].find(button => button.textContent === label);
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Read the currently highlighted weekday chips on the pace page.
+// @param {HTMLElement} container - Mounted wizard.
+// @returns {Array<string>} Pressed day labels such as Tue.
+function pressedPaceDays(container) {
+  return [...container.querySelectorAll(".project-pace-day[aria-pressed='true']")].map(button => button.textContent);
 }
 
 describe("PlanWizard projects step", () => {
@@ -703,17 +720,40 @@ describe("PlanWizard pace cards step", () => {
     await saveFirstProject(container, "Rebuild the ingestion pipeline");
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
-    const twoBlocks = [...container.querySelectorAll(".project-pace-choice")]
-      .find(button => button.textContent === "Two focused blocks per week");
-    await clickAndSettle(twoBlocks);
-    expect([...container.querySelectorAll(".project-pace-day[aria-pressed='true']")].map(button => button.textContent))
-      .toEqual(["Tue", "Thu"]);
+    await clickAndSettle(paceChoice(container, "Two focused blocks per week"));
+    expect(pressedPaceDays(container)).toEqual(["Tue", "Thu"]);
     expect(container.querySelector(".project-pace-hint").textContent).toContain("Thursday");
+    await clickAndSettle(container.querySelectorAll(".project-pace-day")[0]);
+    expect(pressedPaceDays(container)).toEqual(["Mon", "Tue", "Thu"]);
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
     const stored = await readPlanGoals(app, SCOPE);
-    expect(stored.prospects[0]).toMatchObject({ paceEm: "twoFocusedBlocks", preferredDows: ["tuesday", "thursday"],
-      preferredWeekdays: ["tuesday", "thursday"] });
+    expect(stored.prospects[0]).toMatchObject({ paceEm: "twoFocusedBlocks", preferredDows: ["monday", "tuesday", "thursday"],
+      preferredWeekdays: ["monday", "tuesday", "thursday"] });
+    await cleanup();
+  });
+
+  it("highlights one day for a substantial block and none for a sprint or maintenance until clicked", async () => {
+    const { app, cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "projects");
+    await saveFirstProject(container, "Rebuild the ingestion pipeline");
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+
+    await clickAndSettle(paceChoice(container, "One substantial block per week"));
+    expect(pressedPaceDays(container)).toEqual(["Wed"]);
+    await clickAndSettle(paceChoice(container, "Deadline sprint"));
+    expect(pressedPaceDays(container)).toEqual([]);
+    await clickAndSettle(container.querySelectorAll(".project-pace-day")[1]);
+    expect(pressedPaceDays(container)).toEqual(["Tue"]);
+    await clickAndSettle(paceChoice(container, "Maintenance only"));
+    expect(pressedPaceDays(container)).toEqual([]);
+    await clickAndSettle(container.querySelectorAll(".project-pace-day")[4]);
+    expect(pressedPaceDays(container)).toEqual(["Fri"]);
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.prospects[0]).toMatchObject({ paceEm: "maintenanceOnly", preferredDows: ["friday"],
+      preferredWeekdays: ["friday"] });
     await cleanup();
   });
 
@@ -724,9 +764,7 @@ describe("PlanWizard pace cards step", () => {
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
     expect(container.querySelector(".project-pace-deadline-input")).toBe(null);
-    const deadlineSprint = [...container.querySelectorAll(".project-pace-choice")]
-      .find(button => button.textContent === "Deadline sprint");
-    await clickAndSettle(deadlineSprint);
+    await clickAndSettle(paceChoice(container, "Deadline sprint"));
     const deadlineField = container.querySelector(".project-pace-deadline-input");
     expect(deadlineField).not.toBe(null);
     await typeInto(deadlineField, "2026-10-15");
