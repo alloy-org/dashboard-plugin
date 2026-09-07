@@ -13,6 +13,15 @@
 @use 'theme-tokens' as *;
 @use 'widget-sizings' as sizings;
 
+/* Spacing and indent steps mirror ample-editor-app's nodes/_bullet-list-item.scss (and the number-
+ * list sibling). The host HTML is sibling `div.bullet-list-item.indent-N` nodes — not ul/li — and
+ * the marker is drawn on `.visible-list-item::before`, so without these rules the peek shows a flat
+ * stack of paragraphs. Expander/drag chrome is omitted; only the readonly visual contract remains. */
+$list-item-margin: 4px;
+$list-item-indent-step: 16px;
+$list-item-marker-gutter: 21px;
+$check-list-indent-step: 20px;
+
 /* The size the user picked is already geometry by the time it reaches this widget: the grid cell spans
  * its columns and carries the per-cell height bounds from widget-sizings.scss, and `.widget` is
  * height: 100% of that cell — so this stylesheet states no width or height of its own. */
@@ -101,311 +110,372 @@
     font-size: 0.85rem;
     text-align: center;
   }
-}
 
-/* Title / note-name links in the header open the chosen note; they inherit the widget-title
- * typography and only pick up a link color on hover so the bar still reads as a title. */
-.widget-note-peek .note-peek-title-link {
-  color: inherit;
-  cursor: pointer;
-  text-decoration: none;
-
-  &:hover {
-    color: $color-link;
-    text-decoration: underline;
-  }
-}
-
-/* Spacing and indent steps mirror ample-editor-app's nodes/_bullet-list-item.scss (and the number-
- * list sibling). The host HTML is sibling `div.bullet-list-item.indent-N` nodes — not ul/li — and
- * the marker is drawn on `.visible-list-item::before`, so without these rules the peek shows a flat
- * stack of paragraphs. Expander/drag chrome is omitted; only the readonly visual contract remains. */
-$list-item-margin: 4px;
-$list-item-indent-step: 16px;
-$list-item-marker-gutter: 21px;
-$check-list-indent-step: 20px;
-
-/* Content rendered by app.htmlFromContent arrives wrapped in the host's readonly ample-editor
- * container, whose own editor stylesheet is not present inside this embed — so the element styles the
- * note relies on are defined here, and apply equally to the local markdown-render fallback. */
-.note-peek-content {
-  color: $color-text;
-  flex: 1;
-  font-size: 13px;
-  line-height: 1.45;
-  min-height: 0;
-  overflow: hidden;
-
-  /* HeadingView injects a material-icons "link" anchor, and note links carry an .icon whose
-   * ::after content is a material ligature — neither font is available in the embed, so hide them
-   * rather than letting the raw words "link" / "description" appear inline. */
-  .heading-anchor,
-  .link > .icon {
-    display: none;
-  }
-
-  h1, h2, h3, h4, h5, h6,
-  .heading {
-    color: $color-navy;
-    line-height: 1.25;
-    margin: 0 0 $sp-xs;
-    position: relative;
-  }
-
-  h1, h1.heading { font-size: 1.25rem; }
-  h2, h2.heading { font-size: 1.1rem; }
-  h3, h3.heading { font-size: 1rem; }
-  h4, h5, h6 { font-size: 0.9rem; }
-
-  /* Headings wrap their text in an <a> for deep-linking; keep them looking like headings. */
-  .heading > a:not(.link):not(.heading-anchor) {
+  /* Title / note-name links in the header open the chosen note; they inherit the widget-title
+   * typography and only pick up a link color on hover so the bar still reads as a title. */
+  .note-peek-title-link {
     color: inherit;
+    cursor: pointer;
     text-decoration: none;
-  }
 
-  p, blockquote, pre, table {
-    margin: 0 0 $sp-sm;
-  }
-
-  ol, ul {
-    margin: 0 0 $sp-sm;
-    padding-left: $sp-lg;
-  }
-
-  li {
-    margin: 0;
-    padding: 0;
-  }
-
-  a {
-    color: $color-link;
-  }
-
-  strong {
-    color: $color-navy;
-  }
-
-  blockquote {
-    border-left: 3px solid $color-border;
-    color: $color-text-secondary;
-    padding-left: $sp-sm;
-  }
-
-  code, pre {
-    background: $color-bg-page;
-    border-radius: $radius-sm;
-    font-size: 12px;
-  }
-
-  code {
-    padding: 1px $sp-xs;
-  }
-
-  /* A long code line must not widen the widget; it is clipped like everything else. */
-  pre {
-    overflow: hidden;
-    padding: $sp-sm;
-    white-space: pre;
-  }
-
-  img {
-    max-width: 100%;
-  }
-
-  table {
-    border-collapse: collapse;
-    max-width: 100%;
-
-    td, th {
-      border: 1px solid $color-border;
-      padding: $sp-xs $sp-sm;
-      text-align: left;
+    &:hover {
+      color: $color-link;
+      text-decoration: underline;
     }
   }
 
-  hr {
-    border: none;
-    border-top: 1px solid $color-border;
-    margin: $sp-sm 0;
-  }
+  /* Content rendered by app.htmlFromContent arrives wrapped in the host's readonly ample-editor
+   * container, whose own editor stylesheet is not present inside this embed — so the element styles the
+   * note relies on are defined here, and apply equally to the local markdown-render fallback. */
+  .note-peek-content {
+    color: $color-text;
+    flex: 1;
+    font-size: 13px;
+    line-height: 1.45;
+    min-height: 0;
+    overflow: hidden;
 
-  .bullet-list-item,
-  .number-list-item {
-    margin: 0 0 $list-item-margin;
-    position: relative;
+    /* HeadingView injects a material-icons "link" anchor, and note links carry an .icon whose
+     * ::after content is a material ligature — neither font is available in the embed, so hide them
+     * rather than letting the raw words "link" / "description" appear inline. */
+    .heading-anchor,
+    .link > .icon {
+      display: none;
+    }
 
-    @for $indent from 0 through 9 {
-      &.indent-#{$indent} {
-        padding-left: #{($indent * $list-item-indent-step) + $list-item-marker-gutter};
+    h1, h2, h3, h4, h5, h6,
+    .heading {
+      color: $color-navy;
+      line-height: 1.25;
+      margin: 0 0 $sp-xs;
+      position: relative;
+    }
+
+    h1, h1.heading { font-size: 1.25rem; }
+    h2, h2.heading { font-size: 1.1rem; }
+    h3, h3.heading { font-size: 1rem; }
+    h4, h5, h6 { font-size: 0.9rem; }
+
+    /* Headings wrap their text in an <a> for deep-linking; keep them looking like headings. */
+    .heading > a:not(.link):not(.heading-anchor) {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    p, blockquote, pre, table {
+      margin: 0 0 $sp-sm;
+    }
+
+    ol, ul {
+      margin: 0 0 $sp-sm;
+      padding-left: $sp-lg;
+    }
+
+    li {
+      margin: 0;
+      padding: 0;
+    }
+
+    a {
+      color: $color-link;
+    }
+
+    strong {
+      color: $color-navy;
+    }
+
+    blockquote {
+      border-left: 3px solid $color-border;
+      color: $color-text-secondary;
+      padding-left: $sp-sm;
+    }
+
+    code, pre {
+      background: $color-bg-page;
+      border-radius: $radius-sm;
+      font-size: 12px;
+    }
+
+    code {
+      padding: 1px $sp-xs;
+    }
+
+    /* A long code line must not widen the widget; it is clipped like everything else. */
+    pre {
+      overflow: hidden;
+      padding: $sp-sm;
+      white-space: pre;
+    }
+
+    img {
+      max-width: 100%;
+    }
+
+    table {
+      border-collapse: collapse;
+      max-width: 100%;
+
+      td, th {
+        border: 1px solid $color-border;
+        padding: $sp-xs $sp-sm;
+        text-align: left;
       }
     }
 
-    .visible-list-item {
-      display: block;
+    hr {
+      border: none;
+      border-top: 1px solid $color-border;
+      margin: $sp-sm 0;
+    }
+
+    .bullet-list-item,
+    .number-list-item {
+      margin: 0 0 $list-item-margin;
       position: relative;
 
-      p {
-        margin: 0;
+      @for $indent from 0 through 9 {
+        &.indent-#{$indent} {
+          padding-left: #{($indent * $list-item-indent-step) + $list-item-marker-gutter};
+        }
       }
 
-      &::before {
-        left: -$list-item-marker-gutter;
-        position: absolute;
-        text-align: center;
-        width: $list-item-marker-gutter;
-      }
-    }
-  }
-
-  /* Solid bullets at even indents, hollow circles at odd — same pairing as ample-editor. */
-  .bullet-list-item {
-    &.indent-0 .visible-list-item::before,
-    &.indent-2 .visible-list-item::before {
-      content: "\2022";
-      font-size: 1.35em;
-      line-height: 1;
-      top: -0.15em;
-    }
-
-    &.indent-1,
-    &.indent-3,
-    &.indent-4,
-    &.indent-5,
-    &.indent-6,
-    &.indent-7,
-    &.indent-8,
-    &.indent-9 {
-      .visible-list-item::before {
-        content: "\26AC";
-        font-size: 0.9em;
-        line-height: 1;
-        top: 0.1em;
-      }
-    }
-
-    &[data-crossed-out-at] .visible-list-item {
-      opacity: 0.55;
-      text-decoration: line-through;
-    }
-  }
-
-  .number-list-item {
-    @for $indent from 0 through 9 {
-      &.indent-#{$indent} .visible-list-item {
-        counter-increment: number-list-items-#{$indent};
-      }
-    }
-
-    &.indent-0 .visible-list-item::before { content: counter(number-list-items-0) ". "; }
-    &.indent-1 .visible-list-item::before { content: counter(number-list-items-1, lower-alpha) ". "; }
-    &.indent-2 .visible-list-item::before { content: counter(number-list-items-2, lower-roman) ". "; }
-    &.indent-3 .visible-list-item::before { content: counter(number-list-items-3, upper-alpha) ". "; }
-    &.indent-4 .visible-list-item::before { content: counter(number-list-items-4, upper-roman) ". "; }
-    &.indent-5 .visible-list-item::before { content: counter(number-list-items-5) ". "; }
-    &.indent-6 .visible-list-item::before { content: counter(number-list-items-6, lower-alpha) ". "; }
-    &.indent-7 .visible-list-item::before { content: counter(number-list-items-7, lower-roman) ". "; }
-    &.indent-8 .visible-list-item::before { content: counter(number-list-items-8, upper-alpha) ". "; }
-    &.indent-9 .visible-list-item::before { content: counter(number-list-items-9, upper-roman) ". "; }
-
-    .visible-list-item::before {
-      text-align: right;
-    }
-  }
-
-  :not(.number-list-item) + .number-list-item,
-  .number-list-item:first-child {
-    counter-reset: number-list-items-0 number-list-items-1 number-list-items-2 number-list-items-3
-      number-list-items-4 number-list-items-5 number-list-items-6 number-list-items-7
-      number-list-items-8 number-list-items-9;
-  }
-
-  /* app.htmlFromContent serializes each task as a checkbox followed by either a content-container or
-   * its paragraph children. Recreate ample-editor's readonly task-card surface without its interactive
-   * row-wrapper, widgets, expander, or Material Icons dependencies. */
-  .check-list-item,
-  li:has(input[type="checkbox"]) {
-    align-items: center;
-    background: $color-bg-page;
-    border-left: 4px solid $color-border;
-    border-radius: 4px;
-    margin: 0 0 6px;
-    min-height: 44px;
-    position: relative;
-  }
-
-  /* Marked wraps Amplenote's exported task form (`- [ ] task`, with blank lines between tasks) in
-   * checkbox-bearing list items and paragraphs. Remove list chrome and keep that paragraph on one
-   * checkbox/text grid row so dev fixtures exercise the same visual contract as production HTML. */
-  ul:has(> li input[type="checkbox"]) {
-    list-style: none;
-    padding-left: 0;
-  }
-
-  li:has(input[type="checkbox"]) {
-    column-gap: 7px;
-    display: flex;
-    padding: 0 $sp-sm 0 10px;
-
-    > p {
-      align-items: center;
-      column-gap: 10px;
-      display: grid;
-      grid-template-columns: 16px minmax(0, 1fr);
-      line-height: 20px;
-      margin: 0;
-      padding: 10px 0;
-      width: 100%;
-    }
-  }
-
-  .check-list-item {
-    display: block;
-
-    @for $indent from 1 through 9 {
-      &.indent-#{$indent} {
-        margin-left: #{$indent * $check-list-indent-step};
-      }
-    }
-
-    &.task-score-bucket-1 { border-left-color: $color-blue; }
-    &.task-score-bucket-2 { border-left-color: $color-warning; }
-    &.task-score-bucket-3 { border-left-color: $color-agenda-priority-urgent; }
-
-    /* The production renderer supplies this full row around the nested input and content containers.
-     * It must own the horizontal layout; putting the wrapper itself in a checkbox-sized grid column
-     * compresses the whole task to one word per line. */
-    > .row-wrapper {
-      align-items: center;
-      display: flex;
-      min-height: 44px;
-      width: 100%;
-
-      > .input-container {
-        flex: 0 0 16px;
-        height: 16px;
-        margin: 0 10px;
+      .visible-list-item {
+        display: block;
         position: relative;
 
-        > input[type="checkbox"] {
-          height: 16px;
+        p {
           margin: 0;
-          opacity: 0;
+        }
+
+        &::before {
+          left: -$list-item-marker-gutter;
           position: absolute;
-          width: 16px;
+          text-align: center;
+          width: $list-item-marker-gutter;
         }
+      }
+    }
 
-        > .checkbox {
-          border: 2px solid $color-text-muted;
-          border-radius: 2px;
-          box-sizing: border-box;
-          display: block;
-          font-size: 0;
+    /* Solid bullets at even indents, hollow circles at odd — same pairing as ample-editor. */
+    .bullet-list-item {
+      &.indent-0 .visible-list-item::before,
+      &.indent-2 .visible-list-item::before {
+        content: "\2022";
+        font-size: 1.35em;
+        line-height: 1;
+        top: -0.15em;
+      }
+
+      &.indent-1,
+      &.indent-3,
+      &.indent-4,
+      &.indent-5,
+      &.indent-6,
+      &.indent-7,
+      &.indent-8,
+      &.indent-9 {
+        .visible-list-item::before {
+          content: "\26AC";
+          font-size: 0.9em;
+          line-height: 1;
+          top: 0.1em;
+        }
+      }
+
+      &[data-crossed-out-at] .visible-list-item {
+        opacity: 0.55;
+        text-decoration: line-through;
+      }
+    }
+
+    .number-list-item {
+      @for $indent from 0 through 9 {
+        &.indent-#{$indent} .visible-list-item {
+          counter-increment: number-list-items-#{$indent};
+        }
+      }
+
+      &.indent-0 .visible-list-item::before { content: counter(number-list-items-0) ". "; }
+      &.indent-1 .visible-list-item::before { content: counter(number-list-items-1, lower-alpha) ". "; }
+      &.indent-2 .visible-list-item::before { content: counter(number-list-items-2, lower-roman) ". "; }
+      &.indent-3 .visible-list-item::before { content: counter(number-list-items-3, upper-alpha) ". "; }
+      &.indent-4 .visible-list-item::before { content: counter(number-list-items-4, upper-roman) ". "; }
+      &.indent-5 .visible-list-item::before { content: counter(number-list-items-5) ". "; }
+      &.indent-6 .visible-list-item::before { content: counter(number-list-items-6, lower-alpha) ". "; }
+      &.indent-7 .visible-list-item::before { content: counter(number-list-items-7, lower-roman) ". "; }
+      &.indent-8 .visible-list-item::before { content: counter(number-list-items-8, upper-alpha) ". "; }
+      &.indent-9 .visible-list-item::before { content: counter(number-list-items-9, upper-roman) ". "; }
+
+      .visible-list-item::before {
+        text-align: right;
+      }
+    }
+
+    :not(.number-list-item) + .number-list-item,
+    .number-list-item:first-child {
+      counter-reset: number-list-items-0 number-list-items-1 number-list-items-2 number-list-items-3
+        number-list-items-4 number-list-items-5 number-list-items-6 number-list-items-7
+        number-list-items-8 number-list-items-9;
+    }
+
+    /* app.htmlFromContent serializes each task as a checkbox followed by either a content-container or
+     * its paragraph children. Recreate ample-editor's readonly task-card surface without its interactive
+     * row-wrapper, widgets, expander, or Material Icons dependencies. */
+    .check-list-item,
+    li:has(input[type="checkbox"]) {
+      align-items: center;
+      background: $color-bg-page;
+      border-left: 4px solid $color-border;
+      border-radius: 4px;
+      margin: 0 0 6px;
+      min-height: 44px;
+      position: relative;
+    }
+
+    /* Marked wraps Amplenote's exported task form (`- [ ] task`, with blank lines between tasks) in
+     * checkbox-bearing list items and paragraphs. Remove list chrome and keep that paragraph on one
+     * checkbox/text grid row so dev fixtures exercise the same visual contract as production HTML. */
+    ul:has(> li input[type="checkbox"]) {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    li:has(input[type="checkbox"]) {
+      column-gap: 7px;
+      display: flex;
+      padding: 0 $sp-sm 0 10px;
+
+      > p {
+        align-items: center;
+        column-gap: 10px;
+        display: grid;
+        grid-template-columns: 16px minmax(0, 1fr);
+        line-height: 20px;
+        margin: 0;
+        padding: 10px 0;
+        width: 100%;
+      }
+    }
+
+    .check-list-item {
+      display: block;
+
+      @for $indent from 1 through 9 {
+        &.indent-#{$indent} {
+          margin-left: #{$indent * $check-list-indent-step};
+        }
+      }
+
+      &.task-score-bucket-1 { border-left-color: $color-blue; }
+      &.task-score-bucket-2 { border-left-color: $color-warning; }
+      &.task-score-bucket-3 { border-left-color: $color-agenda-priority-urgent; }
+
+      /* The production renderer supplies this full row around the nested input and content containers.
+       * It must own the horizontal layout; putting the wrapper itself in a checkbox-sized grid column
+       * compresses the whole task to one word per line. */
+      > .row-wrapper {
+        align-items: center;
+        display: flex;
+        min-height: 44px;
+        width: 100%;
+
+        > .input-container {
+          flex: 0 0 16px;
           height: 16px;
+          margin: 0 10px;
           position: relative;
-          width: 16px;
+
+          > input[type="checkbox"] {
+            height: 16px;
+            margin: 0;
+            opacity: 0;
+            position: absolute;
+            width: 16px;
+          }
+
+          > .checkbox {
+            border: 2px solid $color-text-muted;
+            border-radius: 2px;
+            box-sizing: border-box;
+            display: block;
+            font-size: 0;
+            height: 16px;
+            position: relative;
+            width: 16px;
+          }
+
+          > input[type="checkbox"]:checked + .checkbox {
+            background: $color-success;
+            border-color: $color-success;
+
+            &::after {
+              border: solid $color-text-on-accent;
+              border-width: 0 2px 2px 0;
+              content: "";
+              height: 7px;
+              left: 4px;
+              position: absolute;
+              top: 1px;
+              transform: rotate(45deg);
+              width: 4px;
+            }
+          }
         }
 
-        > input[type="checkbox"]:checked + .checkbox {
+        > .content-container {
+          flex: 1;
+          line-height: 20px;
+          min-width: 0;
+          padding: 10px 0;
+          word-break: break-word;
+
+          p {
+            margin: 0;
+          }
+        }
+
+        > .expander,
+        > .inline-details,
+        > .task-expander-container,
+        > .widget-popup-container,
+        > .widgets-bar-container {
+          display: none;
+        }
+      }
+
+      > .details-container {
+        display: none;
+      }
+
+      /* The host can also return its compact serializer form without a row-wrapper. Keep that shape on
+       * the same two-column layout while the full production row above remains a normal flex row. */
+      &:not(:has(> .row-wrapper)) {
+        column-gap: 10px;
+        display: grid;
+        grid-template-columns: 16px minmax(0, 1fr);
+        padding: 0 $sp-sm 0 10px;
+      }
+    }
+
+    .check-list-item:not(:has(> .row-wrapper)),
+    li:has(input[type="checkbox"]) {
+      > input[type="checkbox"],
+      > p > input[type="checkbox"] {
+        appearance: none;
+        background: transparent;
+        border: 2px solid $color-text-muted;
+        border-radius: 2px;
+        box-sizing: border-box;
+        flex-shrink: 0;
+        grid-column: 1;
+        grid-row: 1;
+        height: 16px;
+        margin: 0;
+        pointer-events: none;
+        position: relative;
+        width: 16px;
+
+        &:checked {
           background: $color-success;
           border-color: $color-success;
 
@@ -422,114 +492,44 @@ $check-list-indent-step: 20px;
           }
         }
       }
+    }
 
-      > .content-container {
+    .check-list-item:not(:has(> .row-wrapper)) {
+      > .content-container,
+      > p {
         flex: 1;
+        grid-column: 2;
+        grid-row: 1;
         line-height: 20px;
+        margin: 0;
         min-width: 0;
         padding: 10px 0;
         word-break: break-word;
+      }
 
+      > .content-container {
         p {
           margin: 0;
         }
       }
-
-      > .expander,
-      > .inline-details,
-      > .task-expander-container,
-      > .widget-popup-container,
-      > .widgets-bar-container {
-        display: none;
-      }
     }
 
-    > .details-container {
-      display: none;
-    }
+    .check-list-item {
+      &.done,
+      &[data-completedat],
+      &[data-dismissedat] {
+        opacity: 0.65;
 
-    /* The host can also return its compact serializer form without a row-wrapper. Keep that shape on
-     * the same two-column layout while the full production row above remains a normal flex row. */
-    &:not(:has(> .row-wrapper)) {
-      column-gap: 10px;
-      display: grid;
-      grid-template-columns: 16px minmax(0, 1fr);
-      padding: 0 $sp-sm 0 10px;
-    }
-  }
-
-  .check-list-item:not(:has(> .row-wrapper)),
-  li:has(input[type="checkbox"]) {
-    > input[type="checkbox"],
-    > p > input[type="checkbox"] {
-      appearance: none;
-      background: transparent;
-      border: 2px solid $color-text-muted;
-      border-radius: 2px;
-      box-sizing: border-box;
-      flex-shrink: 0;
-      grid-column: 1;
-      grid-row: 1;
-      height: 16px;
-      margin: 0;
-      pointer-events: none;
-      position: relative;
-      width: 16px;
-
-      &:checked {
-        background: $color-success;
-        border-color: $color-success;
-
-        &::after {
-          border: solid $color-text-on-accent;
-          border-width: 0 2px 2px 0;
-          content: "";
-          height: 7px;
-          left: 4px;
-          position: absolute;
-          top: 1px;
-          transform: rotate(45deg);
-          width: 4px;
+        > .content-container,
+        > p,
+        > .row-wrapper > .content-container {
+          text-decoration: line-through;
         }
       }
     }
-  }
 
-  .check-list-item:not(:has(> .row-wrapper)) {
-    > .content-container,
-    > p {
-      flex: 1;
-      grid-column: 2;
-      grid-row: 1;
-      line-height: 20px;
-      margin: 0;
-      min-width: 0;
-      padding: 10px 0;
-      word-break: break-word;
+    > :last-child {
+      margin-bottom: 0;
     }
-
-    > .content-container {
-      p {
-        margin: 0;
-      }
-    }
-  }
-
-  .check-list-item {
-    &.done,
-    &[data-completedat],
-    &[data-dismissedat] {
-      opacity: 0.65;
-
-      > .content-container,
-      > p,
-      > .row-wrapper > .content-container {
-        text-decoration: line-through;
-      }
-    }
-  }
-
-  > :last-child {
-    margin-bottom: 0;
   }
 }

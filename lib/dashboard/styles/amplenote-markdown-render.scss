@@ -2,6 +2,11 @@
  * Created: 2026-03-14 | Model: claude-4.6-opus-high-thinking
  * Task: Styles for Amplenote Rich Footnote indicators and tippy popup content
  * Prompt summary: "implement rich footnotes with icons and tippy popups showing text, images, video, URL"
+ *
+ * Two wrapping selectors rather than one, because a footnote occupies two disjoint trees: the indicator is
+ * inline in the rendered note, while tippy moves the popup to a `[data-tippy-root]` element on the body. The
+ * popup's own wrapper is therefore the themed tippy box it is always mounted inside — attachFootnotePopups
+ * builds every one of these with `theme: 'rich-footnote'`.
  */
 
 @use 'theme-tokens' as *;
@@ -10,22 +15,22 @@
 
 .rich-footnote-wrap {
   display: inline;
-}
 
-.rich-footnote-indicator {
-  cursor: default;
-  display: inline-block;
-  font-size: 0.65em;
-  margin-left: 2px;
-  opacity: 0.65;
-  vertical-align: super;
+  .rich-footnote-indicator {
+    cursor: default;
+    display: inline-block;
+    font-size: 0.65em;
+    margin-left: 2px;
+    opacity: 0.65;
+    vertical-align: super;
 
-  &:hover {
-    opacity: 1;
+    &:hover {
+      opacity: 1;
+    }
   }
 }
 
-// ── Tippy theme for Rich Footnote popups ──
+// ── Tippy theme for Rich Footnote popups, and the popup content mounted in them ──
 
 .tippy-box[data-theme~='rich-footnote'] {
   background: $color-bg-card;
@@ -45,79 +50,77 @@
   > .tippy-content {
     padding: $sp-md;
   }
-}
 
-// ── Popup content layout ──
-
-.rich-footnote-popup {
-  display: flex;
-  flex-direction: column;
-  gap: $sp-sm;
-}
-
-.rich-footnote-popup-url {
-  align-items: center;
-  display: flex;
-  gap: $sp-xs;
-
-  svg {
-    color: $color-accent;
-    flex-shrink: 0;
+  .rich-footnote-popup {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
   }
 
-  a {
-    color: $color-link;
-    overflow: hidden;
-    text-decoration: none;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .rich-footnote-popup-url {
+    align-items: center;
+    display: flex;
+    gap: $sp-xs;
 
-    &:hover {
-      text-decoration: underline;
+    svg {
+      color: $color-accent;
+      flex-shrink: 0;
+    }
+
+    a {
+      color: $color-link;
+      overflow: hidden;
+      text-decoration: none;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+
+      &:hover {
+        text-decoration: underline;
+      }
     }
   }
-}
 
-.rich-footnote-popup-text {
-  color: $color-text;
-}
-
-.rich-footnote-popup-media {
-  border-radius: $radius-sm;
-  overflow: hidden;
-
-  img,
-  video,
-  iframe {
-    display: block;
-    max-width: 100%;
-    width: 100%;
+  .rich-footnote-popup-text {
+    color: $color-text;
   }
 
-  iframe {
-    aspect-ratio: 16 / 9;
-    border: 0;
+  .rich-footnote-popup-media {
+    border-radius: $radius-sm;
+    overflow: hidden;
+
+    img,
+    video,
+    iframe {
+      display: block;
+      max-width: 100%;
+      width: 100%;
+    }
+
+    iframe {
+      aspect-ratio: 16 / 9;
+      border: 0;
+    }
   }
-}
 
-.rich-footnote-popup-actions {
-  border-top: 1px solid $color-border;
-  display: flex;
-  justify-content: flex-end;
-  padding-top: $sp-sm;
-}
+  .rich-footnote-popup-actions {
+    border-top: 1px solid $color-border;
+    display: flex;
+    justify-content: flex-end;
+    padding-top: $sp-sm;
+  }
 
-.rich-footnote-popup-close {
-  background: none;
-  border: none;
-  color: $color-accent;
-  cursor: pointer;
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  padding: $sp-xs $sp-sm;
+  .rich-footnote-popup-close {
+    background: none;
+    border: none;
+    color: $color-accent;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: $sp-xs $sp-sm;
 
-  &:hover {
-    opacity: 0.8;
+    &:hover {
+      opacity: 0.8;
+    }
   }
 }

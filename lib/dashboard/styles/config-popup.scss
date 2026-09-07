@@ -32,112 +32,119 @@ $config-popup-z-index: 1000;
   top: 0;
   width: var(--dashboard-viewport-width, 100vw);
   z-index: $config-popup-z-index;
-}
 
-.config-popup-container {
-  background: $color-bg-card;
-  border: 1px solid $color-border;
-  border-radius: $radius-lg;
-  box-shadow: 0 $config-popup-shadow-y $config-popup-shadow-blur $color-overlay-shadow;
-  max-width: $config-popup-max-width;
-  min-width: $config-popup-min-width;
-  width: 650px;
+  /* Everything the popup contains is scoped to the overlay so no other card in the dashboard can pick these
+   * rules up, but scoped through `:where()` so the scoping costs no specificity. Four stylesheets extend the
+   * popup by class — dashboard-layout-popup, dashboard-settings-popup, llm-provider-selector, and
+   * widget-memory-measurement-popup — and their overrides are balanced against the weight these selectors
+   * had when they sat at the top level. A plain nested `.config-popup-overlay` would outweigh all of them. */
+  :where(&) {
+    .config-popup-container {
+      background: $color-bg-card;
+      border: 1px solid $color-border;
+      border-radius: $radius-lg;
+      box-shadow: 0 $config-popup-shadow-y $config-popup-shadow-blur $color-overlay-shadow;
+      max-width: $config-popup-max-width;
+      min-width: $config-popup-min-width;
+      width: 650px;
 
-  .explanation-paragraph {
-    font-size: 14px;
-    margin: 12px 0 20px;
-  }
-
-  .config-popup-header {
-    border-bottom: 1px solid $color-border;
-    padding: $sp-lg;
-  }
-
-  .config-popup-title {
-    color: $color-navy;
-    font-size: 0.95rem;
-    font-weight: 700;
-    margin: 0;
-  }
-
-  .config-popup-body {
-    padding: $sp-lg;
-
-    label {
-      align-items: center;
-      color: $color-text;
-      cursor: pointer;
-      display: flex;
-      font-size: 0.85rem;
-      gap: $sp-sm;
-      padding: $sp-xs 0;
-    }
-
-    input[type="radio"],
-    input[type="checkbox"] {
-      accent-color: $color-accent;
-    }
-
-    .config-field {
-      margin-bottom: $sp-md;
-
-      .config-line {
-        margin-bottom: 10px;
-        margin-top: 10px;
+      .explanation-paragraph {
+        font-size: 14px;
+        margin: 12px 0 20px;
       }
 
-      &:last-child {
-        margin-bottom: 0;
+      .config-popup-header {
+        border-bottom: 1px solid $color-border;
+        padding: $sp-lg;
       }
-    }
 
-    .config-field-label {
-      color: $color-text-secondary;
-      font-size: 0.75rem;
-      font-weight: 600;
-      letter-spacing: 0.03em;
-      margin-bottom: $sp-xs;
-      text-transform: uppercase;
-    }
-  }
-
-  .config-popup-actions {
-    border-top: 1px solid $color-border;
-    display: flex;
-    gap: $sp-sm;
-    justify-content: flex-end;
-    padding: $sp-md $sp-lg;
-
-    > button {
-      padding-left: 8px;
-      padding-right: 8px;
-    }
-  }
-
-  .config-popup-btn {
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    cursor: pointer;
-    font-size: 0.8rem;
-    font-weight: 600;
-    padding: $sp-sm $sp-lg;
-
-    &--cancel {
-      background: transparent;
-      color: $color-text-secondary;
-
-      &:hover {
-        background: $color-bg-page-hover;
+      .config-popup-title {
+        color: $color-navy;
+        font-size: 0.95rem;
+        font-weight: 700;
+        margin: 0;
       }
-    }
 
-    &--submit {
-      background: $color-accent;
-      border-color: $color-accent;
-      color: $color-text-on-accent;
+      .config-popup-body {
+        padding: $sp-lg;
 
-      &:hover {
-        opacity: 0.9;
+        label {
+          align-items: center;
+          color: $color-text;
+          cursor: pointer;
+          display: flex;
+          font-size: 0.85rem;
+          gap: $sp-sm;
+          padding: $sp-xs 0;
+        }
+
+        input[type="radio"],
+        input[type="checkbox"] {
+          accent-color: $color-accent;
+        }
+
+        .config-field {
+          margin-bottom: $sp-md;
+
+          .config-line {
+            margin-bottom: 10px;
+            margin-top: 10px;
+          }
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+        }
+
+        .config-field-label {
+          color: $color-text-secondary;
+          font-size: 0.75rem;
+          font-weight: 600;
+          letter-spacing: 0.03em;
+          margin-bottom: $sp-xs;
+          text-transform: uppercase;
+        }
+      }
+
+      .config-popup-actions {
+        border-top: 1px solid $color-border;
+        display: flex;
+        gap: $sp-sm;
+        justify-content: flex-end;
+        padding: $sp-md $sp-lg;
+
+        > button {
+          padding-left: 8px;
+          padding-right: 8px;
+        }
+      }
+
+      .config-popup-btn {
+        border: 1px solid $color-border;
+        border-radius: $radius-sm;
+        cursor: pointer;
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: $sp-sm $sp-lg;
+
+        &--cancel {
+          background: transparent;
+          color: $color-text-secondary;
+
+          &:hover {
+            background: $color-bg-page-hover;
+          }
+        }
+
+        &--submit {
+          background: $color-accent;
+          border-color: $color-accent;
+          color: $color-text-on-accent;
+
+          &:hover {
+            opacity: 0.9;
+          }
+        }
       }
     }
   }

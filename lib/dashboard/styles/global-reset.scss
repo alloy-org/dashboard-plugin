@@ -1,0 +1,30 @@
+/* The one stylesheet in this directory with nothing to scope: the box-sizing reset and the body typography
+ * apply to the whole document, so they cannot sit inside a component's wrapping class the way every other
+ * stylesheet here does. Kept separate from dashboard.scss for exactly that reason — so that file can be read
+ * as the styles of `.dashboard-outer-container` and nothing else.
+ *
+ * Extracted from dashboard.scss, where it was written by claude-sonnet-4-5-20250929 on 2026-02-21.
+ */
+
+@use 'theme' as *;
+
+html {
+  overflow-y: scroll;
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    -webkit-font-smoothing: antialiased;
+    background: $color-bg-page;
+    color: $color-text;
+    font-family: $font-sans;
+
+    button {
+      font-family: inherit;
+    }
+  }
+}

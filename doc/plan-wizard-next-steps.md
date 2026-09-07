@@ -55,9 +55,10 @@ between them, shows "N of 5", and offers Back/Next. Unbuilt steps render
 `lib/dashboard/plan-wizard/pending-step.jsx`, which states the milestone is not built rather than showing inputs
 that record nothing; this keeps the plan's rule that the UI must not imply unimplemented work has run.
 
-The last four steps are scaffolding only. `projects` needs the discovery milestone; the other three correspond to
-the three mockups that were reviewed but not built. Their step definitions are the place to attach components as
-those milestones land — no other file needs to change to add a page.
+All five steps are now built. `projects` gained its discovery pass in
+`lib/plan-wizard/prospect-discovery.js`; what remains for that milestone is continuous background harvesting and
+`ProspectTask` proposals within an endorsed project. Step definitions remain the place to attach a component, so
+no other file needs to change to add a page.
 
 ### What remains in step 2
 
@@ -115,8 +116,11 @@ the same edit, since the merge treats an older or tied timestamp as a no-op. Sug
 `sourceKind: "default"` when they are the generic fallbacks; the UI should present those as starting points, not
 as inferred conclusions about the user.
 
-For this slice: save, show a saved state, and leave "Find my projects" disabled — the discovery milestone does not
-exist yet, and the plan is explicit that the UI must not imply projects have been generated.
+"Find my projects" now saves the intents and runs discovery on the projects page. Discovery reads the stored
+intents, so the save must land first: proposals chosen for the intents the user just replaced would be worse than
+none. Discovery is explicit rather than automatic on mount — it costs a provider call, and the plan's rule that
+the UI must not imply projects were generated still holds, so the page states which of nothing-asked-for,
+nothing-to-work-from, running, nothing-found, and awaiting-judgement it is in.
 
 ### 2d. `lib/dashboard/plan-wizard/plan-wizard.scss`
 
@@ -153,8 +157,9 @@ NODE_OPTIONS=--experimental-vm-modules npx jest --runInBand --testPathPattern='p
 
 ## After step 2
 
-Unchanged from the implementation plan: `ActionProspect`/`ProspectTask` persistence and project discovery, then
-Proposed Agenda and calendar integration, then the remaining wizard steps and the Quarterly Goals projection.
+`ActionProspect` persistence and the wizard's five pages are built, and project discovery proposes candidates on
+demand. What remains: `ProspectTask` persistence and proposals, continuous background harvesting, then Proposed
+Agenda and calendar integration, then the Quarterly Goals projection.
 Start history rollover before enabling continuous background harvesting so the annual guide stays bounded.
 
 ## Conventions to re-read before writing code

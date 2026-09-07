@@ -79,15 +79,19 @@ function IntentStepCategory({ fields, isDisabled, onAddSecondary, onApplySuggest
 //   reseeded only when the plan scope changes or a save succeeds, so suggestions arriving from a background
 //   refresh cannot discard what the user is in the middle of writing.
 // @param {object} params - An object with the following properties:
+//   - {boolean} isDiscovering - True while project discovery runs, so "Find my projects" cannot be double-run.
 //   - {boolean} isRefreshing - True while inference runs; fields stay editable throughout.
 //   - {boolean} isSaving - True while a save is in flight.
+//   - {Function} onFindProjects - Moves to the projects page and runs discovery there.
 //   - {object} planningContext - Stored goals, goalRecords, and possibilities for the scope.
 //   - {Function} onSave - Receives goal records and resolves true when the write succeeded.
 //   - {Error|null} saveError - Last save failure; its presence turns the action into a retry.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 // @returns {JSX.Element} The intent page.
-// "Find my projects" stays disabled: project discovery does not exist yet and the UI must not imply it ran.
-export default function IntentStep({ isRefreshing, isSaving, onSave, planningContext, saveError, scopeKey }) {
+// "Find my projects" saves first: discovery reads the stored intents, so an unsaved answer would be invisible
+// to it and the user would be shown projects chosen for the intents they had before this edit.
+export default function IntentStep({ isDiscovering = false, isRefreshing, onFindProjects, onSave, planningContext,
+    isSaving, saveError, scopeKey }) {
   const [draftFields, setDraftFields] = useState(() => draftFieldsFromGoals(planningContext.goals));
   const [focusedFieldUuid, setFocusedFieldUuid] = useState(null);
   const [hasSaved, setHasSaved] = useState(false);
@@ -144,15 +148,28 @@ export default function IntentStep({ isRefreshing, isSaving, onSave, planningCon
   // ----------------------------------------------------------------------------------------------
   // @desc Save every field that carries text, plus tombstones for goals the user emptied.
   // On failure the draft is left untouched so the user's input survives and the retry can reuse its timestamp.
+  // @returns {Promise<boolean>} True when a write happened and succeeded.
   const handleSave = async () => {
     const capturedAt = capturedAtRef.current ?? new Date().toISOString();
     capturedAtRef.current = capturedAt;
     const goalRecords = goalRecordsFromDraftFields(draftFields, planningContext, capturedAt);
-    if (!goalRecords.length) return;
+    if (!goalRecords.length) return false;
     const didSave = await onSave(goalRecords);
-    if (!didSave) return;
+    if (!didSave) return false;
     capturedAtRef.current = null;
     setHasSaved(true);
+    return true;
+  };
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Save the answers, then hand off to project discovery. A failed save stops the handoff unless intents
+  //   were already stored, since discovery reasoning over a stale intent would propose projects for a goal the
+  //   user has just changed.
+  const handleFindProjects = async () => {
+    const hadStoredIntent = planningContext.goals.length > 0;
+    const didSave = await handleSave();
+    if (!didSave && !hadStoredIntent) return;
+    await onFindProjects();
   };
 
   const workFields = draftFields.filter(field => field.userCategoryEm === "work");
@@ -179,9 +196,11 @@ export default function IntentStep({ isRefreshing, isSaving, onSave, planningCon
         <button className="intent-step-save" disabled={ isSaving || !hasAnswer } onClick={ handleSave } type="button">
           { isSaving ? "Saving…" : saveLabel }
         </button>
-        <button className="intent-step-continue" disabled={ true } title="Project discovery is not built yet"
+        <button className="intent-step-continue" disabled={ isSaving || isDiscovering || !hasAnswer }
+          onClick={ handleFindProjects }
+          title="Save these intents and read your recent tasks for the projects that would carry them"
           type="button">
-          Find my projects
+          { isDiscovering ? "Finding projects…" : "Find my projects" }
         </button>
       </div>
     </div>

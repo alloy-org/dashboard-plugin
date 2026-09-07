@@ -7,15 +7,13 @@
 
 @use 'theme-tokens' as *;
 
-.dashboard-outer-container {
-  .no-config-upsell {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    gap: $sp-sm;
-    padding: $sp-xs $sp-md $sp-md;
-    text-align: center;
-  }
+.no-config-upsell {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: $sp-sm;
+  padding: $sp-xs $sp-md $sp-md;
+  text-align: center;
 
   .no-config-upsell-badges {
     display: flex;

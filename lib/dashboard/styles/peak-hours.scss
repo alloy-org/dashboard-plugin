@@ -151,43 +151,43 @@
       margin: 0;
     }
   }
-}
 
-.vertical-1-cell .widget-peak-hours {
-  .peak-hours-metrics-grid {
-    gap: $sp-sm;
+  .vertical-1-cell & {
+    .peak-hours-metrics-grid {
+      gap: $sp-sm;
+    }
+
+    .peak-hours-metric-card {
+      padding: $sp-xs $sp-sm;
+    }
+
+    .peak-hours-metric-label {
+      font-size: 0.7rem;
+      margin-bottom: 0;
+    }
+
+    .peak-hours-metric-value {
+      font-size: 1rem;
+    }
+
+    .peak-hours-legend {
+      margin-bottom: $sp-xs;
+    }
+
+    .peak-hours-chart-container {
+      height: 160px;
+    }
   }
 
-  .peak-hours-metric-card {
-    padding: $sp-xs $sp-sm;
+  .horizontal-2-cell & .peak-hours-chart-container {
+    height: 220px;
   }
 
-  .peak-hours-metric-label {
-    font-size: 0.7rem;
-    margin-bottom: 0;
+  .vertical-2-cell & .peak-hours-chart-container {
+    height: 380px;
   }
 
-  .peak-hours-metric-value {
-    font-size: 1rem;
+  .horizontal-2-cell.vertical-2-cell & .peak-hours-chart-container {
+    height: 440px;
   }
-
-  .peak-hours-legend {
-    margin-bottom: $sp-xs;
-  }
-
-  .peak-hours-chart-container {
-    height: 160px;
-  }
-}
-
-.horizontal-2-cell .widget-peak-hours .peak-hours-chart-container {
-  height: 220px;
-}
-
-.vertical-2-cell .widget-peak-hours .peak-hours-chart-container {
-  height: 380px;
-}
-
-.horizontal-2-cell.vertical-2-cell .widget-peak-hours .peak-hours-chart-container {
-  height: 440px;
 }

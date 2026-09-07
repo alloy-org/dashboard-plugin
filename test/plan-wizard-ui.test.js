@@ -16,7 +16,7 @@ let inferenceImplementation = null;
 await jest.unstable_mockModule("providers/fetch-ai-provider", () => ({
   llmPromptWithPluginFallback: jest.fn(async (app, prompt, options) => {
     inferenceCalls.push({ options, prompt });
-    if (inferenceImplementation) return inferenceImplementation();
+    if (inferenceImplementation) return inferenceImplementation(prompt);
     return {
       occupationHypothesis: "Builds developer tools",
       personal: [],
@@ -291,9 +291,11 @@ describe("PlanWizard intent step", () => {
     await cleanup();
   });
 
-  it("leaves Find my projects disabled until project discovery exists", async () => {
+  it("leaves Find my projects disabled until an intent exists for a project to advance", async () => {
     const { cleanup, container } = await renderPlanWizard();
     expect(container.querySelector(".intent-step-continue").disabled).toBe(true);
+    await typeInto(workFields(container)[0], "Ship the analytics offering");
+    expect(container.querySelector(".intent-step-continue").disabled).toBe(false);
     await cleanup();
   });
 });
@@ -304,6 +306,12 @@ describe("PlanWizard step navigation", () => {
     inferenceImplementation = null;
   });
 
+  // A test that fails before its own cleanup would otherwise leave a mounted wizard in the body, and the next
+  // test queries the body — so it would read the stranded wizard's step instead of its own.
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
   it("opens on the intent step and reports its position in the sequence", async () => {
     const { cleanup, container } = await renderPlanWizard();
     expect(container.querySelector(".plan-wizard-progress").textContent).toBe(`1 of ${ WIZARD_STEPS.length }`);
@@ -312,14 +320,15 @@ describe("PlanWizard step navigation", () => {
     await cleanup();
   });
 
-  it("advances to the projects step and says discovery has not run", async () => {
+  it("advances to the projects step and asks for an intent before offering to suggest projects", async () => {
     const { cleanup, container } = await renderPlanWizard();
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
     expect(container.querySelector(".plan-wizard-progress").textContent).toBe(`2 of ${ WIZARD_STEPS.length }`);
     expect(container.querySelector(".intent-step-page")).toBe(null);
     expect(container.querySelector(".projects-step-page")).not.toBe(null);
-    expect(container.querySelector(".projects-step-discovery-notice").textContent).toContain("not built yet");
+    expect(container.querySelector(".projects-step-discover").disabled).toBe(true);
+    expect(container.querySelector(".projects-step-discovery-notice").textContent).toContain("Save an intent");
     await cleanup();
   });
 
@@ -426,6 +435,102 @@ describe("PlanWizard projects step", () => {
     const stored = await readPlanGoals(app, SCOPE);
     expect(stored.prospects).toEqual([]);
     expect(stored.prospectRecords.map(record => record.approvalStatus)).toEqual(["humanRejected"]);
+    await cleanup();
+  });
+});
+
+describe("PlanWizard project discovery", () => {
+  beforeEach(() => {
+    inferenceCalls.length = 0;
+    inferenceImplementation = null;
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Answer both prompts the wizard issues from one implementation, reading the intent's stored identity out
+  //   of the discovery prompt itself. The identity is minted during the save, so a candidate cannot be written
+  //   with a hardcoded link — which also verifies the prompt carries the identities a proposal must cite.
+  // @param {object} params - { proposals, workIntent } to return and to match.
+  // @returns {Function} Implementation for the mocked provider.
+  function respondToBothPrompts({ proposals, workIntent }) {
+    return prompt => {
+      if (!prompt.includes('"prospects"')) return { occupationHypothesis: "Builds developer tools", personal: [], work: [] };
+      const goalMatch = prompt.match(new RegExp(`\\[([^\\]]+)\\] \\(work\\) ${ workIntent }`));
+      const linkedGoalUuids = goalMatch ? [goalMatch[1]] : [];
+      return { prospects: proposals.map(proposal => ({ ...proposal, linkedGoalUuids })) };
+    };
+  }
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Add two tasks completed in the past few days, so a candidate citing both clears the two-task bar.
+  // @param {object} app - Fixture app whose tasks are read by evidence collection.
+  function pushRecentCompletions(app) {
+    const secondsAgo = days => Math.round((Date.now() - days * 86400000) / 1000);
+    app.tasks.push({ completedAt: secondsAgo(2), content: "Assemble the weekly report by hand", createdAt: secondsAgo(9),
+      noteName: "Reporting", noteUUID: "note-reporting", uuid: "task-a" });
+    app.tasks.push({ completedAt: secondsAgo(4), content: "Re-send last week's report", createdAt: secondsAgo(11),
+      noteName: "Reporting", noteUUID: "note-reporting", uuid: "task-b" });
+  }
+
+  it("saves the intent, advances to projects, and shows what discovery proposed with its reasoning", async () => {
+    const app = createPlanWizardApp();
+    pushRecentCompletions(app);
+    inferenceImplementation = respondToBothPrompts({ workIntent: "Ship the analytics offering",
+      proposals: [{ focusMonths: [], resolvedTaskUuids: ["task-a", "task-b"], summary: "Automate the weekly report",
+        substantiation: "Generating the report would resolve both reporting tasks without writing either one.",
+        userCategoryEm: "work" }] });
+    const { cleanup, container } = await renderPlanWizard({ app });
+    await typeInto(workFields(container)[0], "Ship the analytics offering");
+    await clickAndSettle(container.querySelector(".intent-step-continue"));
+
+    expect(container.querySelector(".plan-wizard-progress").textContent).toBe(`2 of ${ WIZARD_STEPS.length }`);
+    const proposedRow = container.querySelector(".projects-step-category--work .project-row--proposed");
+    expect(proposedRow.querySelector(".project-row-name").value).toBe("Automate the weekly report");
+    expect(proposedRow.querySelector(".project-row-provenance").textContent).toContain("without writing either one");
+    expect(container.querySelector(".projects-step-discovery-notice").textContent).toContain("waiting on you");
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.prospects[0]).toMatchObject({ approvalStatus: "awaitingJudgement", summary: "Automate the weekly report" });
+    await cleanup();
+  });
+
+  it("affirms an edited proposal while keeping the reasoning discovery gave it", async () => {
+    const app = createPlanWizardApp();
+    pushRecentCompletions(app);
+    inferenceImplementation = respondToBothPrompts({ workIntent: "Ship the analytics offering",
+      proposals: [{ focusMonths: [], resolvedTaskUuids: ["task-a", "task-b"], summary: "Automate the weekly report",
+        substantiation: "Generating the report would resolve both reporting tasks without writing either one.",
+        userCategoryEm: "work" }] });
+    const { cleanup, container } = await renderPlanWizard({ app });
+    await typeInto(workFields(container)[0], "Ship the analytics offering");
+    await clickAndSettle(container.querySelector(".intent-step-continue"));
+    const proposedName = container.querySelector(".projects-step-category--work .project-row--proposed .project-row-name");
+    await typeInto(proposedName, "Automate the weekly report end to end");
+    await clickAndSettle(container.querySelector(".projects-step-save"));
+
+    const stored = await readPlanGoals(app, SCOPE);
+    const affirmed = stored.prospects.find(prospect => prospect.summary === "Automate the weekly report end to end");
+    expect(affirmed.approvalStatus).toBe("humanAffirmed");
+    expect(affirmed.substantiation).toContain("without writing either one");
+    expect(affirmed.evidence.map(citation => citation.taskUuid)).toEqual(["task-a", "task-b"]);
+    await cleanup();
+  });
+
+  it("says why a pass proposed nothing rather than leaving an unexplained empty list", async () => {
+    const app = createPlanWizardApp();
+    inferenceImplementation = respondToBothPrompts({ proposals: [], workIntent: "Ship the analytics offering" });
+    const { cleanup, container } = await renderPlanWizard({ app });
+    await typeInto(workFields(container)[0], "Ship the analytics offering");
+    await clickAndSettle(container.querySelector(".intent-step-save"));
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+    expect(container.querySelector(".projects-step-discover").disabled).toBe(false);
+
+    await clickAndSettle(container.querySelector(".projects-step-discover"));
+    expect(container.querySelector(".projects-step-discovery-notice").textContent)
+      .toContain("no candidate the evidence supports");
+    expect(container.querySelector(".project-row--proposed")).toBe(null);
     await cleanup();
   });
 });
@@ -545,6 +650,32 @@ describe("PlanWizard modal presentation", () => {
     expect(document.querySelector(".plan-wizard-overlay")).not.toBeNull();
     await cleanup();
     expect(document.querySelector(".plan-wizard-overlay")).toBeNull();
+  });
+
+  it("anchors the overlay in the document at the scroll offset the wizard opened at", async () => {
+    const scrollOffsetPixels = 480;
+    const originalScrollY = Object.getOwnPropertyDescriptor(window, "scrollY");
+    Object.defineProperty(window, "scrollY", { configurable: true, value: scrollOffsetPixels });
+    const { cleanup, container } = await renderPlanWizard();
+    const overlay = container.querySelector(".plan-wizard-overlay");
+    expect(overlay.style.top).toBe(`${ scrollOffsetPixels }px`);
+    if (originalScrollY) Object.defineProperty(window, "scrollY", originalScrollY); else delete window.scrollY;
+    await cleanup();
+  });
+
+  it("returns the viewport to the top of the dialog when the page changes", async () => {
+    const scrollRequests = [];
+    Element.prototype.scrollIntoView = function scrollIntoViewStub(options) {
+      scrollRequests.push({ element: this, options });
+    };
+    const { cleanup, container } = await renderPlanWizard();
+    scrollRequests.length = 0;
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+    expect(scrollRequests).toHaveLength(1);
+    expect(scrollRequests[0].element).toBe(container.querySelector(".plan-wizard-overlay"));
+    expect(scrollRequests[0].options.block).toBe("start");
+    delete Element.prototype.scrollIntoView;
+    await cleanup();
   });
 
   it("closes on a backdrop click but not on a click inside the dialog", async () => {

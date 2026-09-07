@@ -13,14 +13,6 @@ $mood-dot-size: 4px;
 $mood-sparkline-height: 24px;
 $mood-transition-duration: 0.15s;
 
-/* [Claude] Task: fade-out animation for mood confirmation auto-dismiss */
-/* Prompt: "Update the 'Mood rating recorded' confirmation to fade out after 5 seconds" */
-/* Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking */
-@keyframes mood-fadeout {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-
 /* [Claude] Task: mood widget styles with selection state, textarea, submit button, and confirmation */
 /* Prompt: "styles for mood selector buttons, textarea, submit, and confirmation state" */
 /* Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking */
@@ -240,4 +232,13 @@ $mood-transition-duration: 0.15s;
     }
   }
 
+  /* [Claude] Task: fade-out animation for mood confirmation auto-dismiss */
+  /* Prompt: "Update the 'Mood rating recorded' confirmation to fade out after 5 seconds" */
+  /* Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking */
+  /* Nested only so this file reads as one scoped block; Sass lifts it back to the top level of the output,
+   * and an animation name is document-global wherever it is written. */
+  @keyframes mood-fadeout {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
 }

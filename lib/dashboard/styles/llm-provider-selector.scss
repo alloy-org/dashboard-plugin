@@ -5,15 +5,17 @@
 
 @use 'theme-tokens' as *;
 
-.config-popup-container .config-popup-body {
-  .llm-provider-options {
-    display: flex;
-    flex-direction: column;
-    gap: $sp-xs;
-  }
+.llm-provider-options {
+  display: flex;
+  flex-direction: column;
+  gap: $sp-xs;
 
-  /* Override the popup body's default centered label so the radio aligns to the top of the two-line text. */
-  .llm-provider-option {
+  /* The option is matched as `label.llm-provider-option` rather than by class alone so it carries the same
+   * weight as the popup body's generic `label` rule in config-popup.scss, whose centered alignment and row
+   * padding this replaces: the radio aligns to the top of the two-line text instead of to its middle. The tie
+   * falls this way round because llm-provider-selector.jsx imports ConfigPopup before its own stylesheet, so
+   * the popup's rules are always emitted into the bundle first. */
+  label.llm-provider-option {
     align-items: flex-start;
     gap: $sp-sm;
     padding: $sp-sm $sp-xs;

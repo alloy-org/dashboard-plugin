@@ -77,20 +77,20 @@
       opacity: 0.3;
     }
   }
-}
 
-.vertical-1-cell .widget-victory-value .vv-chart {
-  height: 180px;
-}
+  .vertical-1-cell & .vv-chart {
+    height: 180px;
+  }
 
-.horizontal-2-cell .widget-victory-value .vv-chart {
-  height: 260px;
-}
+  .horizontal-2-cell & .vv-chart {
+    height: 260px;
+  }
 
-.vertical-2-cell .widget-victory-value .vv-chart {
-  height: 380px;
-}
+  .vertical-2-cell & .vv-chart {
+    height: 380px;
+  }
 
-.horizontal-2-cell.vertical-2-cell .widget-victory-value .vv-chart {
-  height: 460px;
+  .horizontal-2-cell.vertical-2-cell & .vv-chart {
+    height: 460px;
+  }
 }

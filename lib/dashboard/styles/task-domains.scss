@@ -11,16 +11,14 @@ $task-domain-transition-duration: 0.15s;
 /* [Claude] Task: task domain selector bar with pills, settings icon, and refresh link */
 /* Prompt: "style the task domain selector bar above the dashboard grid" */
 /* Date: 2026-02-21 | Model: claude-opus-4-6 */
-.dashboard-toolbar {
-  .task-domains {
-    align-items: center;
-    background: $color-bg-card;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    display: flex;
-    gap: $sp-md;
-    padding: $sp-sm $sp-md;
-  }
+.task-domains {
+  align-items: center;
+  background: $color-bg-card;
+  border: 1px solid $color-border;
+  border-radius: $radius-sm;
+  display: flex;
+  gap: $sp-md;
+  padding: $sp-sm $sp-md;
 
   .task-domains-list {
     align-items: center;
@@ -140,7 +138,7 @@ $task-domain-transition-duration: 0.15s;
   /* [Claude] Task: empty-state styling with setup prompt for missing task domains */
   /* Prompt: "update the Task Domain area to include a message 'Set up a task domain to use the dashboard'" */
   /* Date: 2026-03-21 | Model: claude-4.6-opus-high-thinking */
-  .task-domains--empty {
+  &--empty {
     .task-domains-empty {
       flex: 1 1 100%;
       font-weight: 500;
@@ -153,7 +151,7 @@ $task-domain-transition-duration: 0.15s;
   /* The pills all stay in the DOM so expanding is a class flip rather than a re-render, and so the */
   /* wide-viewport bar is untouched by these rules. */
   @include breakpoint($breakpoint-tablet) {
-    .task-domains {
+    & {
       gap: $sp-xs;
     }
 
@@ -161,7 +159,7 @@ $task-domain-transition-duration: 0.15s;
       flex-wrap: wrap;
     }
 
-    .task-domains:not(.task-domains--expanded) .task-domain-item:not(.task-domain-item--mobile-visible) {
+    &:not(.task-domains--expanded) .task-domain-item:not(.task-domain-item--mobile-visible) {
       display: none;
     }
 

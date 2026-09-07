@@ -7,8 +7,8 @@ Import the service and pass the existing Amplenote `app` interface or embed app 
 `onEmbedCall` cases or new app methods are required.
 
 ```javascript
-import { readPlanGoals, refreshPlanIntentPossibilities, savePlanGoals, savePlanIntentPossibilities,
-  savePlanProspects, savePlanQuarterAnswer } from "plan-wizard/plan-wizard-service";
+import { readPlanGoals, refreshPlanActionProspects, refreshPlanIntentPossibilities, savePlanGoals,
+  savePlanIntentPossibilities, savePlanProspects, savePlanQuarterAnswer } from "plan-wizard/plan-wizard-service";
 
 const scope = { domainName: "Work", domainUuid: "domain-uuid", quarter: 4, year: 2026 };
 const planningContext = await readPlanGoals(app, scope);
@@ -138,10 +138,16 @@ Failed writes throw, allowing the eventual UI to retain the user's input and off
 This pass stores/retrieves top-level goals, generates and stores intent possibilities, persists `ActionProspect`
 and `ProspectTask` records, and stores the two quarter-wide answers. All five wizard pages are built and styled;
 the wizard opens as a modal over the dashboard (`lib/dashboard/styles/plan-wizard.scss`) rather than inside the
-planning widget's cell, since a widget column cannot hold a five-page form. Project discovery
-(`prospect-discovery.js`), `prospect-task-service.js`, monthly history, and Quarterly Goals template population
-remain subsequent milestones — the projects page therefore captures projects the user names and states plainly
-that nothing was derived from their notes.
+planning widget's cell, since a widget column cannot hold a five-page form.
+
+`refreshPlanActionProspects` proposes the projects that would carry a quarter's chosen intents, from the evidence
+`prospect-evidence.js` collects: tasks marked important in the past three months, completions from the past month,
+other recently created tasks, and the notes that work happened in. A candidate must cite at least two of those
+tasks and advance a chosen intent of its own category, or it is discarded rather than stored. It runs on demand
+rather than continuously, and its proposals arrive as `awaitingJudgement` for the user to affirm or reject.
+
+`prospect-task-service.js`, continuous background harvesting, monthly history, and Quarterly Goals template
+population remain subsequent milestones.
 
 Run the focused suites with:
 

@@ -1,14 +1,35 @@
 // The wizard's second page: name the projects that carry the intents saved on the first page, and tie each one to
-// the intents it advances. Projects the user names are stored as human-provided prospects; when the discovery
-// milestone lands, its proposals arrive in this same list awaiting judgement, and the page already distinguishes
-// them. Until then the page says plainly that nothing has been derived from the user's notes, rather than
-// presenting an empty list as though a search had run and found nothing.
+// the intents it advances. Projects the user names are stored as human-provided prospects; discovery's proposals
+// arrive in the same list awaiting judgement, drawn as provisional so an inference is never mistaken for a
+// decision the user made.
+//
+// Discovery runs only when asked. It reads the intents from the first page, so it has nothing to work from until
+// those are saved, and it costs a provider call — so the page offers it as an action and reports what a pass
+// found, rather than firing on mount and presenting an empty list as though a search had already run.
 
 import { draftRowsFromProspects, emptyProjectRow, prospectRecordsFromDraftRows,
   rejectionRecordFromRow } from "dashboard/plan-wizard/projects-step-fields";
 import { useEffect, useRef, useState } from "react";
 
 const CATEGORY_HEADINGS = { personal: "Personal projects (optional)", work: "Professional projects" };
+
+// ----------------------------------------------------------------------------------------------
+// @desc Say what discovery is doing or has done, so the page never leaves the user guessing why the list holds
+//   only what they typed. Each state is distinct: nothing asked for yet, nothing to work from, a pass running, a
+//   pass that proposed nothing and why, and a pass that produced candidates awaiting judgement.
+// @param {object} params - An object with the following properties:
+//   - {string|null} discoveryFailureReason - Why the last pass proposed nothing, when it proposed nothing.
+//   - {boolean} hasChosenIntent - Whether the quarter has a saved intent for a project to advance.
+//   - {boolean} isDiscovering - Whether a pass is in flight.
+//   - {number} proposedCount - Proposals currently awaiting the user's judgement.
+// @returns {string} The notice to render.
+function discoveryNoticeText({ discoveryFailureReason, hasChosenIntent, isDiscovering, proposedCount }) {
+  if (isDiscovering) return "Looking through your important, recent, and recently completed tasks for themes…";
+  if (!hasChosenIntent) return "Save an intent on the previous page and these can be suggested from your own tasks.";
+  if (discoveryFailureReason) return `Nothing was suggested: ${ discoveryFailureReason }.`;
+  if (proposedCount) return `${ proposedCount } project(s) below were suggested from your tasks and are waiting on you.`;
+  return "Nothing has been suggested yet. Everything below is what you named.";
+}
 
 // ----------------------------------------------------------------------------------------------
 // @desc One editable project row: its name, the intents it advances, and the control that drops it.
@@ -35,7 +56,11 @@ function ProjectRow({ goals, isDisabled, onChangeSummary, onReject, onToggleGoal
           </button>
         ) : null }
       </div>
-      { wasProposed ? <p className="project-row-provenance">Suggested from your notes — edit or remove it.</p> : null }
+      { wasProposed ? (
+        <p className="project-row-provenance">
+          { row.substantiation || "Suggested from your notes" } — edit or remove it.
+        </p>
+      ) : null }
       { goals.length && row.summary.trim() ? (
         <div className="project-row-goal-list">
           { goals.map(goal => (
@@ -55,13 +80,17 @@ function ProjectRow({ goals, isDisabled, onChangeSummary, onReject, onToggleGoal
 // @desc Render and save the projects page. Draft rows are local state seeded from stored prospects and reseeded
 //   only when the plan scope changes or a save succeeds, so a project the user is naming survives a refresh.
 // @param {object} params - An object with the following properties:
+//   - {string|null} discoveryFailureReason - Why the last discovery pass proposed nothing, when it proposed none.
+//   - {boolean} isDiscovering - True while a discovery pass is in flight.
 //   - {boolean} isSaving - True while a save is in flight.
+//   - {Function} onDiscover - Runs a discovery pass for the current scope.
 //   - {Function} onSave - Receives prospect records and resolves true when the write succeeded.
 //   - {object} planningContext - Stored goals and prospects for the scope.
 //   - {Error|null} saveError - Last save failure; its presence turns the action into a retry.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 // @returns {JSX.Element} The projects page.
-export default function ProjectsStep({ isSaving, onSave, planningContext, saveError, scopeKey }) {
+export default function ProjectsStep({ discoveryFailureReason = null, isDiscovering = false, isSaving, onDiscover,
+    planningContext, saveError, onSave, scopeKey }) {
   const [draftRows, setDraftRows] = useState(() => draftRowsFromProspects(planningContext.prospects));
   const [hasSaved, setHasSaved] = useState(false);
   const capturedAtRef = useRef(null);
@@ -128,6 +157,8 @@ export default function ProjectsStep({ isSaving, onSave, planningContext, saveEr
 
   const hasNamedProject = draftRows.some(row => row.summary.trim());
   const saveLabel = saveError ? "Retry saving" : "Save projects";
+  const hasChosenIntent = planningContext.goals.length > 0;
+  const proposedCount = draftRows.filter(row => row.approvalStatus === "awaitingJudgement").length;
 
   return (
     <div className="projects-step-page">
@@ -135,9 +166,18 @@ export default function ProjectsStep({ isSaving, onSave, planningContext, saveEr
       <p className="projects-step-summary">
         Name the concrete work behind each intent, then tie it to the outcomes it moves forward.
       </p>
-      <p className="projects-step-discovery-notice" role="note">
-        Deriving projects from your notes and tasks is not built yet, so nothing below was suggested for you.
-      </p>
+      <div className="projects-step-discovery">
+        <button className="projects-step-discover" disabled={ isDiscovering || isSaving || !hasChosenIntent }
+          onClick={ onDiscover }
+          title={ hasChosenIntent ? "Read your recent tasks for projects that would carry these intents"
+            : "Save an intent on the previous page first, so there is something for a project to advance" }
+          type="button">
+          { isDiscovering ? "Reading your tasks…" : "Suggest projects from my tasks" }
+        </button>
+        <p className="projects-step-discovery-notice" role="status">
+          { discoveryNoticeText({ discoveryFailureReason, hasChosenIntent, isDiscovering, proposedCount }) }
+        </p>
+      </div>
       { ["work", "personal"].map(userCategoryEm => {
         const categoryRows = draftRows.filter(row => row.userCategoryEm === userCategoryEm);
         const categoryGoals = planningContext.goals.filter(goal => goal.userCategoryEm === userCategoryEm);

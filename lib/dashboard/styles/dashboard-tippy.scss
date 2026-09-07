@@ -2,6 +2,12 @@
  * Created: 2026-03-09 | Model: claude-4.6-opus-high-thinking
  * Task: Tippy.js base positioning CSS + dashboard theme + tooltip content classes
  * Prompt summary: "replace hand-rolled tooltips with tippy.js, separated into its own component and stylesheet"
+ *
+ * The one component stylesheet here with no wrapping class, and deliberately so: this is the vendored
+ * replacement for tippy.css. The elements it names are built by the library and appended to the body, not
+ * rendered by any component of ours, so there is no component class to scope them under — and scoping
+ * `.tippy-box` would change the weight the rich-footnote theme in amplenote-markdown-render.scss overrides it
+ * at. Rules specific to our own tooltips live under `.tippy-box[data-theme~='dashboard']` below.
  */
 
 @use 'theme-tokens' as *;

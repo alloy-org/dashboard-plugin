@@ -5,6 +5,8 @@
  */
 
 @use 'theme' as *;
+// Document-wide box-sizing reset and body typography; the only rules here that no component class can scope.
+@use 'global-reset';
 // Inlined Roboto @font-face — must ship in-bundle because the embed's data: URL origin blocks Google Fonts.
 @use 'roboto-font';
 // Grid geometry per unit of the size the user picked, shared with the widget stylesheets that read it.
@@ -16,28 +18,6 @@ $spinner-size: 32px;
 $spinner-border-width: 3px;
 $spinner-duration: 0.8s;
 $error-padding: 40px;
-
-html {
-  overflow-y: scroll;
-
-  // Global resets
-  *, *::before, *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-
-  body {
-    -webkit-font-smoothing: antialiased;
-    background: $color-bg-page;
-    color: $color-text;
-    font-family: $font-sans;
-
-    button {
-      font-family: inherit;
-    }
-  }
-}
 
 /* [Claude] Task: split dashboard into full-width background wrapper and max-width content area */
 /* Prompt: "background wrapper consumes 100% of window, widget area maxes out at 1200px" */
@@ -97,8 +77,47 @@ html {
       z-index: 2;
     }
 
+    /* The toolbar holds the task-domain selector on the left and the Settings / Layout buttons on the
+     * right; those two blocks are styled by their own components, so what lives here is the row that
+     * carries them. */
     .dashboard-toolbar {
+      align-items: stretch;
+      display: flex;
+      flex-wrap: wrap;
+      gap: $sp-md;
+      justify-content: space-between;
+      margin-bottom: $sp-lg;
       transition: opacity 0.32s ease, transform 0.32s ease;
+
+      .dashboard-toolbar-actions {
+        align-items: center;
+        background-color: $color-bg-card;
+        border: 1px solid $color-border;
+        border-radius: $radius-sm;
+        color: $color-text-secondary;
+        display: flex;
+        flex-shrink: 0;
+        padding: 5px 8px;
+      }
+
+      .dashboard-configure-button {
+        background-color: $color-bg-card;
+        border: 1px solid transparent;
+        border-radius: $radius-sm;
+        color: $color-text;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+        padding: $sp-xs $sp-md;
+        transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+        white-space: nowrap;
+
+        &:hover {
+          background: $color-bg-page;
+          border-color: $color-accent;
+          color: $color-text;
+        }
+      }
     }
 
     &--widget-focused .dashboard-toolbar {
@@ -408,18 +427,20 @@ html {
       width: $spinner-size;
     }
   }
-}
 
-@keyframes dashboard-background-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+  /* Animation names are document-global whatever they are nested in; these live inside the wrapper only
+   * so this file reads as one scoped block. Sass lifts them back to the top level of the output. */
+  @keyframes dashboard-background-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
 
-@keyframes widget-wobble {
-  from { transform: rotate(-1.5deg); }
-  to { transform: rotate(1.5deg); }
+  @keyframes widget-wobble {
+    from { transform: rotate(-1.5deg); }
+    to { transform: rotate(1.5deg); }
+  }
 }
