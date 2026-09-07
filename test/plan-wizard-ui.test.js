@@ -1,6 +1,7 @@
-// Exercise the first wizard page against the real persistence stack: only the provider call is substituted, so
-// suggestion selection, optional personal answers, secondary ranks, retries, and scope switching are verified
-// through the same merge and note-writing code the plugin runs.
+// Exercise the wizard's pages against the real persistence stack: only the provider call is substituted, so
+// suggestion selection, optional personal answers, secondary ranks, retries, scope switching, project capture,
+// weekday emphasis, and the two quarter-wide answers are verified through the same merge and note-writing code
+// the plugin runs.
 
 import { jest } from "@jest/globals";
 import { createPlanWizardApp } from "./fixtures/plan-wizard-app.js";
@@ -296,13 +297,14 @@ describe("PlanWizard step navigation", () => {
     await cleanup();
   });
 
-  it("advances to the next step and names the milestone that is not built", async () => {
+  it("advances to the projects step and says discovery has not run", async () => {
     const { cleanup, container } = await renderPlanWizard();
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
     expect(container.querySelector(".plan-wizard-progress").textContent).toBe(`2 of ${ WIZARD_STEPS.length }`);
     expect(container.querySelector(".intent-step-page")).toBe(null);
-    expect(container.querySelector(".pending-step-notice").textContent).toContain("not built yet");
+    expect(container.querySelector(".projects-step-page")).not.toBe(null);
+    expect(container.querySelector(".projects-step-discovery-notice").textContent).toContain("not built yet");
     await cleanup();
   });
 
@@ -326,6 +328,196 @@ describe("PlanWizard step navigation", () => {
     expect(container.querySelector(".plan-wizard-progress").textContent)
       .toBe(`${ WIZARD_STEPS.length } of ${ WIZARD_STEPS.length }`);
     expect(container.querySelector(".plan-wizard-next").disabled).toBe(true);
+    await cleanup();
+  });
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Type into a text input the way React's onChange expects.
+// @param {HTMLInputElement} input - Field to edit.
+// @param {string} text - New value.
+async function typeIntoInput(input, text) {
+  await act(async () => {
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+    setter.call(input, text);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Advance the wizard to a named step from wherever it currently sits, so a test does not depend on the
+//   sequence's numeric positions or on how many steps an earlier helper already traversed.
+// @param {HTMLElement} container - Mounted wizard.
+// @param {string} stepKey - Step to land on.
+async function advanceToStep(container, stepKey) {
+  const targetIndex = WIZARD_STEPS.findIndex(step => step.key === stepKey);
+  for (let guard = 0; guard < WIZARD_STEPS.length; guard += 1) {
+    const [position] = container.querySelector(".plan-wizard-progress").textContent.split(" of ");
+    if (Number(position) - 1 === targetIndex) return;
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+  }
+  throw new Error(`Could not reach the ${ stepKey } step`);
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Save one professional project, the precondition for the weekday page having anything to assign.
+// @param {HTMLElement} container - Mounted wizard, positioned on the projects step.
+// @param {string} summary - Project name to enter.
+async function saveFirstProject(container, summary) {
+  const nameField = container.querySelector(".projects-step-category--work .project-row-name");
+  await typeIntoInput(nameField, summary);
+  await clickAndSettle(container.querySelector(".projects-step-save"));
+}
+
+describe("PlanWizard projects step", () => {
+  beforeEach(() => {
+    inferenceCalls.length = 0;
+    inferenceImplementation = null;
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("saves a named project as a human-provided prospect and restores it on reopening", async () => {
+    const { app, cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "projects");
+    await saveFirstProject(container, "Rebuild the ingestion pipeline");
+
+    expect(container.querySelector(".projects-step-saved")).not.toBe(null);
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.prospects.map(prospect => prospect.summary)).toEqual(["Rebuild the ingestion pipeline"]);
+    expect(stored.prospects[0].approvalStatus).toBe("humanProvided");
+    await cleanup();
+
+    const reopened = await renderPlanWizard({ app });
+    await advanceToStep(reopened.container, "projects");
+    const names = [...reopened.container.querySelectorAll(".projects-step-category--work .project-row-name")];
+    expect(names.map(field => field.value)).toContain("Rebuild the ingestion pipeline");
+    await reopened.cleanup();
+  });
+
+  it("ties a project to the intent it advances", async () => {
+    const app = createPlanWizardApp();
+    await savePlanGoals(app, { ...SCOPE, goals: [{ capturedAt: "2026-09-06T12:00:00Z", goalRank: 1,
+      goalText: "Ship the analytics offering", userCategoryEm: "work" }] });
+    const { cleanup, container } = await renderPlanWizard({ app });
+    await advanceToStep(container, "projects");
+    await typeIntoInput(container.querySelector(".projects-step-category--work .project-row-name"), "Instrument the funnel");
+
+    const goalCheckbox = container.querySelector(".projects-step-category--work .project-row-goal input");
+    await clickAndSettle(goalCheckbox);
+    await clickAndSettle(container.querySelector(".projects-step-save"));
+
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.prospects[0].linkedGoalUuids).toEqual([stored.goals[0].uuid]);
+    await cleanup();
+  });
+
+  it("remembers a removed project as rejected rather than forgetting it", async () => {
+    const { app, cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "projects");
+    await saveFirstProject(container, "Retire the legacy exporter");
+    await clickAndSettle(container.querySelector(".project-row-reject"));
+
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.prospects).toEqual([]);
+    expect(stored.prospectRecords.map(record => record.approvalStatus)).toEqual(["humanRejected"]);
+    await cleanup();
+  });
+});
+
+describe("PlanWizard themed weekdays step", () => {
+  beforeEach(() => {
+    inferenceCalls.length = 0;
+    inferenceImplementation = null;
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("asks for a project before offering weekdays to assign", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "themed-weekdays");
+
+    expect(container.querySelector(".themed-weekdays-grid")).toBe(null);
+    expect(container.querySelector(".themed-weekdays-empty").textContent).toContain("Name a project");
+    await cleanup();
+  });
+
+  it("stores a weekday emphasis on the project it belongs to", async () => {
+    const { app, cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "projects");
+    await saveFirstProject(container, "Rebuild the ingestion pipeline");
+    await advanceToStep(container, "themed-weekdays");
+
+    const [monday] = [...container.querySelectorAll(".themed-weekdays-option")];
+    await clickAndSettle(monday);
+    await clickAndSettle(container.querySelector(".themed-weekdays-save"));
+
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.prospects[0].preferredWeekdays).toEqual(["monday"]);
+    expect(stored.prospects[0].approvalStatus).toBe("humanProvided");
+    await cleanup();
+  });
+});
+
+describe("PlanWizard quarter-wide answers", () => {
+  beforeEach(() => {
+    inferenceCalls.length = 0;
+    inferenceImplementation = null;
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("saves the quarter's name and restores it on reopening", async () => {
+    const { app, cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "quarter-name");
+    await typeInto(container.querySelector(".quarter-answer-input"), "The Shipping Quarter");
+    await clickAndSettle(container.querySelector(".quarter-answer-save"));
+
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.quarterName.text).toBe("The Shipping Quarter");
+    await cleanup();
+
+    const reopened = await renderPlanWizard({ app });
+    await advanceToStep(reopened.container, "quarter-name");
+    expect(reopened.container.querySelector(".quarter-answer-input").value).toBe("The Shipping Quarter");
+    await reopened.cleanup();
+  });
+
+  it("saves the daily sufficiency bar separately from the quarter's name", async () => {
+    const { app, cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "quarter-name");
+    await typeInto(container.querySelector(".quarter-answer-input"), "The Shipping Quarter");
+    await clickAndSettle(container.querySelector(".quarter-answer-save"));
+    await advanceToStep(container, "enough-for-today");
+    await typeInto(container.querySelector(".quarter-answer-input"), "Two hours of focused project work");
+    await clickAndSettle(container.querySelector(".quarter-answer-save"));
+
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.quarterName.text).toBe("The Shipping Quarter");
+    expect(stored.dailySufficiency.text).toBe("Two hours of focused project work");
+    await cleanup();
+  });
+
+  it("keeps the user's text and offers a retry when the write fails", async () => {
+    const app = createPlanWizardApp();
+    const { cleanup, container } = await renderPlanWizard({ app });
+    await advanceToStep(container, "quarter-name");
+    app.replaceNoteContent.mockRejectedValueOnce(new Error("Amplenote was unreachable"));
+    await typeInto(container.querySelector(".quarter-answer-input"), "The Shipping Quarter");
+    await clickAndSettle(container.querySelector(".quarter-answer-save"));
+
+    expect(container.querySelector(".quarter-answer-error").textContent).toContain("Amplenote was unreachable");
+    expect(container.querySelector(".quarter-answer-input").value).toBe("The Shipping Quarter");
+    expect(container.querySelector(".quarter-answer-save").textContent).toBe("Retry saving");
+
+    await clickAndSettle(container.querySelector(".quarter-answer-save"));
+    expect(container.querySelector(".quarter-answer-saved")).not.toBe(null);
     await cleanup();
   });
 });

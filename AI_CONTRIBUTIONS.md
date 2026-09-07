@@ -3,14 +3,37 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-09-06 — Build the plan wizard's four remaining pages on ActionProspect persistence
+
+**Model:** Claude Opus 5 (1M context)
+**Files created:**
+- `lib/dashboard/plan-wizard/projects-step.jsx` — The projects page: name the concrete work behind each saved
+  intent and tie it to the outcomes it advances. Projects the user names are stored as `humanProvided` prospects,
+  and the page already distinguishes an inferred proposal from a chosen one so discovery's output can appear in
+  the same list later. It states plainly that nothing was derived from the user's notes, rather than presenting an
+  empty list as though a search had run and found nothing.
+- `lib/dashboard/plan-wizard/projects-step-fields.js` — Maps draft rows onto `ActionProspect` records: which rows
+  are live, what editing an inferred proposal means (it becomes `humanAffirmed`, since the user has taken a
+  position), and what a removal writes (`humanRejected`, retained so the idea is not reproposed).
+- `lib/dashboard/plan-wizard/themed-weekdays-step.jsx` — Assigns each project's `preferredWeekdays`. The emphasis
+  is stored on the projects themselves rather than in a separate weekday table, because the agenda's real question
+  is which work suits today. With no projects saved the page says so instead of rendering an empty grid.
+- `lib/dashboard/plan-wizard/quarter-answer-step.jsx` — One component serving both single-answer pages, "Name the
+  quarter" and "When have you done enough for today?", so the save, retry, and reseed behavior is written once.
+  Both questions are optional and the page never blocks Next.
+- `lib/dashboard/plan-wizard/quarter-answer-fields.js` — The draft-versus-stored comparison behind those two
+  pages, which disables a save that would rewrite identical text and add a note revision for nothing.
+
 ## 2026-09-06 — Add the plan wizard entry button and scaffold its remaining steps
 
 **Model:** Claude Opus 5 (1M context)
 **Files created:**
 - `lib/dashboard/plan-wizard/wizard-steps.js` — The ordered five-step sequence a user passes through to populate a
-  Quarterly Plan, each step carrying its title, one-line summary, and (for the four unbuilt ones) the milestone
-  that has not shipped. Declaring the sequence in one place lets the shell show honest progress and gives each
-  future milestone an obvious place to attach its component.
+  Quarterly Plan, each step carrying its title, one-line summary, the `implementationFile` naming the component
+  that owns its screen, and (for the four unbuilt ones) the milestone that has not shipped. The intent step's file
+  exists; the other four name where their component will live, so a reader can go from a step to its code, or to
+  the path the next milestone should create. Declaring the sequence in one place lets the shell show honest
+  progress and gives each future milestone an obvious place to attach its component.
 - `lib/dashboard/plan-wizard/pending-step.jsx` — Placeholder page for a step whose milestone is not implemented.
   It names the missing milestone rather than showing empty inputs, so a user is never led to believe an answer was
   recorded or that unbuilt work already ran.

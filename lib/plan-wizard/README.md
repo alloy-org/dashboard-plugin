@@ -1,4 +1,4 @@
-Goal and intent persistence for the planning wizard and other dashboard consumers.
+Goal, intent, and project persistence for the planning wizard and other dashboard consumers.
 
 # First-pass API
 
@@ -7,8 +7,8 @@ Import the service and pass the existing Amplenote `app` interface or embed app 
 `onEmbedCall` cases or new app methods are required.
 
 ```javascript
-import { readPlanGoals, refreshPlanIntentPossibilities, savePlanGoals,
-  savePlanIntentPossibilities } from "plan-wizard/plan-wizard-service";
+import { readPlanGoals, refreshPlanIntentPossibilities, savePlanGoals, savePlanIntentPossibilities,
+  savePlanProspects, savePlanQuarterAnswer } from "plan-wizard/plan-wizard-service";
 
 const scope = { domainName: "Work", domainUuid: "domain-uuid", quarter: 4, year: 2026 };
 const planningContext = await readPlanGoals(app, scope);
@@ -32,19 +32,26 @@ the evidence window.
 const context = await refreshPlanIntentPossibilities(app, scope);
 ```
 
-`readPlanGoals` returns `{ generatedAt, goalRecords, goals, noteUuid, possibilities, scope }`:
+`readPlanGoals` returns `{ dailySufficiency, generatedAt, goalRecords, goals, noteUuid, possibilities,
+prospectRecords, prospects, quarterName, scope }`:
 
 - `goals`: active `GoalSet` instances, sorted by category and rank.
 - `goalRecords`: all goal instances, including deletion records for reconciliation.
 - `possibilities`: `{ personal: IntentPossibility[], work: IntentPossibility[] }`.
+- `prospects`: `ActionProspect` instances for this quarter, excluding rejected and retired projects.
+- `prospectRecords`: every prospect for this quarter, including rejected and retired ones, so an editor can
+  reconcile them and discovery can avoid reproposing an idea the user already declined.
+- `quarterName` / `dailySufficiency`: `{ capturedAt, text }` or null; the two answers scoped to the whole quarter
+  rather than to any single project.
 - `generatedAt`: separate inference timestamps for the two categories.
 - `noteUuid`: null when the datastore has not been initialized. A read never creates or repairs a note.
 
-`GoalSet` and `IntentPossibility` are native JavaScript classes with validating constructors. They serialize
-directly to plain JSON and are reconstructed on reads. Assignment to a property is ordinary JavaScript;
-validation runs again when the object is saved or reloaded. Constructors retain compatible extension fields.
+`GoalSet`, `IntentPossibility`, `ActionProspect`, and `ProspectTask` are native JavaScript classes with validating
+constructors. They serialize directly to plain JSON and are reconstructed on reads. Assignment to a property is
+ordinary JavaScript; validation runs again when the object is saved or reloaded. Constructors retain compatible
+extension fields.
 
-Both save methods return the verified current context. They create an archived annual guide if necessary.
+Every save method returns the verified current context. They create an archived annual guide if necessary.
 To default to All Notes, omit both domain fields. To default to the next quarter, omit both quarter/year;
 explicit periods allow historical access, including after December 15. The same annual note contains all four
 quarters so current and upcoming planning coexist.
@@ -59,6 +66,15 @@ existing goals; the complete resulting set must have unique UUIDs.
 Every update requires its own `capturedAt`. Preserve that timestamp when retrying the same edit. Omitting a goal
 from a save leaves it unchanged. To delete a slot, send its rank/category with `goalText: ""`, `isDeleted: true`,
 and a newer `capturedAt`. A later explicit restoration sends `isDeleted: false` and a newer timestamp.
+
+Prospects are keyed by their own UUID rather than by a slot, because a project has no rank and its summary is
+renameable. A newer `capturedAt` replaces the stored record; an older or tied one is ignored. A human decision
+outranks an inference: once a prospect is `humanProvided`, `humanAffirmed`, `humanRejected`, or `retired`, a later
+`awaitingJudgement` proposal for the same identity is discarded rather than demoting it, so a discovery rerun
+cannot undo what the user chose. Rejected and retired records stay stored so the same idea is not reproposed.
+
+`savePlanQuarterAnswer` writes one of `quarterName` or `dailySufficiency` into the picked-goals leaf, since both
+are scoped to the quarter rather than to a project. They follow the same newest-capture-wins rule as goals.
 
 Suggestion saves replace one category's snapshot, with up to three possibilities. They require `generatedAt`,
 ignore older/tied snapshots, and reuse UUIDs when suggestion text matches. `sourceKind: "default"` identifies
@@ -97,7 +113,11 @@ Metadata contains the stable domain UUID, year, and schema version. Renaming the
 identity. Multiple matching guides produce an error rather than silently choosing one.
 
 All content writes use `replaceNoteContent` with an explicit section, including the initial headingless section.
-Fenced JSON lives below unique quarter/category headings. Writes replace only the owned JSON fence within a leaf,
+Fenced JSON lives below unique quarter/category headings. Intent leaves are level-three headings scoped to a
+quarter; the two prospect leaves are level-two headings under their level-one project category and are scoped to
+the category, since a project outlives the quarter that raised it and each record names its own `quarterKey`.
+`intentSectionDefinition` carries each leaf's expected depth and parent chain, and the repository asserts against
+that data rather than against hardcoded levels. Writes replace only the owned JSON fence within a leaf,
 retaining surrounding prose. Missing leaves are recreated under the nearest available ancestor, preserving its
 subtree. The service verifies writes and treats false returns, bridge errors, malformed payloads, duplicate
 headings, and unsupported schemas as errors. A failed bootstrap can resume in the same empty archived note.
@@ -115,9 +135,11 @@ Failed writes throw, allowing the eventual UI to retain the user's input and off
 
 # Scope and validation
 
-This pass stores/retrieves top-level goals, generates and stores intent possibilities, and reserves project
-headings. Project discovery, `ActionProspect`/`ProspectTask` persistence, the wizard UI, monthly history, and
-Quarterly Goals template population remain subsequent milestones.
+This pass stores/retrieves top-level goals, generates and stores intent possibilities, persists `ActionProspect`
+and `ProspectTask` records, and stores the two quarter-wide answers. All five wizard pages are built. Project
+discovery (`prospect-discovery.js`), `prospect-task-service.js`, monthly history, and Quarterly Goals template
+population remain subsequent milestones — the projects page therefore captures projects the user names and states
+plainly that nothing was derived from their notes.
 
 Run the focused suites with:
 

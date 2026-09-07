@@ -3,10 +3,24 @@
 // user who leaves mid-answer loses nothing.
 
 import IntentStep from "dashboard/plan-wizard/intent-step";
-import PendingStep from "dashboard/plan-wizard/pending-step";
+import ProjectsStep from "dashboard/plan-wizard/projects-step";
+import QuarterAnswerStep from "dashboard/plan-wizard/quarter-answer-step";
+import ThemedWeekdaysStep from "dashboard/plan-wizard/themed-weekdays-step";
 import { WIZARD_STEPS, wizardStepIndexFromKey } from "dashboard/plan-wizard/wizard-steps";
 import usePlanWizard, { planScopeKey } from "hooks/use-plan-wizard";
 import { useState } from "react";
+
+// Copy for the two pages that capture a single quarter-wide answer, kept beside the routing that renders them.
+const QUARTER_ANSWER_COPY = {
+  "enough-for-today": { answerKey: "dailySufficiency", heading: "When have you done enough for today?",
+    hints: ["Two hours of focused project work", "Every task I marked important yesterday", "One thing that moves a quarterly intent"],
+    placeholder: "What has to be true before the day counts as a good one?",
+    summary: "A day that meets this bar is a day you can stop working with a clear conscience." },
+  "quarter-name": { answerKey: "quarterName", heading: "Name the quarter",
+    hints: ["The Shipping Quarter", "Rebuild the Foundations", "Fewer, Bigger Things"],
+    placeholder: "Give this stretch of months a name you will recognize later.",
+    summary: "A name makes the quarter easy to refer to later, when you are looking back at what it was for." },
+};
 
 export { WIZARD_STEPS };
 
@@ -21,8 +35,8 @@ export { WIZARD_STEPS };
 //   - {number} year - Planning year.
 // @returns {JSX.Element} The wizard.
 export default function PlanWizard({ app, domainName = null, domainUuid = null, onClose, quarter, year }) {
-  const { error, isLoading, isRefreshing, isSaving, planningContext, reload, saveError,
-    saveGoals } = usePlanWizard({ app, domainName, domainUuid, quarter, year });
+  const { error, isLoading, isRefreshing, isSaving, planningContext, reload, saveError, saveGoals, saveProspects,
+    saveQuarterAnswer } = usePlanWizard({ app, domainName, domainUuid, quarter, year });
   const [stepKey, setStepKey] = useState(WIZARD_STEPS[0].key);
   const scopeKey = planScopeKey({ domainName, domainUuid, quarter, year });
   const quarterLabel = planningContext.scope ? planningContext.scope.quarterKey : `${ year }-Q${ quarter }`;
@@ -61,7 +75,19 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
         <IntentStep isRefreshing={ isRefreshing } isSaving={ isSaving } onSave={ saveGoals }
           planningContext={ planningContext } saveError={ saveError } scopeKey={ scopeKey } />
       ) : null }
-      { !isLoading && !error && step.key !== "intent" ? <PendingStep step={ step } /> : null }
+      { !isLoading && !error && step.key === "projects" ? (
+        <ProjectsStep isSaving={ isSaving } onSave={ saveProspects } planningContext={ planningContext }
+          saveError={ saveError } scopeKey={ scopeKey } />
+      ) : null }
+      { !isLoading && !error && step.key === "themed-weekdays" ? (
+        <ThemedWeekdaysStep isSaving={ isSaving } onSave={ saveProspects } planningContext={ planningContext }
+          saveError={ saveError } scopeKey={ scopeKey } />
+      ) : null }
+      { !isLoading && !error && QUARTER_ANSWER_COPY[step.key] ? (
+        <QuarterAnswerStep { ...QUARTER_ANSWER_COPY[step.key] }
+          answer={ planningContext[QUARTER_ANSWER_COPY[step.key].answerKey] } isSaving={ isSaving }
+          onSave={ saveQuarterAnswer } saveError={ saveError } scopeKey={ scopeKey } />
+      ) : null }
       { !isLoading && !error ? (
         <nav className="plan-wizard-navigation">
           <button className="plan-wizard-back" disabled={ isFirstStep } onClick={ () => handleStepChange(-1) }
