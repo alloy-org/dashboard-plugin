@@ -99,9 +99,9 @@ export default function PaceCardsStep({ isSaving, onNavigate, onSave, planningCo
   };
 
   return (
-    <form className="pace-cards-page" id={ PACE_CARDS_STEP_FORM_ID } onSubmit={ handleNavigate }>
-      <h2 className="pace-cards-heading">{ PACE_CARDS_STEP_COPY.title }</h2>
-      <p className="pace-cards-summary">{ PACE_CARDS_STEP_COPY.summary }</p>
+    <form className="plan-step-container pace-cards-container" id={ PACE_CARDS_STEP_FORM_ID } onSubmit={ handleNavigate }>
+      <h2 className="plan-heading">{ PACE_CARDS_STEP_COPY.title }</h2>
+      <p className="plan-summary">{ PACE_CARDS_STEP_COPY.summary }</p>
       { drafts.length ? (
         <div className="pace-cards-list">
           { drafts.map(draft => (
@@ -111,13 +111,13 @@ export default function PaceCardsStep({ isSaving, onNavigate, onSave, planningCo
           )) }
         </div>
       ) : (
-        <p className="pace-cards-empty" role="note">
+        <p className="plan-empty" role="note">
           Name a project on the previous step first — a pace is a rhythm for particular work, so there is nothing
           to protect yet.
         </p>
       ) }
       { saveError ? (
-        <p className="pace-cards-error" role="alert">Your project paces were not saved. { saveError.message }</p>
+        <p className="plan-error" role="alert">Your project paces were not saved. { saveError.message }</p>
       ) : null }
     </form>
   );

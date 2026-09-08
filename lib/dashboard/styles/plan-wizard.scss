@@ -240,47 +240,49 @@ $plan-wizard-z-index: 1100;
     margin-left: auto;
   }
 
-  // ── Shared page layout ───────────────────────────────────────────────────────────────────
+  // ── Shared step layout ───────────────────────────────────────────────────────────────────
 
-  /* Each step's root element is laid out identically, so the pages read as one sequence rather than five
-   * separately-built forms. No `flex: 1` here: a page sizes to its own content, and the dialog to the page. */
-  .intent-step-page,
-  .pace-cards-page,
-  .projects-step-page,
-  .quarter-answer-page,
-  .quarter-name-page {
+  /* Every question page uses the same outer rhythm and the same heading/summary/error/button language. A new
+   * step adds `plan-step-container` plus its own namespaced wrapper; it does not need a new selector here.
+   * No `flex: 1`: a page sizes to its own content, and the dialog to the page. */
+  .plan-step-container {
     display: flex;
     flex-direction: column;
     gap: $sp-md;
     padding: $sp-lg 0;
   }
 
-  .intent-step-heading,
-  .pace-cards-heading,
-  .projects-step-heading,
-  .quarter-answer-heading,
-  .quarter-name-heading,
-  .quarter-name-timeline-heading {
+  .plan-heading {
     font-size: 1.05rem;
     font-weight: 700;
     margin: 0;
   }
 
-  .intent-step-status,
-  .intent-step-summary,
-  .pace-cards-summary,
-  .projects-step-summary,
-  .quarter-answer-summary,
-  .quarter-name-summary,
-  .quarter-name-timeline-summary {
+  .plan-status,
+  .plan-summary {
     color: $color-text-secondary;
     font-size: 0.85rem;
     line-height: 1.5;
     margin: 0;
   }
 
-  /* The primary action on every page is the save, so it is the one button carrying the accent. */
-  .quarter-answer-save {
+  .plan-category-heading {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    margin: 0;
+    text-transform: uppercase;
+  }
+
+  .plan-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-md;
+  }
+
+  /* Nested under `.plan-wizard-page` so these beat that block's `button { border: 1px solid }` default. */
+  .plan-wizard-page .plan-button--primary {
     background: $color-accent;
     border-color: $color-accent;
     color: $color-text-on-accent;
@@ -291,33 +293,33 @@ $plan-wizard-z-index: 1100;
     }
   }
 
-  .projects-step-actions,
-  .quarter-answer-actions {
-    align-items: center;
-    display: flex;
-    flex-wrap: wrap;
-    gap: $sp-md;
+  .plan-wizard-page .plan-button--dashed {
+    border-style: dashed;
+    flex-shrink: 0;
   }
 
-  .intent-step-error,
-  .pace-cards-error,
-  .projects-step-error,
-  .quarter-answer-error,
-  .quarter-name-error {
+  .plan-error {
     color: $color-danger;
     font-size: 0.8rem;
     margin: 0;
   }
 
-  .quarter-answer-saved {
+  .plan-saved {
     color: $color-success;
     font-size: 0.8rem;
     margin: 0;
   }
 
-  .quarter-answer-optional {
+  .plan-optional {
     color: $color-text-muted;
     font-size: 0.75rem;
+    margin: 0;
+  }
+
+  .plan-empty {
+    color: $color-text-muted;
+    font-size: 0.82rem;
+    line-height: 1.5;
     margin: 0;
   }
 
@@ -325,7 +327,7 @@ $plan-wizard-z-index: 1100;
 
   /* The two categories sit side by side where there is room, since they are parallel questions rather than
    * sequential ones, and stack on a phone. */
-  .intent-step-page {
+  .intent-step-container {
     display: grid;
     gap: $sp-lg;
     grid-template-columns: 1fr 1fr;
@@ -333,86 +335,77 @@ $plan-wizard-z-index: 1100;
     @include breakpoint($breakpoint-tablet) {
       grid-template-columns: 1fr;
     }
-  }
 
-  .intent-step-heading,
-  .intent-step-status,
-  .intent-step-summary,
-  .intent-step-error {
-    grid-column: 1 / -1;
-  }
+    > .plan-error,
+    > .plan-heading,
+    > .plan-status,
+    > .plan-summary {
+      grid-column: 1 / -1;
+    }
 
-  /* Each category is a card of its own, so the two parallel questions read as two places to answer rather than
-   * as one undifferentiated form. The fill is primary against the form's secondary ground; the category color is
-   * a thick top stripe, as in the original layout, with a quiet grey edge on the remaining sides. */
-  .intent-step-category {
-    background: $color-bg-primary;
-    border: 1px solid $color-border;
-    border-radius: $radius-md;
-    display: flex;
-    flex-direction: column;
-    gap: $sp-sm;
-    padding: $sp-md;
+    /* Each category is a card of its own, so the two parallel questions read as two places to answer rather than
+     * as one undifferentiated form. The fill is primary against the form's secondary ground; the category color is
+     * a thick top stripe, as in the original layout, with a quiet grey edge on the remaining sides. */
+    .intent-step-category {
+      background: $color-bg-primary;
+      border: 1px solid $color-border;
+      border-radius: $radius-md;
+      display: flex;
+      flex-direction: column;
+      gap: $sp-sm;
+      padding: $sp-md;
 
-    .intent-step-add-secondary {
-      align-self: flex-start;
-      border-style: dashed;
+      .plan-button--dashed {
+        align-self: flex-start;
+        font-size: 0.75rem;
+        margin-top: auto;
+      }
+
+      &--work {
+        border-top: 4px solid $color-intent-work;
+
+        .plan-button--dashed {
+          border-color: $color-intent-work;
+          color: $color-intent-work;
+        }
+      }
+
+      &--personal {
+        border-top: 4px solid $color-intent-personal;
+
+        .plan-button--dashed {
+          border-color: $color-intent-personal;
+          color: $color-intent-personal;
+        }
+      }
+    }
+
+    .intent-step-suggestion-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: $sp-xs;
+    }
+
+    /* Suggested intents are starting points, not chosen answers. They sit on the secondary fill with
+     * medium-contrast text so they read as chips on the primary card, inferred and default alike. */
+    .intent-step-suggestion {
+      background: $color-bg-secondary;
+      color: $color-text-secondary;
       font-size: 0.75rem;
-      margin-top: auto;
-    }
+      font-weight: 500;
+      text-align: left;
 
-    &--work {
-      border-top: 4px solid $color-intent-work;
-
-      .intent-step-add-secondary {
-        border-color: $color-intent-work;
-        color: $color-intent-work;
+      &:hover:not(:disabled) {
+        background: $color-bg-page-hover;
       }
     }
 
-    &--personal {
-      border-top: 4px solid $color-intent-personal;
-
-      .intent-step-add-secondary {
-        border-color: $color-intent-personal;
-        color: $color-intent-personal;
-      }
+    .intent-step-suggestion-note {
+      color: $color-text-muted;
+      font-size: 0.7rem;
+      font-style: italic;
+      margin: 0;
     }
-  }
-
-  .intent-step-category-heading {
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    margin: 0;
-    text-transform: uppercase;
-  }
-
-  .intent-step-suggestion-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: $sp-xs;
-  }
-
-  /* Suggested intents are starting points, not chosen answers. They sit on the secondary fill with
-   * medium-contrast text so they read as chips on the primary card, inferred and default alike. */
-  .intent-step-category .intent-step-suggestion {
-    background: $color-bg-secondary;
-    color: $color-text-secondary;
-    font-size: 0.75rem;
-    font-weight: 500;
-    text-align: left;
-
-    &:hover:not(:disabled) {
-      background: $color-bg-page-hover;
-    }
-  }
-
-  .intent-step-suggestion-note {
-    color: $color-text-muted;
-    font-size: 0.7rem;
-    font-style: italic;
-    margin: 0;
   }
 
   // ── Projects step ────────────────────────────────────────────────────────────────────────
@@ -420,426 +413,406 @@ $plan-wizard-z-index: 1100;
   /* Add-project and discovery share one row so the two dashed actions stay adjacent instead of stacking under a
    * column category. The notice still sits with the discovery button: it is that button's result, and separating
    * them would leave the user reading a status with no visible cause. */
-  .projects-step-discover {
-    border-style: dashed;
-    flex-shrink: 0;
-    font-size: 0.75rem;
-  }
-
-  .projects-step-discovery-notice {
-    color: $color-text-secondary;
-    flex: 1;
-    font-size: 0.8rem;
-    margin: 0;
-    min-width: 12rem;
-  }
-
-  .projects-step-category-heading {
-    font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    margin: $sp-sm 0 0;
-    text-transform: uppercase;
-  }
-
-  .projects-step-category {
-    display: flex;
-    flex-direction: column;
-    gap: $sp-md;
-  }
-
-  /* Project proposals are choices to sort, not form rows to process sequentially. A two-column card grid matches
-   * that mental model and collapses to one column before labels and decision buttons become cramped. */
-  .projects-step-card-grid {
-    display: grid;
-    gap: $sp-md;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-
-    @include breakpoint($breakpoint-tablet) {
-      grid-template-columns: 1fr;
+  .projects-step-container {
+    .plan-category-heading {
+      margin: $sp-sm 0 0;
     }
-  }
 
-  .project-row {
-    background: $color-bg-primary;
-    border: 1px solid $color-border;
-    border-radius: $radius-md;
-    display: flex;
-    flex-direction: column;
-    gap: $sp-sm;
-    justify-content: flex-start;
-    min-height: 156px;
-    padding: $sp-md;
-  }
+    .projects-step-discover {
+      font-size: 0.75rem;
+    }
 
-  /* A discovered project the user has not yet judged is visually provisional, so an inference is never mistaken
-   * for a decision the user made. */
-  .project-row--proposed {
-    background: $color-bg-page;
-    border-style: dashed;
-  }
-
-  .project-row-header {
-    align-items: center;
-    display: flex;
-    gap: $sp-sm;
-  }
-
-  .project-row-provenance {
-    color: $color-text-muted;
-    font-size: 0.7rem;
-    font-style: italic;
-    margin: 0;
-
-    p {
+    .projects-step-discovery-notice {
+      color: $color-text-secondary;
+      flex: 1;
+      font-size: 0.8rem;
       margin: 0;
+      min-width: 12rem;
     }
-  }
 
-  .project-row-reject {
-    color: $color-danger;
-    flex-shrink: 0;
-    font-size: 0.72rem;
-
-    @include breakpoint($breakpoint-tablet) {
-      display: none;
+    .projects-step-category {
+      display: flex;
+      flex-direction: column;
+      gap: $sp-md;
     }
-  }
 
-  .project-row-priority {
-    display: grid;
-    gap: $sp-xs;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    margin-top: auto;
-  }
+    /* Project proposals are choices to sort, not form rows to process sequentially. A two-column card grid
+     * matches that mental model and collapses to one column before labels and decision buttons become cramped. */
+    .projects-step-card-grid {
+      display: grid;
+      gap: $sp-md;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
 
-  .plan-wizard-page .project-row-priority-button {
-    font-size: 0.72rem;
-    padding: $sp-sm $sp-xs;
-    text-align: center;
-
-    &[aria-pressed="true"] {
-      background: $color-navy;
-      border-color: $color-navy;
-      color: $color-text-on-accent;
-
-      &:hover:not(:disabled) {
-        background: $color-navy;
-        opacity: 0.9;
+      @include breakpoint($breakpoint-tablet) {
+        grid-template-columns: 1fr;
       }
     }
-  }
 
-  .projects-step-add {
-    border-style: dashed;
-    flex-shrink: 0;
-  }
+    .project-row {
+      background: $color-bg-primary;
+      border: 1px solid $color-border;
+      border-radius: $radius-md;
+      display: flex;
+      flex-direction: column;
+      gap: $sp-sm;
+      justify-content: flex-start;
+      min-height: 156px;
+      padding: $sp-md;
+    }
 
-  .projects-step-empty-goals {
-    color: $color-text-muted;
-    font-size: 0.82rem;
-    margin: 0;
+    /* A discovered project the user has not yet judged is visually provisional, so an inference is never mistaken
+     * for a decision the user made. */
+    .project-row--proposed {
+      background: $color-bg-page;
+      border-style: dashed;
+    }
+
+    .project-row-header {
+      align-items: center;
+      display: flex;
+      gap: $sp-sm;
+    }
+
+    .project-row-provenance {
+      color: $color-text-muted;
+      font-size: 0.7rem;
+      font-style: italic;
+      margin: 0;
+
+      p {
+        margin: 0;
+      }
+    }
+
+    .project-row-reject {
+      color: $color-danger;
+      flex-shrink: 0;
+      font-size: 0.72rem;
+
+      @include breakpoint($breakpoint-tablet) {
+        display: none;
+      }
+    }
+
+    .project-row-priority {
+      display: grid;
+      gap: $sp-xs;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: auto;
+    }
+
+    .project-row-priority-button {
+      font-size: 0.72rem;
+      padding: $sp-sm $sp-xs;
+      text-align: center;
+
+      &[aria-pressed="true"] {
+        background: $color-navy;
+        border-color: $color-navy;
+        color: $color-text-on-accent;
+
+        &:hover:not(:disabled) {
+          background: $color-navy;
+          opacity: 0.9;
+        }
+      }
+    }
   }
 
   // ── Pace cards step ──────────────────────────────────────────────────────────────────────
 
-  .pace-cards-list {
-    display: flex;
-    flex-direction: column;
-    gap: $sp-md;
-  }
-
-  .pace-cards-empty {
-    color: $color-text-muted;
-    font-size: 0.82rem;
-    line-height: 1.5;
-    margin: 0;
-  }
-
-  .project-pace {
-    background: $color-bg-primary;
-    border: 1px solid $color-border;
-    border-radius: $radius-md;
-    display: flex;
-    flex-direction: column;
-    gap: $sp-md;
-    padding: $sp-md;
-  }
-
-  .project-pace-title {
-    font-size: 0.95rem;
-    font-weight: 700;
-    margin: 0;
-  }
-
-  .project-pace-options {
-    display: grid;
-    gap: $sp-sm;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-
-    @include breakpoint($breakpoint-tablet) {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+  .pace-cards-container {
+    .pace-cards-list {
+      display: flex;
+      flex-direction: column;
+      gap: $sp-md;
     }
-  }
 
-  .project-pace-choice {
-    font-size: 0.72rem;
-    line-height: 1.3;
-    min-height: 52px;
-    padding: $sp-sm;
-    text-align: center;
-
-    &--selected {
-      border-color: $color-blue;
-      box-shadow: 0 0 0 1px $color-blue;
-      color: $color-navy;
+    .project-pace {
+      background: $color-bg-primary;
+      border: 1px solid $color-border;
+      border-radius: $radius-md;
+      display: flex;
+      flex-direction: column;
+      gap: $sp-md;
+      padding: $sp-md;
     }
-  }
 
-  .project-pace-deadline {
-    align-items: center;
-    color: $color-text-secondary;
-    display: flex;
-    flex-wrap: wrap;
-    font-size: 0.8rem;
-    font-weight: 600;
-    gap: $sp-sm;
-  }
+    .project-pace-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin: 0;
+    }
 
-  .project-pace-deadline-input {
-    flex: 1;
-    min-width: 10rem;
-  }
+    .project-pace-options {
+      display: grid;
+      gap: $sp-sm;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
 
-  .project-pace-days {
-    display: flex;
-    flex-wrap: wrap;
-    gap: $sp-xs;
-  }
-
-  /* Beat the overlay's transparent button default the same way priority chips do, so a chosen day stays a
-     filled success chip rather than a quiet outlined control. */
-  .plan-wizard-page .project-pace-day {
-    font-size: 0.72rem;
-    min-width: 44px;
-    padding: $sp-xs $sp-sm;
-    text-align: center;
-
-    &[aria-pressed="true"] {
-      background: $color-success;
-      border-color: $color-success;
-      color: $color-text-on-accent;
-
-      &:hover:not(:disabled) {
-        background: $color-success;
-        opacity: 0.9;
+      @include breakpoint($breakpoint-tablet) {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
-  }
 
-  .project-pace-hint {
-    color: $color-text-muted;
-    font-size: 0.78rem;
-    line-height: 1.4;
-    margin: 0;
+    .project-pace-choice {
+      font-size: 0.72rem;
+      line-height: 1.3;
+      min-height: 52px;
+      padding: $sp-sm;
+      text-align: center;
+
+      &--selected {
+        border-color: $color-blue;
+        box-shadow: 0 0 0 1px $color-blue;
+        color: $color-navy;
+      }
+    }
+
+    .project-pace-deadline {
+      align-items: center;
+      color: $color-text-secondary;
+      display: flex;
+      flex-wrap: wrap;
+      font-size: 0.8rem;
+      font-weight: 600;
+      gap: $sp-sm;
+    }
+
+    .project-pace-deadline-input {
+      flex: 1;
+      min-width: 10rem;
+    }
+
+    .project-pace-days {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: $sp-xs;
+    }
+
+    .project-pace-days-label {
+      color: $color-text-secondary;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-right: $sp-sm;
+    }
+
+    /* Beat the overlay's transparent button default the same way priority chips do, so a chosen day stays a
+       filled success chip rather than a quiet outlined control. */
+    .project-pace-day {
+      font-size: 0.72rem;
+      min-width: 44px;
+      padding: $sp-xs $sp-sm;
+      text-align: center;
+
+      &[aria-pressed="true"] {
+        background: $color-success;
+        border-color: $color-success;
+        color: $color-text-on-accent;
+
+        &:hover:not(:disabled) {
+          background: $color-success;
+          opacity: 0.9;
+        }
+      }
+    }
+
   }
 
   // ── Quarter answer steps ─────────────────────────────────────────────────────────────────
 
   /* Hints are examples of the kind of answer wanted, not options to pick, so they are set as quiet prose rather
    * than as the tappable chips the intent page uses for real suggestions. */
-  .quarter-answer-hint-list {
-    color: $color-text-muted;
-    display: flex;
-    flex-wrap: wrap;
-    font-size: 0.75rem;
-    gap: $sp-md;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
+  .quarter-answer-container {
+    .quarter-answer-hint-list {
+      color: $color-text-muted;
+      display: flex;
+      flex-wrap: wrap;
+      font-size: 0.75rem;
+      gap: $sp-md;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
 
-  .quarter-answer-hint {
-    font-style: italic;
+    .quarter-answer-hint {
+      font-style: italic;
+    }
   }
 
   // ── Quarter name step ────────────────────────────────────────────────────────────────────
 
-  .quarter-name-ideas {
-    display: flex;
-    flex-direction: column;
-    gap: $sp-sm;
-  }
-
-  .quarter-name-idea {
-    background: $color-bg-primary;
-    font-weight: 500;
-    line-height: 1.45;
-    text-align: left;
-
-    &--selected {
-      background: $color-blue-light;
-      border-color: $color-accent;
-      border-width: 2px;
-      color: $color-navy;
-    }
-  }
-
-  .quarter-name-custom {
-    align-items: center;
-    background: $color-bg-primary;
-    border: 1px dashed $color-border;
-    border-radius: $radius-sm;
-    display: flex;
-    gap: $sp-sm;
-    min-height: $plan-wizard-input-min-height;
-    padding: 0 $sp-md;
-
-    &--selected {
-      border-color: $color-accent;
-      border-style: solid;
-      border-width: 2px;
+  .quarter-name-container {
+    .quarter-name-ideas {
+      display: flex;
+      flex-direction: column;
+      gap: $sp-sm;
     }
 
-    .quarter-name-custom-input {
-      background: transparent;
-      border: 0;
-      min-height: 0;
-      padding: $sp-sm 0;
+    .quarter-name-idea {
+      background: $color-bg-primary;
+      font-weight: 500;
+      line-height: 1.45;
+      text-align: left;
 
-      &:focus {
-        border: 0;
-        outline: none;
+      &--selected {
+        background: $color-blue-light;
+        border-color: $color-accent;
+        border-width: 2px;
+        color: $color-navy;
       }
     }
-  }
 
-  .quarter-name-custom-mark {
-    color: $color-text-muted;
-    flex: 0 0 auto;
-  }
+    .quarter-name-custom {
+      align-items: center;
+      background: $color-bg-primary;
+      border: 1px dashed $color-border;
+      border-radius: $radius-sm;
+      display: flex;
+      gap: $sp-sm;
+      min-height: $plan-wizard-input-min-height;
+      padding: 0 $sp-md;
 
-  .quarter-name-timeline {
-    display: flex;
-    flex-direction: column;
-    gap: $sp-md;
-  }
+      &--selected {
+        border-color: $color-accent;
+        border-style: solid;
+        border-width: 2px;
+      }
 
-  .quarter-name-months {
-    display: grid;
-    gap: 0 $sp-md;
-    grid-template-columns: minmax(7rem, 11rem) repeat(3, minmax(0, 1fr));
-  }
+      .quarter-name-custom-input {
+        background: transparent;
+        border: 0;
+        min-height: 0;
+        padding: $sp-sm 0;
 
-  .quarter-name-month {
-    color: $color-text-secondary;
-    font-size: 0.78rem;
-    font-weight: 600;
-    text-align: center;
-
-    &:first-child {
-      grid-column: 2;
-    }
-  }
-
-  .quarter-name-window {
-    display: grid;
-    gap: $sp-xs $sp-md;
-    grid-template-columns: minmax(7rem, 11rem) minmax(0, 1fr);
-  }
-
-  .quarter-name-window-label {
-    font-size: 0.82rem;
-    font-weight: 600;
-    margin: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .quarter-name-window-track {
-    background-color: $color-bg-page;
-    background-image: linear-gradient($color-border, $color-border), linear-gradient($color-border, $color-border);
-    background-position: 33.333%, 66.666%;
-    background-repeat: no-repeat;
-    background-size: 1px 100%, 1px 100%;
-    border-radius: 999px;
-    height: 28px;
-    position: relative;
-  }
-
-  .quarter-name-bar {
-    align-items: center;
-    border-radius: 999px;
-    bottom: 4px;
-    display: flex;
-    justify-content: space-between;
-    padding: 0 6px;
-    pointer-events: none;
-    position: absolute;
-    top: 4px;
-
-    &--0 {
-      background: $color-blue-light;
+        &:focus {
+          border: 0;
+          outline: none;
+        }
+      }
     }
 
-    &--1 {
-      background: $color-intent-personal;
+    .quarter-name-custom-mark {
+      color: $color-text-muted;
+      flex: 0 0 auto;
     }
 
-    &--2 {
-      background: $color-success;
+    .quarter-name-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: $sp-md;
     }
-  }
 
-  .quarter-name-bar-handle {
-    color: $color-text-on-accent;
-    font-size: 0.85rem;
-    line-height: 1;
-  }
+    .quarter-name-months {
+      display: grid;
+      gap: 0 $sp-md;
+      grid-template-columns: minmax(7rem, 11rem) repeat(3, minmax(0, 1fr));
+    }
 
-  .quarter-name-window-start,
-  .quarter-name-window-end {
-    appearance: none;
-    background: transparent;
-    height: 28px;
-    left: 0;
-    margin: 0;
-    pointer-events: none;
-    position: absolute;
-    top: 0;
-    width: 100%;
+    .quarter-name-month {
+      color: $color-text-secondary;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-align: center;
 
-    &::-webkit-slider-thumb {
+      &:first-child {
+        grid-column: 2;
+      }
+    }
+
+    .quarter-name-window {
+      display: grid;
+      gap: $sp-xs $sp-md;
+      grid-template-columns: minmax(7rem, 11rem) minmax(0, 1fr);
+    }
+
+    .quarter-name-window-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .quarter-name-window-track {
+      background-color: $color-bg-page;
+      background-image: linear-gradient($color-border, $color-border), linear-gradient($color-border, $color-border);
+      background-position: 33.333%, 66.666%;
+      background-repeat: no-repeat;
+      background-size: 1px 100%, 1px 100%;
+      border-radius: 999px;
+      height: 28px;
+      position: relative;
+    }
+
+    .quarter-name-bar {
+      align-items: center;
+      border-radius: 999px;
+      bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 6px;
+      pointer-events: none;
+      position: absolute;
+      top: 4px;
+
+      &--0 {
+        background: $color-blue-light;
+      }
+
+      &--1 {
+        background: $color-intent-personal;
+      }
+
+      &--2 {
+        background: $color-success;
+      }
+    }
+
+    .quarter-name-bar-handle {
+      color: $color-text-on-accent;
+      font-size: 0.85rem;
+      line-height: 1;
+    }
+
+    .quarter-name-window-start,
+    .quarter-name-window-end {
       appearance: none;
       background: transparent;
-      border: 0;
-      cursor: ew-resize;
       height: 28px;
-      pointer-events: auto;
-      width: 18px;
+      left: 0;
+      margin: 0;
+      pointer-events: none;
+      position: absolute;
+      top: 0;
+      width: 100%;
+
+      &::-webkit-slider-thumb {
+        appearance: none;
+        background: transparent;
+        border: 0;
+        cursor: ew-resize;
+        height: 28px;
+        pointer-events: auto;
+        width: 18px;
+      }
+
+      &::-moz-range-thumb {
+        background: transparent;
+        border: 0;
+        cursor: ew-resize;
+        height: 28px;
+        pointer-events: auto;
+        width: 18px;
+      }
     }
 
-    &::-moz-range-thumb {
-      background: transparent;
-      border: 0;
-      cursor: ew-resize;
-      height: 28px;
-      pointer-events: auto;
-      width: 18px;
+    .quarter-name-deadline-note {
+      color: $color-text-muted;
+      font-size: 0.75rem;
+      grid-column: 1 / -1;
+      margin: 0;
     }
-  }
-
-  .quarter-name-deadline-note {
-    color: $color-text-muted;
-    font-size: 0.75rem;
-    grid-column: 1 / -1;
-    margin: 0;
-  }
-
-  .quarter-name-empty {
-    color: $color-text-secondary;
-    font-size: 0.85rem;
-    margin: 0;
   }
 }

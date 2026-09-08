@@ -116,9 +116,9 @@ export default function QuarterNameStep({ isSaving, onNavigate, onSaveName, onSa
   };
 
   return (
-    <form className="quarter-name-page" id={ QUARTER_NAME_STEP_FORM_ID } onSubmit={ handleNavigate }>
-      <h2 className="quarter-name-heading">{ QUARTER_NAME_STEP_COPY.title }</h2>
-      <p className="quarter-name-summary">{ QUARTER_NAME_STEP_COPY.summary }</p>
+    <form className="plan-step-container quarter-name-container" id={ QUARTER_NAME_STEP_FORM_ID } onSubmit={ handleNavigate }>
+      <h2 className="plan-heading">{ QUARTER_NAME_STEP_COPY.title }</h2>
+      <p className="plan-summary">{ QUARTER_NAME_STEP_COPY.summary }</p>
       <div className="quarter-name-ideas">
         { ideas.map(idea => (
           <button aria-pressed={ selectedName === idea }
@@ -134,8 +134,8 @@ export default function QuarterNameStep({ isSaving, onNavigate, onSaveName, onSa
             placeholder="Write my own" type="text" value={ customText } />
         </label>
       </div>
-      <h3 className="quarter-name-timeline-heading">{ TIMELINE_HEADING }</h3>
-      <p className="quarter-name-timeline-summary">{ TIMELINE_SUMMARY }</p>
+      <h3 className="plan-heading">{ TIMELINE_HEADING }</h3>
+      <p className="plan-summary">{ TIMELINE_SUMMARY }</p>
       { windowDrafts.length ? (
         <div className="quarter-name-timeline">
           <div aria-hidden="true" className="quarter-name-months">
@@ -150,13 +150,13 @@ export default function QuarterNameStep({ isSaving, onNavigate, onSaveName, onSa
           )) }
         </div>
       ) : (
-        <p className="quarter-name-empty" role="note">
+        <p className="plan-empty" role="note">
           Name a project on the previous steps first — a timeline is a spread of particular work, so there is
           nothing to place yet.
         </p>
       ) }
       { saveError ? (
-        <p className="quarter-name-error" role="alert">Your quarter name was not saved. { saveError.message }</p>
+        <p className="plan-error" role="alert">Your quarter name was not saved. { saveError.message }</p>
       ) : null }
     </form>
   );

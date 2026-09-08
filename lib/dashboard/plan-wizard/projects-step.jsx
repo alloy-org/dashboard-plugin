@@ -130,9 +130,9 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
   };
 
   return (
-    <form className="projects-step-page" id={ PROJECTS_STEP_FORM_ID } onSubmit={ handleNavigate }>
-      <h2 className="projects-step-heading">{ PROJECTS_STEP_COPY.title }</h2>
-      <p className="projects-step-summary">{ PROJECTS_STEP_COPY.summary }</p>
+    <form className="plan-step-container projects-step-container" id={ PROJECTS_STEP_FORM_ID } onSubmit={ handleNavigate }>
+      <h2 className="plan-heading">{ PROJECTS_STEP_COPY.title }</h2>
+      <p className="plan-summary">{ PROJECTS_STEP_COPY.summary }</p>
       { ["work", "personal"].map(userCategoryEm => {
         const categoryRows = draftRows.filter(row => row.userCategoryEm === userCategoryEm);
         const categoryGoals = planningContext.goals.filter(goal => goal.userCategoryEm === userCategoryEm);
@@ -141,9 +141,9 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
         const proposedCount = categoryRows.filter(row => row.approvalStatusEm === "awaitingJudgement").length;
         return (
           <section className={ `projects-step-category projects-step-category--${ userCategoryEm }` } key={ userCategoryEm }>
-            <h3 className="projects-step-category-heading">{ CATEGORY_HEADINGS[userCategoryEm] }</h3>
+            <h3 className="plan-category-heading">{ CATEGORY_HEADINGS[userCategoryEm] }</h3>
             { categoryGoals.length ? null : (
-              <p className="projects-step-empty-goals">
+              <p className="plan-empty">
                 You have not saved an intent in this category, so there is nothing here to tie a project to yet.
               </p>
             ) }
@@ -153,13 +153,14 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
                   onChangeSummary={ handleChangeRow } onReject={ handleReject } onSetPriority={ handleSetPriority } />
               )) }
             </div>
-            <div className="projects-step-actions">
-              <button className="projects-step-add" disabled={ isSaving }
+            <div className="plan-actions">
+              <button className="plan-button plan-button--dashed projects-step-add" disabled={ isSaving }
                 onClick={ () => setDraftRows(previous => previous.concat(emptyProjectRow(userCategoryEm,
                   categoryGoalUuids))) } type="button">
                 Add another project
               </button>
-              <button className="projects-step-discover" disabled={ isDiscovering || isSaving || !hasChosenIntent }
+              <button className="plan-button plan-button--dashed projects-step-discover"
+                disabled={ isDiscovering || isSaving || !hasChosenIntent }
                 onClick={ onDiscover }
                 title={ hasChosenIntent ? "Read your recent tasks for projects that would carry these intents"
                   : "Save an intent in this category first, so there is something for a project to advance" }
@@ -174,7 +175,7 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
         );
       }) }
       { saveError ? (
-        <p className="projects-step-error" role="alert">Your projects were not saved. { saveError.message }</p>
+        <p className="plan-error" role="alert">Your projects were not saved. { saveError.message }</p>
       ) : null }
     </form>
   );

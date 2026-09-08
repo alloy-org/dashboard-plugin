@@ -1,8 +1,10 @@
 // One project's pace card: which rhythm to protect, which weekdays that rhythm occupies, and a deadline when
 // the chosen rhythm is a sprint.
 
-import { PACE_OPTIONS, PACE_WORKDAYS, paceHintText, weekdayLabel } from "dashboard/plan-wizard/pace-cards-step-fields";
+import { PACE_OPTIONS, PACE_WORKDAYS, weekdayLabel } from "dashboard/plan-wizard/pace-cards-step-fields";
 import { memo } from "react";
+
+const PREFERRED_DAYS_LABEL = "Preferred days of week (optional)";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Render one project's pace choices without forcing sibling cards to redraw.
@@ -14,7 +16,6 @@ import { memo } from "react";
 //   - {Function} onToggleWeekday - Receives the project UUID and weekday enum.
 // @returns {JSX.Element} The project's pace card.
 function ProjectPace({ draft, isDisabled, onChangeDeadline, onSelectPace, onToggleWeekday }) {
-  const hintText = paceHintText(draft);
   return (
     <article className="project-pace">
       <h3 className="project-pace-title">{ draft.summary }</h3>
@@ -36,7 +37,8 @@ function ProjectPace({ draft, isDisabled, onChangeDeadline, onSelectPace, onTogg
             value={ draft.deadlineOn ?? "" } />
         </label>
       ) : null }
-      <div aria-label={ `Preferred days for ${ draft.summary }` } className="project-pace-days">
+      <div aria-label={ `${ PREFERRED_DAYS_LABEL } for ${ draft.summary }` } className="project-pace-days">
+        <span className="project-pace-days-label">{ PREFERRED_DAYS_LABEL }</span>
         { PACE_WORKDAYS.map(weekday => {
           const isSelected = draft.preferredWeekdays.includes(weekday);
           return (
@@ -47,7 +49,6 @@ function ProjectPace({ draft, isDisabled, onChangeDeadline, onSelectPace, onTogg
           );
         }) }
       </div>
-      <p className="project-pace-hint">{ hintText }</p>
     </article>
   );
 }

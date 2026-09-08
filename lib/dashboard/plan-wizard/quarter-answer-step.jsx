@@ -70,9 +70,9 @@ export default function QuarterAnswerStep({ answer, answerKey, hints = [], isSav
   const saveLabel = saveError ? "Retry saving" : "Save answer";
 
   return (
-    <div className={ `quarter-answer-page quarter-answer-page--${ answerKey }` }>
-      <h2 className="quarter-answer-heading">{ title }</h2>
-      <p className="quarter-answer-summary">{ summary }</p>
+    <div className={ `plan-step-container quarter-answer-container quarter-answer-container--${ answerKey }` }>
+      <h2 className="plan-heading">{ title }</h2>
+      <p className="plan-summary">{ summary }</p>
       <input className="quarter-answer-input" disabled={ isSaving } onChange={ event => handleChangeText(event.target.value) }
         placeholder={ placeholder } type="text" value={ draftText } />
       { hints.length ? (
@@ -81,14 +81,14 @@ export default function QuarterAnswerStep({ answer, answerKey, hints = [], isSav
         </ul>
       ) : null }
       { saveError ? (
-        <p className="quarter-answer-error" role="alert">Your answer was not saved. { saveError.message }</p>
+        <p className="plan-error" role="alert">Your answer was not saved. { saveError.message }</p>
       ) : null }
-      { hasSaved ? <p className="quarter-answer-saved">Saved.</p> : null }
-      <div className="quarter-answer-actions">
-        <button className="quarter-answer-save" disabled={ isSaving || !canSave } onClick={ handleSave } type="button">
+      { hasSaved ? <p className="plan-saved">Saved.</p> : null }
+      <div className="plan-actions">
+        <button className="plan-button plan-button--primary" disabled={ isSaving || !canSave } onClick={ handleSave } type="button">
           { isSaving ? "Saving…" : saveLabel }
         </button>
-        <p className="quarter-answer-optional">This one is optional — you can move on without answering.</p>
+        <p className="plan-optional">This one is optional — you can move on without answering.</p>
       </div>
     </div>
   );

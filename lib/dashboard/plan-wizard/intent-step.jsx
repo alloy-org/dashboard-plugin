@@ -60,7 +60,7 @@ function IntentStepCategory({ fields, isDisabled, onAddSecondary, onApplySuggest
   const hasDefaultSuggestions = possibilities.some(possibility => possibility.sourceKind === "default");
   return (
     <section className={ `intent-step-category intent-step-category--${ userCategoryEm }` }>
-      <h3 className="intent-step-category-heading">{ heading }</h3>
+      <h3 className="plan-category-heading">{ heading }</h3>
       { fields.map(field => (
         <IntentStepField field={ field } isDisabled={ isDisabled } key={ field.uuid }
           onChangeText={ text => onChangeText(field.uuid, text) } onFocus={ () => onFocusField(field.uuid) }
@@ -80,7 +80,7 @@ function IntentStepCategory({ fields, isDisabled, onAddSecondary, onApplySuggest
       { hasDefaultSuggestions ? (
         <p className="intent-step-suggestion-note">Starting points, not conclusions drawn from your notes.</p>
       ) : null }
-      <button className="intent-step-add-secondary" disabled={ isDisabled } onClick={ onAddSecondary } type="button">
+      <button className="plan-button plan-button--dashed" disabled={ isDisabled } onClick={ onAddSecondary } type="button">
         Add a secondary or more granular goal
       </button>
     </section>
@@ -198,17 +198,17 @@ export default function IntentStep({ isRefreshing, isSaving, onAnswerStateChange
     onFocusField: setFocusedFieldUuid };
 
   return (
-    <form className="intent-step-page" id={ INTENT_STEP_FORM_ID } onSubmit={ handleNext }>
-      <h2 className="intent-step-heading">{ INTENT_STEP_COPY.title }</h2>
-      <p className="intent-step-summary">{ INTENT_STEP_COPY.summary }</p>
-      { isRefreshing ? <p className="intent-step-status">Looking through your recent work for suggestions…</p> : null }
+    <form className="plan-step-container intent-step-container" id={ INTENT_STEP_FORM_ID } onSubmit={ handleNext }>
+      <h2 className="plan-heading">{ INTENT_STEP_COPY.title }</h2>
+      <p className="plan-summary">{ INTENT_STEP_COPY.summary }</p>
+      { isRefreshing ? <p className="plan-status">Looking through your recent work for suggestions…</p> : null }
       <IntentStepCategory { ...categoryProps } fields={ workFields } onAddSecondary={ () => handleAddSecondary("work") }
         possibilities={ planningContext.possibilities.work } userCategoryEm="work" />
       <IntentStepCategory { ...categoryProps } fields={ personalFields }
         onAddSecondary={ () => handleAddSecondary("personal") } possibilities={ planningContext.possibilities.personal }
         userCategoryEm="personal" />
       { saveError ? (
-        <p className="intent-step-error" role="alert">Your answers were not saved. { saveError.message }</p>
+        <p className="plan-error" role="alert">Your answers were not saved. { saveError.message }</p>
       ) : null }
     </form>
   );

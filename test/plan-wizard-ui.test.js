@@ -136,17 +136,17 @@ describe("PlanWizard intent step", () => {
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
     const afterNext = await readPlanGoals(app, SCOPE);
     expect(afterNext.goals.map(goal => goal.goalText)).toEqual(["Ship the analytics offering"]);
-    expect(container.querySelector(".projects-step-page")).not.toBeNull();
+    expect(container.querySelector(".projects-step-container")).not.toBeNull();
     await cleanup();
   });
 
   it("focuses a newly added secondary goal field", async () => {
     const { cleanup, container } = await renderPlanWizard();
-    await clickAndSettle(container.querySelector(".intent-step-category--work .intent-step-add-secondary"));
+    await clickAndSettle(container.querySelector(".intent-step-category--work .plan-button--dashed"));
     expect(document.activeElement).toBe(workFields(container)[1]);
-    await clickAndSettle(container.querySelector(".intent-step-category--personal .intent-step-add-secondary"));
+    await clickAndSettle(container.querySelector(".intent-step-category--personal .plan-button--dashed"));
     expect(document.activeElement).toBe(personalFields(container)[1]);
-    await clickAndSettle(container.querySelector(".intent-step-category--work .intent-step-add-secondary"));
+    await clickAndSettle(container.querySelector(".intent-step-category--work .plan-button--dashed"));
     expect(document.activeElement).toBe(workFields(container)[2]);
     await cleanup();
   });
@@ -154,7 +154,7 @@ describe("PlanWizard intent step", () => {
   it("saves without a personal answer and records added secondary goals at the next rank", async () => {
     const { app, cleanup, container } = await renderPlanWizard();
     await typeInto(workFields(container)[0], "Ship the rewrite");
-    await clickAndSettle(container.querySelector(".intent-step-category--work .intent-step-add-secondary"));
+    await clickAndSettle(container.querySelector(".intent-step-category--work .plan-button--dashed"));
     await typeInto(workFields(container)[1], "Cut the support backlog");
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
@@ -187,7 +187,7 @@ describe("PlanWizard intent step", () => {
     app.replaceNoteContent = jest.fn(async () => { throw new Error("Note write rejected"); });
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
-    expect(container.querySelector(".intent-step-error")).not.toBeNull();
+    expect(container.querySelector(".plan-error")).not.toBeNull();
     expect(workFields(container)[0].value).toBe("Ship the rewrite");
 
     app.replaceNoteContent = workingReplace;
@@ -320,7 +320,7 @@ describe("PlanWizard intent step", () => {
     expect(container.querySelector(".plan-wizard-close")).toBeNull();
     expect(suggestions.every(button => button.tabIndex === -1)).toBe(true);
     expect(tabbableControls.every(element => element.matches(
-      ".intent-step-input, .intent-step-add-secondary, .plan-wizard-next"))).toBe(true);
+      ".intent-step-input, .intent-step-container .plan-button--dashed, .plan-wizard-next"))).toBe(true);
     expect(container.querySelector(".intent-step-save")).toBeNull();
     expect(container.querySelector(".intent-step-continue")).toBeNull();
     await cleanup();
@@ -361,15 +361,15 @@ describe("PlanWizard step navigation", () => {
     expect(stepDots).toHaveLength(WIZARD_STEPS.length);
     expect(stepDots[0].classList).toContain("plan-wizard-step-dot--current");
     expect(stepDots.slice(1).some(dot => dot.classList.contains("plan-wizard-step-dot--current"))).toBe(false);
-    expect(container.querySelector(".intent-step-page")).not.toBe(null);
+    expect(container.querySelector(".intent-step-container")).not.toBe(null);
     expect(container.querySelector(".plan-wizard-back")).toBeNull();
     await cleanup();
   });
 
   it("renders each step's title and summary from WIZARD_STEPS", async () => {
     const { cleanup, container } = await renderPlanWizard();
-    const headingSelector = ".intent-step-heading, .pace-cards-heading, .projects-step-heading, .quarter-answer-heading, .quarter-name-heading";
-    const summarySelector = ".intent-step-summary, .pace-cards-summary, .projects-step-summary, .quarter-answer-summary, .quarter-name-summary";
+    const headingSelector = ".plan-step-container > .plan-heading";
+    const summarySelector = ".plan-step-container > .plan-summary";
     for (const step of WIZARD_STEPS) {
       await advanceToStep(container, step.key);
       expect(container.querySelector(headingSelector).textContent).toBe(step.title);
@@ -383,7 +383,7 @@ describe("PlanWizard step navigation", () => {
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
     expect(container.querySelector(".plan-wizard-progress").textContent).toBe(`1 of ${ WIZARD_STEPS.length }`);
-    expect(container.querySelector(".intent-step-page")).not.toBeNull();
+    expect(container.querySelector(".intent-step-container")).not.toBeNull();
     await cleanup();
   });
 
@@ -409,7 +409,7 @@ describe("PlanWizard step navigation", () => {
     const { cleanup, container } = await renderPlanWizard();
     await typeInto(workFields(container)[0], "Ship the analytics offering");
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
-    expect(container.querySelector(".projects-step-page")).not.toBeNull();
+    expect(container.querySelector(".projects-step-container")).not.toBeNull();
 
     await clickAndSettle(container.querySelector(".plan-wizard-back"));
     expect(workFields(container)[0].value).toBe("Ship the analytics offering");
@@ -445,7 +445,7 @@ async function advanceToStep(container, stepKey) {
     const [position] = container.querySelector(".plan-wizard-progress").textContent.split(" of ");
     if (Number(position) - 1 === targetIndex) return;
     const nextButton = container.querySelector(".plan-wizard-next");
-    if (nextButton.disabled && container.querySelector(".intent-step-page")) {
+    if (nextButton.disabled && container.querySelector(".intent-step-container")) {
       await typeInto(workFields(container)[0], "Advance through the wizard");
     }
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
@@ -608,9 +608,9 @@ describe("PlanWizard project discovery", () => {
     expect(proposedRow.querySelector(".project-row-name").value).toBe("Automate the weekly report");
     expect(proposedRow.querySelector(".project-row-provenance").textContent).toContain("without writing either one");
     expect(container.querySelector(".projects-step-discovery-notice").textContent).toContain("waiting on you");
-    expect(container.querySelector(".projects-step-page > .projects-step-actions")).toBeNull();
+    expect(container.querySelector(".projects-step-container > .plan-actions")).toBeNull();
     expect(container.querySelectorAll(".projects-step-category .projects-step-discover")).toHaveLength(2);
-    const workActions = container.querySelector(".projects-step-category--work .projects-step-actions");
+    const workActions = container.querySelector(".projects-step-category--work .plan-actions");
     expect(workActions.querySelector(".projects-step-add")).not.toBeNull();
     expect(workActions.querySelector(".projects-step-discover")).not.toBeNull();
     expect(proposedRow.querySelector(".project-row-goal")).toBeNull();
@@ -724,7 +724,7 @@ describe("PlanWizard pace cards step", () => {
     await advanceToStep(container, "pace-cards");
 
     expect(container.querySelector(".pace-cards-list")).toBe(null);
-    expect(container.querySelector(".pace-cards-empty").textContent).toContain("Name a project");
+    expect(container.querySelector(".plan-empty").textContent).toContain("Name a project");
     await cleanup();
   });
 
@@ -738,7 +738,7 @@ describe("PlanWizard pace cards step", () => {
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
     expect(container.querySelector(".pace-cards-list")).toBe(null);
-    expect(container.querySelector(".pace-cards-empty").textContent).toContain("Name a project");
+    expect(container.querySelector(".plan-empty").textContent).toContain("Name a project");
     await cleanup();
   });
 
@@ -772,7 +772,8 @@ describe("PlanWizard pace cards step", () => {
 
     await clickAndSettle(paceChoice(container, "Two focused blocks per week"));
     expect(pressedPaceDays(container)).toEqual(["Tue", "Thu"]);
-    expect(container.querySelector(".project-pace-hint").textContent).toContain("Thursday");
+    expect(container.querySelector(".project-pace-days-label").textContent).toBe("Preferred days of week (optional)");
+    expect(container.querySelector(".project-pace-hint")).toBe(null);
     await clickAndSettle(container.querySelectorAll(".project-pace-day")[0]);
     expect(pressedPaceDays(container)).toEqual(["Mon", "Tue", "Thu"]);
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
@@ -783,13 +784,13 @@ describe("PlanWizard pace cards step", () => {
     await cleanup();
   });
 
-  it("highlights one day for a substantial block and none for a sprint or maintenance until clicked", async () => {
+  it("highlights one day for about one weekly block and none for a sprint or other/TBD until clicked", async () => {
     const { app, cleanup, container } = await renderPlanWizard();
     await advanceToStep(container, "projects");
     await saveFirstProject(container, "Rebuild the ingestion pipeline");
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
-    await clickAndSettle(paceChoice(container, "One substantial block per week"));
+    await clickAndSettle(paceChoice(container, "About one block per week"));
     expect(pressedPaceDays(container)).toEqual(["Wed"]);
     await clickAndSettle(container.querySelectorAll(".project-pace-day")[4]);
     expect(pressedPaceDays(container)).toEqual(["Fri"]);
@@ -797,7 +798,7 @@ describe("PlanWizard pace cards step", () => {
     expect(pressedPaceDays(container)).toEqual([]);
     await clickAndSettle(container.querySelectorAll(".project-pace-day")[1]);
     expect(pressedPaceDays(container)).toEqual(["Tue"]);
-    await clickAndSettle(paceChoice(container, "Maintenance only"));
+    await clickAndSettle(paceChoice(container, "Other / TBD"));
     expect(pressedPaceDays(container)).toEqual([]);
     await clickAndSettle(container.querySelectorAll(".project-pace-day")[4]);
     expect(pressedPaceDays(container)).toEqual(["Fri"]);
@@ -905,7 +906,7 @@ describe("PlanWizard quarter name step", () => {
     await advanceToStep(container, "quarter-name");
 
     expect(container.querySelector(".quarter-name-window")).toBeNull();
-    expect(container.querySelector(".quarter-name-empty")).not.toBeNull();
+    expect(container.querySelector(".plan-empty")).not.toBeNull();
     await cleanup();
   });
 });
@@ -943,7 +944,7 @@ describe("PlanWizard quarter-wide answers", () => {
     await typeInto(container.querySelector(".quarter-name-custom-input"), "The Shipping Quarter");
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
     await typeInto(container.querySelector(".quarter-answer-input"), "Two hours of focused project work");
-    await clickAndSettle(container.querySelector(".quarter-answer-save"));
+    await clickAndSettle(container.querySelector(".plan-button--primary"));
 
     const stored = await readPlanGoals(app, SCOPE);
     expect(stored.quarterName.text).toBe("The Shipping Quarter");
@@ -959,9 +960,9 @@ describe("PlanWizard quarter-wide answers", () => {
     await typeInto(container.querySelector(".quarter-name-custom-input"), "The Shipping Quarter");
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
-    expect(container.querySelector(".quarter-name-error").textContent).toContain("Amplenote was unreachable");
+    expect(container.querySelector(".plan-error").textContent).toContain("Amplenote was unreachable");
     expect(container.querySelector(".quarter-name-custom-input").value).toBe("The Shipping Quarter");
-    expect(container.querySelector(".quarter-name-page")).not.toBeNull();
+    expect(container.querySelector(".quarter-name-container")).not.toBeNull();
 
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
     const stored = await readPlanGoals(app, SCOPE);
