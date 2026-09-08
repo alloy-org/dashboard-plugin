@@ -1,35 +1,41 @@
-/**
- * [Claude-authored file]
- * Created: 2026-03-14 | Model: claude-4.6-opus-high-thinking
- * Task: Dev-mode inline note editor with save/back
- * Prompt summary: "textarea editor for viewing and editing note content in the dev environment"
- */
-import { useEffect, useState } from "react";
+// Dev-mode inline note editor: load a note's markdown into a contentEditable field with save and back.
+
+import { useEffect, useRef, useState } from "react";
+import "styles/note-editor.scss";
 import { fetchNoteContent, saveNoteContent } from "util/goal-notes";
 
-// ────────────────────────────────────────────────────────────────
-/**
- * Inline note editor shown in dev mode when a widget navigates to a note.
- * Loads the note's markdown content into a textarea and provides save/back controls.
- */
-// [Claude claude-4.7-opus] Task: migrate NoteEditor from createElement to JSX
-// Prompt: "translate this project to render components with JSX instead"
+// ----------------------------------------------------------------------------------------------
+// @desc Show one note's full markdown in a contentEditable field so the dev environment can inspect a data
+//   store that Amplenote would otherwise open as a native note.
+// @param {object} params - An object with the following properties:
+//   - {object} app - Amplenote embed app proxy, or the browser-dev mock.
+//   - {string} noteUUID - Note to load.
+//   - {Function} onBack - Leaves the editor and returns to the previous view.
+// @returns {JSX.Element} Toolbar plus the editable note body, or a loading placeholder.
 export default function NoteEditor({ app, noteUUID, onBack }) {
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const editorRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
-    fetchNoteContent(app, noteUUID).then(c => {
-      if (!cancelled) {
-        setContent(c || '');
-        setLoading(false);
-      }
+    setLoading(true);
+    fetchNoteContent(app, noteUUID).then(noteContent => {
+      if (cancelled) return;
+      setContent(noteContent || "");
+      setLoading(false);
     });
     return () => { cancelled = true; };
-  }, [noteUUID, app]);
+  }, [app, noteUUID]);
 
+  useEffect(() => {
+    if (loading || !editorRef.current) return;
+    editorRef.current.textContent = content;
+  }, [loading, noteUUID]);
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Write the current editor text back to the note, replacing its entire body.
   const handleSave = async () => {
     setSaving(true);
     await saveNoteContent(app, noteUUID, content);
@@ -37,27 +43,23 @@ export default function NoteEditor({ app, noteUUID, onBack }) {
   };
 
   if (loading) {
-    return <div className="note-editor-loading">Loading note…</div>;
+    return (
+      <div className="note-editor">
+        <div className="note-editor-loading">Loading note…</div>
+      </div>
+    );
   }
 
   return (
     <div className="note-editor">
       <div className="note-editor-toolbar">
-        <button
-          className="note-editor-btn note-editor-btn--back"
-          onClick={onBack}
-        >← Back</button>
-        <button
-          className="note-editor-btn note-editor-btn--save"
-          onClick={handleSave}
-          disabled={saving}
-        >{saving ? 'Saving…' : 'Save'}</button>
+        <button className="note-editor-btn note-editor-btn--back" onClick={ onBack } type="button">← Back</button>
+        <button className="note-editor-btn note-editor-btn--save" disabled={ saving } onClick={ handleSave }
+          type="button">{ saving ? "Saving…" : "Save" }</button>
       </div>
-      <textarea
-        className="note-editor-textarea"
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-      />
+      <div aria-label="Data note content" aria-multiline="true" className="note-editor-content" contentEditable="true"
+        onInput={ event => setContent(event.currentTarget.textContent ?? "") } ref={ editorRef } role="textbox"
+        spellCheck="false" suppressContentEditableWarning />
     </div>
   );
 }

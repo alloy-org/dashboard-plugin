@@ -46,11 +46,10 @@ function discoveryNoticeText({ discoveryFailureReason, hasChosenIntent, isDiscov
 //   - {Function} onSave - Receives prospect records and resolves true when the write succeeded.
 //   - {Function} onSaveDecision - Persists one card decision without entering page-wide saving state.
 //   - {object} planningContext - Stored goals and prospects for the scope.
-//   - {Error|null} saveError - Last save failure; its presence turns the action into a retry.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 // @returns {JSX.Element} The projects page.
 export default function ProjectsStep({ discoveryFailureReason = null, isDiscovering = false, isSaving, onDiscover,
-    onNavigate, onSave, onSaveDecision, planningContext, saveError, scopeKey }) {
+    onNavigate, onSave, onSaveDecision, planningContext, scopeKey }) {
   const [draftRows, setDraftRows] = useState(() => draftRowsFromProspects(planningContext.prospects,
     planningContext.goals));
   const capturedAtRef = useRef(null);
@@ -174,9 +173,6 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
           </section>
         );
       }) }
-      { saveError ? (
-        <p className="plan-error" role="alert">Your projects were not saved. { saveError.message }</p>
-      ) : null }
     </form>
   );
 }

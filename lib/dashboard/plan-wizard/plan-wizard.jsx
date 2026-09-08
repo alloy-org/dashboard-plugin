@@ -17,13 +17,15 @@
 
 import IntentStep, { INTENT_STEP_FORM_ID } from "dashboard/plan-wizard/intent-step";
 import PaceCardsStep, { PACE_CARDS_STEP_FORM_ID } from "dashboard/plan-wizard/pace-cards-step";
+import PlanSaveError from "dashboard/plan-wizard/plan-save-error";
 import ProjectsStep, { PROJECTS_STEP_FORM_ID } from "dashboard/plan-wizard/projects-step";
 import QuarterAnswerStep from "dashboard/plan-wizard/quarter-answer-step";
 import QuarterNameStep, { QUARTER_NAME_STEP_FORM_ID } from "dashboard/plan-wizard/quarter-name-step";
 import { WIZARD_STEPS, wizardStepIndexFromKey } from "dashboard/plan-wizard/wizard-steps";
 import usePlanWizard, { planScopeKey } from "hooks/use-plan-wizard";
-import { createPortal } from "react-dom";
+import NoteEditor from "note-editor";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import "dashboard/styles/plan-wizard.scss";
 
 // Field copy for the daily-sufficiency page. Title and summary live on WIZARD_STEPS; this keeps the input hints
@@ -31,6 +33,9 @@ import "dashboard/styles/plan-wizard.scss";
 const DAILY_SUFFICIENCY_COPY = { answerKey: "dailySufficiency",
   hints: ["Two hours of focused project work", "Every task I marked important yesterday", "One thing that moves a quarterly intent"],
   placeholder: "What has to be true before the day counts as a good one?" };
+const SAVE_ERROR_PREFIX = { "enough-for-today": "Your answer was not saved.", intent: "Your answers were not saved.",
+  "pace-cards": "Your project paces were not saved.", projects: "Your projects were not saved.",
+  "quarter-name": "Your quarter name was not saved." };
 
 export { WIZARD_STEPS };
 
@@ -59,6 +64,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
     saveQuarterAnswer } = usePlanWizard({ app, domainName, domainUuid, quarter, year });
   const [stepKey, setStepKey] = useState(WIZARD_STEPS[0].key);
   const [hasIntentAnswer, setHasIntentAnswer] = useState(false);
+  const [inspectingNoteUuid, setInspectingNoteUuid] = useState(null);
   const [overlayTop] = useState(currentDocumentScrollTop);
   const overlayRef = useRef(null);
   const projectNavigationDirectionRef = useRef(1);
@@ -120,6 +126,13 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
     if (event.target === event.currentTarget) onClose();
   };
 
+  // ----------------------------------------------------------------------------------------------
+  // @desc Show the Vision Guide in the inline editor after the data-note link is followed in the dev environment.
+  // @param {string} noteUuid - Vision Guide UUID to load.
+  const handleOpenDataNote = noteUuid => {
+    setInspectingNoteUuid(noteUuid);
+  };
+
   const wizardModal = (
     <div className="plan-wizard-overlay" onClick={ handleBackdropClick } ref={ overlayRef }
       style={ { top: overlayTop } }>
@@ -153,28 +166,35 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
             <button className="plan-wizard-retry" onClick={ reload } type="button">Try again</button>
           </div>
         ) : null }
-        { !isLoading && !error && step.key === "intent" ? (
-          <IntentStep { ...{ isRefreshing, isSaving, planningContext, saveError, scopeKey } }
+        { inspectingNoteUuid ? (
+          <NoteEditor app={ app } noteUUID={ inspectingNoteUuid } onBack={ () => setInspectingNoteUuid(null) } />
+        ) : null }
+        { !inspectingNoteUuid && !isLoading && !error && step.key === "intent" ? (
+          <IntentStep { ...{ isRefreshing, isSaving, planningContext, scopeKey } }
             onAnswerStateChange={ setHasIntentAnswer } onFindProjects={ handleFindProjects } onSave={ saveGoals } />
         ) : null }
-        { !isLoading && !error && step.key === "projects" ? (
-          <ProjectsStep { ...{ discoveryFailureReason, isDiscovering, isSaving, planningContext, saveError, scopeKey } }
+        { !inspectingNoteUuid && !isLoading && !error && step.key === "projects" ? (
+          <ProjectsStep { ...{ discoveryFailureReason, isDiscovering, isSaving, planningContext, scopeKey } }
             onDiscover={ discoverProspects } onNavigate={ handleProjectNavigation } onSave={ saveProspects }
             onSaveDecision={ saveProspectDecision } />
         ) : null }
-        { !isLoading && !error && step.key === "pace-cards" ? (
-          <PaceCardsStep { ...{ isSaving, planningContext, saveError, scopeKey } }
+        { !inspectingNoteUuid && !isLoading && !error && step.key === "pace-cards" ? (
+          <PaceCardsStep { ...{ isSaving, planningContext, scopeKey } }
             onNavigate={ handleProjectNavigation } onSave={ records => saveProspects(records, { updatePlacement: false }) } />
         ) : null }
-        { !isLoading && !error && step.key === "quarter-name" ? (
-          <QuarterNameStep { ...{ isSaving, planningContext, saveError, scopeKey } }
+        { !inspectingNoteUuid && !isLoading && !error && step.key === "quarter-name" ? (
+          <QuarterNameStep { ...{ isSaving, planningContext, scopeKey } }
             onNavigate={ handleProjectNavigation } onSaveName={ saveQuarterAnswer } onSaveProspects={ saveProspects } />
         ) : null }
-        { !isLoading && !error && step.key === "enough-for-today" ? (
+        { !inspectingNoteUuid && !isLoading && !error && step.key === "enough-for-today" ? (
           <QuarterAnswerStep { ...DAILY_SUFFICIENCY_COPY } { ...{ isSaving, saveError, scopeKey } }
             answer={ planningContext.dailySufficiency } onSave={ saveQuarterAnswer } stepKey={ step.key } />
         ) : null }
-        { !isLoading && !error ? (
+        { !inspectingNoteUuid && saveError && !isLoading && !error ? (
+          <PlanSaveError app={ app } noteUuid={ saveError.noteUuid ?? planningContext.noteUuid }
+            onOpenDataNote={ handleOpenDataNote } prefix={ SAVE_ERROR_PREFIX[step.key] } saveError={ saveError } />
+        ) : null }
+        { !inspectingNoteUuid && !isLoading && !error ? (
           <nav className="plan-wizard-navigation">
             { isFirstStep ? null : (
               <button className="plan-wizard-back" disabled={ isNavigatingFormStep && isSaving }

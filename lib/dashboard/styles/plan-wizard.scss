@@ -282,7 +282,8 @@ $plan-wizard-z-index: 1100;
   }
 
   /* Nested under `.plan-wizard-page` so these beat that block's `button { border: 1px solid }` default. */
-  .plan-wizard-page .plan-button--primary {
+  .plan-wizard-page .plan-button--primary,
+  .plan-wizard-page .note-editor-btn--save {
     background: $color-accent;
     border-color: $color-accent;
     color: $color-text-on-accent;
@@ -302,6 +303,16 @@ $plan-wizard-z-index: 1100;
     color: $color-danger;
     font-size: 0.8rem;
     margin: 0;
+  }
+
+  .plan-error-note-link {
+    color: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+
+    &:hover {
+      color: $color-navy;
+    }
   }
 
   .plan-saved {

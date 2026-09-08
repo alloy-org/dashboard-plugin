@@ -22,11 +22,10 @@ const QUARTER_NAME_STEP_COPY = wizardStepFromKey("quarter-name");
 //   - {Function} onSaveName - Receives a quarterName answer and resolves true when the write succeeded.
 //   - {Function} onSaveProspects - Receives prospect records and resolves true when the write succeeded.
 //   - {object} planningContext - Stored prospects, quarter name, and scope.
-//   - {Error|null} saveError - Last save failure; its presence turns the action into a retry.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 // @returns {JSX.Element} The Name the quarter page.
 export default function QuarterNameStep({ isSaving, onNavigate, onSaveName, onSaveProspects, planningContext,
-    saveError, scopeKey }) {
+    scopeKey }) {
   const scope = planningContext.scope;
   const ideas = nameIdeasFromProspects(planningContext.prospects, scope);
   const storedName = answerTextFromRecord(planningContext.quarterName);
@@ -155,9 +154,6 @@ export default function QuarterNameStep({ isSaving, onNavigate, onSaveName, onSa
           nothing to place yet.
         </p>
       ) }
-      { saveError ? (
-        <p className="plan-error" role="alert">Your quarter name was not saved. { saveError.message }</p>
-      ) : null }
     </form>
   );
 }

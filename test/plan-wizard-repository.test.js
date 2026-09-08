@@ -221,9 +221,10 @@ test("names the overflowing Vision Guide section and its character count", async
   try {
     await expect(replaceGuideSection({}, oversizedContent, { uuid: "guide-note" },
       { heading: { level: 1, text: "Professional projects and goals" } }))
-      .rejects.toThrow("Professional projects and goals");
+      .rejects.toMatchObject({ message: expect.stringContaining("Professional projects and goals"),
+        noteUuid: "guide-note" });
     expect(recordedErrors[0][1]).toMatchObject({ headingText: "Professional projects and goals",
-      sectionCharacters: MAXIMUM_GUIDE_SECTION_CHARACTERS + 1 });
+      noteUuid: "guide-note", sectionCharacters: MAXIMUM_GUIDE_SECTION_CHARACTERS + 1 });
   } finally {
     console.error = originalConsoleError;
   }

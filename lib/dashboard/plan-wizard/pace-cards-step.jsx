@@ -17,10 +17,9 @@ const PACE_CARDS_STEP_COPY = wizardStepFromKey("pace-cards");
 //   - {Function} onNavigate - Changes wizard page after pending pace edits save successfully.
 //   - {Function} onSave - Receives prospect records and resolves true when the write succeeded.
 //   - {object} planningContext - Stored prospects for the scope.
-//   - {Error|null} saveError - Last save failure; its presence turns the action into a retry.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 // @returns {JSX.Element} The pace cards page.
-export default function PaceCardsStep({ isSaving, onNavigate, onSave, planningContext, saveError, scopeKey }) {
+export default function PaceCardsStep({ isSaving, onNavigate, onSave, planningContext, scopeKey }) {
   const [drafts, setDrafts] = useState(() => draftPacesFromProspects(planningContext.prospects));
   const capturedAtRef = useRef(null);
   const seededScopeRef = useRef(scopeKey);
@@ -116,9 +115,6 @@ export default function PaceCardsStep({ isSaving, onNavigate, onSave, planningCo
           to protect yet.
         </p>
       ) }
-      { saveError ? (
-        <p className="plan-error" role="alert">Your project paces were not saved. { saveError.message }</p>
-      ) : null }
     </form>
   );
 }

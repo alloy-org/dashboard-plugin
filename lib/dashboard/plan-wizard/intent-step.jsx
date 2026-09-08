@@ -98,13 +98,12 @@ function IntentStepCategory({ fields, isDisabled, onAddSecondary, onApplySuggest
 //   - {Function} onFindProjects - Moves to the projects page and runs discovery there.
 //   - {object} planningContext - Stored goals, goalRecords, and possibilities for the scope.
 //   - {Function} onSave - Receives goal records and resolves true when the write succeeded.
-//   - {Error|null} saveError - Last save failure; its presence turns the action into a retry.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 // @returns {JSX.Element} The intent page.
 // The wizard's shared Next button submits this form: discovery reads stored intents, so an unsaved answer would
 // otherwise be invisible and the user would be shown projects chosen for the prior answer.
 export default function IntentStep({ isRefreshing, isSaving, onAnswerStateChange, onFindProjects, onSave,
-    planningContext, saveError, scopeKey }) {
+    planningContext, scopeKey }) {
   const [draftFields, setDraftFields] = useState(() => draftFieldsFromGoals(planningContext.goals));
   const [focusedFieldUuid, setFocusedFieldUuid] = useState(null);
   const capturedAtRef = useRef(null);
@@ -207,9 +206,6 @@ export default function IntentStep({ isRefreshing, isSaving, onAnswerStateChange
       <IntentStepCategory { ...categoryProps } fields={ personalFields }
         onAddSecondary={ () => handleAddSecondary("personal") } possibilities={ planningContext.possibilities.personal }
         userCategoryEm="personal" />
-      { saveError ? (
-        <p className="plan-error" role="alert">Your answers were not saved. { saveError.message }</p>
-      ) : null }
     </form>
   );
 }

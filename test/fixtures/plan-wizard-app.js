@@ -22,6 +22,7 @@ export function createPlanWizardApp() {
       && (options.group === "archived" ? note.archived : !note.archived))),
     findNote: jest.fn(async ({ uuid }) => notes.find(note => note.uuid === uuid) ?? null),
     getNoteContent: jest.fn(async ({ uuid }) => notes.find(note => note.uuid === uuid)?.content ?? null),
+    navigate: jest.fn(async () => true),
     replaceNoteContent: jest.fn(async ({ uuid }, content, { section }) => {
       const note = notes.find(item => item.uuid === uuid);
       if (!note) return false;

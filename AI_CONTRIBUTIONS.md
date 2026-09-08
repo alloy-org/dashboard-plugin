@@ -3,6 +3,35 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-09-07 — Link overflowed Vision Guide writes to the data note
+
+**Model:** Cursor Grok 4.6
+**Files created:**
+- `lib/dashboard/plan-wizard/plan-save-error.jsx` — Save failures include an Open data note link when a Vision
+  Guide UUID is known.
+- `lib/dashboard/styles/note-editor.scss` — Editor styles live on the `.note-editor` root so they apply inside
+  the wizard overlay as well as the planning widget.
+- `test/plan-wizard-data-note.test.js` — In the dev environment the link opens the full note in a contentEditable
+  field.
+
+**Files modified:**
+- `lib/plan-wizard/vision-guide-notes.js` — Overflow errors carry `noteUuid` so the UI can link without parsing
+  the message.
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` — Shared save-error alert; the data-note link opens NoteEditor in
+  the dev environment.
+- `lib/dashboard/note-editor.jsx` — Dev note view uses a contentEditable field so a large Vision Guide can be
+  read in full.
+- `lib/dashboard/plan-wizard/intent-step.jsx`, `projects-step.jsx`, `pace-cards-step.jsx`,
+  `quarter-name-step.jsx`, `quarter-answer-step.jsx` — Save-error copy moves to the shared alert.
+- `lib/dashboard/styles/plan-wizard.scss`, `planning.scss` — Link styling; editor rules leave the planning
+  stylesheet.
+- `test/plan-wizard-ui.test.js`, `test/plan-wizard-repository.test.js`, `test/fixtures/plan-wizard-app.js` —
+  Overflow errors expose the note UUID; production clicks navigate to the Amplenote URL.
+
+**Prompt summary:** "Upon trying to save values for Pace, received error about the write limit. Let's include a
+link to the data note when this occurs, including in dev environment where we should be able to see the full
+data store note in a contentEditable element"
+
 ## 2026-09-07 — Name the quarter from Focus projects and sketch when each runs
 
 **Model:** Cursor Grok 4.6

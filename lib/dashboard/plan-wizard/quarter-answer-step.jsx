@@ -80,9 +80,6 @@ export default function QuarterAnswerStep({ answer, answerKey, hints = [], isSav
           { hints.map(hint => <li className="quarter-answer-hint" key={ hint }>{ hint }</li>) }
         </ul>
       ) : null }
-      { saveError ? (
-        <p className="plan-error" role="alert">Your answer was not saved. { saveError.message }</p>
-      ) : null }
       { hasSaved ? <p className="plan-saved">Saved.</p> : null }
       <div className="plan-actions">
         <button className="plan-button plan-button--primary" disabled={ isSaving || !canSave } onClick={ handleSave } type="button">

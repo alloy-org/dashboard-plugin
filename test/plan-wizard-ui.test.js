@@ -828,6 +828,32 @@ describe("PlanWizard pace cards step", () => {
       preferredWeekdays: [] });
     await cleanup();
   });
+
+  it("links to the Vision Guide note when a pace save fails", async () => {
+    const { app, cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "projects");
+    await saveFirstProject(container, "Rebuild the ingestion pipeline");
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+    await clickAndSettle(paceChoice(container, "Two focused blocks per week"));
+
+    const workingReplace = app.replaceNoteContent;
+    app.replaceNoteContent = jest.fn(async () => {
+      throw new Error("Vision Guide section \"Professional ideas & prospects\" is 288538 characters; the write limit is 200000");
+    });
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+
+    const error = container.querySelector(".plan-error");
+    expect(error.textContent).toContain("write limit is 200000");
+    const noteLink = container.querySelector(".plan-error-note-link");
+    expect(noteLink.textContent).toBe("Open data note");
+    expect(noteLink.getAttribute("href")).toBe(`https://www.amplenote.com/notes/${ app.notes[0].uuid }`);
+    await act(async () => { noteLink.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true })); });
+    await settle();
+    expect(app.navigate).toHaveBeenCalledWith(`https://www.amplenote.com/notes/${ app.notes[0].uuid }`);
+
+    app.replaceNoteContent = workingReplace;
+    await cleanup();
+  });
 });
 
 describe("PlanWizard quarter name step", () => {
