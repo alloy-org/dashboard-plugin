@@ -3,6 +3,51 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-09-07 — Clarify project focus bars and expose project context
+
+**Model:** GPT-5.6 Sol
+**Files created:** none
+**Files modified:**
+- `lib/dashboard/plan-wizard/quarter-name-step-fields.js`,
+  `lib/dashboard/plan-wizard/project-focus-window-fields.js` — Cycle five bar colors and carry prior priority,
+  pace, weekday, deadline, category, and reasoning details into an HTML-safe tooltip.
+- `lib/dashboard/plan-wizard/project-focus-window.jsx` — Show the project tooltip immediately and expose a
+  resize cursor over the final 30 pixels of each bar.
+- `lib/dashboard/styles/plan-wizard.scss`, `theme-tokens.scss`, `theme-light.scss`, `theme-dark.scss` — Add a
+  canary/orange/red/purple/teal palette and strengthen the middle-month contrast in both themes.
+- `test/plan-wizard-quarter-name.test.js` — Cover five-color cycling and escaped project tooltip details.
+- `build/compiled.js` — Rebuild the distributable plugin with the updated Plan Builder client and theme.
+
+**Prompt summary:** "Use five visible colors for Roughly when? bars, show a resize cursor over their last 30px,
+increase middle-column contrast, and immediately tooltip full project context from previous steps."
+
+## 2026-09-07 — Build and style the "done enough for today" wizard page
+
+**Model:** Claude Opus 5
+**Files created:**
+- `lib/dashboard/plan-wizard/done-enough-fields.js` — The catalog of daily-sufficiency conditions and release
+  activities, and the composition and parsing that carry a selection through the single stored answer text.
+- `lib/dashboard/plan-wizard/done-enough-conditions.jsx` — The radiogroup card of conditions, including the
+  field that appears when Custom condition is chosen.
+- `lib/dashboard/plan-wizard/done-enough-preview.jsx` — The panel that reads a qualifying day back in the
+  wording the chosen condition produces, with the scene drawn from theme tokens.
+- `lib/dashboard/plan-wizard/done-enough-step.jsx` — The page itself, replacing the shared single-answer
+  component for this step; holds the draft, composes the answer, and saves it.
+**Files removed:**
+- `lib/dashboard/plan-wizard/quarter-answer-step.jsx` — Superseded; the quarter-name page keeps the shared
+  field rules in `quarter-answer-fields.js`.
+**Files modified:**
+- `lib/dashboard/plan-wizard/wizard-steps.js` — The final step's title, summary, and implementing file.
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` — Route the step to the new page; the input hints and placeholder
+  it used to supply now live with the page's own copy.
+- `lib/dashboard/styles/plan-wizard.scss` — Styles for the two-column page: eyebrow and optional badge,
+  condition rows and their selected state, release chips, and the preview panel and its scene.
+- `test/plan-wizard-ui.test.js` — Cover choosing a condition and activities, restoring both on reopening, a
+  written condition, and Not now leaving the question unanswered.
+
+**Prompt summary:** "Add styles to the final plan-wizard step, reusing classes from the other plan builder
+components, so the user can optionally choose criteria for when they have done enough for one day."
+
 ## 2026-09-07 — Make project focus windows optional and directly draggable
 
 **Model:** GPT-5.6 Sol

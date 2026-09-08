@@ -967,10 +967,15 @@ $plan-wizard-z-index: 1100;
       grid-template-columns: minmax(7rem, 11rem) minmax(0, 1fr) 28px;
     }
 
+    .quarter-name-window-label-cell {
+      min-width: 0;
+    }
+
     .quarter-name-window-label {
+      cursor: help;
+      display: block;
       font-size: 0.82rem;
       font-weight: 600;
-      margin: 0;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -978,9 +983,9 @@ $plan-wizard-z-index: 1100;
 
     .quarter-name-window-track {
       background-color: $color-bg-page;
-      background-image: linear-gradient(to right, transparent 0 33.333%, $color-bg-page-hover 33.333% 66.666%,
-        transparent 66.666%), linear-gradient($color-border, $color-border),
-        linear-gradient($color-border, $color-border);
+      background-image: linear-gradient(to right, transparent 0 33.333%, $color-border 33.333% 66.666%,
+        transparent 66.666%), linear-gradient($color-text-muted, $color-text-muted),
+        linear-gradient($color-text-muted, $color-text-muted);
       background-position: 0, 33.333%, 66.666%;
       background-repeat: no-repeat;
       background-size: 100% 100%, 1px 100%, 1px 100%;
@@ -1012,15 +1017,27 @@ $plan-wizard-z-index: 1100;
       top: 4px;
 
       &--0 {
-        background: $color-blue-light;
+        background: $color-project-window-canary;
+
+        .quarter-name-bar-handle {
+          color: $color-text;
+        }
       }
 
       &--1 {
-        background: $color-intent-personal;
+        background: $color-project-window-orange;
       }
 
       &--2 {
-        background: $color-success;
+        background: $color-project-window-red;
+      }
+
+      &--3 {
+        background: $color-project-window-purple;
+      }
+
+      &--4 {
+        background: $color-project-window-teal;
       }
 
       &--pulse {
@@ -1032,6 +1049,16 @@ $plan-wizard-z-index: 1100;
       color: $color-text-on-accent;
       font-size: 0.85rem;
       line-height: 1;
+    }
+
+    .quarter-name-bar-end-hit {
+      bottom: 0;
+      cursor: ew-resize;
+      pointer-events: auto;
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: min(30px, 100%);
     }
 
     .quarter-name-window-start,

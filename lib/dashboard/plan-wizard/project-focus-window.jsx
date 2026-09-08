@@ -1,8 +1,9 @@
 // One project's optional focus window on the Name the quarter timeline: click an empty month to place it, drag
 // near either edge to resize it, or drag its middle to move the whole range.
 
+import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
 import { FOCUS_WINDOW_EDGE_HIT_PIXELS, dayOffsetFromPointer, monthIndexFromPointer, movedWindowDraft,
-  pointerOperationFromPosition, removedWindowDraft,
+  pointerOperationFromPosition, projectTooltipHtmlFromDraft, removedWindowDraft,
   windowDraftFromMonthIndex } from "dashboard/plan-wizard/project-focus-window-fields";
 import { dayOffsetFromDateKey, deadlineNoteFromDraft,
   updatedWindowDraft } from "dashboard/plan-wizard/quarter-name-step-fields";
@@ -29,6 +30,7 @@ function ProjectFocusWindow({ draft, isDisabled, onChangeWindow, quarterEndOn, q
   const axis = { quarterEndOn, quarterMonths, quarterStartOn };
   const dragOperationRef = useRef(null);
   const [pulseVersion, setPulseVersion] = useState(0);
+  const tooltipHtml = projectTooltipHtmlFromDraft(draft);
 
   // ----------------------------------------------------------------------------------------------
   // @desc Apply a keyboard-operated range thumb while keeping the opposite edge and the deadline clamp.
@@ -98,7 +100,11 @@ function ProjectFocusWindow({ draft, isDisabled, onChangeWindow, quarterEndOn, q
 
   return (
     <div className="quarter-name-window">
-      <p className="quarter-name-window-label">{ draft.summary }</p>
+      <div className="quarter-name-window-label-cell">
+        <DashboardTippy content={ tooltipHtml } delay={ 0 } placement="right">
+          <span className="quarter-name-window-label" tabIndex={ 0 }>{ draft.summary }</span>
+        </DashboardTippy>
+      </div>
       <div aria-label={ hasWindow ? `Focus window for ${ draft.summary }` : `Place ${ draft.summary } in a month` }
         className={ `quarter-name-window-track${ hasWindow ? "" : " quarter-name-window-track--empty" }` }
         onPointerCancel={ handlePointerUp } onPointerDown={ handlePointerDown } onPointerMove={ handlePointerMove }
@@ -109,6 +115,7 @@ function ProjectFocusWindow({ draft, isDisabled, onChangeWindow, quarterEndOn, q
               ? " quarter-name-bar--pulse" : "" }` } key={ pulseVersion } style={ barStyle }>
               <span aria-hidden="true" className="quarter-name-bar-handle">‹</span>
               <span aria-hidden="true" className="quarter-name-bar-handle">›</span>
+              <span aria-hidden="true" className="quarter-name-bar-end-hit" />
             </div>
             <input aria-label={ `Start of ${ draft.summary }` } className="quarter-name-window-start"
               disabled={ isDisabled } max={ maxDay } min={ 0 }
@@ -143,7 +150,12 @@ export function projectFocusWindowPropsEqual(previous, next) {
     && previous.quarterEndOn === next.quarterEndOn && previous.quarterStartOn === next.quarterStartOn
     && previousDraft.colorIndex === nextDraft.colorIndex && previousDraft.deadlineOn === nextDraft.deadlineOn
     && previousDraft.endOn === nextDraft.endOn && previousDraft.startOn === nextDraft.startOn
-    && previousDraft.summary === nextDraft.summary && previousDraft.uuid === nextDraft.uuid;
+    && previousDraft.paceEm === nextDraft.paceEm
+    && (previousDraft.preferredWeekdays ?? []).join(",") === (nextDraft.preferredWeekdays ?? []).join(",")
+    && previousDraft.priorityEm === nextDraft.priorityEm
+    && (previousDraft.substantiations ?? []).join("\n") === (nextDraft.substantiations ?? []).join("\n")
+    && previousDraft.summary === nextDraft.summary && previousDraft.userCategoryEm === nextDraft.userCategoryEm
+    && previousDraft.uuid === nextDraft.uuid;
 }
 
 export default memo(ProjectFocusWindow, projectFocusWindowPropsEqual);

@@ -1,7 +1,8 @@
 // Exercise the Name the quarter helpers without rendering: name ideas from Focus projects, deadline-clamped
 // default windows, color cycling, and the focusMonths written for a dragged bar.
 
-import { FOCUS_WINDOW_EDGE_HIT_PIXELS, movedWindowDraft, pointerOperationFromPosition, removedWindowDraft,
+import { FOCUS_WINDOW_EDGE_HIT_PIXELS, movedWindowDraft, pointerOperationFromPosition,
+  projectTooltipHtmlFromDraft, removedWindowDraft,
   windowDraftFromMonthIndex } from "dashboard/plan-wizard/project-focus-window-fields";
 import { FOCUS_WINDOW_COLOR_COUNT, clampFocusWindow, deadlineNoteFromDraft, defaultFocusWindow,
   draftWindowsFromProspects, focusMonthsFromWindow, focusWindowColorIndex, nameIdeasFromProspects,
@@ -88,16 +89,29 @@ describe("focus windows", () => {
     expect(position(700)).toBeNull();
   });
 
-  test("omits Not now projects from the timeline and cycles bar colors past the third row", () => {
+  test("builds an escaped tooltip from project decisions made on earlier steps", () => {
+    const tooltip = projectTooltipHtmlFromDraft({ deadlineOn: "2026-11-14", paceEm: "deadlineSprint",
+      preferredWeekdays: ["monday"], priorityEm: "quarterFocus", substantiations: ["Closes <five> tasks"],
+      summary: "Ship & learn", userCategoryEm: "work" });
+    expect(tooltip).toContain("Ship &amp; learn");
+    expect(tooltip).toContain("Focus this quarter");
+    expect(tooltip).toContain("Deadline sprint");
+    expect(tooltip).toContain("Monday");
+    expect(tooltip).toContain("Closes &lt;five&gt; tasks");
+  });
+
+  test("omits Not now projects and cycles five distinct bar colors", () => {
     const drafts = draftWindowsFromProspects([
       prospect({ summary: "One", uuid: "1" }),
       prospect({ summary: "Two", uuid: "2" }),
       prospect({ summary: "Three", uuid: "3" }),
       prospect({ summary: "Four", uuid: "4" }),
+      prospect({ summary: "Five", uuid: "5" }),
+      prospect({ summary: "Six", uuid: "6" }),
       prospect({ priorityEm: "notNow", summary: "Parked", uuid: "parked" }),
     ], SCOPE);
-    expect(drafts.map(draft => draft.summary)).toEqual(["One", "Two", "Three", "Four"]);
-    expect(drafts.map(draft => draft.colorIndex)).toEqual([0, 1, 2, 0]);
+    expect(drafts.map(draft => draft.summary)).toEqual(["One", "Two", "Three", "Four", "Five", "Six"]);
+    expect(drafts.map(draft => draft.colorIndex)).toEqual([0, 1, 2, 3, 4, 0]);
     expect(focusWindowColorIndex(FOCUS_WINDOW_COLOR_COUNT)).toBe(0);
   });
 
