@@ -187,6 +187,55 @@ test("bootstraps the complete skeleton through a whole-note write", async () => 
 });
 
 // ----------------------------------------------------------------------------------------------
+// @desc createNote answers with a local-prefixed identifier that changes once the note reaches the server, and a
+//   write addressed to the superseded identifier reports success while changing nothing. Bootstrap must look the
+//   note up before writing so the skeleton lands in the note the host actually holds.
+test("writes the skeleton through the handle the host settled on, not the identifier creation returned", async () => {
+  const app = createPlanWizardApp();
+  await savePlanGoals(app, { ...scope, goals: [goal] });
+  const [bootstrapCall] = app.replaceNoteContent.mock.calls;
+  expect(bootstrapCall[0].uuid).toBe(app.notes[0].uuid);
+  expect(app.notes[0].content.trim()).not.toBe("");
+  expect(guideSectionRange(app.notes[0].content, "Guide metadata").level).toBe(1);
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc A note that displays as empty does not always read back as an empty string; getNoteContent was observed
+//   returning a single backslash for a note with no visible content. That is truthy after trimming and carries no
+//   headings, so a literal emptiness test sent a blank note down the parsing path and reported it as missing
+//   metadata rather than initializing it.
+test("initializes a note that reads back as a lone backslash", async () => {
+  const app = createPlanWizardApp();
+  await savePlanGoals(app, { ...scope, goals: [goal] });
+  app.notes[0].content = "\\";
+  const recovered = await savePlanGoals(app, { ...scope, goals: [goal] });
+  expect(app.notes).toHaveLength(1);
+  expect(recovered.goals).toHaveLength(1);
+  expect(guideSectionRange(app.notes[0].content, "Guide metadata").level).toBe(1);
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Reading a scope whose only note reads back as a lone backslash reports empty planning data rather than
+//   failing, so opening the wizard on a freshly created guide never surfaces a parsing error.
+test("reads a lone-backslash note as empty planning data", async () => {
+  const app = createPlanWizardApp();
+  await savePlanGoals(app, { ...scope, goals: [goal] });
+  app.notes[0].content = "\\";
+  const context = await readPlanGoals(app, scope);
+  expect(context.goals).toEqual([]);
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Only a backslash alone on its line is discounted. An escaped backslash sits beside other characters and is
+//   authored content, so a note holding one must still be refused rather than silently overwritten as blank.
+test("refuses to overwrite a note holding an escaped backslash as content", async () => {
+  const app = createPlanWizardApp();
+  await savePlanGoals(app, { ...scope, goals: [goal] });
+  app.notes[0].content = "\\\\";
+  await expect(savePlanGoals(app, { ...scope, goals: [goal] })).rejects.toThrow();
+});
+
+// ----------------------------------------------------------------------------------------------
 // @desc A note left holding only the bootstrap preamble is this plugin's own partial write, not user data, so
 //   reopening the wizard finishes it in place instead of refusing it as non-empty forever.
 test("finishes a note left holding only the bootstrap preamble", async () => {
@@ -197,6 +246,34 @@ test("finishes a note left holding only the bootstrap preamble", async () => {
   expect(app.notes).toHaveLength(1);
   expect(recovered.goals).toHaveLength(1);
   expect(guideSectionRange(app.notes[0].content, "Guide metadata").level).toBe(1);
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc The scope tag encodes the domain UUID, and an earlier encoding was long enough for the host to truncate it.
+//   A stored tag that is a prefix of the expected one identifies the same scope, so a note stranded by that bug is
+//   adopted rather than orphaned beside a fresh duplicate.
+test("adopts an empty note whose scope tag the host truncated", async () => {
+  const app = createPlanWizardApp();
+  await savePlanGoals(app, { ...scope, goals: [goal] });
+  const strandedNote = app.notes[0];
+  strandedNote.content = "";
+  strandedNote.tags = strandedNote.tags.map(tag => (tag.includes("plan-wizard/2026-") ? tag.slice(0, tag.length - 12) : tag));
+  const recovered = await savePlanGoals(app, { ...scope, goals: [goal] });
+  expect(app.notes).toHaveLength(1);
+  expect(recovered.goals).toHaveLength(1);
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc A truncated tag identifies a scope only by prefix, so a different year must never satisfy it.
+test("does not adopt a truncated tag belonging to another year", async () => {
+  const app = createPlanWizardApp();
+  await savePlanGoals(app, { ...scope, goals: [goal] });
+  const strandedNote = app.notes[0];
+  strandedNote.content = "";
+  strandedNote.name = "Unrelated note";
+  strandedNote.tags = strandedNote.tags.map(tag => (tag.includes("plan-wizard/2026-") ? tag.slice(0, tag.length - 12) : tag));
+  await savePlanGoals(app, { ...scope, goals: [goal], year: 2027 });
+  expect(app.notes).toHaveLength(2);
 });
 
 // ----------------------------------------------------------------------------------------------

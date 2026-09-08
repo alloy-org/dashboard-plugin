@@ -15,17 +15,17 @@ export function createPlanWizardApp() {
     getTaskDomainTasks: jest.fn(async () => tasks.slice()),
     createNote: jest.fn(async (name, tags, options) => {
       const uuid = `note-${ notes.length + 1 }`;
-      notes.push({ archived: options?.archive ?? false, content: "", name, tags, uuid });
-      return uuid;
+      notes.push({ archived: options?.archive ?? false, content: "", localUuid: `local-${ uuid }`, name, tags, uuid });
+      return `local-${ uuid }`;
     }),
     filterNotes: jest.fn(async (options = {}) => notes.filter(note => (!options.tag || note.tags.includes(options.tag))
       && (options.group === "archived" ? note.archived : !note.archived))),
-    findNote: jest.fn(async ({ uuid }) => notes.find(note => note.uuid === uuid) ?? null),
-    getNoteContent: jest.fn(async ({ uuid }) => notes.find(note => note.uuid === uuid)?.content ?? null),
+    findNote: jest.fn(async ({ uuid }) => noteForUuid(notes, uuid) ?? null),
+    getNoteContent: jest.fn(async ({ uuid }) => noteForUuid(notes, uuid)?.content ?? null),
     navigate: jest.fn(async () => true),
     replaceNoteContent: jest.fn(async ({ uuid }, content, options = {}) => {
       const note = notes.find(item => item.uuid === uuid);
-      if (!note) return false;
+      if (!note) return true;
       if (!("section" in options)) { note.content = content; return true; }
       const range = mockSectionRange(note.content, options.section);
       if (!range) return false;
@@ -59,4 +59,15 @@ function mockSectionRange(content, section) {
   if (!heading) return null;
   const following = headings.find(candidate => candidate.start > heading.start && candidate.level <= heading.level);
   return { end: following?.start ?? content.length, start: heading.body };
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Resolve a note by either the identifier it settled on or the local one creation handed back.
+// @param {Array<object>} notes - Mock note store.
+// @param {string} uuid - Identifier supplied by the caller.
+// @returns {object|undefined} The matching note.
+// createNote returns a local-prefixed identifier that changes once the note persists. Lookups keep honoring it, but a
+//   write addressed to it reports success without changing anything, so the two are resolved differently on purpose.
+function noteForUuid(notes, uuid) {
+  return notes.find(note => note.uuid === uuid || note.localUuid === uuid);
 }
