@@ -544,12 +544,15 @@ function _parseFrontmatter(raw) {
   return { meta, content, frontmatterEnd: endIdx + 4 };
 }
 
-// [Claude] Task: find section boundaries in markdown content for replaceNoteContent section support
-// Prompt: "implementing replaceNoteContent with the 'section' object will require a regular expression"
-// Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
+// ----------------------------------------------------------------------------------------------
+// @desc Locate one markdown section without allowing horizontal whitespace matching to consume blank lines,
+//   so replacing a section cannot duplicate its existing gap before the first body element.
+// @param {string} content - Complete note body.
+// @param {string} headingText - Exact heading text whose body should be replaced.
+// @returns {object|null} Heading-line end and section-content end offsets, or null when absent.
 function _findSectionBoundaries(content, headingText) {
   const escaped = headingText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const headingRe = new RegExp(`^(#{1,6})\\s+${escaped}\\s*$`, 'gm');
+  const headingRe = new RegExp(`^(#{1,6})[ \\t]+${escaped}[ \\t]*\\r?$`, 'gm');
   const match = headingRe.exec(content);
   if (!match) return null;
 
@@ -557,7 +560,7 @@ function _findSectionBoundaries(content, headingText) {
   const headingLineEnd = match.index + match[0].length;
 
   const rest = content.substring(headingLineEnd);
-  const nextHeadingRe = new RegExp(`^#{1,${headingLevel}}\\s+`, 'gm');
+  const nextHeadingRe = new RegExp(`^#{1,${headingLevel}}[ \\t]+`, 'gm');
   const nextMatch = nextHeadingRe.exec(rest);
 
   return {

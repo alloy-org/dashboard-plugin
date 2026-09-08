@@ -20,7 +20,7 @@ await jest.unstable_mockModule("providers/fetch-ai-provider", () => ({
 }));
 
 const { default: PlanWizard } = await import("dashboard/plan-wizard/plan-wizard");
-const { default: NoteEditor } = await import("note-editor");
+const { default: NoteEditor } = await import("dashboard/note-editor");
 
 const SCOPE = { domainName: "Work", domainUuid: "domain-1", quarter: 4, year: 2026 };
 

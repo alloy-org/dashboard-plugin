@@ -15,6 +15,7 @@
 // reach the rest when the viewport cannot show it all at once. A nested fixed layer keeps the dim covering the
 // rest of the screen, since the overlay box itself only wraps the dialog.
 
+import NoteEditor from "dashboard/note-editor";
 import IntentStep, { INTENT_STEP_FORM_ID } from "dashboard/plan-wizard/intent-step";
 import PaceCardsStep, { PACE_CARDS_STEP_FORM_ID } from "dashboard/plan-wizard/pace-cards-step";
 import PlanSaveError from "dashboard/plan-wizard/plan-save-error";
@@ -23,7 +24,6 @@ import QuarterAnswerStep from "dashboard/plan-wizard/quarter-answer-step";
 import QuarterNameStep, { QUARTER_NAME_STEP_FORM_ID } from "dashboard/plan-wizard/quarter-name-step";
 import { WIZARD_STEPS, wizardStepIndexFromKey } from "dashboard/plan-wizard/wizard-steps";
 import usePlanWizard, { planScopeKey } from "hooks/use-plan-wizard";
-import NoteEditor from "note-editor";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import "dashboard/styles/plan-wizard.scss";

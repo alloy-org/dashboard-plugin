@@ -106,6 +106,24 @@ describe("Dev App Harness", () => {
       expect(storedMarkdown).toContain("archived: true");
       expect(storedMarkdown).toContain('"goalText": "Run three times each week"');
     });
+
+    // ----------------------------------------------------------------------------------------------
+    // @desc Repeated section writes must retain one blank line after the heading instead of exponentially
+    //   duplicating the whitespace already present before its JSON fence.
+    it("keeps section spacing constant across repeated Vision Guide writes", async () => {
+      const app = createDevApp(tmpSettingsPath, tmpNotesDir);
+      const scope = { domainName: "Work", domainUuid: "domain-work-uuid", quarter: 4, year: 2026 };
+      for (let index = 0; index < 20; index += 1) {
+        const capturedAt = new Date(Date.UTC(2026, 8, 7, 18, 0, index)).toISOString();
+        await savePlanGoals(app, { ...scope, goals: [{ capturedAt, goalRank: 1,
+          goalText: `Reliability intent revision ${ index }`, userCategoryEm: "work" }] });
+      }
+
+      const noteFile = fs.readdirSync(tmpNotesDir).find(fileName => fileName.endsWith(".md"));
+      const storedMarkdown = fs.readFileSync(path.join(tmpNotesDir, noteFile), "utf8");
+      expect(storedMarkdown).toContain("### Q4 2026 Picked intents\n\n```json");
+      expect(storedMarkdown).not.toMatch(/### Q4 2026 Picked intents\n{3,}```json/);
+    });
   });
 
   // --------------------------------------------------

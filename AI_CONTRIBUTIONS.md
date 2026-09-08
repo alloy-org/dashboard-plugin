@@ -3,6 +3,32 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-09-07 — Stop dev section writes from doubling blank lines
+
+**Model:** GPT-5.6 Sol
+**Files created:** none
+**Files modified:**
+- `dev/dev-app.js` — Restrict markdown heading whitespace matching to spaces and tabs so section boundaries
+  stop before blank lines instead of copying those lines into both sides of every replacement.
+- `test/dev-app.test.js` — Repeat a Vision Guide section write twenty times and verify its heading-to-JSON
+  spacing stays constant.
+- `notes/e8f55153-d133-4a56-a099-518634af5d70.md` — Normalize whitespace-only gaps before JSON fences,
+  removing 264,319 duplicated newline characters while preserving and validating all nineteen JSON payloads.
+
+**Prompt summary:** "Review the oversized disk-backed data note and proceed with fixing the exponential
+blank-line growth that causes sections to exceed the 200,000-character write limit."
+
+## 2026-09-07 — Resolve the nested Plan Wizard note-editor import
+
+**Model:** GPT-5.6 Sol
+**Files created:** none
+**Files modified:**
+- `lib/dashboard/plan-wizard/plan-wizard.jsx`, `test/plan-wizard-data-note.test.js` — Import the shared editor
+  from its `dashboard/note-editor` path so both esbuild environments resolve it from the `lib` root.
+
+**Prompt summary:** "The previous agent left an error: Could not resolve note-editor. Review the project import
+rules and accommodate the different dev and production environments."
+
 ## 2026-09-07 — Link overflowed Vision Guide writes to the data note
 
 **Model:** Cursor Grok 4.6
