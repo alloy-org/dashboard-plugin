@@ -19,21 +19,18 @@ import IntentStep, { INTENT_STEP_FORM_ID } from "dashboard/plan-wizard/intent-st
 import PaceCardsStep, { PACE_CARDS_STEP_FORM_ID } from "dashboard/plan-wizard/pace-cards-step";
 import ProjectsStep, { PROJECTS_STEP_FORM_ID } from "dashboard/plan-wizard/projects-step";
 import QuarterAnswerStep from "dashboard/plan-wizard/quarter-answer-step";
+import QuarterNameStep, { QUARTER_NAME_STEP_FORM_ID } from "dashboard/plan-wizard/quarter-name-step";
 import { WIZARD_STEPS, wizardStepIndexFromKey } from "dashboard/plan-wizard/wizard-steps";
 import usePlanWizard, { planScopeKey } from "hooks/use-plan-wizard";
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import "dashboard/styles/plan-wizard.scss";
 
-// Field copy for the two pages that capture a single quarter-wide answer. Title and summary live on WIZARD_STEPS;
-// this keeps the input hints and placeholder beside the routing that renders them.
-const QUARTER_ANSWER_COPY = {
-  "enough-for-today": { answerKey: "dailySufficiency",
-    hints: ["Two hours of focused project work", "Every task I marked important yesterday", "One thing that moves a quarterly intent"],
-    placeholder: "What has to be true before the day counts as a good one?" },
-  "quarter-name": { answerKey: "quarterName", hints: ["The Shipping Quarter", "Rebuild the Foundations", "Fewer, Bigger Things"],
-    placeholder: "Give this stretch of months a name you will recognize later." },
-};
+// Field copy for the daily-sufficiency page. Title and summary live on WIZARD_STEPS; this keeps the input hints
+// and placeholder beside the routing that renders them.
+const DAILY_SUFFICIENCY_COPY = { answerKey: "dailySufficiency",
+  hints: ["Two hours of focused project work", "Every task I marked important yesterday", "One thing that moves a quarterly intent"],
+  placeholder: "What has to be true before the day counts as a good one?" };
 
 export { WIZARD_STEPS };
 
@@ -72,9 +69,9 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const step = WIZARD_STEPS[stepIndex];
   const isFirstStep = stepIndex === 0;
   const isLastStep = stepIndex === WIZARD_STEPS.length - 1;
-  const isPaceCardsStep = step.key === "pace-cards";
-  const isProspectFormStep = isPaceCardsStep || step.key === "projects";
-  const prospectFormId = isPaceCardsStep ? PACE_CARDS_STEP_FORM_ID : PROJECTS_STEP_FORM_ID;
+  const navigatingFormId = { "pace-cards": PACE_CARDS_STEP_FORM_ID, "projects": PROJECTS_STEP_FORM_ID,
+    "quarter-name": QUARTER_NAME_STEP_FORM_ID }[step.key];
+  const isNavigatingFormStep = Boolean(navigatingFormId);
   const hasPersistedIntent = planningContext.goals.length > 0;
 
   // ----------------------------------------------------------------------------------------------
@@ -169,28 +166,31 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
           <PaceCardsStep { ...{ isSaving, planningContext, saveError, scopeKey } }
             onNavigate={ handleProjectNavigation } onSave={ records => saveProspects(records, { updatePlacement: false }) } />
         ) : null }
-        { !isLoading && !error && QUARTER_ANSWER_COPY[step.key] ? (
-          <QuarterAnswerStep { ...QUARTER_ANSWER_COPY[step.key] } { ...{ isSaving, saveError, scopeKey } }
-            answer={ planningContext[QUARTER_ANSWER_COPY[step.key].answerKey] } onSave={ saveQuarterAnswer }
-            stepKey={ step.key } />
+        { !isLoading && !error && step.key === "quarter-name" ? (
+          <QuarterNameStep { ...{ isSaving, planningContext, saveError, scopeKey } }
+            onNavigate={ handleProjectNavigation } onSaveName={ saveQuarterAnswer } onSaveProspects={ saveProspects } />
+        ) : null }
+        { !isLoading && !error && step.key === "enough-for-today" ? (
+          <QuarterAnswerStep { ...DAILY_SUFFICIENCY_COPY } { ...{ isSaving, saveError, scopeKey } }
+            answer={ planningContext.dailySufficiency } onSave={ saveQuarterAnswer } stepKey={ step.key } />
         ) : null }
         { !isLoading && !error ? (
           <nav className="plan-wizard-navigation">
             { isFirstStep ? null : (
-              <button className="plan-wizard-back" disabled={ isProspectFormStep && isSaving }
-                form={ isProspectFormStep ? prospectFormId : undefined }
-                onClick={ isProspectFormStep ? () => { projectNavigationDirectionRef.current = -1; }
+              <button className="plan-wizard-back" disabled={ isNavigatingFormStep && isSaving }
+                form={ isNavigatingFormStep ? navigatingFormId : undefined }
+                onClick={ isNavigatingFormStep ? () => { projectNavigationDirectionRef.current = -1; }
                   : () => handleStepChange(-1) }
-                type={ isProspectFormStep ? "submit" : "button" } value="-1">Back</button>
+                type={ isNavigatingFormStep ? "submit" : "button" } value="-1">Back</button>
             ) }
             <button className="plan-wizard-next"
               disabled={ isLastStep || (isFirstStep && ((!hasIntentAnswer && !hasPersistedIntent) || isSaving))
-                || (isProspectFormStep && isSaving) }
-              form={ isFirstStep ? INTENT_STEP_FORM_ID : isProspectFormStep ? prospectFormId : undefined }
-              onClick={ isFirstStep ? undefined : isProspectFormStep
+                || (isNavigatingFormStep && isSaving) }
+              form={ isFirstStep ? INTENT_STEP_FORM_ID : isNavigatingFormStep ? navigatingFormId : undefined }
+              onClick={ isFirstStep ? undefined : isNavigatingFormStep
                 ? () => { projectNavigationDirectionRef.current = 1; } : () => handleStepChange(1) }
-              type={ isFirstStep || isProspectFormStep ? "submit" : "button" } value="1">
-              { (isFirstStep || isProspectFormStep) && isSaving ? "Saving…" : "Next" }
+              type={ isFirstStep || isNavigatingFormStep ? "submit" : "button" } value="1">
+              { (isFirstStep || isNavigatingFormStep) && isSaving ? "Saving…" : "Next" }
             </button>
           </nav>
         ) : null }

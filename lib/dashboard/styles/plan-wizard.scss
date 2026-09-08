@@ -247,7 +247,8 @@ $plan-wizard-z-index: 1100;
   .intent-step-page,
   .pace-cards-page,
   .projects-step-page,
-  .quarter-answer-page {
+  .quarter-answer-page,
+  .quarter-name-page {
     display: flex;
     flex-direction: column;
     gap: $sp-md;
@@ -257,7 +258,9 @@ $plan-wizard-z-index: 1100;
   .intent-step-heading,
   .pace-cards-heading,
   .projects-step-heading,
-  .quarter-answer-heading {
+  .quarter-answer-heading,
+  .quarter-name-heading,
+  .quarter-name-timeline-heading {
     font-size: 1.05rem;
     font-weight: 700;
     margin: 0;
@@ -267,7 +270,9 @@ $plan-wizard-z-index: 1100;
   .intent-step-summary,
   .pace-cards-summary,
   .projects-step-summary,
-  .quarter-answer-summary {
+  .quarter-answer-summary,
+  .quarter-name-summary,
+  .quarter-name-timeline-summary {
     color: $color-text-secondary;
     font-size: 0.85rem;
     line-height: 1.5;
@@ -297,7 +302,8 @@ $plan-wizard-z-index: 1100;
   .intent-step-error,
   .pace-cards-error,
   .projects-step-error,
-  .quarter-answer-error {
+  .quarter-answer-error,
+  .quarter-name-error {
     color: $color-danger;
     font-size: 0.8rem;
     margin: 0;
@@ -655,5 +661,185 @@ $plan-wizard-z-index: 1100;
 
   .quarter-answer-hint {
     font-style: italic;
+  }
+
+  // ── Quarter name step ────────────────────────────────────────────────────────────────────
+
+  .quarter-name-ideas {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+  }
+
+  .quarter-name-idea {
+    background: $color-bg-primary;
+    font-weight: 500;
+    line-height: 1.45;
+    text-align: left;
+
+    &--selected {
+      background: $color-blue-light;
+      border-color: $color-accent;
+      border-width: 2px;
+      color: $color-navy;
+    }
+  }
+
+  .quarter-name-custom {
+    align-items: center;
+    background: $color-bg-primary;
+    border: 1px dashed $color-border;
+    border-radius: $radius-sm;
+    display: flex;
+    gap: $sp-sm;
+    min-height: $plan-wizard-input-min-height;
+    padding: 0 $sp-md;
+
+    &--selected {
+      border-color: $color-accent;
+      border-style: solid;
+      border-width: 2px;
+    }
+
+    .quarter-name-custom-input {
+      background: transparent;
+      border: 0;
+      min-height: 0;
+      padding: $sp-sm 0;
+
+      &:focus {
+        border: 0;
+        outline: none;
+      }
+    }
+  }
+
+  .quarter-name-custom-mark {
+    color: $color-text-muted;
+    flex: 0 0 auto;
+  }
+
+  .quarter-name-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-md;
+  }
+
+  .quarter-name-months {
+    display: grid;
+    gap: 0 $sp-md;
+    grid-template-columns: minmax(7rem, 11rem) repeat(3, minmax(0, 1fr));
+  }
+
+  .quarter-name-month {
+    color: $color-text-secondary;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: center;
+
+    &:first-child {
+      grid-column: 2;
+    }
+  }
+
+  .quarter-name-window {
+    display: grid;
+    gap: $sp-xs $sp-md;
+    grid-template-columns: minmax(7rem, 11rem) minmax(0, 1fr);
+  }
+
+  .quarter-name-window-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .quarter-name-window-track {
+    background-color: $color-bg-page;
+    background-image: linear-gradient($color-border, $color-border), linear-gradient($color-border, $color-border);
+    background-position: 33.333%, 66.666%;
+    background-repeat: no-repeat;
+    background-size: 1px 100%, 1px 100%;
+    border-radius: 999px;
+    height: 28px;
+    position: relative;
+  }
+
+  .quarter-name-bar {
+    align-items: center;
+    border-radius: 999px;
+    bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 6px;
+    pointer-events: none;
+    position: absolute;
+    top: 4px;
+
+    &--0 {
+      background: $color-blue-light;
+    }
+
+    &--1 {
+      background: $color-intent-personal;
+    }
+
+    &--2 {
+      background: $color-success;
+    }
+  }
+
+  .quarter-name-bar-handle {
+    color: $color-text-on-accent;
+    font-size: 0.85rem;
+    line-height: 1;
+  }
+
+  .quarter-name-window-start,
+  .quarter-name-window-end {
+    appearance: none;
+    background: transparent;
+    height: 28px;
+    left: 0;
+    margin: 0;
+    pointer-events: none;
+    position: absolute;
+    top: 0;
+    width: 100%;
+
+    &::-webkit-slider-thumb {
+      appearance: none;
+      background: transparent;
+      border: 0;
+      cursor: ew-resize;
+      height: 28px;
+      pointer-events: auto;
+      width: 18px;
+    }
+
+    &::-moz-range-thumb {
+      background: transparent;
+      border: 0;
+      cursor: ew-resize;
+      height: 28px;
+      pointer-events: auto;
+      width: 18px;
+    }
+  }
+
+  .quarter-name-deadline-note {
+    color: $color-text-muted;
+    font-size: 0.75rem;
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+
+  .quarter-name-empty {
+    color: $color-text-secondary;
+    font-size: 0.85rem;
+    margin: 0;
   }
 }

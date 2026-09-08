@@ -368,8 +368,8 @@ describe("PlanWizard step navigation", () => {
 
   it("renders each step's title and summary from WIZARD_STEPS", async () => {
     const { cleanup, container } = await renderPlanWizard();
-    const headingSelector = ".intent-step-heading, .pace-cards-heading, .projects-step-heading, .quarter-answer-heading";
-    const summarySelector = ".intent-step-summary, .pace-cards-summary, .projects-step-summary, .quarter-answer-summary";
+    const headingSelector = ".intent-step-heading, .pace-cards-heading, .projects-step-heading, .quarter-answer-heading, .quarter-name-heading";
+    const summarySelector = ".intent-step-summary, .pace-cards-summary, .projects-step-summary, .quarter-answer-summary, .quarter-name-summary";
     for (const step of WIZARD_STEPS) {
       await advanceToStep(container, step.key);
       expect(container.querySelector(headingSelector).textContent).toBe(step.title);
@@ -829,6 +829,87 @@ describe("PlanWizard pace cards step", () => {
   });
 });
 
+describe("PlanWizard quarter name step", () => {
+  beforeEach(() => {
+    inferenceCalls.length = 0;
+    inferenceImplementation = null;
+  });
+
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("drafts three name ideas from Focus projects and lets the user write their own", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "projects");
+    await saveFirstProject(container, "Noteapps rebuild");
+    await clickAndSettle(container.querySelector(".projects-step-category--work .projects-step-add"));
+    const nameFields = [...container.querySelectorAll(".projects-step-category--work .project-row-name")];
+    const secondName = nameFields[nameFields.length - 1];
+    const secondCard = secondName.closest(".project-row");
+    await typeInto(secondName, "ROI metrics API");
+    await clickAndSettle(secondCard.querySelector(".project-row-priority-button"));
+    await advanceToStep(container, "quarter-name");
+
+    const ideas = [...container.querySelectorAll(".quarter-name-idea")].map(button => button.textContent);
+    expect(ideas).toEqual([
+      "The Noteapps rebuild quarter",
+      "Finish Noteapps rebuild, then ROI metrics API",
+      "Fewer open threads by December than October",
+    ]);
+    expect(container.querySelector(".quarter-name-idea--selected").textContent).toBe("The Noteapps rebuild quarter");
+    expect(container.querySelector(".quarter-name-custom-input").getAttribute("placeholder")).toBe("Write my own");
+    await cleanup();
+  });
+
+  it("places each active project on the timeline and persists the suggested months", async () => {
+    const { app, cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "projects");
+    await saveFirstProject(container, "Noteapps rebuild");
+    await advanceToStep(container, "quarter-name");
+
+    expect(container.querySelector(".quarter-name-window-label").textContent).toBe("Noteapps rebuild");
+    expect(container.querySelector(".quarter-name-bar--0")).not.toBeNull();
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.quarterName.text).toBe("The Noteapps rebuild quarter");
+    expect(stored.prospects[0].focusMonths.length).toBeGreaterThan(0);
+    expect(stored.prospects[0].focusMonths[0].startsWith("2026-")).toBe(true);
+    await cleanup();
+  });
+
+  it("keeps a sprint deadline on or before the suggested bar and names it in the footnote", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "projects");
+    await saveFirstProject(container, "ROI metrics API");
+    await advanceToStep(container, "pace-cards");
+    await clickAndSettle(paceChoice(container, "Deadline sprint"));
+    await typeInto(container.querySelector(".project-pace-deadline-input"), "2026-10-15");
+    await advanceToStep(container, "quarter-name");
+
+    const endInput = container.querySelector(".quarter-name-window-end");
+    expect(Number(endInput.value)).toBeLessThanOrEqual(14);
+    expect(container.querySelector(".quarter-name-deadline-note").textContent)
+      .toContain("Deadline Oct 15 sits inside the ROI metrics API bar.");
+    await cleanup();
+  });
+
+  it("omits Not now projects from the timeline", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "projects");
+    await saveFirstProject(container, "Park this project");
+    const notNow = [...container.querySelectorAll(".project-row-priority-button")]
+      .find(button => button.textContent === "Not now");
+    await clickAndSettle(notNow);
+    await advanceToStep(container, "quarter-name");
+
+    expect(container.querySelector(".quarter-name-window")).toBeNull();
+    expect(container.querySelector(".quarter-name-empty")).not.toBeNull();
+    await cleanup();
+  });
+});
+
 describe("PlanWizard quarter-wide answers", () => {
   beforeEach(() => {
     inferenceCalls.length = 0;
@@ -842,25 +923,25 @@ describe("PlanWizard quarter-wide answers", () => {
   it("saves the quarter's name and restores it on reopening", async () => {
     const { app, cleanup, container } = await renderPlanWizard();
     await advanceToStep(container, "quarter-name");
-    await typeInto(container.querySelector(".quarter-answer-input"), "The Shipping Quarter");
-    await clickAndSettle(container.querySelector(".quarter-answer-save"));
+    await typeInto(container.querySelector(".quarter-name-custom-input"), "A quarter of finishing the directory");
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
     const stored = await readPlanGoals(app, SCOPE);
-    expect(stored.quarterName.text).toBe("The Shipping Quarter");
+    expect(stored.quarterName.text).toBe("A quarter of finishing the directory");
     await cleanup();
 
     const reopened = await renderPlanWizard({ app });
     await advanceToStep(reopened.container, "quarter-name");
-    expect(reopened.container.querySelector(".quarter-answer-input").value).toBe("The Shipping Quarter");
+    expect(reopened.container.querySelector(".quarter-name-custom-input").value).toBe("A quarter of finishing the directory");
+    expect(reopened.container.querySelector(".quarter-name-custom--selected")).not.toBeNull();
     await reopened.cleanup();
   });
 
   it("saves the daily sufficiency bar separately from the quarter's name", async () => {
     const { app, cleanup, container } = await renderPlanWizard();
     await advanceToStep(container, "quarter-name");
-    await typeInto(container.querySelector(".quarter-answer-input"), "The Shipping Quarter");
-    await clickAndSettle(container.querySelector(".quarter-answer-save"));
-    await advanceToStep(container, "enough-for-today");
+    await typeInto(container.querySelector(".quarter-name-custom-input"), "The Shipping Quarter");
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
     await typeInto(container.querySelector(".quarter-answer-input"), "Two hours of focused project work");
     await clickAndSettle(container.querySelector(".quarter-answer-save"));
 
@@ -875,15 +956,16 @@ describe("PlanWizard quarter-wide answers", () => {
     const { cleanup, container } = await renderPlanWizard({ app });
     await advanceToStep(container, "quarter-name");
     app.replaceNoteContent.mockRejectedValueOnce(new Error("Amplenote was unreachable"));
-    await typeInto(container.querySelector(".quarter-answer-input"), "The Shipping Quarter");
-    await clickAndSettle(container.querySelector(".quarter-answer-save"));
+    await typeInto(container.querySelector(".quarter-name-custom-input"), "The Shipping Quarter");
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
-    expect(container.querySelector(".quarter-answer-error").textContent).toContain("Amplenote was unreachable");
-    expect(container.querySelector(".quarter-answer-input").value).toBe("The Shipping Quarter");
-    expect(container.querySelector(".quarter-answer-save").textContent).toBe("Retry saving");
+    expect(container.querySelector(".quarter-name-error").textContent).toContain("Amplenote was unreachable");
+    expect(container.querySelector(".quarter-name-custom-input").value).toBe("The Shipping Quarter");
+    expect(container.querySelector(".quarter-name-page")).not.toBeNull();
 
-    await clickAndSettle(container.querySelector(".quarter-answer-save"));
-    expect(container.querySelector(".quarter-answer-saved")).not.toBe(null);
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.quarterName.text).toBe("The Shipping Quarter");
     await cleanup();
   });
 });
@@ -975,6 +1057,10 @@ describe("PlanWizard modal presentation", () => {
     expect(intentField.tagName).toBe("INPUT");
     expect(intentField.getAttribute("type")).toBe("text");
     await advanceToStep(container, "quarter-name");
+    const nameField = container.querySelector(".quarter-name-custom-input");
+    expect(nameField.tagName).toBe("INPUT");
+    expect(nameField.getAttribute("type")).toBe("text");
+    await advanceToStep(container, "enough-for-today");
     const answerField = container.querySelector(".quarter-answer-input");
     expect(answerField.tagName).toBe("INPUT");
     expect(answerField.getAttribute("type")).toBe("text");

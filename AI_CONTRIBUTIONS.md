@@ -3,6 +3,26 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-09-07 — Name the quarter from Focus projects and sketch when each runs
+
+**Model:** Cursor Grok 4.6
+**Files created:**
+- `lib/dashboard/plan-wizard/quarter-name-step-fields.js` — Draft three name ideas from Focus titles, stagger
+  per-project windows, clamp them on or before a sprint deadline, and map the bar onto `focusMonths`.
+- `lib/dashboard/plan-wizard/quarter-name-step.jsx` — Chip picker plus Write my own, with a month-range timeline.
+- `lib/dashboard/plan-wizard/project-focus-window.jsx` — One project's draggable start/end bar.
+- `test/plan-wizard-quarter-name.test.js` — Name ideas, deadline clamps, color cycling, and save detection.
+
+**Files modified:**
+- `lib/dashboard/plan-wizard/wizard-steps.js` — Quarter-name copy matches the drafted-from-answers page.
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` — Routes quarter-name through its own form; enough-for-today stays
+  on the shared one-line answer page.
+- `lib/dashboard/styles/plan-wizard.scss` — Name chips, dashed custom field, and cycling timeline bars.
+- `test/plan-wizard-ui.test.js` — Cover Focus-based ideas, persisted months, deadline footnotes, and custom names.
+
+**Prompt summary:** "For the Quarter name step, suggest 3 ideas based on Focus projects, and for each active
+project offer a slider for when the user might focus on each; cycle colors; default dates before a deadline"
+
 ## 2026-09-07 — Drive wizard step titles and summaries from WIZARD_STEPS
 
 **Model:** Cursor Grok 4.6
