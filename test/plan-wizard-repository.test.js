@@ -2,7 +2,7 @@
 
 import { createPlanWizardApp } from "./fixtures/plan-wizard-app.js";
 import { readPlanGoals, savePlanGoals, savePlanIntentPossibilities } from "plan-wizard/plan-wizard-service";
-import { guideSectionRange } from "plan-wizard/vision-guide-markdown";
+import { GUIDE_PREAMBLE_TEXT, guideSectionRange } from "plan-wizard/vision-guide-markdown";
 import { MAXIMUM_GUIDE_SECTION_CHARACTERS, replaceGuideSection } from "plan-wizard/vision-guide-notes";
 import { validatedSectionPayload } from "plan-wizard/vision-guide-repository";
 import plugin from "plugin";
@@ -53,9 +53,9 @@ test("creates archived storage and round-trips both categories through targeted 
   const saved = await savePlanGoals(app, { ...scope, goals: [goal, personalGoal] });
   expect(saved.goals).toHaveLength(2);
   expect(app.createNote).toHaveBeenCalledWith("Work Mission Builder Vision Guide 2026", expect.any(Array), { archive: true });
-  expect(app.replaceNoteContent.mock.calls[0][2]).toEqual({ section: { heading: null } });
+  expect(app.replaceNoteContent.mock.calls[0][2]).toEqual({});
   expect(app.replaceNoteContent.mock.calls[1][2]).toEqual({ section: { heading: { level: 3, text: "Q4 2026 Picked intents" } } });
-  for (const call of app.replaceNoteContent.mock.calls) expect(call[2].section).toBeDefined();
+  for (const call of app.replaceNoteContent.mock.calls.slice(1)) expect(call[2].section).toBeDefined();
   const reloaded = await readPlanGoals(app, scope);
   expect(reloaded).toEqual(saved);
   expect(app.filterNotes).toHaveBeenCalledWith(expect.objectContaining({ group: "archived" }));
@@ -171,6 +171,32 @@ test("recovers from failed bootstrap and rejects false-success verification", as
   expect((await savePlanGoals(app, { ...scope, goals: [goal] })).goals).toHaveLength(1);
   app.replaceNoteContent.mockResolvedValueOnce(true);
   await expect(savePlanGoals(app, { ...scope, goals: [{ ...goal, capturedAt: "2026-09-07" }] })).rejects.toThrow("verification failed");
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Bootstrap writes the whole note rather than the section above the first heading. Targeting that section
+//   bounded the write to the preamble and dropped every heading after it, leaving a note that could never be read
+//   or repaired, so the skeleton must arrive through a write that names no section at all.
+test("bootstraps the complete skeleton through a whole-note write", async () => {
+  const app = createPlanWizardApp();
+  await savePlanGoals(app, { ...scope, goals: [goal] });
+  const [bootstrapCall] = app.replaceNoteContent.mock.calls;
+  expect(bootstrapCall[2]).toEqual({});
+  expect(guideSectionRange(app.notes[0].content, "Guide metadata").level).toBe(1);
+  expect(guideSectionRange(app.notes[0].content, "Top-line intent").level).toBe(1);
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc A note left holding only the bootstrap preamble is this plugin's own partial write, not user data, so
+//   reopening the wizard finishes it in place instead of refusing it as non-empty forever.
+test("finishes a note left holding only the bootstrap preamble", async () => {
+  const app = createPlanWizardApp();
+  await savePlanGoals(app, { ...scope, goals: [goal] });
+  app.notes[0].content = `${ GUIDE_PREAMBLE_TEXT }\n\n`;
+  const recovered = await savePlanGoals(app, { ...scope, goals: [goal] });
+  expect(app.notes).toHaveLength(1);
+  expect(recovered.goals).toHaveLength(1);
+  expect(guideSectionRange(app.notes[0].content, "Guide metadata").level).toBe(1);
 });
 
 // ----------------------------------------------------------------------------------------------

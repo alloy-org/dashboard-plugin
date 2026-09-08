@@ -146,15 +146,18 @@ The API preserves the targeted heading and can return `false` if the section is 
 handle that return value as a failed write. Do not report success on a bridge error envelope.
 
 Live API checks confirmed that parent replacement includes nested headings and preserves sibling sections.
-The initial headingless section also accepts the complete note skeleton, so bootstrap requires no exception
-to targeted writes. Duplicate owned headings are rejected before writing. Horizontal rules introduce additional
+The initial headingless section does NOT accept the complete note skeleton: a write to
+`section: { heading: null }` is bounded by the first heading, so the skeleton's headings are dropped and the
+note is left holding only the preamble. Bootstrap therefore omits the `section` option, which the documented
+API defines as a whole-note replacement. Duplicate owned headings are rejected before writing. Horizontal rules introduce additional
 headingless boundaries and remain unsupported inside a target being rewritten. The existing development
 `replaceSectionContent` utility was not used as evidence for production behavior.
 
 Use the nearest existing ancestor/insertion section to create missing children, preserving exactly the content
 that the host says belongs to that target. Fetch current sections/content just before structural updates.
-For a new empty note, write the complete skeleton to its initial headingless section. Never fall back to
-overwriting an existing whole note because parsing or section lookup failed.
+For a new empty note, write the complete skeleton through a whole-note write that names no section. A note
+holding only the bootstrap preamble is a partial bootstrap from this plugin and may be finished the same way.
+Never fall back to overwriting an existing whole note because parsing or section lookup failed.
 
 Serialize writes per note in the running service, including structural edits that overlap child writes.
 Apply field-aware merges to freshly read records, retain unrelated prose/unknown sections, and verify affected

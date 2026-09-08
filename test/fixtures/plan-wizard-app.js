@@ -23,10 +23,11 @@ export function createPlanWizardApp() {
     findNote: jest.fn(async ({ uuid }) => notes.find(note => note.uuid === uuid) ?? null),
     getNoteContent: jest.fn(async ({ uuid }) => notes.find(note => note.uuid === uuid)?.content ?? null),
     navigate: jest.fn(async () => true),
-    replaceNoteContent: jest.fn(async ({ uuid }, content, { section }) => {
+    replaceNoteContent: jest.fn(async ({ uuid }, content, options = {}) => {
       const note = notes.find(item => item.uuid === uuid);
       if (!note) return false;
-      const range = mockSectionRange(note.content, section);
+      if (!("section" in options)) { note.content = content; return true; }
+      const range = mockSectionRange(note.content, options.section);
       if (!range) return false;
       note.content = `${ note.content.slice(0, range.start) }${ content.trim() }\n\n${ note.content.slice(range.end) }`;
       return true;
@@ -38,7 +39,7 @@ export function createPlanWizardApp() {
 // ----------------------------------------------------------------------------------------------
 // @desc Find a section body, including deeper headings, while ignoring headings inside backtick fences.
 // @param {string} content - Note content.
-// @param {object} section - heading descriptor, with heading:null selecting initial content.
+// @param {object} section - heading descriptor; a write with no section option replaces the whole note instead.
 // @returns {object|null} Body offsets; implementation is independent of production markdown parsing.
 // The live API retained siblings and replaced descendants; mimic that contract in tests.
 function mockSectionRange(content, section) {

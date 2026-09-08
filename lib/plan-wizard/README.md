@@ -112,7 +112,11 @@ The note is named `[Task domain] Mission Builder Vision Guide [year]`, tagged `p
 Metadata contains the stable domain UUID, year, and schema version. Renaming the domain or note does not change
 identity. Multiple matching guides produce an error rather than silently choosing one.
 
-All content writes use `replaceNoteContent` with an explicit section, including the initial headingless section.
+Every content write except bootstrap uses `replaceNoteContent` with an explicit section. Bootstrap passes no
+`section` option, which the API documents as replacing the entire note: `section: { heading: null }` bounds the
+write to the text above the first heading and silently drops the skeleton's headings. That whole-note write is
+reached only for a note that is empty or holds nothing but the bootstrap preamble, never as a fallback for a
+note whose parsing or section lookup failed.
 Fenced JSON lives below unique quarter/category headings. Intent leaves are level-three headings scoped to a
 quarter; the two prospect leaves are level-two headings under their level-one project category and are scoped to
 the category, since a project outlives the quarter that raised it and each record names its own `quarterKey`.
