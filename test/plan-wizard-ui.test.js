@@ -91,6 +91,18 @@ async function clickAndSettle(element) {
   await settle();
 }
 
+// ----------------------------------------------------------------------------------------------
+// @desc Dispatch one pointer phase with a horizontal coordinate and settle React's resulting state update.
+// @param {HTMLElement} element - Timeline track receiving the pointer event.
+// @param {string} eventName - pointerdown, pointermove, or pointerup.
+// @param {number} clientX - Horizontal viewport coordinate.
+async function dispatchPointer(element, eventName, clientX) {
+  await act(async () => {
+    element.dispatchEvent(new MouseEvent(eventName, { bubbles: true, clientX }));
+  });
+  await settle();
+}
+
 function workFields(container) {
   return [...container.querySelectorAll(".intent-step-category--work .intent-step-input")];
 }
@@ -451,6 +463,15 @@ async function advanceToStep(container, stepKey) {
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
   }
   throw new Error(`Could not reach the ${ stepKey } step`);
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Find one "done enough" condition's radio by the option key it carries.
+// @param {HTMLElement} container - Mounted wizard, positioned on the enough-for-today step.
+// @param {string} conditionKey - DONE_ENOUGH_OPTIONS key, such as top-three-tasks or not-now.
+// @returns {HTMLInputElement} The radio for that condition.
+function conditionRadio(container, conditionKey) {
+  return container.querySelector(`.done-enough-condition-radio[value="${ conditionKey }"]`);
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -889,20 +910,57 @@ describe("PlanWizard quarter name step", () => {
     await cleanup();
   });
 
-  it("places each active project on the timeline and persists the suggested months", async () => {
+  it("places an empty project in the clicked month, pulses it, removes it, and persists its replacement", async () => {
     const { app, cleanup, container } = await renderPlanWizard();
     await advanceToStep(container, "projects");
     await saveFirstProject(container, "Noteapps rebuild");
     await advanceToStep(container, "quarter-name");
 
     expect(container.querySelector(".quarter-name-window-label").textContent).toBe("Noteapps rebuild");
-    expect(container.querySelector(".quarter-name-bar--0")).not.toBeNull();
+    expect(container.querySelector(".quarter-name-bar")).toBeNull();
+    expect(container.querySelector(".quarter-name-window-remove")).toBeNull();
+    const track = container.querySelector(".quarter-name-window-track");
+    track.getBoundingClientRect = () => ({ left: 100, width: 900 });
+    await dispatchPointer(track, "pointerdown", 550);
+    await dispatchPointer(track, "pointerup", 550);
+
+    expect(container.querySelector(".quarter-name-window-start").value).toBe("31");
+    expect(container.querySelector(".quarter-name-window-end").value).toBe("60");
+    expect(container.querySelector(".quarter-name-bar--pulse")).not.toBeNull();
+    await clickAndSettle(container.querySelector(".quarter-name-window-remove"));
+    expect(container.querySelector(".quarter-name-bar")).toBeNull();
+
+    await dispatchPointer(track, "pointerdown", 850);
+    await dispatchPointer(track, "pointerup", 850);
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
     const stored = await readPlanGoals(app, SCOPE);
     expect(stored.quarterName.text).toBe("The Noteapps rebuild quarter");
-    expect(stored.prospects[0].focusMonths.length).toBeGreaterThan(0);
-    expect(stored.prospects[0].focusMonths[0].startsWith("2026-")).toBe(true);
+    expect(stored.prospects[0].focusMonths).toEqual(["2026-12"]);
+    await cleanup();
+  });
+
+  it("drags a bar by its middle while preserving its duration and pulses after release", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "projects");
+    await saveFirstProject(container, "Noteapps rebuild");
+    await advanceToStep(container, "quarter-name");
+    const track = container.querySelector(".quarter-name-window-track");
+    track.getBoundingClientRect = () => ({ left: 100, width: 900 });
+    await dispatchPointer(track, "pointerdown", 250);
+    await dispatchPointer(track, "pointerup", 250);
+    const originalStart = Number(container.querySelector(".quarter-name-window-start").value);
+    const originalEnd = Number(container.querySelector(".quarter-name-window-end").value);
+
+    await dispatchPointer(track, "pointerdown", 250);
+    await dispatchPointer(track, "pointermove", 350);
+    await dispatchPointer(track, "pointerup", 350);
+
+    const movedStart = Number(container.querySelector(".quarter-name-window-start").value);
+    const movedEnd = Number(container.querySelector(".quarter-name-window-end").value);
+    expect(movedStart).toBeGreaterThan(originalStart);
+    expect(movedEnd - movedStart).toBe(originalEnd - originalStart);
+    expect(container.querySelector(".quarter-name-bar--pulse")).not.toBeNull();
     await cleanup();
   });
 
@@ -915,6 +973,10 @@ describe("PlanWizard quarter name step", () => {
     await typeInto(container.querySelector(".project-pace-deadline-input"), "2026-10-15");
     await advanceToStep(container, "quarter-name");
 
+    const track = container.querySelector(".quarter-name-window-track");
+    track.getBoundingClientRect = () => ({ left: 100, width: 900 });
+    await dispatchPointer(track, "pointerdown", 250);
+    await dispatchPointer(track, "pointerup", 250);
     const endInput = container.querySelector(".quarter-name-window-end");
     expect(Number(endInput.value)).toBeLessThanOrEqual(14);
     expect(container.querySelector(".quarter-name-deadline-note").textContent)
@@ -964,17 +1026,67 @@ describe("PlanWizard quarter-wide answers", () => {
     await reopened.cleanup();
   });
 
-  it("saves the daily sufficiency bar separately from the quarter's name", async () => {
+  it("saves the chosen daily condition and its release activities separately from the quarter's name", async () => {
     const { app, cleanup, container } = await renderPlanWizard();
     await advanceToStep(container, "quarter-name");
     await typeInto(container.querySelector(".quarter-name-custom-input"), "The Shipping Quarter");
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
-    await typeInto(container.querySelector(".quarter-answer-input"), "Two hours of focused project work");
+    await clickAndSettle(conditionRadio(container, "two-focus-blocks"));
+    await clickAndSettle(container.querySelectorAll(".done-enough-release-choice")[0]);
     await clickAndSettle(container.querySelector(".plan-button--primary"));
 
     const stored = await readPlanGoals(app, SCOPE);
     expect(stored.quarterName.text).toBe("The Shipping Quarter");
-    expect(stored.dailySufficiency.text).toBe("Two hours of focused project work");
+    expect(stored.dailySufficiency.text)
+      .toBe("Two focused work blocks on quarterly goals — released toward: Walk");
+    await cleanup();
+  });
+
+  it("restores the chosen condition and activities on reopening, rather than the line of text they saved as", async () => {
+    const { app, cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "enough-for-today");
+    await clickAndSettle(conditionRadio(container, "top-three-tasks"));
+    await clickAndSettle(container.querySelectorAll(".done-enough-release-choice")[2]);
+    await clickAndSettle(container.querySelector(".plan-button--primary"));
+    await cleanup();
+
+    const reopened = await renderPlanWizard({ app });
+    await advanceToStep(reopened.container, "enough-for-today");
+    expect(conditionRadio(reopened.container, "top-three-tasks").checked).toBe(true);
+    const pressedActivities = [...reopened.container.querySelectorAll(".done-enough-release-choice")]
+      .filter(chip => chip.getAttribute("aria-pressed") === "true");
+    expect(pressedActivities.map(chip => chip.textContent)).toEqual(["Read"]);
+    await reopened.cleanup();
+  });
+
+  it("saves a condition the user writes themselves, and reads it back as the custom choice", async () => {
+    const { app, cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "enough-for-today");
+    await clickAndSettle(conditionRadio(container, "custom-condition"));
+    await typeInto(container.querySelector(".done-enough-custom-input"), "Inbox empty and one dream task moved");
+    await clickAndSettle(container.querySelector(".plan-button--primary"));
+
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.dailySufficiency.text).toBe("Inbox empty and one dream task moved");
+    await cleanup();
+
+    const reopened = await renderPlanWizard({ app });
+    await advanceToStep(reopened.container, "enough-for-today");
+    expect(conditionRadio(reopened.container, "custom-condition").checked).toBe(true);
+    expect(reopened.container.querySelector(".done-enough-custom-input").value)
+      .toBe("Inbox empty and one dream task moved");
+    await reopened.cleanup();
+  });
+
+  it("leaves the daily condition unanswered when the user chooses Not now", async () => {
+    const { app, cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "enough-for-today");
+    expect(conditionRadio(container, "not-now").checked).toBe(true);
+    expect(container.querySelector(".done-enough-container .plan-button--primary").disabled).toBe(true);
+    expect(container.querySelector(".plan-wizard-navigation")).not.toBeNull();
+
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.dailySufficiency).toBeNull();
     await cleanup();
   });
 
@@ -1088,7 +1200,8 @@ describe("PlanWizard modal presentation", () => {
     expect(nameField.tagName).toBe("INPUT");
     expect(nameField.getAttribute("type")).toBe("text");
     await advanceToStep(container, "enough-for-today");
-    const answerField = container.querySelector(".quarter-answer-input");
+    await clickAndSettle(conditionRadio(container, "custom-condition"));
+    const answerField = container.querySelector(".done-enough-custom-input");
     expect(answerField.tagName).toBe("INPUT");
     expect(answerField.getAttribute("type")).toBe("text");
     await cleanup();

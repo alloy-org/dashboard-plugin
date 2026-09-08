@@ -133,7 +133,7 @@ export default function QuarterNameStep({ isSaving, onNavigate, onSaveName, onSa
             placeholder="Write my own" type="text" value={ customText } />
         </label>
       </div>
-      <h3 className="plan-heading">{ TIMELINE_HEADING }</h3>
+      <h3 className="plan-heading quarter-name-timeline-heading">{ TIMELINE_HEADING }</h3>
       <p className="plan-summary">{ TIMELINE_SUMMARY }</p>
       { windowDrafts.length ? (
         <div className="quarter-name-timeline">

@@ -16,11 +16,11 @@
 // rest of the screen, since the overlay box itself only wraps the dialog.
 
 import NoteEditor from "dashboard/note-editor";
+import DoneEnoughStep from "dashboard/plan-wizard/done-enough-step";
 import IntentStep, { INTENT_STEP_FORM_ID } from "dashboard/plan-wizard/intent-step";
 import PaceCardsStep, { PACE_CARDS_STEP_FORM_ID } from "dashboard/plan-wizard/pace-cards-step";
 import PlanSaveError from "dashboard/plan-wizard/plan-save-error";
 import ProjectsStep, { PROJECTS_STEP_FORM_ID } from "dashboard/plan-wizard/projects-step";
-import QuarterAnswerStep from "dashboard/plan-wizard/quarter-answer-step";
 import QuarterNameStep, { QUARTER_NAME_STEP_FORM_ID } from "dashboard/plan-wizard/quarter-name-step";
 import { WIZARD_STEPS, wizardStepIndexFromKey } from "dashboard/plan-wizard/wizard-steps";
 import usePlanWizard, { planScopeKey } from "hooks/use-plan-wizard";
@@ -28,11 +28,6 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import "dashboard/styles/plan-wizard.scss";
 
-// Field copy for the daily-sufficiency page. Title and summary live on WIZARD_STEPS; this keeps the input hints
-// and placeholder beside the routing that renders them.
-const DAILY_SUFFICIENCY_COPY = { answerKey: "dailySufficiency",
-  hints: ["Two hours of focused project work", "Every task I marked important yesterday", "One thing that moves a quarterly intent"],
-  placeholder: "What has to be true before the day counts as a good one?" };
 const SAVE_ERROR_PREFIX = { "enough-for-today": "Your answer was not saved.", intent: "Your answers were not saved.",
   "pace-cards": "Your project paces were not saved.", projects: "Your projects were not saved.",
   "quarter-name": "Your quarter name was not saved." };
@@ -187,8 +182,8 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
             onNavigate={ handleProjectNavigation } onSaveName={ saveQuarterAnswer } onSaveProspects={ saveProspects } />
         ) : null }
         { !inspectingNoteUuid && !isLoading && !error && step.key === "enough-for-today" ? (
-          <QuarterAnswerStep { ...DAILY_SUFFICIENCY_COPY } { ...{ isSaving, saveError, scopeKey } }
-            answer={ planningContext.dailySufficiency } onSave={ saveQuarterAnswer } stepKey={ step.key } />
+          <DoneEnoughStep { ...{ isSaving, saveError, scopeKey } } answer={ planningContext.dailySufficiency }
+            onSave={ saveQuarterAnswer } />
         ) : null }
         { !inspectingNoteUuid && saveError && !isLoading && !error ? (
           <PlanSaveError app={ app } noteUuid={ saveError.noteUuid ?? planningContext.noteUuid }

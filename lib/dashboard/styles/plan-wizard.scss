@@ -630,24 +630,250 @@ $plan-wizard-z-index: 1100;
 
   }
 
-  // ── Quarter answer steps ─────────────────────────────────────────────────────────────────
+  // ── Done enough step ─────────────────────────────────────────────────────────────────────
 
-  /* Hints are examples of the kind of answer wanted, not options to pick, so they are set as quiet prose rather
-   * than as the tappable chips the intent page uses for real suggestions. */
-  .quarter-answer-container {
-    .quarter-answer-hint-list {
-      color: $color-text-muted;
+  /* The last page pairs a decision with its consequence: the conditions on the left, and on the right the
+   * wording a day meeting the selected one would be described in. They are two columns rather than two stacked
+   * sections because the preview is only useful while the choice is being made, and it collapses under the
+   * choices on a narrow screen, where side-by-side would leave neither readable. */
+  .done-enough-container {
+    .done-enough-eyebrow {
+      align-items: baseline;
+      display: flex;
+      gap: $sp-sm;
+    }
+
+    /* Optional is a promise rather than a warning — the page is skippable — so it is set in the personal-intent
+     * violet rather than in the danger or warning colors. */
+    .done-enough-optional-badge {
+      color: $color-intent-personal;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    /* This question is two clauses long, so it is given more room to breathe than the one-line headings the
+     * earlier pages ask, and a measure that keeps it from running the full width of a wide dialog. */
+    .done-enough-heading {
+      font-size: 1.25rem;
+      line-height: 1.35;
+      max-width: 42rem;
+    }
+
+    .done-enough-columns {
+      display: grid;
+      gap: $sp-lg;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+
+      @include breakpoint($breakpoint-tablet) {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .done-enough-choices {
+      display: flex;
+      flex-direction: column;
+      gap: $sp-md;
+      min-width: 0;
+    }
+
+    .done-enough-conditions {
+      background: $color-bg-primary;
+      border: 1px solid $color-border;
+      border-radius: $radius-md;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: $sp-md;
+    }
+
+    /* The page asks two sub-questions — the condition, and what a met condition releases the user toward — and
+     * they are set alike so neither reads as a subordinate part of the other. */
+    .done-enough-conditions-legend {
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin: 0 0 $sp-sm;
+    }
+
+    .done-enough-release-heading {
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin: $sp-xs 0 0;
+    }
+
+    /* A selected condition takes the same light blue fill and accent edge a chosen quarter-name idea does, so
+     * one choice out of a list looks the same wherever the wizard asks for one. The transparent border on the
+     * unselected rows reserves that edge, so selecting one does not shift the rows below it. */
+    .done-enough-condition {
+      align-items: flex-start;
+      border: 1px solid transparent;
+      border-radius: $radius-sm;
+      cursor: pointer;
+      display: flex;
+      gap: $sp-sm;
+      padding: $sp-sm;
+
+      &:hover {
+        background: $color-bg-page-hover;
+      }
+
+      &--selected {
+        background: $color-blue-light;
+        border-color: $color-blue;
+
+        &:hover {
+          background: $color-blue-light;
+        }
+      }
+    }
+
+    .done-enough-condition-radio {
+      accent-color: $color-blue;
+      cursor: pointer;
+      flex: 0 0 auto;
+      margin: 2px 0 0;
+    }
+
+    /* Grows to the row rather than to its own longest line, so the custom condition's field is as wide as the
+     * card instead of as wide as the description above it. */
+    .done-enough-condition-text {
+      display: flex;
+      flex: 1 1 auto;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+
+    .done-enough-condition-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .done-enough-condition-description {
+      color: $color-text-secondary;
+      font-size: 0.75rem;
+      line-height: 1.4;
+    }
+
+    .done-enough-custom-input {
+      margin-top: $sp-xs;
+    }
+
+    .done-enough-release-list {
       display: flex;
       flex-wrap: wrap;
+      gap: $sp-xs;
+    }
+
+    /* Several activities can be true at once, so these are pressed chips rather than radios. A chosen one is
+     * outlined in the success green the weekday chips use, kept as an outline because what someone would rather
+     * be doing is an aside to the condition above it, not the page's decision. */
+    .done-enough-release-choice {
+      background: $color-bg-primary;
+      border-radius: 999px;
       font-size: 0.75rem;
-      gap: $sp-md;
+      font-weight: 500;
+      padding: $sp-xs $sp-md;
+
+      &[aria-pressed="true"] {
+        border-color: $color-success;
+        color: $color-success;
+        font-weight: 700;
+      }
+    }
+
+    .done-enough-release-custom-input {
+      max-width: 24rem;
+    }
+
+    .done-enough-preview {
+      background: $color-bg-primary;
+      border: 1px solid $color-border;
+      border-radius: $radius-md;
+      display: flex;
+      flex-direction: column;
+      gap: $sp-sm;
+      min-width: 0;
+      padding: $sp-md;
+    }
+
+    /* The scene is drawn from the success color at low opacity rather than from fixed greens, so it follows the
+     * theme instead of glowing against a dark dialog. */
+    .done-enough-scene {
+      border-radius: $radius-md;
+      display: block;
+      height: auto;
+      width: 100%;
+    }
+
+    .done-enough-scene-sky {
+      fill: $color-success;
+      opacity: 0.1;
+    }
+
+    .done-enough-scene-sun {
+      fill: $color-warning;
+      opacity: 0.35;
+    }
+
+    .done-enough-scene-hill {
+      fill: $color-success;
+
+      &--far {
+        opacity: 0.25;
+      }
+
+      &--near {
+        opacity: 0.45;
+      }
+    }
+
+    .done-enough-preview-title {
+      color: $color-navy;
+      font-size: 1rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .done-enough-signal-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: $sp-xs;
       list-style: none;
       margin: 0;
       padding: 0;
     }
 
-    .quarter-answer-hint {
+    /* Each chip substantiates the selected condition: what it credits, and what it deliberately ignores. The
+     * excluded one is italic and unmarked so the distinction survives without color alone carrying it. */
+    .done-enough-signal {
+      align-items: center;
+      border: 1px solid $color-border;
+      border-radius: 999px;
+      color: $color-text-secondary;
+      display: inline-flex;
+      font-size: 0.7rem;
+      gap: $sp-xs;
+      padding: 2px $sp-sm;
+
+      &--excluded {
+        font-style: italic;
+      }
+    }
+
+    .done-enough-signal-mark {
+      color: $color-success;
+      font-weight: 700;
+    }
+
+    /* Pushed to the bottom of the stretched panel, where a caption belongs, and stating that the wording is all
+     * this page produces so far: nothing yet reads the stored condition at the end of a day. */
+    .done-enough-preview-note {
+      color: $color-text-muted;
+      font-size: 0.7rem;
       font-style: italic;
+      margin: auto 0 0;
     }
   }
 
@@ -708,6 +934,10 @@ $plan-wizard-z-index: 1100;
       flex: 0 0 auto;
     }
 
+    .quarter-name-timeline-heading {
+      margin-top: calc($sp-xl + $sp-sm);
+    }
+
     .quarter-name-timeline {
       display: flex;
       flex-direction: column;
@@ -717,7 +947,7 @@ $plan-wizard-z-index: 1100;
     .quarter-name-months {
       display: grid;
       gap: 0 $sp-md;
-      grid-template-columns: minmax(7rem, 11rem) repeat(3, minmax(0, 1fr));
+      grid-template-columns: minmax(7rem, 11rem) repeat(3, minmax(0, 1fr)) 28px;
     }
 
     .quarter-name-month {
@@ -734,7 +964,7 @@ $plan-wizard-z-index: 1100;
     .quarter-name-window {
       display: grid;
       gap: $sp-xs $sp-md;
-      grid-template-columns: minmax(7rem, 11rem) minmax(0, 1fr);
+      grid-template-columns: minmax(7rem, 11rem) minmax(0, 1fr) 28px;
     }
 
     .quarter-name-window-label {
@@ -748,13 +978,26 @@ $plan-wizard-z-index: 1100;
 
     .quarter-name-window-track {
       background-color: $color-bg-page;
-      background-image: linear-gradient($color-border, $color-border), linear-gradient($color-border, $color-border);
-      background-position: 33.333%, 66.666%;
+      background-image: linear-gradient(to right, transparent 0 33.333%, $color-bg-page-hover 33.333% 66.666%,
+        transparent 66.666%), linear-gradient($color-border, $color-border),
+        linear-gradient($color-border, $color-border);
+      background-position: 0, 33.333%, 66.666%;
       background-repeat: no-repeat;
-      background-size: 1px 100%, 1px 100%;
+      background-size: 100% 100%, 1px 100%, 1px 100%;
       border-radius: 999px;
+      cursor: grab;
       height: 28px;
       position: relative;
+      touch-action: none;
+      user-select: none;
+
+      &:active {
+        cursor: grabbing;
+      }
+
+      &--empty {
+        cursor: pointer;
+      }
     }
 
     .quarter-name-bar {
@@ -778,6 +1021,10 @@ $plan-wizard-z-index: 1100;
 
       &--2 {
         background: $color-success;
+      }
+
+      &--pulse {
+        animation: quarter-name-bar-pulse 420ms ease-out;
       }
     }
 
@@ -803,19 +1050,33 @@ $plan-wizard-z-index: 1100;
         appearance: none;
         background: transparent;
         border: 0;
-        cursor: ew-resize;
         height: 28px;
-        pointer-events: auto;
         width: 18px;
       }
 
       &::-moz-range-thumb {
         background: transparent;
         border: 0;
-        cursor: ew-resize;
         height: 28px;
-        pointer-events: auto;
         width: 18px;
+      }
+    }
+
+    .quarter-name-window-remove {
+      align-self: center;
+      background: transparent;
+      border: 0;
+      color: $color-text-muted;
+      cursor: pointer;
+      font-size: 1.15rem;
+      height: 28px;
+      line-height: 1;
+      padding: 0;
+      width: 28px;
+
+      &:hover:not(:disabled),
+      &:focus-visible {
+        color: $color-danger;
       }
     }
 
@@ -824,6 +1085,23 @@ $plan-wizard-z-index: 1100;
       font-size: 0.75rem;
       grid-column: 1 / -1;
       margin: 0;
+    }
+
+    @keyframes quarter-name-bar-pulse {
+      0% {
+        filter: brightness(1);
+        transform: scaleY(1);
+      }
+
+      45% {
+        filter: brightness(1.22);
+        transform: scaleY(1.28);
+      }
+
+      100% {
+        filter: brightness(1);
+        transform: scaleY(1);
+      }
     }
   }
 }

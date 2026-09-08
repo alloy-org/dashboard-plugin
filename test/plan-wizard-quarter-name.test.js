@@ -1,6 +1,8 @@
 // Exercise the Name the quarter helpers without rendering: name ideas from Focus projects, deadline-clamped
 // default windows, color cycling, and the focusMonths written for a dragged bar.
 
+import { FOCUS_WINDOW_EDGE_HIT_PIXELS, movedWindowDraft, pointerOperationFromPosition, removedWindowDraft,
+  windowDraftFromMonthIndex } from "dashboard/plan-wizard/project-focus-window-fields";
 import { FOCUS_WINDOW_COLOR_COUNT, clampFocusWindow, deadlineNoteFromDraft, defaultFocusWindow,
   draftWindowsFromProspects, focusMonthsFromWindow, focusWindowColorIndex, nameIdeasFromProspects,
   quarterBoundsFromScope, selectedNameFromRecord, windowDraftsNeedSave } from "dashboard/plan-wizard/quarter-name-step-fields";
@@ -52,6 +54,38 @@ describe("focus windows", () => {
     const { quarterMonths } = quarterBoundsFromScope(SCOPE);
     expect(focusMonthsFromWindow({ endOn: "2026-11-14", quarterMonths, startOn: "2026-10-01" }))
       .toEqual(["2026-10", "2026-11"]);
+  });
+
+  test("keeps an empty focusMonths list unplaced and instantiates the month the user clicks", () => {
+    const bounds = quarterBoundsFromScope(SCOPE);
+    const [emptyDraft] = draftWindowsFromProspects([prospect()], SCOPE);
+    expect(emptyDraft).toMatchObject({ endOn: null, focusMonths: [], startOn: null });
+    const novemberDraft = windowDraftFromMonthIndex(emptyDraft, { ...bounds, monthIndex: 1 });
+    expect(novemberDraft).toMatchObject({
+      endOn: "2026-11-30", focusMonths: ["2026-11"], startOn: "2026-11-01",
+    });
+  });
+
+  test("moves a bar without changing its duration, clamps at the quarter edge, and removes it", () => {
+    const bounds = quarterBoundsFromScope(SCOPE);
+    const [draft] = draftWindowsFromProspects([prospect({ focusMonths: ["2026-11"] })], SCOPE);
+    const moved = movedWindowDraft(draft, { ...bounds, dayDelta: 10 });
+    expect(moved).toMatchObject({ endOn: "2026-12-10", startOn: "2026-11-11" });
+    const clamped = movedWindowDraft(draft, { ...bounds, dayDelta: 100 });
+    expect(clamped).toMatchObject({ endOn: "2026-12-31", startOn: "2026-12-02" });
+    expect(removedWindowDraft(moved)).toMatchObject({ endOn: null, focusMonths: [], startOn: null });
+  });
+
+  test("resizes within 25 pixels of an edge and moves from the bar interior", () => {
+    const position = clientX => pointerOperationFromPosition({ clientX,
+      edgeHitPixels: FOCUS_WINDOW_EDGE_HIT_PIXELS, endDay: 60, maxDay: 90, startDay: 30,
+      trackBounds: { left: 0, width: 900 } });
+    expect(position(275)).toBe("resize-start");
+    expect(position(325)).toBe("resize-start");
+    expect(position(450)).toBe("move");
+    expect(position(575)).toBe("resize-end");
+    expect(position(625)).toBe("resize-end");
+    expect(position(700)).toBeNull();
   });
 
   test("omits Not now projects from the timeline and cycles bar colors past the third row", () => {

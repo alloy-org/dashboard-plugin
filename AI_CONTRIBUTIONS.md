@@ -3,6 +3,26 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-09-07 — Make project focus windows optional and directly draggable
+
+**Model:** GPT-5.6 Sol
+**Files created:**
+- `lib/dashboard/plan-wizard/project-focus-window-fields.js` — Pure pointer geometry and optional-window
+  transformations for month placement, edge hit testing, movement, and removal.
+**Files modified:**
+- `lib/dashboard/plan-wizard/quarter-name-step-fields.js` — Preserve empty ranges while translating stored
+  month labels into timeline drafts.
+- `lib/dashboard/plan-wizard/project-focus-window.jsx` — Add month-click placement, 25-pixel edge resizing,
+  interior whole-bar dragging, Remove controls, and applied-result pulses.
+- `lib/dashboard/plan-wizard/quarter-name-step.jsx`, `lib/dashboard/styles/plan-wizard.scss` — Increase timeline
+  separation, emphasize the middle month, align row actions, and animate successful range edits.
+- `test/plan-wizard-quarter-name.test.js`, `test/plan-wizard-ui.test.js` — Cover empty/removable ranges,
+  month-click creation, bounded whole-bar movement, persistence, and release pulses.
+- `build/compiled.js` — Rebuild the distributable plugin with the updated Plan Builder client.
+
+**Prompt summary:** "Improve Roughly when? spacing and month delineation; make ranges removable and creatable by
+clicking an empty month; drag bars by their interior; pulse after resize or move."
+
 ## 2026-09-07 — Stop dev section writes from doubling blank lines
 
 **Model:** GPT-5.6 Sol
