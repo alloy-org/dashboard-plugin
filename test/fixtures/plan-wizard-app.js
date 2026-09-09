@@ -18,12 +18,21 @@ export function createPlanWizardApp() {
       notes.push({ archived: options?.archive ?? false, content: "", localUuid: `local-${ uuid }`, name, tags, uuid });
       return `local-${ uuid }`;
     }),
-    filterNotes: jest.fn(async (options = {}) => notes.filter(note => (!options.tag || note.tags.includes(options.tag))
-      && (options.group === "archived" ? note.archived : !note.archived))),
-    findNote: jest.fn(async ({ uuid }) => noteForUuid(notes, uuid) ?? null),
+    filterNotes: jest.fn(async (options = {}) => {
+      const matched = notes.filter(note => (!options.tag || note.tags.includes(options.tag))
+        && (options.group === "archived" ? note.archived : !note.archived));
+      return matched.map(bridgeNoteHandle);
+    }),
+    findNote: jest.fn(async ({ uuid }) => {
+      const note = noteForUuid(notes, uuid);
+      return note ? bridgeNoteHandle(note) : null;
+    }),
     getNoteContent: jest.fn(async ({ uuid }) => noteForUuid(notes, uuid)?.content ?? null),
     navigate: jest.fn(async () => true),
-    replaceNoteContent: jest.fn(async ({ uuid }, content, options = {}) => {
+    replaceNoteContent: jest.fn(async (handle, content, options = {}) => {
+      // A handle that still carries the fields findNote returned did not survive the bridge as a writable
+      // reference; the host resolves nothing and reports the success it never performed.
+      const uuid = handle && "archived" in handle ? null : handle?.uuid;
       const note = notes.find(item => item.uuid === uuid);
       if (!note) return true;
       if (!("section" in options)) { note.content = content; return true; }
@@ -70,4 +79,15 @@ function mockSectionRange(content, section) {
 //   write addressed to it reports success without changing anything, so the two are resolved differently on purpose.
 function noteForUuid(notes, uuid) {
   return notes.find(note => note.uuid === uuid || note.localUuid === uuid);
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Build the note handle the host hands back across the embed bridge.
+// @param {object} note - Internal fixture note record.
+// @returns {object} Handle carrying only what a structured clone would preserve.
+// The production bridge structured-clones every value it returns, so a caller never receives the host's own note
+//   object and cannot write through it: the internal record is deliberately withheld here so that forwarding a
+//   returned handle straight into replaceNoteContent fails in tests the way it does in the app.
+function bridgeNoteHandle(note) {
+  return { archived: note.archived, name: note.name, tags: note.tags.slice(), uuid: note.uuid };
 }

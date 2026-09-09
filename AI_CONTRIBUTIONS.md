@@ -3,6 +3,30 @@
 This file tracks all code authored or substantially modified by AI models in this
 repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
 
+## 2026-09-08 — Fix Plan Builder bootstrap writing through a non-writable note handle
+
+**Model:** Claude Opus 5 (1M context)
+**Files created:** none
+**Files modified:**
+- `lib/plan-wizard/vision-guide-notes.js` — Rebuild the write target in `replaceGuideSection` as a bare
+  `{ uuid }` literal and reject a handle carrying no uuid.
+- `test/fixtures/plan-wizard-app.js` — Return structured-clone-shaped handles from `findNote`/`filterNotes`
+  and treat a write addressed by such a handle as the unearned success the host reports.
+- `test/plan-wizard-repository.test.js` — Cover fresh bootstrap, adoption of an interrupted run's empty note,
+  and the missing-uuid refusal.
+
+**Task:** Diagnose and fix "Plan Builder could not read its saved Vision Guide" in production
+**Prompt summary:** "Error attempting to open plan builder in production"
+**Scope:** ~14 lines of logic, ~68 lines of test/fixture changes
+**Notes:** Bootstrap forwarded the handle returned by `findNote` straight into `replaceNoteContent`. In production
+  every app call crosses the embed's postMessage bridge, which structured-clones its arguments, so that handle was
+  not a writable reference; the host reported a successful write it never performed and the guide read back empty
+  with no error to catch. The fixture previously leaked its internal note objects, which is why tests passed. The
+  three suites failing on `main` (`dream-task-service`, `plan-wizard-intents`, `proposed-agenda-widget-range`) were
+  already failing before this change and are untouched.
+
+---
+
 ## 2026-09-07 — Clarify project focus bars and expose project context
 
 **Model:** GPT-5.6 Sol

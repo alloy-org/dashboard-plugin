@@ -3,7 +3,9 @@
 import { createPlanWizardApp } from "./fixtures/plan-wizard-app.js";
 import { readPlanGoals, savePlanGoals, savePlanIntentPossibilities } from "plan-wizard/plan-wizard-service";
 import { GUIDE_PREAMBLE_TEXT, guideSectionRange } from "plan-wizard/vision-guide-markdown";
-import { MAXIMUM_GUIDE_SECTION_CHARACTERS, replaceGuideSection } from "plan-wizard/vision-guide-notes";
+import { MAXIMUM_GUIDE_SECTION_CHARACTERS, VISION_GUIDE_TAG, findVisionGuide, initializeVisionGuide,
+  replaceGuideSection, visionGuideNoteName, visionGuideScopeTag } from "plan-wizard/vision-guide-notes";
+import { DASHBOARD_NOTE_TAG } from "constants/settings";
 import { validatedSectionPayload } from "plan-wizard/vision-guide-repository";
 import plugin from "plugin";
 
@@ -331,4 +333,40 @@ test("names the overflowing Vision Guide section and its character count", async
   } finally {
     console.error = originalConsoleError;
   }
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Bootstrap must write through a handle the host can resolve, not one the bridge returned.
+// A handle received from findNote or filterNotes is structured-cloned across the embed's postMessage bridge and is
+//   not a writable reference; the host answers the write with an unearned success, so the guide silently stays empty
+//   and the wizard fails on its next read. Writing through a bare { uuid } is what every other note service does.
+test("initializes a Vision Guide by writing through a resolvable note handle", async () => {
+  const app = createPlanWizardApp();
+  const guide = await initializeVisionGuide(app, null, scope);
+  expect(guide.metadata).toMatchObject({ domainUuid: scope.domainUuid, year: scope.year });
+  expect(guide.content).toContain(GUIDE_PREAMBLE_TEXT);
+  expect(app.notes[0].content).toContain(GUIDE_PREAMBLE_TEXT);
+  const [writtenHandle] = app.replaceNoteContent.mock.calls[0];
+  expect(Object.keys(writtenHandle)).toEqual(["uuid"]);
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc A run interrupted after note creation is adopted and finished rather than left empty forever.
+// The note carries the scope tag but no metadata, so identity rests on the tag rather than on stored content.
+test("finishes bootstrapping an empty note left behind by an interrupted run", async () => {
+  const app = createPlanWizardApp();
+  await app.createNote(visionGuideNoteName(scope),
+    [DASHBOARD_NOTE_TAG, VISION_GUIDE_TAG, visionGuideScopeTag(scope)], { archive: true });
+  const existing = await findVisionGuide(app, scope);
+  expect(existing.metadata).toBeNull();
+  const guide = await initializeVisionGuide(app, existing, scope);
+  expect(guide.metadata).toMatchObject({ domainUuid: scope.domainUuid, year: scope.year });
+  expect(app.notes).toHaveLength(1);
+  expect(app.notes[0].content).toContain(GUIDE_PREAMBLE_TEXT);
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc A write that cannot name its note fails loudly instead of reporting an unearned success.
+test("refuses a Vision Guide write whose handle carries no uuid", async () => {
+  await expect(replaceGuideSection({}, "content", {}, null)).rejects.toThrow(/no uuid/);
 });
