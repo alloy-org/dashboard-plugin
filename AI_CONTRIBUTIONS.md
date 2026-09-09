@@ -1,7 +1,39 @@
 # AI Contributions Log
 
 This file tracks all code authored or substantially modified by AI models in this
-repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`. 
+repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
+
+---
+
+## [Claude Opus 5 (1M context)] Bridge-safe note handles across every note-writing service
+
+**Files:**
+- `test/test-helpers.js` (modified) — `mockApp` now models the embed's postMessage bridge: handles returned
+  from `findNote`/`filterNotes`/`searchNotes`/`createNote` are registered in a `WeakSet`, and writes through
+  one are dropped while still resolving `true`, as the host does. Writes now return `true` rather than
+  `undefined`.
+- `lib/dashboard/shared-notes-archive.js` (modified) — normalize the existing-pins-note handle
+- `lib/dashboard/proposed-agenda-archive.js` (modified) — normalize the existing-monthly-note handle
+- `lib/dashboard/proposed-agenda-decision-log.js` (modified) — normalize the existing-decision-note handle
+- `lib/dashboard/energy-per-habit-cache.js` (modified) — normalize in `loadHabitCache` and `ensureCacheNote`
+- `lib/recent-notes-service.js` (modified) — normalize the existing-daily-note handle
+- `lib/graveyard-service.js` (modified) — normalize in `findOrCreateGraveyardNote` and the retired-tasks note
+- `lib/dream-task-service.js` (modified) — normalize both non-create branches of `_resolveDreamTaskNoteHandle`
+- `lib/plan-wizard/vision-guide-notes.js` (modified) — correct a comment that claimed every other service
+  already normalized; at the time it was written, none of them did
+- `doc/code_conventions.md` (modified) — new section stating the rule and why the fixture enforces it
+
+**Task:** Generalize the Vision Guide `{ uuid }` fix — audit every note-writing service for the same
+bridge-handle defect, and make the test fixture model the bridge so the defect cannot ship again
+**Prompt summary:** "How to utilize the finding that the latest change finally unlock the means to open Plan
+Builder" - audit for other instances, then fix the fixtures
+**Scope:** 7 services fixed at 9 call sites, plus fixture and documentation
+**Notes:** Every affected resolver had the same shape - the create branch built a `{ uuid }` literal (safe)
+while the existing-note branch returned the bridge's own object (broken), so each bug appeared only on the
+second and later runs. The habit cache was worst affected: its incremental section refresh writes exclusively
+through the existing-note path. Verified by reverting the Vision Guide fix against the stricter fixture: 80
+additional tests fail, where before the fixture change the same revert broke none. Full suite holds at the
+3 pre-existing failures (573 passing); `npm run build` and the production smoke test pass. 
 
 ## 2026-09-08 — Fix Plan Builder bootstrap writing through a non-writable note handle
 

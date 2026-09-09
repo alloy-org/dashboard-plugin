@@ -99,3 +99,40 @@ function providerNameToApiKey(providerName) { ... }
 // Good 
 function apiKeyFromProviderName(providerName) { ... }
 ```
+
+### Rebuild note handles as `{ uuid }` before writing through them
+
+`app.findNote` and `app.filterNotes` return handles belonging to the Amplenote bridge. In production the
+dashboard runs in an iframe, so every `app` call is structured-cloned across a postMessage boundary, and one
+of those handles does not survive the round trip as something the host can resolve to a note. The host then
+reports a write it never performed: `replaceNoteContent` resolves `true`, no error is thrown, and the note
+reads back unchanged. Only a handle the caller constructed itself survives.
+
+Normalize where the resolver produces the handle, not at each write, so a later caller cannot reintroduce the
+bug by writing through the same returned object.
+
+```javascript
+// Bad — the existing-note branch returns the bridge's own object; every write through it is silently dropped
+async function resolveArchiveNote(app) {
+  const noteHandle = await app.findNote({ name: noteName, tags: [DASHBOARD_NOTE_TAG] });
+  if (noteHandle?.uuid) return { noteHandle, state: stateFromNoteContent(await app.getNoteContent(noteHandle)) };
+  ...
+}
+
+// Good — the caller owns the handle it hands back
+async function resolveArchiveNote(app) {
+  const foundHandle = await app.findNote({ name: noteName, tags: [DASHBOARD_NOTE_TAG] });
+  if (foundHandle?.uuid) {
+    const content = await app.getNoteContent({ uuid: foundHandle.uuid });
+    return { noteHandle: { uuid: foundHandle.uuid }, state: stateFromNoteContent(content) };
+  }
+  ...
+}
+```
+
+Reads (`getNoteContent`, `getNoteTasks`) are unaffected, but passing `{ uuid }` there too keeps one rule.
+
+Because this failure is invisible at runtime, the test fixture models it: `mockApp` in `test/test-helpers.js`
+registers every handle it returns from a lookup and makes writes through those handles no-ops that still
+resolve `true`, exactly as the host does. A test that writes through an unnormalized handle therefore fails on
+the unchanged note body rather than passing against a mock more permissive than production.

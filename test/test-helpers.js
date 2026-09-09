@@ -73,6 +73,25 @@ export function mockApp(notes, { plugin = null } = {}) {
   // Store all notes for search functionality
   app._allNotes = allNotes;
 
+  // Identity set of every note object this mock has handed back from a lookup (findNote, filterNotes,
+  // searchNotes, createNote). Writing through one of these is the production bug modeled in
+  // bridgeDropsWrite: the host silently drops the write and answers true. Membership is by object
+  // identity, so a caller that rebuilds the handle as { uuid } is unaffected.
+  const LOOKUP_RESULT_HANDLES = new WeakSet();
+
+  // ------------------------------------------------------------------------------------------
+  // @desc Mark note objects as having crossed the bridge from a lookup, then return them unchanged.
+  // @param {*} result - A note object, an array of them, or null/undefined.
+  // @returns {*} The same value, with any note objects registered as unwritable handles.
+  const markAsLookupResult = (result) => {
+    if (Array.isArray(result)) {
+      result.forEach(note => { if (note && typeof note === "object") LOOKUP_RESULT_HANDLES.add(note); });
+    } else if (result && typeof result === "object") {
+      LOOKUP_RESULT_HANDLES.add(result);
+    }
+    return result;
+  };
+
   app.alert = jest.fn().mockImplementation(async (text, options = {}) => {
     console.debug("Alert was called", text);
   });
@@ -89,7 +108,7 @@ export function mockApp(notes, { plugin = null } = {}) {
   app.createNote = jest.fn().mockImplementation(async (name, tags = []) => {
     const newNote = mockNote(name, "", `note-created-${ Date.now() }`, { tags });
     allNotes.push(newNote);
-    return newNote;
+    return markAsLookupResult(newNote);
   });
 
   // Helper function to find a note by handle (can be UUID string or note object)
@@ -97,6 +116,20 @@ export function mockApp(notes, { plugin = null } = {}) {
     const uuid = typeof noteHandle === "string" ? noteHandle : noteHandle?.uuid;
     return allNotes.find(n => n.uuid === uuid);
   };
+
+  // ------------------------------------------------------------------------------------------
+  // @desc Model the embed's postMessage bridge for a handle a caller is about to write through.
+  //   In production, arguments to an app call are structured-cloned across the iframe boundary. A
+  //   handle that came back from findNote or filterNotes is one of the bridge's lazily-populated
+  //   objects, and it does not survive that round trip as anything the host can resolve to a note:
+  //   the host reports a successful write it never performed, so the note reads back unchanged with
+  //   no error to catch. Only a handle the caller built itself — a bare { uuid } literal — survives.
+  //   Returning true for the refused write is the point of this helper, not an oversight; a mock
+  //   that threw here would be easier to satisfy than the host and would keep hiding the bug.
+  // @param {*} noteHandle - Handle as passed to a write method.
+  // @returns {boolean} True when the write must be dropped while still reporting success.
+  const bridgeDropsWrite = (noteHandle) => noteHandle !== null && typeof noteHandle === "object" &&
+    LOOKUP_RESULT_HANDLES.has(noteHandle);
 
   // filterNotes - searches note titles and filters by tags
   // Supports hierarchical tag matching: tag "business" matches "business", "business/updates", etc.
@@ -122,7 +155,7 @@ export function mockApp(notes, { plugin = null } = {}) {
       });
     }
 
-    return results;
+    return markAsLookupResult(results);
   });
 
   app.getNoteContent = jest.fn().mockImplementation(async (noteHandle) => {
@@ -131,10 +164,12 @@ export function mockApp(notes, { plugin = null } = {}) {
   });
 
   app.insertNoteContent = jest.fn().mockImplementation(async (noteHandle, content) => {
+    if (bridgeDropsWrite(noteHandle)) return true;
     const note = findNoteByHandle(noteHandle);
     if (note) {
       note.body += content;
     }
+    return true;
   });
 
   app.navigate = jest.fn();
@@ -146,10 +181,12 @@ export function mockApp(notes, { plugin = null } = {}) {
   app.notes.filter = jest.fn().mockResolvedValue(null);
   app.openEmbed = jest.fn().mockImplementation(async () => plugin?.renderEmbed(app))
   app.replaceNoteContent = jest.fn().mockImplementation(async (noteHandle, content, options) => {
+    if (bridgeDropsWrite(noteHandle)) return true;
     const note = findNoteByHandle(noteHandle);
     if (note) {
       note.body = replaceSectionContent(note.body, content, options);
     }
+    return true;
   });
   app.setSetting = jest.fn().mockResolvedValue(null);
   app.setSetting.mockImplementation((key, value) => {
@@ -167,20 +204,20 @@ export function mockApp(notes, { plugin = null } = {}) {
   app.searchNotes = jest.fn().mockImplementation(async (query) => {
     const queryLower = query.toLowerCase();
     const queryWords = queryLower.split(/\s+/);
-    return app._allNotes.filter(note => {
+    const matches = app._allNotes.filter(note => {
       const contentLower = (note.body || "").toLowerCase();
       const nameLower = (note.name || "").toLowerCase();
       const combined = contentLower + " " + nameLower;
       // Match if the query appears as a phrase, or if all words appear
-      return combined.includes(queryLower) ||
-        queryWords.every(word => combined.includes(word));
+      return combined.includes(queryLower) || queryWords.every(word => combined.includes(word));
     });
+    return markAsLookupResult(matches);
   });
 
   if (allNotes.length > 0) {
     const noteFunction = jest.fn();
     noteFunction.mockImplementation(async (noteHandle) => {
-      return findNoteByHandle(noteHandle) || null;
+      return markAsLookupResult(findNoteByHandle(noteHandle) || null);
     });
 
     app.findNote = noteFunction;
