@@ -240,6 +240,22 @@ $plan-wizard-z-index: 1100;
     margin-left: auto;
   }
 
+  /* Cancel is a way out, not a step in the sequence, so it reads as a link rather than as a peer of Back and
+   * Next. Nested under `.plan-wizard-page` to beat that block's `button { border: 1px solid }` default, the same
+   * way the primary action is promoted below. */
+  .plan-wizard-page .plan-wizard-cancel {
+    background: none;
+    border: none;
+    color: $color-text-muted;
+    padding-left: 0;
+    text-decoration: underline;
+
+    &:hover:not(:disabled) {
+      background: none;
+      color: $color-text-secondary;
+    }
+  }
+
   // ── Shared step layout ───────────────────────────────────────────────────────────────────
 
   /* Every question page uses the same outer rhythm and the same heading/summary/error/button language. A new

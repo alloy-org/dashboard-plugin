@@ -14,6 +14,10 @@
 // bottom. Anchored in the document the dialog takes the height its questions ask for, and the page scrolls to
 // reach the rest when the viewport cannot show it all at once. A nested fixed layer keeps the dim covering the
 // rest of the screen, since the overlay box itself only wraps the dialog.
+//
+// The navigation's left slot carries Back on every page but the first, where there is nowhere to go back to. The
+// first page fills that slot with Cancel, so leaving the wizard is a visible control on the page a user is most
+// likely to have opened by accident, rather than only Escape and a backdrop click.
 
 import NoteEditor from "dashboard/note-editor";
 import DoneEnoughStep from "dashboard/plan-wizard/done-enough-step";
@@ -156,7 +160,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
               <circle cx="12" cy="12" r="4" />
               <circle className="plan-wizard-title-icon-center" cx="12" cy="12" r="1.5" />
             </svg>
-            <h1 className="plan-wizard-title">Plan Builder</h1>
+            <h1 className="plan-wizard-title">Plan Builder - Beta</h1>
           </div>
           <div aria-label={ `Step ${ stepIndex + 1 } of ${ WIZARD_STEPS.length }` } className="plan-wizard-step-track">
             { WIZARD_STEPS.map((wizardStep, wizardStepIndex) => (
@@ -211,10 +215,13 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
         ) : null }
         { !inspectingNoteUuid && !isLoading && !error ? (
           <nav className="plan-wizard-navigation">
-            { isFirstStep ? null : (
+            { isFirstStep ? (
+              <button className="plan-wizard-cancel" onClick={ onClose } type="button">Cancel</button>
+            ) : (
               <button className="plan-wizard-back" disabled={ isNavigatingSaveStep && isSaving }
-                onClick={ isNavigatingSaveStep ? () => handleNavigateStep(-1) : () => handleStepChange(-1) }
-                type="button">Back</button>
+                form={ isNavigatingSaveStep ? handleNavigateStep(-1) : undefined }
+                onClick={ isNavigatingSaveStep ? () => { projectNavigationDirectionRef.current = -1; } : () => handleStepChange(-1) }
+                type={ isNavigatingSaveStep ? "submit" : "button" } value="-1">Back</button>
             ) }
             <button className="plan-wizard-next"
               disabled={ isLastStep || (isFirstStep && ((!hasIntentAnswer && !hasPersistedIntent) || isSaving))

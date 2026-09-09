@@ -332,7 +332,8 @@ describe("PlanWizard intent step", () => {
     expect(container.querySelector(".plan-wizard-close")).toBeNull();
     expect(suggestions.every(button => button.tabIndex === -1)).toBe(true);
     expect(tabbableControls.every(element => element.matches(
-      ".intent-step-input, .intent-step-container .plan-button--dashed, .plan-wizard-next"))).toBe(true);
+      ".intent-step-input, .intent-step-container .plan-button--dashed, .plan-wizard-cancel, .plan-wizard-next")))
+      .toBe(true);
     expect(container.querySelector(".intent-step-save")).toBeNull();
     expect(container.querySelector(".intent-step-continue")).toBeNull();
     await cleanup();
@@ -368,13 +369,25 @@ describe("PlanWizard step navigation", () => {
   it("opens on the intent step and reports its position in the sequence", async () => {
     const { cleanup, container } = await renderPlanWizard();
     const stepDots = [...container.querySelectorAll(".plan-wizard-step-dot")];
-    expect(container.querySelector(".plan-wizard-title").textContent).toBe("Plan Builder");
+    expect(container.querySelector(".plan-wizard-title").textContent).toBe("Plan Builder - Beta");
     expect(container.querySelector(".plan-wizard-progress").textContent).toBe(`1 of ${ WIZARD_STEPS.length }`);
     expect(stepDots).toHaveLength(WIZARD_STEPS.length);
     expect(stepDots[0].classList).toContain("plan-wizard-step-dot--current");
     expect(stepDots.slice(1).some(dot => dot.classList.contains("plan-wizard-step-dot--current"))).toBe(false);
     expect(container.querySelector(".intent-step-container")).not.toBe(null);
     expect(container.querySelector(".plan-wizard-back")).toBeNull();
+    await cleanup();
+  });
+
+  it("offers Cancel in place of Back on the first step and closes through it", async () => {
+    let closeCount = 0;
+    const { cleanup, container } = await renderPlanWizard({ onClose: () => { closeCount += 1; } });
+    await clickAndSettle(container.querySelector(".plan-wizard-cancel"));
+
+    expect(closeCount).toBe(1);
+    await advanceToStep(container, "projects");
+    expect(container.querySelector(".plan-wizard-cancel")).toBeNull();
+    expect(container.querySelector(".plan-wizard-back")).not.toBeNull();
     await cleanup();
   });
 
