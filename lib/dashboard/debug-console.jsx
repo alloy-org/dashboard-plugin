@@ -1,5 +1,6 @@
+import { runDebugEvaluationSession } from "debug-evaluate-service";
 import { useEffect, useRef, useState } from "react";
-import { addLogListener, getLogBuffer, removeLogListener } from "util/log";
+import { addLogListener, getLogBuffer, logAlways, removeLogListener } from "util/log";
 import WidgetWrapper from "widget-wrapper";
 
 import "styles/debug-console.scss";
@@ -27,11 +28,10 @@ function formatArgs(args) {
 }
 
 // ------------------------------------------------------------------------------------------
-// [Claude claude-sonnet-4-6] Task: render debug console widget that subscribes to logIfEnabled messages
-// Prompt: "capture all logIfEnabled messages and show them in a scrollable DebugConsole widget"
-// [Claude claude-4.7-opus] Task: migrate DebugConsoleWidget from createElement to JSX
-// Prompt: "translate this project to render components with JSX instead"
-export default function DebugConsoleWidget() {
+// @desc Render the scrollable log viewer, following new entries as they arrive. The header's Debug button
+//   opens an expression prompt evaluated by the plugin host, whose result lands in this same log.
+// @param {object} app - Amplenote app bridge, needed only by the expression evaluator.
+export default function DebugConsoleWidget({ app }) {
   const [entries, setEntries] = useState(() => getLogBuffer());
   const scrollRef = useRef(null);
 
@@ -53,23 +53,39 @@ export default function DebugConsoleWidget() {
   }, [entries]);
 
   const handleClear = () => setEntries([]);
+  // The session is fire-and-forget: it owns its own dialogs, and a rejection (a host that refuses to prompt)
+  // has nowhere to surface but the log.
+  const handleDebug = () => {
+    runDebugEvaluationSession(app).catch(error => logAlways('[debug-console] evaluation session failed:', error));
+  };
 
-  const clearButton = (
-    <button
-      className="debug-console__clear-button"
-      type="button"
-      onClick={handleClear}
-      title="Clear log entries"
-    >
-      Clear
-    </button>
+  const headerActions = (
+    <div className="debug-console__header-actions">
+      <button
+        className="debug-console__header-button"
+        type="button"
+        onClick={handleDebug}
+        title="Evaluate an expression in the plugin host"
+      >
+        Debug
+      </button>
+      <button
+        className="debug-console__header-button"
+        type="button"
+        onClick={handleClear}
+        title="Clear log entries"
+      >
+        Clear
+      </button>
+    </div>
   );
 
   return (
-    <WidgetWrapper widgetId={WIDGET_ID} headerActions={clearButton}>
+    <WidgetWrapper widgetId={WIDGET_ID} headerActions={headerActions}>
       <div className="debug-console" ref={scrollRef}>
         {entries.length === 0
-          ? <div className="debug-console__empty">No log messages yet. Enable Console Logging in Settings to start capturing messages.</div>
+          ? <div className="debug-console__empty">No log messages yet. Enable Console Logging in Settings to
+              start capturing messages, or press Debug to evaluate an expression in the plugin host.</div>
           : entries.map(entry => (
               <div key={entry.id} className="debug-console__entry">
                 <span className="debug-console__timestamp">

@@ -53,7 +53,12 @@
     }
   }
 
-  .debug-console__clear-button {
+  .debug-console__header-actions {
+    display: flex;
+    gap: 4px;
+  }
+
+  .debug-console__header-button {
     background: none;
     border: 1px solid $color-border;
     border-radius: 3px;

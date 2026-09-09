@@ -135,3 +135,45 @@ describe("browser dev app tasks", () => {
     }
   });
 });
+
+// [Claude claude-opus-5 (1M context)] Generated tests for: the dev app's app.alert stand-in and its
+//   debugEvaluate action, which back the Debug Console's Debug button in the local dev environment.
+describe("browser dev app alert modal", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("shows the preface as the heading and the message as preformatted text, resolving -1 on dismiss", async () => {
+    const app = createBrowserDevApp();
+    const promise = app.alert("line one\nline two", { preface: "await app.findNote({})" });
+
+    const overlay = document.querySelector('[data-dev-prompt="overlay"]');
+    expect(overlay.textContent).toContain("await app.findNote({})");
+    expect(overlay.querySelector("[data-dev-alert-body]").textContent).toBe("line one\nline two");
+
+    overlay.querySelector("[data-dev-alert-dismiss]").click();
+
+    await expect(promise).resolves.toBe(-1);
+    expect(document.querySelector('[data-dev-prompt="overlay"]')).toBeNull();
+  });
+
+  it("resolves an action's value when its button is chosen", async () => {
+    const app = createBrowserDevApp();
+    const promise = app.alert("2", { actions: [{ label: "Run another expression", value: "run-again" }] });
+
+    const buttons = [...document.querySelectorAll('[data-dev-prompt="overlay"] button')];
+    buttons.find(button => button.textContent === "Run another expression").click();
+
+    await expect(promise).resolves.toBe("run-again");
+  });
+});
+
+describe("browser dev app debugEvaluate", () => {
+  it("evaluates an expression against the dev app itself", async () => {
+    const app = createBrowserDevApp();
+    const evaluation = await app.debugEvaluate("typeof app.findNote");
+
+    expect(evaluation.error).toBeNull();
+    expect(evaluation.output).toBe('"function"');
+  });
+});

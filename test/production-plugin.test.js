@@ -39,3 +39,18 @@ test.each([true, false])("suggestion request logging respects Console logging=%s
     expect(log).not.toHaveBeenCalled();
   }
 });
+
+// ----------------------------------------------------------------------------------------------
+// @desc Verify the Debug Console's evaluator works through the shipped bundle, whose host has no module
+//   loader — the evaluator builds its runner from the AsyncFunction constructor for exactly that reason.
+// [Claude claude-opus-5 (1M context)] Generated test for: the debugEvaluate embed action.
+test("debugEvaluate embed action evaluates an expression against the host app", async () => {
+  const plugin = runInNewContext(pluginCode, { console: { error: jest.fn(), log: jest.fn() }, setTimeout });
+  const app = { findNote: async ({ uuid }) => ({ name: "Daily jots", uuid }), settings: {} };
+
+  const evaluation = await plugin.onEmbedCall(app, "debugEvaluate", 'await app.findNote({ uuid: "note-9" })');
+
+  expect(evaluation.error).toBeNull();
+  expect(JSON.parse(evaluation.output)).toEqual({ name: "Daily jots", uuid: "note-9" });
+  expect(evaluation.resultType).toBe("Object");
+});

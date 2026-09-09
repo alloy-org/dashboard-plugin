@@ -43,6 +43,7 @@ import SharedNotesWidget from 'shared-notes';
 import TaskDomains from 'task-domains';
 import { backgroundSplashUrl } from 'util/background-splash-images';
 import { dateKeyFromDateInput, weekStartDayFromFormat, weekStartFromDateInput } from 'util/date-utility';
+import { servedFromDevServer } from 'util/dev-environment';
 import { logIfEnabled, setLoggingEnabled } from "util/log";
 import { snapDashboardAction } from "util/plausible";
 import { captureDashboardException, captureDashboardMessage, capturePluginFailure, logSentryStatus } from "util/sentry-reporting";
@@ -205,7 +206,7 @@ const CalendarCell = createWidgetCell('calendar', CalendarWidget, ({ app, comple
   app, completedTasksByDate, currentDate, gridHeightSize: config?.gridHeightSize, gridWidthSize: config?.gridWidthSize,
   onDateSelect, onOpenSettings, openTasks, selectedDate, weekFormat,
 }));
-const DebugConsoleCell = createWidgetCell('debug-console', DebugConsoleWidget, () => ({}));
+const DebugConsoleCell = createWidgetCell('debug-console', DebugConsoleWidget, pickProps('app'));
 const EnergyPerHabitCell = createWidgetCell('energy-per-habit', EnergyPerHabitWidget, pickProps('app'));
 const DreamTaskCell = createWidgetCell('dream-task', DreamTaskWidget, ({ app, config, onOpenSettings, providerApiKey,
     providerEm, taskDomainName, taskDomainUUID }) => ({
@@ -755,12 +756,13 @@ export default function DashboardApp({ app, initPromise }) {
     : null;
 
   const debugToolsEnabled = String(configParams[SETTING_KEYS.DEBUG_CONSOLE] || '').trim() === 'true';
-  const debugConsoleEnabled = debugToolsEnabled || IS_DEV_ENVIRONMENT || pluginContext().pluginUUID === "6da03574-0f4b-11f1-ba9e-11ba9c716f59";
+  const devServerHosted = servedFromDevServer();
+  const debugConsoleEnabled = debugToolsEnabled || IS_DEV_ENVIRONMENT || devServerHosted || pluginContext().pluginUUID === "6da03574-0f4b-11f1-ba9e-11ba9c716f59";
   const memoryMeasurementEnabled = debugConsoleEnabled;
   if (debugConsoleEnabled) {
-    logIfEnabled(`[dashboard] Debug console enabled (configParams "${ configParams[SETTING_KEYS.DEBUG_CONSOLE] || "(empty)" }" app setting keys "${ Object.keys(app.settings) || "(empty)" }", ${ pluginContext().pluginUUID }), including in layout popup`);
+    logIfEnabled(`[dashboard] Debug console enabled (setting "${ configParams[SETTING_KEYS.DEBUG_CONSOLE] || "(empty)" }", dev bundle ${ IS_DEV_ENVIRONMENT }, dev server ${ devServerHosted }, plugin ${ pluginContext().pluginUUID }), including in layout popup`);
   } else {
-    logIfEnabled(`[dashboard] Debug console disabled (${ SETTING_KEYS.DEBUG_CONSOLE } is '${ configParams?.[SETTING_KEYS.DEBUG_CONSOLE] }', pluginUUID ${ pluginContext().pluginUUID }, context ${ JSON.stringify(pluginContext()) }), excluding from layout popup`);
+    logIfEnabled(`[dashboard] Debug console disabled (${ SETTING_KEYS.DEBUG_CONSOLE } is '${ configParams?.[SETTING_KEYS.DEBUG_CONSOLE] }', dev bundle ${ IS_DEV_ENVIRONMENT }, dev server ${ devServerHosted }, pluginUUID ${ pluginContext().pluginUUID }), excluding from layout popup`);
   }
   const layoutPopupExcludeWidgetIds = debugConsoleEnabled ? [] : ['debug-console'];
 

@@ -257,6 +257,20 @@ describe('DashboardApp', () => {
   });
 
   // ------------------------------------------------
+  // [Claude claude-opus-5 (1M context)] Generated test for: the debug_console setting reaching the
+  //   dashboard, without which enabling it in plugin settings changed nothing about the Debug Console.
+  describe('debug settings in the init payload', () => {
+    it('carries the debug_console setting through to the settings the dashboard reads', async () => {
+      const settingApp = buildMockApp(plugin);
+      settingApp.settings['debug_console'] = 'true';
+
+      const payload = await settingApp.init();
+
+      expect(payload.settings['debug_console']).toBe('true');
+    });
+  });
+
+  // ------------------------------------------------
   describe('widget rendering with real task data', () => {
     beforeEach(async () => {
       const initPromise = mockApp.init();
