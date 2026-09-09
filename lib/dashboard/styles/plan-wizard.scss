@@ -8,6 +8,7 @@ $plan-wizard-edge-inset-horizontal: 10%;
 $plan-wizard-edge-inset-horizontal-phone: 10px;
 $plan-wizard-edge-inset-vertical: $sp-xl;
 $plan-wizard-input-min-height: 38px;
+$plan-wizard-pending-spinner-size: 14px;
 $plan-wizard-shadow-blur: 40px;
 $plan-wizard-shadow-y: 12px;
 $plan-wizard-z-index: 1100;
@@ -274,7 +275,6 @@ $plan-wizard-z-index: 1100;
     margin: 0;
   }
 
-  .plan-status,
   .plan-summary {
     color: $color-text-secondary;
     font-size: 0.85rem;
@@ -365,7 +365,6 @@ $plan-wizard-z-index: 1100;
 
     > .plan-error,
     > .plan-heading,
-    > .plan-status,
     > .plan-summary {
       grid-column: 1 / -1;
     }
@@ -405,6 +404,41 @@ $plan-wizard-z-index: 1100;
           color: $color-intent-personal;
         }
       }
+    }
+
+    /* The pending row holds the place the suggestion chips will take, so a slow inference pass reads as work in
+     * progress in that spot rather than as an empty gap under the fields. Cached chips from an earlier pass stay
+     * clickable below it. */
+    .intent-step-suggestion-pending {
+      align-items: center;
+      color: $color-text-muted;
+      display: flex;
+      font-size: 0.75rem;
+      font-style: italic;
+      gap: $sp-sm;
+      min-height: $plan-wizard-pending-spinner-size;
+    }
+
+    .intent-step-pending-spinner {
+      animation: intent-step-pending-spin 0.8s linear infinite;
+      border: 2px solid $color-border;
+      border-radius: 50%;
+      border-top-color: $color-link;
+      box-sizing: border-box;
+      flex-shrink: 0;
+      height: $plan-wizard-pending-spinner-size;
+      width: $plan-wizard-pending-spinner-size;
+    }
+
+    /* Without the animation a static ring reads as a broken control, so the wait is carried by the label alone. */
+    @media (prefers-reduced-motion: reduce) {
+      .intent-step-pending-spinner {
+        display: none;
+      }
+    }
+
+    @keyframes intent-step-pending-spin {
+      to { transform: rotate(360deg); }
     }
 
     .intent-step-suggestion-list {

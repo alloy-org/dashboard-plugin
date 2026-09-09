@@ -46,6 +46,7 @@ function IntentStepField({ field, isDisabled, onChangeText, onFocus, placeholder
 // @param {object} params - An object with the following properties:
 //   - {Array<object>} fields - Draft fields for this category, primary first.
 //   - {boolean} isDisabled - True while a save is in flight.
+//   - {boolean} isRefreshing - True while the inference queries that produce this category's suggestions run.
 //   - {Function} onAddSecondary - Appends another field in this category.
 //   - {Function} onApplySuggestion - Receives a possibility to place in the focused field.
 //   - {Function} onChangeText - Receives (fieldUuid, text).
@@ -53,9 +54,11 @@ function IntentStepField({ field, isDisabled, onChangeText, onFocus, placeholder
 //   - {Array<object>} possibilities - Stored IntentPossibility records for this category.
 //   - {string} userCategoryEm - work or personal.
 // @returns {JSX.Element} The category block.
-// Defaults are labeled as starting points so a generic suggestion never reads as an inferred conclusion.
-function IntentStepCategory({ fields, isDisabled, onAddSecondary, onApplySuggestion, onChangeText, onFocusField,
-    possibilities, userCategoryEm }) {
+// Defaults are labeled as starting points so a generic suggestion never reads as an inferred conclusion. While
+// inference runs, the pending row sits where the suggestions will land, so the wait is visible in the place the
+// result will appear rather than as a status line the user has to connect to this block.
+function IntentStepCategory({ fields, isDisabled, isRefreshing, onAddSecondary, onApplySuggestion, onChangeText,
+    onFocusField, possibilities, userCategoryEm }) {
   const { heading, placeholder } = CATEGORY_LABELS[userCategoryEm];
   const hasDefaultSuggestions = possibilities.some(possibility => possibility.sourceKind === "default");
   return (
@@ -66,6 +69,12 @@ function IntentStepCategory({ fields, isDisabled, onAddSecondary, onApplySuggest
           onChangeText={ text => onChangeText(field.uuid, text) } onFocus={ () => onFocusField(field.uuid) }
           placeholder={ placeholder } />
       )) }
+      { isRefreshing ? (
+        <div className="intent-step-suggestion-pending">
+          <span className="intent-step-pending-spinner" />
+          <span className="intent-step-pending-label">Retrieving intent directions…</span>
+        </div>
+      ) : null }
       { possibilities.length ? (
         <div className="intent-step-suggestion-list">
           { possibilities.map(possibility => (
@@ -92,7 +101,8 @@ function IntentStepCategory({ fields, isDisabled, onAddSecondary, onApplySuggest
 //   reseeded only when the plan scope changes or a save succeeds, so suggestions arriving from a background
 //   refresh cannot discard what the user is in the middle of writing.
 // @param {object} params - An object with the following properties:
-//   - {boolean} isRefreshing - True while inference runs; fields stay editable throughout.
+//   - {boolean} isRefreshing - True while inference runs; each category shows a pending row where its
+//     suggestions will appear, and fields stay editable throughout.
 //   - {boolean} isSaving - True while a save is in flight.
 //   - {Function} onAnswerStateChange - Reports whether Next should be enabled.
 //   - {Function} onFindProjects - Moves to the projects page and runs discovery there.
@@ -194,14 +204,13 @@ export default function IntentStep({ isRefreshing, isSaving, onAnswerStateChange
 
   const workFields = draftFields.filter(field => field.userCategoryEm === "work");
   const personalFields = draftFields.filter(field => field.userCategoryEm === "personal");
-  const categoryProps = { isDisabled: isSaving, onApplySuggestion: handleApplySuggestion, onChangeText: handleChangeText,
-    onFocusField: setFocusedFieldUuid };
+  const categoryProps = { isDisabled: isSaving, isRefreshing, onApplySuggestion: handleApplySuggestion,
+    onChangeText: handleChangeText, onFocusField: setFocusedFieldUuid };
 
   return (
     <div className="plan-step-container intent-step-container">
       <h2 className="plan-heading">{ INTENT_STEP_COPY.title }</h2>
       <p className="plan-summary">{ INTENT_STEP_COPY.summary }</p>
-      { isRefreshing ? <p className="plan-status">Looking through your recent work for suggestions…</p> : null }
       <IntentStepCategory { ...categoryProps } fields={ workFields } onAddSecondary={ () => handleAddSecondary("work") }
         possibilities={ planningContext.possibilities.work } userCategoryEm="work" />
       <IntentStepCategory { ...categoryProps } fields={ personalFields }

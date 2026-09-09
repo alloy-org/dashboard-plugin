@@ -135,6 +135,28 @@ describe("PlanWizard intent step", () => {
     await cleanup();
   });
 
+  it("marks each category's suggestion area as pending while the inference queries run", async () => {
+    let releaseInference = null;
+    inferenceImplementation = () => new Promise(resolve => { releaseInference = resolve; });
+    const { cleanup, container } = await renderPlanWizard();
+    const pendingRows = [...container.querySelectorAll(".intent-step-suggestion-pending")];
+
+    expect(pendingRows.length).toBe(2);
+    expect(pendingRows.every(row => row.textContent.includes("Retrieving intent directions"))).toBe(true);
+    expect(pendingRows.every(row => row.querySelector(".intent-step-pending-spinner"))).toBe(true);
+    expect(container.querySelectorAll(".intent-step-suggestion").length).toBe(0);
+
+    await act(async () => {
+      releaseInference({ occupationHypothesis: "Builds developer tools", personal: [],
+        work: [{ confidence: 6, intent: "Ship the analytics offering", substantiation: "Analytics tasks completed." }] });
+    });
+    await settle();
+
+    expect(container.querySelectorAll(".intent-step-suggestion-pending").length).toBe(0);
+    expect(container.querySelectorAll(".intent-step-category--work .intent-step-suggestion").length).toBe(1);
+    await cleanup();
+  });
+
   it("fills the field from a clicked suggestion and persists it when Next is clicked", async () => {
     const { app, cleanup, container } = await renderPlanWizard();
     const firstSuggestion = container.querySelector(".intent-step-category--work .intent-step-suggestion");
