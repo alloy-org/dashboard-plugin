@@ -7,7 +7,8 @@ import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import DreamTaskWidget from "dream-task";
 import { updateDreamTaskTaskMetadata } from "dashboard/dream-task-internals";
-import { scheduledDreamTaskResultFromStartAt, startAtSecondsFromDateAndMinutes } from "dashboard/dream-task-schedule";
+import { resolveDreamTaskScheduleSelection, scheduledDreamTaskResultFromStartAt,
+  startAtSecondsFromDateAndMinutes } from "dashboard/dream-task-schedule";
 import { analyzeDreamTasks } from "dream-task-service";
 import { SETTING_KEYS } from "constants/settings";
 import { setPluginData } from "plugin-data";
@@ -66,6 +67,7 @@ function buildMockAppWithNote(initialContent) {
       return Promise.resolve("");
     }),
     getTask: jest.fn().mockImplementation(uuid => Promise.resolve(SAMPLE_TASKS.find(t => t.uuid === uuid) || null)),
+    getExternalCalendarEvents: jest.fn().mockResolvedValue([]),
     getTaskDomains: jest.fn().mockResolvedValue([{ uuid: "dom-work", name: "Work" }]),
     getTaskDomainTasks: jest.fn().mockResolvedValue(SAMPLE_TASKS),
     replaceNoteContent: jest.fn().mockImplementation((_handle, content, options) => {
@@ -74,6 +76,7 @@ function buildMockAppWithNote(initialContent) {
     }),
     insertNoteContent: jest.fn().mockResolvedValue(undefined),
     insertTask: jest.fn().mockResolvedValue("created-task-uuid"),
+    alert: jest.fn(),
     updateTask: jest.fn().mockResolvedValue(true),
     currentNoteContent: () => noteContent,
   };
@@ -233,6 +236,62 @@ describe("DreamTask action links", () => {
       expect(app.updateTask).not.toHaveBeenCalled();
     });
 
+    it("creates invented tasks in the note chosen by the schedule prompt", async () => {
+      const app = buildMockAppWithNote(MOCK_NOTE_CONTENT);
+      const task = { isExisting: false, noteUUID: "chosen-note", suggestionId: "sug-102",
+        title: "Build a landing page for Task Agent Pro", rating: 8 };
+      const startAt = Math.floor(new Date(2026, 3, 29, 9, 30, 0).getTime() / 1000);
+
+      const result = await scheduledDreamTaskResultFromStartAt(app, "daily-jot-uuid", startAt, task);
+
+      expect(result).toEqual({ noteUUID: "chosen-note", startAt, taskUuid: "created-task-uuid" });
+      expect(app.insertTask).toHaveBeenCalledWith(
+        { uuid: "chosen-note" },
+        { content: "Build a landing page for Task Agent Pro", startAt },
+      );
+    });
+
+    it("puts a note selector above the time field when scheduling an invented suggestion", async () => {
+      const todaySlots = [{ label: "9:30 AM", value: 9 * 60 + 30 }];
+      const app = {
+        alert: jest.fn(),
+        prompt: jest.fn().mockResolvedValue([{ uuid: "chosen-note" }, "Today", todaySlots[0].value, -1]),
+      };
+      const now = new Date(2026, 3, 29, 8, 0, 0);
+      const task = { isExisting: false, title: "Build a landing page for Task Agent Pro" };
+      const localMidnightSeconds = Math.floor(new Date(2026, 3, 29, 0, 0, 0).getTime() / 1000);
+
+      const selection = await resolveDreamTaskScheduleSelection(app, {
+        defaultNoteUUID: "daily-jot-uuid", now, task, todaySlots,
+      });
+
+      const inputs = app.prompt.mock.calls[0][1].inputs;
+      expect(inputs[0]).toEqual({ label: "Note", type: "note", value: { uuid: "daily-jot-uuid" } });
+      expect(inputs[1]).toEqual({ label: "Date", type: "string", value: "Today" });
+      expect(inputs[2].label).toBe("Time");
+      expect(selection).toEqual({
+        noteUUID: "chosen-note",
+        startAt: startAtSecondsFromDateAndMinutes(localMidnightSeconds, todaySlots[0].value),
+      });
+    });
+
+    it("omits the note selector when scheduling an existing Amplenote task", async () => {
+      const todaySlots = [{ label: "9:30 AM", value: 9 * 60 + 30 }];
+      const app = { alert: jest.fn(), prompt: jest.fn().mockResolvedValue(["Today", todaySlots[0].value, -1]) };
+      const now = new Date(2026, 3, 29, 8, 0, 0);
+      const task = { isExisting: true, noteUUID: "existing-note", title: "Update budget", uuid: "task-7" };
+
+      const selection = await resolveDreamTaskScheduleSelection(app, {
+        defaultNoteUUID: "daily-jot-uuid", now, task, todaySlots,
+      });
+
+      const inputs = app.prompt.mock.calls[0][1].inputs;
+      expect(inputs[0].type).not.toBe("note");
+      expect(inputs.map(input => input.label)).toEqual(["Date", "Time"]);
+      expect(selection.noteUUID).toBe("existing-note");
+      expect(selection.startAt).toBe(startAtSecondsFromDateAndMinutes(now, todaySlots[0].value));
+    });
+
     it("updates existing tasks with a unix-seconds startAt", async () => {
       const app = buildMockAppWithNote(MOCK_NOTE_CONTENT);
       const task = { isExisting: true, suggestionId: "sug-101", title: "Update budget", uuid: "task-7", rating: 7 };
@@ -294,6 +353,55 @@ describe("DreamTask action links", () => {
         expect(cards[0].textContent).not.toContain("Schedule");
         expect(cards[1].textContent).toContain("Build a landing page for Task Agent Pro");
         expect(cards[1].textContent).toContain("Schedule");
+      } finally {
+        await act(async () => { root.unmount(); });
+        container.remove();
+      }
+    });
+
+    it("opens a schedule prompt with a note selector for invented suggestions", async () => {
+      const app = buildMockAppWithNote(MOCK_NOTE_CONTENT);
+      app.prompt = jest.fn().mockImplementation(async (_message, options) => {
+        const inputs = options.inputs || [];
+        const hasNote = inputs[0]?.type === "note";
+        const note = { name: "Picked note", uuid: "chosen-note" };
+        const timeValue = inputs.find(input => input.label === "Time")?.value ?? 9 * 60;
+        const dateInput = inputs.find(input => input.label === "Date");
+        if (dateInput?.type === "date") {
+          return hasNote ? [note, dateInput.value, timeValue] : [dateInput.value, timeValue];
+        }
+        return hasNote ? [note, "Today", timeValue, -1] : ["Today", timeValue, -1];
+      });
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      const root = createRoot(container);
+
+      try {
+        await act(async () => {
+          root.render(createElement(DreamTaskWidget, {
+            app, gridHeightSize: 1, gridWidthSize: 2, onOpenSettings: jest.fn(), providerApiKey: "test-key",
+            taskDomainName: "Work", taskDomainUUID: "dom-work",
+          }));
+        });
+        const cards = await waitForDreamTaskCards(container);
+        const inventedCard = [...cards].find(card => card.textContent.includes("Build a landing page"));
+        const scheduleLink = [...inventedCard.querySelectorAll(".dream-task-card-action")]
+          .find(link => link.textContent.includes("Schedule"));
+        await act(async () => { scheduleLink.click(); });
+        for (let attempt = 0; attempt < 10 && app.prompt.mock.calls.length === 0; attempt += 1) {
+          await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
+        }
+
+        const inputs = app.prompt.mock.calls[0][1].inputs;
+        expect(inputs[0]).toEqual(expect.objectContaining({ label: "Note", type: "note" }));
+        expect(inputs.findIndex(input => input.label === "Time")).toBeGreaterThan(0);
+        for (let attempt = 0; attempt < 10 && app.insertTask.mock.calls.length === 0; attempt += 1) {
+          await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
+        }
+        expect(app.insertTask).toHaveBeenCalledWith(
+          { uuid: "chosen-note" },
+          expect.objectContaining({ content: "Build a landing page for Task Agent Pro" }),
+        );
       } finally {
         await act(async () => { root.unmount(); });
         container.remove();
