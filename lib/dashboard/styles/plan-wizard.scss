@@ -517,7 +517,6 @@ $plan-wizard-z-index: 1100;
       flex-direction: column;
       gap: $sp-sm;
       justify-content: flex-start;
-      min-height: 156px;
       padding: $sp-md;
     }
 
@@ -555,17 +554,32 @@ $plan-wizard-z-index: 1100;
       }
     }
 
+    .project-row-emphasis {
+      margin-top: auto;
+    }
+
+    .project-row-emphasis-label {
+      color: $color-text-secondary;
+      font-size: 0.72rem;
+      font-weight: 600;
+      margin: $sp-sm 0;
+    }
+
     .project-row-priority {
       display: grid;
       gap: $sp-xs;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      margin-top: auto;
     }
 
     .project-row-priority-button {
       font-size: 0.72rem;
       padding: $sp-sm $sp-xs;
       text-align: center;
+
+      &:disabled {
+        background: $color-bg-page;
+        color: $color-text-muted;
+      }
 
       &[aria-pressed="true"] {
         background: $color-navy;

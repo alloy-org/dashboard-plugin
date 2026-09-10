@@ -581,16 +581,24 @@ describe("PlanWizard projects step", () => {
     await cleanup();
   });
 
-  it("shows priority choices as soon as a custom project has text", async () => {
+  // ----------------------------------------------------------------------------------------------
+  // @desc Keep empty project emphasis visible but inactive, then enable and persist a named project's choice.
+  it("enables visible priority choices only when a custom project has nonblank text", async () => {
     const { app, cleanup, container } = await renderPlanWizard();
     await advanceToStep(container, "projects");
     const nameField = container.querySelector(".projects-step-category--work .project-row-name");
     const projectCard = nameField.closest(".project-row");
-    expect(projectCard.querySelector(".project-row-priority")).toBeNull();
-
-    await typeInto(nameField, "Instrument the funnel");
     const priorityButtons = [...projectCard.querySelectorAll(".project-row-priority-button")];
     expect(priorityButtons.map(button => button.textContent)).toEqual(["Focus", "Keep warm", "Not now"]);
+    expect(projectCard.querySelector(".project-row-emphasis-label").textContent).toBe("Project emphasis");
+    expect(priorityButtons.every(button => button.disabled)).toBe(true);
+    await typeInto(nameField, "   ");
+    expect(priorityButtons.every(button => button.disabled)).toBe(true);
+    await typeInto(nameField, "Instrument the funnel");
+    expect(priorityButtons.every(button => !button.disabled)).toBe(true);
+    await typeInto(nameField, "");
+    expect(priorityButtons.every(button => button.disabled)).toBe(true);
+    await typeInto(nameField, "Instrument the funnel");
     await clickAndSettle(priorityButtons[0]);
 
     const stored = await readPlanGoals(app, SCOPE);

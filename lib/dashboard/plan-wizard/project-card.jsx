@@ -5,6 +5,7 @@ import { memo, useEffect, useState } from "react";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Render one project proposal or custom project with card-local priority selection state.
+//   Keep emphasis choices visible and disabled until the project has a nonblank name.
 // @param {object} params - An object with the following properties:
 //   - {boolean} isDisabled - Whether a page-level save prevents editing.
 //   - {Function} onChangeSummary - Receives the row UUID and edited row fields.
@@ -15,6 +16,7 @@ import { memo, useEffect, useState } from "react";
 function ProjectCard({ isDisabled, onChangeSummary, onReject, onSetPriority, row }) {
   const [isPrioritySaving, setIsPrioritySaving] = useState(false);
   const [selectedPriorityEm, setSelectedPriorityEm] = useState(row.priorityEm);
+  const hasSummary = Boolean(row.summary.trim());
   const wasProposed = row.approvalStatusEm === "awaitingJudgement";
   const wasSuggested = row.approvalStatusEm !== "humanProvided";
   const rowClass = `project-row ${ wasProposed ? "project-row--proposed" : "project-row--chosen" }`;
@@ -53,18 +55,19 @@ function ProjectCard({ isDisabled, onChangeSummary, onReject, onSetPriority, row
           { row.substantiations.map(reason => <p key={ reason }>{ reason }</p>) }
         </div>
       ) : null }
-      { row.summary.trim() ? (
-        <div aria-label={ `Priority for ${ row.summary }` } className="project-row-priority">
+      <div className="project-row-emphasis">
+        <p className="project-row-emphasis-label" id={ `project-emphasis-${ row.uuid }` }>Project emphasis</p>
+        <div aria-labelledby={ `project-emphasis-${ row.uuid }` } className="project-row-priority" role="group">
           { PROJECT_PRIORITY_OPTIONS.map(option => (
             <button aria-pressed={ selectedPriorityEm === option.value }
               className={ `project-row-priority-button${ selectedPriorityEm === option.value ? " project-row-priority-button--selected" : "" }` }
-              disabled={ isDisabled || isPrioritySaving } key={ option.value }
+              disabled={ isDisabled || isPrioritySaving || !hasSummary } key={ option.value }
               onClick={ () => handleSetPriority(option.value) } type="button">
               { option.label }
             </button>
           )) }
         </div>
-      ) : null }
+      </div>
     </div>
   );
 }
