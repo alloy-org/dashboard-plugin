@@ -73,11 +73,12 @@ async function settle() {
 // ----------------------------------------------------------------------------------------------
 // @desc Type into a text field the way React's onChange expects. React installs its own value setter on the
 //   element, so assigning to .value directly would not notify it; calling the prototype's setter does.
-// @param {HTMLInputElement} input - Field to edit.
+// @param {HTMLInputElement|HTMLTextAreaElement} input - Field to edit.
 // @param {string} text - New value.
 async function typeInto(input, text) {
   await act(async () => {
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+    const prototype = input instanceof window.HTMLTextAreaElement ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+    const setter = Object.getOwnPropertyDescriptor(prototype, "value").set;
     setter.call(input, text);
     input.dispatchEvent(new Event("input", { bubbles: true }));
   });
@@ -1232,12 +1233,12 @@ describe("PlanWizard modal presentation", () => {
     await cleanup();
   });
 
-  it("captures each answer in a one-line text input, since every wizard answer is a phrase", async () => {
+  it("wraps intent answers in textareas while keeping the other short answers as text inputs", async () => {
     const { cleanup, container } = await renderPlanWizard();
-    expect(container.querySelectorAll("textarea")).toHaveLength(0);
+    expect(container.querySelectorAll("textarea")).toHaveLength(2);
     const intentField = container.querySelector(".intent-step-input");
-    expect(intentField.tagName).toBe("INPUT");
-    expect(intentField.getAttribute("type")).toBe("text");
+    expect(intentField.tagName).toBe("TEXTAREA");
+    expect(intentField.rows).toBe(1);
     await advanceToStep(container, "quarter-name");
     const nameField = container.querySelector(".quarter-name-custom-input");
     expect(nameField.tagName).toBe("INPUT");

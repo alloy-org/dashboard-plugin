@@ -83,7 +83,8 @@ $plan-wizard-z-index: 1100;
 
     /* Every page's inputs share one look, so a question added later needs no new field styling. */
     input[type="text"],
-    input[type="date"] {
+    input[type="date"],
+    textarea.intent-step-input {
       background: $color-bg-primary;
       border: 1px solid $color-border;
       border-radius: $radius-sm;
@@ -379,6 +380,7 @@ $plan-wizard-z-index: 1100;
       display: flex;
       flex-direction: column;
       gap: $sp-sm;
+      min-width: 0;
       padding: $sp-md;
 
       .plan-button--dashed {
@@ -404,6 +406,15 @@ $plan-wizard-z-index: 1100;
           color: $color-intent-personal;
         }
       }
+    }
+
+    .intent-step-input {
+      box-sizing: border-box;
+      display: block;
+      line-height: 1.4;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      resize: none;
     }
 
     /* The pending row holds the place the suggestion chips will take, so a slow inference pass reads as work in

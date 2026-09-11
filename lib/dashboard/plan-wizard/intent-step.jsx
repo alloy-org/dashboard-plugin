@@ -12,8 +12,8 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 const INTENT_STEP_COPY = wizardStepFromKey("intent");
 
 // ----------------------------------------------------------------------------------------------
-// @desc One editable goal line. A goal is a single sentence, so this is a one-line text input rather than a
-//   textarea: the box should not invite a paragraph, and Enter should not insert a newline into a goal.
+// @desc Render an editable goal that wraps and grows to show all its text, including restored goals and
+//   applied suggestions. Recalculate its height when the text or available width changes.
 // @param {object} params - An object with the following properties:
 //   - {object} field - Draft field: { goalRank, goalText, shouldAutoFocus, userCategoryEm, uuid }.
 //   - {boolean} isDisabled - True while a save is in flight.
@@ -29,14 +29,36 @@ function IntentStepField({ field, isDisabled, onChangeText, onFocus, placeholder
   const fieldClass = `intent-step-field ${ isPrimary ? "intent-step-field--primary" : "intent-step-field--secondary" }`;
 
   useLayoutEffect(() => {
+    const input = inputRef.current;
+    let previousWidth = input.clientWidth;
+
+    // ----------------------------------------------------------------------------------------------
+    // @desc Reset the height so shorter text can shrink, then fit the content plus the textarea's borders.
+    const resizeInput = () => {
+      input.style.height = "auto";
+      input.style.height = `${ input.scrollHeight + input.offsetHeight - input.clientHeight }px`;
+    };
+
+    resizeInput();
+    if (typeof ResizeObserver === "undefined") return undefined;
+    const resizeObserver = new ResizeObserver(() => {
+      if (input.clientWidth === previousWidth) return;
+      previousWidth = input.clientWidth;
+      resizeInput();
+    });
+    resizeObserver.observe(input);
+    return () => resizeObserver.disconnect();
+  }, [field.goalText]);
+
+  useLayoutEffect(() => {
     if (!field.shouldAutoFocus) return;
     inputRef.current?.focus();
   }, [field.shouldAutoFocus]);
 
   return (
     <div className={ fieldClass }>
-      <input className="intent-step-input" disabled={ isDisabled } onChange={ event => onChangeText(event.target.value) }
-        onFocus={ onFocus } placeholder={ placeholder } ref={ inputRef } type="text" value={ field.goalText } />
+      <textarea className="intent-step-input" disabled={ isDisabled } onChange={ event => onChangeText(event.target.value) }
+        onFocus={ onFocus } placeholder={ placeholder } ref={ inputRef } rows={ 1 } value={ field.goalText } />
     </div>
   );
 }
