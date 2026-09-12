@@ -28,6 +28,14 @@ export function createPlanWizardApp() {
       return note ? bridgeNoteHandle(note) : null;
     }),
     getNoteContent: jest.fn(async ({ uuid }) => noteForUuid(notes, uuid)?.content ?? null),
+    // Unlike replaceNoteContent, the host accepts the local identifier createNote hands back, which is what lets
+    // a caller seed a brand-new note before it has settled on its permanent UUID.
+    insertNoteContent: jest.fn(async ({ uuid }, content, options = {}) => {
+      const note = noteForUuid(notes, uuid);
+      if (!note) return false;
+      note.content = options.atEnd ? `${ note.content }${ content }` : `${ content }${ note.content }`;
+      return true;
+    }),
     navigate: jest.fn(async () => true),
     replaceNoteContent: jest.fn(async (handle, content, options = {}) => {
       // A handle that still carries the fields findNote returned did not survive the bridge as a writable

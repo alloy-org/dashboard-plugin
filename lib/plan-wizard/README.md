@@ -150,8 +150,37 @@ other recently created tasks, and the notes that work happened in. A candidate m
 tasks and advance a chosen intent of its own category, or it is discarded rather than stored. It runs on demand
 rather than continuously, and its proposals arrive as `awaitingJudgement` for the user to affirm or reject.
 
-`prospect-task-service.js`, continuous background harvesting, monthly history, and Quarterly Goals template
-population remain subsequent milestones.
+`prospect-task-service.js`, continuous background harvesting, and monthly history remain subsequent milestones.
+
+# Publishing to the quarterly plan note
+
+The Vision Guide is the datastore; the quarterly plan note (`Q4 2026 Work Plan`) is what the user reads.
+`quarterly-plan-publisher.js` carries decisions from the first into the second, and `use-plan-wizard.js` calls it
+after the projects, pace, quarter-name, and done-enough pages save. Per-card priority clicks do not publish, so a
+chip click never rewrites the note.
+
+Ownership is carried by a visible `[builder]` suffix on a heading, a line, or one semicolon-separated segment.
+The builder may replace or delete anything carrying it and may touch nothing else, which is what lets a plan note
+hold hand-written and generated content at once. Where both have something to say on one line — a day-of-week
+bullet, a month's Focus — the user's text stays first and project names are appended after it.
+
+- Focus and Keep warm projects become `##` blocks under `# Projects`; Keep warm is marked `[builder: keep warm]`.
+  A rewrite carries the user's `Outcome`, `Constraints`, and `Done enough when` values forward from the block it
+  replaces, since the wizard never asks about those.
+- Not now projects become plain bullets under `# Not This Quarter`. They are bullets rather than `- [ ]`
+  checkboxes on purpose: publishing must not create tasks in the user's lists. The done-enough answer, appended
+  under `## Success Looks Like`, is a plain bullet for the same reason.
+- The quarter's name leads the note as an H1 and is deliberately not repeated under `# Quarter Theme`; that
+  sentence and the `## Success Looks Like` outcomes stay the user's. The only scaffolding cleared is a
+  `## [Project N]` block still holding its bracketed name and no filled bullets, and only once real projects
+  exist to take its place.
+
+`mergedQuarterlyPlanContent` splices the note that was just read, so everything outside the owned sections is
+copied forward byte for byte, and the result is written in one whole-note call rather than several section
+writes. That write is bracketed: nothing is written if the merge would drop a heading the user wrote, and the
+saved note is read back and confirmed to carry every published project before the call reports success.
+Republishing an unchanged plan produces identical markdown and performs no write. A section the note does not
+have is skipped rather than created, so a plan note restructured by hand degrades instead of breaking.
 
 Run the focused suites with:
 
