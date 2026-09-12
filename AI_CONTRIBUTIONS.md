@@ -5,6 +5,33 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## [Claude Opus 5 (1M context)] Instrument what the wizard submits, and ask a fast model for it
+
+**Files:**
+- `lib/plan-wizard/wizard-prompt-diagnostics.js` (new) — measures a rendered prompt and an evidence bundle, and
+  logs the submission profile before the call and the duration against budget after it
+- `lib/plan-wizard/prospect-discovery.js` (modified) — `discoverActionProspects` logs its submission and outcome,
+  and requests `WIZARD_LLM_MODEL`
+- `lib/plan-wizard/intent-inference.js` (modified) — `inferIntentPossibilities` does the same
+- `lib/plan-wizard/plan-wizard-service.js` (modified) — `refreshPlanActionProspects` reports per-phase timing, so
+  goal read, evidence collection, discovery and save are separable within the one minute budget
+- `lib/plan-wizard/plan-models.js` (modified) — added `WIZARD_LLM_MODEL`
+- `lib/constants/llm-providers.js` (modified) — registered `gemini-3.8-flash` in `GEMINI_TOKEN_LIMITS`
+
+**Task:** Diagnose why the Projects page still times out on a large task corpus, and try a faster model
+**Prompt summary:** "We recently switched to a 60 second timeout on the project page but on my large corpus of
+tasks, the page still eventually times out. Let's increase the debuggability of what's happening: log how many
+tasks are being submitted to the LLM to evaluate, log the total size of the request, log other details that can
+help to formulate how we should revise the prompt in order to finish in under 60 seconds. Let's also try a model
+with a better speed profile, let's say Google Flash 3.8"
+
+**Notes:** The submission line is emitted before the provider call rather than after, because a timeout leaves no
+response to inspect and that line is the only record of what was asked. Section sizes are labeled by each
+section's opening line alone, so the log names which evidence signal is large without reproducing task text.
+The user confirmed `gemini-3.8-flash` as the intended model ID; it was not previously in the registry.
+
+---
+
 ## [Claude Opus 5 (1M context)] Give the plan wizard's two LLM passes the 60 second timeout they assumed
 
 **Files:**
