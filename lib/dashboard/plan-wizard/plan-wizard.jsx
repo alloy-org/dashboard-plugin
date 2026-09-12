@@ -17,14 +17,14 @@
 
 import NoteEditor from "dashboard/note-editor";
 import DoneEnoughStep from "dashboard/plan-wizard/done-enough-step";
-import IntentStep, { INTENT_STEP_FORM_ID } from "dashboard/plan-wizard/intent-step";
-import PaceCardsStep, { PACE_CARDS_STEP_FORM_ID } from "dashboard/plan-wizard/pace-cards-step";
+import IntentStep from "dashboard/plan-wizard/intent-step";
+import PaceCardsStep from "dashboard/plan-wizard/pace-cards-step";
 import PlanSaveError from "dashboard/plan-wizard/plan-save-error";
-import ProjectsStep, { PROJECTS_STEP_FORM_ID } from "dashboard/plan-wizard/projects-step";
-import QuarterNameStep, { QUARTER_NAME_STEP_FORM_ID } from "dashboard/plan-wizard/quarter-name-step";
+import ProjectsStep from "dashboard/plan-wizard/projects-step";
+import QuarterNameStep from "dashboard/plan-wizard/quarter-name-step";
 import { WIZARD_STEPS, wizardStepIndexFromKey } from "dashboard/plan-wizard/wizard-steps";
 import usePlanWizard, { planScopeKey } from "hooks/use-plan-wizard";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import "dashboard/styles/plan-wizard.scss";
 
@@ -63,6 +63,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const [overlayTop] = useState(currentDocumentScrollTop);
   const overlayRef = useRef(null);
   const projectNavigationDirectionRef = useRef(1);
+  const stepNavigateRef = useRef(null);
   const scopeKey = planScopeKey({ domainName, domainUuid, quarter, year });
   const quarterLabel = planningContext.scope ? planningContext.scope.quarterKey : `${ year }-Q${ quarter }`;
   const domainLabel = domainName ?? "All Notes";
@@ -70,10 +71,25 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const step = WIZARD_STEPS[stepIndex];
   const isFirstStep = stepIndex === 0;
   const isLastStep = stepIndex === WIZARD_STEPS.length - 1;
-  const navigatingFormId = { "pace-cards": PACE_CARDS_STEP_FORM_ID, "projects": PROJECTS_STEP_FORM_ID,
-    "quarter-name": QUARTER_NAME_STEP_FORM_ID }[step.key];
-  const isNavigatingFormStep = Boolean(navigatingFormId);
+  const isNavigatingSaveStep = ["pace-cards", "projects", "quarter-name"].includes(step.key);
   const hasPersistedIntent = planningContext.goals.length > 0;
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Hold the current step's save-then-navigate handler so the shared Back and Next buttons can run it.
+  //   The buttons live outside the step they act on, and the sandboxed embed forbids the native <form> submission
+  //   that used to bridge that gap, so each step hands its handler up here instead.
+  // @param {Function|null} handleNavigate - The mounted step's handler, or null as that step unmounts.
+  const handleRegisterNavigate = useCallback(handleNavigate => {
+    stepNavigateRef.current = handleNavigate;
+  }, []);
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Run the current step's registered handler, which navigates only once its pending edits saved.
+  // @param {number} stepDelta - Positive for Next, negative for Back; read by the step's navigation callback.
+  const handleNavigateStep = stepDelta => {
+    projectNavigationDirectionRef.current = stepDelta;
+    if (stepNavigateRef.current) stepNavigateRef.current();
+  };
 
   // ----------------------------------------------------------------------------------------------
   // @desc Move the given number of steps through the sequence, stopping at either end.
@@ -166,20 +182,24 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
         ) : null }
         { !inspectingNoteUuid && !isLoading && !error && step.key === "intent" ? (
           <IntentStep { ...{ isRefreshing, isSaving, planningContext, scopeKey } }
-            onAnswerStateChange={ setHasIntentAnswer } onFindProjects={ handleFindProjects } onSave={ saveGoals } />
+            onAnswerStateChange={ setHasIntentAnswer } onFindProjects={ handleFindProjects }
+            onRegisterNavigate={ handleRegisterNavigate } onSave={ saveGoals } />
         ) : null }
         { !inspectingNoteUuid && !isLoading && !error && step.key === "projects" ? (
           <ProjectsStep { ...{ discoveryFailureReason, isDiscovering, isSaving, planningContext, scopeKey } }
-            onDiscover={ discoverProspects } onNavigate={ handleProjectNavigation } onSave={ saveProspects }
+            onDiscover={ discoverProspects } onNavigate={ handleProjectNavigation }
+            onRegisterNavigate={ handleRegisterNavigate } onSave={ saveProspects }
             onSaveDecision={ saveProspectDecision } />
         ) : null }
         { !inspectingNoteUuid && !isLoading && !error && step.key === "pace-cards" ? (
           <PaceCardsStep { ...{ isSaving, planningContext, scopeKey } }
-            onNavigate={ handleProjectNavigation } onSave={ records => saveProspects(records, { updatePlacement: false }) } />
+            onNavigate={ handleProjectNavigation } onRegisterNavigate={ handleRegisterNavigate }
+            onSave={ records => saveProspects(records, { updatePlacement: false }) } />
         ) : null }
         { !inspectingNoteUuid && !isLoading && !error && step.key === "quarter-name" ? (
           <QuarterNameStep { ...{ isSaving, planningContext, scopeKey } }
-            onNavigate={ handleProjectNavigation } onSaveName={ saveQuarterAnswer } onSaveProspects={ saveProspects } />
+            onNavigate={ handleProjectNavigation } onRegisterNavigate={ handleRegisterNavigate }
+            onSaveName={ saveQuarterAnswer } onSaveProspects={ saveProspects } />
         ) : null }
         { !inspectingNoteUuid && !isLoading && !error && step.key === "enough-for-today" ? (
           <DoneEnoughStep { ...{ isSaving, saveError, scopeKey } } answer={ planningContext.dailySufficiency }
@@ -192,20 +212,16 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
         { !inspectingNoteUuid && !isLoading && !error ? (
           <nav className="plan-wizard-navigation">
             { isFirstStep ? null : (
-              <button className="plan-wizard-back" disabled={ isNavigatingFormStep && isSaving }
-                form={ isNavigatingFormStep ? navigatingFormId : undefined }
-                onClick={ isNavigatingFormStep ? () => { projectNavigationDirectionRef.current = -1; }
-                  : () => handleStepChange(-1) }
-                type={ isNavigatingFormStep ? "submit" : "button" } value="-1">Back</button>
+              <button className="plan-wizard-back" disabled={ isNavigatingSaveStep && isSaving }
+                onClick={ isNavigatingSaveStep ? () => handleNavigateStep(-1) : () => handleStepChange(-1) }
+                type="button">Back</button>
             ) }
             <button className="plan-wizard-next"
               disabled={ isLastStep || (isFirstStep && ((!hasIntentAnswer && !hasPersistedIntent) || isSaving))
-                || (isNavigatingFormStep && isSaving) }
-              form={ isFirstStep ? INTENT_STEP_FORM_ID : isNavigatingFormStep ? navigatingFormId : undefined }
-              onClick={ isFirstStep ? undefined : isNavigatingFormStep
-                ? () => { projectNavigationDirectionRef.current = 1; } : () => handleStepChange(1) }
-              type={ isFirstStep || isNavigatingFormStep ? "submit" : "button" } value="1">
-              { (isFirstStep || isNavigatingFormStep) && isSaving ? "Saving…" : "Next" }
+                || (isNavigatingSaveStep && isSaving) }
+              onClick={ isFirstStep || isNavigatingSaveStep ? () => handleNavigateStep(1) : () => handleStepChange(1) }
+              type="button">
+              { (isFirstStep || isNavigatingSaveStep) && isSaving ? "Saving…" : "Next" }
             </button>
           </nav>
         ) : null }

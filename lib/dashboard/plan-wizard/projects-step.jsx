@@ -10,11 +10,11 @@
 import ProjectCard from "dashboard/plan-wizard/project-card";
 import { draftRowsFromProspects, emptyProjectRow, priorityRecordFromRow, prospectRecordsFromDraftRows,
   rejectionRecordFromRow } from "dashboard/plan-wizard/projects-step-fields";
+import { useRegisteredNavigate } from "dashboard/plan-wizard/step-navigation";
 import { wizardStepFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const CATEGORY_HEADINGS = { personal: "Personal projects (optional)", work: "Professional projects" };
-export const PROJECTS_STEP_FORM_ID = "plan-wizard-projects-form";
 const PROJECTS_STEP_COPY = wizardStepFromKey("projects");
 
 // ----------------------------------------------------------------------------------------------
@@ -43,13 +43,14 @@ function discoveryNoticeText({ discoveryFailureReason, hasChosenIntent, isDiscov
 //   - {boolean} isSaving - True while a save is in flight.
 //   - {Function} onDiscover - Runs a discovery pass for the current scope.
 //   - {Function} onNavigate - Changes wizard page after pending project edits save successfully.
+//   - {Function} onRegisterNavigate - Publishes this page's Back/Next handler to the wizard's shared navigation.
 //   - {Function} onSave - Receives prospect records and resolves true when the write succeeded.
 //   - {Function} onSaveDecision - Persists one card decision without entering page-wide saving state.
 //   - {object} planningContext - Stored goals and prospects for the scope.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 // @returns {JSX.Element} The projects page.
 export default function ProjectsStep({ discoveryFailureReason = null, isDiscovering = false, isSaving, onDiscover,
-    onNavigate, onSave, onSaveDecision, planningContext, scopeKey }) {
+    onNavigate, onRegisterNavigate, onSave, onSaveDecision, planningContext, scopeKey }) {
   const [draftRows, setDraftRows] = useState(() => draftRowsFromProspects(planningContext.prospects,
     planningContext.goals));
   const capturedAtRef = useRef(null);
@@ -119,17 +120,18 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
   };
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Save pending custom project text before honoring the Back or Next submit button.
-  // @param {object} event - Form submission event from the wizard navigation.
-  const handleNavigate = async event => {
-    event.preventDefault();
+  // @desc Save pending custom project text before honoring the Back or Next button.
+  // @returns {Promise<void>} Resolves once a successful save has let navigation run.
+  const handleNavigate = async () => {
     const didSave = await handleSave();
     if (!didSave) return;
     onNavigate();
   };
 
+  useRegisteredNavigate(onRegisterNavigate, handleNavigate);
+
   return (
-    <form className="plan-step-container projects-step-container" id={ PROJECTS_STEP_FORM_ID } onSubmit={ handleNavigate }>
+    <div className="plan-step-container projects-step-container">
       <h2 className="plan-heading">{ PROJECTS_STEP_COPY.title }</h2>
       <p className="plan-summary">{ PROJECTS_STEP_COPY.summary }</p>
       { ["work", "personal"].map(userCategoryEm => {
@@ -173,6 +175,6 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
           </section>
         );
       }) }
-    </form>
+    </div>
   );
 }

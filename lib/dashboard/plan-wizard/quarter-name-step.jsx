@@ -4,13 +4,13 @@
 
 import ProjectFocusWindow from "dashboard/plan-wizard/project-focus-window";
 import { answerTextFromRecord, hasUnsavedAnswer, quarterAnswerFromDraft } from "dashboard/plan-wizard/quarter-answer-fields";
-import { CUSTOM_QUARTER_NAME, QUARTER_NAME_STEP_FORM_ID, TIMELINE_HEADING, TIMELINE_SUMMARY,
+import { CUSTOM_QUARTER_NAME, TIMELINE_HEADING, TIMELINE_SUMMARY,
   draftWindowsFromProspects, monthNameFromMonthKey, nameIdeasFromProspects, prospectRecordsFromWindowDrafts,
   quarterBoundsFromScope, selectedNameFromRecord, windowDraftsNeedSave } from "dashboard/plan-wizard/quarter-name-step-fields";
+import { useRegisteredNavigate } from "dashboard/plan-wizard/step-navigation";
 import { wizardStepFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export { QUARTER_NAME_STEP_FORM_ID };
 const QUARTER_NAME_STEP_COPY = wizardStepFromKey("quarter-name");
 
 // ----------------------------------------------------------------------------------------------
@@ -19,13 +19,14 @@ const QUARTER_NAME_STEP_COPY = wizardStepFromKey("quarter-name");
 // @param {object} params - An object with the following properties:
 //   - {boolean} isSaving - True while a save is in flight.
 //   - {Function} onNavigate - Changes wizard page after pending edits save successfully.
+//   - {Function} onRegisterNavigate - Publishes this page's Back/Next handler to the wizard's shared navigation.
 //   - {Function} onSaveName - Receives a quarterName answer and resolves true when the write succeeded.
 //   - {Function} onSaveProspects - Receives prospect records and resolves true when the write succeeded.
 //   - {object} planningContext - Stored prospects, quarter name, and scope.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 // @returns {JSX.Element} The Name the quarter page.
-export default function QuarterNameStep({ isSaving, onNavigate, onSaveName, onSaveProspects, planningContext,
-    scopeKey }) {
+export default function QuarterNameStep({ isSaving, onNavigate, onRegisterNavigate, onSaveName, onSaveProspects,
+    planningContext, scopeKey }) {
   const scope = planningContext.scope;
   const ideas = nameIdeasFromProspects(planningContext.prospects, scope);
   const storedName = answerTextFromRecord(planningContext.quarterName);
@@ -105,17 +106,18 @@ export default function QuarterNameStep({ isSaving, onNavigate, onSaveName, onSa
   };
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Save pending name and window edits before honoring the Back or Next submit button.
-  // @param {object} event - Form submission event from the wizard navigation.
-  const handleNavigate = async event => {
-    event.preventDefault();
+  // @desc Save pending name and window edits before honoring the Back or Next button.
+  // @returns {Promise<void>} Resolves once a successful save has let navigation run.
+  const handleNavigate = async () => {
     const didSave = await handleSave();
     if (!didSave) return;
     onNavigate();
   };
 
+  useRegisteredNavigate(onRegisterNavigate, handleNavigate);
+
   return (
-    <form className="plan-step-container quarter-name-container" id={ QUARTER_NAME_STEP_FORM_ID } onSubmit={ handleNavigate }>
+    <div className="plan-step-container quarter-name-container">
       <h2 className="plan-heading">{ QUARTER_NAME_STEP_COPY.title }</h2>
       <p className="plan-summary">{ QUARTER_NAME_STEP_COPY.summary }</p>
       <div className="quarter-name-ideas">
@@ -154,6 +156,6 @@ export default function QuarterNameStep({ isSaving, onNavigate, onSaveName, onSa
           nothing to place yet.
         </p>
       ) }
-    </form>
+    </div>
   );
 }

@@ -5,10 +5,10 @@
 
 import { CATEGORY_LABELS, PRIMARY_GOAL_RANK, draftFieldsFromGoals, goalRecordsFromDraftFields,
   nextSecondaryRank } from "dashboard/plan-wizard/intent-step-fields";
+import { useRegisteredNavigate } from "dashboard/plan-wizard/step-navigation";
 import { wizardStepFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-export const INTENT_STEP_FORM_ID = "plan-wizard-intent-form";
 const INTENT_STEP_COPY = wizardStepFromKey("intent");
 
 // ----------------------------------------------------------------------------------------------
@@ -96,14 +96,15 @@ function IntentStepCategory({ fields, isDisabled, onAddSecondary, onApplySuggest
 //   - {boolean} isSaving - True while a save is in flight.
 //   - {Function} onAnswerStateChange - Reports whether Next should be enabled.
 //   - {Function} onFindProjects - Moves to the projects page and runs discovery there.
+//   - {Function} onRegisterNavigate - Publishes this page's Next handler to the wizard's shared navigation.
 //   - {object} planningContext - Stored goals, goalRecords, and possibilities for the scope.
 //   - {Function} onSave - Receives goal records and resolves true when the write succeeded.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 // @returns {JSX.Element} The intent page.
-// The wizard's shared Next button submits this form: discovery reads stored intents, so an unsaved answer would
-// otherwise be invisible and the user would be shown projects chosen for the prior answer.
-export default function IntentStep({ isRefreshing, isSaving, onAnswerStateChange, onFindProjects, onSave,
-    planningContext, scopeKey }) {
+// The wizard's shared Next button runs this page's handler: discovery reads stored intents, so an unsaved answer
+// would otherwise be invisible and the user would be shown projects chosen for the prior answer.
+export default function IntentStep({ isRefreshing, isSaving, onAnswerStateChange, onFindProjects,
+    onRegisterNavigate, onSave, planningContext, scopeKey }) {
   const [draftFields, setDraftFields] = useState(() => draftFieldsFromGoals(planningContext.goals));
   const [focusedFieldUuid, setFocusedFieldUuid] = useState(null);
   const capturedAtRef = useRef(null);
@@ -176,12 +177,10 @@ export default function IntentStep({ isRefreshing, isSaving, onAnswerStateChange
   };
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Submit the shared Next button: persist changed answers before project discovery, while an unchanged
+  // @desc Run the shared Next button: persist changed answers before project discovery, while an unchanged
   //   stored answer can proceed without adding another note revision.
-  // @param {object} event - Form submission event from the navigation's associated Next button.
   // A failed changed-answer save keeps the user on this page so discovery cannot reason over stale intent text.
-  const handleNext = async event => {
-    event.preventDefault();
+  const handleNext = async () => {
     if (!capturedAtRef.current && planningContext.goals.length) {
       await onFindProjects();
       return;
@@ -191,13 +190,15 @@ export default function IntentStep({ isRefreshing, isSaving, onAnswerStateChange
     await onFindProjects();
   };
 
+  useRegisteredNavigate(onRegisterNavigate, handleNext);
+
   const workFields = draftFields.filter(field => field.userCategoryEm === "work");
   const personalFields = draftFields.filter(field => field.userCategoryEm === "personal");
   const categoryProps = { isDisabled: isSaving, onApplySuggestion: handleApplySuggestion, onChangeText: handleChangeText,
     onFocusField: setFocusedFieldUuid };
 
   return (
-    <form className="plan-step-container intent-step-container" id={ INTENT_STEP_FORM_ID } onSubmit={ handleNext }>
+    <div className="plan-step-container intent-step-container">
       <h2 className="plan-heading">{ INTENT_STEP_COPY.title }</h2>
       <p className="plan-summary">{ INTENT_STEP_COPY.summary }</p>
       { isRefreshing ? <p className="plan-status">Looking through your recent work for suggestions…</p> : null }
@@ -206,6 +207,6 @@ export default function IntentStep({ isRefreshing, isSaving, onAnswerStateChange
       <IntentStepCategory { ...categoryProps } fields={ personalFields }
         onAddSecondary={ () => handleAddSecondary("personal") } possibilities={ planningContext.possibilities.personal }
         userCategoryEm="personal" />
-    </form>
+    </div>
   );
 }

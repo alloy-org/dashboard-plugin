@@ -1,13 +1,13 @@
 // The wizard page after projects: choose a realistic pace for each named project. The chosen rhythm is stored as
 // paceEm, the days it occupies as preferredWeekdays (preferredDows), and a sprint's landing date as deadlineOn.
 
-import { PACE_CARDS_STEP_FORM_ID, draftFromPaceSelection, draftPacesFromProspects, paceRecordsFromDrafts,
+import { draftFromPaceSelection, draftPacesFromProspects, paceRecordsFromDrafts,
   toggledWeekdaysFromSelection } from "dashboard/plan-wizard/pace-cards-step-fields";
 import ProjectPace from "dashboard/plan-wizard/project-pace";
+import { useRegisteredNavigate } from "dashboard/plan-wizard/step-navigation";
 import { wizardStepFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export { PACE_CARDS_STEP_FORM_ID };
 const PACE_CARDS_STEP_COPY = wizardStepFromKey("pace-cards");
 
 // ----------------------------------------------------------------------------------------------
@@ -15,11 +15,13 @@ const PACE_CARDS_STEP_COPY = wizardStepFromKey("pace-cards");
 // @param {object} params - An object with the following properties:
 //   - {boolean} isSaving - True while a save is in flight.
 //   - {Function} onNavigate - Changes wizard page after pending pace edits save successfully.
+//   - {Function} onRegisterNavigate - Publishes this page's Back/Next handler to the wizard's shared navigation.
 //   - {Function} onSave - Receives prospect records and resolves true when the write succeeded.
 //   - {object} planningContext - Stored prospects for the scope.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 // @returns {JSX.Element} The pace cards page.
-export default function PaceCardsStep({ isSaving, onNavigate, onSave, planningContext, scopeKey }) {
+export default function PaceCardsStep({ isSaving, onNavigate, onRegisterNavigate, onSave, planningContext,
+    scopeKey }) {
   const [drafts, setDrafts] = useState(() => draftPacesFromProspects(planningContext.prospects));
   const capturedAtRef = useRef(null);
   const seededScopeRef = useRef(scopeKey);
@@ -88,17 +90,18 @@ export default function PaceCardsStep({ isSaving, onNavigate, onSave, planningCo
   };
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Save pending pace edits before honoring the Back or Next submit button.
-  // @param {object} event - Form submission event from the wizard navigation.
-  const handleNavigate = async event => {
-    event.preventDefault();
+  // @desc Save pending pace edits before honoring the Back or Next button.
+  // @returns {Promise<void>} Resolves once a successful save has let navigation run.
+  const handleNavigate = async () => {
     const didSave = await handleSave();
     if (!didSave) return;
     onNavigate();
   };
 
+  useRegisteredNavigate(onRegisterNavigate, handleNavigate);
+
   return (
-    <form className="plan-step-container pace-cards-container" id={ PACE_CARDS_STEP_FORM_ID } onSubmit={ handleNavigate }>
+    <div className="plan-step-container pace-cards-container">
       <h2 className="plan-heading">{ PACE_CARDS_STEP_COPY.title }</h2>
       <p className="plan-summary">{ PACE_CARDS_STEP_COPY.summary }</p>
       { drafts.length ? (
@@ -115,6 +118,6 @@ export default function PaceCardsStep({ isSaving, onNavigate, onSave, planningCo
           to protect yet.
         </p>
       ) }
-    </form>
+    </div>
   );
 }

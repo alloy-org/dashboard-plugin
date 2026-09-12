@@ -5,6 +5,36 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## [Claude Opus 5 (1M context)] Replace the wizard's native form submission, which the sandboxed embed blocks
+
+**Files:**
+- `lib/dashboard/plan-wizard/step-navigation.js` (created) — `useRegisteredNavigate`, the hook a step uses to
+  publish its save-then-navigate handler to the wizard for as long as it is mounted
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` (modified) — holds the mounted step's handler in
+  `stepNavigateRef` via `handleRegisterNavigate`; Back and Next are now plain `type="button"` calling
+  `handleNavigateStep`, replacing the `form=`/`type="submit"` pairing and the `navigatingFormId` map
+- `lib/dashboard/plan-wizard/intent-step.jsx` (modified) — `<form>` to `<div>`, `handleNext` no longer takes a
+  submit event, registers through the new hook
+- `lib/dashboard/plan-wizard/projects-step.jsx` (modified) — same conversion for `handleNavigate`
+- `lib/dashboard/plan-wizard/pace-cards-step.jsx` (modified) — same conversion
+- `lib/dashboard/plan-wizard/quarter-name-step.jsx` (modified) — same conversion
+- `lib/dashboard/plan-wizard/pace-cards-step-fields.js` (modified) — drop the now-unused form id constant
+- `lib/dashboard/plan-wizard/quarter-name-step-fields.js` (modified) — drop the now-unused form id constant
+
+**Task:** Fix the production failure where submitting the wizard's first page never advanced to the next page
+**Prompt summary:** "When submitting the first page of lib/dashboard/plan-wizard/ in production, an error
+prevents reaching the subsequent page" — with a console screenshot showing the blocked submission
+**Scope:** 4 step components converted off native form submission, 1 new shared hook, 1 shell rewired
+**Notes:** Amplenote serves the dashboard embed in an iframe sandboxed without `allow-forms`, so the browser
+refused the submission outright ("Blocked form submission to '' because the form's frame is sandboxed and the
+'allow-forms' permission is not set"). Because the submit event never fired, each step's `onSubmit` handler
+never ran and the wizard silently stayed put. The sandbox is set by the host and cannot be changed from the
+plugin, so the fix removes the dependency on native submission rather than trying to re-permit it. The
+registration effect intentionally has no dependency array: `handleNavigate` closes over current draft state
+and is rebuilt each render, so a stale registration would navigate with stale drafts.
+
+---
+
 ## [Claude Opus 5 (1M context)] Bridge-safe note handles across every note-writing service
 
 **Files:**
