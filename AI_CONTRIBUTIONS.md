@@ -5,6 +5,30 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## [Claude Opus 5 (1M context)] Give the plan wizard's two LLM passes the 60 second timeout they assumed
+
+**Files:**
+- `lib/plan-wizard/plan-models.js` (modified) — added `WIZARD_LLM_TIMEOUT_SECONDS`, the single stated timeout
+  for both wizard inference passes
+- `lib/plan-wizard/prospect-discovery.js` (modified) — `discoverActionProspects` passes `timeoutSeconds` to the
+  prompt runner
+- `lib/plan-wizard/intent-inference.js` (modified) — `inferIntentPossibilities` passes the same
+- `lib/providers/fetch-ai-provider.js` (modified) — `llmPrompt` forwards the caller's `timeoutSeconds` to
+  `responseFromStreamOrChunk`, which previously fell back to its own 30s default
+
+**Task:** Diagnose why the Projects page timed out well before its intended 60 second budget
+**Prompt summary:** "Upon submitting the Projects page in production, I receive a timeout after what felt like
+20 seconds or so, even though I thought we had specified a 60 second timeout for this page"
+**Scope:** One new shared constant, threading a timeout through two call sites and one provider seam
+**Notes:** Two independent causes. The 60 second value the user remembered exists only as a private
+`LLM_TIMEOUT_SECONDS` in `dream-task-service.js` and `proposed-agenda-service.js`, neither of which is on the
+wizard's path — the wizard passed no timeout at all and took the provider layer's 30 second default. Separately,
+`llmPrompt` bounded only the fetch with the caller's timeout and left the response body read on its own 30
+second timer, so even the services that did ask for 60 were capped at 30 for the second half of the request.
+That second timeout is the one that produced the bare `Timeout` message in the console.
+
+---
+
 ## [Claude Opus 5 (1M context)] Replace the wizard's native form submission, which the sandboxed embed blocks
 
 **Files:**
