@@ -12,8 +12,8 @@ await jest.unstable_mockModule("util/goal-notes", () => ({
   saveNoteContent: async (app, noteUUID, content, options) => app.replaceNoteContent({ uuid: noteUUID }, content, options),
 }));
 
-await jest.unstable_mockModule("providers/fetch-ai-provider", () => ({
-  llmPromptWithPluginFallback: jest.fn(async () => ({
+await jest.unstable_mockModule("plan-wizard/wizard-prompt-runner", () => ({
+  raceWizardPrompt: jest.fn(async () => ({
     occupationHypothesis: "Builds developer tools", personal: [],
     work: [{ confidence: 6, intent: "Ship the analytics offering", substantiation: "Repeated analytics tasks." }],
   })),

@@ -13,8 +13,8 @@ const SCOPE = { domainName: "Work", domainUuid: "domain-1", quarter: 4, year: 20
 const inferenceCalls = [];
 let inferenceImplementation = null;
 
-await jest.unstable_mockModule("providers/fetch-ai-provider", () => ({
-  llmPromptWithPluginFallback: jest.fn(async (app, prompt, options) => {
+await jest.unstable_mockModule("plan-wizard/wizard-prompt-runner", () => ({
+  raceWizardPrompt: jest.fn(async (app, prompt, options) => {
     inferenceCalls.push({ options, prompt });
     if (inferenceImplementation) return inferenceImplementation(prompt);
     return {
