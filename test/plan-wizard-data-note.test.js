@@ -33,12 +33,14 @@ async function settle() {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Type into a text field the way React's onChange expects.
-// @param {HTMLInputElement} input - Field to edit.
+// @desc Type into a text field the way React's onChange expects. React installs its own value setter on the
+//   element, so assigning to .value directly would not notify it; calling the prototype's setter does.
+// @param {HTMLInputElement|HTMLTextAreaElement} input - Field to edit.
 // @param {string} text - New value.
 async function typeInto(input, text) {
   await act(async () => {
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+    const prototype = input instanceof window.HTMLTextAreaElement ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+    const setter = Object.getOwnPropertyDescriptor(prototype, "value").set;
     setter.call(input, text);
     input.dispatchEvent(new Event("input", { bubbles: true }));
   });

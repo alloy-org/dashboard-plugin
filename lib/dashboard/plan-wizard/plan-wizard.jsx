@@ -219,9 +219,8 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
               <button className="plan-wizard-cancel" onClick={ onClose } type="button">Cancel</button>
             ) : (
               <button className="plan-wizard-back" disabled={ isNavigatingSaveStep && isSaving }
-                form={ isNavigatingSaveStep ? handleNavigateStep(-1) : undefined }
-                onClick={ isNavigatingSaveStep ? () => { projectNavigationDirectionRef.current = -1; } : () => handleStepChange(-1) }
-                type={ isNavigatingSaveStep ? "submit" : "button" } value="-1">Back</button>
+                onClick={ isNavigatingSaveStep ? () => handleNavigateStep(-1) : () => handleStepChange(-1) }
+                type="button">Back</button>
             ) }
             <button className="plan-wizard-next"
               disabled={ isLastStep || (isFirstStep && ((!hasIntentAnswer && !hasPersistedIntent) || isSaving))

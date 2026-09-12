@@ -7,7 +7,10 @@ import { resolvePlanScope } from "plan-wizard/plan-models";
 import { refreshPlanIntentPossibilities } from "plan-wizard/plan-wizard-service";
 import { createPlanWizardApp } from "./fixtures/plan-wizard-app.js";
 
-const referenceDate = new Date("2026-09-06T12:00:00.000Z");
+// Anchored to the current day rather than a fixed date: every window in this file is expressed in days
+// before the reference, and the calendar only reaches forward, so externalCalendarEventsForTargetDate
+// returns nothing once a pinned reference date falls into the past.
+const referenceDate = new Date();
 const scope = resolvePlanScope({ domainName: "Work", domainUuid: "domain-work", quarter: 4, year: 2026 });
 
 // ----------------------------------------------------------------------------------------------
@@ -94,13 +97,14 @@ test("collects scoped evidence, excluding planning notes and resolving footnotes
 // Defaults must not pretend the user expressed them, so they carry no evidence and minimal confidence.
 test("uses documented defaults and the calendar when personal evidence is absent", async () => {
   const app = createPlanWizardApp();
-  app.getExternalCalendarEvents = async () => [{ start: "2026-09-08T17:00:00.000Z", title: "Soccer league" }];
+  const upcomingEventStart = new Date(referenceDate.getTime() + 2 * 86400000).toISOString();
+  app.getExternalCalendarEvents = async () => [{ start: upcomingEventStart, title: "Soccer league" }];
   app.notes.push({ archived: false, content: "Work log", name: "Work log", tags: ["work"], uuid: "note-work" });
   app.tasks.push(completedTask(4));
 
   const evidence = await collectIntentEvidence(app, scope, { referenceDate });
   expect(evidence.personal.hasPersonalTaggedEvidence).toBe(false);
-  expect(evidence.calendarSummaries).toEqual([{ startsAt: "2026-09-08T17:00:00.000Z", title: "Soccer league" }]);
+  expect(evidence.calendarSummaries).toEqual([{ startsAt: upcomingEventStart, title: "Soccer league" }]);
 
   const promptRunner = async () => ({ occupationHypothesis: "Builds developer tooling",
     personal: [{ confidence: 9, intent: "Play more soccer", substantiation: "A calendar event" }],
@@ -154,5 +158,5 @@ test("refreshes and persists suggestions without picking goals", async () => {
   expect(context.possibilities.personal.map(possibility => possibility.intent)).toEqual(["Hike weekly"]);
   expect(context.goals).toEqual([]);
   expect(context.failureReason).toBeNull();
-  expect(context.generatedAt.work).toBe("2026-09-06T12:00:00.000Z");
+  expect(context.generatedAt.work).toBe(referenceDate.toISOString());
 });
