@@ -11,6 +11,7 @@ import path from "path"
 import { fileURLToPath } from "url"
 import { assertHostPluginBoundary } from "./host-plugin-boundary.js"
 import { createLibImportsPlugin } from "./lib-imports-plugin.js"
+import { assertInlineScriptSafe } from "./inline-script-safety.js"
 import { createScssPlugin } from "./scss-plugin.js"
 
 dotenv.config();
@@ -50,8 +51,12 @@ const clientBuild = await esbuild.build({
 });
 const jsOutput = clientBuild.outputFiles.find(f => f.path.endsWith('.js'));
 const cssOutput = clientBuild.outputFiles.find(f => f.path.endsWith('.css'));
-const clientBase64 = Buffer.from(jsOutput.text).toString("base64");
 const compiledCSS = cssOutput ? cssOutput.text : "";
+
+// The bundle goes into the embed document as an inline <script>, so its bytes are read by the HTML tokenizer. Verify
+// it holds no sequence the tokenizer would treat as markup before it can reach a user's note.
+assertInlineScriptSafe(jsOutput.text);
+const clientScript = jsOutput.text;
 
 // Plugin to provide the client bundle as a virtual module
 const clientBundlePlugin = {
@@ -62,7 +67,7 @@ const clientBundlePlugin = {
       namespace: 'client-bundle',
     }));
     build.onLoad({ filter: /.*/, namespace: 'client-bundle' }, () => ({
-      contents: `export const clientBase64 = ${JSON.stringify(clientBase64)};`,
+      contents: `export const clientScript = ${JSON.stringify(clientScript)};`,
       loader: 'js',
     }));
   }
@@ -83,14 +88,37 @@ const cssContentPlugin = {
   }
 };
 
+// Name esbuild assigns the bundle to via globalName. Any identifier works; it only has to survive minification,
+// which a globalName does and esbuild's own internal names do not.
+const PLUGIN_GLOBAL_NAME = "dashboardPlugin";
+
+// ------------------------------------------------------------------------------------------
+// @desc Wrap esbuild's `var dashboardPlugin = (() => { ... })();` output in an outer closure that returns the
+//   plugin object, so the artifact is a single expression evaluating to the plugin — the shape Amplenote expects
+//   from the note's code block.
+// @param {string} bundledCode - esbuild IIFE output, which assigns the module namespace to PLUGIN_GLOBAL_NAME.
+// @returns {string} A self-contained expression evaluating to the plugin object
+// Earlier builds instead rewrote esbuild's own `var plugin_default = plugin;` line into a `return`. That worked only
+// while the bundle was unminified: minification renames plugin_default, the rewrite silently fails to match, and the
+// artifact evaluates to undefined. Going through globalName is stable because esbuild never renames it.
+function wrapAsPluginExpression(bundledCode) {
+  return `(() => {\n${ bundledCode }\nreturn ${ PLUGIN_GLOBAL_NAME }.default;\n})()\n`;
+}
+
 // Step 2: Bundle the plugin (with client code injected via virtual module)
-// [Claude claude-opus-4-7] Task: post-process esbuild output so the IIFE returns the plugin directly
-// Prompt: "make compiled.js end with `return plugin;\n})()` instead of `var plugin_default = plugin;\n})();`"
+//
+// The host plugin is minified because the whole bundle is pasted into the plugin note's code block, and that code
+// block is parsed and held in memory by every Amplenote client that opens the note — including mobile, where the
+// dashboard already fights iOS Jetsam kills (see lib/dashboard/crash-breadcrumb.js). keepNames is on so the saving
+// does not cost readable host stack traces: the host has no Sentry (that is embed-side only), so a console trace is
+// the only diagnostic available when a host action fails on a user's device.
 const result = await esbuild.build({
   entryPoints: [`lib/plugin.js`],
   bundle: true,
   format: "iife",
-  minify: false,
+  globalName: PLUGIN_GLOBAL_NAME,
+  keepNames: true,
+  minify: true,
   outfile: "build/compiled.js",
   metafile: true,
   packages: "external",
@@ -108,8 +136,6 @@ const result = await esbuild.build({
 // [OpenAI GPT-6] Reject hooks and components even when tree shaking removes their client-only code.
 assertHostPluginBoundary(result.metafile);
 
-let code = result.outputFiles[0].text;
-code = code.replace(/\n(\s*)var plugin_default = plugin;\n/, "\n$1return plugin;\n");
-code = code.replace(/\}\)\(\);\s*$/, "})()\n");
+const code = wrapAsPluginExpression(result.outputFiles[0].text);
 fs.writeFileSync("build/compiled.js", code);
-console.log("Built build/compiled.js")
+console.log(`Built build/compiled.js (${ Math.round(code.length / 1024) } KB)`)

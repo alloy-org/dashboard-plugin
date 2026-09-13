@@ -2,31 +2,40 @@
 
 > Generated: 2026-03-14 | Analyzed artifact: `build/compiled.js`
 > Updated: 2026-03-14 — minification enabled; size reduced from 908 KB to 473 KB
+> Updated: 2026-09-13 — plugin-wrapper minification restored (it had regressed to `minify: false`), then the client
+>   bundle switched from a base64 data: URL to an inline `<script>`. 1,268 KB → 1,193 KB → **966 KB** (-24% overall).
+>   The per-section figures below the overview predate this measurement and describe the 473 KB artifact; the overview
+>   table has been re-measured against the current build.
 
 ---
 
 ## Overview
 
-The production artifact is a single file: **`build/compiled.js`** at **473 KB** (after minification; previously 908 KB unminified).
+The production artifact is a single file: **`build/compiled.js`** at **966 KB**.
 
-Minification is enabled in both build stages (`minify: true` in both the Step 1 client bundle and Step 2 plugin wrapper in `esbuild.js`).
+Minification is enabled in both build stages (`minify: true` in both the Step 1 client bundle and Step 2 plugin wrapper in `esbuild.js`). The Step 2 wrapper is additionally built with `keepNames: true`, which costs ~6 KB and preserves readable host stack traces, and with `globalName` — see `wrapAsPluginExpression` in `esbuild.js` for why the artifact is wrapped rather than regex-rewritten.
 
-1. **Client bundle** — React, all dashboard UI components, and every npm runtime dependency are compiled into a browser-facing IIFE and then base64-encoded as a string literal inside the outer bundle.
-2. **Plugin wrapper** — `lib/plugin.js` and its lib-only imports are bundled with `packages: "external"`. The client bundle (as base64) and the compiled CSS are injected as virtual modules.
+1. **Client bundle** — React, all dashboard UI components, and every npm runtime dependency are compiled into a browser-facing IIFE and embedded as a string literal inside the outer bundle, which `lib/embed-html.js` writes into a plain inline `<script>` element.
+2. **Plugin wrapper** — `lib/plugin.js` and its lib-only imports are bundled with `packages: "external"`. The client bundle and the compiled CSS are injected as virtual modules.
 
-Because the client bundle is base64-encoded inside the plugin wrapper, its raw bytes are inflated by ~33% (3 bytes → 4 chars). The table below accounts for this and reports *decoded* (real) sizes wherever the client bundle's content is discussed.
+The client bundle used to be base64-encoded, inflating its raw bytes by ~33% (3 bytes → 4 chars). It no longer is; `inline-script-safety.js` fails the build if the bundle ever holds a byte sequence the HTML tokenizer would read as markup, which is the hazard the encoding previously absorbed. Figures below are actual bytes.
 
 ---
 
 ## Top-level size breakdown
 
-| Section | Bytes (in file) | Decoded bytes | Share of file |
-|---|---|---|---|
-| Base64 client bundle string | ~390,000 | ~293,000 | 82% |
-| Plugin lib code (outer wrapper) | ~80,000 | 80,000 | 17% |
-| Compiled CSS (inlined) | ~4,453 | ~4,453 | ~1% |
-| esbuild IIFE preamble / helpers | ~200 | ~200 | < 0.1% |
-| **Total** | **~473 KB** | — | **100%** |
+Measured 2026-09-13 against the current build:
+
+| Section | Bytes (in file) | Share of file |
+|---|---|---|
+| Client bundle string (inlined) | ~705,000 | 71% |
+| Plugin lib code (outer wrapper) | ~220,000 | 22% |
+| Compiled CSS (inlined) | ~61,000 | 6% |
+| **Total** | **988,682 (966 KB)** | **100%** |
+
+Both easy levers have now been spent: the plugin wrapper is minified (-75 KB) and the base64 encoding is gone
+(-227 KB). The dominant cost is the client bundle itself, so further reduction means removing or deferring its
+dependencies rather than changing how it is packaged.
 
 The dominant cost is the client bundle. All analysis below focuses on its decoded contents (~603 KB), measured from the unminified dev bundle (`dev/compiled/bundle.js`, 1.33 MB), which uses the same entry point and dependency graph but includes development builds of React/ReactDOM instead of production builds.
 

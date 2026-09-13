@@ -1,1 +1,1 @@
-export const clientBase64 = '';
+export const clientScript = '';

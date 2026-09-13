@@ -5,6 +5,42 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## [Claude Opus 5 (1M context)] Inline the client bundle instead of base64-encoding it, guarded by an HTML tokenizer check
+
+**Model:** claude-opus-5[1m]
+**Files created/modified:**
+- `inline-script-safety.js` (created) — Build-time guard running the HTML tokenizer's script-data state machine over the client bundle; fails the build with the offending byte offset and an excerpt when the bundle would corrupt the embed document
+- `lib/embed-html.js` (modified) — Client bundle written into a plain `<script>` element rather than a `data:text/javascript;base64,` script URL; `clientBase64` virtual export renamed `clientScript`
+- `esbuild.js` (modified) — Stopped base64-encoding the client bundle; runs `assertInlineScriptSafe` on it before injecting the virtual module
+- `test/stubs/client-bundle.js` (modified) — Renamed export to match
+- `test/inline-script-safety.test.js` (created) — Ten cases, each asserting the guard's verdict *and* the environment's real HTML parse agree
+- `test/production-plugin.test.js` (modified) — Added an end-to-end parse of the embed document the shipped artifact actually produces
+- `test/plugin.test.js` (modified) — Assertion updated from the data URI to the inline script
+- `doc/size_analysis.md` (modified) — Re-measured
+
+**Task:** Recover the 33% size premium base64 was costing the plugin note's code block, without reintroducing the parsing hazard it was protecting against
+**Prompt summary:** "Why are we translating to base64?" → "Yes" (to inlining plus a build-time guard)
+**Scope:** ~230 lines across 8 files
+**Notes:** `build/compiled.js` 1,193 KB → 966 KB (-227 KB); 1,268 KB → 966 KB (-24%) across both this and the preceding minification change. Base64 entered in d3085cc ("Attempted bugfix", 2026-02-21), the same commit that stopped loading React from esm.sh and bundled it into the client — no rationale was recorded. The hazard is real: inside a `<script>` element, `<!--` puts the HTML tokenizer into script-data-escaped state and a following `<script` escalates to double-escaped, where `</script>` stops closing the element. The bundle contains both ingredients (30 `<!--` from marked's regexes and the Rich Footnote `<!--FNREF:n-->` markers; one `<script` from React DOM's `innerHTML="<script><\/script>"` probe) and survives only because React DOM is bundled ahead of marked — an ordering nobody chose and any import change could invert. esbuild already escapes `</script`, which is why that sequence never appears. Guard verified non-vacuous by appending an unsafe literal to a real client source and confirming the build fails with the byte offset; the four jsdom probes that motivated the design are preserved as tests.
+
+---
+
+## [Claude Opus 5 (1M context)] Minify the host plugin bundle, with a minification-safe plugin expression wrapper
+
+**Model:** claude-opus-5[1m]
+**Files created/modified:**
+- `esbuild.js` (modified) — Step 2 plugin bundle switched to `minify: true` with `keepNames: true` and `globalName`; replaced the two regex post-processing lines with `wrapAsPluginExpression`
+- `host-plugin-boundary.js` (modified) — Allow esbuild's injected `<runtime>` helper module, which `keepNames` introduces and which the guard was counting as an external import; every other external stays a violation
+- `test/production-plugin.test.js` (modified) — Replaced the `__require` assertion, which minification had rendered inert, with a check for an unbound `require` global; added a regression test that the artifact evaluates to the plugin object
+- `doc/size_analysis.md` (modified) — Re-measured the overview table against the current build
+
+**Task:** Reduce the size of the code block pasted into the plugin note, to lower the chance of memory exhaustion in Amplenote clients
+**Prompt summary:** "we need Dashboard to work offline, so I guess that we need to stick to keeping the code in a code block. Let's instead minify the Javascript to reduce the incidence of it creating memory overflows"
+**Scope:** ~40 lines across 4 files
+**Notes:** `build/compiled.js` 1,268 KB → 1,193 KB (-6%); the host wrapper itself fell 350 KB → 275 KB (-21%), but the already-minified base64 client bundle is 77% of the artifact and unaffected. The wrapper rewrite was required, not incidental: minification renames `plugin_default`, so the previous regex post-processing silently produced an artifact evaluating to `undefined` — which is why `minify: false` had been set on this stage. Verified by evaluating a deliberately broken artifact before relying on the new guard. The two failing tests in the suite (`proposed-agenda-widget-range`, `dream-task-service`) are pre-existing and unrelated, confirmed by stashing.
+
+---
+
 ## [Claude Opus 5 (1M context)] Bound a project placement write to one project, at the documented 100k limit
 
 **Files:**

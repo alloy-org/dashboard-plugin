@@ -4,6 +4,10 @@
 // @returns {void} Throws with offending paths and repair guidance when the boundary is crossed.
 export function assertHostPluginBoundary(metafile) {
   const violations = new Set();
+  // esbuild records its own injected helper module under this path once keepNames is enabled. It is generated code
+  // that esbuild inlines into the bundle, not a package the host would have to resolve at runtime, so it is the one
+  // import allowed to look external here. Every other external stays a violation.
+  const isEsbuildRuntime = importPath => importPath === "<runtime>";
   for (const [inputPath, input] of Object.entries(metafile.inputs)) {
     const normalizedPath = inputPath.replaceAll("\\", "/");
     const isHook = /(^|\/)lib\/hooks\//.test(normalizedPath);
@@ -11,12 +15,12 @@ export function assertHostPluginBoundary(metafile) {
     const isReact = /(^|\/)node_modules\/(react|react-dom)(\/|$)/.test(normalizedPath);
     if (isHook || isComponent || isReact) violations.add(inputPath);
     for (const dependency of input.imports) {
-      if (dependency.external) violations.add(`${ inputPath } imports ${ dependency.path }`);
+      if (dependency.external && !isEsbuildRuntime(dependency.path)) violations.add(`${ inputPath } imports ${ dependency.path }`);
     }
   }
   for (const output of Object.values(metafile.outputs)) {
     for (const dependency of output.imports) {
-      if (dependency.external) violations.add(`External runtime import: ${ dependency.path }`);
+      if (dependency.external && !isEsbuildRuntime(dependency.path)) violations.add(`External runtime import: ${ dependency.path }`);
     }
   }
   if (violations.size > 0) {

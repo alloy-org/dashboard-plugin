@@ -94,10 +94,11 @@ describe('Dashboard Plugin', () => {
       expect(html).toContain('</html>');
     });
 
-    it('should include the client bundle as a data URI script', async () => {
+    it('should inline the client bundle rather than encoding it as a data URI', async () => {
       const html = await plugin.renderEmbed(mockApp);
 
-      expect(html).toContain('data:text/javascript;base64,');
+      expect(html).toContain('<script type="text/javascript">');
+      expect(html).not.toContain('data:text/javascript;base64,');
     });
 
     it('should include dashboard root element', async () => {

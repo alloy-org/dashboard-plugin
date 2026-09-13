@@ -35,7 +35,18 @@ Edit any JS or SCSS source file, save, and refresh the browser to see changes. M
 npm run build
 ```
 
-Compiles the full plugin (client bundle base64-encoded + CSS inlined) into `build/compiled.js` for installation in Amplenote.
+Compiles the full plugin (client bundle + CSS inlined) into `build/compiled.js` for installation in Amplenote, and
+prints the artifact's size — it is pasted into the plugin note's code block, which every Amplenote client parses and
+holds in memory whenever that note is opened, so the number is worth watching.
+
+The build fails rather than emitting a broken artifact in two cases, both guarding mistakes that would otherwise ship
+silently:
+
+- `host-plugin-boundary.js` rejects React, hooks, components, or any external package reaching the host dependency
+  graph, which has no module loader to resolve them.
+- `inline-script-safety.js` rejects a client bundle containing a byte sequence the HTML tokenizer would read as
+  markup. The bundle is inlined into the embed document rather than base64-encoded — worth ~227 KB — and that is the
+  hazard the encoding used to absorb.
 
 ## Tests
 
