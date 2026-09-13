@@ -94,11 +94,18 @@ about 200 characters instead of a 3,500-character record. Roles are re-derived o
 forward, so they stay honest through a rename. The trail is capped at 24 entries, keeping the oldest.
 
 `consolidatePlanActionProspects` cleans up what is already stored: it groups a quarter's unjudged proposals by
-the same overlap rule, asks a provider for the one project each group was reaching for, and writes that project
-under the surviving member's identity with every member's evidence, links, and provenance. Judged projects are
-never touched, and a group the provider declines to name is left exactly as it was. It runs on demand, because
-combining is a rewrite of what the user is about to read. Records it absorbs are removed through
-`savePlanProspects`'s `removeProspectUuids`, and their placement buckets are emptied first.
+the same overlap rule and writes one project per group under the surviving member's identity, carrying every
+member's evidence, links, and provenance. Which records are one project, and which identity survives, is decided
+from the cited tasks alone — the same rule the merge applies to incoming proposals, so a stored group collapses
+on the same authority. Judged projects are never touched. It runs on demand, because combining is a rewrite of
+what the user is about to read. Records it absorbs are removed through `savePlanProspects`'s
+`removeProspectUuids`, and their placement buckets are emptied first.
+
+A provider is asked for one thing the ratio cannot supply: the title a person would have written for the whole
+undertaking, rather than the best of the eight summaries already in the group. That is a refinement layered over
+a completed merge, not a gate on it — if the call fails, times out, or names a group unusably, the group still
+collapses under the wording of the member covering most of the group's vocabulary, and the provenance entry
+records a null `promptSource` to say so.
 
 The projects page offers it as `Combine N overlapping suggestions`, shown only when a category's stored proposals
 still form a group of more than one. They can, even though the merge folds restatements in on the way: the merge

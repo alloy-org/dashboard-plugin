@@ -11,7 +11,7 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 **Files created/modified:**
 - `lib/plan-wizard/prospect-similarity.js` (created) — Jaccard overlap of two projects' cited task UUIDs, single-link grouping, and best-match lookup against stored records; the basis for deciding two proposals are one project
 - `lib/plan-wizard/prospect-leaf-storage.js` (created) — Translates a prospect leaf between the payload consumers read and the interned form the note stores: per-leaf task/note identity tables with `[taskIndex, noteIndex]` citations, and the five derived fields omitted
-- `lib/plan-wizard/prospect-consolidation.js` (created) — Groups a quarter's unjudged proposals and asks a provider for the one project each group describes, validating the answer and discarding a group it cannot usably name
+- `lib/plan-wizard/prospect-consolidation.js` (created) — Groups a quarter's unjudged proposals by cited evidence and combines each group deterministically, naming the result from the member covering most of the group's vocabulary; a provider is asked only to improve that title, and a failed or unusable answer costs the title rather than the merge
 - `lib/plan-wizard/vision-guide-merge.js` (modified) — Matches an incoming proposal by evidence overlap rather than UUID equality; unions evidence and provenance, and re-derives provenance roles from the surviving summary
 - `lib/plan-wizard/vision-guide-markdown.js` (modified) — Prospect index leaves scoped per quarter, placement buckets holding `prospectUuids` instead of whole records, month anchoring that skips every quarter's index leaf
 - `lib/plan-wizard/vision-guide-repository.js` (modified) — Hydrates and serializes prospect leaves at the fence boundary, validates bucket payloads, adds `clearProspectPlacementSections`
@@ -25,7 +25,7 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 - `lib/dashboard/plan-wizard/projects-step.jsx` (modified) — `Combine N overlapping suggestions` action, shown only when a category's stored proposals still group, with the grouping memoized against the stored records
 - `lib/dashboard/plan-wizard/plan-wizard.jsx` (modified) — Passes the consolidation action and its in-flight flag to the projects page
 - `lib/dashboard/styles/plan-wizard.scss` (modified) — The combine action shares the discover action's type scale
-- `test/plan-wizard-consolidation.test.js` (created) — Overlap measurement, grouping, restatement folding, rejected-project protection, storage round trip, legacy-leaf read, and the end-to-end consolidation
+- `test/plan-wizard-consolidation.test.js` (created) — Overlap measurement, grouping, restatement folding, rejected-project protection, storage round trip, legacy-leaf read, consolidation under a failed and an unusable naming answer, and the end-to-end consolidation
 - `test/plan-wizard-ui.test.js`, `test/plan-wizard-prospects.test.js`, `test/plan-wizard-repository.test.js`, `test/plan-wizard-markdown.test.js`, `test/wizard-prompt-race.test.js` (modified) — Concurrency-guard test, distinct evidence for two sibling projects, and assertions updated to the new heading, bucket shape, and schema constant
 - `lib/plan-wizard/README.md` (modified) — Overlap matching, provenance, consolidation, interned storage, quarter-scoped leaves, no-migration policy
 
