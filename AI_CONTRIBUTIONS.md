@@ -5,6 +5,32 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## [Claude Opus 5 (1M context)] Bound a project placement write to one project, at the documented 100k limit
+
+**Files:**
+- `lib/plan-wizard/vision-guide-notes.js` (modified) — `MAXIMUM_GUIDE_SECTION_CHARACTERS` lowered from 200,000 to
+  the 100,000 characters `app.replaceNoteContent` and `app.insertNoteContent` are documented to throw above
+- `lib/plan-wizard/vision-guide-markdown.js` (modified) — replaced `insertProspectMonthSubtree` with
+  `prospectMonthAnchorHeading` and `appendProspectMonthSubtree`, which name the sibling a new project/month tree is
+  appended to and produce that sibling's new body
+- `lib/plan-wizard/vision-guide-repository.js` (modified) — `ensureProspectMonthSection` appends a project tree to
+  the last project already placed in the category instead of rewriting the category root
+- `test/plan-wizard-prospects.test.js` (modified) — placement targets the previous project's section rather than
+  the category root, and a placement write stays proportional to one project when the category holds many
+- `test/plan-wizard-ui.test.js`, `test/plan-wizard-data-note.test.js` (modified) — overflow fixtures quote the
+  100,000 limit
+
+**Task:** Bill hit "Vision Guide section \"Professional projects and goals\" is 266397 characters; the write limit
+is 200000" when removing a project.
+**Prompt summary:** "evaluate what write error is causing a section to overflow" then "reference the app
+documentation ... to look at the extent to which we can use a different write shape", then "let's begin".
+**Scope:** ~40 lines changed across three modules, ~60 lines of new tests
+**Notes:** Placing a project rewrote the whole level-one category subtree to insert one ~3.5KB tree. Appending to
+the last sibling costs one project's markdown instead. The API offers no insert-before-a-heading primitive, so
+project trees are now ordered by placement rather than alphabetically. A category with no project placed yet still
+falls back to the root, where the body is the ideas leaf alone.
+
+
 ## [Claude Opus 5 (1M context)] Instrument what the wizard submits, and ask a fast model for it
 
 **Files:**

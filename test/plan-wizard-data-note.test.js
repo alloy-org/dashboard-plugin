@@ -89,7 +89,7 @@ describe("PlanWizard data note in the dev environment", () => {
     const noteUuid = app.notes[0].uuid;
     const workingReplace = app.replaceNoteContent;
     app.replaceNoteContent = jest.fn(async () => {
-      const overflowError = new Error("Vision Guide section \"Professional ideas & prospects\" is 288538 characters; the write limit is 200000");
+      const overflowError = new Error("Vision Guide section \"Professional ideas & prospects\" is 288538 characters; the write limit is 100000");
       overflowError.noteUuid = noteUuid;
       throw overflowError;
     });

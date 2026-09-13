@@ -8,7 +8,7 @@ import { MAXIMUM_SUMMARY_LENGTH, discoverActionProspects, normalizedSummaryKey, 
   prospectPromptFromEvidence, shortenedSummary } from "plan-wizard/prospect-discovery";
 import { activeNoteSummaries, collectProspectEvidence, completedTasksWithinMonth, importantTasksWithinWindow,
   monthLabelsForQuarter } from "plan-wizard/prospect-evidence";
-import { PROSPECT_TASK_BUCKET_LABELS, guideSectionRange, parseJsonPayload,
+import { PROSPECT_TASK_BUCKET_LABELS, guideSectionRange, parseJsonPayload, prospectMonthHeadingText,
   prospectTaskBucketHeadingText } from "plan-wizard/vision-guide-markdown";
 import { createPlanWizardApp } from "./fixtures/plan-wizard-app.js";
 
@@ -331,4 +331,69 @@ test("skips placement-bucket writes when a pace-only save asks not to update pla
     uuid: "prospect-pace" }] });
   expect(app.notes[0].content).toContain("Rewrite the billing stack");
   expect(app.notes[0].content).not.toContain("prospect-pace Awaiting approval");
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Build one stored project for the placement tests, named and identified by the caller.
+// @param {string} summary - Project title carried into its month heading.
+// @param {string} uuid - Stable project identity.
+// @param {string} substantiation - Reason the project exists; a long one inflates the category's ideas leaf.
+// @returns {object} Record accepted by savePlanProspects.
+function placeableProject(summary, uuid, substantiation = "Named while planning") {
+  return { approvalStatusEm: "humanProvided", capturedAt: "2026-09-07T12:00:00Z", focusMonths: ["2026-10"],
+    substantiation, summary, userCategoryEm: "work", uuid };
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Collect the section each write of this pass targeted, so a placement can be checked for which heading it
+//   rewrote rather than only for the content it produced.
+// @param {object} app - Plan wizard app mock.
+// @returns {Array<object>} { characters, headingText } per section write, in call order.
+function sectionWrites(app) {
+  const writes = app.replaceNoteContent.mock.calls.filter(([, , options]) => options?.section?.heading);
+  return writes.map(([, content, options]) => ({ characters: content.length, headingText: options.section.heading.text }));
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc A placement appends the new project's tree to the last project already placed, rather than rewriting the
+//   category root. Rewriting the root costs every project the category holds, which is what left a 266,000
+//   character category unable to accept any further placement, a removal included.
+test("appends a new project tree to the last project placed instead of rewriting the category root", async () => {
+  const app = createPlanWizardApp();
+  await savePlanProspects(app, { ...scope, prospects: [placeableProject("Rewrite the billing stack", "prospect-first")] });
+  const firstHeading = prospectMonthHeadingText("2026-10", "Rewrite the billing stack", "prospect-first");
+  app.replaceNoteContent.mockClear();
+
+  await savePlanProspects(app, { ...scope, prospects: [placeableProject("Retire the legacy importer", "prospect-second")] });
+  const headingsWritten = sectionWrites(app).map(write => write.headingText);
+  expect(headingsWritten).toContain(firstHeading);
+  expect(headingsWritten).not.toContain("Professional projects and goals");
+  expect(prospectPlacementBuckets(app.notes[0].content, "prospect-first")).toEqual(["Awaiting approval"]);
+  expect(prospectPlacementBuckets(app.notes[0].content, "prospect-second")).toEqual(["Awaiting approval"]);
+  const content = app.notes[0].content;
+  expect(content.indexOf(firstHeading)).toBeLessThan(content.indexOf("prospect-second Awaiting approval"));
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc The cost of placing a project stays proportional to one project however large the category has grown,
+//   since the tree is appended to a sibling rather than to the root that holds every stored record. The category
+//   that failed in production held 49 stored projects in its ideas leaf and 17 placement trees beside it.
+test("keeps a placement write proportional to one project when the category holds many", async () => {
+  const app = createPlanWizardApp();
+  const substantiation = "s".repeat(3000);
+  for (let index = 0; index < 10; index += 1) {
+    await savePlanProspects(app, { ...scope,
+      prospects: [placeableProject(`Rewrite subsystem ${ index }`, `prospect-${ index }`, substantiation)] });
+  }
+  const categoryRange = guideSectionRange(app.notes[0].content, "Professional projects and goals");
+  const categoryCharacters = categoryRange.end - categoryRange.bodyStart;
+  expect(categoryCharacters).toBeGreaterThan(50000);
+  app.replaceNoteContent.mockClear();
+
+  await savePlanProspects(app, { ...scope, prospects: [placeableProject("Retire the legacy importer", "prospect-last")] });
+  const placementWrites = sectionWrites(app).filter(write => write.headingText !== "Professional ideas & prospects");
+  expect(placementWrites.length).toBeGreaterThan(0);
+  const largestPlacementWrite = Math.max(...placementWrites.map(write => write.characters));
+  expect(largestPlacementWrite).toBeLessThan(categoryCharacters / 4);
+  expect(prospectPlacementBuckets(app.notes[0].content, "prospect-last")).toEqual(["Awaiting approval"]);
 });
