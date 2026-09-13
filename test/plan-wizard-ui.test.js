@@ -655,6 +655,12 @@ describe("PlanWizard project discovery", () => {
       noteName: "Reporting", noteUUID: "note-reporting", uuid: "task-a" });
     app.tasks.push({ completedAt: secondsAgo(4), content: "Re-send last week's report", createdAt: secondsAgo(11),
       noteName: "Reporting", noteUUID: "note-reporting", uuid: "task-b" });
+    // A second, unrelated pair, so a test needing two distinct projects can give each its own citations. Projects
+    // are told apart by the tasks they cite, so two proposals citing the same tasks are one project by design.
+    app.tasks.push({ completedAt: secondsAgo(3), content: "Reconcile the October invoices", createdAt: secondsAgo(12),
+      noteName: "Billing", noteUUID: "note-billing", uuid: "task-c" });
+    app.tasks.push({ completedAt: secondsAgo(5), content: "Chase the overdue invoice", createdAt: secondsAgo(13),
+      noteName: "Billing", noteUUID: "note-billing", uuid: "task-d" });
   }
 
   it("saves the intent, advances to projects, and shows what discovery proposed with its reasoning", async () => {
@@ -725,8 +731,8 @@ describe("PlanWizard project discovery", () => {
       proposals: [
         { focusMonths: [], resolvedTaskUuids: ["task-a", "task-b"], substantiations: ["Automates both reports."],
           summary: "Automate the weekly report", userCategoryEm: "work" },
-        { focusMonths: [], resolvedTaskUuids: ["task-a", "task-b"], substantiations: ["Prevents both report failures."],
-          summary: "Harden report delivery", userCategoryEm: "work" },
+        { focusMonths: [], resolvedTaskUuids: ["task-c", "task-d"], substantiations: ["Settles both invoices."],
+          summary: "Close the billing backlog", userCategoryEm: "work" },
       ] });
     const { cleanup, container } = await renderPlanWizard({ app });
     await typeInto(workFields(container)[0], "Ship the analytics offering");
@@ -756,6 +762,99 @@ describe("PlanWizard project discovery", () => {
     const stored = await readPlanGoals(app, SCOPE);
     expect(stored.prospects.find(prospect => prospect.summary === "Automate the weekly report").priorityEm)
       .toBe("quarterFocus");
+    await cleanup();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A second click while a pass is running joins the pass already in flight rather than starting another.
+  //   The request token discards a superseded pass's result but cannot stop it writing: discovery persists what
+  //   it produced before it returns, so repeated clicks stored repeated sets of proposals while the page showed
+  //   one. Eleven passes beginning inside the same second is how forty-eight unjudged near-duplicates reached a
+  //   single Vision Guide leaf.
+  it("runs one discovery pass however many times the button is clicked while it is running", async () => {
+    const app = createPlanWizardApp();
+    pushRecentCompletions(app);
+    let releaseProvider = null;
+    const respond = respondToBothPrompts({ workIntent: "Ship the analytics offering",
+      proposals: [{ focusMonths: [], resolvedTaskUuids: ["task-a", "task-b"], substantiations: ["Automates both."],
+        summary: "Automate the weekly report", userCategoryEm: "work" }] });
+    const { cleanup, container } = await renderPlanWizard({ app });
+    await typeInto(workFields(container)[0], "Ship the analytics offering");
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+
+    const discoveryPrompts = () => inferenceCalls.filter(call => call.prompt.includes('"prospects"'));
+    const promptsBefore = discoveryPrompts().length;
+    // Only the discovery prompt is held open. Deferring every prompt would let a later intent-inference call
+    // overwrite the release handle and strand the pass this test is about.
+    inferenceImplementation = prompt => {
+      if (!prompt.includes('"prospects"')) return respond(prompt);
+      return new Promise(resolve => { releaseProvider = () => resolve(respond(prompt)); });
+    };
+    const discoverButton = container.querySelector(".projects-step-category--work .projects-step-discover");
+    await act(async () => {
+      for (let click = 0; click < 5; click += 1) {
+        discoverButton.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      }
+      await Promise.resolve();
+    });
+    expect(discoveryPrompts().length - promptsBefore).toBe(1);
+
+    await act(async () => { releaseProvider(); });
+    await settle();
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.prospects).toHaveLength(1);
+    // The handler receives the click event as its argument, so what reaches provenance has to be the name of the
+    // press rather than the event object; an unnameable trigger fails provenance validation and silently discards
+    // every candidate the pass produced.
+    expect(stored.prospects[0].provenance).toEqual([expect.objectContaining({ role: "originator",
+      summary: "Automate the weekly report", triggerAction: "wizardProjectsRefreshClick" })]);
+    inferenceImplementation = null;
+    await cleanup();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc The page offers to combine only when several stored suggestions still describe one undertaking, and the
+  //   combined project replaces them rather than being added beside them. The merge folds a restatement into the
+  //   record it matches one pair at a time, so a proposal that bridges two others leaves a group behind that only
+  //   a pass over the whole category can see; that is the gap this action exists to close.
+  it("offers to combine overlapping suggestions and replaces them with the one project", async () => {
+    const app = createPlanWizardApp();
+    pushRecentCompletions(app);
+    inferenceImplementation = respondToBothPrompts({ workIntent: "Ship the analytics offering",
+      proposals: [
+        { focusMonths: [], resolvedTaskUuids: ["task-a", "task-b"], substantiations: ["Automates both reports."],
+          summary: "Automate the weekly report", userCategoryEm: "work" },
+        { focusMonths: [], resolvedTaskUuids: ["task-c", "task-d"], substantiations: ["Settles both invoices."],
+          summary: "Close the billing backlog", userCategoryEm: "work" },
+        { focusMonths: [], resolvedTaskUuids: ["task-a", "task-b", "task-c", "task-d"],
+          substantiations: ["One pipeline covers reporting and billing."],
+          summary: "Automate the back-office pipeline", userCategoryEm: "work" },
+      ] });
+    const { cleanup, container } = await renderPlanWizard({ app });
+    await typeInto(workFields(container)[0], "Ship the analytics offering");
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.prospects).toHaveLength(2);
+    const combineButton = container.querySelector(".projects-step-category--work .projects-step-combine");
+    expect(combineButton.textContent).toContain("Combine 2 overlapping suggestions");
+    expect(container.querySelector(".projects-step-category--personal .projects-step-combine")).toBeNull();
+
+    inferenceImplementation = prompt => {
+      expect(prompt).toContain('"mergedProjects"');
+      return { mergedProjects: [{ groupId: "group-1",
+        substantiations: ["One pipeline that produces the report and settles the invoices."],
+        summary: "Automate the back-office reporting and billing pipeline" }] };
+    };
+    await clickAndSettle(combineButton);
+
+    const combined = await readPlanGoals(app, SCOPE);
+    expect(combined.prospects).toHaveLength(1);
+    expect(combined.prospects[0].summary).toBe("Automate the back-office reporting and billing pipeline");
+    expect(combined.prospects[0].evidence.map(citation => citation.taskUuid).sort())
+      .toEqual(["task-a", "task-b", "task-c", "task-d"]);
+    expect(container.querySelector(".projects-step-category--work .projects-step-combine")).toBeNull();
+    inferenceImplementation = null;
     await cleanup();
   });
 

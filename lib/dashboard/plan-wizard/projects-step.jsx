@@ -11,8 +11,9 @@ import ProjectCard from "dashboard/plan-wizard/project-card";
 import { draftRowsFromProspects, emptyProjectRow, priorityRecordFromRow, prospectRecordsFromDraftRows,
   rejectionRecordFromRow } from "dashboard/plan-wizard/projects-step-fields";
 import { useRegisteredNavigate } from "dashboard/plan-wizard/step-navigation";
+import { clusterProspectsByEvidence } from "plan-wizard/prospect-similarity";
 import { wizardStepFromKey } from "dashboard/plan-wizard/wizard-steps";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const CATEGORY_HEADINGS = { personal: "Personal projects (optional)", work: "Professional projects" };
 const PROJECTS_STEP_COPY = wizardStepFromKey("projects");
@@ -36,11 +37,26 @@ function discoveryNoticeText({ discoveryFailureReason, hasChosenIntent, isDiscov
 }
 
 // ----------------------------------------------------------------------------------------------
+// @desc Count how many of a category's unjudged proposals are restatements of another one
+// @param {Array<object>} prospects - Stored projects for the quarter.
+// @param {string} userCategoryEm - work or personal.
+// @returns {number} Proposals sitting in a group of more than one; zero when every proposal stands alone.
+function restatedProjectCount(prospects, userCategoryEm) {
+  const unjudgedProspects = prospects.filter(prospect => prospect.userCategoryEm === userCategoryEm
+    && prospect.approvalStatusEm === "awaitingJudgement");
+  const groups = clusterProspectsByEvidence(unjudgedProspects);
+  const restatedGroups = groups.filter(group => group.length > 1);
+  return restatedGroups.reduce((runningTotal, group) => runningTotal + group.length, 0);
+}
+
+// ----------------------------------------------------------------------------------------------
 // @desc Render the projects page and save changed custom projects before Back or Next changes the page.
 // @param {object} params - An object with the following properties:
 //   - {string|null} discoveryFailureReason - Why the last discovery pass proposed nothing, when it proposed none.
+//   - {boolean} isConsolidating - True while a consolidation pass is in flight.
 //   - {boolean} isDiscovering - True while a discovery pass is in flight.
 //   - {boolean} isSaving - True while a save is in flight.
+//   - {Function} onConsolidate - Combines the proposals that describe one undertaking.
 //   - {Function} onDiscover - Runs a discovery pass for the current scope.
 //   - {Function} onNavigate - Changes wizard page after pending project edits save successfully.
 //   - {Function} onRegisterNavigate - Publishes this page's Back/Next handler to the wizard's shared navigation.
@@ -49,12 +65,17 @@ function discoveryNoticeText({ discoveryFailureReason, hasChosenIntent, isDiscov
 //   - {object} planningContext - Stored goals and prospects for the scope.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 // @returns {JSX.Element} The projects page.
-export default function ProjectsStep({ discoveryFailureReason = null, isDiscovering = false, isSaving, onDiscover,
-    onNavigate, onRegisterNavigate, onSave, onSaveDecision, planningContext, scopeKey }) {
+export default function ProjectsStep({ discoveryFailureReason = null, isConsolidating = false, isDiscovering = false,
+    isSaving, onConsolidate, onDiscover, onNavigate, onRegisterNavigate, onSave, onSaveDecision, planningContext,
+    scopeKey }) {
   const [draftRows, setDraftRows] = useState(() => draftRowsFromProspects(planningContext.prospects,
     planningContext.goals));
   const capturedAtRef = useRef(null);
   const seededScopeRef = useRef(scopeKey);
+  // Grouping compares every unjudged proposal against every other, and this component re-renders on each
+  // keystroke in a project name, so it is computed when the stored records change rather than per render.
+  const combinableCountByCategory = useMemo(() => ({ personal: restatedProjectCount(planningContext.prospects, "personal"),
+    work: restatedProjectCount(planningContext.prospects, "work") }), [planningContext.prospects]);
 
   useEffect(() => {
     if (seededScopeRef.current === scopeKey && !capturedAtRef.current) return;
@@ -140,6 +161,7 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
         const categoryGoalUuids = categoryGoals.map(goal => goal.uuid);
         const hasChosenIntent = categoryGoals.length > 0;
         const proposedCount = categoryRows.filter(row => row.approvalStatusEm === "awaitingJudgement").length;
+        const combinableCount = combinableCountByCategory[userCategoryEm];
         return (
           <section className={ `projects-step-category projects-step-category--${ userCategoryEm }` } key={ userCategoryEm }>
             <h3 className="plan-category-heading">{ CATEGORY_HEADINGS[userCategoryEm] }</h3>
@@ -168,6 +190,15 @@ export default function ProjectsStep({ discoveryFailureReason = null, isDiscover
                 type="button">
                 { isDiscovering ? "Reading your tasks…" : "Suggest projects from my tasks" }
               </button>
+              { combinableCount ? (
+                <button className="plan-button plan-button--dashed projects-step-combine"
+                  disabled={ isConsolidating || isDiscovering || isSaving }
+                  onClick={ () => onConsolidate() }
+                  title="Several suggestions here describe the same undertaking; combine them into one project"
+                  type="button">
+                  { isConsolidating ? "Combining…" : `Combine ${ combinableCount } overlapping suggestions` }
+                </button>
+              ) : null }
               <p className="projects-step-discovery-notice" role="status">
                 { discoveryNoticeText({ discoveryFailureReason, hasChosenIntent, isDiscovering, proposedCount }) }
               </p>

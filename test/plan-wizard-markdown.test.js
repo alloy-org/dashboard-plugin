@@ -1,5 +1,6 @@
 // Verify markdown structure, exact JSON round trips, and prose preservation.
 
+import { GUIDE_SCHEMA_VERSION } from "plan-wizard/plan-models";
 import { guideHeadingRanges, guideSectionRange, initialVisionGuideMarkdown, parseJsonPayload,
   prospectMonthHeadingText, prospectTaskBucketHeadingText, replaceJsonPayload } from "plan-wizard/vision-guide-markdown";
 
@@ -48,7 +49,7 @@ test("initializes all quarters within a domain/year guide", () => {
   expect(headings.filter(heading => heading.level === 3)).toHaveLength(12);
   expect(guideSectionRange(markdown, "Q4 2026 Picked intents")).not.toBeNull();
   const metadata = guideSectionRange(markdown, "Guide metadata");
-  expect(parseJsonPayload(markdown.slice(metadata.bodyStart, metadata.end)).payload).toEqual({ domainName: "Work", domainUuid: "work", schemaVersion: 1, year: 2026 });
+  expect(parseJsonPayload(markdown.slice(metadata.bodyStart, metadata.end)).payload).toEqual({ domainName: "Work", domainUuid: "work", schemaVersion: GUIDE_SCHEMA_VERSION, year: 2026 });
 });
 
 // ----------------------------------------------------------------------------------------------

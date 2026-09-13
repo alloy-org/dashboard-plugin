@@ -6,6 +6,7 @@ import { GUIDE_PREAMBLE_TEXT, guideSectionRange } from "plan-wizard/vision-guide
 import { MAXIMUM_GUIDE_SECTION_CHARACTERS, VISION_GUIDE_TAG, findVisionGuide, initializeVisionGuide,
   replaceGuideSection, visionGuideNoteName, visionGuideScopeTag } from "plan-wizard/vision-guide-notes";
 import { DASHBOARD_NOTE_TAG } from "constants/settings";
+import { GUIDE_SCHEMA_VERSION } from "plan-wizard/plan-models";
 import { validatedSectionPayload } from "plan-wizard/vision-guide-repository";
 import plugin from "plugin";
 
@@ -151,7 +152,9 @@ test.each(["payload", "heading", "schema", "duplicate"])("refuses %s corruption 
   await savePlanGoals(app, { ...scope, goals: [goal] });
   if (corruption === "payload") app.notes[0].content = app.notes[0].content.replace('"goalText": "Grow revenue"', '"goalText": invalid');
   if (corruption === "heading") app.notes[0].content += "\n### Q4 2026 Picked intents\n```json\n{\"goals\":[]}\n```\n";
-  if (corruption === "schema") app.notes[0].content = app.notes[0].content.replace('"schemaVersion": 1', '"schemaVersion": 2');
+  if (corruption === "schema") {
+    app.notes[0].content = app.notes[0].content.replace(`"schemaVersion": ${ GUIDE_SCHEMA_VERSION }`, `"schemaVersion": ${ GUIDE_SCHEMA_VERSION + 1 }`);
+  }
   if (corruption === "duplicate") app.notes.push({ ...app.notes[0], uuid: "duplicate" });
   const before = app.notes.map(note => note.content);
   const writes = app.replaceNoteContent.mock.calls.length;

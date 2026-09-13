@@ -33,7 +33,7 @@ function prospectBucketPayload(bucketLabel, content, prospectUuid) {
 function prospectPlacementBuckets(content, prospectUuid) {
   return PROSPECT_TASK_BUCKET_LABELS.filter(bucketLabel => {
     const payload = prospectBucketPayload(bucketLabel, content, prospectUuid);
-    return (payload?.prospects ?? []).some(prospect => prospect.uuid === prospectUuid);
+    return (payload?.prospectUuids ?? []).includes(prospectUuid);
   });
 }
 
@@ -302,22 +302,22 @@ test("places unchosen projects in Awaiting approval and moves the UUID when the 
     capturedAt: "2026-09-07T12:00:00Z", substantiation: "Named while planning",
     summary: "Rewrite the billing stack", userCategoryEm: "work", uuid: "prospect-parked" }] });
   expect(prospectPlacementBuckets(app.notes[0].content, "prospect-parked")).toEqual(["Awaiting approval"]);
-  expect(prospectBucketPayload("Rejected", app.notes[0].content, "prospect-parked").prospects).toEqual([]);
+  expect(prospectBucketPayload("Rejected", app.notes[0].content, "prospect-parked").prospectUuids).toEqual([]);
 
-  await savePlanProspects(app, { ...scope, prospects: [{ approvalStatusEm: "humanProvided",
+  const parked = await savePlanProspects(app, { ...scope, prospects: [{ approvalStatusEm: "humanProvided",
     capturedAt: "2026-09-07T12:05:00Z", priorityEm: "notNow", substantiation: "Named while planning",
     summary: "Rewrite the billing stack", userCategoryEm: "work", uuid: "prospect-parked" }] });
   expect(prospectPlacementBuckets(app.notes[0].content, "prospect-parked")).toEqual(["Rejected"]);
-  expect(prospectBucketPayload("Awaiting approval", app.notes[0].content, "prospect-parked").prospects).toEqual([]);
-  expect(prospectBucketPayload("Rejected", app.notes[0].content, "prospect-parked").prospects[0])
-    .toMatchObject({ priorityEm: "notNow", uuid: "prospect-parked" });
+  expect(prospectBucketPayload("Awaiting approval", app.notes[0].content, "prospect-parked").prospectUuids).toEqual([]);
+  expect(prospectBucketPayload("Rejected", app.notes[0].content, "prospect-parked").prospectUuids).toEqual(["prospect-parked"]);
+  expect(parked.prospectRecords.find(prospect => prospect.uuid === "prospect-parked")).toMatchObject({ priorityEm: "notNow" });
 
   await savePlanProspects(app, { ...scope, prospects: [{ approvalStatusEm: "humanProvided",
     capturedAt: "2026-09-07T12:10:00Z", priorityEm: "quarterFocus", substantiation: "Named while planning",
     summary: "Rewrite the billing stack", userCategoryEm: "work", uuid: "prospect-parked" }] });
   expect(prospectPlacementBuckets(app.notes[0].content, "prospect-parked")).toEqual([]);
-  expect(prospectBucketPayload("Awaiting approval", app.notes[0].content, "prospect-parked").prospects).toEqual([]);
-  expect(prospectBucketPayload("Rejected", app.notes[0].content, "prospect-parked").prospects).toEqual([]);
+  expect(prospectBucketPayload("Awaiting approval", app.notes[0].content, "prospect-parked").prospectUuids).toEqual([]);
+  expect(prospectBucketPayload("Rejected", app.notes[0].content, "prospect-parked").prospectUuids).toEqual([]);
 });
 
 // ----------------------------------------------------------------------------------------------
@@ -380,7 +380,7 @@ test("appends a new project tree to the last project placed instead of rewriting
 //   that failed in production held 49 stored projects in its ideas leaf and 17 placement trees beside it.
 test("keeps a placement write proportional to one project when the category holds many", async () => {
   const app = createPlanWizardApp();
-  const substantiation = "s".repeat(3000);
+  const substantiation = "s".repeat(4500);
   for (let index = 0; index < 10; index += 1) {
     await savePlanProspects(app, { ...scope,
       prospects: [placeableProject(`Rewrite subsystem ${ index }`, `prospect-${ index }`, substantiation)] });
@@ -391,7 +391,7 @@ test("keeps a placement write proportional to one project when the category hold
   app.replaceNoteContent.mockClear();
 
   await savePlanProspects(app, { ...scope, prospects: [placeableProject("Retire the legacy importer", "prospect-last")] });
-  const placementWrites = sectionWrites(app).filter(write => write.headingText !== "Professional ideas & prospects");
+  const placementWrites = sectionWrites(app).filter(write => write.headingText !== "Q4 2026 Professional ideas & prospects");
   expect(placementWrites.length).toBeGreaterThan(0);
   const largestPlacementWrite = Math.max(...placementWrites.map(write => write.characters));
   expect(largestPlacementWrite).toBeLessThan(categoryCharacters / 4);

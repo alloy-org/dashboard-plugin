@@ -67,11 +67,44 @@ Every update requires its own `capturedAt`. Preserve that timestamp when retryin
 from a save leaves it unchanged. To delete a slot, send its rank/category with `goalText: ""`, `isDeleted: true`,
 and a newer `capturedAt`. A later explicit restoration sends `isDeleted: false` and a newer timestamp.
 
-Prospects are keyed by their own UUID rather than by a slot, because a project has no rank and its summary is
-renameable. A newer `capturedAt` replaces the stored record; an older or tied one is ignored. A human decision
+Prospects are matched by the tasks they cite rather than by their wording, because wording is the least stable
+thing a provider returns. `prospect-similarity.js` measures Jaccard overlap of two records' cited task UUIDs; at
+or above `PROSPECT_DUPLICATE_OVERLAP` (0.4) an incoming proposal is a restatement of the stored project and is
+merged into it, inheriting its identity. A UUID the caller supplies is honoured first, so renaming a project
+being edited cannot redirect the write into a neighbour. Either way the stored record absorbs the restatement's
+citations and provenance, so the task count the page shows rises as duplicates fold together.
+
+That replaced UUID equality alone. Discovery derived a UUID by hashing the summary, so every rewording arrived as
+a project nobody had judged: one leaf accumulated 49 unjudged records that were really 6 undertakings, among them
+eight spellings of the same Diff Digest launch, and it grew to 188,890 characters against a 100,000-character
+write limit. Measured against those 49 records, overlap grouped them into exactly the 6 real projects, with the
+closest unrelated pair at 0.32 and thresholds of 0.4 and 0.5 producing an identical grouping.
+
+A newer `capturedAt` replaces the stored record; an older or tied one leaves its fields intact. A human decision
 outranks an inference: once a prospect is `humanProvided`, `humanAffirmed`, `humanRejected`, or `retired`, a later
 `awaitingJudgement` proposal for the same identity is discarded rather than demoting it, so a discovery rerun
-cannot undo what the user chose. Rejected and retired records stay stored so the same idea is not reproposed.
+cannot undo what the user chose. Rejected and retired records stay stored, with their evidence, so the same idea
+is recognized and not reproposed.
+
+Every proposal that shaped a project is recorded in its `provenance`: when it arrived, the `triggerAction` that
+set the pass going, which provider answered (`agent-pro` or `direct-provider`, from the leg that won the race in
+`wizard-prompt-runner.js`), the model, and the summary it proposed. The entry matching the project's current
+summary is the `originator`; the rest are `mergedContributor`, so the wording that was folded in survives at
+about 200 characters instead of a 3,500-character record. Roles are re-derived on every merge rather than carried
+forward, so they stay honest through a rename. The trail is capped at 24 entries, keeping the oldest.
+
+`consolidatePlanActionProspects` cleans up what is already stored: it groups a quarter's unjudged proposals by
+the same overlap rule, asks a provider for the one project each group was reaching for, and writes that project
+under the surviving member's identity with every member's evidence, links, and provenance. Judged projects are
+never touched, and a group the provider declines to name is left exactly as it was. It runs on demand, because
+combining is a rewrite of what the user is about to read. Records it absorbs are removed through
+`savePlanProspects`'s `removeProspectUuids`, and their placement buckets are emptied first.
+
+The projects page offers it as `Combine N overlapping suggestions`, shown only when a category's stored proposals
+still form a group of more than one. They can, even though the merge folds restatements in on the way: the merge
+matches one incoming record against one stored record, so a proposal bridging two others merges into whichever it
+overlaps most and leaves the third beside it. Against the 49 production records, merging alone reduced them to 11
+and 24,973 characters; grouping the survivors found 8 projects, at about 19,600.
 
 `savePlanQuarterAnswer` writes one of `quarterName` or `dailySufficiency` into the picked-goals leaf, since both
 are scoped to the quarter rather than to a project. They follow the same newest-capture-wins rule as goals.
@@ -107,6 +140,9 @@ whether to persist a degraded snapshot.
 
 # Note format and write behavior
 
+There is no migration between schema versions. A guide written under a retired `GUIDE_SCHEMA_VERSION` is refused
+with an error naming the note and saying to delete or retag it; the wizard then builds a new one.
+
 The note is named `[Task domain] Mission Builder Vision Guide [year]`, tagged `plugins/dashboard` and
 `plugins/dashboard/plan-wizard`, with an additional domain/year tag for interrupted-creation recovery.
 Metadata contains the stable domain UUID, year, and schema version. Renaming the domain or note does not change
@@ -118,8 +154,20 @@ write to the text above the first heading and silently drops the skeleton's head
 reached only for a note that is empty or holds nothing but the bootstrap preamble, never as a fallback for a
 note whose parsing or section lookup failed.
 Fenced JSON lives below unique quarter/category headings. Intent leaves are level-three headings scoped to a
-quarter; the two prospect leaves are level-two headings under their level-one project category and are scoped to
-the category, since a project outlives the quarter that raised it and each record names its own `quarterKey`.
+quarter; the prospect leaves are level-two headings under their level-one project category, one per quarter
+(`Q4 2026 Professional ideas & prospects`). They were scoped to the category alone, on the reasoning that a
+project outlives the quarter that raised it — it does, and each record still names its own `quarterKey`, but a
+leaf is rewritten whole on every save, so category scope made the cost of saving one project the size of every
+project that category had ever held. A project carried into a later quarter is written into that quarter's leaf
+under the identity it already had.
+
+A prospect leaf is stored in an interned form and hydrated on read (`prospect-leaf-storage.js`). The leaf keeps
+one `taskUuids` and one `noteUuids` table and each citation is a `[taskIndex, noteIndex]` pair, because 547
+evidence entries in one leaf named only 92 distinct tasks and 19 distinct notes. The five fields
+`ActionProspect` recomputes in its constructor — `relatedTasks`, `relatedNotes`, `substantiation`,
+`preferredDows`, `primaryNote` — are not written at all. Both are lossless, and together they took that leaf from
+188,877 characters to 83,718; with restatements folded together it is under 25,000. Placement buckets hold
+`prospectUuids` rather than whole records, which used to store every project a second time.
 `intentSectionDefinition` carries each leaf's expected depth and parent chain, and the repository asserts against
 that data rather than against hardcoded levels. Writes replace only the owned JSON fence within a leaf,
 retaining surrounding prose. Missing leaves are recreated under the nearest available ancestor, preserving its
@@ -151,6 +199,12 @@ tasks and advance a chosen intent of its own category, or it is discarded rather
 rather than continuously, and its proposals arrive as `awaitingJudgement` for the user to affirm or reject.
 
 `prospect-task-service.js`, continuous background harvesting, and monthly history remain subsequent milestones.
+
+Both generating passes are run at most once at a time per scope by `usePlanWizard`'s `runExclusivePass`. The
+request token discards a superseded pass's rendered result but cannot stop it writing, because a pass persists
+what it produced before it returns; a second click therefore used to store a second full set of proposals while
+the page showed one. Eleven passes beginning inside the same second is how 48 unjudged near-duplicates reached a
+single leaf.
 
 # Publishing to the quarterly plan note
 

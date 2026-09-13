@@ -34,31 +34,31 @@ describe("raceWizardPrompt", () => {
   it("answers with the direct provider when Agent Pro is still running", async () => {
     agentProMock.mockReturnValue(resolveAfter({ source: "agent-pro" }, 80));
     llmPromptMock.mockResolvedValue({ source: "direct" });
-    await expect(raceWizardPrompt({}, "prompt", KEYED_OPTIONS)).resolves.toEqual({ source: "direct" });
+    await expect(raceWizardPrompt({}, "prompt", KEYED_OPTIONS)).resolves.toEqual({ source: "direct", wizardPromptSource: "direct-provider" });
   });
 
   it("answers with Agent Pro when the direct provider is slower", async () => {
     agentProMock.mockResolvedValue({ source: "agent-pro" });
     llmPromptMock.mockReturnValue(resolveAfter({ source: "direct" }, 80));
-    await expect(raceWizardPrompt({}, "prompt", KEYED_OPTIONS)).resolves.toEqual({ source: "agent-pro" });
+    await expect(raceWizardPrompt({}, "prompt", KEYED_OPTIONS)).resolves.toEqual({ source: "agent-pro", wizardPromptSource: "agent-pro" });
   });
 
   it("waits for the slower source when the faster one fails rather than settling on its failure", async () => {
     agentProMock.mockResolvedValue(null);
     llmPromptMock.mockReturnValue(resolveAfter({ source: "direct" }, 40));
-    await expect(raceWizardPrompt({}, "prompt", KEYED_OPTIONS)).resolves.toEqual({ source: "direct" });
+    await expect(raceWizardPrompt({}, "prompt", KEYED_OPTIONS)).resolves.toEqual({ source: "direct", wizardPromptSource: "direct-provider" });
   });
 
   it("treats a rejection as a source dropping out, not as the race's answer", async () => {
     llmPromptMock.mockRejectedValue(new Error("Timeout"));
     agentProMock.mockReturnValue(resolveAfter({ source: "agent-pro" }, 40));
-    await expect(raceWizardPrompt({}, "prompt", KEYED_OPTIONS)).resolves.toEqual({ source: "agent-pro" });
+    await expect(raceWizardPrompt({}, "prompt", KEYED_OPTIONS)).resolves.toEqual({ source: "agent-pro", wizardPromptSource: "agent-pro" });
   });
 
   it("races Agent Pro alone when no provider key was resolved", async () => {
     agentProMock.mockResolvedValue({ source: "agent-pro" });
     const unkeyedOptions = { jsonResponse: true, timeoutSeconds: 60 };
-    await expect(raceWizardPrompt({}, "prompt", unkeyedOptions)).resolves.toEqual({ source: "agent-pro" });
+    await expect(raceWizardPrompt({}, "prompt", unkeyedOptions)).resolves.toEqual({ source: "agent-pro", wizardPromptSource: "agent-pro" });
     expect(llmPromptMock).not.toHaveBeenCalled();
   });
 

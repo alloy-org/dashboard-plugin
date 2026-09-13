@@ -58,9 +58,9 @@ function currentDocumentScrollTop() {
 //   - {number} year - Planning year.
 // @returns {JSX.Element} The wizard.
 export default function PlanWizard({ app, domainName = null, domainUuid = null, onClose, quarter, year }) {
-  const { discoverProspects, discoveryFailureReason, error, isDiscovering, isLoading, isRefreshing, isSaving,
-    planningContext, reload, saveError, saveGoals, saveProspectDecision, saveProspects,
-    saveQuarterAnswer } = usePlanWizard({ app, domainName, domainUuid, quarter, year });
+  const { consolidateProspects, discoverProspects, discoveryFailureReason, error, isConsolidating, isDiscovering,
+    isLoading, isRefreshing, isSaving, planningContext, reload, saveError, saveGoals, saveProspectDecision,
+    saveProspects, saveQuarterAnswer } = usePlanWizard({ app, domainName, domainUuid, quarter, year });
   const [stepKey, setStepKey] = useState(WIZARD_STEPS[0].key);
   const [hasIntentAnswer, setHasIntentAnswer] = useState(false);
   const [inspectingNoteUuid, setInspectingNoteUuid] = useState(null);
@@ -190,8 +190,8 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
             onRegisterNavigate={ handleRegisterNavigate } onSave={ saveGoals } />
         ) : null }
         { !inspectingNoteUuid && !isLoading && !error && step.key === "projects" ? (
-          <ProjectsStep { ...{ discoveryFailureReason, isDiscovering, isSaving, planningContext, scopeKey } }
-            onDiscover={ discoverProspects } onNavigate={ handleProjectNavigation }
+          <ProjectsStep { ...{ discoveryFailureReason, isConsolidating, isDiscovering, isSaving, planningContext, scopeKey } }
+            onConsolidate={ consolidateProspects } onDiscover={ discoverProspects } onNavigate={ handleProjectNavigation }
             onRegisterNavigate={ handleRegisterNavigate } onSave={ saveProspects }
             onSaveDecision={ saveProspectDecision } />
         ) : null }

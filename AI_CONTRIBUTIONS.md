@@ -5,6 +5,37 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## [Claude Opus 5 (1M context)] Stop one idea being stored as forty-nine projects, and shrink what a project costs
+
+**Model:** claude-opus-5[1m]
+**Files created/modified:**
+- `lib/plan-wizard/prospect-similarity.js` (created) — Jaccard overlap of two projects' cited task UUIDs, single-link grouping, and best-match lookup against stored records; the basis for deciding two proposals are one project
+- `lib/plan-wizard/prospect-leaf-storage.js` (created) — Translates a prospect leaf between the payload consumers read and the interned form the note stores: per-leaf task/note identity tables with `[taskIndex, noteIndex]` citations, and the five derived fields omitted
+- `lib/plan-wizard/prospect-consolidation.js` (created) — Groups a quarter's unjudged proposals and asks a provider for the one project each group describes, validating the answer and discarding a group it cannot usably name
+- `lib/plan-wizard/vision-guide-merge.js` (modified) — Matches an incoming proposal by evidence overlap rather than UUID equality; unions evidence and provenance, and re-derives provenance roles from the surviving summary
+- `lib/plan-wizard/vision-guide-markdown.js` (modified) — Prospect index leaves scoped per quarter, placement buckets holding `prospectUuids` instead of whole records, month anchoring that skips every quarter's index leaf
+- `lib/plan-wizard/vision-guide-repository.js` (modified) — Hydrates and serializes prospect leaves at the fence boundary, validates bucket payloads, adds `clearProspectPlacementSections`
+- `lib/plan-wizard/vision-guide-notes.js` (modified) — Retired-schema failure now names the note and says to delete or retag it, since nothing migrates
+- `lib/plan-wizard/plan-models.js` (modified) — Schema version 2, `DERIVED_PROSPECT_FIELDS`, provenance constants and `assertProvenanceEntry`
+- `lib/plan-wizard/action-prospect.js` (modified) — `provenance` property, validated per entry
+- `lib/plan-wizard/prospect-discovery.js` (modified) — Stamps each proposal with the trigger, provider leg, model, and its own summary
+- `lib/plan-wizard/wizard-prompt-runner.js` (modified) — Names the winning leg on the result as `wizardPromptSource`
+- `lib/plan-wizard/plan-wizard-service.js` (modified) — `consolidatePlanActionProspects`, `removeProspectUuids` on `savePlanProspects`, `triggerAction` threading
+- `lib/hooks/use-plan-wizard.js` (modified) — `runExclusivePass` so a generating pass runs once at a time per scope; guards the trigger name against the click event the button hands it; exposes `consolidateProspects`
+- `lib/dashboard/plan-wizard/projects-step.jsx` (modified) — `Combine N overlapping suggestions` action, shown only when a category's stored proposals still group, with the grouping memoized against the stored records
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` (modified) — Passes the consolidation action and its in-flight flag to the projects page
+- `lib/dashboard/styles/plan-wizard.scss` (modified) — The combine action shares the discover action's type scale
+- `test/plan-wizard-consolidation.test.js` (created) — Overlap measurement, grouping, restatement folding, rejected-project protection, storage round trip, legacy-leaf read, and the end-to-end consolidation
+- `test/plan-wizard-ui.test.js`, `test/plan-wizard-prospects.test.js`, `test/plan-wizard-repository.test.js`, `test/plan-wizard-markdown.test.js`, `test/wizard-prompt-race.test.js` (modified) — Concurrency-guard test, distinct evidence for two sibling projects, and assertions updated to the new heading, bucket shape, and schema constant
+- `lib/plan-wizard/README.md` (modified) — Overlap matching, provenance, consolidation, interned storage, quarter-scoped leaves, no-migration policy
+
+**Task:** Stop `replaceNoteContent` overflowing on the Vision Guide's Professional prospect leaf, which had reached 188,890 characters against a 100,000-character limit
+**Prompt summary:** "figure out how to store data for lib/plan-wizard in a way that won't overflow replaceContent — do we need multiple notes?" then "proceed" on overlap matching, interning, quarter-scoped leaves, consolidation, and provenance
+**Scope:** ~900 lines across 16 files, 3 new modules and 1 new test file
+**Notes:** Diagnosed from the user's live note: 49 stored records, 48 unjudged, all from 11 discovery passes inside one second; 39% of the leaf was evidence and a further 32% was fields the model recomputes. Multiple notes were not needed — the bound is per section write, and the note itself was already 268KB. Measured on that real leaf, the new path stores it in 24,973 characters across 11 records, and ~19,600 across 8 after consolidation. The concurrency test caught a live bug: `onDiscover` is wired straight to `onClick`, so the click event arrived as `triggerAction` and failed provenance validation, silently discarding every candidate of the pass.
+
+---
+
 ## [Claude Opus 5 (1M context)] Inline the client bundle instead of base64-encoding it, guarded by an HTML tokenizer check
 
 **Model:** claude-opus-5[1m]
