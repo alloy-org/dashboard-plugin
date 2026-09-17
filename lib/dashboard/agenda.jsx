@@ -4,6 +4,7 @@
  * Task: Agenda widget — today's tasks with priority colors and durations
  * Prompt summary: "widget listing today's scheduled tasks with time, priority indicator, and duration"
  */
+import { DASHBOARD_NOTE_TAG } from "constants/settings"
 import { obligationsFromTasksAndEvents, TODAY_OBLIGATIONS_EVENT, TODAY_OBLIGATIONS_REQUEST_EVENT } from "proposed-agenda-obligations"
 import { useState, useEffect, useRef } from "react"
 import WidgetWrapper from "widget-wrapper"
@@ -12,6 +13,7 @@ import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-ma
 // Prompt: "DRY formatDateKey in date-utility.js; consumed by agenda, tests, use-domain-tasks"
 // Date: 2026-03-24 | Model: claude-sonnet-4-6
 import { formatDateKey } from "util/date-utility"
+import { logIfEnabled } from "util/log"
 import "styles/agenda.scss"
 
 const DATES_PER_PAGE = 3;
@@ -140,6 +142,29 @@ export default function AgendaWidget({ app, calendarEvents, currentDate, selecte
     await app.navigate(`https://www.amplenote.com/notes/${noteUuid}`);
   };
 
+  // ------------------------------------------------------------------------------------------
+  // @desc Opens the note for a calendar event, creating it when none exists yet. Calendar events carry no
+  //   note reference of their own, so the event's title is the note name: an existing note of that name is
+  //   reused, and otherwise a new (unarchived, so it stays visible) note is created and opened. Failures are
+  //   logged rather than surfaced, matching how the widget's other navigation handlers behave.
+  // @param {Object} calendarEvent - A normalized calendar event; only its title is used.
+  // @returns {Promise<void>}
+  const navigateToEventNote = async (calendarEvent) => {
+    const noteName = (calendarEvent.title || '').trim();
+    if (!noteName) return;
+    try {
+      const existingNote = await app.findNote({ name: noteName });
+      // createNote can resolve to an object rather than a uuid string, and a handle returned by findNote is
+      // not usable for writes across the embed bridge, so the uuid is extracted and passed on its own.
+      const createdNote = existingNote?.uuid ? null : await app.createNote(noteName, [DASHBOARD_NOTE_TAG]);
+      const noteUuid = existingNote?.uuid || (typeof createdNote === 'object' ? createdNote?.uuid : createdNote);
+      if (!noteUuid) return;
+      await app.navigate(`https://www.amplenote.com/notes/${noteUuid}`);
+    } catch (err) {
+      logIfEnabled('[Agenda] could not open note for calendar event', err);
+    }
+  };
+
   const renderDateLabel = (dateKey) => {
     const dateForLabel = new Date(`${dateKey}T00:00:00`);
     return dateForLabel.toLocaleDateString([], {
@@ -231,8 +256,12 @@ export default function AgendaWidget({ app, calendarEvents, currentDate, selecte
 
   const renderEventItem = (item) => {
     const durationMinutes = calendarEventDurationMinutes(item.event);
+    const eventTitle = item.event.title || '';
     return (
-      <div key={`cal-${item.index}`} className="agenda-item agenda-task-row">
+      <div key={`cal-${item.index}`}
+        className="agenda-item agenda-task-row"
+        title={eventTitle ? `Open or create a note for "${ eventTitle }"` : undefined}
+        onClick={eventTitle ? () => navigateToEventNote(item.event) : undefined}>
         <div className="agenda-indicator priority-normal" />
         <div className="agenda-content">
           {item.event.allDay

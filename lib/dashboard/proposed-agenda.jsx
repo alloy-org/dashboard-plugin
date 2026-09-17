@@ -16,6 +16,7 @@ import { AMPLE_AGENT_PRO_NOTE_NAME } from "providers/ai-provider-settings";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
+import { calendarEventDateFromValue } from "util/calendar-utility";
 import { formatClockLabel } from "util/date-utility";
 import { snapDashboardAction } from "util/plausible";
 import WidgetWrapper from "widget-wrapper";
@@ -175,6 +176,19 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   // Key the range by value so equivalent object literals do not regenerate.
   const dateRangeKey = dateRange ? `${ dateRange.startAt }-${ dateRange.endAt }` : null;
 
+  // ------------------------------------------------------------------------------------------
+  // @desc Keys the calendar events by value for the same reason dateRangeKey exists: useExternalCalendarEvents
+  //   re-fetches on every visibilitychange and normalizeExternalCalendarEvents always rebuilds the array via
+  //   .map, so the reference changes on each return to the dashboard even when the events are unchanged. Keying
+  //   on the fields that can alter a proposal (timing, title, all-day) means navigating away and back no longer
+  //   re-runs the LLM; a genuine calendar change still does.
+  const calendarEventsKey = useMemo(() => {
+    if (!Array.isArray(calendarEvents)) return null;
+    const eventIdentities = calendarEvents.map(event => [ calendarEventDateFromValue(event?.start)?.getTime() ?? "",
+      calendarEventDateFromValue(event?.end)?.getTime() ?? "", event?.title || "", event?.allDay ? "1" : "0" ].join("|"));
+    return eventIdentities.join("~");
+  }, [calendarEvents]);
+
   const [approving, setApproving] = useState(false);
   const [ampleAgentProAvailable, setAmpleAgentProAvailable] = useState(false);
   const [attribution, setAttribution] = useState(null);
@@ -208,7 +222,7 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
     priorityKey, providerEm: modelProviderEm, setApproving, setAttribution, setDateLabel, setDismissedKeys, setError,
     setIsFutureDay, setLoading, setObligations, setProposed, setRecordDomainName, setRecordDomainUuid,
     setRecordProviderEm, setScheduledKeys }),
-    [app, calendarEvents, currentDate, dateRangeKey, modelProviderEm, priorityKey, providerApiKey, taskDomainName,
+    [app, calendarEventsKey, currentDate, dateRangeKey, modelProviderEm, priorityKey, providerApiKey, taskDomainName,
     taskDomainUUID]);
 
   const onChangeModel = useCallback(() => setProviderPopupOpen(true), []);

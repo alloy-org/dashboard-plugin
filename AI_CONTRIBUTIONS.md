@@ -5,6 +5,18 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## [Claude Opus 5 (1M context)] Stop the Proposed Agenda regenerating on every return to the dashboard, and make Agenda calendar rows clickable
+
+**Model:** claude-opus-5[1m]
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda.jsx` (modified) — `calendarEventsKey` memo keys the calendar events by value (start, end, title, all-day) and replaces the `calendarEvents` array reference in `runGeneration`'s dependency list. `useExternalCalendarEvents` refetches on every `visibilitychange` and `normalizeExternalCalendarEvents` always rebuilds the array via `.map`, so returning to the dashboard produced a new reference and re-ran the LLM even when nothing had changed; this mirrors the `dateRangeKey` treatment already in the file
+- `lib/dashboard/agenda.jsx` (modified) — `navigateToEventNote` opens the note named for a calendar event, creating it when absent, and `renderEventItem` gains the click handler and title tooltip it previously lacked (only `renderTaskItem` was clickable). The uuid is extracted from the `findNote`/`createNote` result and passed alone, since a `findNote` handle is not usable across the embed bridge
+- `test/proposed-agenda-calendar-refresh.test.js` (created) — Asserts an equal-but-new `calendarEvents` array does not re-run the provider, and that a genuine event change still does; verified to fail against the pre-fix dependency list
+
+**Prompt summary:** "the dashboard re-freshes almost every time you navigate to the dashboard, suggest less aggressive and use the reseed button instead" and "why are not all calendar items clickable in the Task Agenda? if there is no note, it should offer to create one"
+
+---
+
 ## [Claude Opus 5 (1M context)] Stop one idea being stored as forty-nine projects, and shrink what a project costs
 
 **Model:** claude-opus-5[1m]
