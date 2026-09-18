@@ -11,19 +11,20 @@ describe("fastModelOptions", () => {
     const settings = { [SETTING_KEYS.LLM_API_KEY_GEMINI]: "gemini-key",
       [SETTING_KEYS.LLM_API_KEY_OPENAI]: "openai-key", [SETTING_KEYS.LLM_PROVIDER_MODEL]: "openai" };
     expect(fastModelOptions(settings)).toEqual({ aiModel: "gemini-3.5-flash-lite", apiKey: "gemini-key",
-      providerEm: "gemini" });
+      providerEm: "gemini", reasoningEffort: null });
   });
 
   it("uses the dashboard's own configured provider when no Gemini key is stored", () => {
     const settings = { [SETTING_KEYS.LLM_API_KEY_ANTHROPIC]: "anthropic-key",
       [SETTING_KEYS.LLM_API_KEY_OPENAI]: "openai-key", [SETTING_KEYS.LLM_PROVIDER_MODEL]: "anthropic-sonnet" };
     expect(fastModelOptions(settings)).toEqual({ aiModel: "claude-haiku-4-5", apiKey: "anthropic-key",
-      providerEm: "anthropic" });
+      providerEm: "anthropic", reasoningEffort: null });
   });
 
   it("falls back to any keyed provider when the dashboard provider itself has no key", () => {
     const settings = { [SETTING_KEYS.LLM_API_KEY_GROK]: "grok-key", [SETTING_KEYS.LLM_PROVIDER_MODEL]: "none" };
-    expect(fastModelOptions(settings)).toEqual({ aiModel: "grok-4.3", apiKey: "grok-key", providerEm: "grok" });
+    expect(fastModelOptions(settings)).toEqual({ aiModel: "grok-4.3", apiKey: "grok-key", providerEm: "grok",
+      reasoningEffort: null });
   });
 
   it("names no model when no provider has a key, rather than one that cannot authenticate", () => {
@@ -33,6 +34,14 @@ describe("fastModelOptions", () => {
 
   it("treats a blank stored key as no key", () => {
     expect(fastModelOptions({ [SETTING_KEYS.LLM_API_KEY_GEMINI]: "   " })).toBeNull();
+  });
+
+  // OpenAI's fast tier is a reasoning model rather than a small one, so it only answers inside the wizard's budget
+  // with its reasoning capped. Left uncapped it spent the whole sixty seconds deliberating and returned nothing.
+  it("caps the reasoning budget when OpenAI's fast tier is a reasoning model", () => {
+    const settings = { [SETTING_KEYS.LLM_API_KEY_OPENAI]: "openai-key", [SETTING_KEYS.LLM_PROVIDER_MODEL]: "openai" };
+    expect(fastModelOptions(settings)).toEqual({ aiModel: "gpt-5.6", apiKey: "openai-key", providerEm: "openai",
+      reasoningEffort: "low" });
   });
 });
 

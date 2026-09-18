@@ -535,7 +535,7 @@ $plan-wizard-z-index: 1100;
     /* A discovered project the user has not yet judged is visually provisional, so an inference is never mistaken
      * for a decision the user made. */
     .project-row--proposed {
-      background: $color-bg-page;
+      background: $color-bg-primary;
       border-style: dashed;
     }
 
@@ -547,7 +547,7 @@ $plan-wizard-z-index: 1100;
 
     .project-row-provenance {
       color: $color-text-muted;
-      font-size: 0.7rem;
+      font-size: 14px;
       font-style: italic;
       margin: 0;
 

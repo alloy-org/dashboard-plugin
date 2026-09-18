@@ -4,8 +4,9 @@
 import { resolvePlanScope } from "plan-wizard/plan-models";
 import { readPlanGoals, refreshPlanActionProspects, savePlanGoals,
   savePlanProspects } from "plan-wizard/plan-wizard-service";
-import { MAXIMUM_SUMMARY_LENGTH, discoverActionProspects, normalizedSummaryKey, prospectIdentityFromSummary,
-  prospectPromptFromEvidence, shortenedSummary } from "plan-wizard/prospect-discovery";
+import { MAXIMUM_SUBSTANTIATION_LENGTH, MAXIMUM_SUMMARY_LENGTH, discoverActionProspects, normalizedSummaryKey,
+  prospectIdentityFromSummary, prospectPromptFromEvidence, shortenedSubstantiation,
+  shortenedSummary } from "plan-wizard/prospect-discovery";
 import { activeNoteSummaries, collectProspectEvidence, completedTasksWithinMonth, importantTasksWithinWindow,
   monthLabelsForQuarter } from "plan-wizard/prospect-evidence";
 import { PROSPECT_TASK_BUCKET_LABELS, guideSectionRange, parseJsonPayload, prospectMonthHeadingText,
@@ -241,6 +242,27 @@ test("shortens a summary to a project name at a word boundary", async () => {
   const discovery = await discoverActionProspects({}, evidenceBundle(), scope, { promptRunner });
   expect(discovery.prospects[0].summary).toBe(shortened);
   expect(discovery.prospects[0].uuid).toBe(prospectIdentityFromSummary(scope, "work", shortened));
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Confirm a substantiation is held to the two lines the page shows it in. A provider asked for a reason will
+//   answer with a paragraph unless the length is enforced here, and the page truncates what it cannot fit rather
+//   than growing, so the reasoning has to end at a sentence rather than wherever the cut lands.
+test("holds a substantiation to the two lines the page gives it, ending at a sentence", async () => {
+  const paragraph = "Automating ticket triage would resolve the recurring support tasks without answering each one. "
+    + "The support log shows the same categories of request arriving weekly. Routing them by category would remove "
+    + "the majority of the manual triage entirely. This would also shorten the response time for the remainder.";
+  const shortened = shortenedSubstantiation(paragraph);
+  expect(shortened.length).toBeLessThanOrEqual(MAXIMUM_SUBSTANTIATION_LENGTH);
+  expect(shortened.endsWith(".")).toBe(true);
+  expect(paragraph.startsWith(shortened)).toBe(true);
+
+  // Several entries are joined before the limit applies, so a provider cannot stack its way past it.
+  const promptRunner = async () => ({ prospects: [candidate({ substantiation: undefined,
+    substantiations: [paragraph, "And a further reason that would overrun the limit on its own."] })] });
+  const discovery = await discoverActionProspects({}, evidenceBundle(), scope, { promptRunner });
+  expect(discovery.prospects[0].substantiations).toHaveLength(1);
+  expect(discovery.prospects[0].substantiations[0].length).toBeLessThanOrEqual(MAXIMUM_SUBSTANTIATION_LENGTH);
 });
 
 // ----------------------------------------------------------------------------------------------
