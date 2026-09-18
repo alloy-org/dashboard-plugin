@@ -6,7 +6,7 @@
  */
 import ConfigPopup from 'config-popup';
 import { PROVIDER_API_KEY_RETRIEVE_URL } from 'constants/llm-providers';
-import { apiKeyFromProvider, BACKGROUND_MODE_OPTIONS, SETTING_KEYS } from 'constants/settings';
+import { apiKeyFromProvider, BACKGROUND_MODE_OPTIONS, BUILD_DATE, SETTING_KEYS } from 'constants/settings';
 import useBackgroundUploadFields from 'hooks/use-background-upload-fields';
 import { useState } from 'react';
 import { logIfEnabled } from "util/log";
@@ -247,6 +247,18 @@ function TimeDateSection({ onTimeFormatChange, onWeekFormatChange, timeFormat, w
 }
 
 // ------------------------------------------------------------------------------------------
+// @desc Renders the build stamp at the foot of the settings popup. The dashboard is installed by pasting
+//   build/compiled.js into a note, so this is how a user (or Bill, reading a bug report) can tell which compile
+//   of the dashboard is actually running in front of them.
+function BuildVersionFooter() {
+  return (
+    <div className="dashboard-settings-build-version">
+      Dashboard build: <span className="dashboard-settings-build-version-date">{BUILD_DATE}</span>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------------------------------
 // @desc Looks up the stored API key for a given provider from configParams.
 // [Claude] Task: look up the stored API key for a given provider option from configParams
 // Prompt: "auto-populate the API key for that provider, if the user previously added it"
@@ -361,6 +373,7 @@ export default function DashboardSettingsPopup({ app, configParams, onCancel, on
           weekFormat={weekFormatLocal}
         />
         {onOpenMemoryMeasurement ? <DebugToolsSection onOpenMemoryMeasurement={onOpenMemoryMeasurement} /> : null}
+        <BuildVersionFooter />
       </div>
     </ConfigPopup>
   );

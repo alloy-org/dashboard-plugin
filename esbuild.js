@@ -22,11 +22,24 @@ const absoluteImportsPlugin = createLibImportsPlugin(path.join(__dirname, 'lib')
 const scssPlugin = createScssPlugin({ style: "compressed" });
 
 // ------------------------------------------------------------------------------------------
+// @desc The local date this build ran, as YYYY-MM-DD. Baked into the bundle so a loaded dashboard can report
+//   which compile it came from — the compiled.js is pasted into a note by hand, so the only way to tell a stale
+//   paste from a current one is to have the build stamp itself.
+// @returns {string} The build date in YYYY-MM-DD form
+function buildDateString() {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${ now.getFullYear() }-${ month }-${ day }`;
+}
+
+// ------------------------------------------------------------------------------------------
 // @desc Build-time defines shared by the client IIFE and the plugin bundle (embed HTML reads
 //   SENTRY_DSN when assembling the optional CDN loader).
 // @returns {Object<string, string>} esbuild define map
 function productionDefines() {
   return {
+    "process.env.BUILD_DATE": JSON.stringify(buildDateString()),
     "process.env.NODE_ENV": '"production"',
     "process.env.SENTRY_DSN": JSON.stringify(process.env.SENTRY_DSN || ""),
   };
