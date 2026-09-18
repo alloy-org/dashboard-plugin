@@ -247,14 +247,12 @@ function TimeDateSection({ onTimeFormatChange, onWeekFormatChange, timeFormat, w
 }
 
 // ------------------------------------------------------------------------------------------
-// @desc Renders the build stamp at the foot of the settings popup. The dashboard is installed by pasting
+// @desc Renders the build stamp for the left side of the popup's button row. The dashboard is installed by pasting
 //   build/compiled.js into a note, so this is how a user (or Bill, reading a bug report) can tell which compile
 //   of the dashboard is actually running in front of them.
 function BuildVersionFooter() {
   return (
-    <div className="dashboard-settings-build-version">
-      Dashboard build: <span className="dashboard-settings-build-version-date">{BUILD_DATE}</span>
-    </div>
+    <span>Dashboard build: <span className="config-popup-footer-monospace">{BUILD_DATE}</span></span>
   );
 }
 
@@ -327,6 +325,7 @@ export default function DashboardSettingsPopup({ app, configParams, onCancel, on
   return (
     <ConfigPopup
       title="⚙️ Dashboard Settings"
+      footerLeft={<BuildVersionFooter />}
       scrollTop={scrollTop}
       onSubmit={() => onSave({
         apiKey,
@@ -373,7 +372,6 @@ export default function DashboardSettingsPopup({ app, configParams, onCancel, on
           weekFormat={weekFormatLocal}
         />
         {onOpenMemoryMeasurement ? <DebugToolsSection onOpenMemoryMeasurement={onOpenMemoryMeasurement} /> : null}
-        <BuildVersionFooter />
       </div>
     </ConfigPopup>
   );

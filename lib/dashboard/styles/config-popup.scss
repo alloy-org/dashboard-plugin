@@ -107,15 +107,33 @@ $config-popup-z-index: 1000;
       }
 
       .config-popup-actions {
+        align-items: center;
         border-top: 1px solid $color-border;
         display: flex;
         gap: $sp-sm;
-        justify-content: flex-end;
         padding: $sp-md $sp-lg;
 
         > button {
           padding-left: 8px;
           padding-right: 8px;
+        }
+
+        // The buttons stay against the right edge whether or not a caller supplied footerLeft, so the gap is taken
+        // by the first button rather than by justify-content, which would have to change with the slot's presence.
+        > .config-popup-btn:first-of-type {
+          margin-left: auto;
+        }
+      }
+
+      // The slot's own content is styled here rather than by the caller: it renders inside the actions row, which
+      // this file owns, so a caller's stylesheet has no wrapper it could legally reach it through.
+      .config-popup-footer-left {
+        color: $color-text-secondary;
+        font-size: 0.75rem;
+        min-width: 0;
+
+        .config-popup-footer-monospace {
+          font-family: monospace;
         }
       }
 

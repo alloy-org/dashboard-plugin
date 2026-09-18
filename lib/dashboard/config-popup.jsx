@@ -15,7 +15,9 @@ import "styles/config-popup.scss"
 // Date: 2026-04-09
 // [Claude claude-4.7-opus] Task: migrate ConfigPopup from createElement to JSX
 // Prompt: "translate this project to render components with JSX instead"
-export default function ConfigPopup({ title, onSubmit, onCancel, submitLabel = 'Submit', children, scrollTop }) {
+// [Claude Opus 5 (1M context)] Task: optional footerLeft slot so a caller can put status text opposite the buttons
+// Prompt: "stick it on the left side of the button row with align-items: center"
+export default function ConfigPopup({ title, onSubmit, onCancel, submitLabel = 'Submit', children, footerLeft, scrollTop }) {
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -50,6 +52,7 @@ export default function ConfigPopup({ title, onSubmit, onCancel, submitLabel = '
         ) : null}
         <div className="config-popup-body">{children}</div>
         <div className="config-popup-actions">
+          {footerLeft ? <div className="config-popup-footer-left">{footerLeft}</div> : null}
           <button className="config-popup-btn config-popup-btn--cancel" onClick={onCancel}>Cancel</button>
           <button className="config-popup-btn config-popup-btn--submit" onClick={onSubmit}>{submitLabel}</button>
         </div>
