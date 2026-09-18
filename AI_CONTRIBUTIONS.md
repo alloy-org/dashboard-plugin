@@ -5,6 +5,30 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## [Claude Opus 5 (1M context)] Make project discovery finish inside its budget, and say so honestly when it does not
+
+**Model:** claude-opus-5[1m]
+**Files created/modified:**
+- `lib/constants/llm-providers.js` (modified) — `FAST_TIER_REASONING_EFFORT` added. OpenAI's fast tier is `gpt-5.6`, a reasoning model rather than a small one like the other entries in `PROVIDER_FAST_MODEL`, so it only behaves as a speed tier with its reasoning budget capped
+- `lib/providers/ai-provider-settings.js` (modified) — `fastModelOptions` returns `reasoningEffort`, set only for OpenAI; null for providers whose fast tier is already a small model
+- `lib/providers/fetch-ai-provider.js` (modified) — `reasoningEffort` threaded through `llmPrompt` (trailing positional argument, so existing calls are unaffected) and `makeRequest` into `requestBodyForProvider`, which emits `reasoning_effort` only when the resolved provider is genuinely `openai` — the OpenAI branch is also the `default` branch, and an unrecognized field would fail an unmatched provider's request
+- `lib/plan-wizard/wizard-prompt-diagnostics.js` (modified) — `wizardLlmOptions` carries `reasoningEffort` through to the race
+- `lib/plan-wizard/wizard-prompt-runner.js` (modified) — Each leg now keeps its rejection message as `failureReason` instead of discarding it, and the race throws naming those reasons when every leg that ran failed. A leg that merely had nothing to offer (Agent Pro not installed) states no reason and still resolves null. Without this, a timeout and an empty answer were indistinguishable to the caller
+- `lib/plan-wizard/prospect-discovery.js` (modified) — `MAXIMUM_SUBSTANTIATION_LENGTH` and `shortenedSubstantiation` hold a proposal's reasoning to the two lines the page shows it in, cutting at a sentence boundary; multiple substantiation entries are joined before the limit applies so a provider cannot stack past it. Prompt updated to ask for one two-line entry
+- `lib/hooks/use-elapsing-progress.js` (created) — Drives the in-flight progress bar from elapsed time, since a provider request reports no progress of its own. Fills toward 40s, then advances at a third of that rate from 30s so it reaches full exactly at the 60s timeout rather than parking at 100% while the request is still running. `progressFractionAtElapsed` is exported separately so the curve is assertable without waiting it out
+- `lib/dashboard/plan-wizard/projects-step.jsx` (modified) — Renders the discovery progress bar while `isDiscovering`; `aria-hidden` because the adjacent `role="status"` notice already announces the state
+- `lib/dashboard/styles/plan-wizard.scss` (modified) — `.projects-step-discovery-progress` and its fill, nested under the existing wrapper. No CSS transition on width: the rate changes partway through and a transition would restart on each tick
+- `test/elapsing-progress.test.js` (created) — Pins the curve at 10s/20s/30s/45s/60s, its continuity at the deceleration point, and the clamp past the timeout
+- `test/fast-model-selection.test.js` (modified) — Expectations updated for the new field; adds the OpenAI case that caps reasoning
+- `test/wizard-prompt-race.test.js` (modified) — A stated failure now throws rather than resolving null; an unstated one still resolves null; reasoning effort reaches the direct provider alone
+- `test/plan-wizard-prospects.test.js` (modified) — Substantiation trimming and the joining of stacked entries
+
+**Task:** Project discovery found a prospect array but page 2 showed no results
+**Prompt summary:** "OpenAI discovery finds prospect array but page 2 shows no results", then "Also, update the substantiation to be about two lines instead of 4", then a progress bar defaulting toward 40s and slowing to 1/3 speed at 30s
+**Notes:** Two defects behind one symptom. `gpt-5.6` was called with default (medium) reasoning on a 5,121-token prompt against a 60s budget and timed out; separately, the race swallowed that timeout into a null, so `discoverActionProspects` fell through to "Project discovery found no candidate the evidence supports" — blaming the user's evidence for a request that was never evaluated. Three test suites (`dream-task-service`, `plan-wizard-host`, `proposed-agenda-widget-range`) fail on main independently of this work and still do
+
+---
+
 ## [Claude Opus 5 (1M context)] Stop the Proposed Agenda regenerating on every return to the dashboard, and make Agenda calendar rows clickable
 
 **Model:** claude-opus-5[1m]

@@ -503,6 +503,23 @@ $plan-wizard-z-index: 1100;
       min-width: 12rem;
     }
 
+    /* The fill's width is set inline from the elapsing-progress hook, which recomputes it on a timer because the
+     * rate changes partway through. A CSS transition on width would fight that: it would restart on each tick
+     * rather than smoothing between them, so the easing stays out of the stylesheet deliberately. */
+    .projects-step-discovery-progress {
+      background: $color-border;
+      border-radius: $radius-sm;
+      flex-basis: 100%;
+      height: 4px;
+      margin-top: $sp-xs;
+      overflow: hidden;
+
+      .discovery-progress-fill {
+        background: $color-accent;
+        height: 100%;
+      }
+    }
+
     .projects-step-category {
       display: flex;
       flex-direction: column;

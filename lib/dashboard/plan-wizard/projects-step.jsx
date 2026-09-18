@@ -11,11 +11,15 @@ import ProjectCard from "dashboard/plan-wizard/project-card";
 import { draftRowsFromProspects, emptyProjectRow, priorityRecordFromRow, prospectRecordsFromDraftRows,
   rejectionRecordFromRow } from "dashboard/plan-wizard/projects-step-fields";
 import { useRegisteredNavigate } from "dashboard/plan-wizard/step-navigation";
+import { useElapsingProgress } from "hooks/use-elapsing-progress";
+import { WIZARD_LLM_TIMEOUT_SECONDS } from "plan-wizard/plan-models";
 import { clusterProspectsByEvidence } from "plan-wizard/prospect-similarity";
 import { wizardStepFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const CATEGORY_HEADINGS = { personal: "Personal projects (optional)", work: "Professional projects" };
+const DISCOVERY_PROGRESS_DECELERATE_SECONDS = 30;
+const DISCOVERY_PROGRESS_TARGET_SECONDS = 40;
 const PROJECTS_STEP_COPY = wizardStepFromKey("projects");
 
 // ----------------------------------------------------------------------------------------------
@@ -72,6 +76,9 @@ export default function ProjectsStep({ discoveryFailureReason = null, isConsolid
     planningContext.goals));
   const capturedAtRef = useRef(null);
   const seededScopeRef = useRef(scopeKey);
+  const discoveryProgress = useElapsingProgress(isDiscovering,
+    { decelerateAtSeconds: DISCOVERY_PROGRESS_DECELERATE_SECONDS, targetSeconds: DISCOVERY_PROGRESS_TARGET_SECONDS,
+      timeoutSeconds: WIZARD_LLM_TIMEOUT_SECONDS });
   // Grouping compares every unjudged proposal against every other, and this component re-renders on each
   // keystroke in a project name, so it is computed when the stored records change rather than per render.
   const combinableCountByCategory = useMemo(() => ({ personal: restatedProjectCount(planningContext.prospects, "personal"),
@@ -202,6 +209,11 @@ export default function ProjectsStep({ discoveryFailureReason = null, isConsolid
               <p className="projects-step-discovery-notice" role="status">
                 { discoveryNoticeText({ discoveryFailureReason, hasChosenIntent, isDiscovering, proposedCount }) }
               </p>
+              { isDiscovering ? (
+                <div aria-hidden="true" className="projects-step-discovery-progress">
+                  <div className="discovery-progress-fill" style={ { width: `${ discoveryProgress * 100 }%` } } />
+                </div>
+              ) : null }
             </div>
           </section>
         );
