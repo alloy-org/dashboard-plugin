@@ -115,12 +115,13 @@ describe("proposed-agenda-archive", () => {
 
   it("stores a generated set and loads it back as pending activities", async () => {
     const app = buildNoteApp();
-    await storeProposedAgenda(app, { activities: [ACT_A, ACT_B], date: DATE, priorityKey: PRIORITY,
+    await storeProposedAgenda(app, { activities: [{ ...ACT_A, projectUuid: "project-uuid" }, ACT_B], date: DATE, priorityKey: PRIORITY,
       providerEm: PROVIDER, llmAttributionFooter: "by Claude" });
 
     const loaded = await loadCachedProposedAgenda(app, { date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER });
     expect(loaded.activities.map(a => a.title)).toEqual(["Deep work block", "Walk break"]);
     expect(loaded.activities[0]).toMatchObject({ startMinutes: 540, startTime: "09:00", taskUuid: "task-1" });
+    expect(loaded.activities[0].projectUuid).toBe("project-uuid");
     expect(loaded.llmAttributionFooter).toBe("by Claude");
     expect(loaded.scheduledKeys).toEqual([]);
     expect(loaded.dismissedKeys).toEqual([]);

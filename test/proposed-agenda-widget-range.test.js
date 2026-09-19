@@ -24,14 +24,17 @@ const { setPluginData } = await import("plugin-data");
 function buildMockApp() {
   const openTasks = SAMPLE_TASKS.filter(task => !task.completedAt && !task.dismissedAt);
   return {
+    addTaskDomainNote: jest.fn().mockResolvedValue(true),
     alert: jest.fn().mockResolvedValue(undefined),
     createNote: jest.fn().mockResolvedValue({ uuid: "archive-note" }),
     filterNotes: jest.fn().mockResolvedValue([]),
     findNote: jest.fn().mockResolvedValue(null),
     getExternalCalendarEvents: jest.fn().mockResolvedValue([]),
     getNoteContent: jest.fn().mockResolvedValue(""),
+    getNoteTasks: jest.fn().mockResolvedValue([]),
     getTaskDomains: jest.fn().mockResolvedValue([{ name: "Work", uuid: "dom-work" }]),
     getTaskDomainTasks: jest.fn().mockResolvedValue(openTasks),
+    insertTask: jest.fn().mockResolvedValue("inserted-task"),
     navigate: jest.fn().mockResolvedValue(undefined),
     replaceNoteContent: jest.fn().mockResolvedValue(true),
     setSetting: jest.fn().mockResolvedValue(undefined),
@@ -86,6 +89,48 @@ describe("ProposedAgendaWidget date range", () => {
   afterEach(() => {
     document.body.innerHTML = "";
     setPluginData({ context: {}, settings: {} });
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A user-picked Saturday overrides the calendar range and automatic weekday rollover.
+  it("edits the calculation date and opens that exact day's populated note", async () => {
+    const { app, container } = await renderWidget({ dateRange: futureWeekdayWindow(), taskDomainName: "Work", taskDomainUUID: "dom-work" });
+    await act(async () => container.querySelector('[aria-label="Change agenda date"]').click());
+    const input = container.querySelector('input[type="date"]');
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set.call(input, "2026-12-12");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await act(async () => container.querySelector(".proposed-agenda-date-control form").dispatchEvent(
+      new Event("submit", { bubbles: true, cancelable: true })));
+    expect(llmMock).toHaveBeenCalledTimes(4);
+    expect(llmMock.mock.calls[3][1]).toContain("Saturday, December 12, 2026");
+    expect(app.createNote.mock.calls.some(([name]) => name === "Proposed Agenda 2026-12-12 Work")).toBe(true);
+    expect(app.getNoteTasks).toHaveBeenCalledWith({ uuid: "archive-note" }, { includeDone: true });
+    expect(app.insertTask).toHaveBeenCalled();
+    expect(app.navigate).toHaveBeenCalledWith("https://www.amplenote.com/notes/archive-note");
+    expect(container.querySelectorAll(".proposed-agenda-day-group")).toHaveLength(1);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A slow response for the old calendar range cannot replace an explicitly selected date's results.
+  it("ignores an older generation that finishes after the date changes", async () => {
+    let finishEarlierGeneration;
+    llmMock.mockImplementationOnce(() => new Promise(resolve => { finishEarlierGeneration = resolve; }));
+    const { container } = await renderWidget();
+    await act(async () => container.querySelector('[aria-label="Change agenda date"]').click());
+    const input = container.querySelector('input[type="date"]');
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set.call(input, "2026-12-12");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => container.querySelector(".proposed-agenda-date-control form").dispatchEvent(
+      new Event("submit", { bubbles: true, cancelable: true })));
+    await act(async () => finishEarlierGeneration({ activities: [{ durationMinutes: 30, startTime: "10:00",
+      taskUuid: "task-7", title: "Stale generation" }] }));
+    expect(container.textContent).toContain("Saturday, December 12, 2026");
+    expect(container.textContent).not.toContain("Stale generation");
   });
 
   // Without a range the widget plans its single auto-resolved day, so there is nothing to head — the list

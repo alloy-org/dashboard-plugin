@@ -3,9 +3,9 @@ import { useState } from "react";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Toggle a native date input from a pencil button and commit a valid local calendar date explicitly.
-// @param {object} props - { dateValue, onSelectDate }.
+// @param {object} props - { dateLabel, dateValue, onSelectDate }.
 // @returns {JSX.Element} Date edit control usable in the agenda's loaded, empty, and error states.
-export default function ProposedAgendaDateControl({ dateValue, onSelectDate }) {
+export default function ProposedAgendaDateControl({ dateLabel, dateValue, onSelectDate }) {
   const [editing, setEditing] = useState(false);
   const [draftDate, setDraftDate] = useState(dateValue);
   // ----------------------------------------------------------------------------------------------
@@ -18,6 +18,7 @@ export default function ProposedAgendaDateControl({ dateValue, onSelectDate }) {
     onSelectDate(draftDate);
   };
   return <div className="proposed-agenda-date-control">
+    <span>{ dateLabel || dateValue }</span>
     <button aria-expanded={ editing } aria-label="Change agenda date" className="proposed-agenda-date-edit"
       onClick={ () => { setDraftDate(dateValue); setEditing(value => !value); } } title="Change agenda date" type="button">✎</button>
     { editing ? <form onSubmit={ onSubmit }>

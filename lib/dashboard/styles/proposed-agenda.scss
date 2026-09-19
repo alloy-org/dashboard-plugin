@@ -12,7 +12,10 @@ $proposed-agenda-transition: 0.12s;
 .widget-proposed-agenda {
   .proposed-agenda-date-control {
     display: flex;
-    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: space-between;
     margin-bottom: 8px;
 
     form {

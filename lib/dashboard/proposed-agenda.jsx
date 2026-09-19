@@ -204,6 +204,7 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   const [modelProviderEm, setModelProviderEm] = useState(persistedProviderEm || providerEm || null);
   const [obligations, setObligations] = useState([]);
   const [priorityKey, setPriorityKey] = useState(persistedPriorityKey || DEFAULT_PRIORITY_KEY);
+  const [projectNotice, setProjectNotice] = useState(null);
   const [proposed, setProposed] = useState([]);
   const [providerPopupOpen, setProviderPopupOpen] = useState(false);
   const [recordDomainName, setRecordDomainName] = useState(taskDomainName || "All Notes");
@@ -229,7 +230,7 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   const runGeneration = useCallback(({ forceRegenerate = false } = {}) => {
     const generation = ++generationRef.current;
     const setters = { setApproving, setAttribution, setDateLabel, setDismissedKeys, setError, setIsFutureDay,
-      setLoading, setObligations, setProposed, setRecordDomainName, setRecordDomainUuid, setRecordProviderEm, setScheduledKeys };
+      setLoading, setObligations, setProjectNotice, setProposed, setRecordDomainName, setRecordDomainUuid, setRecordProviderEm, setScheduledKeys };
     const guardedSetters = Object.fromEntries(Object.entries(setters).map(([name, setter]) =>
       [name, value => { if (generation === generationRef.current) setter(value); }]));
     return runProposedAgendaGeneration(app, { calendarEvents, currentDate, dateRange, domainName: taskDomainName,
@@ -320,7 +321,7 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   useWidgetLoadedEvent(WIDGET_ID, !loading && !error, !!error);
 
   const dateValue = selectedDate || dateKeyFromDateInput(proposed[0]?.targetMidnightSeconds || resolveProposedAgendaDate());
-  const dateControl = <ProposedAgendaDateControl dateValue={ dateValue } onSelectDate={ setSelectedDate } />;
+  const dateControl = <ProposedAgendaDateControl dateLabel={ dateLabel } dateValue={ dateValue } onSelectDate={ setSelectedDate } />;
   if (loading) return <LoadingState dateControl={ dateControl } />;
   if (error) {
     const envApiKey = (typeof process !== "undefined" && process.env?.OPEN_AI_ACCESS_TOKEN) || "";
@@ -342,7 +343,8 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
     hidePastBeforeMinutes, hidePastOnMidnightSeconds: todayMidnightSeconds });
   const dayGroups = agendaRowsGroupedByDay(rows);
   if (rows.length === 0) {
-    return <MessageState dateControl={ dateControl } message="No schedule could be proposed yet." onRetry={ () => runGeneration() } />;
+    return <MessageState dateControl={ dateControl } message={ projectNotice || "No schedule could be proposed yet." }
+      onRetry={ () => runGeneration() } />;
   }
   const pending = pendingCount(proposed, scheduledKeys, dismissedKeys);
   const reseedAction = (
@@ -352,15 +354,9 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
 
   return (
     <>
-      <WidgetWrapper headerActions={ reseedAction } subtitle={ dateLabel } widgetId={ WIDGET_ID }>
+      <WidgetWrapper headerActions={ reseedAction } subtitle="" widgetId={ WIDGET_ID }>
         { dateControl }
-        { dateLabel
-          ? <div className="proposed-agenda-mobile-date">
-              <span>{ dateLabel }</span>
-              <button className="proposed-agenda-model-change" onClick={ onChangeModel }
-                title="Change AI provider" type="button">⇅</button>
-            </div>
-          : null }
+        { projectNotice ? <p role="status">{ projectNotice }</p> : null }
         <PriorityModelBar modelName={ _modelName(modelProviderEm) } onChangeModel={ onChangeModel }
           onPriorityChange={ onPriorityChange } priorityKey={ priorityKey } />
         <div className="proposed-agenda-list" ref={ listRef }>

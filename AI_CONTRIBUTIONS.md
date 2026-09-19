@@ -5,6 +5,23 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-09-19 — Editable Proposed Agenda dates and quarterly project progress
+
+**Model:** GPT-6
+**Task:** Allow choosing the date used to calculate Proposed Agenda, populate a dated note without duplicating existing work, and suggest progress on quarterly projects using Plan Builder pace choices and actual completion evidence.
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda.jsx`, `lib/dashboard/proposed-agenda-date-control.jsx`, `lib/dashboard/styles/proposed-agenda.scss` — Add the pencil/date form, retain explicit dates, ignore stale generation results, and show projects that have no free calendar slot.
+- `lib/dashboard/proposed-agenda-llm-generator.js`, `lib/dashboard/proposed-agenda-note.js` — Read existing dated-note tasks, preserve their commitments, add missing task references, open the populated note, and reuse generated project checkboxes when scheduling.
+- `lib/dashboard/proposed-agenda-service.js`, `lib/dashboard/proposed-agenda-archive.js` — Read the selected quarter's complete markdown and Plan Builder evidence, preserve project associations in cached suggestions, and schedule project steps with their identities intact.
+- `lib/dashboard/project-progress-model.js`, `lib/dashboard/project-progress-service.js`, `lib/dashboard/project-agenda-suggestions.js` — Reuse Builder project UUIDs, persist identities for hand-authored projects, record related/completed task UUIDs and dates in a quarterly domain progress note, count unique completions against weekly pace, and fill missing due-project suggestions without overlapping obligations.
+- `test/project-progress.test.js`, `test/proposed-agenda-note.test.js`, `test/proposed-agenda-widget-range.test.js`, `test/proposed-agenda-next-day.test.js`, `test/proposed-agenda-archive.test.js`, `test/proposed-agenda-llm-generator.test.js` — Cover identities, completion counting, dismissed/reopened tasks, exact weekend dates, late responses, existing task preservation, retries, scheduling reuse, complete Rich Footnotes, and the selected quarter.
+- `build/compiled.js` — Rebuild the host-compatible production plugin.
+
+**Validation:** Production build and host boundary passed. The targeted local suite passed 93 tests; all 3 live provider integration tests and 6 production smoke tests passed. Browser inspection could not start because the browser tool reported missing sandbox metadata; date editing was verified with React DOM interaction tests.
+**Notes:** Progress notes use `Project Builder Q3 2026 Work Progress` naming (quarter and Task Domain vary). Task counts are explicitly a proxy for weekly blocks. No commits were made by this agent.
+
+---
+
 ## 2026-09-18 — Repair duplicated Plan Builder publications after markdown escaping
 
 **Model:** GPT-6

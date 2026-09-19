@@ -85,6 +85,19 @@ beforeEach(() => {
 // [Claude claude-opus-4-8 (1M context)] Generated tests for: proposed-agenda next-day + weekend targeting
 describe("proposed-agenda next-day targeting", () => {
   // ----------------------------------------------------------------------------------------------
+  // @desc Explicit dates select their own quarter's plan and retain Rich Footnotes beyond the former text cutoff.
+  it("reads the selected quarter and retains the complete plan markdown", async () => {
+    const { app } = buildApp();
+    app.filterNotes.mockImplementation(async options => options.query === "Q4 2026 Work Plan"
+      ? [{ name: "Q4 2026 Work Plan", uuid: PLAN_NOTE_UUID }] : []);
+    app.getNoteContent.mockResolvedValue("# Quarter Theme\n" + "Planning context. ".repeat(350)
+      + "\nConsult [the specification][^1].\n\n[^1]: [Complete definition]()\n\n    Preserve the multiline project specification.\n");
+    await generateProposedAgenda(app, { targetDate: new Date(2026, 11, 12) });
+    expect(app.filterNotes).toHaveBeenCalledWith({ query: "Q4 2026 Work Plan" });
+    expect(lastPromptSent).toContain("Preserve the multiline project specification.");
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // The 5pm scenario: the agenda is built for the day AFTER today. We pin that via the targetDate override
   // (the same value an after-4pm run resolves to) and confirm the prompt names the next day and the scheduled
   // startAt lands on the next day — provably different from a same-day run.
