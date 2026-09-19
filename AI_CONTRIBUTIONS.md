@@ -5,6 +5,19 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-09-18 — Repair duplicated Plan Builder publications after markdown escaping
+
+**Model:** GPT-6
+**Files modified:**
+- `lib/plan-wizard/quarterly-plan-markdown.js` — Recognize Amplenote-escaped builder markers and template placeholders when replacing generated content and verifying saves.
+- `lib/plan-wizard/quarterly-plan-merge.js` — Remove accumulated leading builder title headings while preserving surrounding prose.
+- `test/plan-wizard-quarterly-plan.test.js` — Cover escaped save/read round trips, existing duplicate projects and schedule entries, placeholder cleanup, and preservation of authored text.
+
+**Task:** Diagnose duplication in the published Q4 2026 Work Plan and fix the publisher.
+**Validation:** All 13 quarterly publication tests and 6 production plugin smoke tests passed; production build passed and refreshed `build/compiled.js`.
+
+---
+
 ## [Claude Opus 5 (1M context)] Make project discovery finish inside its budget, and say so honestly when it does not
 
 **Model:** claude-opus-5[1m]

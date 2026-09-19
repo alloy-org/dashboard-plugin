@@ -7,7 +7,7 @@ import { defaultQuarterlyTemplate } from "constants/quarters";
 import { resolvePlanScope } from "plan-wizard/plan-models";
 import { savePlanGoals, savePlanProspects, savePlanQuarterAnswer } from "plan-wizard/plan-wizard-service";
 import { BUILDER_MARKER, KEEP_WARM_MARKER } from "plan-wizard/quarterly-plan-markdown";
-import { mergedQuarterlyPlanContent } from "plan-wizard/quarterly-plan-merge";
+import { contentWithPlanTitle, mergedQuarterlyPlanContent } from "plan-wizard/quarterly-plan-merge";
 import { quarterlyPlanPublication } from "plan-wizard/quarterly-plan-publication";
 import { publishQuarterlyPlan } from "plan-wizard/quarterly-plan-publisher";
 import { createPlanWizardApp } from "./fixtures/plan-wizard-app.js";
@@ -128,9 +128,74 @@ describe("mergedQuarterlyPlanContent", () => {
     expect(merged).toContain("## Hire a second support engineer");
     expect(merged).toContain("- Outcome: Offer signed by December 1");
   });
+
+  it("repairs escaped duplicate titles, projects, and schedule entries from earlier publications", () => {
+    const fullPublication = { ...publication, notThisQuarter: ["Conference talk"],
+      projects: [...publication.projects, { ...publication.projects[0], isKeptWarm: true, summary: "Keep onboarding warm" }] };
+    const once = mergedQuarterlyPlanContent(provisionalPlanNoteContent(), fullPublication);
+    const projectStart = once.indexOf("## Ship diff-view v2");
+    const projectEnd = once.indexOf("# Not This Quarter");
+    const duplicateProjects = once.slice(projectStart, projectEnd);
+    const duplicated = once.replace("# Quarter Theme", "# Old quarter name [builder]\n\n# Quarter Theme")
+      .replace("# Not This Quarter", duplicateProjects + "# Not This Quarter")
+      .replace(/Ship diff-view v2 \[builder\](?=;|\n)/g, "Ship diff-view v2 [builder]; Ship diff-view v2 [builder]");
+    const escaped = duplicated.replace(/(?<!\\)\[/g, "\\[").replace(/(?<!\\)\]/g, "\\]");
+    const repaired = mergedQuarterlyPlanContent(escaped, fullPublication);
+    expect(repaired.match(/^# .* \[builder\]$/gm)).toHaveLength(1);
+    expect(repaired.match(/^## Ship diff-view v2 /gm)).toHaveLength(1);
+    expect(repaired.match(/^## Keep onboarding warm /gm)).toHaveLength(1);
+    expect(repaired).toContain("- Tuesdays: deep work; Ship diff-view v2 [builder]; Keep onboarding warm [builder]");
+    expect(repaired).toContain("- Focus: Ship diff-view v2 [builder]; Keep onboarding warm [builder]");
+    expect(repaired.match(/^- Conference talk /gm)).toHaveLength(1);
+    expect(repaired.match(/^- Done for today when:/gm)).toHaveLength(1);
+    expect(repaired).toContain("- Outcome: Offer signed by December 1");
+    expect(repaired).toContain("## Hire a second support engineer");
+    expect(mergedQuarterlyPlanContent(repaired, fullPublication)).toBe(repaired);
+    const savedAgain = repaired.replace(/(?<!\\)\[/g, "\\[").replace(/(?<!\\)\]/g, "\\]");
+    expect(mergedQuarterlyPlanContent(savedAgain, fullPublication)).toBe(repaired);
+  });
+
+  it("recognizes escaped placeholders while preserving filled project bullets", () => {
+    const escapedTemplate = provisionalPlanNoteContent().replace(/(?<!\\)\[/g, "\\[").replace(/(?<!\\)\]/g, "\\]");
+    const merged = mergedQuarterlyPlanContent(escapedTemplate, publication);
+    expect(merged).not.toContain("## \\[Project");
+    const edited = merged.replace("- Outcome:\n", "- Outcome: Faster rendering\n")
+      .replace("- Constraints:\n", "- Constraints: No new dependencies\n")
+      .replace(/\[builder\]/g, "\\[builder\\]");
+    const republished = mergedQuarterlyPlanContent(edited, publication);
+    expect(republished).toContain("- Outcome: Faster rendering");
+    expect(republished).toContain("- Constraints: No new dependencies");
+  });
+
+  it("preserves prose around duplicate titles and stops removing titles at a user heading", () => {
+    const content = "Preamble\n\n# Old \\[builder\\]\n\nMy notes\n\n# Old [builder]\n\n# User title\n\n# Later [builder]\n";
+    const updated = contentWithPlanTitle(content, "New quarter");
+    expect(updated).toContain("Preamble");
+    expect(updated).toContain("My notes");
+    expect(updated).not.toContain("# Old");
+    expect(updated).toContain("# User title\n\n# Later [builder]");
+  });
 });
 
 describe("publishQuarterlyPlan", () => {
+  it("verifies projects when the host escapes brackets on every save and avoids accumulating copies", async () => {
+    const { app, planNoteContent } = appWithPlanNote(provisionalPlanNoteContent());
+    app.replaceNoteContent.mockImplementation(async ({ uuid }, content) => {
+      const note = app.notes.find(item => item.uuid === uuid);
+      note.content = content.replace(/(?<!\\)\[/g, "\\[").replace(/(?<!\\)\]/g, "\\]");
+      return true;
+    });
+    const planningContext = { prospects: [{ focusMonths: ["2026-11"], preferredWeekdays: ["tuesday"],
+      priorityEm: "quarterFocus", substantiations: ["Named by you"], summary: "Ship diff-view v2" }],
+      quarterName: { text: "The Compounding Quarter" } };
+    for (let publishIndex = 0; publishIndex < 3; publishIndex += 1) {
+      await expect(publishQuarterlyPlan(app, { ...scope, planningContext })).resolves.toMatchObject({ updated: true });
+    }
+    expect(planNoteContent().match(/^## Ship diff-view v2 /gm)).toHaveLength(1);
+    expect(planNoteContent().match(/^# The Compounding Quarter /gm)).toHaveLength(1);
+    expect(planNoteContent()).not.toContain("## \\[Project");
+  });
+
   it("merges each wizard page's decisions into a provisionally completed plan note as they are submitted", async () => {
     const { app, planNoteContent } = appWithPlanNote(provisionalPlanNoteContent());
     const publishOptions = context => ({ ...scope, planningContext: context });
