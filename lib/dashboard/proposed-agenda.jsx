@@ -1,29 +1,28 @@
-// [Claude claude-opus-4-8 (1M context)-authored file]
-// Prompt summary: "redesign the proposed-agenda widget: a Today's-priority selector + changeable AI model, an
-//   hour-by-hour list that interleaves already-scheduled obligations with LLM proposals (Add to schedule /
-//   dismiss), and an Approve schedule / Dismiss all footer with a pending count"
+// Render the proposed agenda with date navigation, priority choices, and scheduling actions.
 import { PROVIDER_DEFAULT_MODEL } from "constants/llm-providers";
 import { configuredProviderEms, SETTING_KEYS } from "constants/settings";
+import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import LlmProviderSelector from "llm-provider-selector";
 import NoConfigUpsell from "no-config-upsell";
 import { pluginSettings, updatePluginSetting } from "plugin-data";
 import { PROPOSED_TASK_STATUS } from "proposed-agenda-archive";
 import ProposedAgendaDateControl from "proposed-agenda-date-control";
-import { DEFAULT_PRIORITY_KEY, PROPOSED_AGENDA_PRIORITY_OPTIONS } from "proposed-agenda-priority";
 import { activityKey, approveAllProposed, mergedAgendaRows, pendingCount, recordProposedRowStatuses,
   runProposedAgendaGeneration, scheduleProposedRow } from "proposed-agenda-llm-generator";
+import ProposedAgendaMessage from "proposed-agenda-message";
+import { populateAgendaNote, prepareAgendaNote } from "proposed-agenda-note";
+import { DEFAULT_PRIORITY_KEY } from "proposed-agenda-priority";
+import ProposedAgendaPriorityControl from "proposed-agenda-priority-control";
 import { agendaRowsGroupedByDay } from "proposed-agenda-range";
 import { resolveProposedAgendaDate } from "proposed-agenda-service";
 import { AMPLE_AGENT_PRO_NOTE_NAME } from "providers/ai-provider-settings";
-import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import "styles/proposed-agenda.scss";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import { calendarEventDateFromValue } from "util/calendar-utility";
-import { dateKeyFromDateInput, formatClockLabel } from "util/date-utility";
+import { dateFromDateInput, dateKeyFromDateInput, formatClockLabel } from "util/date-utility";
 import { snapDashboardAction } from "util/plausible";
 import WidgetWrapper from "widget-wrapper";
-
-import "styles/proposed-agenda.scss";
 
 const WIDGET_ID = "proposed-agenda";
 
@@ -32,8 +31,6 @@ const WIDGET_ID = "proposed-agenda";
 // how DreamTask degrades.
 const NO_CONFIG_ERROR_CODES = new Set(["invalid_api_key", "llm_error", "no_provider_configured", "parse_error"]);
 
-// [Claude claude-opus-4-8 (1M context)] Task: scheduling-focused features highlighted in the no-config upsell
-// Prompt: "we will highlight different features" (vs. DreamTask's goal-coach features)
 const NO_CONFIG_FEATURES = [
   { icon: "🗓️", label: "Auto-draft your day" },
   { icon: "⚖️", label: "Balance work by priority" },
@@ -47,68 +44,15 @@ const NO_CONFIG_FEATURES = [
 // @desc Resolve the model name shown in the model pill from the selected provider enum.
 // @param {string|null} providerEm
 // @returns {string}
-// [Claude claude-opus-4-8 (1M context)] Task: derive the displayed model name from the provider
 function _modelName(providerEm) {
   return PROVIDER_DEFAULT_MODEL[providerEm] || providerEm || "default model";
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Loading placeholder shown while obligations are derived and the LLM builds the schedule.
-// [Claude claude-opus-4-8 (1M context)] Task: proposed-agenda loading state
-function LoadingState({ dateControl }) {
-  return (
-    <WidgetWrapper widgetId={ WIDGET_ID }>
-      { dateControl }
-      <div className="proposed-agenda-loading">
-        <div className="proposed-agenda-spinner" />
-        <p>Drafting your hour-by-hour schedule …</p>
-      </div>
-    </WidgetWrapper>
-  );
-}
-
-// ----------------------------------------------------------------------------------------------
-// @desc Error/empty state with a retry button.
-// @param {object} props - { message, onRetry }.
-// [Claude claude-opus-4-8 (1M context)] Task: proposed-agenda error/empty state
-function MessageState({ dateControl, message, onRetry }) {
-  return (
-    <WidgetWrapper widgetId={ WIDGET_ID }>
-      { dateControl }
-      <div className="proposed-agenda-message">
-        <p>{ message }</p>
-        <button className="proposed-agenda-retry" onClick={ onRetry }>Try again</button>
-      </div>
-    </WidgetWrapper>
-  );
-}
-
-// ----------------------------------------------------------------------------------------------
-// @desc The Today's-priority selector and the changeable AI-model pill above the agenda list.
-// @param {object} props - { modelName, onChangeModel, onPriorityChange, priorityKey }.
-// [Claude claude-opus-4-8 (1M context)] Task: render the priority selector + model-change control
-function PriorityModelBar({ modelName, onChangeModel, onPriorityChange, priorityKey }) {
-  return (
-    <div className="proposed-agenda-controls">
-      <label className="proposed-agenda-priority-label">Today's priority</label>
-      <select className="proposed-agenda-priority-select" value={ priorityKey } onChange={ onPriorityChange }>
-        {
-          PROPOSED_AGENDA_PRIORITY_OPTIONS.map(option => (
-          <option key={ option.key } value={ option.key }>{ option.label }</option>))
-        }
-      </select>
-      <span className="proposed-agenda-model" title="AI model used to generate this agenda">🌐 { modelName }</span>
-      <button className="proposed-agenda-model-change" title="Change AI provider" onClick={ onChangeModel }>⇅</button>
-    </div>
-  );
-}
-
-// ----------------------------------------------------------------------------------------------
-// @desc One agenda row. Already-scheduled obligations and just-scheduled proposals render greyed with a
+// @desc One agenda row. Already-scheduled obligations and just-scheduled proposals retain readable titles with a
 //   "Scheduled" badge; pending proposals show their reason plus Add-to-schedule and dismiss controls. A "Note"
 //   link beneath the timestamp opens the note backing the row's task (when one is linkable).
 // @param {object} props - { onDismiss, onOpenNote, onSchedule, row, scheduledKeys, timeFormat }.
-// [Claude claude-opus-4-8 (1M context)] Task: render an obligation or proposed-activity row
 function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, timeFormat }) {
   const [reasonExpanded, setReasonExpanded] = useState(false);
   const isScheduled = row.isObligation || scheduledKeys.has(activityKey(row));
@@ -123,8 +67,9 @@ function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, ti
             { formatClockLabel(row.startMinutes, timeFormat) }</span>
           {
             hasNote
-            ? <a href="#" className="proposed-agenda-note-link" title="Open the note for this task" onClick={ (event) => onOpenNote(event, row) }>Note</a>
-            : null
+            ? <a href="#" className="proposed-agenda-note-link" title="Open the note for this task"
+                onClick={ (event) => onOpenNote(event, row) }>Note</a>
+            : <span className="proposed-agenda-note-link">{ row.source === "event" ? "Event" : "Task" }</span>
           }
         </span>
         <div className="proposed-agenda-content">
@@ -139,22 +84,21 @@ function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, ti
               : null }
           </span>
           { hasReason ? <span className="proposed-agenda-reason proposed-agenda-reason--desktop">{ row.reason }</span> : null }
+          { row.projectUuid ? <span className="proposed-agenda-goal-badge">☆ Quarterly goal</span> : null }
         </div>
         { isScheduled
           ? <span className="proposed-agenda-scheduled-meta">
-              { row.durationMinutes
-                ? <span className="proposed-agenda-duration">{ `${ row.durationMinutes }m` }</span> : null }
               <span className="proposed-agenda-scheduled-badge" title="Already scheduled on this date">Scheduled</span>
             </span>
           : <>
               <span className="proposed-agenda-actions">
                 <button className="proposed-agenda-add" title={ `Schedule for ${ row.startTime } on the agenda date` }
                   onClick={ (event) => onSchedule(event, row) }>
-                  <span>📅 &nbsp;Add to schedule</span>
+                  <span><span aria-hidden="true" className="proposed-agenda-schedule-icon">▦</span> Add to schedule</span>
                   { row.durationMinutes
                     ? <span className="proposed-agenda-add-duration">{ `${ row.durationMinutes }m` } duration</span> : null }
                 </button>
-                <button className="proposed-agenda-dismiss" title="Dismiss this suggestion"
+                <button aria-label="Dismiss this suggestion" className="proposed-agenda-dismiss" title="Dismiss this suggestion"
                   onClick={ (event) => onDismiss(event, row) }>×</button>
               </span>
             </>
@@ -163,6 +107,20 @@ function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, ti
       { hasReason && reasonExpanded
         ? <div className="proposed-agenda-reason proposed-agenda-reason--mobile">{ row.reason }</div> : null }
     </div>
+  );
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Show a naturally sized activity indicator while obligations and the proposed schedule load.
+function LoadingState({ dateControl }) {
+  return (
+    <WidgetWrapper widgetId={ WIDGET_ID }>
+      { dateControl }
+      <div className="proposed-agenda-loading">
+        <span aria-hidden="true" className="proposed-agenda-spinner">⟳</span>
+        <p>Drafting your hour-by-hour schedule …</p>
+      </div>
+    </WidgetWrapper>
   );
 }
 
@@ -217,7 +175,6 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
 
   // Identifies the domain-specific stored monthly line currently on screen so status changes cannot mutate
   // another Task Domain's cache record.
-  // [OpenAI GPT-5.6] Task: include Task Domain identity in Proposed Agenda lifecycle writes.
   const llmDateRecord = useMemo(() => ({ date: selectedDate || currentDate, domainName: recordDomainName,
     domainUuid: recordDomainUuid, priorityKey, providerEm: recordProviderEm }),
     [currentDate, priorityKey, recordDomainName, recordDomainUuid, recordProviderEm, selectedDate]);
@@ -237,7 +194,8 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
       domainUuid: taskDomainUUID, explicitDate: selectedDate, forceRegenerate,
       isCurrentGeneration: () => generation === generationRef.current, priorityKey,
       providerEm: modelProviderEm, ...guardedSetters }).catch(error => {
-      guardedSetters.setError({ error: error?.message || "Could not prepare the agenda. Please try again.", errorCode: "agenda_error" });
+      guardedSetters.setError({ error: error?.message || "Could not prepare the agenda. Please try again.",
+        errorCode: "agenda_error", noteUuid: error?.noteUuid || null });
       guardedSetters.setProposed([]);
     });
   }, [app, calendarEventsKey, currentDate, dateRangeKey, modelProviderEm, priorityKey, providerApiKey, selectedDate,
@@ -245,8 +203,6 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
 
   const onChangeModel = useCallback(() => setProviderPopupOpen(true), []);
 
-  // [Claude claude-opus-4-8 (1M context)] Task: persist the chosen provider so it is restored on reload
-  // Prompt: "persist it via app.setSetting, using a const key name"
   const onSelectProvider = useCallback((selectedProviderEm) => {
     setProviderPopupOpen(false);
     if (selectedProviderEm && selectedProviderEm !== modelProviderEm) {
@@ -256,8 +212,9 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
     }
   }, [app, modelProviderEm]);
 
-  // [Claude claude-opus-4-8 (1M context)] Task: persist the chosen "Today's priority" so it is restored on reload
-  // Prompt: "persist it via app.setSetting, using a const key name"
+  // ------------------------------------------------------------------------------------------
+  // @desc Persist the chosen priority and regenerate using its built-in or custom instruction.
+  // @param {object} event - Selected priority key in target.value.
   const onPriorityChange = useCallback(event => {
     const nextKey = event.target.value;
     setPriorityKey(nextKey);
@@ -320,8 +277,12 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
 
   useWidgetLoadedEvent(WIDGET_ID, !loading && !error, !!error);
 
-  const dateValue = selectedDate || dateKeyFromDateInput(proposed[0]?.targetMidnightSeconds || resolveProposedAgendaDate());
-  const dateControl = <ProposedAgendaDateControl dateLabel={ dateLabel } dateValue={ dateValue } onSelectDate={ setSelectedDate } />;
+  const fallbackDate = resolveProposedAgendaDate(dateFromDateInput(currentDate || new Date()));
+  const dateValue = selectedDate || dateKeyFromDateInput(proposed[0]?.targetMidnightSeconds || fallbackDate);
+  const datedRows = proposed.filter(row => row.targetMidnightSeconds);
+  const savedDates = [...new Set(datedRows.map(row => dateKeyFromDateInput(row.targetMidnightSeconds)))];
+  const dateControl = <ProposedAgendaDateControl calendarEvents={ calendarEvents } dateLabel={ dateLabel }
+    dateValue={ dateValue } onSelectDate={ setSelectedDate } savedDates={ savedDates } />;
   if (loading) return <LoadingState dateControl={ dateControl } />;
   if (error) {
     const envApiKey = (typeof process !== "undefined" && process.env?.OPEN_AI_ACCESS_TOKEN) || "";
@@ -332,7 +293,8 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
           moreFeaturesLabel="+ 15 more features included" widgetId={ WIDGET_ID } />
       );
     }
-    return <MessageState dateControl={ dateControl } message={ error.error } onRetry={ () => runGeneration() } />;
+    return <ProposedAgendaMessage app={ app } dateControl={ dateControl } message={ error.error } noteUuid={ error.noteUuid }
+      onRetry={ () => runGeneration() } />;
   }
 
   // Hide elapsed proposals only on today; the midnight value also orders legacy rows without a day stamp.
@@ -343,22 +305,49 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
     hidePastBeforeMinutes, hidePastOnMidnightSeconds: todayMidnightSeconds });
   const dayGroups = agendaRowsGroupedByDay(rows);
   if (rows.length === 0) {
-    return <MessageState dateControl={ dateControl } message={ projectNotice || "No schedule could be proposed yet." }
+    return <ProposedAgendaMessage dateControl={ dateControl } message={ projectNotice || "No schedule could be proposed yet." }
       onRetry={ () => runGeneration() } />;
   }
   const pending = pendingCount(proposed, scheduledKeys, dismissedKeys);
-  const reseedAction = (
-    <a href="#" className="widget-header-action" title="Propose a fresh schedule (replaces today's saved set)"
-      onClick={ (event) => { event.preventDefault(); runGeneration({ forceRegenerate: true }); } }>🔄 Reseed</a>
-  );
+  const calendarCount = obligations.filter(row => row.source === "event").length;
+  const headerActions = <div className="proposed-agenda-header-actions">
+    <button className="proposed-agenda-model" onClick={ onChangeModel } title="Change AI provider" type="button">
+      <span aria-hidden="true">◎</span>{ _modelName(modelProviderEm) }<span aria-hidden="true">⌄</span></button>
+    <button className="proposed-agenda-regenerate" onClick={ () => runGeneration({ forceRegenerate: true }) } type="button">
+      <span aria-hidden="true">⟳</span> Regenerate</button>
+  </div>;
+
+  // ------------------------------------------------------------------------------------------
+  // @desc Save the visible agenda into dated notes for review without scheduling its suggestions.
+  // @returns {Promise<void>} Opens the final saved note or reports a failure without hiding the agenda.
+  const onAccept = async () => {
+    setApproving(true);
+    try {
+      let savedNote;
+      for (const group of dayGroups) {
+        const targetDate = group.targetMidnightSeconds || dateValue;
+        const { note } = await prepareAgendaNote(app, { domainName: recordDomainName, domainUuid: recordDomainUuid, targetDate });
+        await populateAgendaNote(app, note, group.rows);
+        savedNote = note;
+      }
+      if (savedNote) await app.navigate(`https://www.amplenote.com/notes/${ savedNote.uuid }`);
+    } catch (error) {
+      await app.alert(error?.message || "Could not save this agenda. Please try again.");
+    } finally {
+      setApproving(false);
+    }
+  };
 
   return (
     <>
-      <WidgetWrapper headerActions={ reseedAction } subtitle="" widgetId={ WIDGET_ID }>
-        { dateControl }
+      <WidgetWrapper headerActions={ headerActions } subtitle="" widgetId={ WIDGET_ID }>
+        <div className="proposed-agenda-overview">
+          { dateControl }
+          <p className="proposed-agenda-day-summary">{ calendarCount } calendar { calendarCount === 1 ? "event" : "events" }
+            { " · " }{ rows.length } { dayGroups.length > 1 ? "items across this range" : "items on the day" }</p>
+        </div>
         { projectNotice ? <p role="status">{ projectNotice }</p> : null }
-        <PriorityModelBar modelName={ _modelName(modelProviderEm) } onChangeModel={ onChangeModel }
-          onPriorityChange={ onPriorityChange } priorityKey={ priorityKey } />
+        <ProposedAgendaPriorityControl dateValue={ dateValue } onPriorityChange={ onPriorityChange } priorityKey={ priorityKey } />
         <div className="proposed-agenda-list" ref={ listRef }>
           { dayGroups.map(dayGroup => (
             <div className="proposed-agenda-day-group" key={ dayGroup.targetMidnightSeconds ?? "undated" }>
@@ -372,13 +361,19 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
           )) }
         </div>
         <div className="proposed-agenda-footer">
-          <button className="proposed-agenda-approve" onClick={ onApprove } disabled={ approving || pending === 0 }>
-            { approving ? "Approving …" : "Approve schedule" }</button>
-          <button className="proposed-agenda-dismiss-all" onClick={ onDismissAll } disabled={ pending === 0 }>
-            Dismiss all</button>
+          <span className="proposed-agenda-pending">{ pending } { pending === 1 ? "suggestion" : "suggestions" } unscheduled
+            { " · " }{ rows.length } on the { dayGroups.length > 1 ? "agenda" : "day" }</span>
+          <button className="proposed-agenda-schedule-all" disabled={ approving || pending === 0 } onClick={ onApprove } type="button">
+            Schedule all</button>
+          <button className="proposed-agenda-approve" disabled={ approving }
+            onClick={ onAccept } title="Save this agenda to its dated note" type="button">
+            { approving ? "Saving …" : "Accept agenda" }</button>
         </div>
-        <p className="proposed-agenda-pending">{ `${ pending } pending` }</p>
-        { attribution ? <p className="proposed-agenda-attribution">{ attribution }</p> : null }
+        <div className="proposed-agenda-secondary-footer">
+          { attribution ? <span className="proposed-agenda-attribution">{ attribution }</span> : null }
+          <button className="proposed-agenda-dismiss-all" disabled={ approving || pending === 0 } onClick={ onDismissAll } type="button">
+            Dismiss all suggestions</button>
+        </div>
       </WidgetWrapper>
       { providerPopupOpen
         ? <LlmProviderSelector allowKeylessProviders={ ampleAgentProAvailable }

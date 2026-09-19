@@ -6,6 +6,7 @@
  */
 import fs from "fs";
 import crypto from "crypto";
+import { readTaskData, writeTaskData } from "./dev-task-data.js";
 import { noteHandleMatchesGroups, SAMPLE_NOTE_HANDLES, SAMPLE_PEOPLE, sampleNoteContentFromUUID,
   withAsyncIterator } from "../lib/util/dev-sample-notes.js";
 import path from "path";
@@ -668,6 +669,22 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       pluginUUID: "dev-dashboard-plugin-uuid",
     },
 
+    // ----------------------------------------------------------------------------------------------
+    // @desc Persist direct membership for a real dev note, including notes already matched by domain tags.
+    // @param {string} domainUuid - Existing Task Domain identity.
+    // @param {object|string} noteHandle - Existing note identity.
+    // @returns {Promise<boolean>} Whether the note exists and belongs to the domain after the call.
+    async addTaskDomainNote(domainUuid, noteHandle) {
+      if (!SAMPLE_DOMAINS.some(domain => domain.uuid === domainUuid)) throw new Error("Unknown Task Domain");
+      const uuid = typeof noteHandle === "string" ? noteHandle : noteHandle?.uuid;
+      if (!uuid || !await app.findNote({ uuid })) return false;
+      const data = readTaskData(notesDir);
+      const noteUuids = data.domainNotes[domainUuid] || [];
+      data.domainNotes[domainUuid] = [...new Set([...noteUuids, uuid])];
+      writeTaskData(data, notesDir);
+      return true;
+    },
+
     async setSetting(key, value) {
       app.settings[key] = String(value);
       writeSettingsFile(app.settings, settingsPath);
@@ -683,36 +700,32 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       return SAMPLE_PEOPLE;
     },
 
-    // [Claude] Task: search notes directory for files tagged with the domain's tag, resolve $sampleTasks$ directive
-    // Prompt: "search each file in notes directory for tags matching the task domain"
-    // Date: 2026-03-16 | Model: claude-4.6-opus-high-thinking
+    // ----------------------------------------------------------------------------------------------
+    // @desc Return fixture tasks plus persisted tasks in notes selected by tags or explicit domain membership.
+    // @param {string|null} domainUuid - Task Domain filter, or null for all tasks.
+    // @returns {Promise<Array<object>>} Tasks visible in that domain.
     async getTaskDomainTasks(domainUuid) {
-      if (!domainUuid) return sampleTasks;
-
+      const data = readTaskData(notesDir);
+      if (!domainUuid) return [...sampleTasks, ...data.tasks];
       const tag = DOMAIN_TAG_MAP[domainUuid];
       if (!tag) return [];
-
+      const explicitNoteUuids = data.domainNotes[domainUuid] || [];
       const notes = _readAllNoteFiles(notesDir);
-      const matchingNotes = notes.filter(note => {
-        const tags = note.meta.tags;
-        return Array.isArray(tags) && tags.includes(tag);
-      });
-
-      let tasks = [];
-      for (const note of matchingNotes) {
-        if (note.content.trim() === "$sampleTasks$") {
-          tasks = tasks.concat(_buildSampleTasks());
-        }
-      }
-      return tasks.length > 0 ? tasks : sampleTasks;
+      const matchingNotes = notes.filter(note => note.meta.tags?.includes(tag) || explicitNoteUuids.includes(note.meta.uuid));
+      const matchingUuids = new Set(matchingNotes.map(note => note.meta.uuid));
+      const storedTasks = data.tasks.filter(task => matchingUuids.has(task.noteUUID));
+      return [...sampleTasks, ...storedTasks];
     },
 
-    // [Claude] Task: return open tasks belonging to a specific note for the Recent Notes widget
-    // Prompt: "ensure dev tasks can populate the stale notes component"
-    // Date: 2026-03-04 | Model: claude-4.6-sonnet-medium-thinking
-    async getNoteTasks(noteHandle, _options = {}) {
+    // ----------------------------------------------------------------------------------------------
+    // @desc Read persisted and fixture tasks for one note, honoring the completed-task option used by agenda retries.
+    // @param {object|string} noteHandle - Note identity.
+    // @param {object} options - Whether completed and dismissed tasks should be included.
+    // @returns {Promise<Array<object>>} Matching tasks.
+    async getNoteTasks(noteHandle, { includeDone = false } = {}) {
       const uuid = typeof noteHandle === "string" ? noteHandle : noteHandle?.uuid;
-      return sampleTasks.filter(t => t.noteUUID === uuid && t.completedAt == null && t.dismissedAt == null);
+      const tasks = [...sampleTasks, ...readTaskData(notesDir).tasks];
+      return tasks.filter(task => task.noteUUID === uuid && (includeDone || (task.completedAt == null && task.dismissedAt == null)));
     },
 
     // [Claude claude-sonnet-4-6] Task: stub getTask for graveyard/dream-task UUID lookups
@@ -882,6 +895,24 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       }
       console.log(`[dev-app] insertNoteContent for ${uuid} (${content.length} chars, atEnd=${!!options.atEnd})`);
       return true;
+    },
+
+    // ----------------------------------------------------------------------------------------------
+    // @desc Write a checkbox to the note and persist its task identity for later reads and agenda deduplication.
+    // @param {object|string} noteHandle - Existing file-backed note identity.
+    // @param {object} task - Task content and optional scheduling attributes.
+    // @returns {Promise<string|null>} Inserted task UUID, or null for a missing note.
+    async insertTask(noteHandle, task) {
+      const noteUUID = typeof noteHandle === "string" ? noteHandle : noteHandle?.uuid;
+      if (!noteUUID || !await app.findNote({ uuid: noteUUID })) return null;
+      const content = String(task.content || "").replace(/\s+/g, " ").trim();
+      const inserted = await app.insertNoteContent({ uuid: noteUUID }, `\n- [ ] ${ content }\n`, { atEnd: true });
+      if (!inserted) return null;
+      const data = readTaskData(notesDir);
+      const uuid = crypto.randomUUID();
+      data.tasks.push({ ...task, content, noteUUID, uuid });
+      writeTaskData(data, notesDir);
+      return uuid;
     },
 
     // [Claude] Task: read note content from a file in the /notes directory

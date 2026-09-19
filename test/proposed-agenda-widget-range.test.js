@@ -86,6 +86,21 @@ beforeEach(() => {
 });
 
 describe("ProposedAgendaWidget date range", () => {
+  // ----------------------------------------------------------------------------------------------
+  // @desc A failed date change preserves the malformed note identity through the widget's error state.
+  it("offers the source note after a date change encounters invalid guide JSON", async () => {
+    const { app, container } = await renderWidget({ dateRange: futureWeekdayWindow(), taskDomainName: "Work", taskDomainUUID: "dom-work" });
+    const note = { name: "Work Mission Builder Vision Guide 2026", uuid: "broken-guide" };
+    app.filterNotes.mockResolvedValue([note]);
+    app.findNote.mockImplementation(async query => query.uuid === note.uuid ? note : null);
+    app.getNoteContent.mockResolvedValue("# Guide metadata\n\n```json\n{broken}\n```");
+    await act(async () => container.querySelector('[aria-label="Next agenda day"]').click());
+    const sourceLink = container.querySelector(".proposed-agenda-message a");
+    expect(sourceLink.textContent).toBe("View source note");
+    await act(async () => sourceLink.click());
+    expect(app.navigate).toHaveBeenCalledWith("https://www.amplenote.com/notes/broken-guide");
+  });
+
   afterEach(() => {
     document.body.innerHTML = "";
     setPluginData({ context: {}, settings: {} });
@@ -96,13 +111,13 @@ describe("ProposedAgendaWidget date range", () => {
   it("edits the calculation date and opens that exact day's populated note", async () => {
     const { app, container } = await renderWidget({ dateRange: futureWeekdayWindow(), taskDomainName: "Work", taskDomainUUID: "dom-work" });
     await act(async () => container.querySelector('[aria-label="Change agenda date"]').click());
-    const input = container.querySelector('input[type="date"]');
+    const input = document.querySelector('input[type="date"]');
     await act(async () => {
       Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set.call(input, "2026-12-12");
       input.dispatchEvent(new Event("input", { bubbles: true }));
       input.dispatchEvent(new Event("change", { bubbles: true }));
     });
-    await act(async () => container.querySelector(".proposed-agenda-date-control form").dispatchEvent(
+    await act(async () => document.querySelector(".agenda-calendar-summary form").dispatchEvent(
       new Event("submit", { bubbles: true, cancelable: true })));
     expect(llmMock).toHaveBeenCalledTimes(4);
     expect(llmMock.mock.calls[3][1]).toContain("Saturday, December 12, 2026");
@@ -120,17 +135,42 @@ describe("ProposedAgendaWidget date range", () => {
     llmMock.mockImplementationOnce(() => new Promise(resolve => { finishEarlierGeneration = resolve; }));
     const { container } = await renderWidget();
     await act(async () => container.querySelector('[aria-label="Change agenda date"]').click());
-    const input = container.querySelector('input[type="date"]');
+    const input = document.querySelector('input[type="date"]');
     await act(async () => {
       Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set.call(input, "2026-12-12");
       input.dispatchEvent(new Event("input", { bubbles: true }));
     });
-    await act(async () => container.querySelector(".proposed-agenda-date-control form").dispatchEvent(
+    await act(async () => document.querySelector(".agenda-calendar-summary form").dispatchEvent(
       new Event("submit", { bubbles: true, cancelable: true })));
     await act(async () => finishEarlierGeneration({ activities: [{ durationMinutes: 30, startTime: "10:00",
       taskUuid: "task-7", title: "Stale generation" }] }));
-    expect(container.textContent).toContain("Saturday, December 12, 2026");
+    expect(container.textContent).toContain("Saturday, December 12");
     expect(container.textContent).not.toContain("Stale generation");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Accepting saves each displayed day to its own note and leaves scheduling to Schedule all.
+  it("accepts a range into dated notes without scheduling its tasks", async () => {
+    const { app, container } = await renderWidget({ dateRange: futureWeekdayWindow(), taskDomainName: "Work", taskDomainUUID: "dom-work" });
+    app.createNote.mockClear();
+    app.insertTask.mockClear();
+    await act(async () => container.querySelector(".proposed-agenda-approve").click());
+    const names = app.createNote.mock.calls.map(([name]) => name);
+    expect(names).toEqual(["Proposed Agenda 2026-12-07 Work", "Proposed Agenda 2026-12-08 Work", "Proposed Agenda 2026-12-09 Work"]);
+    expect(app.insertTask).toHaveBeenCalledTimes(3);
+    expect(app.updateTask).not.toHaveBeenCalled();
+    expect(app.navigate).toHaveBeenCalledWith("https://www.amplenote.com/notes/archive-note");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A changed popout priority persists the existing setting and reaches the actual generation prompt.
+  it("regenerates with the priority selected from the new popout", async () => {
+    const { app, container } = await renderWidget({ dateRange: futureWeekdayWindow() });
+    await act(async () => container.querySelector('[aria-label="Change agenda priority"]').click());
+    const button = [...document.querySelectorAll(".agenda-priority-option")].find(option => option.textContent.includes("Deep work"));
+    await act(async () => button.click());
+    expect(app.setSetting).toHaveBeenCalledWith(SETTING_KEYS.PROPOSED_AGENDA_PRIORITY, "deep-work");
+    expect(llmMock.mock.calls.at(-1)[1]).toContain("Protect a sustained block");
   });
 
   // Without a range the widget plans its single auto-resolved day, so there is nothing to head — the list
@@ -150,7 +190,7 @@ describe("ProposedAgendaWidget date range", () => {
     expect(rows).toHaveLength(3);
     const durations = [...container.querySelectorAll(".proposed-agenda-add-duration")].map(node => node.textContent);
     expect(durations).toEqual(["60m duration", "60m duration", "60m duration"]);
-    expect(container.querySelector(".proposed-agenda-pending").textContent).toBe("3 pending");
+    expect(container.querySelector(".proposed-agenda-pending").textContent).toBe("3 suggestions unscheduled · 3 on the agenda");
   });
 
   // The window's bounds may arrive as a fresh object literal on every render; an unchanged window must not

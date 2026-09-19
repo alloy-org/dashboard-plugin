@@ -1,433 +1,157 @@
-/* [Claude claude-opus-4-8 (1M context)-authored file]
- * Prompt summary: "styles for the proposed-agenda widget — hour-by-hour activity rows with per-activity
- *   schedule links and a bottom approve button"
- */
-
-@use 'breakpoints' as *;
+// Agenda card layout, using the dashboard's existing typeface and theme colors.
 @use 'theme-tokens' as *;
 
-$proposed-agenda-radius: 6px;
-$proposed-agenda-transition: 0.12s;
+.widget-proposed-agenda.widget {
+  container-type: inline-size;
 
-.widget-proposed-agenda {
-  .proposed-agenda-date-control {
-    display: flex;
+  button:focus-visible, a:focus-visible { outline: 2px solid $color-link; outline-offset: 3px; }
+
+  .proposed-agenda-header-actions { align-items: center; display: flex; gap: 8px; }
+  .proposed-agenda-model, .proposed-agenda-regenerate {
     align-items: center;
-    flex-wrap: wrap;
+    background: $color-bg-card;
+    border: 1px solid $color-border;
+    border-radius: 8px;
+    color: $color-text-secondary;
+    display: inline-flex;
+    font-size: 13px;
     gap: 8px;
-    justify-content: space-between;
-    margin-bottom: 8px;
-
-    form {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
+    padding: 4px 12px;
+    white-space: nowrap;
   }
-
+  .proposed-agenda-model { border-radius: 999px; }
+  .proposed-agenda-regenerate { background: $color-bg-primary; border-color: $color-blue-light; color: $color-link; }
+  .proposed-agenda-model > span:first-child { color: $color-link; }
+  .proposed-agenda-date-control { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
+  .proposed-agenda-day-arrow {
+    background: $color-bg-card;
+    border: 1px solid $color-border;
+    border-radius: 8px;
+    color: $color-text-secondary;
+    flex-shrink: 0;
+    font-size: 24px;
+    padding: 0 $sp-sm;
+  }
   .proposed-agenda-date-edit {
+    align-items: center;
     background: transparent;
     border: 0;
-    color: $color-link;
-    cursor: pointer;
-    font-size: 20px;
-    min-height: 32px;
-    min-width: 32px;
-  }
-
-  a {
-    color: $color-link;
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-
-  /* [Claude claude-opus-4-8 (1M context)] Task: Today's-priority selector + model pill control row */
-  .proposed-agenda-controls {
-    align-items: center;
-    border-bottom: 1px solid $color-border;
-    display: flex;
-    gap: 8px;
-    padding-bottom: 10px;
-  }
-
-  /* [GPT-5.6 Sol] Task: place the agenda date in the body on phone-sized screens */
-  .proposed-agenda-mobile-date {
-    color: $color-text-muted;
-    display: none;
-    font-size: 14px;
-    margin: 0 0 8px;
-  }
-
-  .proposed-agenda-priority-label {
-    color: $color-text-muted;
-    flex: 0 0 auto;
-    font-size: 14px;
-  }
-
-  .proposed-agenda-priority-select {
-    background: $color-bg-card;
-    border: 1px solid $color-border;
-    border-radius: $proposed-agenda-radius;
     color: $color-text;
-    flex: 1 1 auto;
-    font-size: 14px;
+    display: inline-flex;
+    font-size: 26px;
     font-weight: 600;
+    gap: 10px;
+    line-height: 1.3;
     min-width: 0;
-    padding: 7px 10px;
-  }
+    padding: 0 8px;
+    text-align: left;
 
-  .proposed-agenda-model {
+    span { color: $color-text-muted; font-size: 15px; font-weight: 400; }
+  }
+  .proposed-agenda-relative-date { background: $color-bg-secondary; border-radius: 999px; color: $color-text-secondary; font-size: 12px; padding: 4px 9px; }
+  .proposed-agenda-today { background: none; border: 0; color: $color-link; font-size: 13px; margin-left: auto; padding: 6px 0; }
+  .proposed-agenda-day-summary { color: $color-text-muted; font-size: 13px; line-height: 1.5; margin-top: $sp-xs; }
+  .proposed-agenda-controls { align-items: center; border-bottom: 1px solid $color-border; display: flex; gap: 10px; padding: $sp-md 0; }
+  .proposed-agenda-priority-label, .proposed-agenda-priority-description { color: $color-text-muted; font-size: 13px; }
+  .proposed-agenda-priority-select {
+    align-items: center;
+    background: $color-bg-card;
     border: 1px solid $color-border;
     border-radius: 999px;
-    color: $color-text-secondary;
-    flex: 0 0 auto;
-    font-size: 0.78em;
-    padding: 4px 10px;
-    white-space: nowrap;
+    color: $color-text;
+    display: inline-flex;
+    flex-shrink: 0;
+    font-size: 13px;
+    font-weight: 500;
+    gap: 8px;
+    padding: 6px 12px;
+
+    span:first-child { color: $color-link; }
+    span:last-child { color: $color-text-muted; }
   }
-
-  .proposed-agenda-model-change {
-    background: $color-bg-card;
-    border: 1px solid $color-border;
-    border-radius: $proposed-agenda-radius;
-    color: $color-text-secondary;
-    cursor: pointer;
-    flex: 0 0 auto;
-    font-size: 0.95em;
-    padding: 4px 8px;
-
-    &:hover {
-      color: $color-link;
-    }
-  }
-
-  /* Renders inline within the widget body (which owns the single scrollbar) — no nested scroll container. */
-  .proposed-agenda-list {
-    display: flex;
-    flex-direction: column;
-    font-size: 14px;
-    margin-top: 4px;
-  }
-
-  .proposed-agenda-day-group + .proposed-agenda-day-group {
-    margin-top: 10px;
-  }
-
-  .proposed-agenda-day-heading {
-    color: $color-text-secondary;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    margin: 6px 0 2px;
-    text-transform: uppercase;
-  }
-
-  /* [Claude claude-opus-4-8 (1M context)] Task: hairline-separated row layout (time, content, duration, actions) */
+  .proposed-agenda-priority-description { line-height: 1.4; }
+  .proposed-agenda-list { display: flex; flex: 1 0 auto; flex-direction: column; font-size: 14px; }
+  .proposed-agenda-day-heading { background: $color-bg-secondary; color: $color-text-secondary; font-size: 12px; padding: $sp-sm 0; }
+  // Intrinsic time/action columns keep row alignment independent of pixel widths and offsets.
   .proposed-agenda-item {
     border-bottom: 1px solid $color-border;
-    padding: 10px 2px;
-    transition: opacity $proposed-agenda-transition ease;
-
-    &--scheduled {
-      opacity: 0.6;
-    }
+    display: grid;
+    gap: $sp-sm $sp-lg;
+    grid-template-columns: max-content minmax(0, 1fr) max-content;
+    padding: $sp-md 0;
   }
-
-  .proposed-agenda-item-main {
-    align-items: flex-start;
-    display: flex;
-    gap: 10px;
-  }
-
-  /* [Claude claude-opus-4-8 (1M context)] Task: stack the timestamp and its "Note" link in one column */
-  .proposed-agenda-time-col {
-    display: flex;
-    flex: 0 0 auto;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 52px;
-  }
-
-  .proposed-agenda-time {
-    color: $color-link;
-    font-variant-numeric: tabular-nums;
-    font-weight: 600;
-
-    &--muted {
-      color: $color-text-secondary;
-      font-weight: 500;
-    }
-  }
-
-  /* [Claude claude-opus-4-8 (1M context)] Task: per-row link to the note backing the task */
-  .proposed-agenda-note-link {
-    color: $color-text-secondary;
-    cursor: pointer;
-    font-size: 0.75em;
-    text-decoration: none;
-
-    &:hover {
-      color: $color-link;
-      text-decoration: underline;
-    }
-  }
-
-  .proposed-agenda-content {
-    display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    gap: 3px;
-    min-width: 0;
-  }
-
-  .proposed-agenda-title-line {
-    display: block;
-  }
-
-  .proposed-agenda-text {
-    color: $color-text;
-    font-weight: 600;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .proposed-agenda-reason {
-    color: $color-text-muted;
-    font-size: 12px;
-    line-height: 1.35;
-  }
-
-  .proposed-agenda-reason--mobile,
-  .proposed-agenda-reason-toggle {
-    display: none;
-  }
-
-  .proposed-agenda-duration {
-    color: $color-text-secondary;
-    flex: 0 0 auto;
-    font-size: 0.8em;
-  }
-
-  /* [GPT-5.6 Sol] Task: align scheduled-task duration and status labels on one centerline */
-  .proposed-agenda-scheduled-meta {
-    align-items: center;
-    display: flex;
-    flex: 0 0 auto;
-    gap: 8px;
-  }
-
-  /* [Claude claude-opus-4-8 (1M context)] Task: per-row Add-to-schedule + dismiss controls */
-  .proposed-agenda-actions {
-    align-items: center;
-    display: flex;
-    flex: 0 0 auto;
-    gap: 6px;
-  }
-
+  .proposed-agenda-item-main { display: contents; }
+  .proposed-agenda-time-col { display: flex; flex-direction: column; gap: 2px; }
+  .proposed-agenda-time { color: $color-link; font-variant-numeric: tabular-nums; font-weight: 500; white-space: nowrap; }
+  .proposed-agenda-time--muted { color: $color-text-muted; }
+  .proposed-agenda-note-link { color: $color-text-muted; font-size: 11px; text-decoration: none; }
+  a.proposed-agenda-note-link:hover { color: $color-link; text-decoration: underline; }
+  .proposed-agenda-content { display: flex; flex-direction: column; gap: $sp-xs; }
+  .proposed-agenda-text { font-weight: 500; line-height: 1.4; overflow-wrap: anywhere; }
+  .proposed-agenda-text p { display: inline; }
+  .proposed-agenda-reason { color: $color-text-secondary; font-size: 13px; line-height: 1.45; }
+  .proposed-agenda-reason--mobile, .proposed-agenda-reason-toggle { display: none; }
+  .proposed-agenda-goal-badge { align-self: flex-start; background: $color-bg-secondary; border: 1px solid $color-border; border-radius: 999px; color: $color-text-secondary; font-size: 11px; padding: 1px 8px; }
+  .proposed-agenda-actions, .proposed-agenda-scheduled-meta { align-items: center; display: flex; flex-shrink: 0; gap: 12px; }
+  .proposed-agenda-actions { align-self: start; }
+  .proposed-agenda-scheduled-meta { align-self: center; }
   .proposed-agenda-add {
-    align-items: center;
     background: $color-bg-card;
     border: 1px solid $color-border;
-    border-radius: $proposed-agenda-radius;
+    border-radius: 8px;
     color: $color-text;
-    cursor: pointer;
     display: flex;
     flex-direction: column;
-    font-size: 0.8em;
-    gap: 1px;
+    font-size: 12px;
+    gap: 2px;
     padding: 5px 10px;
     white-space: nowrap;
-
-    &:hover {
-      border-color: $color-link;
-      color: $color-link;
-    }
   }
-
-  /* [GPT-5.6 Sol] Task: group proposal duration with its scheduling action instead of floating it in the row */
-  .proposed-agenda-add-duration {
-    color: $color-text-secondary;
-    font-size: 0.9em;
-    font-weight: 400;
-    line-height: 1;
-  }
-
-  .proposed-agenda-dismiss {
-    background: transparent;
-    border: 2px transparent solid;
-    border-radius: 50%;
-    color: $color-text-secondary;
-    cursor: pointer;
-    font-size: 1em;
-    line-height: 1;
-    padding: 4px 6px;
-
-    &:hover {
-      background-color: $color-bg-warning;
-      border-color: $color-danger;
-      color: $color-danger;
-    }
-  }
-
-  .proposed-agenda-scheduled-badge {
-    color: $color-text-secondary;
-    flex: 0 0 auto;
-    font-size: 0.76em;
-    padding: 0 10px;
+  .proposed-agenda-add:hover, .proposed-agenda-model:hover, .proposed-agenda-priority-select:hover { border-color: $color-link; }
+  .proposed-agenda-schedule-icon { color: $color-link; margin-right: 4px; }
+  .proposed-agenda-add-duration { align-self: center; color: $color-text-muted; font-size: 11px; }
+  .proposed-agenda-dismiss { background: none; border: 0; border-radius: 6px; color: $color-text-muted; font-size: 20px; padding: 0 $sp-xs; }
+  .proposed-agenda-dismiss:hover { background: $color-bg-warning; color: $color-danger; }
+  .proposed-agenda-scheduled-badge { color: $color-text-muted; font-size: 12px; padding: 0 4px; white-space: nowrap; }
+  .proposed-agenda-footer { align-items: center; background: $color-bg-secondary; border-top: 1px solid $color-border; display: flex; gap: 8px; margin-top: 24px; padding: $sp-md 0; }
+  .proposed-agenda-pending { color: $color-text-muted; flex: 1; font-size: 13px; line-height: 1.4; }
+  .proposed-agenda-approve, .proposed-agenda-schedule-all {
+    border: 1px solid $color-border;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 14px;
     white-space: nowrap;
   }
+  .proposed-agenda-approve { background: $color-link; border-color: $color-link; color: $color-text-on-accent; }
+  .proposed-agenda-schedule-all { background: $color-bg-card; color: $color-text; }
+  .proposed-agenda-secondary-footer { align-items: center; background: $color-bg-secondary; color: $color-text-muted; display: flex; gap: 12px; justify-content: space-between; padding-bottom: $sp-sm; }
+  .proposed-agenda-attribution { font-size: 10px; }
+  .proposed-agenda-dismiss-all { background: none; border: 0; color: $color-text-muted; font-size: 11px; margin-left: auto; padding: 0; }
+  .proposed-agenda-message, .proposed-agenda-loading { align-items: center; color: $color-text-secondary; display: flex; flex-direction: column; font-size: 14px; gap: 10px; padding: 24px; text-align: center; }
+  .proposed-agenda-retry { background: transparent; border: 1px solid $color-border; border-radius: 8px; color: $color-link; padding: 6px 14px; }
+  .proposed-agenda-spinner { animation: proposed-agenda-spin 0.8s linear infinite; color: $color-link; font-size: 1.75em; }
 
-  /* [Claude claude-opus-4-8 (1M context)] Task: Approve schedule / Dismiss all footer */
-  .proposed-agenda-footer {
-    display: flex;
-    gap: 10px;
-    margin-top: 12px;
+  @container (max-width: 600px) {
+    .widget-header { flex-wrap: wrap; }
+    .proposed-agenda-header-actions { margin-left: auto; }
+    .proposed-agenda-date-edit { font-size: 21px; padding: 0; }
+    .proposed-agenda-priority-description { display: none; }
+    .proposed-agenda-relative-date { display: none; }
+    .proposed-agenda-item { grid-template-columns: max-content minmax(0, 1fr); }
+    .proposed-agenda-actions, .proposed-agenda-scheduled-meta { grid-column: 2; justify-self: start; }
+    .proposed-agenda-footer { flex-wrap: wrap; }
+    .proposed-agenda-pending { flex-basis: 100%; }
+    .proposed-agenda-schedule-all { margin-left: auto; }
   }
-
-  .proposed-agenda-approve {
-    background: $color-bg-card;
-    border: 1px solid $color-border;
-    border-radius: $proposed-agenda-radius;
-    color: $color-text;
-    cursor: pointer;
-    flex: 1 1 auto;
-    font-weight: 600;
-    padding: 10px 18px;
-    transition: opacity $proposed-agenda-transition ease;
-
-    &:hover:not(:disabled) {
-      border-color: $color-link;
-      color: $color-link;
-    }
-
-    &:disabled {
-      cursor: default;
-      opacity: 0.5;
-    }
+  @container (max-width: 420px) {
+    .widget-header { align-items: flex-start; }
+    .proposed-agenda-date-control { gap: 5px; }
+    .proposed-agenda-date-edit { flex: 1; font-size: 18px; }
+    .proposed-agenda-today { flex-basis: 100%; text-align: right; }
+    .proposed-agenda-reason--desktop { display: none; }
+    .proposed-agenda-reason--mobile { background: $color-bg-secondary; border-radius: 6px; display: block; grid-column: 2 / -1; padding: $sp-sm; }
+    .proposed-agenda-reason-toggle { background: none; border: 0; color: $color-link; display: inline-flex; margin-left: 5px; }
   }
-
-  .proposed-agenda-dismiss-all {
-    background: $color-bg-card;
-    border: 1px solid $color-border;
-    border-radius: $proposed-agenda-radius;
-    color: $color-text-secondary;
-    cursor: pointer;
-    flex: 0 0 auto;
-    padding: 10px 16px;
-
-    &:hover:not(:disabled) {
-      border-color: $color-danger;
-      color: $color-danger;
-    }
-
-    &:disabled {
-      cursor: default;
-      opacity: 0.5;
-    }
-  }
-
-  .proposed-agenda-pending {
-    color: $color-text-muted;
-    font-size: 0.78em;
-    margin: 8px 0 0;
-    text-align: center;
-  }
-
-  .proposed-agenda-attribution {
-    color: $color-text-muted;
-    font-size: 0.75em;
-    margin: 4px 0 0;
-    text-align: center;
-  }
-
-  .proposed-agenda-message,
-  .proposed-agenda-loading {
-    align-items: center;
-    color: $color-text-secondary;
-    display: flex;
-    flex-direction: column;
-    font-size: 0.85rem;
-    gap: 10px;
-    padding: 18px 12px;
-    text-align: center;
-  }
-
-  .proposed-agenda-retry {
-    background: transparent;
-    border: 1px solid $color-border;
-    border-radius: $proposed-agenda-radius;
-    color: $color-link;
-    cursor: pointer;
-    padding: 5px 14px;
-  }
-
-  /* [Claude claude-opus-4-8 (1M context)] Task: spinner reused from dream-task loading idiom */
-  .proposed-agenda-spinner {
-    animation: proposed-agenda-spin 0.8s linear infinite;
-    border: 3px solid $color-border;
-    border-radius: 50%;
-    border-top-color: $color-link;
-    height: 28px;
-    width: 28px;
-  }
-
-  /* [GPT-5.6 Sol] Task: use compact, expandable proposal explanations on mobile */
-  @include breakpoint($breakpoint-large-phone) {
-    .widget-title__label {
-      overflow: visible;
-      text-overflow: clip;
-    }
-
-    .widget-title__subtitle {
-      display: none;
-    }
-
-    .proposed-agenda-mobile-date {
-      align-items: center;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .proposed-agenda-controls .proposed-agenda-model-change {
-      display: none;
-    }
-
-    .proposed-agenda-item-main {
-      gap: 8px;
-    }
-
-    .proposed-agenda-reason--desktop {
-      display: none;
-    }
-
-    .proposed-agenda-reason--mobile {
-      background: rgba($color-bg-page, 0.55);
-      border-radius: $proposed-agenda-radius;
-      display: block;
-      margin: 8px 0 0 60px;
-      padding: 8px 10px;
-    }
-
-    .proposed-agenda-reason-toggle {
-      background: transparent;
-      border: 0;
-      color: $color-link;
-      cursor: pointer;
-      display: inline-flex;
-      font-size: 14px;
-      line-height: 1;
-      margin-left: 5px;
-      padding: 1px;
-      vertical-align: middle;
-    }
-  }
-
-  @keyframes proposed-agenda-spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
+  @keyframes proposed-agenda-spin { to { transform: rotate(360deg); } }
 }

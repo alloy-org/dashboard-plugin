@@ -1,0 +1,62 @@
+// Shared portal shell and calendar/priority contents, scoped independently of the widget card.
+@use 'theme-tokens' as *;
+
+.proposed-agenda-popover {
+  background: $color-bg-card;
+  border: 1px solid $color-border;
+  border-radius: 14px;
+  box-shadow: 0 12px 30px $color-overlay-shadow;
+  font-size: 13px;
+  // Viewport limits let intrinsic content sizing remain scrollable on small screens.
+  max-height: calc(100vh - 16px);
+  max-width: calc(100vw - 16px);
+  overflow: auto;
+  position: fixed;
+  z-index: 10020;
+
+  button, input { font: inherit; }
+  button { color: inherit; cursor: pointer; }
+  button:disabled { cursor: default; opacity: 0.5; }
+  button:focus-visible, input:focus-visible { outline: 2px solid $color-link; outline-offset: -2px; }
+  .agenda-calendar-shortcuts { border-bottom: 1px solid $color-border; display: flex; gap: 6px; padding: 12px 14px 10px; }
+  .agenda-calendar-shortcuts button { background: $color-bg-secondary; border: 1px solid $color-border; border-radius: 8px; flex: 1; font-size: 12px; font-weight: 500; padding: 8px 4px; }
+  .agenda-calendar-heading { align-items: center; display: flex; gap: 6px; padding: 14px 14px 8px; }
+  .agenda-calendar-heading strong { flex: 1; font-size: 18px; font-weight: 600; }
+  .agenda-calendar-heading button { background: none; border: 0; border-radius: 6px; color: $color-text-secondary; font-size: 23px; padding: 0 $sp-sm; }
+  .agenda-calendar-grid { display: grid; gap: 3px; grid-template-columns: repeat(7, 1fr); padding: 0 12px 14px; }
+  .agenda-calendar-weekday { color: $color-text-muted; font-size: 11px; padding: 4px; text-align: center; }
+  .agenda-calendar-day { background: none; border: 1px solid transparent; border-radius: 8px; padding: $sp-xs $sp-sm; }
+  .agenda-calendar-day:hover { background: $color-bg-secondary; }
+  .agenda-calendar-day[aria-current='date'] { border-color: $color-link; }
+  .agenda-calendar-day[aria-pressed='true'] { background: $color-link; color: $color-text-on-accent; font-weight: 600; }
+  .agenda-calendar-markers { display: flex; gap: 3px; justify-content: center; margin-top: 2px; }
+  .agenda-calendar-markers:empty::before { content: "\00a0"; }
+  .agenda-calendar-saved, .agenda-calendar-busy { color: $color-link; font-style: normal; }
+  .agenda-calendar-saved::before, .agenda-calendar-busy::before { content: "•"; }
+  .agenda-calendar-busy { color: $color-warning; }
+  .agenda-calendar-day[aria-pressed='true'] i { color: inherit; }
+  .agenda-calendar-legend { border-top: 1px solid $color-border; color: $color-text-secondary; display: flex; font-size: 11px; gap: 14px; padding: 10px 14px; }
+  .agenda-calendar-legend span { align-items: center; display: flex; gap: 5px; }
+  .agenda-calendar-summary { background: $color-bg-secondary; border-top: 1px solid $color-border; padding: 12px 14px; }
+  .agenda-calendar-summary strong { font-weight: 500; }
+  .agenda-calendar-summary p { color: $color-text-muted; font-size: 12px; line-height: 1.4; margin: 3px 0 0; }
+  .agenda-calendar-summary form { align-items: flex-end; display: flex; gap: 8px; margin-top: 12px; }
+  .agenda-calendar-summary label { color: $color-text-secondary; display: grid; flex: 1; font-size: 11px; }
+  .agenda-calendar-summary input { margin-top: $sp-xs; padding: $sp-xs; }
+  .agenda-calendar-summary button { padding: 6px $sp-sm; }
+  .agenda-calendar-summary input, .agenda-calendar-summary button { background: $color-bg-card; border: 1px solid $color-border; border-radius: 6px; color: $color-text; }
+  .agenda-priority-heading { color: $color-text-muted; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; padding: 13px 14px 6px; text-transform: uppercase; }
+  .agenda-priority-options { display: grid; }
+  .agenda-priority-option { background: none; border: 0; display: flex; gap: 8px; padding: 10px 14px; text-align: left; }
+  .agenda-priority-option[aria-pressed='true'], .agenda-priority-option:hover { background: $color-bg-secondary; }
+  .agenda-priority-check { color: $color-link; font-weight: 600; visibility: hidden; }
+  .agenda-priority-option[aria-pressed='true'] .agenda-priority-check { visibility: visible; }
+  .agenda-priority-option strong { display: block; font-weight: 500; }
+  .agenda-priority-option small { color: $color-text-muted; display: block; font-size: 12px; line-height: 1.4; margin-top: 3px; }
+  .agenda-priority-custom { background: $color-bg-secondary; border-top: 1px solid $color-border; padding: 12px 14px; }
+  .agenda-priority-custom label { color: $color-text-secondary; display: block; font-size: 11px; margin-bottom: 6px; }
+  .agenda-priority-custom > div { display: flex; gap: 6px; }
+  .agenda-priority-custom input { background: $color-bg-card; border: 1px solid $color-border; border-radius: 8px; color: $color-text; flex: 1; font-size: 12px; min-width: 0; padding: 9px; }
+  .agenda-priority-custom button { background: $color-link; border: 0; border-radius: 8px; color: $color-text-on-accent; font-weight: 500; padding: $sp-sm 14px; }
+  .agenda-priority-custom p { color: $color-text-muted; font-size: 11px; line-height: 1.4; margin: 8px 0 0; }
+}
