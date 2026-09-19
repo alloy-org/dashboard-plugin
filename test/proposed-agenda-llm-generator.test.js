@@ -16,6 +16,7 @@ await jest.unstable_mockModule("proposed-agenda-service", async () => ({
 }));
 
 await jest.unstable_mockModule("proposed-agenda-obligations", async () => ({
+  obligationsFromTasksAndEvents: () => [],
   requestTodayObligations: (...args) => requestTodayObligationsMock(...args),
 }));
 

@@ -10,6 +10,28 @@ $proposed-agenda-radius: 6px;
 $proposed-agenda-transition: 0.12s;
 
 .widget-proposed-agenda {
+  .proposed-agenda-date-control {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+  }
+
+  .proposed-agenda-date-edit {
+    background: transparent;
+    border: 0;
+    color: $color-link;
+    cursor: pointer;
+    font-size: 20px;
+    min-height: 32px;
+    min-width: 32px;
+  }
+
   a {
     color: $color-link;
     text-decoration: none;

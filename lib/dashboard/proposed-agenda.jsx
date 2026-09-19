@@ -8,16 +8,18 @@ import LlmProviderSelector from "llm-provider-selector";
 import NoConfigUpsell from "no-config-upsell";
 import { pluginSettings, updatePluginSetting } from "plugin-data";
 import { PROPOSED_TASK_STATUS } from "proposed-agenda-archive";
+import ProposedAgendaDateControl from "proposed-agenda-date-control";
 import { DEFAULT_PRIORITY_KEY, PROPOSED_AGENDA_PRIORITY_OPTIONS } from "proposed-agenda-priority";
 import { activityKey, approveAllProposed, mergedAgendaRows, pendingCount, recordProposedRowStatuses,
   runProposedAgendaGeneration, scheduleProposedRow } from "proposed-agenda-llm-generator";
 import { agendaRowsGroupedByDay } from "proposed-agenda-range";
+import { resolveProposedAgendaDate } from "proposed-agenda-service";
 import { AMPLE_AGENT_PRO_NOTE_NAME } from "providers/ai-provider-settings";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import { calendarEventDateFromValue } from "util/calendar-utility";
-import { formatClockLabel } from "util/date-utility";
+import { dateKeyFromDateInput, formatClockLabel } from "util/date-utility";
 import { snapDashboardAction } from "util/plausible";
 import WidgetWrapper from "widget-wrapper";
 
@@ -53,9 +55,10 @@ function _modelName(providerEm) {
 // ----------------------------------------------------------------------------------------------
 // @desc Loading placeholder shown while obligations are derived and the LLM builds the schedule.
 // [Claude claude-opus-4-8 (1M context)] Task: proposed-agenda loading state
-function LoadingState() {
+function LoadingState({ dateControl }) {
   return (
     <WidgetWrapper widgetId={ WIDGET_ID }>
+      { dateControl }
       <div className="proposed-agenda-loading">
         <div className="proposed-agenda-spinner" />
         <p>Drafting your hour-by-hour schedule …</p>
@@ -68,9 +71,10 @@ function LoadingState() {
 // @desc Error/empty state with a retry button.
 // @param {object} props - { message, onRetry }.
 // [Claude claude-opus-4-8 (1M context)] Task: proposed-agenda error/empty state
-function MessageState({ message, onRetry }) {
+function MessageState({ dateControl, message, onRetry }) {
   return (
     <WidgetWrapper widgetId={ WIDGET_ID }>
+      { dateControl }
       <div className="proposed-agenda-message">
         <p>{ message }</p>
         <button className="proposed-agenda-retry" onClick={ onRetry }>Try again</button>
@@ -140,11 +144,11 @@ function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, ti
           ? <span className="proposed-agenda-scheduled-meta">
               { row.durationMinutes
                 ? <span className="proposed-agenda-duration">{ `${ row.durationMinutes }m` }</span> : null }
-              <span className="proposed-agenda-scheduled-badge" title="Already scheduled today">Scheduled</span>
+              <span className="proposed-agenda-scheduled-badge" title="Already scheduled on this date">Scheduled</span>
             </span>
           : <>
               <span className="proposed-agenda-actions">
-                <button className="proposed-agenda-add" title={ `Schedule for ${ row.startTime } today` }
+                <button className="proposed-agenda-add" title={ `Schedule for ${ row.startTime } on the agenda date` }
                   onClick={ (event) => onSchedule(event, row) }>
                   <span>📅 &nbsp;Add to schedule</span>
                   { row.durationMinutes
@@ -205,25 +209,38 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   const [recordDomainName, setRecordDomainName] = useState(taskDomainName || "All Notes");
   const [recordDomainUuid, setRecordDomainUuid] = useState(taskDomainUUID || null);
   const [recordProviderEm, setRecordProviderEm] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const generationRef = useRef(0);
   const [scheduledKeys, setScheduledKeys] = useState(() => new Set());
   const listRef = useRef(null);
 
   // Identifies the domain-specific stored monthly line currently on screen so status changes cannot mutate
   // another Task Domain's cache record.
   // [OpenAI GPT-5.6] Task: include Task Domain identity in Proposed Agenda lifecycle writes.
-  const llmDateRecord = useMemo(() => ({ date: currentDate, domainName: recordDomainName,
+  const llmDateRecord = useMemo(() => ({ date: selectedDate || currentDate, domainName: recordDomainName,
     domainUuid: recordDomainUuid, priorityKey, providerEm: recordProviderEm }),
-    [currentDate, priorityKey, recordDomainName, recordDomainUuid, recordProviderEm]);
+    [currentDate, priorityKey, recordDomainName, recordDomainUuid, recordProviderEm, selectedDate]);
 
   // providerApiKey is included so that adding an API key in Dashboard Settings (which leaves providerEm
   // unchanged) still re-triggers generation, letting the widget recover from the no-provider state.
-  const runGeneration = useCallback(({ forceRegenerate = false } = {}) => runProposedAgendaGeneration(app,
-    { calendarEvents, currentDate, dateRange, domainName: taskDomainName, domainUuid: taskDomainUUID, forceRegenerate,
-    priorityKey, providerEm: modelProviderEm, setApproving, setAttribution, setDateLabel, setDismissedKeys, setError,
-    setIsFutureDay, setLoading, setObligations, setProposed, setRecordDomainName, setRecordDomainUuid,
-    setRecordProviderEm, setScheduledKeys }),
-    [app, calendarEventsKey, currentDate, dateRangeKey, modelProviderEm, priorityKey, providerApiKey, taskDomainName,
-    taskDomainUUID]);
+  // ------------------------------------------------------------------------------------------
+  // @desc Generate the selected day and discard stale responses after another date or provider is chosen.
+  // @param {object} options - Whether to bypass the normal agenda cache.
+  const runGeneration = useCallback(({ forceRegenerate = false } = {}) => {
+    const generation = ++generationRef.current;
+    const setters = { setApproving, setAttribution, setDateLabel, setDismissedKeys, setError, setIsFutureDay,
+      setLoading, setObligations, setProposed, setRecordDomainName, setRecordDomainUuid, setRecordProviderEm, setScheduledKeys };
+    const guardedSetters = Object.fromEntries(Object.entries(setters).map(([name, setter]) =>
+      [name, value => { if (generation === generationRef.current) setter(value); }]));
+    return runProposedAgendaGeneration(app, { calendarEvents, currentDate, dateRange, domainName: taskDomainName,
+      domainUuid: taskDomainUUID, explicitDate: selectedDate, forceRegenerate,
+      isCurrentGeneration: () => generation === generationRef.current, priorityKey,
+      providerEm: modelProviderEm, ...guardedSetters }).catch(error => {
+      guardedSetters.setError({ error: error?.message || "Could not prepare the agenda. Please try again.", errorCode: "agenda_error" });
+      guardedSetters.setProposed([]);
+    });
+  }, [app, calendarEventsKey, currentDate, dateRangeKey, modelProviderEm, priorityKey, providerApiKey, selectedDate,
+    taskDomainName, taskDomainUUID]);
 
   const onChangeModel = useCallback(() => setProviderPopupOpen(true), []);
 
@@ -280,7 +297,7 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
       setApproving, setScheduledKeys });
   }, [app, defaultNoteUuid, dismissedKeys, llmDateRecord, proposed, scheduledKeys]);
 
-  useEffect(() => { runGeneration(); }, [runGeneration]);
+  useEffect(() => { runGeneration(); return () => { generationRef.current += 1; }; }, [runGeneration]);
   useEffect(() => { attachFootnotePopups(listRef.current); }, [obligations, proposed]);
 
   // Adopt the dashboard-configured provider when it changes and the user has not picked one inside the widget,
@@ -302,7 +319,9 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
 
   useWidgetLoadedEvent(WIDGET_ID, !loading && !error, !!error);
 
-  if (loading) return <LoadingState />;
+  const dateValue = selectedDate || dateKeyFromDateInput(proposed[0]?.targetMidnightSeconds || resolveProposedAgendaDate());
+  const dateControl = <ProposedAgendaDateControl dateValue={ dateValue } onSelectDate={ setSelectedDate } />;
+  if (loading) return <LoadingState dateControl={ dateControl } />;
   if (error) {
     const envApiKey = (typeof process !== "undefined" && process.env?.OPEN_AI_ACCESS_TOKEN) || "";
     const hasLlmConfig = !!(envApiKey || providerApiKey);
@@ -312,7 +331,7 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
           moreFeaturesLabel="+ 15 more features included" widgetId={ WIDGET_ID } />
       );
     }
-    return <MessageState message={ error.error } onRetry={ () => runGeneration() } />;
+    return <MessageState dateControl={ dateControl } message={ error.error } onRetry={ () => runGeneration() } />;
   }
 
   // Hide elapsed proposals only on today; the midnight value also orders legacy rows without a day stamp.
@@ -323,7 +342,7 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
     hidePastBeforeMinutes, hidePastOnMidnightSeconds: todayMidnightSeconds });
   const dayGroups = agendaRowsGroupedByDay(rows);
   if (rows.length === 0) {
-    return <MessageState message="No schedule could be proposed yet." onRetry={ () => runGeneration() } />;
+    return <MessageState dateControl={ dateControl } message="No schedule could be proposed yet." onRetry={ () => runGeneration() } />;
   }
   const pending = pendingCount(proposed, scheduledKeys, dismissedKeys);
   const reseedAction = (
@@ -334,6 +353,7 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   return (
     <>
       <WidgetWrapper headerActions={ reseedAction } subtitle={ dateLabel } widgetId={ WIDGET_ID }>
+        { dateControl }
         { dateLabel
           ? <div className="proposed-agenda-mobile-date">
               <span>{ dateLabel }</span>
