@@ -9,6 +9,9 @@
  */
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
+import { GUIDE_SCHEMA_VERSION } from "plan-wizard/plan-models";
+import { initialVisionGuideMarkdown } from "plan-wizard/vision-guide-markdown";
+import { VISION_GUIDE_TAG } from "plan-wizard/vision-guide-notes";
 import { setPluginData } from "plugin-data";
 import { SAMPLE_TASKS } from "./fixtures/tasks.js";
 
@@ -84,6 +87,23 @@ beforeEach(() => {
 
 // [Claude claude-opus-4-8 (1M context)] Generated tests for: proposed-agenda next-day + weekend targeting
 describe("proposed-agenda next-day targeting", () => {
+  // ----------------------------------------------------------------------------------------------
+  // @desc A retired Vision Guide cannot block ordinary task suggestions or remove the selected quarterly plan from the prompt.
+  it("generates an agenda when optional project progress uses a retired guide", async () => {
+    const { app } = buildApp();
+    const guideNote = { name: "Work Mission Builder Vision Guide 2026", uuid: "old-guide" };
+    const guideScope = { domainName: "Work", domainUuid: "dom-work", year: 2026 };
+    const guideContent = initialVisionGuideMarkdown(guideScope).replace(`"schemaVersion": ${ GUIDE_SCHEMA_VERSION }`, '"schemaVersion": 1');
+    app.filterNotes.mockImplementation(async options => options.tag === VISION_GUIDE_TAG
+      ? [guideNote] : options.query === "Q3 2026 Work Plan" ? [{ name: "Q3 2026 Work Plan", uuid: PLAN_NOTE_UUID }] : []);
+    app.findNote.mockImplementation(async query => query.uuid === guideNote.uuid ? guideNote : null);
+    app.getNoteContent.mockImplementation(async note => note.uuid === guideNote.uuid ? guideContent : "# Plan\n- Ship things");
+    const result = await generateProposedAgenda(app, { targetDate: new Date(2026, 8, 21) });
+    expect(llmMock).toHaveBeenCalledTimes(1);
+    expect(lastPromptSent).toContain("Ship things");
+    expect(result.activities).toEqual(expect.arrayContaining([expect.objectContaining({ taskUuid: "task-7" })]));
+  });
+
   // ----------------------------------------------------------------------------------------------
   // @desc Explicit dates select their own quarter's plan and retain Rich Footnotes beyond the former text cutoff.
   it("reads the selected quarter and retains the complete plan markdown", async () => {

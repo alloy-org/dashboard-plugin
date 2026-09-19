@@ -1,5 +1,8 @@
 // Verify quarterly identity persistence, completion evidence, and guaranteed due-project suggestions.
 import { jest } from "@jest/globals";
+import { GUIDE_SCHEMA_VERSION } from "plan-wizard/plan-models";
+import { initialVisionGuideMarkdown } from "plan-wizard/vision-guide-markdown";
+import { readVisionGuide } from "plan-wizard/vision-guide-repository";
 import { ensureDueProjectSuggestions } from "project-agenda-suggestions";
 import { projectMatchesTask, projectProgressEvidence, projectWithTaskEvidence, quarterlyProgressProjects } from "project-progress-model";
 import { loadProjectProgress } from "project-progress-service";
@@ -95,6 +98,29 @@ describe("project suggestion fallback", () => {
 });
 
 describe("project progress note", () => {
+  // ----------------------------------------------------------------------------------------------
+  // @desc Optional agenda progress skips retired and future guides, while strict readers still reject them and no notes are rewritten.
+  it.each([1, GUIDE_SCHEMA_VERSION + 1])("skips schema %s without modifying guide or progress records", async schemaVersion => {
+    const note = { name: "Work Mission Builder Vision Guide 2026", uuid: "guide-note" };
+    const content = initialVisionGuideMarkdown(scope).replace(`"schemaVersion": ${ GUIDE_SCHEMA_VERSION }`, `"schemaVersion": ${ schemaVersion }`);
+    const app = { createNote: jest.fn(), filterNotes: jest.fn().mockResolvedValue([note]), findNote: jest.fn().mockResolvedValue(note),
+      getNoteContent: jest.fn().mockResolvedValue(content), replaceNoteContent: jest.fn() };
+    await expect(loadProjectProgress(app, { domainName: scope.domainName, domainUuid: scope.domainUuid, quarterlyContent, targetDate }))
+      .resolves.toEqual({ candidates: [], markdown: "", projects: [] });
+    await expect(readVisionGuide(app, scope)).rejects.toMatchObject({ code: "VISION_GUIDE_UNSUPPORTED_SCHEMA" });
+    expect(app.findNote.mock.calls.every(([query]) => query.uuid === note.uuid)).toBe(true);
+    expect(app.createNote).not.toHaveBeenCalled();
+    expect(app.replaceNoteContent).not.toHaveBeenCalled();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Bridge failures remain visible instead of silently disabling project evidence.
+  it("propagates lookup failures unrelated to schema compatibility", async () => {
+    const app = { filterNotes: jest.fn().mockRejectedValue(new Error("Connection failed")) };
+    await expect(loadProjectProgress(app, { domainName: scope.domainName, domainUuid: scope.domainUuid, quarterlyContent, targetDate }))
+      .rejects.toThrow("Connection failed");
+  });
+
   // ----------------------------------------------------------------------------------------------
   // @desc Initial generation records a quarter's real completion evidence and stable source task references.
   it("creates the quarter-scoped note with persisted UUIDs and completion timestamps", async () => {
