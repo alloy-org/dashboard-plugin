@@ -42,7 +42,7 @@ import RecentNotesWidget from 'recent-notes';
 import SharedNotesWidget from 'shared-notes';
 import TaskDomains from 'task-domains';
 import { backgroundSplashUrl } from 'util/background-splash-images';
-import { dateKeyFromDateInput, weekStartDayFromFormat, weekStartFromDateInput } from 'util/date-utility';
+import { dateKeyFromDateInput, localMidnightFromDateInput, weekStartFromDateInput } from 'util/date-utility';
 import { servedFromDevServer } from 'util/dev-environment';
 import { logIfEnabled, setLoggingEnabled } from "util/log";
 import { snapDashboardAction } from "util/plausible";
@@ -297,7 +297,7 @@ function intendedWidgetIds(settingsSnapshot) {
 //   - {string} [pluginNoteUUID] - UUID of the plugin's backing note, when available
 // @param {Object} setters - React state setters and refs used to apply the payload
 // [Claude claude-opus-4-8] Task: document and rename the applyDashboardData payload parameter
-function applyDashboardData(initialPayload, { initDataFreshRef, initializeDomainTasks, setConfigParams,
+function applyDashboardData(initialPayload, { initializeDomainTasks, setConfigParams,
     setCurrentDate, setDailyVictoryValues, setMoodRatings, setPluginNoteUUID,
     setQuarterlyPlans, setWeeklyVictoryValue }) {
   setLoggingEnabled(initialPayload.settings?.[SETTING_KEYS.CONSOLE_LOGGING]);
@@ -313,14 +313,6 @@ function applyDashboardData(initialPayload, { initDataFreshRef, initializeDomain
   setWeeklyVictoryValue(initialPayload.weeklyVictoryValue);
   setCurrentDate(initialPayload.currentDate);
   if (initialPayload.pluginNoteUUID) setPluginNoteUUID(initialPayload.pluginNoteUUID);
-  initDataFreshRef.current = true;
-}
-
-// ------------------------------------------------------------------------------------------
-function isCurrentWeekEarlyForWeekStart(weekStartDay) {
-  const now = new Date();
-  const weekStart = weekStartFromDateInput(now, weekStartDay);
-  return now.getTime() - weekStart.getTime() < 3 * 24 * 60 * 60 * 1000;
 }
 
 // ------------------------------------------------------------------------------------------
@@ -335,13 +327,14 @@ function mergeMoodRatingsByIdentity(currentRatings, fetchedRatings) {
 }
 
 // ------------------------------------------------------------------------------------------
-async function fetchMoodRatingsForDate(app, referenceDate, setMoodRatings, weekStartDay) {
-  let weekStart = weekStartFromDateInput(referenceDate, weekStartDay);
-  if (isCurrentWeekEarlyForWeekStart(weekStartDay)) {
-    weekStart = new Date(weekStart);
-    weekStart.setDate(weekStart.getDate() - 7);
-  }
-  const fromUnixSeconds = Math.floor(weekStart.getTime() / 1000);
+// @desc Load mood ratings from the first of the seven displayed days and merge them into the dashboard cache.
+// @param {Object} app - Dashboard app interface.
+// @param {Date|string} referenceDate - Last displayed date.
+// @param {Function} setMoodRatings - Setter for the shared mood history.
+async function fetchMoodRatingsForDate(app, referenceDate, setMoodRatings) {
+  const rangeStart = localMidnightFromDateInput(referenceDate);
+  rangeStart.setDate(rangeStart.getDate() - 6);
+  const fromUnixSeconds = Math.floor(rangeStart.getTime() / 1000);
   try {
     const ratings = await app.getMoodRatings(fromUnixSeconds);
     if (Array.isArray(ratings)) {
@@ -452,7 +445,6 @@ export default function DashboardApp({ app, initPromise }) {
   const [weekFormat, setWeekFormat] = useState('sunday');
   const [weeklyVictoryValue, setWeeklyVictoryValue] = useState(null);
   const dashboardSettingNoteRef = useRef(null);
-  const initDataFreshRef = useRef(false);
   // Crash-breadcrumb session state: a stable device profile + start time for this dashboard load,
   // the pending breadcrumb write promise (so the settle-stamp can be chained after it, avoiding a
   // last-write-wins race), and a flag so we stamp at most once.
@@ -461,7 +453,6 @@ export default function DashboardApp({ app, initPromise }) {
   const breadcrumbStartedAtRef = useRef(Date.now());
   const breadcrumbWriteRef = useRef(null);
   const breadcrumbStampedRef = useRef(false);
-  const weekStartDay = weekStartDayFromFormat(weekFormat);
 
   useEffect(() => {
     const t0 = Date.now();
@@ -511,7 +502,7 @@ export default function DashboardApp({ app, initPromise }) {
           startedAt: breadcrumbStartedAtRef.current, widgetIds: intendedWidgetIds(data.settings) });
       }
       applyDashboardData(data, {
-        initDataFreshRef, initializeDomainTasks, setConfigParams,
+        initializeDomainTasks, setConfigParams,
         setCurrentDate, setDailyVictoryValues, setMoodRatings, setPluginNoteUUID,
         setQuarterlyPlans, setWeeklyVictoryValue });
       dashboardSettingNoteRef.current = new DashboardSettingNote(app);
@@ -540,38 +531,24 @@ export default function DashboardApp({ app, initPromise }) {
     return startMemorySampling();
   }, [configParams]);
 
-  const victoryReferenceDate = useMemo(() => {
-    if (selectedDate) return selectedDate;
-    if (!currentDate) return null;
-    if (isCurrentWeekEarlyForWeekStart(weekStartDay)) {
-      const weekStart = weekStartFromDateInput(currentDate, weekStartDay);
-      const prevWeekDay = new Date(weekStart);
-      prevWeekDay.setDate(prevWeekDay.getDate() - 1);
-      return dateKeyFromDateInput(prevWeekDay);
-    }
-    return currentDate;
-  }, [currentDate, selectedDate, weekStartDay]);
+  const victoryReferenceDate = selectedDate || currentDate;
 
   const fetchMoodRatings = useCallback(
-    (referenceDate) => fetchMoodRatingsForDate(app, referenceDate, setMoodRatings, weekStartDay),
-    [app, weekStartDay]
+    (referenceDate) => fetchMoodRatingsForDate(app, referenceDate, setMoodRatings), [app]
   );
 
+  // ------------------------------------------------------------------------------------------
+  // @desc Load both calendar weeks touched by the rolling seven-day range, retaining calendar task coverage.
   useEffect(() => {
-    const referenceDate = selectedDate || currentDate;
-    if (!referenceDate) return;
-    if (initDataFreshRef.current) {
-      initDataFreshRef.current = false;
-    } else {
-      fetchMoodRatings(referenceDate);
-    }
-    // activeTaskDomain may be null here; getCompletedTasks is not domain-scoped, so an All-Notes dashboard
-    // still populates victory-value metrics rather than gating the fetch behind a selected domain.
-    fetchCompletedTasks(referenceDate, activeTaskDomain);
-    if (victoryReferenceDate && victoryReferenceDate !== referenceDate) {
-      fetchCompletedTasks(victoryReferenceDate, activeTaskDomain);
-    }
-  }, [activeTaskDomain, currentDate, fetchCompletedTasks, fetchMoodRatings, selectedDate, victoryReferenceDate]);
+    if (!victoryReferenceDate) return;
+    fetchMoodRatings(victoryReferenceDate);
+    fetchCompletedTasks(victoryReferenceDate, activeTaskDomain);
+    const rangeStart = localMidnightFromDateInput(victoryReferenceDate);
+    rangeStart.setDate(rangeStart.getDate() - 6);
+    const firstWeekKey = dateKeyFromDateInput(weekStartFromDateInput(rangeStart));
+    const lastWeekKey = dateKeyFromDateInput(weekStartFromDateInput(victoryReferenceDate));
+    if (firstWeekKey !== lastWeekKey) fetchCompletedTasks(rangeStart, activeTaskDomain);
+  }, [activeTaskDomain, fetchCompletedTasks, fetchMoodRatings, victoryReferenceDate]);
 
   const handleDomainChange = useCallback(
     (newDomains, newActiveDomain, taskData) =>

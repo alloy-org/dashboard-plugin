@@ -1,25 +1,13 @@
-/**
- * [Claude-authored file]
- * Created: 2026-02-17 | Model: claude-sonnet-4-5-20250929
- * Task: Victory value widget — weekly total and canvas bar chart with mood overlay
- * Prompt summary: "widget with bar chart of daily victory values and optional mood trend line"
- */
-import { useEffect, useRef, useState } from "react"
-import WidgetWrapper from "./widget-wrapper"
-import { parseWidgetConfig, widgetConfigKey } from "../constants/settings"
-import { pluginSettings } from "plugin-data"
-import ConfigPopup from "./config-popup"
-import { useCanvasTippy } from "./dashboard-tooltip-tippy.jsx"
-import { renderMarkdown } from "util/utility"
-import "styles/victory-value.scss"
-import {
-  dateFromDateInput,
-  dateKeyFromDateInput,
-  tooltipLabelFromDateInput,
-  weekDateSlotsFromDateInput,
-  weekStartDayFromFormat,
-  weekStartFromDateInput,
-} from "util/date-utility"
+// Render seven days of completed-task victory values with weekly navigation and a mood overlay.
+import { parseWidgetConfig, widgetConfigKey } from "../constants/settings";
+import ConfigPopup from "./config-popup";
+import { useCanvasTippy } from "./dashboard-tooltip-tippy.jsx";
+import WidgetWrapper from "./widget-wrapper";
+import { pluginSettings } from "plugin-data";
+import { useEffect, useRef, useState } from "react";
+import "styles/victory-value.scss";
+import { dateFromDateInput, dateKeyFromDateInput, tooltipLabelFromDateInput, weekDateSlotsFromDateInput } from "util/date-utility";
+import { renderMarkdown } from "util/utility";
 
 const MOODS = [
   { value: -2, emoji: '\u{1F622}', label: 'Awful' },
@@ -29,64 +17,37 @@ const MOODS = [
   { value: 2, emoji: '\u{1F604}', label: 'Great' }
 ];
 
-// [Claude] Task: format week date range for display in widget header
+// ------------------------------------------------------------------------------------------
+// @desc Build seven daily totals ending on the reference date, using supplied daily values until tasks are available.
+// @param {Object} completedTasksByDate - Completed tasks grouped by local date key.
+// @param {Array} dailyValues - Fallback daily totals.
+// @param {Date|string} referenceDate - Last day of the displayed range.
+// @returns {Array} Seven chronological daily totals and task counts.
+function buildDailyValuesForWeek(completedTasksByDate, dailyValues, referenceDate) {
+  const startDate = dateFromDateInput(referenceDate);
+  startDate.setDate(startDate.getDate() - 6);
+  const weekSlots = weekDateSlotsFromDateInput(startDate, startDate.getDay());
+  const valuesByDate = new Map((dailyValues || []).map(entry => [dateKeyFromDateInput(entry.date), entry]));
+  return weekSlots.map((slot) => {
+    const tasksForDay = completedTasksByDate?.[slot.dateKey];
+    const fallback = valuesByDate.get(slot.dateKey);
+    const value = Array.isArray(tasksForDay)
+      ? tasksForDay.reduce((sum, task) => sum + (task.victoryValue || 0), 0) : fallback?.value || 0;
+    const taskCount = Array.isArray(tasksForDay) ? tasksForDay.length : fallback?.taskCount || 0;
+    return { date: slot.date, day: slot.day, taskCount, value };
+  });
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc Format the first and last displayed dates for the widget header.
+// @param {Array} chartDailyValues - Seven chronological daily values.
+// @returns {string} Localized date range.
 function formatWeekDateRange(chartDailyValues) {
   if (!chartDailyValues || chartDailyValues.length < 7) return '';
   const start = dateFromDateInput(chartDailyValues[0].date);
   const end = dateFromDateInput(chartDailyValues[6].date);
-  const fmt = (d) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  return `${fmt(start)} \u2013 ${fmt(end)}`;
-}
-
-// [Claude] Task: shift reference date by N weeks for chart navigation arrows
-function shiftWeekDate(referenceDate, deltaWeeks) {
-  const date = dateFromDateInput(referenceDate);
-  date.setDate(date.getDate() + deltaWeeks * 7);
-  return dateKeyFromDateInput(date);
-}
-
-// [Claude] Task: determine whether referenceDate is in the current week or later (disables right arrow)
-function isCurrentWeekOrLater(referenceDate, weekStartDay) {
-  const refWeekStart = weekStartFromDateInput(referenceDate, weekStartDay);
-  const todayWeekStart = weekStartFromDateInput(new Date(), weekStartDay);
-  return refWeekStart >= todayWeekStart;
-}
-
-// [Claude] Task: derive chart values from completed tasks keyed by date
-function buildDailyValuesFromCompletedTasks(dailyValues, completedTasksByDate) {
-  if (!Array.isArray(dailyValues) || dailyValues.length === 0) return [];
-  if (!completedTasksByDate || typeof completedTasksByDate !== 'object') return dailyValues;
-
-  return dailyValues.map((entry) => {
-    const dateKey = dateKeyFromDateInput(entry.date);
-    const tasksForDay = Array.isArray(completedTasksByDate[dateKey]) ? completedTasksByDate[dateKey] : [];
-    const computedValue = tasksForDay.reduce((sum, task) => sum + (task.victoryValue || 0), 0);
-
-    return {
-      ...entry,
-      value: computedValue,
-      taskCount: tasksForDay.length
-    };
-  });
-}
-
-// [Claude] Task: derive chart values for selected week from completed task map
-function buildDailyValuesForWeek(referenceDate, dailyValues, completedTasksByDate, weekStartDay) {
-  const weekSlots = weekDateSlotsFromDateInput(referenceDate, weekStartDay);
-  if (!completedTasksByDate || typeof completedTasksByDate !== 'object') {
-    return buildDailyValuesFromCompletedTasks(dailyValues, completedTasksByDate);
-  }
-
-  return weekSlots.map((slot) => {
-    const tasksForDay = Array.isArray(completedTasksByDate[slot.dateKey]) ? completedTasksByDate[slot.dateKey] : [];
-    const computedValue = tasksForDay.reduce((sum, task) => sum + (task.victoryValue || 0), 0);
-    return {
-      day: slot.day,
-      date: slot.date,
-      value: computedValue,
-      taskCount: tasksForDay.length
-    };
-  });
+  const options = { day: 'numeric', month: 'short' };
+  return `${ start.toLocaleDateString(undefined, options) } – ${ end.toLocaleDateString(undefined, options) }`;
 }
 
 // [Claude] Task: persist widget config via app.setSetting (real Amplenote API)
@@ -310,11 +271,23 @@ function buildTooltipHTML(hoveredBar, dailyValues, completedTasksByDate, moodByD
   return parts.join('');
 }
 
-// --------------------------------------------------------------------------------------------------
-// [Claude] Task: render configurable time range radio options
-// [Claude claude-4.7-opus] Task: convert TimeRangeOptions render fn to JSX component
-// Prompt: "translate this project to render components with JSX instead"
-function TimeRangeOptions({ timeRange, setTimeRange }) {
+// ------------------------------------------------------------------------------------------
+// @desc Shift the displayed range by whole calendar weeks, stopping at today when navigating forward.
+// @param {number} deltaWeeks - Number of weeks to move backward or forward.
+// @param {Date|string} referenceDate - Last displayed date.
+// @returns {string} Local date key for the new range end.
+function shiftWeekDate(deltaWeeks, referenceDate) {
+  const date = dateFromDateInput(referenceDate);
+  date.setDate(date.getDate() + deltaWeeks * 7);
+  const shiftedKey = dateKeyFromDateInput(date);
+  const todayKey = dateKeyFromDateInput(new Date());
+  return shiftedKey > todayKey ? todayKey : shiftedKey;
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc Render the saved time range options with a seven-day default.
+// @param {Object} props - Time range selection and its state setter.
+function TimeRangeOptions({ setTimeRange, timeRange }) {
   return (
     <>
       {['week', 'month', '30days'].map((value) => (
@@ -326,27 +299,26 @@ function TimeRangeOptions({ timeRange, setTimeRange }) {
             checked={timeRange === value}
             onChange={setTimeRange.bind(null, value)}
           />
-          {value === 'week' ? 'This week' : value === 'month' ? 'This month' : 'Last 30 days'}
+          {value === 'week' ? 'Last 7 days' : value === 'month' ? 'This month' : 'Last 30 days'}
         </label>
       ))}
     </>
   );
 }
 
-// --------------------------------------------------------------------------------------------------
-// [Claude] Task: victory-value widget using useCanvasTippy for bar hover tooltips
-// [Claude claude-4.6-opus-high-thinking] Task: accept weekFormat prop for week day ordering
-// [Claude claude-4.7-opus] Task: migrate VictoryValueWidget from createElement to JSX
-// Prompt: "translate this project to render components with JSX instead"
+// ------------------------------------------------------------------------------------------
+// @desc Render the seven days ending on the selected date, with arrows that move the range by one week.
+// @param {Object} props - Completed tasks, mood ratings, fallback totals, and date navigation callback.
+// @returns {JSX.Element} Configurable Victory Value chart.
 export default function VictoryValueWidget({ app, completedTasksByDate, dailyValues, moodRatings,
-    onReferenceDateChange, referenceDate, weekFormat, weeklyTotal }) {
+    onReferenceDateChange, referenceDate }) {
   const canvasRef = useRef(null);
   const redrawChartRef = useRef(null);
-  const weekStartDay = weekStartDayFromFormat(weekFormat);
-  const chartDailyValues = buildDailyValuesForWeek(referenceDate, dailyValues, completedTasksByDate, weekStartDay);
+  const rangeEndDate = referenceDate || dateKeyFromDateInput(new Date());
+  const chartDailyValues = buildDailyValuesForWeek(completedTasksByDate, dailyValues, rangeEndDate);
   const maxValue = Math.max(...chartDailyValues.map((entry) => entry.value), 1);
   const chartWeeklyTotal = chartDailyValues.reduce((sum, entry) => sum + (entry.value || 0), 0);
-  const roundedWeeklyTotal = Math.round(chartWeeklyTotal || weeklyTotal || 0);
+  const roundedWeeklyTotal = Math.round(chartWeeklyTotal);
   const moodByDay = buildMoodByDay(moodRatings, chartDailyValues);
 
   const [configOpen, setConfigOpen] = useState(false);
@@ -361,6 +333,12 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
   const tip = useCanvasTippy({ interactive: true });
   const onCanvasMouseMove = (e) => { tip.cancelScheduledHide(); handleCanvasMouseMove(canvasRef, setHoveredBar, e); };
   const onCanvasMouseLeave = () => tip.scheduleHide(300, () => setHoveredBar(null));
+
+  // ------------------------------------------------------------------------------------------
+  // @desc Draw the selected dates and clear any tooltip left over from the previous range.
+  useEffect(() => {
+    setHoveredBar(null);
+  }, [rangeEndDate]);
 
   useEffect(() => {
     redrawChartRef.current = () => drawChart(canvasRef, chartDailyValues, maxValue, moodByDay, showMood);
@@ -410,7 +388,7 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
         >
           <div className="config-field">
             <div className="config-field-label">Time range</div>
-            <TimeRangeOptions timeRange={timeRange} setTimeRange={setTimeRange} />
+            <TimeRangeOptions setTimeRange={setTimeRange} timeRange={timeRange} />
           </div>
           <div className="config-field">
             <div className="config-field-label">Mood overlay</div>
@@ -433,7 +411,7 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
         <button
           className="vv-nav-arrow"
           type="button"
-          onClick={() => onReferenceDateChange && onReferenceDateChange(shiftWeekDate(referenceDate, -1))}
+          onClick={() => onReferenceDateChange && onReferenceDateChange(shiftWeekDate(-1, rangeEndDate))}
           title="Previous week"
           aria-label="Previous week"
         >‹</button>
@@ -448,8 +426,8 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
         <button
           className="vv-nav-arrow"
           type="button"
-          disabled={isCurrentWeekOrLater(referenceDate, weekStartDay)}
-          onClick={() => onReferenceDateChange && onReferenceDateChange(shiftWeekDate(referenceDate, 1))}
+          disabled={dateKeyFromDateInput(rangeEndDate) >= dateKeyFromDateInput(new Date())}
+          onClick={() => onReferenceDateChange && onReferenceDateChange(shiftWeekDate(1, rangeEndDate))}
           title="Next week"
           aria-label="Next week"
         >›</button>
