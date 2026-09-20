@@ -2,15 +2,18 @@
 // they would rather be released toward once it is. Both halves are stored in the single dailySufficiency answer
 // (see done-enough-fields.js), so this page saves one line of text like every other quarter-wide answer.
 //
-// The page never blocks Next. A daily bar someone was pushed into naming would be worse than none, so "Not now"
-// is offered as a real choice and is where an unanswered question starts.
+// The page never blocks the wizard's final button. A daily bar someone was pushed into naming would be worse
+// than none, so "Not now" is offered as a real choice and is where an unanswered question starts. Because it is
+// the last page, that button reads Done and closes the wizard, saving an unsaved selection on its way out so a
+// user who chose a condition and reached for Done instead of Save condition keeps their answer.
 
 import DoneEnoughConditions from "dashboard/plan-wizard/done-enough-conditions";
 import { DONE_ENOUGH_CUSTOM_KEY, RELEASE_CHOICES, RELEASE_CUSTOM_KEY, RELEASE_HEADING,
-  doneEnoughDraftFromAnswer, doneEnoughTextFromDraft,
+  doneEnoughDraftFromAnswer, doneEnoughOptionFromKey, doneEnoughTextFromDraft,
   toggledReleaseKeysFromSelection } from "dashboard/plan-wizard/done-enough-fields";
 import DoneEnoughPreview from "dashboard/plan-wizard/done-enough-preview";
 import { hasUnsavedAnswer, quarterAnswerFromDraft } from "dashboard/plan-wizard/quarter-answer-fields";
+import { useRegisteredNavigate } from "dashboard/plan-wizard/step-navigation";
 import { wizardStepFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useEffect, useRef, useState } from "react";
 
@@ -24,15 +27,21 @@ const DONE_ENOUGH_STEP_COPY = wizardStepFromKey("enough-for-today");
 // @param {object} params - An object with the following properties:
 //   - {object|null} answer - Stored { capturedAt, text } for this question, or null when unanswered.
 //   - {boolean} isSaving - True while a save is in flight.
+//   - {Function} onAnswerStateChange - Receives true once a condition option is selected, so the wizard can
+//     enable its Done button for a selection this page has not been asked to save yet.
+//   - {Function} onNavigate - Closes the wizard once any pending edit saved successfully.
+//   - {Function} onRegisterNavigate - Publishes this page's Done handler to the wizard's shared navigation.
 //   - {Function} onSave - Receives { answerKey, capturedAt, text } and resolves true when the write succeeded.
 //   - {Error|null} saveError - Last save failure; its presence turns the action into a retry.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 // @returns {JSX.Element} The page.
-export default function DoneEnoughStep({ answer, isSaving, onSave, saveError, scopeKey }) {
+export default function DoneEnoughStep({ answer, isSaving, onAnswerStateChange, onNavigate, onRegisterNavigate,
+    onSave, saveError, scopeKey }) {
   const [draft, setDraft] = useState(() => doneEnoughDraftFromAnswer(answer));
   const [hasSaved, setHasSaved] = useState(false);
   const capturedAtRef = useRef(null);
   const seededScopeRef = useRef(scopeKey);
+  const hasSelectedCondition = Boolean(doneEnoughOptionFromKey(draft.conditionKey));
 
   useEffect(() => {
     if (seededScopeRef.current === scopeKey && !capturedAtRef.current) return;
@@ -47,6 +56,10 @@ export default function DoneEnoughStep({ answer, isSaving, onSave, saveError, sc
     setDraft(doneEnoughDraftFromAnswer(answer));
   }, [answer]);
 
+  useEffect(() => {
+    if (onAnswerStateChange) onAnswerStateChange(hasSelectedCondition);
+  }, [hasSelectedCondition, onAnswerStateChange]);
+
   // ----------------------------------------------------------------------------------------------
   // @desc Record one edit and stamp the capture time every edit since the last save will be written under.
   // @param {Function} updateDraft - Receives the current draft and returns the next one.
@@ -59,16 +72,33 @@ export default function DoneEnoughStep({ answer, isSaving, onSave, saveError, sc
 
   // ----------------------------------------------------------------------------------------------
   // @desc Save the composed answer, keeping the selection intact on failure so a retry can reuse its timestamp.
+  // @returns {Promise<boolean>} Whether the answer is now stored, so a caller may move on.
   const handleSave = async () => {
     const capturedAt = capturedAtRef.current ?? new Date().toISOString();
     capturedAtRef.current = capturedAt;
     const didSave = await onSave(quarterAnswerFromDraft("dailySufficiency", capturedAt, doneEnoughTextFromDraft(draft)));
-    if (!didSave) return;
+    if (!didSave) return false;
     capturedAtRef.current = null;
     setHasSaved(true);
+    return true;
   };
 
   const canSave = hasUnsavedAnswer(answer, doneEnoughTextFromDraft(draft));
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Save an unsaved selection, then let the wizard's Done button close the wizard. A selection that
+  //   matches what is stored, or "Not now", writes nothing and closes immediately.
+  // @returns {Promise<void>} Resolves once a successful save has let the wizard close.
+  const handleNavigate = async () => {
+    if (canSave) {
+      const didSave = await handleSave();
+      if (!didSave) return;
+    }
+    if (onNavigate) onNavigate();
+  };
+
+  useRegisteredNavigate(onRegisterNavigate, handleNavigate);
+
   const saveLabel = saveError ? "Retry saving" : "Save condition";
 
   return (

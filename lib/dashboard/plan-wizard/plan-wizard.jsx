@@ -18,6 +18,10 @@
 // The navigation's left slot carries Back on every page but the first, where there is nowhere to go back to. The
 // first page fills that slot with Cancel, so leaving the wizard is a visible control on the page a user is most
 // likely to have opened by accident, rather than only Escape and a backdrop click.
+//
+// The right slot reads Next until the final page, where it reads Done and closes the wizard. It used to read Next
+// there and sit permanently disabled, which left a finished plan with no way out but Escape or the backdrop, and
+// read as an unmet requirement rather than as the end of the sequence.
 
 import NoteEditor from "dashboard/note-editor";
 import DoneEnoughStep from "dashboard/plan-wizard/done-enough-step";
@@ -64,6 +68,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
     saveProspects, saveQuarterAnswer } = usePlanWizard({ app, domainName, domainUuid, quarter, year });
   const [stepKey, setStepKey] = useState(WIZARD_STEPS[0].key);
   const [hasIntentAnswer, setHasIntentAnswer] = useState(false);
+  const [hasDoneEnoughSelection, setHasDoneEnoughSelection] = useState(false);
   const [inspectingNoteUuid, setInspectingNoteUuid] = useState(null);
   const [overlayTop] = useState(currentDocumentScrollTop);
   useSuspendWidgetMounting(); // The wizard covers the dashboard, so scrolling behind it must not mount widgets the user cannot see
@@ -77,8 +82,9 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const step = WIZARD_STEPS[stepIndex];
   const isFirstStep = stepIndex === 0;
   const isLastStep = stepIndex === WIZARD_STEPS.length - 1;
-  const isNavigatingSaveStep = ["pace-cards", "projects", "quarter-name"].includes(step.key);
+  const isNavigatingSaveStep = ["enough-for-today", "pace-cards", "projects", "quarter-name"].includes(step.key);
   const hasPersistedIntent = planningContext.goals.length > 0;
+  const advanceLabel = isLastStep ? "Done" : "Next";
 
   // ----------------------------------------------------------------------------------------------
   // @desc Hold the current step's save-then-navigate handler so the shared Back and Next buttons can run it.
@@ -120,6 +126,17 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   // @desc Apply the project page direction selected by Back or Next after that page confirms its draft saved.
   const handleProjectNavigation = () => {
     handleStepChange(projectNavigationDirectionRef.current);
+  };
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Leave the final page once it has saved whatever the user selected: Back returns to the page before it,
+  //   and Done has nowhere further to go, so it closes the wizard.
+  const handleDoneEnoughNavigation = () => {
+    if (projectNavigationDirectionRef.current < 0) {
+      handleStepChange(-1);
+      return;
+    }
+    onClose();
   };
 
   useEffect(() => {
@@ -209,7 +226,8 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
         ) : null }
         { !inspectingNoteUuid && !isLoading && !error && step.key === "enough-for-today" ? (
           <DoneEnoughStep { ...{ isSaving, saveError, scopeKey } } answer={ planningContext.dailySufficiency }
-            onSave={ saveQuarterAnswer } />
+            onAnswerStateChange={ setHasDoneEnoughSelection } onNavigate={ handleDoneEnoughNavigation }
+            onRegisterNavigate={ handleRegisterNavigate } onSave={ saveQuarterAnswer } />
         ) : null }
         { !inspectingNoteUuid && saveError && !isLoading && !error ? (
           <PlanSaveError app={ app } noteUuid={ saveError.noteUuid ?? planningContext.noteUuid }
@@ -225,11 +243,12 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
                 type="button">Back</button>
             ) }
             <button className="plan-wizard-next"
-              disabled={ isLastStep || (isFirstStep && ((!hasIntentAnswer && !hasPersistedIntent) || isSaving))
+              disabled={ (isLastStep && !hasDoneEnoughSelection)
+                || (isFirstStep && ((!hasIntentAnswer && !hasPersistedIntent) || isSaving))
                 || (isNavigatingSaveStep && isSaving) }
               onClick={ isFirstStep || isNavigatingSaveStep ? () => handleNavigateStep(1) : () => handleStepChange(1) }
               type="button">
-              { (isFirstStep || isNavigatingSaveStep) && isSaving ? "Saving…" : "Next" }
+              { (isFirstStep || isNavigatingSaveStep) && isSaving ? "Saving…" : advanceLabel }
             </button>
           </nav>
         ) : null }

@@ -468,8 +468,9 @@ describe("PlanWizard step navigation", () => {
     await cleanup();
   });
 
-  it("stops at the last step rather than running past the end of the sequence", async () => {
-    const { cleanup, container } = await renderPlanWizard();
+  it("finishes on the last step with an enabled Done button rather than a dead Next", async () => {
+    const closeCalls = [];
+    const { cleanup, container } = await renderPlanWizard({ onClose: () => closeCalls.push(true) });
     await typeInto(workFields(container)[0], "Ship the analytics offering");
     for (let step = 1; step < WIZARD_STEPS.length; step += 1) {
       await clickAndSettle(container.querySelector(".plan-wizard-next"));
@@ -477,7 +478,11 @@ describe("PlanWizard step navigation", () => {
 
     expect(container.querySelector(".plan-wizard-progress").textContent)
       .toBe(`${ WIZARD_STEPS.length } of ${ WIZARD_STEPS.length }`);
-    expect(container.querySelector(".plan-wizard-next").disabled).toBe(true);
+    const doneButton = container.querySelector(".plan-wizard-next");
+    expect(doneButton.textContent).toBe("Done");
+    expect(doneButton.disabled).toBe(false);
+    await clickAndSettle(doneButton);
+    expect(closeCalls).toHaveLength(1);
     await cleanup();
   });
 });
@@ -1230,6 +1235,21 @@ describe("PlanWizard quarter-wide answers", () => {
 
     const stored = await readPlanGoals(app, SCOPE);
     expect(stored.dailySufficiency).toBeNull();
+    await cleanup();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A user who picks a condition and reaches for Done rather than Save condition should still have it.
+  it("saves a chosen condition that was never explicitly saved when Done closes the wizard", async () => {
+    const closeCalls = [];
+    const { app, cleanup, container } = await renderPlanWizard({ onClose: () => closeCalls.push(true) });
+    await advanceToStep(container, "enough-for-today");
+    await clickAndSettle(conditionRadio(container, "two-focus-blocks"));
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.dailySufficiency.text).toBe("Two focused work blocks on quarterly goals");
+    expect(closeCalls).toHaveLength(1);
     await cleanup();
   });
 
