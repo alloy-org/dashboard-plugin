@@ -14,6 +14,7 @@ import { createLibImportsPlugin } from "../lib-imports-plugin.js";
 import { createScssPlugin } from "../scss-plugin.js";
 import { buildSentryLoaderScripts } from "../lib/util/sentry-loader.js";
 import { readSettingsFile, writeSettingsFile, DEFAULT_SETTINGS_PATH, createDevApp } from "./dev-app.js";
+import { handleNoteDeleteApi } from "./dev-note-delete-api.js";
 import { handleTaskApi } from "./dev-task-api.js";
 
 dotenv.config();
@@ -472,6 +473,10 @@ async function main() {
 
     if (req.url === "/api/note-tasks") {
       if (handleTaskApi(createDevApp(), req, res)) return;
+    }
+
+    if (req.url === "/api/note-delete") {
+      if (handleNoteDeleteApi(createDevApp(), req, res)) return;
     }
 
     if (req.url === "/api/note-create") {

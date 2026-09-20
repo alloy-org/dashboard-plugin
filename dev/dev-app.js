@@ -810,6 +810,23 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       return uuid;
     },
 
+    // ----------------------------------------------------------------------------------------------
+    // @desc Remove a file-backed note from discovery while preserving its original bytes in local trash.
+    // @param {object} noteHandle - Note UUID or name, optionally restricted by tags.
+    // @returns {Promise<boolean>} True when an existing note was moved; false when no note matched.
+    async deleteNote(noteHandle) {
+      const note = _readAllNoteFiles(notesDir).find(record => noteHandle?.uuid
+        ? record.meta.uuid === noteHandle.uuid
+        : noteHandle?.name && record.meta.title === noteHandle.name
+          && (noteHandle.tags ?? []).every(tag => _noteFileHasTag(record, tag)));
+      if (!note) return false;
+      const trashDirectory = path.join(notesDir, ".trash");
+      fs.mkdirSync(trashDirectory, { recursive: true });
+      const trashFilename = `${ crypto.randomUUID() }-${ note.filename }`;
+      fs.renameSync(path.join(notesDir, note.filename), path.join(trashDirectory, trashFilename));
+      return true;
+    },
+
     // [Claude] Task: find a note by looping over files in the /notes directory and matching frontmatter
     // Prompt: "when app.findNote is called, loop over each of the files in the notes directory"
     // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
