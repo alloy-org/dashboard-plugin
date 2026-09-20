@@ -1,6 +1,6 @@
 // Verify date-note persistence preserves existing work and retries without duplicate suggestions.
 import { jest } from "@jest/globals";
-import { populateAgendaNote, prepareAgendaNote, scheduleProjectStep } from "proposed-agenda-note";
+import { existingAgendaNoteTasks, populateAgendaNote, prepareAgendaNote, scheduleProjectStep } from "proposed-agenda-note";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Provide a stateful note API that records inserted tasks and simulates actual subsequent reads.
@@ -13,6 +13,28 @@ function noteApp() {
 }
 
 describe("dated agenda notes", () => {
+  // ----------------------------------------------------------------------------------------------
+  // @desc Browsing a date in the widget must not leave an empty dated note behind for every day visited.
+  it("reads a date's tasks without creating the note when none exists", async () => {
+    const app = noteApp();
+    const tasks = await existingAgendaNoteTasks(app, { domainName: "Work", targetDate: new Date(2026, 11, 12) });
+    expect(app.findNote).toHaveBeenCalledWith({ name: "Proposed Agenda 2026-12-12 Work" });
+    expect(app.createNote).not.toHaveBeenCalled();
+    expect(app.getNoteTasks).not.toHaveBeenCalled();
+    expect(tasks).toEqual([]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc An already-saved day still contributes its fixed tasks, read through a rebuilt bare handle.
+  it("returns an existing date note's tasks", async () => {
+    const app = noteApp();
+    app.findNote.mockResolvedValue({ name: "Proposed Agenda 2026-12-12 Work", tasks: [], uuid: "saved-note" });
+    const tasks = await existingAgendaNoteTasks(app, { domainName: "Work", targetDate: new Date(2026, 11, 12) });
+    expect(app.getNoteTasks).toHaveBeenCalledWith({ uuid: "saved-note" }, { includeDone: true });
+    expect(app.createNote).not.toHaveBeenCalled();
+    expect(tasks).toEqual(app.tasks);
+  });
+
   // ----------------------------------------------------------------------------------------------
   // @desc Explicit weekend dates stay exact, and a new dated note joins the domain for future completion tracking.
   it("creates a Saturday note and checks its existing tasks", async () => {

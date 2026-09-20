@@ -107,8 +107,9 @@ describe("ProposedAgendaWidget date range", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc A user-picked Saturday overrides the calendar range and automatic weekday rollover.
-  it("edits the calculation date and opens that exact day's populated note", async () => {
+  // @desc A user-picked Saturday overrides the calendar range and automatic weekday rollover, and shows that
+  //   day in the widget rather than writing a dated note and navigating away from the dashboard.
+  it("edits the calculation date and shows that exact day without leaving the dashboard", async () => {
     const { app, container } = await renderWidget({ dateRange: futureWeekdayWindow(), taskDomainName: "Work", taskDomainUUID: "dom-work" });
     await act(async () => container.querySelector('[aria-label="Change agenda date"]').click());
     const input = document.querySelector('input[type="date"]');
@@ -121,11 +122,11 @@ describe("ProposedAgendaWidget date range", () => {
       new Event("submit", { bubbles: true, cancelable: true })));
     expect(llmMock).toHaveBeenCalledTimes(4);
     expect(llmMock.mock.calls[3][1]).toContain("Saturday, December 12, 2026");
-    expect(app.createNote.mock.calls.some(([name]) => name === "Proposed Agenda 2026-12-12 Work")).toBe(true);
-    expect(app.getNoteTasks).toHaveBeenCalledWith({ uuid: "archive-note" }, { includeDone: true });
-    expect(app.insertTask).toHaveBeenCalled();
-    expect(app.navigate).toHaveBeenCalledWith("https://www.amplenote.com/notes/archive-note");
+    expect(app.createNote.mock.calls.some(([name]) => name === "Proposed Agenda 2026-12-12 Work")).toBe(false);
+    expect(app.insertTask).not.toHaveBeenCalled();
+    expect(app.navigate).not.toHaveBeenCalled();
     expect(container.querySelectorAll(".proposed-agenda-day-group")).toHaveLength(1);
+    expect(container.querySelector(".proposed-agenda-date-edit").textContent).toContain("December 12");
   });
 
   // ----------------------------------------------------------------------------------------------
