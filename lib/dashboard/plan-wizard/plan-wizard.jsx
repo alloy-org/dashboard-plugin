@@ -22,6 +22,10 @@
 // The right slot reads Next until the final page, where it reads Done and closes the wizard. It used to read Next
 // there and sit permanently disabled, which left a finished plan with no way out but Escape or the backdrop, and
 // read as an unmet requirement rather than as the end of the sequence.
+//
+// The final page puts a View Quarterly Plan link beside Done. It publishes before it opens, so the note shown is
+// the plan including the answer just given on that page, and it renders through the same inline NoteEditor the
+// data-note link uses rather than navigating away from a wizard the user has not finished.
 
 import NoteEditor from "dashboard/note-editor";
 import DoneEnoughStep from "dashboard/plan-wizard/done-enough-step";
@@ -65,16 +69,20 @@ function currentDocumentScrollTop() {
 export default function PlanWizard({ app, domainName = null, domainUuid = null, onClose, quarter, year }) {
   const { consolidateProspects, discoverProspects, discoveryFailureReason, error, isConsolidating, isDiscovering,
     isLoading, isRefreshing, isSaving, planningContext, reload, saveError, saveGoals, saveProspectDecision,
-    saveProspects, saveQuarterAnswer } = usePlanWizard({ app, domainName, domainUuid, quarter, year });
+    saveProspects, saveQuarterAnswer, viewQuarterlyPlan } = usePlanWizard({ app, domainName, domainUuid, quarter,
+    year });
   const [stepKey, setStepKey] = useState(WIZARD_STEPS[0].key);
   const [hasIntentAnswer, setHasIntentAnswer] = useState(false);
   const [hasDoneEnoughSelection, setHasDoneEnoughSelection] = useState(false);
   const [inspectingNoteUuid, setInspectingNoteUuid] = useState(null);
+  const [isOpeningPlanNote, setIsOpeningPlanNote] = useState(false);
+  const [planNoteError, setPlanNoteError] = useState(null);
   const [overlayTop] = useState(currentDocumentScrollTop);
   useSuspendWidgetMounting(); // The wizard covers the dashboard, so scrolling behind it must not mount widgets the user cannot see
   const overlayRef = useRef(null);
   const projectNavigationDirectionRef = useRef(1);
   const stepNavigateRef = useRef(null);
+  const planNoteRequestRef = useRef(false);
   const scopeKey = planScopeKey({ domainName, domainUuid, quarter, year });
   const quarterLabel = planningContext.scope ? planningContext.scope.quarterKey : `${ year }-Q${ quarter }`;
   const domainLabel = domainName ?? "All Notes";
@@ -99,6 +107,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   // @desc Run the current step's registered handler, which navigates only once its pending edits saved.
   // @param {number} stepDelta - Positive for Next, negative for Back; read by the step's navigation callback.
   const handleNavigateStep = stepDelta => {
+    planNoteRequestRef.current = false;
     projectNavigationDirectionRef.current = stepDelta;
     if (stepNavigateRef.current) stepNavigateRef.current();
   };
@@ -130,8 +139,14 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
 
   // ----------------------------------------------------------------------------------------------
   // @desc Leave the final page once it has saved whatever the user selected: Back returns to the page before it,
-  //   and Done has nowhere further to go, so it closes the wizard.
+  //   View Quarterly Plan opens the plan note over the page, and Done has nowhere further to go, so it closes the
+  //   wizard.
   const handleDoneEnoughNavigation = () => {
+    if (planNoteRequestRef.current) {
+      planNoteRequestRef.current = false;
+      openQuarterlyPlanNote();
+      return;
+    }
     if (projectNavigationDirectionRef.current < 0) {
       handleStepChange(-1);
       return;
@@ -165,6 +180,40 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   // @param {string} noteUuid - Vision Guide UUID to load.
   const handleOpenDataNote = noteUuid => {
     setInspectingNoteUuid(noteUuid);
+  };
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Publish everything stored for this quarter and then show the resulting plan note.
+  // @returns {Promise<void>} Resolves once the note is on screen or the failure has been reported.
+  const openQuarterlyPlanNote = async () => {
+    setIsOpeningPlanNote(true);
+    setPlanNoteError(null);
+    try {
+      const noteUuid = await viewQuarterlyPlan();
+      if (!noteUuid) {
+        setPlanNoteError(new Error("This quarter has no plan note yet, and one could not be created."));
+        return;
+      }
+      setInspectingNoteUuid(noteUuid);
+    } catch (publishError) {
+      setPlanNoteError(publishError);
+    } finally {
+      setIsOpeningPlanNote(false);
+    }
+  };
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Show the quarter's plan note, saving the page's pending selection first so the plan the user reads
+  //   includes the answer they just gave rather than only the ones they had already saved. The save runs through
+  //   the page's own registered handler, the same path Back and Done take, so a failed write keeps the user on
+  //   the page with its retry rather than opening a note that contradicts what they chose.
+  const handleViewQuarterlyPlan = () => {
+    if (!isNavigatingSaveStep || !stepNavigateRef.current) {
+      openQuarterlyPlanNote();
+      return;
+    }
+    planNoteRequestRef.current = true;
+    stepNavigateRef.current();
   };
 
   const wizardModal = (
@@ -229,6 +278,11 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
             onAnswerStateChange={ setHasDoneEnoughSelection } onNavigate={ handleDoneEnoughNavigation }
             onRegisterNavigate={ handleRegisterNavigate } onSave={ saveQuarterAnswer } />
         ) : null }
+        { !inspectingNoteUuid && planNoteError && !isLoading && !error ? (
+          <p className="plan-wizard-plan-note-error" role="alert">
+            { `The quarterly plan note could not be opened. ${ planNoteError.message }` }
+          </p>
+        ) : null }
         { !inspectingNoteUuid && saveError && !isLoading && !error ? (
           <PlanSaveError app={ app } noteUuid={ saveError.noteUuid ?? planningContext.noteUuid }
             onOpenDataNote={ handleOpenDataNote } prefix={ SAVE_ERROR_PREFIX[step.key] } saveError={ saveError } />
@@ -242,6 +296,12 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
                 onClick={ isNavigatingSaveStep ? () => handleNavigateStep(-1) : () => handleStepChange(-1) }
                 type="button">Back</button>
             ) }
+            { isLastStep ? (
+              <button className="plan-wizard-view-plan" disabled={ isOpeningPlanNote || isSaving }
+                onClick={ handleViewQuarterlyPlan } type="button">
+                { isOpeningPlanNote ? "Opening…" : "View Quarterly Plan" }
+              </button>
+            ) : null }
             <button className="plan-wizard-next"
               disabled={ (isLastStep && !hasDoneEnoughSelection)
                 || (isFirstStep && ((!hasIntentAnswer && !hasPersistedIntent) || isSaving))

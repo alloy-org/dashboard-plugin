@@ -487,6 +487,74 @@ describe("PlanWizard step navigation", () => {
   });
 });
 
+describe("PlanWizard quarterly plan link", () => {
+  // ----------------------------------------------------------------------------------------------
+  // @desc The link is what makes the wizard's answers verifiable: a user who has just answered five pages should
+  //   be able to read the plan those answers produced without leaving the page they are on.
+  it("offers the plan link only on the last page, beside Done", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "quarter-name");
+    expect(container.querySelector(".plan-wizard-view-plan")).toBeNull();
+
+    await advanceToStep(container, "enough-for-today");
+    const planLink = container.querySelector(".plan-wizard-view-plan");
+    expect(planLink.textContent).toBe("View Quarterly Plan");
+    expect(planLink.disabled).toBe(false);
+    // The link sits to the left of the button that closes the wizard, not after it.
+    expect(planLink.nextElementSibling.className).toBe("plan-wizard-next");
+    await cleanup();
+  });
+
+  it("shows the plan note carrying every page's answers, including the one just selected", async () => {
+    const { app, cleanup, container } = await renderPlanWizard();
+    await typeInto(workFields(container)[0], "Cut support load in half");
+    await advanceToStep(container, "projects");
+    await saveFirstProject(container, "Ship diff-view v2");
+    await advanceToStep(container, "enough-for-today");
+    await clickAndSettle(conditionRadio(container, "two-focus-blocks"));
+
+    await clickAndSettle(container.querySelector(".plan-wizard-view-plan"));
+    const planNote = app.notes.find(note => note.name === "Q4 2026 Work Plan");
+    expect(planNote).toBeTruthy();
+    expect(planNote.content).toContain("Cut support load in half");
+    expect(planNote.content).toContain("Ship diff-view v2");
+    // Publishing happens before the note opens, so the condition selected moments ago is already in it.
+    expect(planNote.content).toContain("Two focused work blocks on quarterly goals");
+    expect(container.querySelector(".note-editor")).toBeTruthy();
+    await cleanup();
+  });
+
+  it("stays on the page with its retry when the selection cannot be saved, rather than opening a stale plan", async () => {
+    const app = createPlanWizardApp();
+    const { cleanup, container } = await renderPlanWizard({ app });
+    await advanceToStep(container, "enough-for-today");
+    app.replaceNoteContent.mockRejectedValueOnce(new Error("Amplenote was unreachable"));
+    await clickAndSettle(conditionRadio(container, "top-three-tasks"));
+    await clickAndSettle(container.querySelector(".plan-wizard-view-plan"));
+
+    expect(container.querySelector(".note-editor")).toBeNull();
+    expect(container.querySelector(".done-enough-container")).toBeTruthy();
+    expect(container.querySelector(".plan-error").textContent).toContain("Amplenote was unreachable");
+    // A failed attempt must not leave the plan-note request armed for whichever button is pressed next.
+    await clickAndSettle(container.querySelector(".plan-wizard-back"));
+    expect(container.querySelector(".note-editor")).toBeNull();
+    expect(container.querySelector(".quarter-name-container")).toBeTruthy();
+    await cleanup();
+  });
+
+  it("returns to the final page from the plan note without losing the selection", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "enough-for-today");
+    await clickAndSettle(conditionRadio(container, "top-three-tasks"));
+    await clickAndSettle(container.querySelector(".plan-wizard-view-plan"));
+    await clickAndSettle(container.querySelector(".note-editor-btn--back"));
+
+    expect(container.querySelector(".done-enough-container")).toBeTruthy();
+    expect(conditionRadio(container, "top-three-tasks").checked).toBe(true);
+    await cleanup();
+  });
+});
+
 // ----------------------------------------------------------------------------------------------
 // @desc Advance the wizard to a named step from wherever it currently sits, supplying a minimal intent when
 //   leaving the first page so tests of later pages satisfy the same Next precondition as a user.

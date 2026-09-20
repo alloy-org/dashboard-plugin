@@ -242,6 +242,30 @@ $plan-wizard-z-index: 1100;
     margin-left: auto;
   }
 
+  /* Reading the plan is a way out of the sequence rather than a step in it, so it reads as a link beside Done the
+   * same way Cancel does beside Next. `margin-left: auto` pushes the pair to the right edge together, and the
+   * `.plan-wizard-next` rule above then contributes nothing but the gap this sets. */
+  .plan-wizard-page .plan-wizard-view-plan {
+    background: none;
+    border: none;
+    color: $color-text-muted;
+    margin-left: auto;
+    margin-right: 20px;
+    padding-right: 0;
+    text-decoration: underline;
+
+    &:hover:not(:disabled) {
+      background: none;
+      color: $color-text-secondary;
+    }
+  }
+
+  .plan-wizard-plan-note-error {
+    color: $color-danger;
+    font-size: 0.85rem;
+    margin: 0;
+  }
+
   /* Cancel is a way out, not a step in the sequence, so it reads as a link rather than as a peer of Back and
    * Next. Nested under `.plan-wizard-page` to beat that block's `button { border: 1px solid }` default, the same
    * way the primary action is promoted below. */

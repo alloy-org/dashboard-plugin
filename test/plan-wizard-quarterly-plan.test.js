@@ -95,6 +95,47 @@ describe("mergedQuarterlyPlanContent", () => {
     expect(twice.match(/^# The Compounding Quarter/gm)).toHaveLength(1);
   });
 
+  // ----------------------------------------------------------------------------------------------
+  // @desc The intents page-one captures are the reason the rest of the plan exists, so a note missing them is
+  //   missing the plan's premise -- and every consumer that prompts from the note reads them as context.
+  it("writes both categories of intent under the quarter theme, above the outcomes", () => {
+    const intentPublication = quarterlyPlanPublication({ goals: [
+      { goalRank: 1, goalText: "Cut support load in half", userCategoryEm: "work" },
+      { goalRank: 1, goalText: "Run a half marathon", userCategoryEm: "personal" },
+      { goalRank: 2, goalText: "   ", userCategoryEm: "work" },
+    ] }, scope);
+    const merged = mergedQuarterlyPlanContent(provisionalPlanNoteContent(), intentPublication);
+    expect(merged).toContain(`- Professional intent: Cut support load in half ${ BUILDER_MARKER }`);
+    expect(merged).toContain(`- Personal intent: Run a half marathon ${ BUILDER_MARKER }`);
+    // A field the user left blank is not an intent, and an empty bullet would say nothing.
+    expect(merged).not.toContain(`- Professional intent:  ${ BUILDER_MARKER }`);
+    const intentIndex = merged.indexOf("- Professional intent:");
+    expect(intentIndex).toBeGreaterThan(merged.indexOf("# Quarter Theme"));
+    expect(intentIndex).toBeLessThan(merged.indexOf("## Success Looks Like"));
+    // Republishing the same intents replaces the bullets rather than stacking a second copy of each.
+    expect(mergedQuarterlyPlanContent(merged, intentPublication)).toBe(merged);
+  });
+
+  it("replaces an intent the user has since reworded rather than keeping both", () => {
+    const first = quarterlyPlanPublication({ goals: [{ goalRank: 1, goalText: "Cut support load",
+      userCategoryEm: "work" }] }, scope);
+    const second = quarterlyPlanPublication({ goals: [{ goalRank: 1, goalText: "Halve support load",
+      userCategoryEm: "work" }] }, scope);
+    const reworded = mergedQuarterlyPlanContent(mergedQuarterlyPlanContent(provisionalPlanNoteContent(), first), second);
+    expect(reworded).toContain(`- Professional intent: Halve support load ${ BUILDER_MARKER }`);
+    expect(reworded).not.toContain("Cut support load");
+  });
+
+  it("leaves the user's theme sentence alone while adding intent bullets beneath it", () => {
+    const authored = provisionalPlanNoteContent()
+      .replace("[One sentence describing the main focus of this quarter.]", "Stabilize before we scale.");
+    const intentPublication = quarterlyPlanPublication({ goals: [{ goalRank: 1,
+      goalText: "Cut support load in half", userCategoryEm: "work" }] }, scope);
+    const merged = mergedQuarterlyPlanContent(authored, intentPublication);
+    expect(merged).toContain("# Quarter Theme\nStabilize before we scale.");
+    expect(merged).toContain(`- Professional intent: Cut support load in half ${ BUILDER_MARKER }`);
+  });
+
   it("leaves the Quarter Theme sentence to the user rather than restating the name it just wrote above", () => {
     const authored = provisionalPlanNoteContent()
       .replace("[One sentence describing the main focus of this quarter.]", "Stabilize before we scale.");
@@ -200,8 +241,10 @@ describe("publishQuarterlyPlan", () => {
     const { app, planNoteContent } = appWithPlanNote(provisionalPlanNoteContent());
     const publishOptions = context => ({ ...scope, planningContext: context });
 
-    await savePlanGoals(app, { ...scope, goals: [{ capturedAt: "2026-09-11T09:00:00Z", goalRank: 1,
-      goalText: "Cut support load in half", userCategoryEm: "work" }] });
+    const intentContext = await savePlanGoals(app, { ...scope, goals: [{ capturedAt: "2026-09-11T09:00:00Z",
+      goalRank: 1, goalText: "Cut support load in half", userCategoryEm: "work" }] });
+    await publishQuarterlyPlan(app, publishOptions(intentContext));
+    expect(planNoteContent()).toContain(`- Professional intent: Cut support load in half ${ BUILDER_MARKER }`);
 
     // Projects page: one project taken as the quarter's focus, one kept warm, one parked.
     const projectsContext = await savePlanProspects(app, { ...scope, prospects: [
@@ -246,6 +289,8 @@ describe("publishQuarterlyPlan", () => {
 
     const published = planNoteContent();
     expect(published).toContain(`- [ ] [Top outcome]\n- Done for today when: two focused blocks and the inbox is clear ${ BUILDER_MARKER }`);
+    // Every page's answer is still in the note at the end, not just the one published most recently.
+    expect(published).toContain(`- Professional intent: Cut support load in half ${ BUILDER_MARKER }`);
     // The whole point of the merge: everything the user wrote before the wizard ran is still there.
     for (const authoredLine of USER_AUTHORED_LINES) expect(published).toContain(authoredLine);
     expect(published).toContain("# Quarterly Review");
