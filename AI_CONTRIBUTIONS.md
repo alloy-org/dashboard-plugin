@@ -5,6 +5,22 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-09-19 — Cycling background project refresh with provider-found tasks and superseded ideas
+
+**Model:** claude-opus-5[1m]
+**Files created/modified:**
+- `lib/dashboard/project-refresh-schedule.js` (created) — Two-regime selection: a 72-hour staleness window that refreshes every stale project, a cycling fallback that walks all projects oldest-refresh-first, and a 20-second budget that stops the cycling regime after at least one project
+- `lib/dashboard/project-task-ideas.js` (modified) — One provider call now asks for both the tasks the model attributes to the project (cited by UUID from a candidate pool) and up to three next-action ideas, each able to supersede an undecided idea via `beforeTask`; found tasks citing an uncitable UUID and unmatched `beforeTask` values are rejected
+- `lib/dashboard/project-task-collection.js` (modified) — Selection delegated to the schedule module, a capped pool of unassociated open tasks is offered to the prompt, provider-found tasks join `relatedTaskRecords`/`relatedTasks`, and returned ideas are merged so a superseded one is replaced at its original position
+- `test/project-task-store.test.js` (modified) — Four scheduling cases plus provider-found association, in-place idea supersession, a cycling load refreshing the oldest project, and budget-limited stopping
+
+**Task:** After the dashboard finishes loading, serially refresh any project untouched for three days; when none is stale, refresh the oldest project each load and keep going for at least 20 seconds. Ask the LLM for newly found tasks and three task ideas, sending the ideas awaiting decision so a returned idea can name the one it updates.
+**Prompt summary:** "we should serially update any project that hasn't had its tasks updated in the past 3 days... spending at least 20 seconds on updating projects... instruct the LLM to send any newly found tasks, and to suggest 3 new tasks... each can specify whether it is a new idea, or an update of a previous task idea, which can be specified as the value of a 'beforeTask'"
+**Scope:** ~150 lines of new logic across 3 files, plus 7 tests
+**Notes:** The staleness window moved from 20 to 72 hours, and the provider is now consulted on every refresh rather than only when a project ran out of ideas, because finding scattered tasks is work the local name match cannot do. Catch-up is never cut off by the budget: leaving a three-day-stale project unrefreshed is the outcome the window exists to prevent. `candidateTaskRecords` is a prompt-only field and stays out of the store note because `_storedProjectPayload` persists a fixed field list.
+
+---
+
 ## 2026-09-19 — Pause viewport-driven widget mounting while the Plan Wizard is open
 
 **Model:** claude-opus-5[1m]

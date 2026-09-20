@@ -1,8 +1,10 @@
-// Verify the per-project sections of the quarterly task store round-trip, are written one project at a time,
-// and that a background pass associates tasks, moves completions, and respects its staleness window.
+// Verify the per-project sections of the quarterly task store round-trip, are written one project at a time, and
+// that a background pass associates tasks, folds in provider-found tasks and superseded ideas, and picks its
+// projects by the staleness window first and the cycling time budget after.
 import { jest } from "@jest/globals";
 import { guideHeadingRanges } from "plan-wizard/vision-guide-markdown";
-import { collectProjectTasks, projectNeedsAttempt } from "project-task-collection";
+import { collectProjectTasks } from "project-task-collection";
+import { projectNeedsRefresh, projectsToRefresh, shouldRefreshAnotherProject } from "project-refresh-schedule";
 import { initialProjectTaskStoreMarkdown, projectSectionMarkdown } from "project-task-store-markdown";
 import { collectedIdeasMarkdown, openProjectTaskStore, readCollectedProjectTasks, storedProjectRecords,
   writeProjectSection } from "project-task-store";
@@ -119,25 +121,66 @@ describe("project task store sections", () => {
   });
 });
 
-describe("background project task collection", () => {
+
+describe("project refresh scheduling", () => {
   // ----------------------------------------------------------------------------------------------
-  // @desc A project attempted inside the staleness window is left alone; one never attempted is always due.
-  it("treats only aged-out and unattempted projects as due", () => {
+  // @desc A project refreshed inside the three-day window is current; one older than it, or never refreshed,
+  //   is due.
+  it("treats only aged-out and unrefreshed projects as due", () => {
     const now = new Date("2026-09-19T12:00:00.000Z");
-    expect(projectNeedsAttempt(undefined, now)).toBe(true);
-    expect(projectNeedsAttempt({ lastAttemptedAt: "2026-09-19T06:00:00.000Z" }, now)).toBe(false);
-    expect(projectNeedsAttempt({ lastAttemptedAt: "2026-09-17T06:00:00.000Z" }, now)).toBe(true);
+    expect(projectNeedsRefresh(undefined, now)).toBe(true);
+    expect(projectNeedsRefresh({ lastAttemptedAt: "2026-09-18T06:00:00.000Z" }, now)).toBe(false);
+    expect(projectNeedsRefresh({ lastAttemptedAt: "2026-09-15T06:00:00.000Z" }, now)).toBe(true);
   });
 
   // ----------------------------------------------------------------------------------------------
+  // @desc While anything is stale the pass takes every stale project, oldest first, and leaves current ones
+  //   alone; the cycling regime never selects while catch-up work remains.
+  it("selects every stale project, oldest refresh first", () => {
+    const now = new Date("2026-09-19T12:00:00.000Z");
+    const projects = [{ uuid: "recent" }, { uuid: "ancient" }, { uuid: "current" }];
+    const recordsByUuid = new Map([["recent", { lastAttemptedAt: "2026-09-15T00:00:00.000Z" }],
+      ["ancient", { lastAttemptedAt: "2026-09-01T00:00:00.000Z" }],
+      ["current", { lastAttemptedAt: "2026-09-19T00:00:00.000Z" }]]);
+    const { orderedProjects, regimeEm } = projectsToRefresh({ now, projects, recordsByUuid });
+    expect(regimeEm).toBe("catchUp");
+    expect(orderedProjects.map(project => project.uuid)).toEqual(["ancient", "recent"]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc With nothing stale, the pass cycles: every project is offered in oldest-first order so the budget
+  //   decides how far the load gets, and the oldest is always the one it starts from.
+  it("cycles through every project once none are stale", () => {
+    const now = new Date("2026-09-19T12:00:00.000Z");
+    const projects = [{ uuid: "newer" }, { uuid: "older" }];
+    const recordsByUuid = new Map([["newer", { lastAttemptedAt: "2026-09-19T06:00:00.000Z" }],
+      ["older", { lastAttemptedAt: "2026-09-18T06:00:00.000Z" }]]);
+    const { orderedProjects, regimeEm } = projectsToRefresh({ now, projects, recordsByUuid });
+    expect(regimeEm).toBe("cycle");
+    expect(orderedProjects.map(project => project.uuid)).toEqual(["older", "newer"]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A cycling pass always refreshes one project, keeps going while its twenty seconds remain, and stops
+  //   once they are spent. A catch-up pass is never stopped by the budget.
+  it("spends its budget before stopping a cycling pass", () => {
+    expect(shouldRefreshAnotherProject({ elapsedMilliseconds: 0, refreshedCount: 0, regimeEm: "cycle" })).toBe(true);
+    expect(shouldRefreshAnotherProject({ elapsedMilliseconds: 8000, refreshedCount: 1, regimeEm: "cycle" })).toBe(true);
+    expect(shouldRefreshAnotherProject({ elapsedMilliseconds: 21000, refreshedCount: 1, regimeEm: "cycle" })).toBe(false);
+    expect(shouldRefreshAnotherProject({ elapsedMilliseconds: 99000, refreshedCount: 4, regimeEm: "catchUp" })).toBe(true);
+  });
+});
+
+describe("background project task collection", () => {
+  // ----------------------------------------------------------------------------------------------
   // @desc A first pass associates the project's open tasks, moves its completion into its own list, records
-  //   the attempt timestamp, and stores the generated ideas.
+  //   the refresh timestamp, and stores the generated ideas.
   it("collects tasks, completions, and generated ideas on a first pass", async () => {
     const app = storeApp({ tasks: [
       { content: "Launch dashboard date picker", noteUUID: "source-note", uuid: "open-task" },
       { completedAt: 1789552800, content: "Launch dashboard polish", uuid: "finished-task" }] });
-    const ideaGenerator = jest.fn().mockResolvedValue({ failureReason: null,
-      suggestedTasks: [{ generatedAt: "2026-09-19T12:00:00.000Z", taskText: "Audit widget memory before ship" }] });
+    const ideaGenerator = jest.fn().mockResolvedValue({ failureReason: null, foundTasks: [],
+      suggestedTasks: [{ beforeTask: null, generatedAt: "2026-09-19T12:00:00.000Z", taskText: "Audit widget memory before ship" }] });
     const now = new Date("2026-09-19T12:00:00.000Z");
     const result = await collectProjectTasks(app, { domainName: scope.domainName, domainUuid: scope.domainUuid,
       ideaGenerator, now, quarterlyContent });
@@ -151,25 +194,78 @@ describe("background project task collection", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc A second pass within the staleness window spends no provider call and rewrites nothing.
-  it("skips projects refreshed inside the staleness window", async () => {
-    const app = storeApp({ tasks: [{ content: "Launch dashboard date picker", uuid: "open-task" }] });
-    const ideaGenerator = jest.fn().mockResolvedValue({ failureReason: null,
-      suggestedTasks: [{ generatedAt: "2026-09-19T12:00:00.000Z", taskText: "Audit widget memory before ship" }] });
+  // @desc A task the local name match never sees is associated when the provider attributes it, and the
+  //   candidate pool it drew from is not persisted into the store note.
+  it("associates tasks the provider attributes to the project", async () => {
+    const app = storeApp({ tasks: [{ content: "Launch dashboard date picker", uuid: "open-task" },
+      { content: "Rework the week grid header", uuid: "unmatched-task" }] });
+    const ideaGenerator = jest.fn(async (_app, { project }) => {
+      expect(project.candidateTaskRecords.map(task => task.taskUuid)).toContain("unmatched-task");
+      return { failureReason: null, foundTasks: [{ taskText: "Rework the week grid header", taskUuid: "unmatched-task" }],
+        suggestedTasks: [] };
+    });
+    await collectProjectTasks(app, { domainName: scope.domainName, domainUuid: scope.domainUuid, ideaGenerator,
+      now: new Date("2026-09-19T12:00:00.000Z"), quarterlyContent });
+    const stored = [...storedProjectRecords(app.noteContent).recordsByUuid.values()][0];
+    expect(stored.relatedTaskRecords.map(task => task.taskUuid).sort()).toEqual(["open-task", "unmatched-task"]);
+    expect(stored.relatedTasks).toContain("unmatched-task");
+    expect(stored.candidateTaskRecords).toBeUndefined();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc An idea naming an earlier one in beforeTask replaces it where it stood, so the user judges one
+  //   refined suggestion rather than two phrasings of it. An idea naming nothing is added alongside.
+  it("replaces a superseded idea in place and appends a new one", async () => {
+    const app = storeApp({ tasks: [] });
+    const firstGenerator = jest.fn().mockResolvedValue({ failureReason: null, foundTasks: [],
+      suggestedTasks: [{ beforeTask: null, generatedAt: "2026-09-19T12:00:00.000Z", taskText: "Audit widget memory" },
+        { beforeTask: null, generatedAt: "2026-09-19T12:00:00.000Z", taskText: "Draft the release notes" }] });
+    const options = { domainName: scope.domainName, domainUuid: scope.domainUuid, quarterlyContent };
+    await collectProjectTasks(app, { ...options, ideaGenerator: firstGenerator, now: new Date("2026-09-19T12:00:00.000Z") });
+    const secondGenerator = jest.fn().mockResolvedValue({ failureReason: null, foundTasks: [],
+      suggestedTasks: [{ beforeTask: "Audit widget memory", generatedAt: "2026-09-23T12:00:00.000Z", taskText: "Audit widget memory and cap the cache" },
+        { beforeTask: null, generatedAt: "2026-09-23T12:00:00.000Z", taskText: "Wire the date picker to the store" }] });
+    await collectProjectTasks(app, { ...options, ideaGenerator: secondGenerator, now: new Date("2026-09-23T12:00:00.000Z") });
+    const stored = [...storedProjectRecords(app.noteContent).recordsByUuid.values()][0];
+    expect(stored.suggestedTasks.map(idea => idea.taskText)).toEqual(["Audit widget memory and cap the cache",
+      "Draft the release notes", "Wire the date picker to the store"]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A second load inside the three-day window still refreshes one project, because the cycling regime
+  //   keeps the store moving rather than going idle whenever every project is current.
+  it("refreshes the oldest project on a load with nothing stale", async () => {
+    const app = storeApp({ tasks: [] });
+    const ideaGenerator = jest.fn().mockResolvedValue({ failureReason: null, foundTasks: [], suggestedTasks: [] });
     const options = { domainName: scope.domainName, domainUuid: scope.domainUuid, ideaGenerator, quarterlyContent };
     await collectProjectTasks(app, { ...options, now: new Date("2026-09-19T12:00:00.000Z") });
-    const writeCount = app.replaceNoteContent.mock.calls.length;
     const second = await collectProjectTasks(app, { ...options, now: new Date("2026-09-19T14:00:00.000Z") });
-    expect(second).toMatchObject({ attempted: 0, skipped: 1 });
+    expect(second).toMatchObject({ attempted: 1, regimeEm: "cycle" });
+    expect(ideaGenerator).toHaveBeenCalledTimes(2);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A cycling pass whose budget is already spent still refreshes its first project and then stops,
+  //   which is what keeps one load from walking the whole quarter's projects.
+  it("stops a cycling pass after one project once its budget is spent", async () => {
+    const app = storeApp({ tasks: [] });
+    const ideaGenerator = jest.fn().mockResolvedValue({ failureReason: null, foundTasks: [], suggestedTasks: [] });
+    const twoProjectContent = `${ quarterlyContent }\n## Second project\n- Weekly rhythm: One block per week\n- Outcome: Ship it\n`;
+    const options = { domainName: scope.domainName, domainUuid: scope.domainUuid, ideaGenerator,
+      quarterlyContent: twoProjectContent };
+    await collectProjectTasks(app, { ...options, now: new Date("2026-09-19T12:00:00.000Z") });
+    ideaGenerator.mockClear();
+    const cycling = await collectProjectTasks(app, { ...options, elapsedMilliseconds: () => 25000,
+      now: new Date("2026-09-19T13:00:00.000Z") });
+    expect(cycling).toMatchObject({ attempted: 1, regimeEm: "cycle" });
     expect(ideaGenerator).toHaveBeenCalledTimes(1);
-    expect(app.replaceNoteContent.mock.calls.length).toBe(writeCount);
   });
 
   // ----------------------------------------------------------------------------------------------
   // @desc An unmounting dashboard stops the pass without leaving the store half-written for that project.
   it("stops between projects when the dashboard goes away", async () => {
     const app = storeApp({ tasks: [] });
-    const ideaGenerator = jest.fn().mockResolvedValue({ failureReason: null, suggestedTasks: [] });
+    const ideaGenerator = jest.fn().mockResolvedValue({ failureReason: null, foundTasks: [], suggestedTasks: [] });
     const result = await collectProjectTasks(app, { domainName: scope.domainName, domainUuid: scope.domainUuid,
       ideaGenerator, now: new Date("2026-09-19T12:00:00.000Z"), quarterlyContent, shouldContinue: () => false });
     expect(result).toMatchObject({ attempted: 0 });
