@@ -1,11 +1,13 @@
 // Render one independently updating project card and persist its priority without disabling sibling cards.
 
+import ExpandingTextarea from "dashboard/plan-wizard/expanding-textarea";
 import { PROJECT_PRIORITY_OPTIONS } from "dashboard/plan-wizard/projects-step-fields";
 import { memo, useEffect, useState } from "react";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Render one project proposal or custom project with card-local priority selection state.
-//   Keep emphasis choices visible and disabled until the project has a nonblank name.
+//   Project names wrap and grow to display their full text. Keep emphasis choices visible and disabled
+//   until the project has a nonblank name.
 // @param {object} params - An object with the following properties:
 //   - {boolean} isDisabled - Whether a page-level save prevents editing.
 //   - {Function} onChangeSummary - Receives the row UUID and edited row fields.
@@ -40,9 +42,9 @@ function ProjectCard({ isDisabled, onChangeSummary, onReject, onSetPriority, row
   return (
     <div aria-busy={ isPrioritySaving } className={ rowClass }>
       <div className="project-row-header">
-        <input className="project-row-name" disabled={ isDisabled || isPrioritySaving }
+        <ExpandingTextarea className="project-row-name" disabled={ isDisabled || isPrioritySaving }
           onChange={ event => onChangeSummary(row.uuid, { summary: event.target.value }) }
-          placeholder="Name a project that moves an intent forward" type="text" value={ row.summary } />
+          placeholder="Name a project that moves an intent forward" value={ row.summary } />
         { row.isStored ? (
           <button className="project-row-reject" disabled={ isDisabled || isPrioritySaving }
             onClick={ () => onReject(row) } title="Remove this project from the plan" type="button">

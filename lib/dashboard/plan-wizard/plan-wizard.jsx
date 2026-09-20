@@ -35,6 +35,8 @@ import PaceCardsStep from "dashboard/plan-wizard/pace-cards-step";
 import PlanSaveError from "dashboard/plan-wizard/plan-save-error";
 import ProjectsStep from "dashboard/plan-wizard/projects-step";
 import QuarterNameStep from "dashboard/plan-wizard/quarter-name-step";
+import { hasCompletedPlanCore, progressRowsFromContext } from "dashboard/plan-wizard/wizard-progress-fields";
+import WizardProgressSidebar from "dashboard/plan-wizard/wizard-progress-sidebar";
 import { WIZARD_STEPS, wizardStepIndexFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useSuspendWidgetMounting } from "dashboard/widget-mount-suspension";
 import usePlanWizard, { planScopeKey } from "hooks/use-plan-wizard";
@@ -85,6 +87,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const projectNavigationDirectionRef = useRef(1);
   const stepNavigateRef = useRef(null);
   const planNoteRequestRef = useRef(false);
+  const pendingStepKeyRef = useRef(null);
   const scopeKey = planScopeKey({ domainName, domainUuid, quarter, year });
   const quarterLabel = planningContext.scope ? planningContext.scope.quarterKey : `${ year }-Q${ quarter }`;
   const domainLabel = domainName ?? "All Notes";
@@ -95,6 +98,10 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const isNavigatingSaveStep = ["enough-for-today", "pace-cards", "projects", "quarter-name"].includes(step.key);
   const hasPersistedIntent = planningContext.goals.length > 0;
   const advanceLabel = isLastStep ? "Done" : "Next";
+  const progressRows = progressRowsFromContext({ currentStepKey: step.key, planningContext, wizardSteps: WIZARD_STEPS });
+  // The grid column and the rail itself are gated on one flag, so the body never reserves a column for a sidebar
+  // it is not rendering: loading, a load failure, and the inline note editor each take the whole width.
+  const rendersProgressSidebar = hasCompletedPlanCore(progressRows) && !inspectingNoteUuid && !isLoading && !error;
 
   // ----------------------------------------------------------------------------------------------
   // @desc Hold the current step's save-then-navigate handler so the shared Back and Next buttons can run it.
@@ -110,6 +117,8 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   // @param {number} stepDelta - Positive for Next, negative for Back; read by the step's navigation callback.
   const handleNavigateStep = stepDelta => {
     planNoteRequestRef.current = false;
+    pendingStepKeyRef.current = null; // Back and Next name their own destination, superseding any jump that failed to save
+
     projectNavigationDirectionRef.current = stepDelta;
     if (stepNavigateRef.current) stepNavigateRef.current();
   };
@@ -120,6 +129,39 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const handleStepChange = stepDelta => {
     const nextIndex = Math.min(Math.max(stepIndex + stepDelta, 0), WIZARD_STEPS.length - 1);
     setStepKey(WIZARD_STEPS[nextIndex].key);
+  };
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Open the step a sidebar jump is waiting on, if one is, and clear that request either way.
+  // @returns {boolean} True when a pending jump was applied, so the caller leaves its own navigation alone.
+  const consumePendingStepKey = () => {
+    const targetStepKey = pendingStepKeyRef.current;
+    pendingStepKeyRef.current = null;
+    if (!targetStepKey) return false;
+    setStepKey(targetStepKey);
+    return true;
+  };
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Jump to an already-answered step the user picked from the progress sidebar, saving whatever is pending
+  //   on the page they are leaving first. The save runs through that page's own registered handler, the same path
+  //   Back and Next take, so an edit made and not yet submitted is carried along rather than silently dropped,
+  //   and a failed write keeps the user where they are with its retry.
+  //
+  //   The intent page is deliberately not routed that way: its registered handler always continues to the projects
+  //   page and runs discovery, so putting a jump through it would land the user somewhere they did not choose. That
+  //   page saves on its own Next, and the sidebar only appears once it has been answered.
+  // @param {string} targetStepKey - Key of the step to open.
+  const handleSelectStep = targetStepKey => {
+    if (targetStepKey === step.key) return;
+    planNoteRequestRef.current = false;
+    pendingStepKeyRef.current = targetStepKey;
+    if (isNavigatingSaveStep && stepNavigateRef.current) {
+      stepNavigateRef.current();
+      return;
+    }
+    pendingStepKeyRef.current = null;
+    setStepKey(targetStepKey);
   };
 
   // ----------------------------------------------------------------------------------------------
@@ -134,10 +176,14 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   };
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Apply the project page direction selected by Back or Next after that page confirms its draft saved.
+  // @desc Apply the project page direction selected by Back or Next after that page confirms its draft saved. A
+  //   sidebar jump waiting on that same save takes precedence, since it names the step to open outright rather
+  //   than a direction to step in.
   const handleProjectNavigation = () => {
+    if (consumePendingStepKey()) return;
     handleStepChange(projectNavigationDirectionRef.current);
   };
+
 
   // ----------------------------------------------------------------------------------------------
   // @desc Leave the final page once it has saved whatever the user selected: Back returns to the page before it,
@@ -149,6 +195,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
       openQuarterlyPlanNote();
       return;
     }
+    if (consumePendingStepKey()) return;
     if (projectNavigationDirectionRef.current < 0) {
       handleStepChange(-1);
       return;
@@ -244,81 +291,89 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
           </div>
           <span className="plan-wizard-progress">{ `${ stepIndex + 1 } of ${ WIZARD_STEPS.length }` }</span>
         </header>
-        { isLoading ? <p className="plan-wizard-status">Loading your plan…</p> : null }
-        { error && !isLoading ? (
-          <div className="plan-wizard-error" role="alert">
-            <p className="plan-wizard-error-title">Plan Builder could not read its saved Vision Guide.</p>
-            <p className="plan-wizard-error-message">{ error.message }</p>
-            <p className="plan-wizard-error-guidance">No planning data was changed. Correct the named record or
-              retry after a temporary connection problem.</p>
-            <button className="plan-wizard-retry" onClick={ reload } type="button">Try again</button>
-          </div>
+        <div className={ `plan-wizard-body${ rendersProgressSidebar ? " plan-wizard-body--with-sidebar" : "" }` }>
+        { rendersProgressSidebar ? (
+          <WizardProgressSidebar { ...{ isOpeningPlanNote, progressRows, quarterLabel } }
+            onOpenPlanNote={ handleViewQuarterlyPlan } onSelectStep={ handleSelectStep } />
         ) : null }
-        { inspectingNoteUuid ? (
-          <NoteEditor app={ app } noteUUID={ inspectingNoteUuid } onBack={ () => setInspectingNoteUuid(null) } />
-        ) : null }
-        { !inspectingNoteUuid && !isLoading && !error && step.key === "intent" ? (
-          <IntentStep { ...{ isRefreshing, isSaving, planningContext, scopeKey } }
-            onAnswerStateChange={ setHasIntentAnswer } onFindProjects={ handleFindProjects }
-            onRegisterNavigate={ handleRegisterNavigate } onSave={ saveGoals } />
-        ) : null }
-        { !inspectingNoteUuid && !isLoading && !error && step.key === "projects" ? (
-          <ProjectsStep { ...{ discoveryFailureReason, isConsolidating, isDiscovering, isSaving, planningContext, scopeKey } }
-            onConsolidate={ consolidateProspects } onDiscover={ discoverProspects } onNavigate={ handleProjectNavigation }
-            onRegisterNavigate={ handleRegisterNavigate } onSave={ saveProspects }
-            onSaveDecision={ saveProspectDecision } />
-        ) : null }
-        { !inspectingNoteUuid && !isLoading && !error && step.key === "pace-cards" ? (
-          <PaceCardsStep { ...{ isSaving, planningContext, scopeKey } }
-            onNavigate={ handleProjectNavigation } onRegisterNavigate={ handleRegisterNavigate }
-            onSave={ records => saveProspects(records, { updatePlacement: false }) } />
-        ) : null }
-        { !inspectingNoteUuid && !isLoading && !error && step.key === "quarter-name" ? (
-          <QuarterNameStep { ...{ isSaving, planningContext, scopeKey } }
-            onNavigate={ handleProjectNavigation } onRegisterNavigate={ handleRegisterNavigate }
-            onSaveName={ saveQuarterAnswer } onSaveProspects={ saveProspects } />
-        ) : null }
-        { !inspectingNoteUuid && !isLoading && !error && step.key === "enough-for-today" ? (
-          <DoneEnoughStep { ...{ isSaving, saveError, scopeKey } } answer={ planningContext.dailySufficiency }
-            onAnswerStateChange={ setHasDoneEnoughSelection } onNavigate={ handleDoneEnoughNavigation }
-            onRegisterNavigate={ handleRegisterNavigate } onSave={ saveQuarterAnswer } />
-        ) : null }
-        { !inspectingNoteUuid && planNoteError && !isLoading && !error ? (
-          <p className="plan-wizard-plan-note-error" role="alert">
-            { `The quarterly plan note could not be opened. ${ planNoteError.message }` }
-          </p>
-        ) : null }
-        { !inspectingNoteUuid && saveError && !isLoading && !error ? (
-          <PlanSaveError app={ app } noteUuid={ saveError.noteUuid ?? planningContext.noteUuid }
-            onOpenDataNote={ handleOpenDataNote } prefix={ SAVE_ERROR_PREFIX[step.key] } saveError={ saveError } />
-        ) : null }
-        { !inspectingNoteUuid && !isLoading && !error ? (
-          <nav className="plan-wizard-navigation">
-            { isFirstStep ? (
-              <button className="plan-wizard-cancel" onClick={ onClose } type="button">Cancel</button>
-            ) : (
-              <button className="plan-wizard-back" disabled={ isNavigatingSaveStep && isSaving }
-                onClick={ isNavigatingSaveStep ? () => handleNavigateStep(-1) : () => handleStepChange(-1) }
-                type="button">Back</button>
-            ) }
-            <div className="plan-wizard-advance-group">
-              { isLastStep ? (
-                <button className="plan-wizard-view-plan" disabled={ isOpeningPlanNote || isSaving }
-                  onClick={ handleViewQuarterlyPlan } type="button">
-                  { isOpeningPlanNote ? "Opening…" : "View Quarterly Plan" }
-                </button>
-              ) : null }
-              <button className="plan-wizard-next"
-                disabled={ (isLastStep && !hasDoneEnoughSelection)
-                  || (isFirstStep && ((!hasIntentAnswer && !hasPersistedIntent) || isSaving))
-                  || (isNavigatingSaveStep && isSaving) }
-                onClick={ isFirstStep || isNavigatingSaveStep ? () => handleNavigateStep(1) : () => handleStepChange(1) }
-                type="button">
-                { (isFirstStep || isNavigatingSaveStep) && isSaving ? "Saving…" : advanceLabel }
-              </button>
+        <div className="plan-wizard-body-main">
+          { isLoading ? <p className="plan-wizard-status">Loading your plan…</p> : null }
+          { error && !isLoading ? (
+            <div className="plan-wizard-error" role="alert">
+              <p className="plan-wizard-error-title">Plan Builder could not read its saved Vision Guide.</p>
+              <p className="plan-wizard-error-message">{ error.message }</p>
+              <p className="plan-wizard-error-guidance">No planning data was changed. Correct the named record or
+                retry after a temporary connection problem.</p>
+              <button className="plan-wizard-retry" onClick={ reload } type="button">Try again</button>
             </div>
-          </nav>
-        ) : null }
+          ) : null }
+          { inspectingNoteUuid ? (
+            <NoteEditor app={ app } noteUUID={ inspectingNoteUuid } onBack={ () => setInspectingNoteUuid(null) } />
+          ) : null }
+          { !inspectingNoteUuid && !isLoading && !error && step.key === "intent" ? (
+            <IntentStep { ...{ isRefreshing, isSaving, planningContext, scopeKey } }
+              onAnswerStateChange={ setHasIntentAnswer } onFindProjects={ handleFindProjects }
+              onRegisterNavigate={ handleRegisterNavigate } onSave={ saveGoals } />
+          ) : null }
+          { !inspectingNoteUuid && !isLoading && !error && step.key === "projects" ? (
+            <ProjectsStep { ...{ discoveryFailureReason, isConsolidating, isDiscovering, isSaving, planningContext, scopeKey } }
+              onConsolidate={ consolidateProspects } onDiscover={ discoverProspects } onNavigate={ handleProjectNavigation }
+              onRegisterNavigate={ handleRegisterNavigate } onSave={ saveProspects }
+              onSaveDecision={ saveProspectDecision } />
+          ) : null }
+          { !inspectingNoteUuid && !isLoading && !error && step.key === "pace-cards" ? (
+            <PaceCardsStep { ...{ isSaving, planningContext, scopeKey } }
+              onNavigate={ handleProjectNavigation } onRegisterNavigate={ handleRegisterNavigate }
+              onSave={ records => saveProspects(records, { updatePlacement: false }) } />
+          ) : null }
+          { !inspectingNoteUuid && !isLoading && !error && step.key === "quarter-name" ? (
+            <QuarterNameStep { ...{ isSaving, planningContext, scopeKey } }
+              onNavigate={ handleProjectNavigation } onRegisterNavigate={ handleRegisterNavigate }
+              onSaveName={ saveQuarterAnswer } onSaveProspects={ saveProspects } />
+          ) : null }
+          { !inspectingNoteUuid && !isLoading && !error && step.key === "enough-for-today" ? (
+            <DoneEnoughStep { ...{ isSaving, saveError, scopeKey } } answer={ planningContext.dailySufficiency }
+              onAnswerStateChange={ setHasDoneEnoughSelection } onNavigate={ handleDoneEnoughNavigation }
+              onRegisterNavigate={ handleRegisterNavigate } onSave={ saveQuarterAnswer } />
+          ) : null }
+          { !inspectingNoteUuid && planNoteError && !isLoading && !error ? (
+            <p className="plan-wizard-plan-note-error" role="alert">
+              { `The quarterly plan note could not be opened. ${ planNoteError.message }` }
+            </p>
+          ) : null }
+          { !inspectingNoteUuid && saveError && !isLoading && !error ? (
+            <PlanSaveError app={ app } noteUuid={ saveError.noteUuid ?? planningContext.noteUuid }
+              onOpenDataNote={ handleOpenDataNote } prefix={ SAVE_ERROR_PREFIX[step.key] } saveError={ saveError } />
+          ) : null }
+          { !inspectingNoteUuid && !isLoading && !error ? (
+            <nav className="plan-wizard-navigation">
+              { isFirstStep ? (
+                <button className="plan-wizard-cancel" onClick={ onClose } type="button">Cancel</button>
+              ) : (
+                <button className="plan-wizard-back" disabled={ isNavigatingSaveStep && isSaving }
+                  onClick={ isNavigatingSaveStep ? () => handleNavigateStep(-1) : () => handleStepChange(-1) }
+                  type="button">Back</button>
+              ) }
+              <div className="plan-wizard-advance-group">
+                { isLastStep ? (
+                  <button className="plan-wizard-view-plan" disabled={ isOpeningPlanNote || isSaving }
+                    onClick={ handleViewQuarterlyPlan } type="button">
+                    { isOpeningPlanNote ? "Opening…" : "View Quarterly Plan" }
+                  </button>
+                ) : null }
+                <button className="plan-wizard-next"
+                  disabled={ (isLastStep && !hasDoneEnoughSelection)
+                    || (isFirstStep && ((!hasIntentAnswer && !hasPersistedIntent) || isSaving))
+                    || (isNavigatingSaveStep && isSaving) }
+                  onClick={ isFirstStep || isNavigatingSaveStep ? () => handleNavigateStep(1) : () => handleStepChange(1) }
+                  type="button">
+                  { (isFirstStep || isNavigatingSaveStep) && isSaving ? "Saving…" : advanceLabel }
+                </button>
+              </div>
+            </nav>
+          ) : null }
+        </div>
+        </div>
       </div>
     </div>
   );

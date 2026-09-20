@@ -9,6 +9,7 @@ $plan-wizard-edge-inset-horizontal-phone: 10px;
 $plan-wizard-edge-inset-vertical: $sp-xl;
 $plan-wizard-input-min-height: 38px;
 $plan-wizard-pending-spinner-size: 14px;
+$plan-wizard-sidebar-width: 220px;
 $plan-wizard-shadow-blur: 40px;
 $plan-wizard-shadow-y: 12px;
 $plan-wizard-z-index: 1100;
@@ -60,6 +61,10 @@ $plan-wizard-z-index: 1100;
   .plan-wizard-page {
     @include card;
 
+    /* The dialog is the container the progress rail's width query measures, so the query has to be declared on an
+     * ancestor of the rail rather than on the body it styles: an element cannot answer its own container query. */
+    container-type: inline-size;
+
     background: $color-bg-secondary;
     box-shadow: 0 $plan-wizard-shadow-y $plan-wizard-shadow-blur $color-overlay-shadow;
     color: $color-text;
@@ -84,7 +89,8 @@ $plan-wizard-z-index: 1100;
     /* Every page's inputs share one look, so a question added later needs no new field styling. */
     input[type="text"],
     input[type="date"],
-    textarea.intent-step-input {
+    textarea.intent-step-input,
+    textarea.project-row-name {
       background: $color-bg-primary;
       border: 1px solid $color-border;
       border-radius: $radius-sm;
@@ -103,6 +109,17 @@ $plan-wizard-z-index: 1100;
       &::placeholder {
         color: $color-text-muted;
       }
+    }
+
+    .intent-step-input,
+    .project-row-name {
+      box-sizing: border-box;
+      display: block;
+      line-height: 1.4;
+      min-width: 0;
+      overflow: hidden;
+      overflow-wrap: anywhere;
+      resize: none;
     }
 
     /* Buttons default to the quiet secondary treatment; each page promotes its own primary action below. */
@@ -435,15 +452,6 @@ $plan-wizard-z-index: 1100;
           color: $color-intent-personal;
         }
       }
-    }
-
-    .intent-step-input {
-      box-sizing: border-box;
-      display: block;
-      line-height: 1.4;
-      overflow: hidden;
-      overflow-wrap: anywhere;
-      resize: none;
     }
 
     /* The pending row holds the place the suggestion chips will take, so a slow inference pass reads as work in
@@ -1252,5 +1260,216 @@ $plan-wizard-z-index: 1100;
         transform: scaleY(1);
       }
     }
+  }
+
+  /* The progress rail beside the questions, shown once the plan's four required steps are answered.
+   *
+   * Whether there is room for it is asked of the dialog through a container query rather than of the viewport
+   * through a media query. The Amplenote iOS WKWebView reports a layout viewport wider than the visible device,
+   * which is the same bug that makes this file pin the overlay to `--dashboard-viewport-width` instead of 100vw;
+   * a `min-width: 900px` media query would therefore show the rail on phones that cannot hold it. The container
+   * query measures the dialog as actually laid out, so it is right in the embed and in a normal browser alike.
+   *
+   * The container is `.plan-wizard-page`, and an `inline-size` container query resolves against that element's
+   * own border box, so 900px here is 900px of dialog width rather than of the space inside its padding. That is
+   * the width at which the two columns can coexist: the rail plus the room the intent page's two goal columns
+   * need before they start wrapping their cards. Below it the body falls back to one column and the rail is not
+   * rendered at all, so its space is fully returned to the question. */
+  .plan-wizard-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .plan-wizard-body-main {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .plan-wizard-progress-sidebar {
+    display: none;
+  }
+
+  @container (min-width: 900px) {
+    .plan-wizard-body--with-sidebar {
+      display: grid;
+      gap: $sp-xl;
+      grid-template-columns: $plan-wizard-sidebar-width minmax(0, 1fr);
+    }
+
+    .plan-wizard-body--with-sidebar .plan-wizard-progress-sidebar {
+      border-right: 1px solid $color-border;
+      display: flex;
+      flex-direction: column;
+      gap: $sp-lg;
+      padding: $sp-lg $sp-lg $sp-lg 0;
+    }
+  }
+
+  .progress-sidebar-heading {
+    color: $color-text-muted;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin: 0;
+    text-transform: uppercase;
+  }
+
+  .progress-step-list {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* The button and the static span carry the same padded row layout, so a step that becomes clickable does not
+   * shift where its text sits. Nested under `.plan-wizard-page` to beat that block's `button { border: 1px solid }`
+   * default, exactly as the Cancel and primary buttons above do. */
+  .plan-wizard-page .progress-step-button,
+  .progress-step-static {
+    align-items: flex-start;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: $radius-md;
+    display: flex;
+    gap: $sp-sm;
+    padding: $sp-sm;
+    text-align: left;
+    width: 100%;
+  }
+
+  .plan-wizard-page .progress-step-button {
+    cursor: pointer;
+
+    &:hover {
+      background: $color-bg-primary;
+    }
+
+    &:focus-visible {
+      border-color: $color-accent;
+      outline: none;
+    }
+  }
+
+  /* The step being read is the one row drawn as a card, so the rail always answers "where am I" before it
+   * answers "what have I done". */
+  .progress-step-row--current .progress-step-static {
+    background: $color-bg-primary;
+    border-color: $color-border;
+  }
+
+  .progress-step-icon {
+    fill: none;
+    flex: 0 0 18px;
+    height: 18px;
+    margin-top: 1px;
+    stroke: currentColor;
+    stroke-width: 2;
+    width: 18px;
+  }
+
+  .progress-step-icon-disc {
+    fill: $color-success;
+    stroke: none;
+  }
+
+  .progress-step-icon-check {
+    stroke: $color-bg-secondary;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .progress-step-icon--pending {
+    color: $color-border;
+  }
+
+  .progress-step-icon-ring {
+    stroke-width: 1.5;
+  }
+
+  .progress-step-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .progress-step-label {
+    color: $color-navy;
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .progress-step-summary {
+    color: $color-text-muted;
+    font-size: 0.75rem;
+    line-height: 1.35;
+  }
+
+  /* The rail's last row leaves the wizard entirely, so it is separated from the steps above it by a rule and
+   * styled as a link rather than as another step. */
+  .plan-wizard-page .progress-plan-note-link {
+    align-items: flex-start;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: $radius-md;
+    border-top: 1px solid $color-border;
+    cursor: pointer;
+    display: flex;
+    gap: $sp-sm;
+    margin-top: auto;
+    padding: $sp-md $sp-sm;
+    text-align: left;
+    width: 100%;
+
+    &:hover:not(:disabled) {
+      background: $color-bg-primary;
+    }
+
+    &:focus-visible {
+      border-color: $color-accent;
+      outline: none;
+    }
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.7;
+    }
+  }
+
+  .plan-note-icon {
+    fill: none;
+    flex: 0 0 18px;
+    height: 18px;
+    margin-top: 1px;
+    stroke: $color-text-muted;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+    width: 18px;
+  }
+
+  .plan-note-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .plan-note-label {
+    color: $color-navy;
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .plan-note-hint {
+    color: $color-text-muted;
+    font-size: 0.75rem;
   }
 }

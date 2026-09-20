@@ -3,11 +3,12 @@
 // intent until the user saves. A background inference response replaces the offered suggestions but never the
 // text a user has begun typing.
 
+import ExpandingTextarea from "dashboard/plan-wizard/expanding-textarea";
 import { CATEGORY_LABELS, PRIMARY_GOAL_RANK, draftFieldsFromGoals, goalRecordsFromDraftFields,
   nextSecondaryRank } from "dashboard/plan-wizard/intent-step-fields";
 import { useRegisteredNavigate } from "dashboard/plan-wizard/step-navigation";
 import { wizardStepFromKey } from "dashboard/plan-wizard/wizard-steps";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const INTENT_STEP_COPY = wizardStepFromKey("intent");
 
@@ -24,41 +25,13 @@ const INTENT_STEP_COPY = wizardStepFromKey("intent");
 // A newly added secondary field carries shouldAutoFocus so the cursor is in it as soon as it appears; without
 // that, the add button keeps focus and the user has to click the empty line before they can type.
 function IntentStepField({ field, isDisabled, onChangeText, onFocus, placeholder }) {
-  const inputRef = useRef(null);
   const isPrimary = field.goalRank === PRIMARY_GOAL_RANK;
   const fieldClass = `intent-step-field ${ isPrimary ? "intent-step-field--primary" : "intent-step-field--secondary" }`;
 
-  useLayoutEffect(() => {
-    const input = inputRef.current;
-    let previousWidth = input.clientWidth;
-
-    // ----------------------------------------------------------------------------------------------
-    // @desc Reset the height so shorter text can shrink, then fit the content plus the textarea's borders.
-    const resizeInput = () => {
-      input.style.height = "auto";
-      input.style.height = `${ input.scrollHeight + input.offsetHeight - input.clientHeight }px`;
-    };
-
-    resizeInput();
-    if (typeof ResizeObserver === "undefined") return undefined;
-    const resizeObserver = new ResizeObserver(() => {
-      if (input.clientWidth === previousWidth) return;
-      previousWidth = input.clientWidth;
-      resizeInput();
-    });
-    resizeObserver.observe(input);
-    return () => resizeObserver.disconnect();
-  }, [field.goalText]);
-
-  useLayoutEffect(() => {
-    if (!field.shouldAutoFocus) return;
-    inputRef.current?.focus();
-  }, [field.shouldAutoFocus]);
-
   return (
     <div className={ fieldClass }>
-      <textarea className="intent-step-input" disabled={ isDisabled } onChange={ event => onChangeText(event.target.value) }
-        onFocus={ onFocus } placeholder={ placeholder } ref={ inputRef } rows={ 1 } value={ field.goalText } />
+      <ExpandingTextarea className="intent-step-input" disabled={ isDisabled } onChange={ event => onChangeText(event.target.value) }
+        onFocus={ onFocus } placeholder={ placeholder } shouldAutoFocus={ field.shouldAutoFocus } value={ field.goalText } />
     </div>
   );
 }

@@ -373,3 +373,48 @@ test("finishes bootstrapping an empty note left behind by an interrupted run", a
 test("refuses a Vision Guide write whose handle carries no uuid", async () => {
   await expect(replaceGuideSection({}, "content", {}, null)).rejects.toThrow(/no uuid/);
 });
+
+// ----------------------------------------------------------------------------------------------
+// @desc Wizard loading deletes schema 1 storage, returns empty goals, and permits a fresh schema 2 save.
+test("wizard loading replaces a retired guide while ordinary readers preserve it", async () => {
+  const app = createPlanWizardApp();
+  await savePlanGoals(app, { ...scope, goals: [goal] });
+  const retired = app.notes[0];
+  retired.content = retired.content.replace(`"schemaVersion": ${ GUIDE_SCHEMA_VERSION }`, '"schemaVersion": 1');
+  await expect(readPlanGoals(app, scope)).rejects.toThrow("retired schema 1");
+  expect(app.deleteNote).not.toHaveBeenCalled();
+  await expect(readPlanGoals(app, { ...scope, deleteRetiredGuide: true })).resolves.toMatchObject({ goals: [], noteUuid: null });
+  expect(app.deleteNote).toHaveBeenCalledWith({ uuid: retired.uuid });
+  expect(app.notes).toHaveLength(0);
+  await expect(savePlanGoals(app, { ...scope, goals: [personalGoal] })).resolves.toMatchObject({ goals: [{ goalText: personalGoal.goalText }] });
+  expect(app.notes[0].content).toContain(`"schemaVersion": ${ GUIDE_SCHEMA_VERSION }`);
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Cleanup is limited to matching schema 1 notes; future schemas, malformed metadata, and other scopes survive.
+test.each(["future", "malformed", "domain", "year"])("wizard cleanup preserves %s guides", async variant => {
+  const app = createPlanWizardApp();
+  await savePlanGoals(app, { ...scope, goals: [goal] });
+  const schemaVersion = variant === "future" ? GUIDE_SCHEMA_VERSION + 1 : 1;
+  app.notes[0].content = app.notes[0].content.replace(`"schemaVersion": ${ GUIDE_SCHEMA_VERSION }`, `"schemaVersion": ${ schemaVersion }`);
+  if (variant === "malformed") app.notes[0].content = app.notes[0].content.replace('"schemaVersion": 1', '"schemaVersion": "broken"');
+  const options = { ...scope, deleteRetiredGuide: true };
+  if (variant === "domain") options.domainUuid = "other-domain";
+  if (variant === "year") options.year = 2027;
+  const loading = readPlanGoals(app, options);
+  if (["future", "malformed"].includes(variant)) await expect(loading).rejects.toThrow();
+  else await expect(loading).resolves.toMatchObject({ goals: [], noteUuid: null });
+  expect(app.deleteNote).not.toHaveBeenCalled();
+  expect(app.notes).toHaveLength(1);
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Failed deletion must surface its note identity instead of reporting a successful fresh start.
+test.each([false, { embedCallFailed: true, error: "Connection lost" }])("wizard reports failed retired-guide deletion: %j", async result => {
+  const app = createPlanWizardApp();
+  await savePlanGoals(app, { ...scope, goals: [goal] });
+  app.notes[0].content = app.notes[0].content.replace(`"schemaVersion": ${ GUIDE_SCHEMA_VERSION }`, '"schemaVersion": 1');
+  app.deleteNote.mockResolvedValueOnce(result);
+  await expect(readPlanGoals(app, { ...scope, deleteRetiredGuide: true })).rejects.toThrow('Could not delete retired Vision Guide');
+  expect(app.notes).toHaveLength(1);
+});

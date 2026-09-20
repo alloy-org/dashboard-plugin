@@ -18,6 +18,13 @@ export function createPlanWizardApp() {
       notes.push({ archived: options?.archive ?? false, content: "", localUuid: `local-${ uuid }`, name, tags, uuid });
       return `local-${ uuid }`;
     }),
+    // Model deletion by removing the note from subsequent lookups and archived discovery.
+    deleteNote: jest.fn(async ({ uuid }) => {
+      const index = notes.findIndex(note => note.uuid === uuid);
+      if (index < 0) return false;
+      notes.splice(index, 1);
+      return true;
+    }),
     filterNotes: jest.fn(async (options = {}) => {
       const matched = notes.filter(note => (!options.tag || note.tags.includes(options.tag))
         && (options.group === "archived" ? note.archived : !note.archived));
