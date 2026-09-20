@@ -238,21 +238,26 @@ $plan-wizard-z-index: 1100;
     padding-top: $sp-lg;
   }
 
-  .plan-wizard-next {
+  /* The advancing controls travel together against the right edge, away from Back on the left. They are wrapped
+   * rather than each given `margin-left: auto`, because the navigation is a `space-between` flex row: two auto
+   * margins in it divide the free space between them and strand the pair mid-bar instead of at the edge. */
+  .plan-wizard-advance-group {
+    align-items: center;
+    display: flex;
+    gap: 22px;
     margin-left: auto;
   }
 
   /* Reading the plan is a way out of the sequence rather than a step in it, so it reads as a link beside Done the
-   * same way Cancel does beside Next. `margin-left: auto` pushes the pair to the right edge together, and the
-   * `.plan-wizard-next` rule above then contributes nothing but the gap this sets. */
+   * same way Cancel does beside Next. The gap above sets its distance from Done; no margin here, or the two add up. */
   .plan-wizard-page .plan-wizard-view-plan {
     background: none;
     border: none;
     color: $color-text-muted;
-    margin-left: auto;
-    margin-right: 20px;
+    padding-left: 0;
     padding-right: 0;
     text-decoration: underline;
+    white-space: nowrap;
 
     &:hover:not(:disabled) {
       background: none;

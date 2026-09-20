@@ -23,9 +23,10 @@
 // there and sit permanently disabled, which left a finished plan with no way out but Escape or the backdrop, and
 // read as an unmet requirement rather than as the end of the sequence.
 //
-// The final page puts a View Quarterly Plan link beside Done. It publishes before it opens, so the note shown is
-// the plan including the answer just given on that page, and it renders through the same inline NoteEditor the
-// data-note link uses rather than navigating away from a wizard the user has not finished.
+// The final page puts a View Quarterly Plan link beside Done. It publishes before it navigates, so the note shown
+// is the plan including the answer just given on that page, and it hands off to Amplenote through app.navigate
+// rather than rendering the markdown inline: the plan note is a real note the user goes on to work in, and the
+// inline editor would show a copy of it that no longer reflects what they did there.
 
 import NoteEditor from "dashboard/note-editor";
 import DoneEnoughStep from "dashboard/plan-wizard/done-enough-step";
@@ -39,6 +40,7 @@ import { useSuspendWidgetMounting } from "dashboard/widget-mount-suspension";
 import usePlanWizard, { planScopeKey } from "hooks/use-plan-wizard";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { navigateToNote } from "util/goal-notes";
 import "dashboard/styles/plan-wizard.scss";
 
 const SAVE_ERROR_PREFIX = { "enough-for-today": "Your answer was not saved.", intent: "Your answers were not saved.",
@@ -183,8 +185,10 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   };
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Publish everything stored for this quarter and then show the resulting plan note.
-  // @returns {Promise<void>} Resolves once the note is on screen or the failure has been reported.
+  // @desc Publish everything stored for this quarter and then hand the user off to the plan note in Amplenote.
+  // @returns {Promise<void>} Resolves once the navigation is underway or the failure has been reported.
+  // The wizard closes on the way out, because navigating replaces the note the dashboard is embedded in: a modal
+  //   left open would otherwise be waiting over whatever the user came back to.
   const openQuarterlyPlanNote = async () => {
     setIsOpeningPlanNote(true);
     setPlanNoteError(null);
@@ -194,7 +198,8 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
         setPlanNoteError(new Error("This quarter has no plan note yet, and one could not be created."));
         return;
       }
-      setInspectingNoteUuid(noteUuid);
+      await navigateToNote(app, noteUuid);
+      onClose();
     } catch (publishError) {
       setPlanNoteError(publishError);
     } finally {
@@ -296,20 +301,22 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
                 onClick={ isNavigatingSaveStep ? () => handleNavigateStep(-1) : () => handleStepChange(-1) }
                 type="button">Back</button>
             ) }
-            { isLastStep ? (
-              <button className="plan-wizard-view-plan" disabled={ isOpeningPlanNote || isSaving }
-                onClick={ handleViewQuarterlyPlan } type="button">
-                { isOpeningPlanNote ? "Opening…" : "View Quarterly Plan" }
+            <div className="plan-wizard-advance-group">
+              { isLastStep ? (
+                <button className="plan-wizard-view-plan" disabled={ isOpeningPlanNote || isSaving }
+                  onClick={ handleViewQuarterlyPlan } type="button">
+                  { isOpeningPlanNote ? "Opening…" : "View Quarterly Plan" }
+                </button>
+              ) : null }
+              <button className="plan-wizard-next"
+                disabled={ (isLastStep && !hasDoneEnoughSelection)
+                  || (isFirstStep && ((!hasIntentAnswer && !hasPersistedIntent) || isSaving))
+                  || (isNavigatingSaveStep && isSaving) }
+                onClick={ isFirstStep || isNavigatingSaveStep ? () => handleNavigateStep(1) : () => handleStepChange(1) }
+                type="button">
+                { (isFirstStep || isNavigatingSaveStep) && isSaving ? "Saving…" : advanceLabel }
               </button>
-            ) : null }
-            <button className="plan-wizard-next"
-              disabled={ (isLastStep && !hasDoneEnoughSelection)
-                || (isFirstStep && ((!hasIntentAnswer && !hasPersistedIntent) || isSaving))
-                || (isNavigatingSaveStep && isSaving) }
-              onClick={ isFirstStep || isNavigatingSaveStep ? () => handleNavigateStep(1) : () => handleStepChange(1) }
-              type="button">
-              { (isFirstStep || isNavigatingSaveStep) && isSaving ? "Saving…" : advanceLabel }
-            </button>
+            </div>
           </nav>
         ) : null }
       </div>

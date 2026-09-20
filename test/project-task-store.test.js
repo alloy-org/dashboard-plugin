@@ -5,7 +5,8 @@ import { jest } from "@jest/globals";
 import { guideHeadingRanges } from "plan-wizard/vision-guide-markdown";
 import { collectProjectTasks } from "project-task-collection";
 import { projectNeedsRefresh, projectsToRefresh, shouldRefreshAnotherProject } from "project-refresh-schedule";
-import { initialProjectTaskStoreMarkdown, projectSectionMarkdown } from "project-task-store-markdown";
+import { initialProjectTaskStoreMarkdown, projectSectionHeadingText,
+  projectSectionMarkdown } from "project-task-store-markdown";
 import { collectedIdeasMarkdown, openProjectTaskStore, readCollectedProjectTasks, storedProjectRecords,
   writeProjectSection } from "project-task-store";
 
@@ -65,6 +66,66 @@ describe("project task store sections", () => {
     expect(recordsByUuid.get("project-uuid")).toMatchObject({ isActive: true, summary: "Launch dashboard" });
     expect(recordsByUuid.get("project-uuid").suggestedTasks[0].taskText).toBe("Audit widget memory");
     expect(recordsByUuid.get("project-uuid").completedTasks[0].taskUuid).toBe("done-task");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Task content arrives as raw note markdown, so a task carrying its own link or Rich Footnote
+  //   reference must be flattened before it is wrapped in the task link, or the note renders bare
+  //   `](https://...)` fragments where the brackets failed to pair.
+  it("flattens markdown inside task text so the task link stays intact", () => {
+    const body = projectSectionMarkdown(storeRecord({
+      relatedTaskRecords: [{ taskText: "Implement the [Spiral as a dashboard component](https://www.amplenote.com/notes/abc)",
+        taskUuid: "open-task" }],
+      suggestedTasks: [{ generatedAt: "2026-09-18T12:00:00.000Z", taskText: "Check the spec before shipping" }] }));
+    expect(body).toContain("  - [Implement the Spiral as a dashboard component](https://www.amplenote.com/notes/tasks/open-task)");
+    expect(body).toContain("  - Check the spec before shipping");
+    const renderedLists = body.slice(0, body.indexOf("```"));
+    expect(renderedLists).not.toContain("https://www.amplenote.com/notes/abc");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Amplenote footnote numbers are positional within the content being written, so references carried in
+  //   from a source note are renumbered from 1 in first-cited order across the section, each with a definition.
+  it("renumbers carried footnote references from one and defines each", () => {
+    const body = projectSectionMarkdown(storeRecord({
+      relatedTaskRecords: [{ taskText: "Ship the meter, see [Implementation ideas][^7]", taskUuid: "open-task" }],
+      suggestedTasks: [{ generatedAt: "2026-09-18T12:00:00.000Z",
+        taskText: "Revisit the [rollout plan][^2] alongside the [meter][^7]" }] }));
+    expect(body).toContain("[Ship the meter, see Implementation ideas](https://www.amplenote.com/notes/tasks/open-task)[^1]");
+    expect(body).toContain("  - Revisit the rollout plan[^2] alongside the meter[^1]");
+    expect(body).toContain("\n[^1]: Referenced from the source task: Implementation ideas");
+    expect(body).toContain("\n[^2]: Referenced from the source task: rollout plan");
+    expect(body.slice(0, body.indexOf("```"))).not.toContain("[^7]");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A footnote marker left inside a link label would reintroduce the nested brackets the flattening
+  //   exists to prevent, so markers trail the task link instead.
+  it("keeps footnote markers outside the task link label", () => {
+    const body = projectSectionMarkdown(storeRecord({
+      relatedTaskRecords: [{ taskText: "Ship the [meter][^4] soon", taskUuid: "open-task" }] }));
+    expect(body).toContain("  - [Ship the meter soon](https://www.amplenote.com/notes/tasks/open-task)[^1]");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc The payload keeps the task text exactly as stored, so flattening is presentation-only and the
+  //   next pass still compares against the real task content.
+  it("leaves the stored payload text unflattened", () => {
+    const rawText = "Implement the [Spiral](https://www.amplenote.com/notes/abc)";
+    const record = storeRecord({ relatedTaskRecords: [{ taskText: rawText, taskUuid: "open-task" }] });
+    const content = initialProjectTaskStoreMarkdown().replace("# Past projects",
+      `## ${ projectSectionHeadingText(record) }\n\n${ projectSectionMarkdown(record) }\n# Past projects`);
+    const { recordsByUuid } = storedProjectRecords(content);
+    expect(recordsByUuid.get("project-uuid").relatedTaskRecords[0].taskText).toBe(rawText);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A project summary carrying a link would split its heading in two and lose the section on the
+  //   next write, so the heading is flattened the same way.
+  it("flattens markdown in the project section heading", () => {
+    const headingText = projectSectionHeadingText({ summary: "Ship [the dashboard](https://example.com)",
+      uuid: "project-uuid" });
+    expect(headingText).toBe("Ship the dashboard (project:project-uuid)");
   });
 
   // ----------------------------------------------------------------------------------------------

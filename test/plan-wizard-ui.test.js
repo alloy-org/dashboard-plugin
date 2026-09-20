@@ -490,7 +490,7 @@ describe("PlanWizard step navigation", () => {
 describe("PlanWizard quarterly plan link", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc The link is what makes the wizard's answers verifiable: a user who has just answered five pages should
-  //   be able to read the plan those answers produced without leaving the page they are on.
+  //   be able to read the plan those answers produced.
   it("offers the plan link only on the last page, beside Done", async () => {
     const { cleanup, container } = await renderPlanWizard();
     await advanceToStep(container, "quarter-name");
@@ -500,12 +500,14 @@ describe("PlanWizard quarterly plan link", () => {
     const planLink = container.querySelector(".plan-wizard-view-plan");
     expect(planLink.textContent).toBe("View Quarterly Plan");
     expect(planLink.disabled).toBe(false);
-    // The link sits to the left of the button that closes the wizard, not after it.
+    // The link sits to the left of the button that closes the wizard, not after it, and the two travel together
+    // against the right edge rather than each finding their own place in the bar.
     expect(planLink.nextElementSibling.className).toBe("plan-wizard-next");
+    expect(planLink.parentElement.className).toBe("plan-wizard-advance-group");
     await cleanup();
   });
 
-  it("shows the plan note carrying every page's answers, including the one just selected", async () => {
+  it("navigates to the plan note carrying every page's answers, including the one just selected", async () => {
     const { app, cleanup, container } = await renderPlanWizard();
     await typeInto(workFields(container)[0], "Cut support load in half");
     await advanceToStep(container, "projects");
@@ -518,9 +520,24 @@ describe("PlanWizard quarterly plan link", () => {
     expect(planNote).toBeTruthy();
     expect(planNote.content).toContain("Cut support load in half");
     expect(planNote.content).toContain("Ship diff-view v2");
-    // Publishing happens before the note opens, so the condition selected moments ago is already in it.
+    // Publishing happens before the navigation, so the condition selected moments ago is already in the note.
     expect(planNote.content).toContain("Two focused work blocks on quarterly goals");
-    expect(container.querySelector(".note-editor")).toBeTruthy();
+    // The user is handed off to the real note in Amplenote rather than shown a rendered copy of it.
+    expect(app.navigate).toHaveBeenCalledWith(`https://www.amplenote.com/notes/${ planNote.uuid }`);
+    expect(container.querySelector(".note-editor")).toBeNull();
+    await cleanup();
+  });
+
+  it("closes the wizard once the plan note has been opened", async () => {
+    const onClose = jest.fn();
+    const { cleanup, container } = await renderPlanWizard({ onClose });
+    await advanceToStep(container, "enough-for-today");
+    await clickAndSettle(conditionRadio(container, "top-three-tasks"));
+    await clickAndSettle(container.querySelector(".plan-wizard-view-plan"));
+
+    // Navigating replaces the note the dashboard is embedded in, so a modal left open would be waiting over
+    // whatever the user came back to.
+    expect(onClose).toHaveBeenCalled();
     await cleanup();
   });
 
@@ -532,25 +549,13 @@ describe("PlanWizard quarterly plan link", () => {
     await clickAndSettle(conditionRadio(container, "top-three-tasks"));
     await clickAndSettle(container.querySelector(".plan-wizard-view-plan"));
 
-    expect(container.querySelector(".note-editor")).toBeNull();
+    expect(app.navigate).not.toHaveBeenCalled();
     expect(container.querySelector(".done-enough-container")).toBeTruthy();
     expect(container.querySelector(".plan-error").textContent).toContain("Amplenote was unreachable");
     // A failed attempt must not leave the plan-note request armed for whichever button is pressed next.
     await clickAndSettle(container.querySelector(".plan-wizard-back"));
-    expect(container.querySelector(".note-editor")).toBeNull();
+    expect(app.navigate).not.toHaveBeenCalled();
     expect(container.querySelector(".quarter-name-container")).toBeTruthy();
-    await cleanup();
-  });
-
-  it("returns to the final page from the plan note without losing the selection", async () => {
-    const { cleanup, container } = await renderPlanWizard();
-    await advanceToStep(container, "enough-for-today");
-    await clickAndSettle(conditionRadio(container, "top-three-tasks"));
-    await clickAndSettle(container.querySelector(".plan-wizard-view-plan"));
-    await clickAndSettle(container.querySelector(".note-editor-btn--back"));
-
-    expect(container.querySelector(".done-enough-container")).toBeTruthy();
-    expect(conditionRadio(container, "top-three-tasks").checked).toBe(true);
     await cleanup();
   });
 });
