@@ -186,7 +186,7 @@ export default function ProjectsStep({ discoveryFailureReason = null, isConsolid
             <div className="plan-actions">
               <button className="plan-button plan-button--dashed projects-step-add" disabled={ isSaving }
                 onClick={ () => setDraftRows(previous => previous.concat(emptyProjectRow(userCategoryEm,
-                  categoryGoalUuids))) } type="button">
+                  categoryGoalUuids, true))) } type="button">
                 Add another project
               </button>
               <button className="plan-button plan-button--dashed projects-step-discover"

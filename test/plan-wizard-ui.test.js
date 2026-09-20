@@ -685,6 +685,20 @@ describe("PlanWizard projects step", () => {
     await cleanup();
   });
 
+  // ----------------------------------------------------------------------------------------------
+  // @desc Put the cursor in the field the Add another project button just produced, so a user who clicks it can
+  //   type immediately rather than hunting for the new card.
+  it("focuses the project name field added by Add another project", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "projects");
+    const namesBefore = [...container.querySelectorAll(".projects-step-category--work .project-row-name")];
+    await clickAndSettle(container.querySelector(".projects-step-category--work .projects-step-add"));
+    const namesAfter = [...container.querySelectorAll(".projects-step-category--work .project-row-name")];
+    expect(namesAfter).toHaveLength(namesBefore.length + 1);
+    expect(document.activeElement).toBe(namesAfter[namesAfter.length - 1]);
+    await cleanup();
+  });
+
   it("remembers a removed project as rejected rather than forgetting it", async () => {
     const { app, cleanup, container } = await renderPlanWizard();
     await advanceToStep(container, "projects");

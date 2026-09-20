@@ -7,7 +7,8 @@ import { memo, useEffect, useState } from "react";
 // ----------------------------------------------------------------------------------------------
 // @desc Render one project proposal or custom project with card-local priority selection state.
 //   Project names wrap and grow to display their full text. Keep emphasis choices visible and disabled
-//   until the project has a nonblank name.
+//   until the project has a nonblank name. A row marked shouldAutoFocus — one the Add another project button
+//   just created — takes the cursor as the card mounts.
 // @param {object} params - An object with the following properties:
 //   - {boolean} isDisabled - Whether a page-level save prevents editing.
 //   - {Function} onChangeSummary - Receives the row UUID and edited row fields.
@@ -44,7 +45,8 @@ function ProjectCard({ isDisabled, onChangeSummary, onReject, onSetPriority, row
       <div className="project-row-header">
         <ExpandingTextarea className="project-row-name" disabled={ isDisabled || isPrioritySaving }
           onChange={ event => onChangeSummary(row.uuid, { summary: event.target.value }) }
-          placeholder="Name a project that moves an intent forward" value={ row.summary } />
+          placeholder="Name a project that moves an intent forward" shouldAutoFocus={ row.shouldAutoFocus }
+          value={ row.summary } />
         { row.isStored ? (
           <button className="project-row-reject" disabled={ isDisabled || isPrioritySaving }
             onClick={ () => onReject(row) } title="Remove this project from the plan" type="button">
@@ -85,8 +87,8 @@ export function projectCardPropsEqual(previous, next) {
   return previous.isDisabled === next.isDisabled && previous.onChangeSummary === next.onChangeSummary
     && previous.onReject === next.onReject && previous.onSetPriority === next.onSetPriority
     && previousRow.approvalStatusEm === nextRow.approvalStatusEm && previousRow.isStored === nextRow.isStored
-    && previousRow.priorityEm === nextRow.priorityEm && previousRow.summary === nextRow.summary
-    && previousRow.uuid === nextRow.uuid
+    && previousRow.priorityEm === nextRow.priorityEm && previousRow.shouldAutoFocus === nextRow.shouldAutoFocus
+    && previousRow.summary === nextRow.summary && previousRow.uuid === nextRow.uuid
     && stringValuesEqual(previousRow.substantiations, nextRow.substantiations);
 }
 
