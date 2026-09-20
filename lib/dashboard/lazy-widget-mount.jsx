@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useReportWidgetDeferred } from "dashboard-load-tracking";
+import { useWidgetMountingSuspended } from "dashboard/widget-mount-suspension";
 
 // Widgets within this distance of the viewport mount ahead of scrolling so they are ready by the time
 // they scroll in, trading a little eagerness for no visible pop-in. Kept modest so a tall mobile
@@ -35,25 +36,42 @@ function WidgetMountPlaceholder({ placeholderRef, widgetId }) {
 //   (mount-once). Because the initial IntersectionObserver callback fires asynchronously even for
 //   elements already on screen, above-the-fold widgets mount a frame after first paint — which also
 //   staggers the initial mount burst that spikes memory.
+//
+//   While a full-screen overlay has suspended mounting (see widget-mount-suspension), an intersection
+//   is remembered rather than acted on, so scrolling behind the overlay does not mount widgets the user
+//   cannot see and cannot spend the overlay's own inference work on widget loads. The moment the overlay
+//   closes, every widget that became visible meanwhile mounts.
 // @param {{ widgetId: string, children: React.ReactNode }} props
 // @returns {React.ReactNode} The children once mounted, otherwise the placeholder.
 export default function LazyWidgetMount({ children, widgetId }) {
   const [mounted, setMounted] = useState(() => !intersectionObserverSupported());
   const placeholderRef = useRef(null);
+  const suspended = useWidgetMountingSuspended();
+  const intersectedWhileSuspendedRef = useRef(false);
 
   useEffect(() => {
     if (mounted) return undefined;
+    // A widget that scrolled into view while mounting was suspended mounts as soon as it resumes, without
+    // waiting for the observer to report the same intersection a second time (it would not: the element has
+    // not moved, so no new entry is delivered).
+    if (!suspended && intersectedWhileSuspendedRef.current) {
+      setMounted(true);
+      return undefined;
+    }
     const node = placeholderRef.current;
     if (!node) return undefined;
     const observer = new IntersectionObserver(entries => {
-      if (entries.some(entry => entry.isIntersecting)) {
-        setMounted(true);
-        observer.disconnect();
+      if (!entries.some(entry => entry.isIntersecting)) return;
+      if (suspended) {
+        intersectedWhileSuspendedRef.current = true;
+        return;
       }
+      setMounted(true);
+      observer.disconnect();
     }, { rootMargin: MOUNT_AHEAD_ROOT_MARGIN });
     observer.observe(node);
     return () => observer.disconnect();
-  }, [mounted]);
+  }, [mounted, suspended]);
 
   if (mounted) return children;
   return <WidgetMountPlaceholder placeholderRef={placeholderRef} widgetId={widgetId} />;

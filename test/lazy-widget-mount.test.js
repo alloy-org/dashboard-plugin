@@ -7,6 +7,7 @@ import { jest } from "@jest/globals";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { DashboardLoadContext } from "dashboard-load-tracking";
+import { suspendWidgetMounting } from "dashboard/widget-mount-suspension";
 
 const { default: LazyWidgetMount } = await import("lazy-widget-mount");
 
@@ -67,5 +68,52 @@ test("renders a placeholder and reports deferred until scrolled into view", () =
   expect(container.querySelector(".real-widget")).not.toBeNull();
   expect(container.querySelector(".lazy-widget-placeholder")).toBeNull();
   expect(observers[0].disconnected).toBe(true);
+  act(() => root.unmount());
+});
+
+test("holds a widget that scrolls into view while mounting is suspended, then mounts it on release", () => {
+  const observers = installIntersectionObserverStub();
+  const tracker = mockTracker();
+  const release = suspendWidgetMounting();
+  const { container, root } = renderWithTracker(tracker, createElement("div", { className: "real-widget" }, "content"));
+
+  act(() => observers[0].fireIntersecting());
+  expect(container.querySelector(".real-widget")).toBeNull();
+  expect(container.querySelector(".lazy-widget-placeholder")).not.toBeNull();
+
+  act(() => release());
+
+  expect(container.querySelector(".real-widget")).not.toBeNull();
+  act(() => root.unmount());
+});
+
+test("re-observes on release so a widget newly visible behind the overlay still mounts", () => {
+  const observers = installIntersectionObserverStub();
+  const tracker = mockTracker();
+  const release = suspendWidgetMounting();
+  const { container, root } = renderWithTracker(tracker, createElement("div", { className: "real-widget" }, "content"));
+
+  act(() => release());
+  expect(container.querySelector(".real-widget")).toBeNull();
+
+  act(() => observers[observers.length - 1].fireIntersecting());
+
+  expect(container.querySelector(".real-widget")).not.toBeNull();
+  act(() => root.unmount());
+});
+
+test("stays suspended until the last of two overlapping overlays releases", () => {
+  const observers = installIntersectionObserverStub();
+  const tracker = mockTracker();
+  const releaseFirst = suspendWidgetMounting();
+  const releaseSecond = suspendWidgetMounting();
+  const { container, root } = renderWithTracker(tracker, createElement("div", { className: "real-widget" }, "content"));
+
+  act(() => observers[0].fireIntersecting());
+  act(() => releaseFirst());
+  expect(container.querySelector(".real-widget")).toBeNull();
+
+  act(() => releaseSecond());
+  expect(container.querySelector(".real-widget")).not.toBeNull();
   act(() => root.unmount());
 });

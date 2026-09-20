@@ -5,6 +5,22 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-09-19 — Pause viewport-driven widget mounting while the Plan Wizard is open
+
+**Model:** claude-opus-5[1m]
+**Files created/modified:**
+- `lib/dashboard/widget-mount-suspension.js` (created) — Module-level suspension switch with counted overlays, a subscriber list, and the `useSuspendWidgetMounting` / `useWidgetMountingSuspended` hooks
+- `lib/dashboard/lazy-widget-mount.jsx` (modified) — `LazyWidgetMount` records an intersection that arrives while suspended instead of mounting, and mounts on release; the observer is rebuilt on resume so a widget newly visible behind the overlay still mounts
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` (modified) — Calls `useSuspendWidgetMounting`, so suspension lasts exactly as long as the wizard overlay is mounted
+- `test/lazy-widget-mount.test.js` (modified) — Three cases: held-then-mounted on release, re-observation on release, and two overlapping overlays
+
+**Task:** Stop the dashboard's scroll-triggered component loading while the Plan Wizard overlay is open, and load any newly visible components as soon as it closes
+**Prompt summary:** "When the plan-wizard is open, let's suppress our usual 'scroll down the dashboard loads a plugin component.' Once the user closes Plan Wizard, we should then immediately check if there are any newly visible components to load"
+**Scope:** ~70 lines of new logic across 3 files, plus 3 tests
+**Notes:** A module singleton rather than React context because the wizard overlay renders deep inside the Planning widget while the lazy mounts it pauses live across every other widget; the only common provider would be the whole dashboard tree. The release is counted and idempotent so overlapping overlays and StrictMode double-invoked cleanups cannot resume mounting early.
+
+---
+
 ## 2026-09-19 — Editable Proposed Agenda dates and quarterly project progress
 
 **Model:** GPT-6

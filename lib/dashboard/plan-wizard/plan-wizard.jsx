@@ -27,6 +27,7 @@ import PlanSaveError from "dashboard/plan-wizard/plan-save-error";
 import ProjectsStep from "dashboard/plan-wizard/projects-step";
 import QuarterNameStep from "dashboard/plan-wizard/quarter-name-step";
 import { WIZARD_STEPS, wizardStepIndexFromKey } from "dashboard/plan-wizard/wizard-steps";
+import { useSuspendWidgetMounting } from "dashboard/widget-mount-suspension";
 import usePlanWizard, { planScopeKey } from "hooks/use-plan-wizard";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -65,6 +66,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const [hasIntentAnswer, setHasIntentAnswer] = useState(false);
   const [inspectingNoteUuid, setInspectingNoteUuid] = useState(null);
   const [overlayTop] = useState(currentDocumentScrollTop);
+  useSuspendWidgetMounting(); // The wizard covers the dashboard, so scrolling behind it must not mount widgets the user cannot see
   const overlayRef = useRef(null);
   const projectNavigationDirectionRef = useRef(1);
   const stepNavigateRef = useRef(null);
