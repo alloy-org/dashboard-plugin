@@ -28,6 +28,7 @@ import useDashboardLayout from 'hooks/use-dashboard-layout';
 import useDashboardTaskUpdates from 'hooks/use-dashboard-task-updates';
 import useDomainTasks from 'hooks/use-domain-tasks';
 import useExternalCalendarEvents from 'hooks/use-external-calendar-events';
+import { useProjectTaskCollection } from 'hooks/use-project-task-collection';
 import LayoutPickerWidget, { saveLayoutWithProfile } from 'layout-picker';
 import { WIDGET_REGISTRY } from 'layout-profiles';
 import LazyWidgetMount from "lazy-widget-mount";
@@ -429,6 +430,8 @@ export default function DashboardApp({ app, initPromise }) {
   const { activeTaskDomain, buildAgendaTasksByDate, initializeDomainTasks,
     onDomainChange, openTasks, taskDomains } = useDomainTasks();
   const activeTaskDomainName = taskDomains.find(domain => domain.uuid === activeTaskDomain)?.name || "All Notes";
+  const startProjectTaskCollection = useProjectTaskCollection({ app, domainName: activeTaskDomainName,
+    domainUuid: activeTaskDomain });
   const { completedTasksByDate, completedTasksLoaded, fetchCompletedTasks } = useCompletedTasks(app);
 
   const { calendarEvents, calendarEventsLoaded } = useExternalCalendarEvents(app, activeTaskDomain);
@@ -592,7 +595,13 @@ export default function DashboardApp({ app, initPromise }) {
   //   means the render survived (even if an individual widget's error boundary tripped), so we stamp
   //   regardless of per-widget errors. Chained after the pending write to avoid a last-write-wins
   //   race, and guarded to run at most once.
+  //
+  //   Settling is also the dashboard's cue that nothing is left competing for bandwidth, so this is where the
+  //   background project/task association pass is started. It is kicked off ahead of the breadcrumb guard
+  //   because that guard returns early on a second settle, and the collection pass keeps its own once-per-mount
+  //   guard; the pass must not inherit the breadcrumb's stamped-already condition.
   const handleDashboardSettled = useCallback(() => {
+    startProjectTaskCollection();
     if (breadcrumbStampedRef.current || !breadcrumbWriteRef.current) return;
     breadcrumbStampedRef.current = true;
     logMemorySample('load-settle');
@@ -601,7 +610,7 @@ export default function DashboardApp({ app, initPromise }) {
       stampBreadcrumbSettled(app, { deviceProfile: deviceProfileRef.current, settledAt: Date.now(),
         startedAt: breadcrumbStartedAtRef.current, widgetIds: written.widgetIds });
     });
-  }, [app]);
+  }, [app, startProjectTaskCollection]);
 
   useDashboardTaskUpdates({ activeTaskDomain, app, onDomainChange, openTasks });
 
