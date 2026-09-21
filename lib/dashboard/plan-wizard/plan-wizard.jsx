@@ -385,7 +385,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
             state, and unmounting it would discard whatever the user had typed but not yet saved. */ }
           { !inspectingNoteUuid && !isLoading && !error && step.key === "intent" ? (
             <div className="plan-wizard-intent-step-frame" hidden={ isShowingIntentReading }>
-              <IntentStep { ...{ intentReading, isRefreshing, isSaving, pendingDirection, planningContext, scopeKey } }
+              <IntentStep { ...{ isRefreshing, isSaving, pendingDirection, planningContext, scopeKey } }
                 onAnswerStateChange={ setHasIntentAnswer } onFindProjects={ handleFindProjects }
                 onOpenReading={ () => setIsViewingIntentReading(true) } onPendingDirectionApplied={ () => setPendingDirection(null) }
                 onRegisterNavigate={ handleRegisterNavigate } onSave={ saveGoals } readingProgress={ intentReadingProgress } />

@@ -95,7 +95,7 @@ function IntentStepCategory({ fields, isDisabled, isRefreshing, onAddSecondary, 
 
 // ----------------------------------------------------------------------------------------------
 // @desc Offer the reading page: while notes are being read, with a bar filling beside the link so the wait has a
-//   visible length, and afterwards as a plain link to how the current suggestions were drawn.
+//   visible length, and otherwise as a plain link to the notes and tasks behind the current suggestions.
 // @param {object} params - An object with the following properties:
 //   - {boolean} isRefreshing - True while a reading is running.
 //   - {Function} onOpenReading - Shows the reading page.
@@ -105,7 +105,7 @@ function IntentReadingLink({ isRefreshing, onOpenReading, progressFraction }) {
   return (
     <div className={ `intent-step-reading${ isRefreshing ? " intent-step-reading--running" : "" }` }>
       <button className="intent-step-reading-link" onClick={ onOpenReading } type="button">
-        { isRefreshing ? "Watch Plan Builder read your notes →" : "See how your notes were read →" }
+        { isRefreshing ? "Watch Plan Builder read your notes →" : "View sources →" }
       </button>
       { isRefreshing ? <IntentReadingProgressBar fraction={ progressFraction } /> : null }
     </div>
@@ -117,7 +117,6 @@ function IntentReadingLink({ isRefreshing, onOpenReading, progressFraction }) {
 //   reseeded only when the plan scope changes or a save succeeds, so suggestions arriving from a background
 //   refresh cannot discard what the user is in the middle of writing.
 // @param {object} params - An object with the following properties:
-//   - {object} intentReading - The reading behind the suggestions; the link to it is offered once it holds anything.
 //   - {boolean} isRefreshing - True while inference runs; each category shows a pending row where its
 //     suggestions will appear, and fields stay editable throughout.
 //   - {boolean} isSaving - True while a save is in flight.
@@ -134,7 +133,7 @@ function IntentReadingLink({ isRefreshing, onOpenReading, progressFraction }) {
 // @returns {JSX.Element} The intent page.
 // The wizard's shared Next button runs this page's handler: discovery reads stored intents, so an unsaved answer
 // would otherwise be invisible and the user would be shown projects chosen for the prior answer.
-export default function IntentStep({ intentReading = null, isRefreshing, isSaving, onAnswerStateChange, onFindProjects,
+export default function IntentStep({ isRefreshing, isSaving, onAnswerStateChange, onFindProjects,
     onOpenReading = null, onPendingDirectionApplied = null, onRegisterNavigate, onSave, pendingDirection = null,
     planningContext, readingProgress = 0, scopeKey }) {
   const [draftFields, setDraftFields] = useState(() => draftFieldsFromGoals(planningContext.goals));
@@ -234,14 +233,12 @@ export default function IntentStep({ intentReading = null, isRefreshing, isSavin
   const personalFields = draftFields.filter(field => field.userCategoryEm === "personal");
   const categoryProps = { isDisabled: isSaving, isRefreshing, onApplySuggestion: handleApplySuggestion,
     onChangeText: handleChangeText, onFocusField: setFocusedFieldUuid };
-  const hasStoredReading = Boolean(intentReading?.readItems.length || intentReading?.themes.length);
-  const offersReading = Boolean(onOpenReading) && (isRefreshing || hasStoredReading);
 
   return (
     <div className="plan-step-container intent-step-container">
       <h2 className="plan-heading">{ INTENT_STEP_COPY.title }</h2>
       <p className="plan-summary">{ INTENT_STEP_COPY.summary }</p>
-      { offersReading ? (
+      { onOpenReading ? (
         <IntentReadingLink isRefreshing={ isRefreshing } onOpenReading={ onOpenReading } progressFraction={ readingProgress } />
       ) : null }
       <IntentStepCategory { ...categoryProps } fields={ workFields } onAddSecondary={ () => handleAddSecondary("work") }

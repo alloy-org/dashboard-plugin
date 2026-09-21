@@ -202,8 +202,24 @@ describe("PlanWizard intent step", () => {
     await clickAndSettle(readingPage.querySelector(".intent-reading-direction"));
     expect(container.querySelector(".intent-reading-page")).toBeNull();
     expect(workFields(container)[0].value).toBe("Hire a frontend contractor");
-    expect(container.querySelector(".intent-step-reading-link").textContent).toContain("See how your notes were read");
+    expect(container.querySelector(".intent-step-reading-link").textContent).toContain("View sources");
     window.matchMedia = originalMatchMedia;
+    await cleanup();
+  });
+
+  it("offers the sources page even when no reading is stored, and reads the notes from there", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    expect(container.querySelector(".intent-step-reading-link").textContent).toContain("View sources");
+    await clickAndSettle(container.querySelector(".intent-step-reading-link"));
+
+    const readingPage = container.querySelector(".intent-reading-page");
+    expect(readingPage.querySelector(".intent-reading-status").textContent).toBe("No sources are stored for these suggestions yet.");
+    inferenceImplementation = () => ({ personal: [], themes: [{ label: "Analytics", taskCount: 0 }],
+      work: [{ confidence: 6, intent: "Ship the analytics offering", substantiation: "Analytics tasks completed." }] });
+    await clickAndSettle(readingPage.querySelector(".intent-reading-reread"));
+
+    expect(readingPage.querySelector(".intent-reading-status").textContent).toBe("Ready. Pick a direction or write your own.");
+    expect(readingPage.querySelector(".intent-reading-reread")).toBeNull();
     await cleanup();
   });
 
@@ -416,7 +432,7 @@ describe("PlanWizard intent step", () => {
     expect(container.querySelector(".plan-wizard-close")).toBeNull();
     expect(suggestions.every(button => button.tabIndex === -1)).toBe(true);
     expect(tabbableControls.every(element => element.matches(
-      ".intent-step-input, .intent-step-container .plan-button--dashed, .plan-wizard-cancel, .plan-wizard-next")))
+      ".intent-step-input, .intent-step-reading-link, .intent-step-container .plan-button--dashed, .plan-wizard-cancel, .plan-wizard-next")))
       .toBe(true);
     expect(container.querySelector(".intent-step-save")).toBeNull();
     expect(container.querySelector(".intent-step-continue")).toBeNull();

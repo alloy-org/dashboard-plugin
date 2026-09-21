@@ -181,8 +181,13 @@ export default function IntentReadingPage({ directions, intentReading, isRefresh
       </header>
       <IntentReadingProgressBar fraction={ isReady ? 1 : progressFraction } />
       <p className="intent-reading-status" role="status">
-        { !isRefreshing && !hasStoredReading ? "No reading is stored for this quarter yet." : statusText }
+        { !isRefreshing && !hasStoredReading ? "No sources are stored for these suggestions yet." : statusText }
       </p>
+      { !isRefreshing && !hasStoredReading ? (
+        <button className="plan-button plan-button--dashed intent-reading-reread" onClick={ onReread } type="button">
+          Read my notes now
+        </button>
+      ) : null }
       <div className="intent-reading-columns">
         <section className="intent-reading-column">
           <h3 className="intent-reading-section-heading">

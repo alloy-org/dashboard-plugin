@@ -5,6 +5,21 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-09-21 — Plan Builder: always offer "View sources"
+
+**Model:** Claude Opus 5 (1M context)
+**Files created/modified:**
+- `lib/dashboard/plan-wizard/intent-step.jsx` (modified) — The link to the reading page is always shown. When no reading is running it reads "View sources →"
+- `lib/dashboard/plan-wizard/intent-reading-page.jsx` (modified) — When no reading is stored, the page offers "Read my notes now"
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` (modified) — Stops passing the `intentReading` prop that IntentStep no longer uses
+- `test/plan-wizard-ui.test.js` (modified) — Tests the sources link with no stored reading and the button that reads the notes from the empty page. The tab-order test now accepts the link
+
+**Task:** Always offer the sources link on the intent page, since seeing which notes shaped the suggestions can both impress and inform the user.
+**Prompt summary:** "We should probably always offer the link to 'View sources' from the 'Intent' page."
+**Scope:** ~20 lines across 3 source files, plus tests
+
+---
+
 ## 2026-09-21 — Plan Builder reading page: notes read, themes, and directions
 
 **Model:** Claude Opus 5 (1M context)
