@@ -1,10 +1,11 @@
 // The rail beside the wizard's questions, listing every step with what the user has stored against it and
 // letting them jump back to any step they have already answered.
 //
-// It appears only once the plan's four required steps are behind the user and only where the dialog is wide
-// enough to hold it, so the rail never competes with the question for room on a narrow screen. Both conditions
-// are decided outside this component: the shell supplies the rows and whether the core is complete, and
-// plan-wizard.scss hides the rail below the dialog's width threshold through a container query.
+// It appears only once the plan's four required steps are behind the user. Where the dialog is too narrow to
+// hold it beside the question, the same list is rendered inside wizard-progress-bar.jsx's drop-down panel
+// instead, so the rail never competes with the question for room. Both conditions are decided outside this
+// component: the shell supplies the rows and whether the core is complete, and plan-wizard.scss picks between
+// the rail and the bar at the dialog's width threshold through a container query.
 //
 // Rows for steps the user has not yet reached are rendered as plain text rather than as buttons. Jumping
 // forward past an unanswered step would land them on a page whose inputs depend on answers that do not exist
@@ -50,6 +51,8 @@ function PlanNoteIcon() {
 // ----------------------------------------------------------------------------------------------
 // @desc Render the wizard's progress rail: a heading, one row per step, and a link to the quarter's plan note.
 // @param {object} params - An object with the following properties:
+//   - {string} headingText - The rail's heading. It names the list's purpose where the list is the whole point of
+//     what the user just opened, so the narrow bar's panel overrides the rail's standing title.
 //   - {boolean} isOpeningPlanNote - True while the plan note is being published and opened, which labels the
 //     link as busy and prevents a second request.
 //   - {Function} onOpenPlanNote - Publishes the plan and hands the user off to the note in Amplenote.
@@ -57,10 +60,11 @@ function PlanNoteIcon() {
 //   - {Array<object>} progressRows - Rows from progressRowsFromContext.
 //   - {string} quarterLabel - The quarter being planned, as "Q4 2026", naming the note the link opens.
 // @returns {JSX.Element} The progress sidebar.
-function WizardProgressSidebar({ isOpeningPlanNote, onOpenPlanNote, onSelectStep, progressRows, quarterLabel }) {
+function WizardProgressSidebar({ headingText = "Quarterly plan", isOpeningPlanNote, onOpenPlanNote, onSelectStep,
+    progressRows, quarterLabel }) {
   return (
     <aside aria-label="Quarterly plan progress" className="plan-wizard-progress-sidebar">
-      <h2 className="progress-sidebar-heading">Quarterly plan</h2>
+      <h2 className="progress-sidebar-heading">{ headingText }</h2>
       <ol className="progress-step-list">
         { progressRows.map(row => {
           const rowClassNames = ["progress-step-row"];

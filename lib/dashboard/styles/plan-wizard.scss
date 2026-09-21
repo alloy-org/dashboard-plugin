@@ -1271,10 +1271,10 @@ $plan-wizard-z-index: 1100;
    * query measures the dialog as actually laid out, so it is right in the embed and in a normal browser alike.
    *
    * The container is `.plan-wizard-page`, and an `inline-size` container query resolves against that element's
-   * own border box, so 900px here is 900px of dialog width rather than of the space inside its padding. That is
-   * the width at which the two columns can coexist: the rail plus the room the intent page's two goal columns
-   * need before they start wrapping their cards. Below it the body falls back to one column and the rail is not
-   * rendered at all, so its space is fully returned to the question. */
+   * content box, so 900px here is 900px of space inside the dialog's padding — about 948px of dialog at the
+   * $sp-xl gutter. That is the width at which the two columns can coexist: the rail plus the room the intent
+   * page's two goal columns need before they start wrapping their cards. Below it the body falls back to one
+   * column, the rail is not rendered, and the step bar below takes over the same navigation. */
   .plan-wizard-body {
     display: flex;
     flex-direction: column;
@@ -1306,6 +1306,143 @@ $plan-wizard-z-index: 1100;
       gap: $sp-lg;
       padding: $sp-lg $sp-lg $sp-lg 0;
     }
+  }
+
+  /* The bar defaults to hidden and the narrow branch turns it on, which is the same shape the rail above uses and
+   * is load-bearing rather than stylistic: every rule in this file is emitted with one `.plan-wizard-overlay`
+   * prefix, so a base rule and a rule inside a container query have equal specificity and the later one in
+   * source order wins. A base `display: flex` here would therefore override the query's `display: none` and
+   * show the bar at every width, rail included. Only the property the query needs to flip lives in the query;
+   * the bar's layout below is shared by both states and stays out of it. */
+  .plan-wizard-progress-bar {
+    border-bottom: 1px solid $color-border;
+    display: none;
+    flex-direction: column;
+    margin: 0 (-$sp-xl);
+    padding: 0 $sp-xl;
+
+    @include breakpoint($breakpoint-large-phone) {
+      margin: 0 (-$sp-lg);
+      padding: 0 $sp-lg;
+    }
+  }
+
+  @container (max-width: 899.98px) {
+    .plan-wizard-progress-bar {
+      display: flex;
+    }
+
+    .plan-wizard-header .plan-wizard-step-track,
+    .plan-wizard-header .plan-wizard-progress {
+      display: none;
+    }
+  }
+
+  /* The summary row is the bar's control, so the whole row is the button rather than a row with a button in it:
+   * the step name and the position are as much "open this" as the words All steps are. Nested under
+   * `.plan-wizard-page` to beat that block's `button { border: 1px solid }` default. */
+  .plan-wizard-page .progress-bar-summary {
+    align-items: center;
+    background: none;
+    border: 1px solid transparent;
+    border-radius: $radius-md;
+    cursor: pointer;
+    display: flex;
+    gap: $sp-sm;
+    padding: $sp-md 0;
+    text-align: left;
+    width: 100%;
+
+    &:focus-visible {
+      border-color: $color-accent;
+      outline: none;
+    }
+  }
+
+  /* Open, the summary row reads as the lid of the panel below it, so it takes the panel's background and the
+   * accent border the mockup gives it rather than staying a quiet strip of the page. */
+  .plan-wizard-progress-bar--open {
+    background: $color-bg-primary;
+  }
+
+  .plan-wizard-progress-bar--open .progress-bar-summary {
+    border-color: $color-accent;
+  }
+
+  .progress-bar-track {
+    align-items: center;
+    display: flex;
+    flex: 0 0 auto;
+    gap: 5px;
+  }
+
+  .progress-bar-dot {
+    background: $color-success;
+    border-radius: 999px;
+    height: 7px;
+    width: 24px;
+
+    &--current {
+      background: $color-navy;
+    }
+  }
+
+  .progress-bar-position {
+    color: $color-text-muted;
+    flex: 0 0 auto;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* The step name is the one part of the row allowed to shrink: the dots, the position, and the disclosure are
+   * all fixed-width, so a long step name truncates rather than pushing All steps off the edge. */
+  .progress-bar-step-title {
+    color: $color-navy;
+    flex: 1 1 auto;
+    font-size: 0.9rem;
+    font-weight: 700;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .progress-bar-disclosure {
+    color: $color-success;
+    flex: 0 0 auto;
+    font-size: 0.85rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .progress-bar-chevron {
+    color: $color-text-muted;
+    fill: none;
+    flex: 0 0 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+    width: 18px;
+  }
+
+  .plan-wizard-progress-bar--open .progress-bar-chevron {
+    transform: rotate(180deg);
+  }
+
+  /* The panel reuses the rail's markup, so the rail's own `display: none` and its column styling have to be
+   * undone here: inside the panel it is a full-width list with no border beside it. */
+  .progress-bar-panel {
+    padding-bottom: $sp-md;
+    padding-top: $sp-sm;
+  }
+
+  .progress-bar-panel .plan-wizard-progress-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-md;
   }
 
   .progress-sidebar-heading {

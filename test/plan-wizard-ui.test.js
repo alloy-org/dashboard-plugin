@@ -31,7 +31,7 @@ await jest.unstable_mockModule("plan-wizard/wizard-prompt-runner", () => ({
 
 const { default: PlanWizard, WIZARD_STEPS } = await import("dashboard/plan-wizard/plan-wizard");
 const { draftPacesFromProspects } = await import("dashboard/plan-wizard/pace-cards-step-fields");
-const { readPlanGoals, savePlanGoals } = await import("plan-wizard/plan-wizard-service");
+const { readPlanGoals, savePlanGoals, savePlanProspects, savePlanQuarterAnswer } = await import("plan-wizard/plan-wizard-service");
 
 // ----------------------------------------------------------------------------------------------
 // @desc Mount the wizard and settle the initial read plus any inference it triggers.
@@ -961,6 +961,91 @@ describe("PlanWizard project discovery", () => {
     expect(container.querySelector(".projects-step-discovery-notice").textContent)
       .toContain("no candidate the evidence supports");
     expect(container.querySelector(".project-row--proposed")).toBe(null);
+    await cleanup();
+  });
+});
+
+// ----------------------------------------------------------------------------------------------
+describe("PlanWizard narrow-width step bar", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  // @desc Seed a quarter whose four required steps are all answered, which is the state that earns the wizard
+  //   its step navigation. The bar and the rail are gated on the same flag, so this is the precondition for both.
+  // @returns {Promise<object>} The fixture app carrying the stored plan.
+  async function createPlannedApp() {
+    const app = createPlanWizardApp();
+    const capturedAt = "2026-09-06T12:00:00Z";
+    await savePlanGoals(app, { ...SCOPE, goals: [{ capturedAt, goalRank: 1, goalText: "Ship the analytics offering",
+      userCategoryEm: "work" }] });
+    await savePlanProspects(app, { ...SCOPE, prospects: [{ approvalStatusEm: "humanProvided", capturedAt,
+      paceEm: "twoFocusedBlocks", priorityEm: "quarterFocus", substantiations: ["Named while planning"],
+      summary: "Instrument the funnel", userCategoryEm: "work", uuid: "prospect-planned-1" }] });
+    await savePlanQuarterAnswer(app, { ...SCOPE, answerKey: "quarterName", capturedAt, text: "Ship and validate" });
+    return app;
+  }
+
+  it("offers the step bar once the required steps are answered, and not before", async () => {
+    const unplanned = await renderPlanWizard();
+    expect(unplanned.container.querySelector(".plan-wizard-progress-bar")).toBeNull();
+    await unplanned.cleanup();
+
+    const { cleanup, container } = await renderPlanWizard({ app: await createPlannedApp() });
+    const summaryButton = container.querySelector(".progress-bar-summary");
+    expect(summaryButton).not.toBeNull();
+    expect(summaryButton.getAttribute("aria-expanded")).toBe("false");
+    expect(container.querySelector(".progress-bar-position").textContent).toBe("Step 1 of 5");
+    expect(container.querySelector(".progress-bar-step-title").textContent).toBe("High-level intent");
+    expect(container.querySelector(".progress-bar-disclosure").textContent).toBe("All steps");
+    expect(container.querySelector(".progress-bar-panel")).toBeNull();
+    await cleanup();
+  });
+
+  it("expands to the full step list and collapses again", async () => {
+    const { cleanup, container } = await renderPlanWizard({ app: await createPlannedApp() });
+    const summaryButton = container.querySelector(".progress-bar-summary");
+    await clickAndSettle(summaryButton);
+
+    const panel = container.querySelector(".progress-bar-panel");
+    expect(panel).not.toBeNull();
+    expect(summaryButton.getAttribute("aria-expanded")).toBe("true");
+    expect(summaryButton.getAttribute("aria-controls")).toBe(panel.id);
+    expect(container.querySelector(".progress-bar-disclosure").textContent).toBe("Done");
+    expect(panel.querySelector(".progress-sidebar-heading").textContent).toBe("Jump to any step");
+    const stepLabels = [...panel.querySelectorAll(".progress-step-label")].map(label => label.textContent);
+    expect(stepLabels).toHaveLength(WIZARD_STEPS.length);
+    expect(stepLabels).toContain("High-level intent");
+    expect(stepLabels).toContain("Project list");
+    expect(panel.querySelector(".progress-plan-note-link")).not.toBeNull();
+
+    await clickAndSettle(summaryButton);
+    expect(container.querySelector(".progress-bar-panel")).toBeNull();
+    await cleanup();
+  });
+
+  it("jumps to a chosen step and closes the panel over the page it opened", async () => {
+    const { cleanup, container } = await renderPlanWizard({ app: await createPlannedApp() });
+    await clickAndSettle(container.querySelector(".progress-bar-summary"));
+    const paceRow = [...container.querySelectorAll(".progress-bar-panel .progress-step-row")]
+      .find(row => row.textContent.includes("Project cadence"));
+    await clickAndSettle(paceRow.querySelector(".progress-step-button"));
+
+    expect(container.querySelector(".pace-cards-container")).not.toBeNull();
+    expect(container.querySelector(".progress-bar-panel")).toBeNull();
+    expect(container.querySelector(".progress-bar-position").textContent).toBe("Step 3 of 5");
+    expect(container.querySelector(".progress-bar-step-title").textContent).toBe("Project cadence");
+    await cleanup();
+  });
+
+  it("closes the panel when Back or Next moves the user instead", async () => {
+    const { cleanup, container } = await renderPlanWizard({ app: await createPlannedApp() });
+    await clickAndSettle(container.querySelector(".progress-bar-summary"));
+    expect(container.querySelector(".progress-bar-panel")).not.toBeNull();
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+
+    expect(container.querySelector(".progress-bar-panel")).toBeNull();
+    expect(container.querySelector(".progress-bar-position").textContent).toBe("Step 2 of 5");
     await cleanup();
   });
 });

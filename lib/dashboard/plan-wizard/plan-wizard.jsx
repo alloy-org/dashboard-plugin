@@ -35,7 +35,8 @@ import PaceCardsStep from "dashboard/plan-wizard/pace-cards-step";
 import PlanSaveError from "dashboard/plan-wizard/plan-save-error";
 import ProjectsStep from "dashboard/plan-wizard/projects-step";
 import QuarterNameStep from "dashboard/plan-wizard/quarter-name-step";
-import { hasCompletedPlanCore, progressRowsFromContext } from "dashboard/plan-wizard/wizard-progress-fields";
+import { hasCompletedPlanCore, progressRowsFromContext, sidebarLabelFromStep } from "dashboard/plan-wizard/wizard-progress-fields";
+import WizardProgressBar from "dashboard/plan-wizard/wizard-progress-bar";
 import WizardProgressSidebar from "dashboard/plan-wizard/wizard-progress-sidebar";
 import { WIZARD_STEPS, wizardStepIndexFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useSuspendWidgetMounting } from "dashboard/widget-mount-suspension";
@@ -100,7 +101,9 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const advanceLabel = isLastStep ? "Done" : "Next";
   const progressRows = progressRowsFromContext({ currentStepKey: step.key, planningContext, wizardSteps: WIZARD_STEPS });
   // The grid column and the rail itself are gated on one flag, so the body never reserves a column for a sidebar
-  // it is not rendering: loading, a load failure, and the inline note editor each take the whole width.
+  // it is not rendering: loading, a load failure, and the inline note editor each take the whole width. The same
+  // flag gates the narrow-width bar, which is the same navigation in the one place a rail does not fit, so the
+  // two appear and disappear together and the container query decides which of them the user actually sees.
   const rendersProgressSidebar = hasCompletedPlanCore(progressRows) && !inspectingNoteUuid && !isLoading && !error;
 
   // ----------------------------------------------------------------------------------------------
@@ -291,6 +294,11 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
           </div>
           <span className="plan-wizard-progress">{ `${ stepIndex + 1 } of ${ WIZARD_STEPS.length }` }</span>
         </header>
+        { rendersProgressSidebar ? (
+          <WizardProgressBar { ...{ isOpeningPlanNote, progressRows, quarterLabel } }
+            onOpenPlanNote={ handleViewQuarterlyPlan } onSelectStep={ handleSelectStep }
+            stepCount={ WIZARD_STEPS.length } stepNumber={ stepIndex + 1 } stepTitle={ sidebarLabelFromStep(step) } />
+        ) : null }
         <div className={ `plan-wizard-body${ rendersProgressSidebar ? " plan-wizard-body--with-sidebar" : "" }` }>
         { rendersProgressSidebar ? (
           <WizardProgressSidebar { ...{ isOpeningPlanNote, progressRows, quarterLabel } }
