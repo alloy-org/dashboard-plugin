@@ -1,7 +1,7 @@
 // The wizard's first page: capture what would make the coming quarter a success, professionally and, optionally,
 // personally. Suggestions are offered as starting points that fill the focused field; nothing becomes a chosen
 // intent until the user saves. A background inference response replaces the offered suggestions but never the
-// text a user has begun typing. A link above the fields opens the reading page, which shows how those suggestions
+// text a user has begun typing. A link below the fields opens the reading page, which shows how those suggestions
 // were drawn from the user's notes.
 
 import ExpandingTextarea from "dashboard/plan-wizard/expanding-textarea";
@@ -238,14 +238,14 @@ export default function IntentStep({ isRefreshing, isSaving, onAnswerStateChange
     <div className="plan-step-container intent-step-container">
       <h2 className="plan-heading">{ INTENT_STEP_COPY.title }</h2>
       <p className="plan-summary">{ INTENT_STEP_COPY.summary }</p>
-      { onOpenReading ? (
-        <IntentReadingLink isRefreshing={ isRefreshing } onOpenReading={ onOpenReading } progressFraction={ readingProgress } />
-      ) : null }
       <IntentStepCategory { ...categoryProps } fields={ workFields } onAddSecondary={ () => handleAddSecondary("work") }
         possibilities={ planningContext.possibilities.work } userCategoryEm="work" />
       <IntentStepCategory { ...categoryProps } fields={ personalFields }
         onAddSecondary={ () => handleAddSecondary("personal") } possibilities={ planningContext.possibilities.personal }
         userCategoryEm="personal" />
+      { onOpenReading ? (
+        <IntentReadingLink isRefreshing={ isRefreshing } onOpenReading={ onOpenReading } progressFraction={ readingProgress } />
+      ) : null }
     </div>
   );
 }

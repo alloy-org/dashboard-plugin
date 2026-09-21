@@ -50,3 +50,17 @@ test("clamps at full rather than overrunning a request that outlives its timeout
   expect(fillAt(75)).toBe(1);
   expect(fillAt(600)).toBe(1);
 });
+
+// ----------------------------------------------------------------------------------------------
+// @desc Confirm an eased bar slows the nearer it gets to full and is still short of full at the budget's end, so a
+//   slow answer leaves it creeping rather than sitting full while the request is still running.
+test("eases toward full without reaching it when asked to", () => {
+  const easedCurve = { decelerateAtSeconds: 20, easesOut: true, targetSeconds: 30, timeoutSeconds: 75 };
+  const easedFillAt = elapsedSeconds => progressFractionAtElapsed(elapsedSeconds, easedCurve);
+  expect(easedFillAt(20)).toBeCloseTo(2 / 3, 5);
+  expect(easedFillAt(75)).toBeCloseTo(0.98, 5);
+  expect(easedFillAt(600)).toBeLessThan(1);
+  const earlyGain = easedFillAt(30) - easedFillAt(20);
+  const lateGain = easedFillAt(60) - easedFillAt(50);
+  expect(lateGain).toBeLessThan(earlyGain / 2);
+});

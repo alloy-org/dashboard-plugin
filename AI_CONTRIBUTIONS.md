@@ -5,6 +5,29 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-09-21 — Plan Builder: stream themes onto the reading page; ease the reading bar
+
+**Model:** Claude Opus 5 (1M context)
+**Files created/modified:**
+- `lib/providers/stream-response-text.js` (created) — Reads a server-sent-event response without showing alerts, keeping events that are split across chunks. It reports the accumulated text as it arrives and stops at a single deadline for the whole read
+- `lib/providers/fetch-ai-provider.js` (modified) — `llmPrompt` takes an optional `onPartialText`. When it is given and the provider can stream (Anthropic or OpenAI-compatible), the request streams
+- `lib/plan-wizard/wizard-prompt-runner.js` (modified) — Passes `onPartialText` to the direct provider leg of the race
+- `lib/plan-wizard/intent-reading.js` (modified) — Added `themesFromPartialResponse`, which takes completed theme entries out of partial JSON, and `undismissedThemes`
+- `lib/plan-wizard/intent-inference.js` (modified) — The prompt now asks for themes first. Added `onPartialThemes`, which reports each theme as it completes and goes quiet once the race is settled
+- `lib/plan-wizard/plan-wizard-service.js`, `lib/hooks/use-plan-wizard.js` (modified) — Pass the streamed themes, minus dismissed ones, through `onProgress` into `intentReading`
+- `lib/dashboard/plan-wizard/intent-reading-page.jsx` (modified) — Themes are shown as they arrive instead of waiting for the full answer
+- `lib/hooks/use-elapsing-progress.js` (modified) — Added an `easesOut` curve that keeps slowing and never fills before the request ends
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` (modified) — The reading bar slows from 20s and eases out across the LLM budget plus 15s
+- `lib/dashboard/plan-wizard/intent-step.jsx` (modified) — Moved the "View sources" link below the intent boxes
+- `test/stream-response-text.test.js` (created), plus `test/plan-wizard-intents.test.js`, `test/plan-wizard-ui.test.js`, `test/elapsing-progress.test.js` and `test/wizard-prompt-race.test.js` (modified)
+
+**Task:** Move the sources link below the intent boxes. Stream the model's answer so themes appear one at a time as they are written. Slow the progress bar near its end so it never fills before the model finishes.
+**Prompt summary:** "Move 'View sources' below the intent boxes; stream back the LLM response so themes show up every few seconds; ensure the progress bar slows down closer to the end so it doesn't fill before the LLM timeouts complete."
+**Scope:** ~250 lines across 1 new and 10 modified source files, plus tests
+**Notes:** Only the direct provider streams. Ample Agent Pro answers through callPlugin in one piece, so when it wins the race the themes arrive with the answer. Gemini streams from a different endpoint, so it is not asked to stream.
+
+---
+
 ## 2026-09-21 — Plan Builder: always offer "View sources"
 
 **Model:** Claude Opus 5 (1M context)

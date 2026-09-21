@@ -44,6 +44,7 @@ import { WIZARD_STEPS, wizardStepIndexFromKey } from "dashboard/plan-wizard/wiza
 import { useSuspendWidgetMounting } from "dashboard/widget-mount-suspension";
 import { useElapsingProgress } from "hooks/use-elapsing-progress";
 import usePlanWizard, { planScopeKey } from "hooks/use-plan-wizard";
+import { WIZARD_LLM_TIMEOUT_SECONDS } from "plan-wizard/plan-models";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { navigateToNote } from "util/goal-notes";
@@ -53,8 +54,10 @@ const SAVE_ERROR_PREFIX = { "enough-for-today": "Your answer was not saved.", in
   "pace-cards": "Your project paces were not saved.", projects: "Your projects were not saved.",
   "quarter-name": "Your quarter name was not saved." };
 
-// The reading page's bar fills in this long and then waits full, since most readings finish well inside it.
-const INTENT_READING_PROGRESS_SECONDS = 30;
+// The bar would fill in 30 seconds at its opening pace, slows from 20, and eases out over the provider's own budget
+// plus time to read the notes, so a slow answer leaves it creeping toward full rather than sitting there.
+const INTENT_READING_PROGRESS = { decelerateAtSeconds: 20, easesOut: true, targetSeconds: 30,
+  timeoutSeconds: WIZARD_LLM_TIMEOUT_SECONDS + 15 };
 
 export { WIZARD_STEPS };
 
@@ -103,8 +106,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const scopeKey = planScopeKey({ domainName, domainUuid, quarter, year });
   // Measured here rather than in either consumer, so the intent page's link and the reading page it opens show one
   // continuous fill instead of each restarting the bar when it mounts.
-  const intentReadingProgress = useElapsingProgress(isRefreshing, { decelerateAtSeconds: INTENT_READING_PROGRESS_SECONDS,
-    targetSeconds: INTENT_READING_PROGRESS_SECONDS, timeoutSeconds: INTENT_READING_PROGRESS_SECONDS });
+  const intentReadingProgress = useElapsingProgress(isRefreshing, INTENT_READING_PROGRESS);
   const quarterLabel = planningContext.scope ? planningContext.scope.quarterKey : `${ year }-Q${ quarter }`;
   const domainLabel = domainName ?? "All Notes";
   // The header states the quarter in the reading order a person says it in, while quarterLabel stays the storage

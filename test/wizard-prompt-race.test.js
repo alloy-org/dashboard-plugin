@@ -82,7 +82,7 @@ describe("raceWizardPrompt", () => {
     await raceWizardPrompt({}, "prompt", KEYED_OPTIONS);
     expect(agentProMock).toHaveBeenCalledWith({}, "prompt", { aiModel: "gemini-3.5-flash-lite", jsonResponse: true });
     expect(llmPromptMock).toHaveBeenCalledWith({}, null, "prompt", "gemini-3.5-flash-lite", "gemini-key", true, 60,
-      undefined);
+      undefined, undefined);
   });
 
   // Only the direct provider takes a reasoning budget; Agent Pro runs the model on its own terms and would reject
@@ -92,7 +92,7 @@ describe("raceWizardPrompt", () => {
     llmPromptMock.mockResolvedValue({ source: "direct" });
     await raceWizardPrompt({}, "prompt", { ...KEYED_OPTIONS, reasoningEffort: "low" });
     expect(llmPromptMock).toHaveBeenCalledWith({}, null, "prompt", "gemini-3.5-flash-lite", "gemini-key", true, 60,
-      "low");
+      "low", undefined);
     expect(agentProMock).toHaveBeenCalledWith({}, "prompt", { aiModel: "gemini-3.5-flash-lite", jsonResponse: true });
   });
 });

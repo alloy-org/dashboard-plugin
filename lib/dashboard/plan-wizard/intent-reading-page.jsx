@@ -140,7 +140,8 @@ export default function IntentReadingPage({ directions, intentReading, isRefresh
   const isReady = phase === "ready" && !isRefreshing;
   const revealedReadCount = useStaggeredReveal(readItems.length, phase !== "reading", READ_ITEM_REVEAL_MS);
   const hasRevealedReadItems = revealedReadCount >= readItems.length;
-  const revealedThemeCount = useStaggeredReveal(themes.length, isReady && hasRevealedReadItems, THEME_REVEAL_MS);
+  // Themes may stream in while the provider is still writing, so they are revealed as they arrive, after the reads.
+  const revealedThemeCount = useStaggeredReveal(themes.length, phase !== "reading" && hasRevealedReadItems, THEME_REVEAL_MS);
   const hasRevealedThemes = revealedThemeCount >= themes.length;
   const revealedDirectionCount = useStaggeredReveal(directions.length, isReady && hasRevealedReadItems && hasRevealedThemes,
     DIRECTION_REVEAL_MS);
@@ -221,7 +222,7 @@ export default function IntentReadingPage({ directions, intentReading, isRefresh
           ) : null }
           { !visibleThemes.length && !(isReady && themes.length) ? (
             <p className="intent-reading-placeholder">
-              { isReady ? "No recurring themes were reported." : "Themes appear once the notes are read." }
+              { isReady ? "No recurring themes were reported." : "Themes appear here as the notes are read." }
             </p>
           ) : null }
           { isReady && hasChangedJudgements ? (

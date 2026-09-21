@@ -16,7 +16,7 @@ let inferenceImplementation = null;
 await jest.unstable_mockModule("plan-wizard/wizard-prompt-runner", () => ({
   raceWizardPrompt: jest.fn(async (app, prompt, options) => {
     inferenceCalls.push({ options, prompt });
-    if (inferenceImplementation) return inferenceImplementation(prompt);
+    if (inferenceImplementation) return inferenceImplementation(prompt, options);
     return {
       occupationHypothesis: "Builds developer tools",
       personal: [],
@@ -203,6 +203,40 @@ describe("PlanWizard intent step", () => {
     expect(container.querySelector(".intent-reading-page")).toBeNull();
     expect(workFields(container)[0].value).toBe("Hire a frontend contractor");
     expect(container.querySelector(".intent-step-reading-link").textContent).toContain("View sources");
+    window.matchMedia = originalMatchMedia;
+    await cleanup();
+  });
+
+  it("shows each streamed theme on the reading page before the answer is complete", async () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = () => ({ matches: true }); // Reduced motion shows each list at once instead of item by item
+    let releaseInference = null;
+    let streamPartialText = null;
+    inferenceImplementation = (prompt, options) => new Promise(resolve => {
+      releaseInference = resolve;
+      streamPartialText = options.onPartialText;
+    });
+    const { cleanup, container } = await renderPlanWizard();
+    await clickAndSettle(container.querySelector(".intent-step-reading-link"));
+    const themeLabels = () => [...container.querySelectorAll(".intent-reading-theme-label")].map(label => label.textContent);
+
+    await act(async () => streamPartialText('{"themes": [{"label": "Analytics", "taskCount": 0}, {"label": "Hir'));
+    await settle();
+    expect(themeLabels()).toEqual(["Analytics"]);
+    expect(container.querySelector(".intent-reading-status").textContent).toBe("Looking for themes and directions…");
+
+    await act(async () => streamPartialText('{"themes": [{"label": "Analytics", "taskCount": 0}, {"label": "Hiring", "taskCount": 0}]'));
+    await settle();
+    expect(themeLabels()).toEqual(["Analytics", "Hiring"]);
+    expect(container.querySelectorAll(".intent-reading-direction").length).toBe(0);
+
+    await act(async () => {
+      releaseInference({ personal: [], themes: [{ label: "Analytics", taskCount: 0 }, { label: "Hiring", taskCount: 0 }],
+        work: [{ confidence: 6, intent: "Ship the analytics offering", substantiation: "Analytics tasks completed." }] });
+    });
+    await settle();
+    expect(themeLabels()).toEqual(["Analytics", "Hiring"]);
+    expect(container.querySelectorAll(".intent-reading-direction").length).toBe(1);
     window.matchMedia = originalMatchMedia;
     await cleanup();
   });

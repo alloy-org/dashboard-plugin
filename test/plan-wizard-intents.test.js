@@ -3,7 +3,7 @@
 import { collectIntentEvidence, completedTasksWithinWindow, isGenuinelyCompleted, isPersonalNote,
   recentlyCreatedTasks } from "plan-wizard/intent-evidence";
 import { defaultPersonalPossibilities, inferIntentPossibilities, intentPromptFromEvidence } from "plan-wizard/intent-inference";
-import { readItemsFromEvidence, themeJudgementsWithChange, themesFromResponse } from "plan-wizard/intent-reading";
+import { readItemsFromEvidence, themeJudgementsWithChange, themesFromPartialResponse, themesFromResponse } from "plan-wizard/intent-reading";
 import { resolvePlanScope } from "plan-wizard/plan-models";
 import { readPlanGoals, refreshPlanIntentPossibilities, savePlanThemeJudgement } from "plan-wizard/plan-wizard-service";
 import { createPlanWizardApp } from "./fixtures/plan-wizard-app.js";
@@ -205,7 +205,7 @@ test("stores the reading and applies theme judgements to the next pass", async (
   await refreshPlanIntentPossibilities(app, { ...scope, onProgress: event => progressEvents.push(event), promptRunner, referenceDate });
   expect(progressEvents).toEqual([{ phase: "evidence", readItems: [
     { kind: "note", label: "Work log", noteUuid: "note-work", taskUuid: null },
-    { kind: "task", label: "Interview contractor", noteUuid: "note-work", taskUuid: "task-4-a" }] }]);
+    { kind: "task", label: "Interview contractor", noteUuid: "note-work", taskUuid: "task-4-a" }], themes: [] }]);
   expect((await readPlanGoals(app, scope)).intentReading.themes.map(theme => theme.label)).toEqual(["Hiring", "Time off"]);
 
   await savePlanThemeJudgement(app, { ...scope, judgement: "pinned", label: "Hiring" });
@@ -219,4 +219,49 @@ test("stores the reading and applies theme judgements to the next pass", async (
   expect(Object.keys(context.intentReading.themeJudgements)).toEqual(["hiring", "time off"]);
   await savePlanThemeJudgement(app, { ...scope, judgement: null, label: "Time off" });
   expect(Object.keys((await readPlanGoals(app, scope)).intentReading.themeJudgements)).toEqual(["hiring"]);
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Confirm only themes whose entry has finished arriving are taken from a response still being streamed,
+//   including when a label holds a brace that would otherwise end the entry early.
+test("takes only the completed themes from a partly streamed response", () => {
+  expect(themesFromPartialResponse('{"themes": [{"label": "Hir', 5)).toEqual([]);
+  const partialText = '{"themes": [{"label": "Hiring {team}", "taskCount": 2}, {"label": "Time off", "taskC';
+  expect(themesFromPartialResponse(partialText, 5)).toEqual([{ label: "Hiring {team}", taskCount: 2 }]);
+  const finishedText = '{"themes": [{"label": "Hiring", "taskCount": 2}], "work": [{"intent": "x"}]}';
+  expect(themesFromPartialResponse(finishedText, 5)).toEqual([{ label: "Hiring", taskCount: 2 }]);
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Confirm a streamed answer reports each theme as it completes, leaves out dismissed themes, and stops
+//   reporting once the provider has answered, so a losing stream cannot follow the final themes onto the page.
+test("reports streamed themes one at a time before the answer arrives", async () => {
+  const app = createPlanWizardApp();
+  app.tasks.push(completedTask(4, { content: "Interview contractor" }), completedTask(5, { content: "Book leave" }));
+  await savePlanThemeJudgement(app, { ...scope, judgement: "dismissed", label: "Time off" });
+  let lateStream = null;
+  const promptRunner = async (unusedApp, prompt, { onPartialText }) => {
+    onPartialText('{"themes": [{"label": "Hiring", "taskCount": 1}');
+    onPartialText('{"themes": [{"label": "Hiring", "taskCount": 1}, {"label": "Time off", "taskCount": 1}');
+    onPartialText('{"themes": [{"label": "Hiring", "taskCount": 1}, {"label": "Time off", "taskCount": 1}, {"label": "Tooling", "taskCount": 1}]');
+    lateStream = onPartialText;
+    return { themes: [{ label: "Hiring", taskCount: 1 }], work: [{ confidence: 6, intent: "Hire a contractor", substantiation: "Hiring tasks" }] };
+  };
+  const progressEvents = [];
+  await refreshPlanIntentPossibilities(app, { ...scope, onProgress: event => progressEvents.push(event), promptRunner, referenceDate });
+  lateStream('{"themes": [{"label": "A"}, {"label": "B"}, {"label": "C"}, {"label": "D"}]');
+
+  const themeLabelsPerEvent = progressEvents.map(event => event.themes.map(theme => theme.label));
+  expect(progressEvents.map(event => event.phase)).toEqual(["evidence", "themes", "themes", "themes"]);
+  expect(themeLabelsPerEvent).toEqual([[], ["Hiring"], ["Hiring"], ["Hiring", "Tooling"]]);
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Confirm the prompt asks for themes before the directions, which is what lets them stream in first.
+test("asks for themes before the directions", () => {
+  const evidence = { calendarSummaries: [], coverage: { collectedAt: "now", completedTaskCount: 0, personalTaskCount: 0,
+    supplementalTaskCount: 0, windowMonths: 3 }, personal: { references: [] }, work: { noteContext: [], references: [],
+    supplementalReferences: [] } };
+  const prompt = intentPromptFromEvidence(evidence, scope);
+  expect(prompt.indexOf('"themes"')).toBeLessThan(prompt.indexOf('"work"'));
 });
