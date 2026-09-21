@@ -5,6 +5,45 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-09-21 — Plan Builder: open a project on the sources page to see its tasks
+
+**Model:** Claude Opus 5 (1M context)
+**Files created/modified:**
+- `lib/plan-wizard/project-sources.js` (modified) — The summary carries `taskByUuid` (text, note, finished time, important flag) for every considered task. New `withNamedSourceNotes` names untitled notes by handle lookup, up to 40
+- `lib/plan-wizard/intent-evidence.js` (modified) — Exports `noteNameFromHandle`
+- `lib/plan-wizard/plan-wizard-service.js` (modified) — Names source notes before reporting or returning the sources
+- `lib/dashboard/plan-wizard/project-sources-page-fields.js` (modified) — Rows carry `servedTaskUuids`. New `projectTaskItems` resolves them, important and open tasks first, and counts cited tasks not among those read
+- `lib/dashboard/plan-wizard/project-sources-page.jsx` (modified) — Project rows with cited tasks open and close on click to list those tasks
+- `lib/dashboard/styles/plan-wizard.scss` (modified) — Row toggle, chevron, and task list styles
+- `test/plan-wizard-project-sources.test.js`, `test/plan-wizard-ui.test.js` (modified) — Tests for the task index, note naming, task ordering, and opening a project on the page
+
+**Task:** Let the user click a project on the sources page to see the tasks related to it.
+**Prompt summary:** "Update the project sources page to allow clicking on a project to see the list of tasks related to it"
+**Notes:** Stored projects cite tasks by UUID only, so task text comes from the tasks read for the sources summary. A cited task not among them is counted rather than shown.
+
+---
+
+## 2026-09-21 — Plan Builder: project evidence sources page
+
+**Model:** Claude Opus 5 (1M context)
+**Files created/modified:**
+- `lib/plan-wizard/project-sources.js` (created) — `projectSourcesFromEvidence` summarizes discovery's evidence: distinct tasks and notes considered, the chosen intents, and the notes ranked by important plus recently finished tasks
+- `lib/dashboard/plan-wizard/project-sources-page-fields.js` (created) — `sourceProjectRows` lists kept projects by distinct tasks cited, with the chosen cadence's label as the ratified mark. `hasThinSources` flags fewer than 10 notes and tasks combined
+- `lib/dashboard/plan-wizard/project-sources-page.jsx` (created) — The "Project evidence sources" page: considered counts, the thin-evidence import warning, intents, important notes, and projects revealed one at a time
+- `lib/plan-wizard/plan-wizard-service.js` (modified) — `refreshPlanActionProspects` reports `projectSources` through `onProgress` before the provider call and returns them. New `readPlanProjectSources` collects them without a provider call
+- `lib/hooks/use-plan-wizard.js` (modified) — Holds `projectSources` for the session and adds `loadProjectSources`
+- `lib/dashboard/plan-wizard/projects-step.jsx` (modified) — "Watch Plan Builder find your projects →" / "View sources →" link under the summary. The discovery progress fill now comes from the wizard shell
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` (modified) — Routes to the sources page, keeping the projects page mounted and hidden beneath it, and measures discovery progress for both pages
+- `lib/dashboard/plan-wizard/intent-reading-page.jsx` (modified) — Exports `useStaggeredReveal` and `ReadItemIcon` for reuse
+- `lib/dashboard/styles/plan-wizard.scss` (modified) — Sources link and page styles
+- `test/plan-wizard-project-sources.test.js` (created), `test/plan-wizard-ui.test.js` (modified) — Tests for the summary, rows, threshold, service progress, and the page during and after discovery
+
+**Task:** Give the user something to watch during the 30+ second project discovery wait, like the intent page's sources.
+**Prompt summary:** "Set up a 'View sources' link from the Projects page showing intents, important notes, and relevant projects with task counts, marking ratified ones; show total notes and tasks considered, and warn to import when fewer than 10"
+**Notes:** Sources live in memory for the session, not in the Vision Guide. Opened without a pass this session, the page collects them without a provider call.
+
+---
+
 ## 2026-09-21 — Plan Builder sidebar: Pro/Personal project counts and a pace ring chart
 
 **Model:** Claude Opus 5 (1M context)

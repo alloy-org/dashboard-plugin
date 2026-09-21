@@ -815,6 +815,177 @@ $pace-slice-other-color: #e87ba4;
     }
   }
 
+  // ── Project sources page ─────────────────────────────────────────────────────────────────
+
+  /* The sources page reuses the intent reading page's layout classes; these rules add only what it shows that the
+   * reading page does not: the considered count, the thin-evidence warning, and project rows with their task counts. */
+  .project-sources-page {
+    .project-sources-considered {
+      color: $color-text;
+      font-size: 0.95rem;
+      margin: 0;
+
+      strong { font-variant-numeric: tabular-nums; }
+    }
+
+    .project-sources-thin-warning {
+      background: $color-bg-warning;
+      border: 1px solid $color-warning;
+      border-radius: $radius-sm;
+      color: $color-text;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      margin: 0;
+      padding: $sp-sm $sp-md;
+    }
+
+    .project-sources-intent-dot {
+      background: $color-intent-work;
+      border-radius: 50%;
+      flex-shrink: 0;
+      height: 8px;
+      margin-top: 0.4em;
+      width: 8px;
+    }
+
+    .project-sources-intent-dot--personal { background: $color-intent-personal; }
+
+    .project-sources-note-detail {
+      color: $color-text-muted;
+      font-size: 0.75rem;
+      white-space: nowrap;
+    }
+
+    .project-sources-project {
+      animation: intent-reading-arrive 0.35s ease-out;
+      background: $color-bg-primary;
+      border: 1px solid $color-border;
+      border-radius: $radius-sm;
+      font-size: 0.9rem;
+      overflow: hidden;
+    }
+
+    .project-sources-project-row {
+      align-items: center;
+      background: none;
+      border: 0;
+      color: inherit;
+      display: flex;
+      flex-wrap: wrap;
+      font: inherit;
+      gap: $sp-xs $sp-sm;
+      padding: $sp-sm $sp-md;
+      text-align: left;
+      width: 100%;
+    }
+
+    button.project-sources-project-row {
+      cursor: pointer;
+
+      &:hover { background: $color-bg-secondary; }
+    }
+
+    .project-sources-project-chevron {
+      fill: none;
+      flex-shrink: 0;
+      height: 0.9rem;
+      stroke: $color-text-muted;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 1.8;
+      transition: transform 0.15s ease;
+      width: 0.9rem;
+    }
+
+    .project-sources-project--open .project-sources-project-chevron { transform: rotate(90deg); }
+
+    .project-sources-task-panel {
+      border-top: 1px solid $color-border;
+      display: flex;
+      flex-direction: column;
+      gap: $sp-xs;
+      padding: $sp-sm $sp-md $sp-sm calc(#{$sp-md} + 1.5rem);
+    }
+
+    .project-sources-task-list {
+      display: flex;
+      flex-direction: column;
+      gap: $sp-xs;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .project-sources-task {
+      align-items: flex-start;
+      display: flex;
+      gap: $sp-sm;
+    }
+
+    .project-sources-task-body {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .project-sources-task-text {
+      font-size: 0.85rem;
+      overflow-wrap: anywhere;
+    }
+
+    .project-sources-task--finished .project-sources-task-text { color: $color-text-muted; }
+
+    .project-sources-task-detail,
+    .project-sources-task-placeholder {
+      color: $color-text-muted;
+      font-size: 0.75rem;
+      margin: 0;
+    }
+
+    .project-sources-project--ratified { border-color: $color-success; }
+
+    .project-sources-project-name {
+      flex: 1 1 12rem;
+      font-weight: 600;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .project-sources-project-category,
+    .project-sources-project-count {
+      color: $color-text-muted;
+      font-size: 0.75rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .project-sources-ratified-badge {
+      align-items: center;
+      border: 1px solid $color-success;
+      border-radius: $radius-sm;
+      color: $color-success;
+      display: inline-flex;
+      font-size: 0.7rem;
+      font-weight: 600;
+      gap: 3px;
+      padding: 1px 6px;
+
+      svg {
+        fill: none;
+        height: 0.8rem;
+        stroke: currentColor;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 2;
+        width: 0.8rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .project-sources-project { animation: none; }
+      .project-sources-project-chevron { transition: none; }
+    }
+  }
+
   // ── Projects step ────────────────────────────────────────────────────────────────────────
 
   /* Add-project and discovery share one row so the two dashed actions stay adjacent instead of stacking under a
@@ -828,6 +999,27 @@ $pace-slice-other-color: #e87ba4;
     .projects-step-discover,
     .projects-step-combine {
       font-size: 0.75rem;
+    }
+
+    .projects-step-sources {
+      display: flex;
+      flex-direction: column;
+      gap: $sp-xs;
+      max-width: 22rem;
+
+      .projects-step-sources-link {
+        align-self: flex-start;
+        border: 0;
+        color: $color-link;
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 0;
+
+        &:hover:not(:disabled) {
+          background: transparent;
+          text-decoration: underline;
+        }
+      }
     }
 
     .projects-step-discovery-notice {

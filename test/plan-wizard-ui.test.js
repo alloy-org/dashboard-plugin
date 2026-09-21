@@ -931,6 +931,63 @@ describe("PlanWizard project discovery", () => {
     await cleanup();
   });
 
+  it("links to the project sources page during discovery, then reveals the projects found and opens one to its tasks", async () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = () => ({ matches: true }); // Reduced motion shows each list at once instead of item by item
+    const app = createPlanWizardApp();
+    pushRecentCompletions(app);
+    const respond = respondToBothPrompts({ workIntent: "Ship the analytics offering",
+      proposals: [{ focusMonths: [], resolvedTaskUuids: ["task-a", "task-b"], summary: "Automate the weekly report",
+        substantiation: "Generating the report would resolve both reporting tasks.", userCategoryEm: "work" }] });
+    let releaseDiscovery = null;
+    inferenceImplementation = prompt => {
+      if (!prompt.includes('"prospects"')) return respond(prompt);
+      return new Promise(resolve => { releaseDiscovery = () => resolve(respond(prompt)); });
+    };
+    const { cleanup, container } = await renderPlanWizard({ app });
+    await typeInto(workFields(container)[0], "Ship the analytics offering");
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+
+    const sourcesLink = container.querySelector(".projects-step-sources-link");
+    expect(sourcesLink.textContent).toContain("Watch Plan Builder find your projects");
+    expect(container.querySelector(".projects-step-sources .intent-reading-progress-fill")).not.toBeNull();
+    await clickAndSettle(sourcesLink);
+
+    const sourcesPage = container.querySelector(".project-sources-page");
+    expect(sourcesPage.querySelector(".intent-reading-title").textContent).toBe("Project evidence sources");
+    expect(sourcesPage.querySelector(".project-sources-considered").textContent)
+      .toBe("Considering 4 tasks from 2 notes, in service of 1 intent.");
+    expect(sourcesPage.querySelector(".project-sources-thin-warning").textContent).toContain("Import your existing notes");
+    const readLabels = [...sourcesPage.querySelectorAll(".intent-reading-read-label")].map(label => label.textContent);
+    expect(readLabels).toEqual(["Ship the analytics offering", "Reporting 2 finished", "Billing 2 finished"]);
+    expect(sourcesPage.querySelectorAll(".project-sources-project")).toHaveLength(0);
+    expect(container.querySelector(".plan-wizard-navigation")).toBeNull();
+
+    await act(async () => { releaseDiscovery(); });
+    await settle();
+
+    const projectRows = [...sourcesPage.querySelectorAll(".project-sources-project")];
+    expect(projectRows.map(row => row.querySelector(".project-sources-project-name").textContent))
+      .toEqual(["Automate the weekly report"]);
+    expect(projectRows[0].querySelector(".project-sources-project-count").textContent).toBe("2 tasks");
+    expect(projectRows[0].querySelector(".project-sources-ratified-badge")).toBeNull();
+    expect(sourcesPage.querySelector(".project-sources-considered").textContent).toContain("Considered 4 tasks");
+    expect(projectRows[0].querySelector(".project-sources-task-list")).toBeNull();
+    await clickAndSettle(projectRows[0].querySelector(".project-sources-project-row"));
+    expect(projectRows[0].querySelector(".project-sources-project-row").getAttribute("aria-expanded")).toBe("true");
+    const taskTexts = [...projectRows[0].querySelectorAll(".project-sources-task-text")].map(text => text.textContent);
+    expect(taskTexts).toEqual(["Assemble the weekly report by hand", "Re-send last week's report"]);
+    expect(projectRows[0].querySelector(".project-sources-task-detail").textContent).toMatch(/^Finished .+ · Reporting$/);
+    await clickAndSettle(projectRows[0].querySelector(".project-sources-project-row"));
+    expect(projectRows[0].querySelector(".project-sources-task-list")).toBeNull();
+
+    await clickAndSettle(sourcesPage.querySelector(".intent-reading-return"));
+    expect(container.querySelector(".project-sources-page")).toBeNull();
+    expect(container.querySelector(".projects-step-sources-link").textContent).toContain("View sources");
+    window.matchMedia = originalMatchMedia;
+    await cleanup();
+  });
+
   it("affirms an edited proposal while keeping the reasoning discovery gave it", async () => {
     const app = createPlanWizardApp();
     pushRecentCompletions(app);

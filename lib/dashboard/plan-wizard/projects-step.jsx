@@ -6,20 +6,20 @@
 // Discovery runs only when asked. It reads the intents from the first page, so it has nothing to work from until
 // those are saved, and it costs a provider call — so the page offers it as an action and reports what a pass
 // found, rather than firing on mount and presenting an empty list as though a search had already run.
+//
+// A link under the page's summary opens the sources page, which shows the intents, notes, and tasks discovery reads.
+// While a pass runs the link invites the user to watch it, since the wait is long enough to want something to look at.
 
+import { IntentReadingProgressBar } from "dashboard/plan-wizard/intent-reading-page";
 import ProjectCard from "dashboard/plan-wizard/project-card";
 import { draftRowsFromProspects, emptyProjectRow, priorityRecordFromRow, prospectRecordsFromDraftRows,
   rejectionRecordFromRow } from "dashboard/plan-wizard/projects-step-fields";
 import { useRegisteredNavigate } from "dashboard/plan-wizard/step-navigation";
-import { useElapsingProgress } from "hooks/use-elapsing-progress";
-import { WIZARD_LLM_TIMEOUT_SECONDS } from "plan-wizard/plan-models";
 import { clusterProspectsByEvidence } from "plan-wizard/prospect-similarity";
 import { wizardStepFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const CATEGORY_HEADINGS = { personal: "Personal projects (optional)", work: "Professional projects" };
-const DISCOVERY_PROGRESS_DECELERATE_SECONDS = 30;
-const DISCOVERY_PROGRESS_TARGET_SECONDS = 40;
 const PROJECTS_STEP_COPY = wizardStepFromKey("projects");
 
 // ----------------------------------------------------------------------------------------------
@@ -54,8 +54,29 @@ function restatedProjectCount(prospects, userCategoryEm) {
 }
 
 // ----------------------------------------------------------------------------------------------
+// @desc Offer the sources page: during a discovery pass as an invitation to watch it, with the pass's progress bar
+//   beneath, and otherwise as a plain link to what the projects were drawn from.
+// @param {object} params - An object with the following properties:
+//   - {number} discoveryProgress - Elapsed fill of the running discovery pass.
+//   - {boolean} isDiscovering - True while a discovery pass is running.
+//   - {Function} onOpenSources - Shows the sources page.
+// @returns {JSX.Element} The link row.
+function ProjectSourcesLink({ discoveryProgress, isDiscovering, onOpenSources }) {
+  return (
+    <div className={ `projects-step-sources${ isDiscovering ? " projects-step-sources--running" : "" }` }>
+      <button className="projects-step-sources-link" onClick={ onOpenSources } type="button">
+        { isDiscovering ? "Watch Plan Builder find your projects →" : "View sources →" }
+      </button>
+      { isDiscovering ? <IntentReadingProgressBar fraction={ discoveryProgress } /> : null }
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------------------------
 // @desc Render the projects page and save changed custom projects before Back or Next changes the page.
 // @param {object} params - An object with the following properties:
+//   - {number} discoveryProgress - Elapsed fill of the running discovery pass, measured by the wizard shell so the
+//     sources page shows the same fill.
 //   - {string|null} discoveryFailureReason - Why the last discovery pass proposed nothing, when it proposed none.
 //   - {boolean} isConsolidating - True while a consolidation pass is in flight.
 //   - {boolean} isDiscovering - True while a discovery pass is in flight.
@@ -63,22 +84,20 @@ function restatedProjectCount(prospects, userCategoryEm) {
 //   - {Function} onConsolidate - Combines the proposals that describe one undertaking.
 //   - {Function} onDiscover - Runs a discovery pass for the current scope.
 //   - {Function} onNavigate - Changes wizard page after pending project edits save successfully.
+//   - {Function|null} onOpenSources - Shows the sources page, leaving this page mounted underneath it.
 //   - {Function} onRegisterNavigate - Publishes this page's Back/Next handler to the wizard's shared navigation.
 //   - {Function} onSave - Receives prospect records and resolves true when the write succeeded.
 //   - {Function} onSaveDecision - Persists one card decision without entering page-wide saving state.
 //   - {object} planningContext - Stored goals and prospects for the scope.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 // @returns {JSX.Element} The projects page.
-export default function ProjectsStep({ discoveryFailureReason = null, isConsolidating = false, isDiscovering = false,
-    isSaving, onConsolidate, onDiscover, onNavigate, onRegisterNavigate, onSave, onSaveDecision, planningContext,
-    scopeKey }) {
+export default function ProjectsStep({ discoveryFailureReason = null, discoveryProgress = 0, isConsolidating = false,
+    isDiscovering = false, isSaving, onConsolidate, onDiscover, onNavigate, onOpenSources = null, onRegisterNavigate, onSave,
+    onSaveDecision, planningContext, scopeKey }) {
   const [draftRows, setDraftRows] = useState(() => draftRowsFromProspects(planningContext.prospects,
     planningContext.goals));
   const capturedAtRef = useRef(null);
   const seededScopeRef = useRef(scopeKey);
-  const discoveryProgress = useElapsingProgress(isDiscovering,
-    { decelerateAtSeconds: DISCOVERY_PROGRESS_DECELERATE_SECONDS, targetSeconds: DISCOVERY_PROGRESS_TARGET_SECONDS,
-      timeoutSeconds: WIZARD_LLM_TIMEOUT_SECONDS });
   // Grouping compares every unjudged proposal against every other, and this component re-renders on each
   // keystroke in a project name, so it is computed when the stored records change rather than per render.
   const combinableCountByCategory = useMemo(() => ({ personal: restatedProjectCount(planningContext.prospects, "personal"),
@@ -162,6 +181,9 @@ export default function ProjectsStep({ discoveryFailureReason = null, isConsolid
     <div className="plan-step-container projects-step-container">
       <h2 className="plan-heading">{ PROJECTS_STEP_COPY.title }</h2>
       <p className="plan-summary">{ PROJECTS_STEP_COPY.summary }</p>
+      { onOpenSources ? (
+        <ProjectSourcesLink { ...{ discoveryProgress, isDiscovering } } onOpenSources={ onOpenSources } />
+      ) : null }
       { ["work", "personal"].map(userCategoryEm => {
         const categoryRows = draftRows.filter(row => row.userCategoryEm === userCategoryEm);
         const categoryGoals = planningContext.goals.filter(goal => goal.userCategoryEm === userCategoryEm);

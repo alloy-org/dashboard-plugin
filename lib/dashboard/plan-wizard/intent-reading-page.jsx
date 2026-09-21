@@ -21,7 +21,7 @@ const STATUS_TEXT = { inferring: "Looking for themes and directions…", reading
 // @param {number} intervalMs - Delay between items.
 // @returns {number} How many items to show.
 // Under reduced motion the whole list is shown at once, since the staggering is decoration rather than information.
-function useStaggeredReveal(itemCount, isEnabled, intervalMs) {
+export function useStaggeredReveal(itemCount, isEnabled, intervalMs) {
   const [revealedCount, setRevealedCount] = useState(0);
   const prefersReducedMotion = typeof window !== "undefined" && typeof window.matchMedia === "function"
     && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -67,7 +67,7 @@ export function IntentReadingProgressBar({ fraction }) {
 // @param {object} params - An object with the following properties:
 //   - {string} kind - note or task.
 // @returns {JSX.Element} Inline SVG.
-function ReadItemIcon({ kind }) {
+export function ReadItemIcon({ kind }) {
   if (kind === "task") {
     return (
       <svg aria-hidden="true" className="intent-reading-item-icon" viewBox="0 0 16 16">

@@ -35,6 +35,7 @@ import IntentReadingPage from "dashboard/plan-wizard/intent-reading-page";
 import IntentStep from "dashboard/plan-wizard/intent-step";
 import PaceCardsStep from "dashboard/plan-wizard/pace-cards-step";
 import PlanSaveError from "dashboard/plan-wizard/plan-save-error";
+import ProjectSourcesPage from "dashboard/plan-wizard/project-sources-page";
 import ProjectsStep from "dashboard/plan-wizard/projects-step";
 import QuarterNameStep from "dashboard/plan-wizard/quarter-name-step";
 import { hasCompletedPlanCore, progressRowsFromContext, sidebarLabelFromStep } from "dashboard/plan-wizard/wizard-progress-fields";
@@ -58,6 +59,7 @@ const SAVE_ERROR_PREFIX = { "enough-for-today": "Your answer was not saved.", in
 // plus time to read the notes, so a slow answer leaves it creeping toward full rather than sitting there.
 const INTENT_READING_PROGRESS = { decelerateAtSeconds: 20, easesOut: true, targetSeconds: 30,
   timeoutSeconds: WIZARD_LLM_TIMEOUT_SECONDS + 15 };
+const DISCOVERY_PROGRESS = { decelerateAtSeconds: 30, targetSeconds: 40, timeoutSeconds: WIZARD_LLM_TIMEOUT_SECONDS };
 
 export { WIZARD_STEPS };
 
@@ -85,14 +87,15 @@ function currentDocumentScrollTop() {
 export default function PlanWizard({ app, domainName = null, domainUuid = null, onClose, onFinished = null, quarter,
     year }) {
   const { consolidateProspects, discoverProspects, discoveryFailureReason, error, intentReading, isConsolidating,
-    isDiscovering, isLoading, isRefreshing, isSaving, planningContext, refreshPossibilities, reload, saveError, saveGoals,
-    saveProspectDecision, saveProspects, saveQuarterAnswer, saveThemeJudgement, viewQuarterlyPlan } = usePlanWizard({ app,
-    domainName, domainUuid, quarter, year });
+    isDiscovering, isLoading, isLoadingProjectSources, isRefreshing, isSaving, loadProjectSources, planningContext,
+    projectSources, refreshPossibilities, reload, saveError, saveGoals, saveProspectDecision, saveProspects,
+    saveQuarterAnswer, saveThemeJudgement, viewQuarterlyPlan } = usePlanWizard({ app, domainName, domainUuid, quarter, year });
   const [stepKey, setStepKey] = useState(WIZARD_STEPS[0].key);
   const [hasIntentAnswer, setHasIntentAnswer] = useState(false);
   const [hasDoneEnoughSelection, setHasDoneEnoughSelection] = useState(false);
   const [inspectingNoteUuid, setInspectingNoteUuid] = useState(null);
   const [isViewingIntentReading, setIsViewingIntentReading] = useState(false);
+  const [isViewingProjectSources, setIsViewingProjectSources] = useState(false);
   const [pendingDirection, setPendingDirection] = useState(null);
   const [isOpeningPlanNote, setIsOpeningPlanNote] = useState(false);
   const [planNoteError, setPlanNoteError] = useState(null);
@@ -107,6 +110,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   // Measured here rather than in either consumer, so the intent page's link and the reading page it opens show one
   // continuous fill instead of each restarting the bar when it mounts.
   const intentReadingProgress = useElapsingProgress(isRefreshing, INTENT_READING_PROGRESS);
+  const discoveryProgress = useElapsingProgress(isDiscovering, DISCOVERY_PROGRESS);
   const quarterLabel = planningContext.scope ? planningContext.scope.quarterKey : `${ year }-Q${ quarter }`;
   const domainLabel = domainName ?? "All Notes";
   // The header states the quarter in the reading order a person says it in, while quarterLabel stays the storage
@@ -126,7 +130,9 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   // flag gates the narrow-width bar, which is the same navigation in the one place a rail does not fit, so the
   // two appear and disappear together and the container query decides which of them the user actually sees.
   const isShowingIntentReading = isViewingIntentReading && step.key === "intent";
-  const rendersProgressSidebar = hasCompletedPlanCore(progressRows) && !inspectingNoteUuid && !isShowingIntentReading
+  const isShowingProjectSources = isViewingProjectSources && step.key === "projects";
+  const isShowingSidePage = isShowingIntentReading || isShowingProjectSources;
+  const rendersProgressSidebar = hasCompletedPlanCore(progressRows) && !inspectingNoteUuid && !isShowingSidePage
     && !isLoading && !error;
 
   // ----------------------------------------------------------------------------------------------
@@ -264,7 +270,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
     const overlayElement = overlayRef.current;
     if (!overlayElement || typeof overlayElement.scrollIntoView !== "function") return;
     overlayElement.scrollIntoView({ behavior: "auto", block: "start" });
-  }, [isShowingIntentReading, stepKey]);
+  }, [isShowingSidePage, stepKey]);
 
   // Escape closes the wizard, as it does for every other dashboard modal. Answers already saved are stored, and
   // an unsaved draft is deliberately not confirmed away here: reopening restores each step from what was saved.
@@ -393,11 +399,21 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
                 onRegisterNavigate={ handleRegisterNavigate } onSave={ saveGoals } readingProgress={ intentReadingProgress } />
             </div>
           ) : null }
+          { !inspectingNoteUuid && !isLoading && !error && isShowingProjectSources ? (
+            <ProjectSourcesPage { ...{ isDiscovering, planningContext, projectSources } }
+              isLoadingSources={ isLoadingProjectSources } onLoadSources={ loadProjectSources }
+              onReturn={ () => setIsViewingProjectSources(false) } progressFraction={ discoveryProgress } />
+          ) : null }
+          { /* Like the intent page, the projects page stays mounted under its sources page so an unsaved project name
+            survives the visit. */ }
           { !inspectingNoteUuid && !isLoading && !error && step.key === "projects" ? (
-            <ProjectsStep { ...{ discoveryFailureReason, isConsolidating, isDiscovering, isSaving, planningContext, scopeKey } }
-              onConsolidate={ consolidateProspects } onDiscover={ discoverProspects } onNavigate={ handleProjectNavigation }
-              onRegisterNavigate={ handleRegisterNavigate } onSave={ saveProspects }
-              onSaveDecision={ saveProspectDecision } />
+            <div className="plan-wizard-projects-step-frame" hidden={ isShowingProjectSources }>
+              <ProjectsStep { ...{ discoveryFailureReason, discoveryProgress, isConsolidating, isDiscovering, isSaving,
+                planningContext, scopeKey } }
+                onConsolidate={ consolidateProspects } onDiscover={ discoverProspects } onNavigate={ handleProjectNavigation }
+                onOpenSources={ () => setIsViewingProjectSources(true) } onRegisterNavigate={ handleRegisterNavigate }
+                onSave={ saveProspects } onSaveDecision={ saveProspectDecision } />
+            </div>
           ) : null }
           { !inspectingNoteUuid && !isLoading && !error && step.key === "pace-cards" ? (
             <PaceCardsStep { ...{ isSaving, planningContext, scopeKey } }
@@ -423,7 +439,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
             <PlanSaveError app={ app } noteUuid={ saveError.noteUuid ?? planningContext.noteUuid }
               onOpenDataNote={ handleOpenDataNote } prefix={ SAVE_ERROR_PREFIX[step.key] } saveError={ saveError } />
           ) : null }
-          { !inspectingNoteUuid && !isShowingIntentReading && !isLoading && !error ? (
+          { !inspectingNoteUuid && !isShowingSidePage && !isLoading && !error ? (
             <nav className="plan-wizard-navigation">
               { isFirstStep ? (
                 <button className="plan-wizard-cancel" onClick={ onClose } type="button">Cancel</button>
