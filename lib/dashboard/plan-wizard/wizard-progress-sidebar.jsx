@@ -11,6 +11,7 @@
 // forward past an unanswered step would land them on a page whose inputs depend on answers that do not exist
 // yet, so the rail only offers the moves that lead somewhere usable.
 
+import PaceBreakdownPie from "dashboard/plan-wizard/pace-breakdown-pie";
 import { memo } from "react";
 
 // ----------------------------------------------------------------------------------------------
@@ -75,7 +76,8 @@ function WizardProgressSidebar({ headingText = "Quarterly plan", isOpeningPlanNo
               { row.isComplete ? <StepCheckIcon /> : <StepPendingIcon /> }
               <span className="progress-step-text">
                 <span className="progress-step-label">{ row.label }</span>
-                { row.summary ? <span className="progress-step-summary">{ row.summary }</span> : null }
+                { row.paceSlices ? <PaceBreakdownPie paceSlices={ row.paceSlices } summary={ row.summary } />
+                  : row.summary ? <span className="progress-step-summary">{ row.summary }</span> : null }
               </span>
             </>
           );

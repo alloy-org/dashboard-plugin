@@ -54,22 +54,50 @@ describe("project summaries", () => {
   test("counts only the projects the user kept, excluding declined ones", () => {
     const planningContext = context({ prospects: [prospect({ uuid: "a" }), prospect({ priorityEm: "notNow", uuid: "b" }),
       prospect({ approvalStatusEm: "humanRejected", uuid: "c" }), prospect({ priorityEm: "stayWarm", uuid: "d" })] });
-    expect(rowFor(planningContext, "projects").summary).toBe("2 projects");
+    expect(rowFor(planningContext, "projects").summary).toBe("2 Pro projects");
   });
 
   test("uses the singular for one project", () => {
-    expect(rowFor(context({ prospects: [prospect()] }), "projects").summary).toBe("1 project");
+    expect(rowFor(context({ prospects: [prospect()] }), "projects").summary).toBe("1 Pro project");
+  });
+
+  test("splits projects into Pro and Personal, naming the noun with the first category shown", () => {
+    const mixedContext = context({ prospects: [prospect({ uuid: "a" }), prospect({ uuid: "b" }),
+      prospect({ userCategoryEm: "personal", uuid: "c" })] });
+    expect(rowFor(mixedContext, "projects").summary).toBe("2 Pro projects, 1 Personal");
+
+    const personalContext = context({ prospects: [prospect({ userCategoryEm: "personal", uuid: "a" }),
+      prospect({ userCategoryEm: "personal", uuid: "b" })] });
+    expect(rowFor(personalContext, "projects").summary).toBe("2 Personal projects");
+  });
+
+  test("counts only Focus and Keep warm projects once any project has one of those priorities", () => {
+    const planningContext = context({ prospects: [prospect({ uuid: "a" }), prospect({ priorityEm: null, uuid: "b" }),
+      prospect({ priorityEm: "stayWarm", userCategoryEm: "personal", uuid: "c" })] });
+    expect(rowFor(planningContext, "projects").summary).toBe("1 Pro project, 1 Personal");
+  });
+
+  test("counts every live project when none has a Focus or Keep warm priority", () => {
+    const planningContext = context({ prospects: [prospect({ priorityEm: null, uuid: "a" }),
+      prospect({ priorityEm: null, uuid: "b" })] });
+    expect(rowFor(planningContext, "projects").summary).toBe("2 Pro projects");
   });
 
   test("groups paces by rhythm and leaves unpaced projects out", () => {
     const planningContext = context({ prospects: [prospect({ paceEm: "twoFocusedBlocks", uuid: "a" }),
       prospect({ paceEm: "twoFocusedBlocks", uuid: "b" }), prospect({ paceEm: "deadlineSprint", uuid: "c" }),
       prospect({ uuid: "d" })] });
-    expect(rowFor(planningContext, "pace-cards").summary).toBe("2 two focused blocks per week · 1 deadline sprint");
+    const paceRow = rowFor(planningContext, "pace-cards");
+    expect(paceRow.summary).toBe("2 two focused blocks per week · 1 deadline sprint");
+    expect(paceRow.paceSlices).toEqual([{ count: 2, label: "Two focused blocks per week", value: "twoFocusedBlocks" },
+      { count: 1, label: "Deadline sprint", value: "deadlineSprint" }]);
+    expect(rowFor(planningContext, "projects").paceSlices).toBeNull();
   });
 
   test("reports no pace before any rhythm is chosen", () => {
-    expect(rowFor(context({ prospects: [prospect()] }), "pace-cards").summary).toBeNull();
+    const paceRow = rowFor(context({ prospects: [prospect()] }), "pace-cards");
+    expect(paceRow.summary).toBeNull();
+    expect(paceRow.paceSlices).toBeNull();
   });
 });
 

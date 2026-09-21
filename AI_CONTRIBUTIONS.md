@@ -5,6 +5,38 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-09-21 — Plan Builder sidebar: Pro/Personal project counts and a pace ring chart
+
+**Model:** Claude Opus 5 (1M context)
+**Files created/modified:**
+- `lib/dashboard/plan-wizard/pace-breakdown-pie.jsx` (created) — Ring chart of projects per pace rhythm. A caption beside the ring names the hovered slice in place of a legend
+- `lib/dashboard/plan-wizard/wizard-progress-fields.js` (modified) — The Project list row reads "10 Pro projects, 3 Personal" and counts only Focus / Keep warm projects, unless no project has either priority. The Project cadence row now carries `paceSlices` for the chart
+- `lib/dashboard/plan-wizard/wizard-progress-sidebar.jsx` (modified) — Draws the pace ring in place of the cadence text summary
+- `lib/dashboard/styles/plan-wizard.scss` (modified) — Ring, slice colors, and caption styles
+- `test/plan-wizard-progress.test.js` (modified) — Tests for the category split, the priority filter and its fallback, and the pace slices
+
+**Task:** Make the progress sidebar's project rows easier to scan.
+**Prompt summary:** "Project list shows '10 Pro projects, 3 Personal'; only include Focus / Keep warm projects unless none were chosen; swap Project cadence for a pie graph with hover to identify categories"
+**Notes:** Slice colors are the first five categorical slots of the dataviz reference palette, checked with its validator (all checks pass; contrast against the surface gives a WARN, covered by the caption text and the SVG's aria-label).
+
+---
+
+## 2026-09-21 — Plan Builder: read completed domain tasks for the reading page; trace evidence counts
+
+**Model:** Claude Opus 5 (1M context)
+**Files created/modified:**
+- `lib/plan-wizard/intent-evidence.js` (modified) — `collectIntentEvidence` merges `app.getCompletedTasks(from, to, { taskDomainUUID })` into the domain's task list, because that list carries open tasks only. With no completions, the notes behind the recent tasks are read instead. Logs the task count after each filtering step, plus which note bodies were read or skipped
+- `lib/plan-wizard/intent-reading.js` (modified) — `readItemsFromEvidence` lists the recent tasks after the completed ones
+- `lib/plan-wizard/plan-wizard-service.js` (modified) — Logs the reading's item counts when it is listed and when it is saved
+- `lib/hooks/use-plan-wizard.js` (modified) — Logs the stored reading's counts when the wizard loads
+- `test/plan-wizard-intents.test.js` (modified) — Added tests for a domain whose task list omits completions, and for a domain with no completions at all
+
+**Task:** In production, the reading page opened from "View sources" showed themes and directions but an empty Read list.
+**Prompt summary:** "I receive only a list of themes and directions, but no 'Read' notes are listed. Ensure we have enough debug logging to piece together how this could occur."
+**Notes:** The Read list came only from completed tasks and their notes. Within a domain, completed tasks came only from `getTaskDomainTasks`, which (judging by the other callers here) returns open tasks. So no completions were found, and the prompt reasoned over recent open tasks that the Read list never showed.
+
+---
+
 ## 2026-09-21 — Plan Builder: stream themes onto the reading page; ease the reading bar
 
 **Model:** Claude Opus 5 (1M context)

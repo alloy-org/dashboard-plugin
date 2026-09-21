@@ -14,6 +14,14 @@ $plan-wizard-shadow-blur: 40px;
 $plan-wizard-shadow-y: 12px;
 $plan-wizard-z-index: 1100;
 
+// Categorical slice colors for the rail's pace ring, one fixed hue per rhythm in the pace page's option order so a
+// rhythm keeps its color whichever others are present. Mid-tone steps that read on both the light and dark rail.
+$pace-slice-small-move-color: #2a78d6;
+$pace-slice-two-blocks-color: #eb6834;
+$pace-slice-one-block-color: #1baf7a;
+$pace-slice-deadline-color: #eda100;
+$pace-slice-other-color: #e87ba4;
+
 /* The overlay is anchored in the document rather than pinned to the viewport: plan-wizard.jsx sets `top` inline
  * to the scroll offset the wizard opened at, so the dialog appears at the top of what the user was looking at
  * and is free to be taller than the screen, with the page scrolling to reach the rest. An absolutely positioned
@@ -1833,6 +1841,42 @@ $plan-wizard-z-index: 1100;
   }
 
   .progress-step-summary {
+    color: $color-text-muted;
+    font-size: 0.75rem;
+    line-height: 1.35;
+  }
+
+  /* The Project cadence row draws its breakdown as a ring with a caption beside it; the caption names the hovered
+   * slice, which is what stands in for a legend the rail is too narrow to hold. */
+  .pace-breakdown-pie {
+    align-items: center;
+    display: flex;
+    gap: $sp-sm;
+    margin-top: 2px;
+  }
+
+  .pace-breakdown-ring {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+
+  .pace-breakdown-slice {
+    cursor: default;
+    fill: none;
+    stroke-width: 9;
+    transition: opacity 120ms ease, stroke-width 120ms ease;
+
+    &--smallMoveMostDays { stroke: $pace-slice-small-move-color; }
+    &--twoFocusedBlocks { stroke: $pace-slice-two-blocks-color; }
+    &--oneSubstantialBlock { stroke: $pace-slice-one-block-color; }
+    &--deadlineSprint { stroke: $pace-slice-deadline-color; }
+    &--maintenanceOnly { stroke: $pace-slice-other-color; }
+  }
+
+  .pace-breakdown-slice--hovered { stroke-width: 11; }
+  .pace-breakdown-slice--dimmed { opacity: 0.35; }
+
+  .pace-breakdown-caption {
     color: $color-text-muted;
     font-size: 0.75rem;
     line-height: 1.35;

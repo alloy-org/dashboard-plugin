@@ -1,5 +1,6 @@
 // Verify evidence windows, personal-tag boundaries, outcome filtering, defaults, and deterministic inference.
 
+import { jest } from "@jest/globals";
 import { collectIntentEvidence, completedTasksWithinWindow, isGenuinelyCompleted, isPersonalNote,
   recentlyCreatedTasks } from "plan-wizard/intent-evidence";
 import { defaultPersonalPossibilities, inferIntentPossibilities, intentPromptFromEvidence } from "plan-wizard/intent-inference";
@@ -90,6 +91,37 @@ test("collects scoped evidence, excluding planning notes and resolving footnotes
   expect(evidence.coverage).toMatchObject({ completedTaskCount: 2, personalTaskCount: 1, windowMonths: 3 });
   const workNoteContext = evidence.work.noteContext.find(note => note.noteUuid === "note-work");
   expect(workNoteContext.text).toContain("Cut invoice errors in half.");
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Confirm completions are read from getCompletedTasks when the domain's task list reports open tasks only,
+//   which is how the host behaves, so a domain still yields notes for the reading page to list.
+test("reads completed domain tasks from getCompletedTasks when the task list omits them", async () => {
+  const app = createPlanWizardApp();
+  app.notes.push({ archived: false, content: "Shipped the importer", name: "Work log", tags: ["work"], uuid: "note-work" });
+  app.getTaskDomainTasks = jest.fn(async () => [{ content: "Still open", createdAt: 1757000000, noteUUID: "note-work", uuid: "open-1" }]);
+  app.getCompletedTasks = jest.fn(async () => [completedTask(4), completedTask(9, { uuid: "b" })]);
+
+  const evidence = await collectIntentEvidence(app, scope, { referenceDate });
+  expect(app.getCompletedTasks).toHaveBeenCalledWith(expect.any(Number), expect.any(Number), { taskDomainUUID: "domain-work" });
+  expect(evidence.work.references.map(reference => reference.taskUuid)).toEqual(["task-4-a", "b"]);
+  const readItems = readItemsFromEvidence(evidence);
+  expect(readItems.filter(item => item.kind === "note").map(item => item.label)).toEqual(["Work log"]);
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Confirm a domain with no completions at all still reads the notes behind its recent tasks and lists
+//   those tasks, since they are what the prompt reasons over.
+test("lists recent tasks and their notes when nothing was completed", async () => {
+  const app = createPlanWizardApp();
+  app.notes.push({ archived: false, content: "Planning the importer", name: "Importer plan", tags: ["work"], uuid: "note-plan" });
+  app.getTaskDomainTasks = jest.fn(async () => [{ content: "Draft importer spec", createdAt: 1757000000, noteUUID: "note-plan",
+    uuid: "open-1" }]);
+  app.getCompletedTasks = jest.fn(async () => []);
+
+  const evidence = await collectIntentEvidence(app, scope, { referenceDate });
+  const readItems = readItemsFromEvidence(evidence);
+  expect(readItems.map(item => `${ item.kind }:${ item.label }`)).toEqual(["note:Importer plan", "task:Draft importer spec"]);
 });
 
 // ----------------------------------------------------------------------------------------------
