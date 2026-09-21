@@ -158,6 +158,67 @@ describe("PlanWizard intent step", () => {
     await cleanup();
   });
 
+  it("links to the reading page while notes are read, then reveals reads, themes, and directions there", async () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = () => ({ matches: true }); // Reduced motion shows each list at once instead of item by item
+    const app = createPlanWizardApp();
+    app.notes.push({ archived: false, content: "Interview three contractors", name: "Hiring: frontend contractor", tags: [],
+      uuid: "note-hiring" });
+    app.tasks.push({ completedAt: Math.round(Date.now() / 1000) - 86400, content: "Book dentist", noteUUID: "note-hiring",
+      uuid: "task-dentist" });
+    let releaseInference = null;
+    inferenceImplementation = () => new Promise(resolve => { releaseInference = resolve; });
+    const { cleanup, container } = await renderPlanWizard({ app });
+
+    expect(container.querySelector(".intent-step-reading-link").textContent).toContain("Watch Plan Builder read your notes");
+    expect(container.querySelector(".intent-step-reading .intent-reading-progress-fill")).not.toBeNull();
+    await clickAndSettle(container.querySelector(".intent-step-reading-link"));
+
+    const readingPage = container.querySelector(".intent-reading-page");
+    expect(readingPage.querySelector(".intent-reading-return").textContent).toBe("Return to Plan Builder");
+    expect(readingPage.querySelector(".intent-reading-status").textContent).toBe("Looking for themes and directions…");
+    const readLabels = [...readingPage.querySelectorAll(".intent-reading-read-label")].map(label => label.textContent);
+    expect(readLabels).toEqual(["Hiring: frontend contractor", "Book dentist"]);
+    expect(readingPage.querySelectorAll(".intent-reading-theme").length).toBe(0);
+    expect(container.querySelector(".plan-wizard-navigation")).toBeNull();
+
+    await act(async () => {
+      releaseInference({ occupationHypothesis: "Builds developer tools", personal: [],
+        themes: [{ label: "Hiring", taskCount: 1 }, { label: "Time off", taskCount: 99 }],
+        work: [{ confidence: 6, intent: "Hire a frontend contractor", substantiation: "Hiring notes." }] });
+    });
+    await settle();
+
+    expect(readingPage.querySelector(".intent-reading-status").textContent).toBe("Ready. Pick a direction or write your own.");
+    const themeTexts = [...readingPage.querySelectorAll(".intent-reading-theme")].map(theme =>
+      theme.querySelector(".intent-reading-theme-label").textContent);
+    expect(themeTexts).toEqual(["Hiring", "Time off"]);
+    await clickAndSettle(readingPage.querySelector(".intent-reading-theme-button[aria-label='Pin Hiring']"));
+    const storedReading = (await readPlanGoals(app, SCOPE)).intentReading;
+    expect(storedReading.themeJudgements).toEqual({ hiring: { judgement: "pinned", label: "Hiring" } });
+    // One task was listed in the prompt, so a count the model reports beyond that is clamped to it.
+    expect(storedReading.themes).toEqual([{ label: "Hiring", taskCount: 1 }, { label: "Time off", taskCount: 1 }]);
+
+    await clickAndSettle(readingPage.querySelector(".intent-reading-direction"));
+    expect(container.querySelector(".intent-reading-page")).toBeNull();
+    expect(workFields(container)[0].value).toBe("Hire a frontend contractor");
+    expect(container.querySelector(".intent-step-reading-link").textContent).toContain("See how your notes were read");
+    window.matchMedia = originalMatchMedia;
+    await cleanup();
+  });
+
+  it("keeps an unsaved answer while the reading page is open", async () => {
+    inferenceImplementation = () => ({ personal: [], themes: [{ label: "Analytics", taskCount: 0 }],
+      work: [{ confidence: 6, intent: "Ship the analytics offering", substantiation: "Analytics tasks completed." }] });
+    const { cleanup, container } = await renderPlanWizard();
+    await typeInto(workFields(container)[0], "Draft I have not saved");
+    await clickAndSettle(container.querySelector(".intent-step-reading-link"));
+    await clickAndSettle(container.querySelector(".intent-reading-return"));
+
+    expect(workFields(container)[0].value).toBe("Draft I have not saved");
+    await cleanup();
+  });
+
   it("fills the field from a clicked suggestion and persists it when Next is clicked", async () => {
     const { app, cleanup, container } = await renderPlanWizard();
     const firstSuggestion = container.querySelector(".intent-step-category--work .intent-step-suggestion");

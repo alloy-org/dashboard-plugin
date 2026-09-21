@@ -31,6 +31,7 @@
 import { quarterLabel as displayQuarterLabel } from "constants/quarters";
 import NoteEditor from "dashboard/note-editor";
 import DoneEnoughStep from "dashboard/plan-wizard/done-enough-step";
+import IntentReadingPage from "dashboard/plan-wizard/intent-reading-page";
 import IntentStep from "dashboard/plan-wizard/intent-step";
 import PaceCardsStep from "dashboard/plan-wizard/pace-cards-step";
 import PlanSaveError from "dashboard/plan-wizard/plan-save-error";
@@ -41,6 +42,7 @@ import WizardProgressBar from "dashboard/plan-wizard/wizard-progress-bar";
 import WizardProgressSidebar from "dashboard/plan-wizard/wizard-progress-sidebar";
 import { WIZARD_STEPS, wizardStepIndexFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useSuspendWidgetMounting } from "dashboard/widget-mount-suspension";
+import { useElapsingProgress } from "hooks/use-elapsing-progress";
 import usePlanWizard, { planScopeKey } from "hooks/use-plan-wizard";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -50,6 +52,9 @@ import "dashboard/styles/plan-wizard.scss";
 const SAVE_ERROR_PREFIX = { "enough-for-today": "Your answer was not saved.", intent: "Your answers were not saved.",
   "pace-cards": "Your project paces were not saved.", projects: "Your projects were not saved.",
   "quarter-name": "Your quarter name was not saved." };
+
+// The reading page's bar fills in this long and then waits full, since most readings finish well inside it.
+const INTENT_READING_PROGRESS_SECONDS = 30;
 
 export { WIZARD_STEPS };
 
@@ -76,14 +81,16 @@ function currentDocumentScrollTop() {
 // @returns {JSX.Element} The wizard.
 export default function PlanWizard({ app, domainName = null, domainUuid = null, onClose, onFinished = null, quarter,
     year }) {
-  const { consolidateProspects, discoverProspects, discoveryFailureReason, error, isConsolidating, isDiscovering,
-    isLoading, isRefreshing, isSaving, planningContext, reload, saveError, saveGoals, saveProspectDecision,
-    saveProspects, saveQuarterAnswer, viewQuarterlyPlan } = usePlanWizard({ app, domainName, domainUuid, quarter,
-    year });
+  const { consolidateProspects, discoverProspects, discoveryFailureReason, error, intentReading, isConsolidating,
+    isDiscovering, isLoading, isRefreshing, isSaving, planningContext, refreshPossibilities, reload, saveError, saveGoals,
+    saveProspectDecision, saveProspects, saveQuarterAnswer, saveThemeJudgement, viewQuarterlyPlan } = usePlanWizard({ app,
+    domainName, domainUuid, quarter, year });
   const [stepKey, setStepKey] = useState(WIZARD_STEPS[0].key);
   const [hasIntentAnswer, setHasIntentAnswer] = useState(false);
   const [hasDoneEnoughSelection, setHasDoneEnoughSelection] = useState(false);
   const [inspectingNoteUuid, setInspectingNoteUuid] = useState(null);
+  const [isViewingIntentReading, setIsViewingIntentReading] = useState(false);
+  const [pendingDirection, setPendingDirection] = useState(null);
   const [isOpeningPlanNote, setIsOpeningPlanNote] = useState(false);
   const [planNoteError, setPlanNoteError] = useState(null);
   const [overlayTop] = useState(currentDocumentScrollTop);
@@ -94,6 +101,10 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const planNoteRequestRef = useRef(false);
   const pendingStepKeyRef = useRef(null);
   const scopeKey = planScopeKey({ domainName, domainUuid, quarter, year });
+  // Measured here rather than in either consumer, so the intent page's link and the reading page it opens show one
+  // continuous fill instead of each restarting the bar when it mounts.
+  const intentReadingProgress = useElapsingProgress(isRefreshing, { decelerateAtSeconds: INTENT_READING_PROGRESS_SECONDS,
+    targetSeconds: INTENT_READING_PROGRESS_SECONDS, timeoutSeconds: INTENT_READING_PROGRESS_SECONDS });
   const quarterLabel = planningContext.scope ? planningContext.scope.quarterKey : `${ year }-Q${ quarter }`;
   const domainLabel = domainName ?? "All Notes";
   // The header states the quarter in the reading order a person says it in, while quarterLabel stays the storage
@@ -112,7 +123,9 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   // it is not rendering: loading, a load failure, and the inline note editor each take the whole width. The same
   // flag gates the narrow-width bar, which is the same navigation in the one place a rail does not fit, so the
   // two appear and disappear together and the container query decides which of them the user actually sees.
-  const rendersProgressSidebar = hasCompletedPlanCore(progressRows) && !inspectingNoteUuid && !isLoading && !error;
+  const isShowingIntentReading = isViewingIntentReading && step.key === "intent";
+  const rendersProgressSidebar = hasCompletedPlanCore(progressRows) && !inspectingNoteUuid && !isShowingIntentReading
+    && !isLoading && !error;
 
   // ----------------------------------------------------------------------------------------------
   // @desc Hold the current step's save-then-navigate handler so the shared Back and Next buttons can run it.
@@ -249,7 +262,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
     const overlayElement = overlayRef.current;
     if (!overlayElement || typeof overlayElement.scrollIntoView !== "function") return;
     overlayElement.scrollIntoView({ behavior: "auto", block: "start" });
-  }, [stepKey]);
+  }, [isShowingIntentReading, stepKey]);
 
   // Escape closes the wizard, as it does for every other dashboard modal. Answers already saved are stored, and
   // an unsaved draft is deliberately not confirmed away here: reopening restores each step from what was saved.
@@ -264,6 +277,15 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   // @param {object} event - The click event.
   const handleBackdropClick = event => {
     if (event.target === event.currentTarget) onClose();
+  };
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Return from the reading page with the direction the user picked there, which the intent page places in its
+  //   professional field as it would a suggestion chip.
+  // @param {object} direction - Professional IntentPossibility chosen on the reading page.
+  const handleApplyDirection = direction => {
+    setPendingDirection(direction);
+    setIsViewingIntentReading(false);
   };
 
   // ----------------------------------------------------------------------------------------------
@@ -354,10 +376,20 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
           { inspectingNoteUuid ? (
             <NoteEditor app={ app } noteUUID={ inspectingNoteUuid } onBack={ () => setInspectingNoteUuid(null) } />
           ) : null }
+          { !inspectingNoteUuid && !isLoading && !error && isShowingIntentReading ? (
+            <IntentReadingPage { ...{ intentReading, isRefreshing } } directions={ planningContext.possibilities.work }
+              onApplyDirection={ handleApplyDirection } onJudgeTheme={ saveThemeJudgement } onReread={ refreshPossibilities }
+              onReturn={ () => setIsViewingIntentReading(false) } progressFraction={ intentReadingProgress } />
+          ) : null }
+          { /* The intent page stays mounted, only hidden, while the reading page is open: its draft lives in its own
+            state, and unmounting it would discard whatever the user had typed but not yet saved. */ }
           { !inspectingNoteUuid && !isLoading && !error && step.key === "intent" ? (
-            <IntentStep { ...{ isRefreshing, isSaving, planningContext, scopeKey } }
-              onAnswerStateChange={ setHasIntentAnswer } onFindProjects={ handleFindProjects }
-              onRegisterNavigate={ handleRegisterNavigate } onSave={ saveGoals } />
+            <div className="plan-wizard-intent-step-frame" hidden={ isShowingIntentReading }>
+              <IntentStep { ...{ intentReading, isRefreshing, isSaving, pendingDirection, planningContext, scopeKey } }
+                onAnswerStateChange={ setHasIntentAnswer } onFindProjects={ handleFindProjects }
+                onOpenReading={ () => setIsViewingIntentReading(true) } onPendingDirectionApplied={ () => setPendingDirection(null) }
+                onRegisterNavigate={ handleRegisterNavigate } onSave={ saveGoals } readingProgress={ intentReadingProgress } />
+            </div>
           ) : null }
           { !inspectingNoteUuid && !isLoading && !error && step.key === "projects" ? (
             <ProjectsStep { ...{ discoveryFailureReason, isConsolidating, isDiscovering, isSaving, planningContext, scopeKey } }
@@ -389,7 +421,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
             <PlanSaveError app={ app } noteUuid={ saveError.noteUuid ?? planningContext.noteUuid }
               onOpenDataNote={ handleOpenDataNote } prefix={ SAVE_ERROR_PREFIX[step.key] } saveError={ saveError } />
           ) : null }
-          { !inspectingNoteUuid && !isLoading && !error ? (
+          { !inspectingNoteUuid && !isShowingIntentReading && !isLoading && !error ? (
             <nav className="plan-wizard-navigation">
               { isFirstStep ? (
                 <button className="plan-wizard-cancel" onClick={ onClose } type="button">Cancel</button>

@@ -3,8 +3,9 @@
 import { collectIntentEvidence, completedTasksWithinWindow, isGenuinelyCompleted, isPersonalNote,
   recentlyCreatedTasks } from "plan-wizard/intent-evidence";
 import { defaultPersonalPossibilities, inferIntentPossibilities, intentPromptFromEvidence } from "plan-wizard/intent-inference";
+import { readItemsFromEvidence, themeJudgementsWithChange, themesFromResponse } from "plan-wizard/intent-reading";
 import { resolvePlanScope } from "plan-wizard/plan-models";
-import { refreshPlanIntentPossibilities } from "plan-wizard/plan-wizard-service";
+import { readPlanGoals, refreshPlanIntentPossibilities, savePlanThemeJudgement } from "plan-wizard/plan-wizard-service";
 import { createPlanWizardApp } from "./fixtures/plan-wizard-app.js";
 
 // Anchored to the current day rather than a fixed date: every window in this file is expressed in days
@@ -159,4 +160,63 @@ test("refreshes and persists suggestions without picking goals", async () => {
   expect(context.goals).toEqual([]);
   expect(context.failureReason).toBeNull();
   expect(context.generatedAt.work).toBe(referenceDate.toISOString());
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Confirm the reading page's list alternates notes and tasks, drops repeats, and stops at fifteen entries.
+// A capped, mixed list reads as a sample of what was read; notes alone would hide the task evidence entirely.
+test("lists read notes and tasks alternately, capped at fifteen", () => {
+  const noteContext = Array.from({ length: 12 }, (unused, index) => ({ noteName: `Note ${ index }`, noteUuid: `note-${ index }`, text: "" }));
+  const references = Array.from({ length: 12 }, (unused, index) => ({ noteUuid: "note-0", taskUuid: `task-${ index }`,
+    text: index === 1 ? "Task 0" : `Task ${ index }` }));
+  const readItems = readItemsFromEvidence({ work: { noteContext, references } });
+
+  expect(readItems).toHaveLength(15);
+  expect(readItems.slice(0, 4).map(item => `${ item.kind }:${ item.label }`)).toEqual(["note:Note 0", "task:Task 0", "note:Note 1",
+    "note:Note 2"]);
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Confirm themes are validated, deduplicated, and have their counts clamped to the tasks the prompt listed.
+test("validates themes from a provider response", () => {
+  const themes = themesFromResponse([{ label: " Hiring ", taskCount: 4.4 }, { label: "hiring", taskCount: 2 }, { label: "" },
+    { label: "Running", taskCount: 50 }, { label: "Time off", taskCount: "many" }], 10);
+  expect(themes).toEqual([{ label: "Hiring", taskCount: 4 }, { label: "Running", taskCount: 10 }, { label: "Time off", taskCount: 0 }]);
+  expect(themesFromResponse("not a list", 10)).toEqual([]);
+  expect(() => themeJudgementsWithChange({}, "Hiring", "starred")).toThrow("Theme judgement");
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Confirm the service reports the notes it read before the provider answers, stores the themes beside the
+//   suggestions, carries the user's judgements into the next prompt, and drops a dismissed theme the model repeats.
+// Judgements are the reading page's only way to steer what is sent to the model, so they must reach the prompt.
+test("stores the reading and applies theme judgements to the next pass", async () => {
+  const app = createPlanWizardApp();
+  app.notes.push({ archived: false, content: "Work log", name: "Work log", tags: [], uuid: "note-work" });
+  app.tasks.push(completedTask(4, { content: "Interview contractor" }));
+  const progressEvents = [];
+  const prompts = [];
+  const promptRunner = async (unusedApp, prompt) => {
+    prompts.push(prompt);
+    return { themes: [{ label: "Hiring", taskCount: 1 }, { label: "Time off", taskCount: 1 }],
+      work: [{ confidence: 6, intent: "Hire a contractor", substantiation: "Hiring tasks" }] };
+  };
+
+  await refreshPlanIntentPossibilities(app, { ...scope, onProgress: event => progressEvents.push(event), promptRunner, referenceDate });
+  expect(progressEvents).toEqual([{ phase: "evidence", readItems: [
+    { kind: "note", label: "Work log", noteUuid: "note-work", taskUuid: null },
+    { kind: "task", label: "Interview contractor", noteUuid: "note-work", taskUuid: "task-4-a" }] }]);
+  expect((await readPlanGoals(app, scope)).intentReading.themes.map(theme => theme.label)).toEqual(["Hiring", "Time off"]);
+
+  await savePlanThemeJudgement(app, { ...scope, judgement: "pinned", label: "Hiring" });
+  await savePlanThemeJudgement(app, { ...scope, judgement: "dismissed", label: "Time off" });
+  const laterReferenceDate = new Date(referenceDate.getTime() + 1000);
+  const context = await refreshPlanIntentPossibilities(app, { ...scope, promptRunner, referenceDate: laterReferenceDate });
+
+  expect(prompts[1]).toContain("favor them: Hiring.");
+  expect(prompts[1]).toContain("leave them out of themes: Time off.");
+  expect(context.intentReading.themes.map(theme => theme.label)).toEqual(["Hiring"]);
+  expect(Object.keys(context.intentReading.themeJudgements)).toEqual(["hiring", "time off"]);
+  await savePlanThemeJudgement(app, { ...scope, judgement: null, label: "Time off" });
+  expect(Object.keys((await readPlanGoals(app, scope)).intentReading.themeJudgements)).toEqual(["hiring"]);
 });

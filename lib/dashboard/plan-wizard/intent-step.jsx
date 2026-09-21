@@ -1,9 +1,11 @@
 // The wizard's first page: capture what would make the coming quarter a success, professionally and, optionally,
 // personally. Suggestions are offered as starting points that fill the focused field; nothing becomes a chosen
 // intent until the user saves. A background inference response replaces the offered suggestions but never the
-// text a user has begun typing.
+// text a user has begun typing. A link above the fields opens the reading page, which shows how those suggestions
+// were drawn from the user's notes.
 
 import ExpandingTextarea from "dashboard/plan-wizard/expanding-textarea";
+import { IntentReadingProgressBar } from "dashboard/plan-wizard/intent-reading-page";
 import { CATEGORY_LABELS, PRIMARY_GOAL_RANK, draftFieldsFromGoals, goalRecordsFromDraftFields,
   nextSecondaryRank } from "dashboard/plan-wizard/intent-step-fields";
 import { useRegisteredNavigate } from "dashboard/plan-wizard/step-navigation";
@@ -92,15 +94,39 @@ function IntentStepCategory({ fields, isDisabled, isRefreshing, onAddSecondary, 
 }
 
 // ----------------------------------------------------------------------------------------------
+// @desc Offer the reading page: while notes are being read, with a bar filling beside the link so the wait has a
+//   visible length, and afterwards as a plain link to how the current suggestions were drawn.
+// @param {object} params - An object with the following properties:
+//   - {boolean} isRefreshing - True while a reading is running.
+//   - {Function} onOpenReading - Shows the reading page.
+//   - {number} progressFraction - Elapsed fill of the running reading.
+// @returns {JSX.Element} The link row.
+function IntentReadingLink({ isRefreshing, onOpenReading, progressFraction }) {
+  return (
+    <div className={ `intent-step-reading${ isRefreshing ? " intent-step-reading--running" : "" }` }>
+      <button className="intent-step-reading-link" onClick={ onOpenReading } type="button">
+        { isRefreshing ? "Watch Plan Builder read your notes →" : "See how your notes were read →" }
+      </button>
+      { isRefreshing ? <IntentReadingProgressBar fraction={ progressFraction } /> : null }
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------------------------
 // @desc Render and save the first wizard page. Draft text is local state seeded from stored goals; it is
 //   reseeded only when the plan scope changes or a save succeeds, so suggestions arriving from a background
 //   refresh cannot discard what the user is in the middle of writing.
 // @param {object} params - An object with the following properties:
+//   - {object} intentReading - The reading behind the suggestions; the link to it is offered once it holds anything.
 //   - {boolean} isRefreshing - True while inference runs; each category shows a pending row where its
 //     suggestions will appear, and fields stay editable throughout.
 //   - {boolean} isSaving - True while a save is in flight.
 //   - {Function} onAnswerStateChange - Reports whether Next should be enabled.
 //   - {Function} onFindProjects - Moves to the projects page and runs discovery there.
+//   - {Function} onOpenReading - Shows the reading page, leaving this page mounted underneath it.
+//   - {Function} onPendingDirectionApplied - Clears pendingDirection once it has been placed.
+//   - {object|null} pendingDirection - A direction picked on the reading page, placed like a suggestion chip.
+//   - {number} readingProgress - Elapsed fill of the running reading.
 //   - {Function} onRegisterNavigate - Publishes this page's Next handler to the wizard's shared navigation.
 //   - {object} planningContext - Stored goals, goalRecords, and possibilities for the scope.
 //   - {Function} onSave - Receives goal records and resolves true when the write succeeded.
@@ -108,8 +134,9 @@ function IntentStepCategory({ fields, isDisabled, isRefreshing, onAddSecondary, 
 // @returns {JSX.Element} The intent page.
 // The wizard's shared Next button runs this page's handler: discovery reads stored intents, so an unsaved answer
 // would otherwise be invisible and the user would be shown projects chosen for the prior answer.
-export default function IntentStep({ isRefreshing, isSaving, onAnswerStateChange, onFindProjects,
-    onRegisterNavigate, onSave, planningContext, scopeKey }) {
+export default function IntentStep({ intentReading = null, isRefreshing, isSaving, onAnswerStateChange, onFindProjects,
+    onOpenReading = null, onPendingDirectionApplied = null, onRegisterNavigate, onSave, pendingDirection = null,
+    planningContext, readingProgress = 0, scopeKey }) {
   const [draftFields, setDraftFields] = useState(() => draftFieldsFromGoals(planningContext.goals));
   const [focusedFieldUuid, setFocusedFieldUuid] = useState(null);
   const capturedAtRef = useRef(null);
@@ -197,15 +224,26 @@ export default function IntentStep({ isRefreshing, isSaving, onAnswerStateChange
 
   useRegisteredNavigate(onRegisterNavigate, handleNext);
 
+  useEffect(() => {
+    if (!pendingDirection) return;
+    handleApplySuggestion(pendingDirection);
+    if (onPendingDirectionApplied) onPendingDirectionApplied();
+  }, [pendingDirection]);
+
   const workFields = draftFields.filter(field => field.userCategoryEm === "work");
   const personalFields = draftFields.filter(field => field.userCategoryEm === "personal");
   const categoryProps = { isDisabled: isSaving, isRefreshing, onApplySuggestion: handleApplySuggestion,
     onChangeText: handleChangeText, onFocusField: setFocusedFieldUuid };
+  const hasStoredReading = Boolean(intentReading?.readItems.length || intentReading?.themes.length);
+  const offersReading = Boolean(onOpenReading) && (isRefreshing || hasStoredReading);
 
   return (
     <div className="plan-step-container intent-step-container">
       <h2 className="plan-heading">{ INTENT_STEP_COPY.title }</h2>
       <p className="plan-summary">{ INTENT_STEP_COPY.summary }</p>
+      { offersReading ? (
+        <IntentReadingLink isRefreshing={ isRefreshing } onOpenReading={ onOpenReading } progressFraction={ readingProgress } />
+      ) : null }
       <IntentStepCategory { ...categoryProps } fields={ workFields } onAddSecondary={ () => handleAddSecondary("work") }
         possibilities={ planningContext.possibilities.work } userCategoryEm="work" />
       <IntentStepCategory { ...categoryProps } fields={ personalFields }

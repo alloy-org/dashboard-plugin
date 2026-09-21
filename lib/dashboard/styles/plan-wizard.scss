@@ -526,6 +526,287 @@ $plan-wizard-z-index: 1100;
     }
   }
 
+  // ── Intent reading page ──────────────────────────────────────────────────────────────────
+
+  /* The bar under the reading link and under the reading page's title. Its width is set inline from the elapsing
+   * progress the wizard shell measures, so the fill carries on unbroken as the user moves between the two. */
+  .intent-reading-progress-track {
+    background: $color-border;
+    border-radius: $radius-sm;
+    height: 4px;
+    overflow: hidden;
+
+    .intent-reading-progress-fill {
+      background: $color-success;
+      height: 100%;
+    }
+  }
+
+  .intent-step-container .intent-step-reading {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+    grid-column: 1 / -1;
+    max-width: 22rem;
+
+    .intent-step-reading-link {
+      align-self: flex-start;
+      border: 0;
+      color: $color-link;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0;
+
+      &:hover:not(:disabled) {
+        background: transparent;
+        text-decoration: underline;
+      }
+    }
+  }
+
+  /* Reads and themes sit in two columns, since neither is the conclusion; the directions they lead to take the full
+   * width beneath them. Below 560px of dialog the columns stack. */
+  .intent-reading-page {
+    gap: $sp-md;
+
+    .intent-reading-header {
+      align-items: baseline;
+      display: flex;
+      gap: $sp-md;
+      justify-content: space-between;
+    }
+
+    .intent-reading-title {
+      font-family: $font-serif;
+      font-size: 1.3rem;
+    }
+
+    .intent-reading-return {
+      border: 0;
+      color: $color-link;
+      flex-shrink: 0;
+      font-weight: 500;
+      padding: 0;
+
+      &:hover:not(:disabled) {
+        background: transparent;
+        text-decoration: underline;
+      }
+    }
+
+    .intent-reading-status {
+      color: $color-text-secondary;
+      font-size: 0.85rem;
+      margin: 0;
+    }
+
+    .intent-reading-columns {
+      display: grid;
+      gap: $sp-lg $sp-xl;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .intent-reading-column {
+      display: flex;
+      flex-direction: column;
+      gap: $sp-sm;
+      min-width: 0;
+    }
+
+    .intent-reading-section-heading {
+      color: $color-text-secondary;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .intent-reading-section-count,
+    .intent-reading-section-hint {
+      color: $color-text-muted;
+      font-weight: 400;
+    }
+
+    .intent-reading-placeholder {
+      color: $color-text-muted;
+      font-size: 0.8rem;
+      font-style: italic;
+      margin: 0;
+    }
+
+    .intent-reading-read-list,
+    .intent-reading-theme-list,
+    .intent-reading-direction-list {
+      display: flex;
+      flex-direction: column;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .intent-reading-read-list { gap: 6px; }
+
+    .intent-reading-read-item {
+      align-items: flex-start;
+      animation: intent-reading-arrive 0.25s ease-out;
+      display: flex;
+      font-size: 0.85rem;
+      gap: $sp-sm;
+      line-height: 1.35;
+    }
+
+    .intent-reading-read-label {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .intent-reading-item-icon {
+      fill: none;
+      flex-shrink: 0;
+      height: 1rem;
+      margin-top: 1px;
+      stroke: $color-text-muted;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 1.3;
+      width: 1rem;
+    }
+
+    .intent-reading-theme-list { gap: $sp-xs; }
+
+    .intent-reading-theme {
+      align-items: center;
+      animation: intent-reading-arrive 0.3s ease-out;
+      background: $color-bg-primary;
+      border: 1px solid $color-border;
+      border-radius: $radius-sm;
+      display: flex;
+      font-size: 0.85rem;
+      gap: $sp-sm;
+      padding: $sp-xs $sp-xs $sp-xs $sp-md;
+    }
+
+    .intent-reading-theme--pinned {
+      border-color: $color-success;
+    }
+
+    .intent-reading-theme--dismissed .intent-reading-theme-label,
+    .intent-reading-theme--dismissed .intent-reading-theme-count {
+      color: $color-text-muted;
+      text-decoration: line-through;
+    }
+
+    .intent-reading-theme-label {
+      font-weight: 500;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .intent-reading-theme-count {
+      color: $color-text-muted;
+      font-size: 0.75rem;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .intent-reading-theme-button {
+      align-items: center;
+      display: inline-flex;
+      font-size: 1rem;
+      font-weight: 400;
+      height: 1.9rem;
+      justify-content: center;
+      line-height: 1;
+      padding: 0;
+      width: 2.1rem;
+
+      &:first-of-type { margin-left: auto; }
+
+      &[aria-pressed="true"] {
+        background: $color-bg-secondary;
+        border-color: $color-text-muted;
+        color: $color-text;
+      }
+
+      svg {
+        fill: none;
+        height: 0.9rem;
+        stroke: currentColor;
+        stroke-linejoin: round;
+        stroke-width: 1.4;
+        width: 0.9rem;
+      }
+    }
+
+    .intent-reading-theme--pinned .intent-reading-theme-button[aria-pressed="true"] {
+      border-color: $color-success;
+      color: $color-success;
+
+      svg { fill: currentColor; }
+    }
+
+    .intent-reading-reread {
+      align-self: flex-start;
+      font-size: 0.75rem;
+    }
+
+    .intent-reading-directions {
+      border-top: 1px solid $color-border;
+      display: flex;
+      flex-direction: column;
+      gap: $sp-sm;
+      padding-top: $sp-md;
+    }
+
+    .intent-reading-direction-list { gap: $sp-sm; }
+
+    .intent-reading-direction {
+      align-items: center;
+      animation: intent-reading-arrive 0.35s ease-out;
+      background: $color-bg-primary;
+      color: $color-text;
+      display: flex;
+      font-size: 0.9rem;
+      font-weight: 600;
+      gap: $sp-sm;
+      padding: $sp-sm $sp-md;
+      text-align: left;
+      width: 100%;
+
+      &:hover:not(:disabled) {
+        background: $color-bg-primary;
+        border-color: $color-success;
+      }
+    }
+
+    .intent-reading-direction-icon {
+      fill: none;
+      flex-shrink: 0;
+      height: 1.1rem;
+      stroke: $color-success;
+      stroke-width: 2;
+      width: 1.1rem;
+    }
+
+    .intent-reading-direction-icon-center {
+      fill: $color-success;
+      stroke: none;
+    }
+
+    @container (max-width: 560px) {
+      .intent-reading-columns { grid-template-columns: minmax(0, 1fr); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .intent-reading-read-item,
+      .intent-reading-theme,
+      .intent-reading-direction { animation: none; }
+    }
+
+    @keyframes intent-reading-arrive {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: none; }
+    }
+  }
+
   // ── Projects step ────────────────────────────────────────────────────────────────────────
 
   /* Add-project and discovery share one row so the two dashed actions stay adjacent instead of stacking under a

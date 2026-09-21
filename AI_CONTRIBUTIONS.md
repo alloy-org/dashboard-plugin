@@ -5,6 +5,29 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-09-21 — Plan Builder reading page: notes read, themes, and directions
+
+**Model:** Claude Opus 5 (1M context)
+**Files created/modified:**
+- `lib/plan-wizard/intent-reading.js` (created) — Builds the read list (notes and tasks alternating, up to 15), validates the themes the model returns, and turns pin/dismiss judgements into prompt guidance
+- `lib/dashboard/plan-wizard/intent-reading-page.jsx` (created) — The "Reading your last quarter" side page. It shows the reads, then the themes, then the directions, one item at a time. Themes can be pinned or dismissed, and a direction can be picked
+- `lib/plan-wizard/intent-evidence.js` (modified) — Sampled notes now carry their names, looked up through findNote when task-domain tasks arrive without one
+- `lib/plan-wizard/intent-inference.js` (modified) — The prompt asks for up to six themes with task counts and includes the user's pinned and dismissed themes
+- `lib/plan-wizard/plan-wizard-service.js` (modified) — `refreshPlanIntentPossibilities` reports the read items through `onProgress` before the model is called. It stores the reading with the professional suggestions and drops dismissed themes. Added `savePlanThemeJudgement`, and the planning context now includes `intentReading`
+- `lib/plan-wizard/vision-guide-repository.js` (modified) — Validates the stored reading and theme judgements
+- `lib/hooks/use-plan-wizard.js` (modified) — Tracks the progress of the running reading and exposes `intentReading` and `saveThemeJudgement`
+- `lib/dashboard/plan-wizard/intent-step.jsx` (modified) — Adds a link to the reading page with a 30-second fill bar while a reading runs, and places a direction picked on the reading page
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` (modified) — Routes to the reading page. The intent page stays mounted but hidden, so unsaved text survives. The bar is measured once with `useElapsingProgress`, so it keeps filling as the user moves between the two pages
+- `lib/dashboard/styles/plan-wizard.scss` (modified) — Reading page styles; the two columns stack below 560px
+- `test/plan-wizard-intents.test.js`, `test/plan-wizard-ui.test.js` (modified) — Tests for the read list, theme validation, judgement persistence and prompt guidance, the link and progressive page, applying a direction, and keeping a draft
+
+**Task:** While Plan Builder's first page waits on inference, link to a side page that reveals, in order, the notes read, the themes found, and the three directions derived from them. Pinning or dismissing a theme steers what is sent to the model.
+**Prompt summary:** "When the user first enters the intent step and the LLMs collect note data, show a link with a progress bar filling in 30 seconds to a new side page showing how their note data was interpreted: notes read (up to ~15), then themes, then the three intents. Directions span the whole page; 'Done' reads 'Return to Plan Builder'."
+**Scope:** ~450 lines across 2 new and 8 modified source files, plus tests
+**Notes:** Themes come from the same single inference call, so they arrive together with the directions; the page reveals them one at a time. Theme counts are the model's own tally, capped at the number of tasks in the prompt. Judgements are stored in the professional possibilities envelope of the Vision Guide and survive later readings.
+
+---
+
 ## 2026-09-21 — Build plan switches to the upcoming quarter 15 days out
 
 **Model:** Grok 4.7
