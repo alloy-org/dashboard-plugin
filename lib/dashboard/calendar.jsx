@@ -5,6 +5,7 @@
  * Prompt summary: "monthly calendar grid with navigation and colored dots indicating task density"
  */
 import { useState } from "react";
+import { monthGridCellsFromDateInput } from "util/date-utility";
 import WidgetWrapper from "widget-wrapper";
 import "styles/calendar.scss"
 
@@ -20,9 +21,6 @@ export default function CalendarWidget({ app, completedTasksByDate, currentDate,
   const today = new Date(currentDate);
   const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const weekStartsOn = weekFormat === 'monday' ? 1 : 0;
-
-  const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
-  const firstDayOfWeek = (new Date(viewDate.getFullYear(), viewDate.getMonth(), 1).getDay() - weekStartsOn + 7) % 7;
 
   const DAY_LABELS = weekStartsOn === 1
     ? ['Mo','Tu','We','Th','Fr','Sa','Su']
@@ -66,23 +64,22 @@ export default function CalendarWidget({ app, completedTasksByDate, currentDate,
     }
   };
 
-  const cells = [];
-  for (let i = 0; i < firstDayOfWeek; i++) {
-    cells.push(<div key={'empty-' + i} className="cal-cell empty" />);
-  }
-  for (let day = 1; day <= daysInMonth; day++) {
+  // Leading blanks keep the 1st under its weekday column; the grid shape comes from the shared month layout.
+  const cells = monthGridCellsFromDateInput(viewDate, weekStartsOn).map((cellDate, index) => {
+    if (!cellDate) return <div key={'empty-' + index} className="cal-cell empty" />;
+    const day = cellDate.getDate();
     const count = taskCountByDay[day] || 0;
     const dotColor = count === 0 ? 'none' : count <= 2 ? '#86efac' : count <= 5 ? '#fbbf24' : '#f87171';
     let cellClass = 'cal-cell';
     if (isToday(day)) cellClass += ' today';
     if (isSelected(day)) cellClass += ' selected';
-    cells.push(
+    return (
       <div key={day} className={cellClass} onClick={() => handleDayClick(day)}>
         <span className="cal-day">{day}</span>
         {dotColor !== 'none' ? <span className="cal-dot" style={{ backgroundColor: dotColor }} /> : null}
       </div>
     );
-  }
+  });
 
   return (
     <WidgetWrapper configurable={true} gridHeightSize={gridHeightSize} gridWidthSize={gridWidthSize}

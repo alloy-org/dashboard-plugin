@@ -2,7 +2,7 @@
 import ProposedAgendaPopover from "proposed-agenda-popover";
 import { useCallback, useRef, useState } from "react";
 import { calendarEventDateFromValue } from "util/calendar-utility";
-import { dateFromDateInput, dateKeyFromDateInput } from "util/date-utility";
+import { dateFromDateInput, dateKeyFromDateInput, monthGridCellsFromDateInput } from "util/date-utility";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Render a month grid, quick dates, real calendar event markers, and an exact-date entry form.
@@ -16,7 +16,6 @@ function AgendaCalendar({ calendarEvents, dateValue, onSelectDate, savedDates })
   const todayKey = dateKeyFromDateInput(today);
   const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
   const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate() + ((8 - today.getDay()) % 7 || 7));
-  const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const eventCounts = {};
   for (const event of calendarEvents || []) {
     const start = calendarEventDateFromValue(event?.start);
@@ -38,30 +37,31 @@ function AgendaCalendar({ calendarEvents, dateValue, onSelectDate, savedDates })
     </div>
     <div className="agenda-calendar-heading">
       <strong aria-live="polite">{ month.toLocaleDateString([], { month: "long", year: "numeric" }) }</strong>
-      <button aria-label="Previous month" onClick={ () => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1)) } type="button">‹</button>
-      <button aria-label="Next month" onClick={ () => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1)) } type="button">›</button>
+      <button aria-label="Previous month" className="agenda-calendar-month-arrow"
+        onClick={ () => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1)) } type="button">‹</button>
+      <button aria-label="Next month" className="agenda-calendar-month-arrow"
+        onClick={ () => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1)) } type="button">›</button>
     </div>
     <div className="agenda-calendar-grid">
       { ["S", "M", "T", "W", "T", "F", "S"].map((day, index) => <span className="agenda-calendar-weekday" key={ index }>{ day }</span>) }
-      { Array.from({ length: month.getDay() }, (_, index) => <span key={ `blank-${ index }` } />) }
-      { Array.from({ length: daysInMonth }, (_, index) => {
-        const date = new Date(month.getFullYear(), month.getMonth(), index + 1);
+      { monthGridCellsFromDateInput(month).map((date, index) => {
+        if (!date) return <span key={ `blank-${ index }` } />;
         const key = dateKeyFromDateInput(date);
         return <button aria-current={ key === todayKey ? "date" : undefined }
           aria-label={ date.toLocaleDateString([], { day: "numeric", month: "long", weekday: "long", year: "numeric" }) }
           aria-pressed={ key === dateValue } className="agenda-calendar-day" key={ key } onClick={ () => onSelectDate(key) } type="button">
-          { index + 1 }<span className="agenda-calendar-markers">
+          { date.getDate() }<span className="agenda-calendar-markers">
             { savedDates.includes(key) ? <i className="agenda-calendar-saved" /> : null }
             { eventCounts[key] >= 3 ? <i className="agenda-calendar-busy" /> : null }
           </span>
         </button>;
       }) }
     </div>
-    <div className="agenda-calendar-legend"><span><i className="agenda-calendar-saved" />Agenda loaded</span>
+    <div className="agenda-calendar-legend"><span><i className="agenda-calendar-saved" />agenda saved</span>
       <span><i className="agenda-calendar-busy" />3+ meetings</span></div>
     <div className="agenda-calendar-summary">
       <strong>{ selected.toLocaleDateString([], { day: "numeric", month: "long", weekday: "long" }) }</strong>
-      <p>{ meetings ? `${ meetings } calendar ${ meetings === 1 ? "event" : "events" } booked. Suggestions will fit around them.`
+      <p>{ meetings ? `${ meetings } ${ meetings === 1 ? "meeting" : "meetings" } already booked. Suggestions will fit around them.`
         : "Choose a day to plan your agenda." }</p>
       <form onSubmit={ onSubmit }><label>Jump to date <input onChange={ event => setDraftDate(event.target.value) }
         required type="date" value={ draftDate } /></label><button type="submit">Open agenda</button></form>

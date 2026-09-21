@@ -13,7 +13,8 @@ test("planning service bundles and persists goals in a bare host context", async
     import path from "node:path";
     import { createLibImportsPlugin } from "./lib-imports-plugin.js";
     const result = await esbuild.build({
-      bundle: true, define: { "process.env.NODE_ENV": '"production"' },
+      bundle: true, define: { "process.env.BUILD_DATE": '"unknown"', "process.env.NODE_ENV": '"production"',
+        "process.env.SENTRY_DSN": '""' },
       entryPoints: ["lib/plan-wizard/plan-wizard-service.js"], format: "iife", globalName: "PlanWizard",
       metafile: true, packages: "external", plugins: [createLibImportsPlugin(path.resolve("lib"))], write: false,
     });
