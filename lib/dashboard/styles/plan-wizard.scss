@@ -184,6 +184,15 @@ $plan-wizard-z-index: 1100;
     white-space: nowrap;
   }
 
+  /* The quarter the wizard is writing to, stated beside the title so the page a user lands on says which plan
+   * they are editing rather than leaving it to the widget button they arrived through. */
+  .plan-wizard-title-quarter {
+    color: $color-text-muted;
+    font-size: 0.8rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
   .plan-wizard-step-track {
     align-items: center;
     display: flex;

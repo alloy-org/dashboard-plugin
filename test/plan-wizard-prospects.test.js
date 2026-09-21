@@ -187,9 +187,10 @@ test("stores a supported candidate as a proposal citing the tasks it would resol
 
 // ----------------------------------------------------------------------------------------------
 // @desc Confirm each rule the note states is enforced here rather than trusted to the model: two real tasks must
-//   concern a candidate, its citations must exist, it must advance a chosen intent of its own category, and a
-//   summary the user already rejected is never re-proposed.
-test("discards candidates that fail the two-task bar, invent citations, or serve no chosen intent", async () => {
+//   concern a professional candidate, its citations must exist, it must advance a chosen intent of its own
+//   category, and a summary the user already rejected is never re-proposed. Every candidate here is professional,
+//   which is the category the two-task bar still applies to.
+test("discards professional candidates that fail the two-task bar, invent citations, or serve no chosen intent", async () => {
   const evidence = evidenceBundle({ rejectedSummaries: ["Rewrite the billing stack"] });
   const promptRunner = async () => ({ prospects: [
     candidate({ resolvedTaskUuids: ["task-a"], summary: "Only one task concerns this" }),
@@ -201,6 +202,47 @@ test("discards candidates that fail the two-task bar, invent citations, or serve
   ] });
   const discovery = await discoverActionProspects({}, evidence, scope, { promptRunner });
   expect(discovery.prospects.map(prospect => prospect.summary)).toEqual(["Automate support ticket triage"]);
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Confirm a personal candidate is proposed on the strength of the intent it serves alone, citing no tasks.
+// Personal intents leave little behind in a task list, so holding them to the professional two-task bar emptied
+// the personal column entirely no matter how many personal intents the user had saved.
+test("proposes a personal candidate that cites no supporting task", async () => {
+  const evidence = evidenceBundle({ chosenGoals: [{ goalRank: 1, goalText: "Run a half marathon",
+    userCategoryEm: "personal", uuid: "goal-personal" }] });
+  const promptRunner = async () => ({ prospects: [candidate({ linkedGoalUuids: ["goal-personal"],
+    resolvedTaskUuids: [], summary: "Train for the spring half marathon", userCategoryEm: "personal" })] });
+  const discovery = await discoverActionProspects({}, evidence, scope, { promptRunner });
+  expect(discovery.prospects.map(prospect => prospect.summary)).toEqual(["Train for the spring half marathon"]);
+  expect(discovery.prospects[0].evidence).toEqual([]);
+  expect(discovery.failureReason).toBeNull();
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Confirm dropping the task bar for personal candidates did not stop their citations being checked: a
+//   personal proposal may cite nothing, but a task identity it does claim must be one the evidence contains, so
+//   an invented UUID never reaches a stored prospect's provenance.
+test("keeps an invented citation out of a personal candidate while still proposing it", async () => {
+  const evidence = evidenceBundle({ chosenGoals: [{ goalRank: 1, goalText: "Run a half marathon",
+    userCategoryEm: "personal", uuid: "goal-personal" }] });
+  const promptRunner = async () => ({ prospects: [candidate({ linkedGoalUuids: ["goal-personal"],
+    resolvedTaskUuids: ["task-a", "task-invented"], summary: "Train for the spring half marathon",
+    userCategoryEm: "personal" })] });
+  const discovery = await discoverActionProspects({}, evidence, scope, { promptRunner });
+  expect(discovery.prospects[0].evidence).toEqual([{ noteUuid: "note-support", taskUuid: "task-a" }]);
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Confirm a personal candidate still has to advance a personal intent the user chose. This is the rule that
+//   replaces the task bar as the check on the category, so a personal proposal serving nothing is still dropped.
+test("drops a personal candidate that advances no chosen personal intent", async () => {
+  const evidence = evidenceBundle({ chosenGoals: [{ goalRank: 1, goalText: "Run a half marathon",
+    userCategoryEm: "personal", uuid: "goal-personal" }] });
+  const promptRunner = async () => ({ prospects: [candidate({ linkedGoalUuids: [], resolvedTaskUuids: [],
+    summary: "Something nobody asked for", userCategoryEm: "personal" })] });
+  const discovery = await discoverActionProspects({}, evidence, scope, { promptRunner });
+  expect(discovery.prospects).toEqual([]);
 });
 
 // ----------------------------------------------------------------------------------------------

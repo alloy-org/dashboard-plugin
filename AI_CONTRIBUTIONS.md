@@ -5,6 +5,49 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-09-20 — Personal projects are proposed without a supporting task
+
+**Model:** claude-opus-5[1m]
+**Files created/modified:**
+- `lib/plan-wizard/prospect-discovery.js` (modified) — Replaces the flat `MINIMUM_RESOLVED_TASKS` gate with `MINIMUM_RESOLVED_TASKS_BY_CATEGORY`, so the two-task citation bar applies to professional candidates only while a personal candidate may cite none; the discovery prompt states the split rule instead of the former blanket requirement
+- `test/plan-wizard-prospects.test.js` (modified) — Three cases covering a personal candidate that cites no task, one whose invented citation is filtered while the proposal survives, and one dropped for advancing no personal intent; the existing bar test is renamed to say it covers professional candidates
+
+**Task:** Let personal projects be suggested without supporting tasks, unlike professional ones
+**Prompt summary:** "let's remove the category-citation rule for the 'Personal' projects - those projects can be suggested without a supporting task, unlike Professional projects"
+**Scope:** ~20 lines changed across 2 files, plus 3 new tests
+**Notes:** Prompted by an empty Personal project list despite saved Personal intents. Citations a personal candidate does make are still validated against the evidence, so an invented task UUID is dropped from provenance rather than stored, and the intent link is still required — it is now the only check on a personal proposal's category. A second, untouched cause remains: `collectProspectEvidence` scopes its task pool to `scope.domainUuid` alone, where `intent-evidence.js` additionally collects personally-tagged notes via `personalNoteUuidsInScope`, so personal tasks still do not reach the discovery prompt as evidence.
+
+---
+
+## 2026-09-20 — Plan Builder targets the current quarter and names it in its header
+
+**Model:** claude-opus-5[1m]
+**Files created/modified:**
+- `lib/dashboard/planning.jsx` (modified) — The "✨ Build plan" header button now resolves to `quarterlyPlans.current` before `next`, reversing a preference that sent the button's answers to a different scope than the current quarter's card reads; the button's tooltip names the quarter it targets
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` (modified) — The wizard header renders the targeted quarter beside the title, as `Q3 2026` via `quarterLabel`, kept distinct from the existing `quarterLabel` storage-key string the tooltip and progress bar use
+- `lib/dashboard/styles/plan-wizard.scss` (modified) — `.plan-wizard-title-quarter`, nested in the file's single wrapper
+- `test/plan-wizard-ui.test.js` (modified) — Asserts the header states the scope's quarter
+
+**Task:** Point Plan Builder at the current quarter, and show which quarter it is targeting in its header
+**Prompt summary:** "Let's update Plan Builder: To target the current quarter, and to print out which quarter is being targeted in the header for Plan Builder"
+**Scope:** ~15 lines changed across 4 files, plus 1 assertion
+**Notes:** Prompted by an empty intent page when opening the current quarter's card: the wizard partitions storage by scope key (`use-plan-wizard.js:31`), and quarter is part of it, so answers entered through the button had been stored against the following quarter all along. This retargets new work to the current quarter but does not move plans already written under the old preference; those remain under the later quarter and are reachable from that card.
+
+---
+
+## 2026-09-20 — Quarter cards open the Plan Builder instead of the plan note
+
+**Model:** claude-opus-5[1m]
+**Files created/modified:**
+- `lib/dashboard/planning.jsx` (modified) — The current and next quarter cards now open the Plan Wizard on click. The inline card handler moved to a documented `handleQuarterCardClick`, which opens the wizard whenever the card carries a quarter and year, and falls back to the previous open-or-create-note path only when it does not
+
+**Task:** Make the quarterly-plan widget open Plan Builder rather than the note when the user clicks to open the plan for the current or next quarter
+**Prompt summary:** "Update the quarterly-plan component to open Plan Builder instead of opening the note directly when the user clicks to open the plan for current or next quarter"
+**Scope:** ~10 lines changed in 1 file
+**Notes:** The wizard already resumed from persisted state, so a card for an existing plan opens on the answers stored for that quarter rather than starting over; a card with no note yet starts on the first page, which is what the previous handler did for that case. Reaching the note itself is still one step away through the View Quarterly Plan link on the wizard's final page. `handleOpenPlan` is retained for the fallback branch. The card labels ("📝 Open Plan" / "+ Create Plan") were left unchanged.
+
+---
+
 ## 2026-09-19 — Cycling background project refresh with provider-found tasks and superseded ideas
 
 **Model:** claude-opus-5[1m]

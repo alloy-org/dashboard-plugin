@@ -1,5 +1,5 @@
 // Quarterly Planning widget
-import { getQuarterMonths, getUpcomingWeekMonday, formatWeekLabel } from "constants/quarters";
+import { getQuarterMonths, getUpcomingWeekMonday, formatWeekLabel, quarterLabel } from "constants/quarters";
 import { IS_DEV_ENVIRONMENT } from "constants/settings";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
 import PlanWizard from "dashboard/plan-wizard/plan-wizard";
@@ -199,11 +199,11 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
   const upcomingMonday = getUpcomingWeekMonday();
   const weekLabel = formatWeekLabel(upcomingMonday);
   const widgetTitle = domainName ? `Quarterly Planning · ${ domainName }` : undefined;
-  const wizardQuarterPlan = quarterlyPlans?.next ?? quarterlyPlans?.current ?? null;
+  const wizardQuarterPlan = quarterlyPlans?.current ?? quarterlyPlans?.next ?? null;
   const canStartWizard = !!(wizardQuarterPlan?.quarter && wizardQuarterPlan?.year);
   const headerActions = canStartWizard ? (
     <button className="widget-header-action" onClick={ () => setWizardPlan({ quarter: wizardQuarterPlan.quarter,
-      year: wizardQuarterPlan.year }) } title="Gather your intents and build a plan for the quarter" type="button">
+      year: wizardQuarterPlan.year }) } title={ `Gather your intents and build a plan for ${ quarterLabel(wizardQuarterPlan.year, wizardQuarterPlan.quarter) }` } type="button">
       ✨ Build plan
     </button>
   ) : null;
@@ -279,6 +279,27 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
     }
   };
 
+  // ----------------------------------------------------------------------------------------------
+  // @desc Handle a click on either quarter card. Both the current and next quarter open the Plan Builder rather
+  //   than the plan note, so a card click always lands on the wizard's questions: an existing plan resumes from
+  //   what was stored for it, and a quarter with no note yet starts the wizard from its first page. The wizard's
+  //   final page keeps the link that navigates to the plan note itself, so opening the note is still one step
+  //   away. The fallback to opening or creating the note covers a card that carries no quarter and year, which
+  //   the wizard needs to know which plan it is editing.
+  // @param {Object} plan - A quarterly plan card's plan, with the following properties:
+  //   - {number|undefined} quarter - Quarter being planned, 1 through 4.
+  //   - {number|undefined} year - Planning year.
+  //   - {string|null} noteUUID - UUID of the existing plan note, absent until a plan has been created.
+  // @returns {Promise<void>} Resolves once the wizard has been opened or the note handled.
+  const handleQuarterCardClick = async (plan) => {
+    if (plan.quarter && plan.year) {
+      setWizardPlan({ quarter: plan.quarter, year: plan.year });
+      return;
+    }
+    const result = await handleOpenPlan(app, plan);
+    handleDevEdit(result);
+  };
+
   return (
     <WidgetWrapper headerActions={headerActions} title={widgetTitle} widgetId="planning">
       <div className="planning-quarters">
@@ -286,14 +307,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
           <QuarterCard
             key={plan.label}
             plan={plan}
-            onCardClick={async () => {
-              if (!plan.noteUUID && plan.quarter && plan.year) {
-                setWizardPlan({ quarter: plan.quarter, year: plan.year });
-                return;
-              }
-              const result = await handleOpenPlan(app, plan);
-              handleDevEdit(result);
-            }}
+            onCardClick={() => handleQuarterCardClick(plan)}
           />
         ))}
       </div>

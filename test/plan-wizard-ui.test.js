@@ -393,6 +393,7 @@ describe("PlanWizard step navigation", () => {
     const { cleanup, container } = await renderPlanWizard();
     const stepDots = [...container.querySelectorAll(".plan-wizard-step-dot")];
     expect(container.querySelector(".plan-wizard-title").textContent).toBe("Plan Builder - Beta");
+    expect(container.querySelector(".plan-wizard-title-quarter").textContent).toBe("Q4 2026");
     expect(container.querySelector(".plan-wizard-progress").textContent).toBe(`1 of ${ WIZARD_STEPS.length }`);
     expect(stepDots).toHaveLength(WIZARD_STEPS.length);
     expect(stepDots[0].classList).toContain("plan-wizard-step-dot--current");

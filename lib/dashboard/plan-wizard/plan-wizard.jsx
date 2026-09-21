@@ -28,6 +28,7 @@
 // rather than rendering the markdown inline: the plan note is a real note the user goes on to work in, and the
 // inline editor would show a copy of it that no longer reflects what they did there.
 
+import { quarterLabel as displayQuarterLabel } from "constants/quarters";
 import NoteEditor from "dashboard/note-editor";
 import DoneEnoughStep from "dashboard/plan-wizard/done-enough-step";
 import IntentStep from "dashboard/plan-wizard/intent-step";
@@ -92,6 +93,9 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const scopeKey = planScopeKey({ domainName, domainUuid, quarter, year });
   const quarterLabel = planningContext.scope ? planningContext.scope.quarterKey : `${ year }-Q${ quarter }`;
   const domainLabel = domainName ?? "All Notes";
+  // The header states the quarter in the reading order a person says it in, while quarterLabel stays the storage
+  // key form the progress bar and tooltip already use, so the two are not conflated.
+  const headerQuarterLabel = displayQuarterLabel(year, quarter);
   const stepIndex = wizardStepIndexFromKey(stepKey);
   const step = WIZARD_STEPS[stepIndex];
   const isFirstStep = stepIndex === 0;
@@ -284,6 +288,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
               <circle className="plan-wizard-title-icon-center" cx="12" cy="12" r="1.5" />
             </svg>
             <h1 className="plan-wizard-title">Plan Builder - Beta</h1>
+            <span className="plan-wizard-title-quarter">{ headerQuarterLabel }</span>
           </div>
           <div aria-label={ `Step ${ stepIndex + 1 } of ${ WIZARD_STEPS.length }` } className="plan-wizard-step-track">
             { WIZARD_STEPS.map((wizardStep, wizardStepIndex) => (
