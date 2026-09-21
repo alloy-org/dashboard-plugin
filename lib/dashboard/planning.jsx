@@ -1,6 +1,7 @@
 // Quarterly Planning widget
 import { getQuarterMonths, getUpcomingWeekMonday, formatWeekLabel, quarterLabel } from "constants/quarters";
 import { IS_DEV_ENVIRONMENT } from "constants/settings";
+import { buildPlanTargetFromPlans, currentQuarterCardAction } from "dashboard/build-plan-quarter";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
 import PlanWizard from "dashboard/plan-wizard/plan-wizard";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
@@ -11,6 +12,7 @@ import {
   getMonthlyPlanContent,
 } from "data-service";
 import NoteEditor from "note-editor";
+import { mirrorQuarterPlanNote } from "plan-wizard/mirror-quarter-plan";
 import { useEffect, useState } from "react";
 import { navigateToNote } from "util/goal-notes";
 import { logIfEnabled } from "util/log";
@@ -189,21 +191,30 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
   const [weekLoading, setWeekLoading] = useState(false);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [editingNoteUUID, setEditingNoteUUID] = useState(null);
+  const [mirroredCurrentNoteUuid, setMirroredCurrentNoteUuid] = useState(null);
 
   const isTwoTall = gridHeightSize >= 2;
-  const plansReady = !!(quarterlyPlans?.current && quarterlyPlans?.next);
-  const domainName = quarterlyPlans?.current?.domainName || quarterlyPlans?.next?.domainName || null;
-  const months = plansReady ? getQuarterMonths(quarterlyPlans.current, quarterlyPlans.next) : [];
+  const currentPlan = quarterlyPlans?.current
+    ? { ...quarterlyPlans.current, noteUUID: quarterlyPlans.current.noteUUID || mirroredCurrentNoteUuid }
+    : null;
+  const nextPlan = quarterlyPlans?.next ?? null;
+  const plansReady = !!(currentPlan && nextPlan);
+  const displayedPlans = { current: currentPlan, next: nextPlan };
+  const domainName = currentPlan?.domainName || nextPlan?.domainName || null;
+  const months = plansReady ? getQuarterMonths(currentPlan, nextPlan) : [];
   const monthClickDeps = { activeTab, setActiveTab, setMonthLoading, setMonthContent };
   const createPlanDeps = { setMonthLoading, setMonthContent };
   const upcomingMonday = getUpcomingWeekMonday();
   const weekLabel = formatWeekLabel(upcomingMonday);
   const widgetTitle = domainName ? `Quarterly Planning · ${ domainName }` : undefined;
-  const wizardQuarterPlan = quarterlyPlans?.current ?? quarterlyPlans?.next ?? null;
+  const wizardQuarterPlan = buildPlanTargetFromPlans({ quarterlyPlans: displayedPlans });
   const canStartWizard = !!(wizardQuarterPlan?.quarter && wizardQuarterPlan?.year);
+  const buildPlanTitle = wizardQuarterPlan
+    ? `Gather your intents and build a plan for ${ quarterLabel(wizardQuarterPlan.year, wizardQuarterPlan.quarter) }`
+    : "";
   const headerActions = canStartWizard ? (
-    <button className="widget-header-action" onClick={ () => setWizardPlan({ quarter: wizardQuarterPlan.quarter,
-      year: wizardQuarterPlan.year }) } title={ `Gather your intents and build a plan for ${ quarterLabel(wizardQuarterPlan.year, wizardQuarterPlan.quarter) }` } type="button">
+    <button className="widget-header-action" onClick={ () => setWizardPlan({ mirrorTarget: null,
+      quarter: wizardQuarterPlan.quarter, year: wizardQuarterPlan.year }) } title={ buildPlanTitle } type="button">
       ✨ Build plan
     </button>
   ) : null;
@@ -216,6 +227,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
     setMonthContent(null);
     setWeekContent(null);
     setInitialLoadDone(false);
+    setMirroredCurrentNoteUuid(null);
     setWizardPlan(null);
   }, [domainName]);
 
@@ -230,7 +242,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
 
   useEffect(() => {
     if (!plansReady || !isTwoTall) return;
-    const noteUUID = quarterlyPlans.current?.noteUUID;
+    const noteUUID = currentPlan?.noteUUID;
     if (!noteUUID) return;
     setWeekLoading(true);
     getMonthlyPlanContent(app, noteUUID, weekLabel)
@@ -240,7 +252,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
       })
       .catch(() => setWeekContent({ found: false, content: null }))
       .finally(() => setWeekLoading(false));
-  }, [isTwoTall, plansReady, quarterlyPlans?.current?.noteUUID, weekLabel]);
+  }, [currentPlan?.noteUUID, isTwoTall, plansReady, weekLabel]);
 
   if (editingNoteUUID && IS_DEV_ENVIRONMENT) {
     return (
@@ -255,13 +267,25 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
   }
 
   // ----------------------------------------------------------------------------------------------
+  // @desc Copy the quarter the wizard just published onto the current quarter. Used when the current quarter
+  //   had no plan of its own and the card opened the upcoming quarter's wizard instead.
+  // @returns {Promise<void>} Resolves once the current quarter's note holds the copied plan.
+  const handleWizardFinished = async () => {
+    if (!wizardPlan?.mirrorTarget) return;
+    if (!nextPlan?.label) throw new Error("The upcoming quarter's plan could not be copied.");
+    const mirrored = await mirrorQuarterPlanNote(app, { sourcePlan: nextPlan, targetPlan: wizardPlan.mirrorTarget });
+    if (mirrored?.noteUuid) setMirroredCurrentNoteUuid(mirrored.noteUuid);
+  };
+
+  // ----------------------------------------------------------------------------------------------
   // @desc The wizard, when one is open. It renders as a fixed overlay above the whole dashboard rather than
   //   inside the widget body, since a widget cell is far too narrow for a five-page form. Both render branches
   //   below include it so opening the wizard does not depend on the quarterly plans having finished loading.
   // @returns {JSX.Element|null} The wizard overlay, or null when no plan is being edited.
   const planWizardOverlay = wizardPlan ? (
     <PlanWizard app={app} domainName={taskDomainName} domainUuid={taskDomainUUID}
-      onClose={() => setWizardPlan(null)} quarter={wizardPlan.quarter} year={wizardPlan.year} />
+      onClose={() => setWizardPlan(null)} onFinished={wizardPlan.mirrorTarget ? handleWizardFinished : null}
+      quarter={wizardPlan.quarter} year={wizardPlan.year} />
   ) : null;
 
   if (!plansReady) {
@@ -280,30 +304,38 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
   };
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Handle a click on either quarter card. Both the current and next quarter open the Plan Builder rather
-  //   than the plan note, so a card click always lands on the wizard's questions: an existing plan resumes from
-  //   what was stored for it, and a quarter with no note yet starts the wizard from its first page. The wizard's
-  //   final page keeps the link that navigates to the plan note itself, so opening the note is still one step
-  //   away. The fallback to opening or creating the note covers a card that carries no quarter and year, which
-  //   the wizard needs to know which plan it is editing.
+  // @desc Handle a click on either quarter card. A card opens that quarter's wizard, except in the last 15 days
+  //   of the quarter when the current quarter has no plan yet: an upcoming plan is copied in as this quarter's
+  //   note, and when neither quarter has a plan the wizard opens on the upcoming quarter and copies its note
+  //   back here once the user finishes. The fallback opens or creates the note when a card has no quarter.
   // @param {Object} plan - A quarterly plan card's plan, with the following properties:
   //   - {number|undefined} quarter - Quarter being planned, 1 through 4.
   //   - {number|undefined} year - Planning year.
   //   - {string|null} noteUUID - UUID of the existing plan note, absent until a plan has been created.
-  // @returns {Promise<void>} Resolves once the wizard has been opened or the note handled.
+  // @returns {Promise<void>} Resolves once the wizard has been opened, the plan copied, or the note handled.
   const handleQuarterCardClick = async (plan) => {
-    if (plan.quarter && plan.year) {
-      setWizardPlan({ quarter: plan.quarter, year: plan.year });
+    if (!(plan.quarter && plan.year)) {
+      const result = await handleOpenPlan(app, plan);
+      handleDevEdit(result);
       return;
     }
-    const result = await handleOpenPlan(app, plan);
-    handleDevEdit(result);
+    const action = currentQuarterCardAction({ plan, quarterlyPlans: displayedPlans });
+    if (action.kind === "mirror-existing") {
+      try {
+        const mirrored = await mirrorQuarterPlanNote(app, { sourcePlan: action.sourcePlan, targetPlan: action.mirrorTarget });
+        if (mirrored?.noteUuid) setMirroredCurrentNoteUuid(mirrored.noteUuid);
+      } catch (mirrorError) {
+        logIfEnabled("[planning] could not copy the upcoming quarter's plan", mirrorError?.message || mirrorError);
+      }
+      return;
+    }
+    setWizardPlan({ mirrorTarget: action.mirrorTarget, quarter: action.quarterPlan.quarter, year: action.quarterPlan.year });
   };
 
   return (
     <WidgetWrapper headerActions={headerActions} title={widgetTitle} widgetId="planning">
       <div className="planning-quarters">
-        {[quarterlyPlans.current, quarterlyPlans.next].map(plan => (
+        {[currentPlan, nextPlan].map(plan => (
           <QuarterCard
             key={plan.label}
             plan={plan}
@@ -335,11 +367,11 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
       {isTwoTall ? (
         <WeeklyPlanSection
           weekLabel={weekLabel}
-          year={quarterlyPlans.current.year}
+          year={currentPlan.year}
           weekLoading={weekLoading}
           weekContent={weekContent}
           onCreateWeekPlan={async () => {
-            const result = await handleCreateWeekPlan(app, quarterlyPlans.current, weekLabel, setWeekLoading, setWeekContent);
+            const result = await handleCreateWeekPlan(app, currentPlan, weekLabel, setWeekLoading, setWeekContent);
             handleDevEdit(result);
           }}
         />

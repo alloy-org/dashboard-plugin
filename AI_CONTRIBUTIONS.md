@@ -5,6 +5,26 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-09-21 — Build plan switches to the upcoming quarter 15 days out
+
+**Model:** Grok 4.7
+**Files created/modified:**
+- `lib/dashboard/build-plan-quarter.js` (created) — Chooses the quarter "Build plan" opens, and what a current-quarter card does in the 15 days before the next quarter when that quarter has no plan yet
+- `lib/plan-wizard/mirror-quarter-plan.js` (created) — Copies an upcoming plan note onto the current quarter under this quarter's name, removing the Month-by-Month Breakdown and any heading that is only a month name
+- `lib/dashboard/planning.jsx` (modified) — The header action stays on the current quarter until the lead window, then opens the upcoming one. A current-quarter card in that window copies an existing upcoming plan, or opens the upcoming wizard and copies its note back when the user finishes
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` (modified) — Done and View Quarterly Plan publish the note and then run an optional finish hook; Cancel, Escape, and the backdrop still only close
+- `test/build-plan-quarter.test.js` (created) — The 15-day boundary, the year rollover, and each card action
+- `test/mirror-quarter-plan.test.js` (created) — Monthly targets are removed and the copy is stored under the current quarter's note name
+- `test/planning-build-plan.test.js` (created) — The widget's button title, the copy, and which wizard a card opens
+- `test/plan-wizard-ui.test.js` (modified) — Done publishes before the finish hook; Cancel does not finish
+
+**Task:** Show the current quarter from Build plan until 15 days before the next quarter, then show the upcoming quarter. In that window, a current quarter with no plan copies the upcoming plan, or builds it in the wizard and copies the finished note back, without monthly targets.
+**Prompt summary:** "When the user clicks Build plan, show the current quarter until 15 days prior to the next quarter, then show the upcoming quarter. If they click the current quarter with no plan inside that window, copy the next quarter's plan or open the wizard for next quarter and copy its markdown back with a different name and monthly targets stripped."
+**Scope:** ~220 lines of new logic across 4 source files, plus tests
+**Notes:** The copied note keeps the plan's own title and projects. Only the Amplenote note name changes, to this quarter's name. Monthly targets are the Month-by-Month Breakdown plus any heading whose text is exactly a month name, which is where an appended month section lands. The wizard's stored answers stay on the quarter that was planned; the current quarter receives the note, not a second Vision Guide.
+
+---
+
 ## 2026-09-20 — Personal projects are proposed without a supporting task
 
 **Model:** claude-opus-5[1m]

@@ -69,10 +69,13 @@ function currentDocumentScrollTop() {
 //   - {string|null} domainName - Selected task domain's display name; null plans All Notes.
 //   - {string|null} domainUuid - Selected task domain's UUID; null plans All Notes.
 //   - {Function} onClose - Dismisses the wizard and returns to the planning widget.
+//   - {Function|null} onFinished - Runs after the quarter's plan note has been published, before the wizard
+//     closes or navigates away. Done and View Quarterly Plan call it; Cancel, Escape, and the backdrop do not.
 //   - {number} quarter - Quarter being planned, 1 through 4.
 //   - {number} year - Planning year.
 // @returns {JSX.Element} The wizard.
-export default function PlanWizard({ app, domainName = null, domainUuid = null, onClose, quarter, year }) {
+export default function PlanWizard({ app, domainName = null, domainUuid = null, onClose, onFinished = null, quarter,
+    year }) {
   const { consolidateProspects, discoverProspects, discoveryFailureReason, error, isConsolidating, isDiscovering,
     isLoading, isRefreshing, isSaving, planningContext, reload, saveError, saveGoals, saveProspectDecision,
     saveProspects, saveQuarterAnswer, viewQuarterlyPlan } = usePlanWizard({ app, domainName, domainUuid, quarter,
@@ -103,6 +106,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const isNavigatingSaveStep = ["enough-for-today", "pace-cards", "projects", "quarter-name"].includes(step.key);
   const hasPersistedIntent = planningContext.goals.length > 0;
   const advanceLabel = isLastStep ? "Done" : "Next";
+  const advanceButtonLabel = (isFirstStep || isNavigatingSaveStep) && (isSaving || isOpeningPlanNote) ? "Saving…" : advanceLabel;
   const progressRows = progressRowsFromContext({ currentStepKey: step.key, planningContext, wizardSteps: WIZARD_STEPS });
   // The grid column and the rail itself are gated on one flag, so the body never reserves a column for a sidebar
   // it is not rendering: loading, a load failure, and the inline note editor each take the whole width. The same
@@ -193,6 +197,37 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
 
 
   // ----------------------------------------------------------------------------------------------
+  // @desc Publish the quarter being planned, then run the caller's finish hook when this wizard was opened so
+  //   its note could be copied onto another quarter. The hook sees the note that publication just wrote.
+  // @returns {Promise<string>} UUID of the published plan note.
+  const publishFinishedPlan = async () => {
+    const noteUuid = await viewQuarterlyPlan();
+    if (!noteUuid) throw new Error("This quarter has no plan note yet, and one could not be created.");
+    if (onFinished) await onFinished();
+    return noteUuid;
+  };
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Close the wizard from Done. A finish hook publishes first and can keep the wizard open by throwing,
+  //   so a copy that failed does not look like the plan was completed.
+  const closeFinishedWizard = async () => {
+    if (!onFinished) {
+      onClose();
+      return;
+    }
+    setIsOpeningPlanNote(true);
+    setPlanNoteError(null);
+    try {
+      await publishFinishedPlan();
+      onClose();
+    } catch (finishError) {
+      setPlanNoteError(finishError);
+    } finally {
+      setIsOpeningPlanNote(false);
+    }
+  };
+
+  // ----------------------------------------------------------------------------------------------
   // @desc Leave the final page once it has saved whatever the user selected: Back returns to the page before it,
   //   View Quarterly Plan opens the plan note over the page, and Done has nowhere further to go, so it closes the
   //   wizard.
@@ -207,7 +242,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
       handleStepChange(-1);
       return;
     }
-    onClose();
+    closeFinishedWizard();
   };
 
   useEffect(() => {
@@ -247,11 +282,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
     setIsOpeningPlanNote(true);
     setPlanNoteError(null);
     try {
-      const noteUuid = await viewQuarterlyPlan();
-      if (!noteUuid) {
-        setPlanNoteError(new Error("This quarter has no plan note yet, and one could not be created."));
-        return;
-      }
+      const noteUuid = await publishFinishedPlan();
       await navigateToNote(app, noteUuid);
       onClose();
     } catch (publishError) {
@@ -375,12 +406,12 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
                   </button>
                 ) : null }
                 <button className="plan-wizard-next"
-                  disabled={ (isLastStep && !hasDoneEnoughSelection)
+                  disabled={ (isLastStep && (!hasDoneEnoughSelection || isOpeningPlanNote))
                     || (isFirstStep && ((!hasIntentAnswer && !hasPersistedIntent) || isSaving))
-                    || (isNavigatingSaveStep && isSaving) }
+                    || (isNavigatingSaveStep && (isSaving || isOpeningPlanNote)) }
                   onClick={ isFirstStep || isNavigatingSaveStep ? () => handleNavigateStep(1) : () => handleStepChange(1) }
                   type="button">
-                  { (isFirstStep || isNavigatingSaveStep) && isSaving ? "Saving…" : advanceLabel }
+                  { advanceButtonLabel }
                 </button>
               </div>
             </nav>

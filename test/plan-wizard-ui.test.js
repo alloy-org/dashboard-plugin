@@ -35,8 +35,8 @@ const { readPlanGoals, savePlanGoals, savePlanProspects, savePlanQuarterAnswer }
 
 // ----------------------------------------------------------------------------------------------
 // @desc Mount the wizard and settle the initial read plus any inference it triggers.
-// @param {object} params - { app, onClose, scope } overrides; a fresh fixture app is created when none is
-//   supplied, and onClose defaults to a no-op for the tests that never dismiss the wizard.
+// @param {object} params - { app, onClose, onFinished, scope } overrides; a fresh fixture app is created when
+//   none is supplied, and onClose defaults to a no-op for the tests that never dismiss the wizard.
 // @returns {Promise<object>} An object with the following properties:
 //   - {object} app - The fixture app the wizard was mounted against.
 //   - {Function} cleanup - Unmounts the wizard and removes its mount point.
@@ -44,13 +44,13 @@ const { readPlanGoals, savePlanGoals, savePlanProspects, savePlanQuarterAnswer }
 //     document.body to escape the planning widget's stacking context, so its markup is not inside the mount
 //     point; the body is therefore the element that contains it.
 //   - {Function} rerender - Re-renders the wizard with a new scope.
-async function renderPlanWizard({ app = createPlanWizardApp(), onClose = () => {}, scope = SCOPE } = {}) {
+async function renderPlanWizard({ app = createPlanWizardApp(), onClose = () => {}, onFinished = null, scope = SCOPE } = {}) {
   const mountPoint = document.createElement("div");
   document.body.appendChild(mountPoint);
   const root = createRoot(mountPoint);
   const rerender = async nextScope => {
     await act(async () => {
-      root.render(createElement(PlanWizard, { app, onClose, ...nextScope }));
+      root.render(createElement(PlanWizard, { app, onClose, onFinished, ...nextScope }));
     });
     await settle();
   };
@@ -484,6 +484,31 @@ describe("PlanWizard step navigation", () => {
     expect(doneButton.disabled).toBe(false);
     await clickAndSettle(doneButton);
     expect(closeCalls).toHaveLength(1);
+    await cleanup();
+  });
+
+  it("publishes the plan note before telling the caller the wizard finished", async () => {
+    const app = createPlanWizardApp();
+    const calls = [];
+    const { cleanup, container } = await renderPlanWizard({ app, onClose: () => calls.push("close"),
+      onFinished: async () => {
+        const planNote = app.notes.find(note => note.name === "Q4 2026 Work Plan");
+        calls.push(planNote?.content ? "finished" : "finished-without-note");
+      } });
+    await typeInto(workFields(container)[0], "Ship the analytics offering");
+    for (let step = 1; step < WIZARD_STEPS.length; step += 1) {
+      await clickAndSettle(container.querySelector(".plan-wizard-next"));
+    }
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+    expect(calls).toEqual(["finished", "close"]);
+    await cleanup();
+  });
+
+  it("leaves a cancelled wizard unfinished", async () => {
+    const onFinished = jest.fn();
+    const { cleanup, container } = await renderPlanWizard({ onFinished });
+    await clickAndSettle(container.querySelector(".plan-wizard-cancel"));
+    expect(onFinished).not.toHaveBeenCalled();
     await cleanup();
   });
 });
