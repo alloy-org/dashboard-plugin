@@ -20,22 +20,22 @@ $cal-transition-duration: 0.12s;
 .widget-calendar {
   &.vertical-2-cell {
     .cal-arrow {
-      font-size: 0.9rem;
+      font-size: $default-font-size;
     }
 
     .cal-month {
-      font-size: 1.1rem;
+      font-size: $small-heading-font-size;
     }
 
     .cal-header {
-      font-size: 0.85rem;
+      font-size: $default-font-size;
     }
 
     .cal-cell {
       padding-top: 0;
 
       .cal-day {
-        font-size: 16px;
+        font-size: $large-font-size;
         top: 0;
       }
 
@@ -84,7 +84,7 @@ $cal-transition-duration: 0.12s;
     border: none;
     color: $color-text-secondary;
     cursor: pointer;
-    font-size: 0.75rem;
+    font-size: $smaller-font-size;
     padding: $sp-xs;
 
     &:hover {
@@ -94,7 +94,7 @@ $cal-transition-duration: 0.12s;
 
   .cal-month {
     color: $color-navy;
-    font-size: 0.85rem;
+    font-size: $default-font-size;
     font-weight: 700;
   }
 
@@ -107,7 +107,7 @@ $cal-transition-duration: 0.12s;
 
   .cal-header {
     color: $color-text-muted;
-    font-size: 0.7rem;
+    font-size: $smaller-font-size;
     font-weight: 600;
     padding: $sp-xs 0;
   }
@@ -160,7 +160,7 @@ $cal-transition-duration: 0.12s;
 
     .cal-day {
       color: $color-text;
-      font-size: 0.8rem;
+      font-size: $smaller-font-size;
       position: relative;
       top: $cal-day-offset;
     }

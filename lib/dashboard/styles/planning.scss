@@ -52,7 +52,7 @@ $planning-transition-duration: 0.15s;
 
     .quarter-label {
       color: $color-navy;
-      font-size: 0.95rem;
+      font-size: $large-font-size;
       font-weight: 700;
     }
 
@@ -65,13 +65,13 @@ $planning-transition-duration: 0.15s;
 
     .quarter-status {
       color: $color-text-secondary;
-      font-size: 0.75rem;
+      font-size: $smaller-font-size;
     }
 
     .quarter-plan-indicator {
       cursor: default;
       flex-shrink: 0;
-      font-size: 0.85rem;
+      font-size: $default-font-size;
       line-height: 1;
     }
   }
@@ -89,7 +89,7 @@ $planning-transition-duration: 0.15s;
     color: $color-text-secondary;
     cursor: pointer;
     flex: 1;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     padding: $sp-sm $sp-md;
     transition: background $planning-transition-duration, color $planning-transition-duration;
 
@@ -118,13 +118,13 @@ $planning-transition-duration: 0.15s;
 
   .month-content-loading {
     color: $color-text-muted;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     font-style: italic;
   }
 
   .month-content-header {
     color: $color-navy;
-    font-size: 0.85rem;
+    font-size: $default-font-size;
     font-weight: 700;
     margin-bottom: $sp-sm;
   }
@@ -134,7 +134,7 @@ $planning-transition-duration: 0.15s;
   /* Date: 2026-03-08 | Model: claude-4.6-opus-high-thinking */
   .month-content-text {
     color: $color-text;
-    font-size: 13px;
+    font-size: $smaller-font-size;
     line-height: 1.4;
 
     p {
@@ -170,7 +170,7 @@ $planning-transition-duration: 0.15s;
     border-radius: $radius-sm;
     color: $color-link;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     padding: $sp-sm $sp-lg;
     transition: border-color $planning-transition-duration, color $planning-transition-duration;
 
@@ -182,7 +182,7 @@ $planning-transition-duration: 0.15s;
 
   .planning-empty {
     color: $color-text-muted;
-    font-size: 0.85rem;
+    font-size: $default-font-size;
     font-style: italic;
     padding: $sp-lg 0;
     text-align: center;
@@ -196,14 +196,14 @@ $planning-transition-duration: 0.15s;
 
   .weekly-plan-header {
     color: $color-navy;
-    font-size: 0.85rem;
+    font-size: $default-font-size;
     font-weight: 700;
     margin-bottom: $sp-sm;
   }
 
   .weekly-plan-loading {
     color: $color-text-muted;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     font-style: italic;
   }
 
@@ -213,7 +213,7 @@ $planning-transition-duration: 0.15s;
     border-radius: $radius-sm;
     color: $color-link;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     padding: $sp-sm $sp-lg;
     transition: border-color $planning-transition-duration, color $planning-transition-duration;
     width: 100%;

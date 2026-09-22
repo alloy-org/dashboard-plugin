@@ -59,7 +59,7 @@ $check-list-indent-step: 20px;
   /* The shared header link is 0.75rem, which leaves the gear glyph too small to read as an icon. The
    * doubled class outweighs dashboard.scss's own .widget-configure rule regardless of bundle order. */
   &.widget .widget-configure {
-    font-size: 14px;
+    font-size: $default-font-size;
   }
 
   /* Pre-selection state: the entire body is the note picker. */
@@ -93,7 +93,7 @@ $check-list-indent-step: 20px;
     border-radius: $radius-sm;
     color: $color-text-on-accent;
     cursor: pointer;
-    font-size: 14px;
+    font-size: $default-font-size;
     font-weight: 600;
     padding: $sp-xs $sp-md;
 
@@ -103,11 +103,11 @@ $check-list-indent-step: 20px;
   }
 
   .note-peek-chooser-icon {
-    font-size: 1.6rem;
+    font-size: $large-heading-font-size;
   }
 
   .note-peek-chooser-label {
-    font-size: 0.85rem;
+    font-size: $default-font-size;
     text-align: center;
   }
 
@@ -130,7 +130,7 @@ $check-list-indent-step: 20px;
   .note-peek-content {
     color: $color-text;
     flex: 1;
-    font-size: 13px;
+    font-size: $smaller-font-size;
     line-height: 1.45;
     min-height: 0;
     overflow: hidden;
@@ -151,10 +151,10 @@ $check-list-indent-step: 20px;
       position: relative;
     }
 
-    h1, h1.heading { font-size: 1.25rem; }
-    h2, h2.heading { font-size: 1.1rem; }
-    h3, h3.heading { font-size: 1rem; }
-    h4, h5, h6 { font-size: 0.9rem; }
+    h1, h1.heading { font-size: $medium-heading-font-size; }
+    h2, h2.heading { font-size: $small-heading-font-size; }
+    h3, h3.heading { font-size: $small-heading-font-size; }
+    h4, h5, h6 { font-size: $default-font-size; }
 
     /* Headings wrap their text in an <a> for deep-linking; keep them looking like headings. */
     .heading > a:not(.link):not(.heading-anchor) {
@@ -193,7 +193,7 @@ $check-list-indent-step: 20px;
     code, pre {
       background: $color-bg-page;
       border-radius: $radius-sm;
-      font-size: 12px;
+      font-size: $smaller-font-size;
     }
 
     code {
@@ -276,7 +276,7 @@ $check-list-indent-step: 20px;
       &.indent-9 {
         .visible-list-item::before {
           content: "\26AC";
-          font-size: 0.9em;
+          font-size: 1em;
           line-height: 1;
           top: 0.1em;
         }

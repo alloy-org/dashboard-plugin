@@ -36,21 +36,21 @@ $quote-tile-min-height: 150px;
     padding: $sp-xl $sp-lg;
 
     .quote-text {
-      font-size: 15px;
+      font-size: $large-font-size;
       font-style: italic;
       line-height: 1.5;
       margin: 0 0 $sp-sm 0;
     }
 
     .quote-author {
-      font-size: 0.75rem;
+      font-size: $smaller-font-size;
       opacity: 0.85;
     }
   }
 
   .quotes-loading {
     color: $color-text-secondary;
-    font-size: 0.85rem;
+    font-size: $default-font-size;
     padding: $sp-xl 0;
     text-align: center;
   }

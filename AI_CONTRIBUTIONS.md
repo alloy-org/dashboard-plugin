@@ -5,6 +5,36 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-09-21 — Shared type scale for dashboard styles
+
+**Model:** Grok 4.7
+**Files created/modified:**
+- `lib/dashboard/styles/global-reset.scss` (modified) — Defines the font-size custom properties on `html`, sets body copy to the default size, and gives headings, `small`, and form controls a size from the scale
+- `lib/dashboard/styles/theme-tokens.scss` (modified) — SCSS names for the scale: `$smaller-font-size` (13px), `$default-font-size` (14px), `$large-font-size` (16px), then headings from `$small-heading-font-size` (16px) up by 4px through `$display-heading-font-size` (32px)
+- `lib/dashboard/styles/*.scss` (modified) — Hard-coded font sizes now use those tokens. Text that was under 13px is the smaller size. The solid list bullet and the agenda spinner stay relative (`em`); the hollow bullet is `1em` so it cannot fall under the line size. The note-peek checkbox keeps `font-size: 0`
+
+**Task:** Keep dashboard text at 13px or larger, with 14px as the default and 16px where the line can take it, and share one heading scale across components.
+**Prompt summary:** "No UI text smaller than 13px. Default 14px, 16px when possible, as global CSS variables. Swap hard-coded sizes for those tokens, and count headings up from a 16px small heading."
+**Notes:** Heading steps are 16, 20, 24, 28, and 32px. The mood confirmation icon was 40px and now uses the 32px display heading.
+
+---
+
+## 2026-09-21 — Plan Builder: link to a quarterly note the user already wrote
+
+**Model:** Grok 4.7
+**Files created/modified:**
+- `lib/plan-wizard/user-edited-plan-note.js` (created) — `planNoteHasUserEdits` and `userEditedPlanNoteUuid` tell a hand-edited quarterly plan note apart from the default template and from Plan Builder's own marked output
+- `lib/hooks/use-user-edited-plan-note.js` (created) — Resolves that note's UUID once per quarter the wizard opens
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` (modified) — Header link "View quarterly plan note" after the quarter date, opening the note without publishing
+- `lib/dashboard/styles/plan-wizard.scss` (modified) — Header link styles, and the title group wraps so the link can follow the date on a narrow dialog
+- `test/user-edited-plan-note.test.js` (created), `test/plan-wizard-ui.test.js` (modified) — Tests for the distinction and for the header link's placement, navigation, and absence
+
+**Task:** Show a way to the quarter's existing plan note when it already differs from the default template by writing that did not come from Plan Builder.
+**Prompt summary:** "When the user visits plan-wizard for a quarter with an extant quarterly note different from the default template, include a 'View quarterly plan note' link. For changes that aren't from plan builder, place it in the header after the date label."
+**Notes:** The link opens the note as stored. The last page's View Quarterly Plan link still publishes before it navigates.
+
+---
+
 ## 2026-09-21 — Plan Builder: open a project on the sources page to see its tasks
 
 **Model:** Claude Opus 5 (1M context)

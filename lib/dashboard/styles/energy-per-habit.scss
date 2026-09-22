@@ -19,7 +19,7 @@ $habit-row-gap: 14px;
 
   .habit-eyebrow {
     color: $color-text-muted;
-    font-size: 0.7rem;
+    font-size: $smaller-font-size;
     font-weight: 600;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -27,7 +27,7 @@ $habit-row-gap: 14px;
 
   .habit-title {
     color: $color-text;
-    font-size: 1.6rem;
+    font-size: $large-heading-font-size;
     font-weight: 600;
     line-height: 1.15;
     margin-top: $sp-xs;
@@ -59,7 +59,7 @@ $habit-row-gap: 14px;
 
   .habit-zero-label {
     color: $color-text-muted;
-    font-size: 0.65rem;
+    font-size: $smaller-font-size;
     left: -3px;
     position: absolute;
     top: -14px;
@@ -88,7 +88,7 @@ $habit-row-gap: 14px;
 
   .habit-row-icon {
     flex: 0 0 auto;
-    font-size: 1rem;
+    font-size: $large-font-size;
     opacity: 0.85;
     width: 20px;
   }
@@ -99,7 +99,7 @@ $habit-row-gap: 14px;
 
   .habit-row-label {
     color: $color-text;
-    font-size: 13px;
+    font-size: $smaller-font-size;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -118,7 +118,7 @@ $habit-row-gap: 14px;
 
   .habit-row-meta {
     color: $color-text-muted;
-    font-size: 12px;
+    font-size: $smaller-font-size;
     margin-top: 1px;
   }
 
@@ -188,7 +188,7 @@ $habit-row-gap: 14px;
   }
 
   .habit-row-value {
-    font-size: 0.95rem;
+    font-size: $large-font-size;
     font-variant-numeric: tabular-nums;
     font-weight: 600;
     padding-left: $sp-md;
@@ -208,7 +208,7 @@ $habit-row-gap: 14px;
     background: $color-bg-page;
     border-radius: $radius-md;
     color: $color-text-secondary;
-    font-size: 0.78rem;
+    font-size: $smaller-font-size;
     line-height: 1.5;
     margin-top: $sp-lg;
     padding: $sp-md $sp-lg;
@@ -224,7 +224,7 @@ $habit-row-gap: 14px;
 
   .habit-empty-hint {
     color: $color-text-muted;
-    font-size: 0.82rem;
+    font-size: $smaller-font-size;
     margin-top: $sp-sm;
   }
 }

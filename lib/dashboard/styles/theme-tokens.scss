@@ -71,6 +71,18 @@ $radius-lg: 14px;
 $font-sans: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 $font-serif: Georgia, 'Times New Roman', serif;
 
+// Type scale. The custom properties are set on html in global-reset.scss.
+// Body copy is $default-font-size, $large-font-size where the line can take it, and nothing below $smaller-font-size.
+// Headings start at $small-heading-font-size and step up by 4px.
+$smaller-font-size: var(--dashboard-smaller-font-size);
+$default-font-size: var(--dashboard-default-font-size);
+$large-font-size: var(--dashboard-large-font-size);
+$small-heading-font-size: var(--dashboard-small-heading-font-size);
+$medium-heading-font-size: var(--dashboard-medium-heading-font-size);
+$large-heading-font-size: var(--dashboard-large-heading-font-size);
+$extra-large-heading-font-size: var(--dashboard-extra-large-heading-font-size);
+$display-heading-font-size: var(--dashboard-display-heading-font-size);
+
 // Mixins
 @mixin card {
   background: $color-bg-card;

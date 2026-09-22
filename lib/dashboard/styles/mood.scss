@@ -48,7 +48,7 @@ $mood-transition-duration: 0.15s;
     }
 
     .mood-emoji {
-      font-size: 1.5rem;
+      font-size: $large-heading-font-size;
     }
   }
 
@@ -59,7 +59,7 @@ $mood-transition-duration: 0.15s;
   .mood-details-label {
     color: $color-text-secondary;
     display: block;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     margin-bottom: $sp-xs;
   }
 
@@ -68,7 +68,7 @@ $mood-transition-duration: 0.15s;
     border: 1px solid $color-border;
     border-radius: $radius-sm;
     color: $color-text;
-    font-size: 0.85rem;
+    font-size: $default-font-size;
     padding: $sp-sm;
     resize: vertical;
     width: 100%;
@@ -99,7 +99,7 @@ $mood-transition-duration: 0.15s;
     color: $color-text-on-accent;
     cursor: pointer;
     flex: 1;
-    font-size: 0.85rem;
+    font-size: $default-font-size;
     font-weight: 600;
     padding: $sp-sm $sp-lg;
     transition: opacity $mood-transition-duration;
@@ -120,7 +120,7 @@ $mood-transition-duration: 0.15s;
     border-radius: $radius-sm;
     color: $color-text-secondary;
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: $default-font-size;
     font-weight: 600;
     padding: $sp-sm $sp-lg;
     transition: border-color $mood-transition-duration, color $mood-transition-duration;
@@ -147,18 +147,18 @@ $mood-transition-duration: 0.15s;
   }
 
   .mood-confirmation-icon {
-    font-size: 2.5rem;
+    font-size: $display-heading-font-size;
   }
 
   .mood-confirmation-text {
     color: $color-success;
-    font-size: 0.9rem;
+    font-size: $default-font-size;
     font-weight: 600;
   }
 
   .mood-summary {
     color: $color-text-secondary;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     text-align: center;
   }
 
@@ -209,7 +209,7 @@ $mood-transition-duration: 0.15s;
     border: none;
     color: $color-text-muted;
     cursor: pointer;
-    font-size: 0.75rem;
+    font-size: $smaller-font-size;
     padding: $sp-xs $sp-sm;
     transition: color $mood-transition-duration;
 
@@ -222,7 +222,7 @@ $mood-transition-duration: 0.15s;
     align-items: center;
     cursor: pointer;
     display: flex;
-    font-size: 0.9rem;
+    font-size: $default-font-size;
     gap: $sp-sm;
     padding: $sp-xs 0;
 

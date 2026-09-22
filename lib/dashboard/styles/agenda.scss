@@ -58,7 +58,7 @@ $agenda-transition-duration: 0.12s;
 
   .agenda-date-label {
     color: $color-text-secondary;
-    font-size: 0.75rem;
+    font-size: $smaller-font-size;
     font-weight: 700;
     letter-spacing: 0.02em;
     text-transform: uppercase;
@@ -66,7 +66,7 @@ $agenda-transition-duration: 0.12s;
 
   .agenda-empty-day {
     color: $color-text-muted;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     font-style: italic;
     padding: $sp-xs 0;
   }
@@ -108,13 +108,13 @@ $agenda-transition-duration: 0.12s;
 
       .agenda-time {
         color: $color-text-secondary;
-        font-size: 0.75rem;
+        font-size: $smaller-font-size;
         font-weight: 600;
       }
 
       .agenda-text {
         color: $color-text;
-        font-size: 13px;
+        font-size: $smaller-font-size;
         overflow: hidden;
         white-space: nowrap;
       }
@@ -124,7 +124,7 @@ $agenda-transition-duration: 0.12s;
         border: 0;
         color: $color-link;
         cursor: pointer;
-        font-size: 12px;
+        font-size: $smaller-font-size;
         margin: 0;
         padding: 0;
         text-align: left;
@@ -134,7 +134,7 @@ $agenda-transition-duration: 0.12s;
 
     .agenda-duration {
       color: $color-text-muted;
-      font-size: 0.7rem;
+      font-size: $smaller-font-size;
     }
   }
 
@@ -151,7 +151,7 @@ $agenda-transition-duration: 0.12s;
 
   .agenda-empty {
     color: $color-text-secondary;
-    font-size: 0.85rem;
+    font-size: $default-font-size;
     padding: $sp-xl 0;
     text-align: center;
   }
@@ -170,7 +170,7 @@ $agenda-transition-duration: 0.12s;
     border: none;
     color: $color-text-secondary;
     cursor: pointer;
-    font-size: 0.65rem;
+    font-size: $smaller-font-size;
     line-height: 1;
     padding: $agenda-page-arrow-padding $sp-xs;
 
@@ -186,7 +186,7 @@ $agenda-transition-duration: 0.12s;
 
   .agenda-page-indicator {
     color: $color-text-muted;
-    font-size: 0.7rem;
+    font-size: $smaller-font-size;
     white-space: nowrap;
   }
 }

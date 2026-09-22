@@ -28,7 +28,7 @@ $tooltip-row-padding-y: 2px;
 
 .tippy-box {
   border-radius: $radius-sm;
-  font-size: 0.75rem;
+  font-size: $smaller-font-size;
   line-height: 1.4;
   outline: 0;
   position: relative;
@@ -194,7 +194,7 @@ $tooltip-row-padding-y: 2px;
 
   .mood-viz-tooltip-time {
     color: $color-tooltip-text-muted;
-    font-size: 0.7rem;
+    font-size: $smaller-font-size;
     min-width: 52px;
   }
 
@@ -207,7 +207,7 @@ $tooltip-row-padding-y: 2px;
   .mood-viz-tooltip-note {
     color: $color-tooltip-text;
     flex-basis: 100%;
-    font-size: 0.7rem;
+    font-size: $smaller-font-size;
     font-style: italic;
     overflow: hidden;
     text-overflow: ellipsis;

@@ -9,6 +9,15 @@
 @use 'theme' as *;
 
 html {
+  --dashboard-smaller-font-size: 13px;
+  --dashboard-default-font-size: 14px;
+  --dashboard-large-font-size: 16px;
+  --dashboard-small-heading-font-size: 16px;
+  --dashboard-medium-heading-font-size: 20px;
+  --dashboard-large-heading-font-size: 24px;
+  --dashboard-extra-large-heading-font-size: 28px;
+  --dashboard-display-heading-font-size: 32px;
+
   overflow-y: scroll;
 
   *, *::before, *::after {
@@ -22,9 +31,22 @@ html {
     background: $color-bg-page;
     color: $color-text;
     font-family: $font-sans;
+    font-size: $default-font-size;
 
-    button {
+    button,
+    input,
+    select,
+    textarea {
       font-family: inherit;
+      font-size: inherit;
     }
+
+    h1 { font-size: $extra-large-heading-font-size; }
+    h2 { font-size: $large-heading-font-size; }
+    h3 { font-size: $medium-heading-font-size; }
+    h4,
+    h5,
+    h6 { font-size: $small-heading-font-size; }
+    small { font-size: $smaller-font-size; }
   }
 }

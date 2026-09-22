@@ -49,7 +49,7 @@ $config-popup-z-index: 1000;
       width: 650px;
 
       .explanation-paragraph {
-        font-size: 14px;
+        font-size: $default-font-size;
         margin: 12px 0 20px;
       }
 
@@ -60,7 +60,7 @@ $config-popup-z-index: 1000;
 
       .config-popup-title {
         color: $color-navy;
-        font-size: 0.95rem;
+        font-size: $small-heading-font-size;
         font-weight: 700;
         margin: 0;
       }
@@ -73,7 +73,7 @@ $config-popup-z-index: 1000;
           color: $color-text;
           cursor: pointer;
           display: flex;
-          font-size: 0.85rem;
+          font-size: $default-font-size;
           gap: $sp-sm;
           padding: $sp-xs 0;
         }
@@ -98,7 +98,7 @@ $config-popup-z-index: 1000;
 
         .config-field-label {
           color: $color-text-secondary;
-          font-size: 0.75rem;
+          font-size: $smaller-font-size;
           font-weight: 600;
           letter-spacing: 0.03em;
           margin-bottom: $sp-xs;
@@ -129,7 +129,7 @@ $config-popup-z-index: 1000;
       // this file owns, so a caller's stylesheet has no wrapper it could legally reach it through.
       .config-popup-footer-left {
         color: $color-text-secondary;
-        font-size: 0.75rem;
+        font-size: $smaller-font-size;
         min-width: 0;
 
         .config-popup-footer-monospace {
@@ -141,7 +141,7 @@ $config-popup-z-index: 1000;
         border: 1px solid $color-border;
         border-radius: $radius-sm;
         cursor: pointer;
-        font-size: 0.8rem;
+        font-size: $smaller-font-size;
         font-weight: 600;
         padding: $sp-sm $sp-lg;
 

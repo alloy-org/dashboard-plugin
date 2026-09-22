@@ -53,7 +53,7 @@
   .note-name {
     color: $color-text;
     flex: 1;
-    font-size: 13px;
+    font-size: $smaller-font-size;
     font-weight: 500;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -64,7 +64,7 @@
   .note-metadata {
     color: $color-text-muted;
     flex-shrink: 0;
-    font-size: 0.75rem;
+    font-size: $smaller-font-size;
     white-space: nowrap;
   }
 
@@ -72,7 +72,7 @@
   .note-empty,
   .note-error {
     color: $color-text-secondary;
-    font-size: 0.85rem;
+    font-size: $default-font-size;
     padding: $sp-md 0;
     text-align: center;
   }

@@ -39,7 +39,7 @@ $task-domain-transition-duration: 0.15s;
     color: $color-text-secondary;
     cursor: pointer;
     display: inline-flex;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     font-weight: 500;
     gap: $sp-xs;
     padding: $sp-xs $sp-md;
@@ -74,7 +74,7 @@ $task-domain-transition-duration: 0.15s;
     border: none;
     color: $color-text-muted;
     cursor: pointer;
-    font-size: 13px;
+    font-size: $smaller-font-size;
     line-height: 1;
     padding: 0;
 
@@ -88,7 +88,7 @@ $task-domain-transition-duration: 0.15s;
     border: none;
     color: $color-text-secondary;
     cursor: pointer;
-    font-size: 0.75rem;
+    font-size: $smaller-font-size;
     padding: $sp-xs $sp-sm;
     white-space: nowrap;
 
@@ -119,7 +119,7 @@ $task-domain-transition-duration: 0.15s;
     color: $color-navy;
     cursor: pointer;
     display: none;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     justify-content: center;
     min-width: 34px;
     padding: $sp-xs $sp-sm;
@@ -132,7 +132,7 @@ $task-domain-transition-duration: 0.15s;
 
   .task-domains-empty {
     color: $color-text-muted;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
   }
 
   /* [Claude] Task: empty-state styling with setup prompt for missing task domains */
@@ -169,7 +169,7 @@ $task-domain-transition-duration: 0.15s;
 
     /* Refresh is the least-reached-for control here, so it stays a muted glyph beside the bolder toggle. */
     .task-domains-refresh {
-      font-size: 0.85rem;
+      font-size: $default-font-size;
       opacity: 0.55;
       padding: $sp-xs;
     }

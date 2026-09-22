@@ -106,7 +106,7 @@ $error-padding: 40px;
         border-radius: $radius-sm;
         color: $color-text;
         cursor: pointer;
-        font-size: 13px;
+        font-size: $smaller-font-size;
         font-weight: 500;
         padding: $sp-xs $sp-md;
         transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
@@ -257,7 +257,7 @@ $error-padding: 40px;
     }
 
     &-icon {
-      font-size: 1rem;
+      font-size: $large-font-size;
     }
 
     /* [OpenAI gpt-5.4] Task: style the widget icon as a desktop focus-mode button */
@@ -281,7 +281,7 @@ $error-padding: 40px;
       color: $color-navy;
       display: flex;
       flex: 1;
-      font-size: 0.85rem;
+      font-size: $default-font-size;
       font-weight: 700;
       gap: $sp-sm;
       letter-spacing: 0.03em;
@@ -293,7 +293,7 @@ $error-padding: 40px;
       /* Date: 2026-03-14 | Model: claude-4.6-sonnet-medium-thinking */
       &__subtitle {
         color: $color-text-muted;
-        font-size: 0.75rem;
+        font-size: $smaller-font-size;
         font-weight: 400;
         letter-spacing: 0.01em;
         text-transform: none;
@@ -309,7 +309,7 @@ $error-padding: 40px;
       border: none;
       color: $color-text-secondary;
       cursor: pointer;
-      font-size: 0.75rem;
+      font-size: $smaller-font-size;
       padding: $sp-xs $sp-sm;
 
       &:hover {
@@ -374,13 +374,13 @@ $error-padding: 40px;
 
     &-title {
       color: $color-danger;
-      font-size: 0.9rem;
+      font-size: $default-font-size;
       font-weight: 700;
     }
 
     &-message {
       color: $color-text-muted;
-      font-size: 0.8rem;
+      font-size: $smaller-font-size;
       max-width: 280px;
       word-break: break-word;
     }
@@ -391,7 +391,7 @@ $error-padding: 40px;
       border-radius: $radius-sm;
       color: $color-text-secondary;
       cursor: pointer;
-      font-size: 0.75rem;
+      font-size: $smaller-font-size;
       margin-top: $sp-xs;
       padding: $sp-xs $sp-md;
       transition: color 0.15s ease, border-color 0.15s ease;

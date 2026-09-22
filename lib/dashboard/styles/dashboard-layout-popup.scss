@@ -34,7 +34,7 @@
     color: $color-text-secondary;
     cursor: pointer;
     flex: 1;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     padding: $sp-sm $sp-md;
     transition: background 0.15s ease, color 0.15s ease;
 
@@ -85,13 +85,13 @@
 
   .dashboard-layout-popup-section-icon {
     flex-shrink: 0;
-    font-size: 0.9rem;
+    font-size: $default-font-size;
     line-height: 1;
   }
 
   .dashboard-layout-popup-section-title {
     color: $color-text-secondary;
-    font-size: 0.72rem;
+    font-size: $smaller-font-size;
     font-weight: 700;
     letter-spacing: 0.05em;
     margin: 0;
@@ -136,7 +136,7 @@
     color: $color-text-muted;
     cursor: grab;
     flex-shrink: 0;
-    font-size: 1rem;
+    font-size: $large-font-size;
     line-height: 1;
 
     &:active {
@@ -146,7 +146,7 @@
 
   .dashboard-layout-popup-item-icon {
     flex-shrink: 0;
-    font-size: 1rem;
+    font-size: $large-font-size;
     line-height: 1;
   }
 
@@ -161,7 +161,7 @@
 
   .dashboard-layout-popup-item-name {
     color: $color-text;
-    font-size: 0.875rem;
+    font-size: $default-font-size;
     font-weight: 500;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -170,7 +170,7 @@
 
   .dashboard-layout-popup-item-description {
     color: $color-text-secondary;
-    font-size: 0.75rem;
+    font-size: $smaller-font-size;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -190,7 +190,7 @@
     border-radius: $radius-sm;
     color: $color-text-secondary;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     line-height: 1;
     padding: 3px 7px;
     transition: background 0.1s ease, color 0.1s ease;
@@ -210,7 +210,7 @@
 
   .dashboard-layout-popup-empty {
     color: $color-text-muted;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     font-style: italic;
     padding: $sp-md $sp-sm;
     text-align: center;
@@ -261,7 +261,7 @@
 
   .dashboard-layout-popup-sizing-label {
     color: $color-text-secondary;
-    font-size: 0.72rem;
+    font-size: $smaller-font-size;
     font-weight: 600;
     letter-spacing: 0.03em;
     text-transform: uppercase;
@@ -274,7 +274,7 @@
     border-radius: $radius-sm;
     color: $color-text;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     padding: $sp-xs $sp-sm;
   }
 
@@ -286,7 +286,7 @@
       border: none;
       color: $color-text-secondary;
       cursor: pointer;
-      font-size: 0.8rem;
+      font-size: $smaller-font-size;
       margin-right: auto;
       padding: 0;
       text-decoration: underline;

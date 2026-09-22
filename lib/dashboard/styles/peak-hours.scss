@@ -29,7 +29,7 @@
     color: inherit;
     cursor: pointer;
     display: inline-flex;
-    font-size: 1.05em;
+    font-size: $large-font-size;
     justify-content: center;
     line-height: 1;
     padding: $sp-xs $sp-sm;
@@ -60,13 +60,13 @@
 
   .peak-hours-metric-label {
     color: $color-text-secondary;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     margin-bottom: $sp-xs;
   }
 
   .peak-hours-metric-value {
     color: $color-navy;
-    font-size: 1.25rem;
+    font-size: $medium-heading-font-size;
     font-weight: 600;
   }
 
@@ -74,7 +74,7 @@
     color: $color-text-secondary;
     display: flex;
     flex-wrap: wrap;
-    font-size: 0.75rem;
+    font-size: $smaller-font-size;
     gap: $sp-lg;
     margin-bottom: $sp-sm;
   }
@@ -118,7 +118,7 @@
     border-radius: $radius-sm;
     box-shadow: 0 2px 8px $color-tooltip-shadow;
     color: $color-tooltip-text;
-    font-size: 0.75rem;
+    font-size: $smaller-font-size;
     padding: $sp-sm $sp-md;
     pointer-events: none;
     position: absolute;
@@ -147,7 +147,7 @@
 
     p {
       color: $color-text-secondary;
-      font-size: 0.85rem;
+      font-size: $default-font-size;
       margin: 0;
     }
   }
@@ -162,12 +162,12 @@
     }
 
     .peak-hours-metric-label {
-      font-size: 0.7rem;
+      font-size: $smaller-font-size;
       margin-bottom: 0;
     }
 
     .peak-hours-metric-value {
-      font-size: 1rem;
+      font-size: $large-font-size;
     }
 
     .peak-hours-legend {

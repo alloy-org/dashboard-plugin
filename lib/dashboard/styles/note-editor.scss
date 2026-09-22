@@ -16,7 +16,7 @@ $note-editor-transition-duration: 0.15s;
 
   .note-editor-loading {
     color: $color-text-muted;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     font-style: italic;
     padding: $sp-md;
   }
@@ -31,7 +31,7 @@ $note-editor-transition-duration: 0.15s;
     border: 1px solid $color-border;
     border-radius: $radius-sm;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     padding: $sp-xs $sp-md;
     transition: background $note-editor-transition-duration;
 
@@ -62,7 +62,7 @@ $note-editor-transition-duration: 0.15s;
     border-radius: $radius-sm;
     flex: 1;
     font-family: $note-editor-mono;
-    font-size: 0.78rem;
+    font-size: $smaller-font-size;
     line-height: 1.45;
     min-height: 60vh;
     overflow: auto;

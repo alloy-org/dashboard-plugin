@@ -31,7 +31,7 @@
 
   .dashboard-settings-section-title {
     color: $color-navy;
-    font-size: 0.85rem;
+    font-size: $default-font-size;
     font-weight: 700;
     letter-spacing: 0.02em;
     margin: 0;
@@ -39,7 +39,7 @@
 
   .dashboard-settings-section-desc {
     color: $color-text-secondary;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     line-height: 1.5;
     margin: 0;
   }
@@ -56,7 +56,7 @@
     border-radius: $radius-sm;
     color: $color-text;
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: $default-font-size;
     padding: $sp-sm $sp-xl $sp-sm $sp-sm;
     transition: border-color 0.15s ease;
     width: 100%;
@@ -106,7 +106,7 @@
 
   .dashboard-settings-dropzone-text {
     color: $color-text-muted;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
   }
 
   .dashboard-settings-dropzone-preview {
@@ -127,7 +127,7 @@
     color: $color-danger;
     cursor: pointer;
     display: inline-block;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     margin-top: $sp-xs;
     text-decoration: none;
 
@@ -140,7 +140,7 @@
 
   .dashboard-settings-api-key-hint {
     color: $color-text-secondary;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     line-height: 1.45;
     margin: 0 0 $sp-xs;
   }
@@ -148,7 +148,7 @@
   .dashboard-settings-api-key-link {
     color: $color-link;
     display: inline-block;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     margin-bottom: $sp-xs;
     text-decoration: none;
 
@@ -170,7 +170,7 @@
     color: $color-text;
     flex: 1;
     font-family: monospace;
-    font-size: 0.82rem;
+    font-size: $smaller-font-size;
     min-width: 0;
     padding: $sp-sm;
     transition: border-color 0.15s ease;
@@ -192,7 +192,7 @@
     color: $color-text-secondary;
     cursor: pointer;
     flex-shrink: 0;
-    font-size: 0.9rem;
+    font-size: $default-font-size;
     line-height: 1;
     padding: $sp-sm;
     transition: background 0.1s ease, color 0.1s ease;
@@ -210,7 +210,7 @@
     border-radius: $radius-sm;
     color: $color-text;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     margin-top: $sp-md;
     padding: $sp-sm $sp-md;
 

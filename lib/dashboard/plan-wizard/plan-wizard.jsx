@@ -27,6 +27,11 @@
 // is the plan including the answer just given on that page, and it hands off to Amplenote through app.navigate
 // rather than rendering the markdown inline: the plan note is a real note the user goes on to work in, and the
 // inline editor would show a copy of it that no longer reflects what they did there.
+//
+// A quarter that already has a plan note the user wrote outside Plan Builder — anything other than the default
+// template and the builder's own marked output — puts a View quarterly plan note link in the header, after the
+// quarter's date. That link opens the note as it stands, without publishing, so arriving to plan a quarter does
+// not rewrite the writing they already did there.
 
 import { quarterLabel as displayQuarterLabel } from "constants/quarters";
 import NoteEditor from "dashboard/note-editor";
@@ -45,6 +50,7 @@ import { WIZARD_STEPS, wizardStepIndexFromKey } from "dashboard/plan-wizard/wiza
 import { useSuspendWidgetMounting } from "dashboard/widget-mount-suspension";
 import { useElapsingProgress } from "hooks/use-elapsing-progress";
 import usePlanWizard, { planScopeKey } from "hooks/use-plan-wizard";
+import useUserEditedPlanNote from "hooks/use-user-edited-plan-note";
 import { WIZARD_LLM_TIMEOUT_SECONDS } from "plan-wizard/plan-models";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -107,6 +113,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const planNoteRequestRef = useRef(false);
   const pendingStepKeyRef = useRef(null);
   const scopeKey = planScopeKey({ domainName, domainUuid, quarter, year });
+  const existingPlanNoteUuid = useUserEditedPlanNote({ app, domainName, domainUuid, quarter, year });
   // Measured here rather than in either consumer, so the intent page's link and the reading page it opens show one
   // continuous fill instead of each restarting the bar when it mounts.
   const intentReadingProgress = useElapsingProgress(isRefreshing, INTENT_READING_PROGRESS);
@@ -304,6 +311,25 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   };
 
   // ----------------------------------------------------------------------------------------------
+  // @desc Open the quarter's existing plan note without publishing. The header offers this when the note already
+  //   holds the user's own writing, and navigating replaces the note the dashboard is embedded in, so the wizard
+  //   closes on the way out.
+  // @returns {Promise<void>} Resolves once the navigation is underway or the failure has been reported.
+  const handleViewExistingPlanNote = async () => {
+    if (!existingPlanNoteUuid) return;
+    setIsOpeningPlanNote(true);
+    setPlanNoteError(null);
+    try {
+      await navigateToNote(app, existingPlanNoteUuid);
+      onClose();
+    } catch (navigationError) {
+      setPlanNoteError(navigationError);
+    } finally {
+      setIsOpeningPlanNote(false);
+    }
+  };
+
+  // ----------------------------------------------------------------------------------------------
   // @desc Publish everything stored for this quarter and then hand the user off to the plan note in Amplenote.
   // @returns {Promise<void>} Resolves once the navigation is underway or the failure has been reported.
   // The wizard closes on the way out, because navigating replaces the note the dashboard is embedded in: a modal
@@ -350,6 +376,12 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
             </svg>
             <h1 className="plan-wizard-title">Plan Builder - Beta</h1>
             <span className="plan-wizard-title-quarter">{ headerQuarterLabel }</span>
+            { existingPlanNoteUuid ? (
+              <button className="plan-wizard-existing-note-link" disabled={ isOpeningPlanNote }
+                onClick={ handleViewExistingPlanNote } type="button">
+                { isOpeningPlanNote ? "Opening…" : "View quarterly plan note" }
+              </button>
+            ) : null }
           </div>
           <div aria-label={ `Step ${ stepIndex + 1 } of ${ WIZARD_STEPS.length }` } className="plan-wizard-step-track">
             { WIZARD_STEPS.map((wizardStep, wizardStepIndex) => (

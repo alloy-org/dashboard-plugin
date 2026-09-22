@@ -91,7 +91,7 @@
   .graveyard-task-title {
     color: $color-text;
     display: block;
-    font-size: 13px;
+    font-size: $smaller-font-size;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -126,18 +126,18 @@
 
   .graveyard-task-tooltip-note {
     color: $color-tooltip-accent;
-    font-size: 0.76rem;
+    font-size: $smaller-font-size;
     font-weight: 600;
   }
 
   .graveyard-task-tooltip-created {
     color: $color-tooltip-text-muted;
-    font-size: 0.72rem;
+    font-size: $smaller-font-size;
   }
 
   .graveyard-task-tooltip-content {
     color: $color-tooltip-text;
-    font-size: 0.78rem;
+    font-size: $smaller-font-size;
     line-height: 1.4;
 
     code {
@@ -181,7 +181,7 @@
   .graveyard-task-age {
     color: $color-text-muted;
     flex-shrink: 0;
-    font-size: 0.75rem;
+    font-size: $smaller-font-size;
     white-space: nowrap;
   }
 
@@ -198,7 +198,7 @@
 
   .graveyard-task-action {
     color: $color-text-secondary;
-    font-size: 0.75rem;
+    font-size: $smaller-font-size;
     text-decoration: none;
 
     &:hover {
@@ -232,14 +232,14 @@
     }
 
     .graveyard-task-age {
-      font-size: 0.7rem;
+      font-size: $smaller-font-size;
     }
   }
 
   .graveyard-loading,
   .graveyard-empty {
     color: $color-text-secondary;
-    font-size: 0.85rem;
+    font-size: $default-font-size;
     padding: $sp-md 0;
     text-align: center;
   }
@@ -253,7 +253,7 @@
 
     p {
       color: $color-danger;
-      font-size: 0.85rem;
+      font-size: $default-font-size;
       text-align: center;
     }
   }
@@ -264,7 +264,7 @@
     border-radius: $radius-sm;
     color: $color-text-secondary;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: $smaller-font-size;
     padding: $sp-xs $sp-sm;
 
     &:hover {

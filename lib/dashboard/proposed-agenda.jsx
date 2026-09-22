@@ -346,7 +346,6 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
           <p className="proposed-agenda-day-summary">{ calendarCount } calendar { calendarCount === 1 ? "event" : "events" }
             { " · " }{ rows.length } { dayGroups.length > 1 ? "items across this range" : "items on the day" }</p>
         </div>
-        { projectNotice ? <p role="status">{ projectNotice }</p> : null }
         <ProposedAgendaPriorityControl dateValue={ dateValue } onPriorityChange={ onPriorityChange } priorityKey={ priorityKey } />
         <div className="proposed-agenda-list" ref={ listRef }>
           { dayGroups.map(dayGroup => (

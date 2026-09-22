@@ -29,8 +29,12 @@ await jest.unstable_mockModule("plan-wizard/wizard-prompt-runner", () => ({
   }),
 }));
 
+const { defaultQuarterlyTemplate } = await import("constants/quarters");
 const { default: PlanWizard, WIZARD_STEPS } = await import("dashboard/plan-wizard/plan-wizard");
 const { draftPacesFromProspects } = await import("dashboard/plan-wizard/pace-cards-step-fields");
+const { resolvePlanScope } = await import("plan-wizard/plan-models");
+const { mergedQuarterlyPlanContent } = await import("plan-wizard/quarterly-plan-merge");
+const { quarterlyPlanPublication } = await import("plan-wizard/quarterly-plan-publication");
 const { readPlanGoals, savePlanGoals, savePlanProspects, savePlanQuarterAnswer } = await import("plan-wizard/plan-wizard-service");
 
 // ----------------------------------------------------------------------------------------------
@@ -644,6 +648,50 @@ describe("PlanWizard quarterly plan link", () => {
     await cleanup();
   });
 
+  it("links to an existing plan note the user wrote, from the header after the quarter date", async () => {
+    const app = createPlanWizardApp();
+    const template = defaultQuarterlyTemplate("Q4 2026", 4);
+    seedQuarterPlanNote(app, template.replace("## October\n- Focus:", "## October\n- Focus: settle the hiring loop"));
+    const onClose = jest.fn();
+    const { cleanup, container } = await renderPlanWizard({ app, onClose });
+
+    const quarterDate = container.querySelector(".plan-wizard-title-quarter");
+    const noteLink = quarterDate.nextElementSibling;
+    expect(noteLink.className).toBe("plan-wizard-existing-note-link");
+    expect(noteLink.textContent).toBe("View quarterly plan note");
+    expect(noteLink.parentElement.className).toBe("plan-wizard-title-group");
+    const contentBefore = app.notes.find(note => note.uuid === "plan-note").content;
+
+    await clickAndSettle(noteLink);
+    expect(app.navigate).toHaveBeenCalledWith("https://www.amplenote.com/notes/plan-note");
+    expect(app.notes.find(note => note.uuid === "plan-note").content).toBe(contentBefore);
+    expect(onClose).toHaveBeenCalled();
+    await cleanup();
+  });
+
+  it("hides the header link when the quarter's note is still the default template", async () => {
+    const app = createPlanWizardApp();
+    seedQuarterPlanNote(app, `${ defaultQuarterlyTemplate("Q4 2026", 4) }\n`);
+    const { cleanup, container } = await renderPlanWizard({ app });
+    expect(container.querySelector(".plan-wizard-existing-note-link")).toBeNull();
+    await cleanup();
+  });
+
+  it("hides the header link when the note differs from the template only by Plan Builder output", async () => {
+    const app = createPlanWizardApp();
+    const scope = resolvePlanScope({ domainName: "Work", domainUuid: "domain-1", quarter: 4, year: 2026 });
+    const publication = quarterlyPlanPublication({
+      prospects: [{ focusMonths: ["2026-10"], paceEm: "twoFocusedBlocks", preferredWeekdays: ["tuesday"],
+        priorityEm: "quarterFocus", substantiations: ["Cited by six tasks"], summary: "Ship diff-view v2",
+        userCategoryEm: "work" }],
+      quarterName: { text: "The Compounding Quarter" } }, scope);
+    const published = mergedQuarterlyPlanContent(defaultQuarterlyTemplate("Q4 2026", 4), publication);
+    seedQuarterPlanNote(app, published);
+    const { cleanup, container } = await renderPlanWizard({ app });
+    expect(container.querySelector(".plan-wizard-existing-note-link")).toBeNull();
+    await cleanup();
+  });
+
   it("navigates to the plan note carrying every page's answers, including the one just selected", async () => {
     const { app, cleanup, container } = await renderPlanWizard();
     await typeInto(workFields(container)[0], "Cut support load in half");
@@ -696,6 +744,15 @@ describe("PlanWizard quarterly plan link", () => {
     await cleanup();
   });
 });
+
+// ----------------------------------------------------------------------------------------------
+// @desc Seed the quarter's plan note on a fixture app before the wizard mounts, so the header lookup finds it.
+// @param {object} app - Plan wizard app fixture.
+// @param {string} content - Initial note markdown.
+function seedQuarterPlanNote(app, content) {
+  app.notes.push({ archived: false, content, localUuid: "local-plan", name: "Q4 2026 Work Plan",
+    tags: ["planning/quarterly"], uuid: "plan-note" });
+}
 
 // ----------------------------------------------------------------------------------------------
 // @desc Advance the wizard to a named step from wherever it currently sits, supplying a minimal intent when

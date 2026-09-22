@@ -21,19 +21,19 @@
 
     .vv-total {
       color: $color-navy;
-      font-size: 2rem;
+      font-size: $display-heading-font-size;
       font-weight: 700;
     }
 
     .vv-label {
       color: $color-text-secondary;
-      font-size: 12px;
+      font-size: $smaller-font-size;
     }
   }
 
   .vv-date-range {
     color: $color-text-secondary;
-    font-size: 0.75rem;
+    font-size: $smaller-font-size;
     font-weight: normal;
   }
 
@@ -62,7 +62,7 @@
     color: $color-text-secondary;
     cursor: pointer;
     flex-shrink: 0;
-    font-size: 1.25rem;
+    font-size: $medium-heading-font-size;
     line-height: 1;
     padding: $sp-xs $sp-sm;
     transition: background 0.15s, color 0.15s;

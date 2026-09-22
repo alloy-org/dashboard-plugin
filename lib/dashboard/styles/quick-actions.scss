@@ -35,12 +35,12 @@ $qa-transition-duration: 0.15s;
     }
 
     .qa-icon {
-      font-size: 1.4rem;
+      font-size: $large-heading-font-size;
     }
 
     .qa-label {
       color: $color-text;
-      font-size: 0.75rem;
+      font-size: $smaller-font-size;
       font-weight: 500;
     }
   }
