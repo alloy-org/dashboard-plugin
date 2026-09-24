@@ -56,6 +56,13 @@ describe("footnoteSafeLinkMarkdown", () => {
     expect(markdown).toBe("[Ship the meter soon](https://example.com/t1)[^1]");
   });
 
+  it("drops multiline footnote definitions carried in task content", () => {
+    const taskText = "Ship the [meter][^4] soon\n\n[^4]: [meter]()\n\n    Captured from example.com\n\n"
+      + "    ![](https://example.com/meter.png)\n";
+    const markdown = footnoteSafeLinkMarkdown(taskText, "https://example.com/t1");
+    expect(markdown).toBe("[Ship the meter soon](https://example.com/t1)");
+  });
+
   it("flattens a nested link rather than nesting brackets inside the label", () => {
     const markdown = footnoteSafeLinkMarkdown("Read [the doc](https://example.com/d)", "https://example.com/t2");
     expect(markdown).toBe("[Read the doc](https://example.com/t2)");

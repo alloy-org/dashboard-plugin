@@ -5,6 +5,20 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-09-24 — Project task store links tasks whose Rich Footnotes carry images
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files created/modified:**
+- `lib/util/amplenote-rich-footnote-writing.js` (modified) — `linkLabelFromMarkdown` removes `[^n]:` definition blocks through `parsedRichFootnotes` before flattening, and collapses line breaks along with other whitespace
+- `lib/dashboard/project-task-store-markdown.js` (modified) — `projectSectionMarkdown` renders existing tasks as plain-text links with no footnote markers or definitions
+- `test/amplenote-rich-footnote-writing.test.js`, `test/project-task-store.test.js` (modified) — Cover task content that carries multiline definitions with captions and images
+
+**Task:** Fix broken task links in the "Project Tasks" store note for tasks whose Rich Footnotes include images.
+**Prompt summary:** "Since we are only attempting to link to a task, we can presumably discard the Rich Footnotes from these tasks and just have them included as plain text that links to the relevant task UUID"
+**Notes:** A task's `content` includes the footnote definitions its references point at. Before this fix, those multiline bodies went into the link label, and their line breaks ended the label before the link could close. Suggested tasks still renumber and define their footnotes.
+
+---
+
 ## 2026-09-24 — Calendar suggestions favor paced projects and follow Plan Builder across the quarter boundary
 
 **Model:** Claude Opus 5.5 (1M context)

@@ -85,26 +85,29 @@ describe("project task store sections", () => {
 
   // ----------------------------------------------------------------------------------------------
   // @desc Amplenote footnote numbers are positional within the content being written, so references carried in
-  //   from a source note are renumbered from 1 in first-cited order across the section, each with a definition.
+  //   from a suggested task are renumbered from 1 in first-cited order across the section, each with a definition.
   it("renumbers carried footnote references from one and defines each", () => {
     const body = projectSectionMarkdown(storeRecord({
-      relatedTaskRecords: [{ taskText: "Ship the meter, see [Implementation ideas][^7]", taskUuid: "open-task" }],
       suggestedTasks: [{ generatedAt: "2026-09-18T12:00:00.000Z",
         taskText: "Revisit the [rollout plan][^2] alongside the [meter][^7]" }] }));
-    expect(body).toContain("[Ship the meter, see Implementation ideas](https://www.amplenote.com/notes/tasks/open-task)[^1]");
-    expect(body).toContain("  - Revisit the rollout plan[^2] alongside the meter[^1]");
-    expect(body).toContain("\n[^1]: Referenced from the source task: Implementation ideas");
-    expect(body).toContain("\n[^2]: Referenced from the source task: rollout plan");
+    expect(body).toContain("  - Revisit the rollout plan[^1] alongside the meter[^2]");
+    expect(body).toContain("\n[^1]: Referenced from the source task: rollout plan");
+    expect(body).toContain("\n[^2]: Referenced from the source task: meter");
     expect(body.slice(0, body.indexOf("```"))).not.toContain("[^7]");
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc A footnote marker left inside a link label would reintroduce the nested brackets the flattening
-  //   exists to prevent, so markers trail the task link instead.
-  it("keeps footnote markers outside the task link label", () => {
-    const body = projectSectionMarkdown(storeRecord({
-      relatedTaskRecords: [{ taskText: "Ship the [meter][^4] soon", taskUuid: "open-task" }] }));
-    expect(body).toContain("  - [Ship the meter soon](https://www.amplenote.com/notes/tasks/open-task)[^1]");
+  // @desc An existing task's content arrives with its footnote definitions appended, including multiline
+  //   captions and images. The task link already leads to those footnotes, so the entry is plain linked text.
+  it("renders an existing task with Rich Footnotes as a plain-text link", () => {
+    const taskText = "[Simple graph and 1,811 reactions][^3] [makes for a very short email headline][^4]\n\n"
+      + "[^3]: [Simple graph and 1,811 reactions]()\n\n    Captured from linkedin.com at 4:11pm\n\n"
+      + "    ![](https://images.amplenote.com/graph.png)\n\n"
+      + "[^4]: [makes for a very short email headline]()\n\n    Captured from mail.google.com at 4:21pm\n";
+    const body = projectSectionMarkdown(storeRecord({ relatedTaskRecords: [{ taskText, taskUuid: "open-task" }] }));
+    expect(body).toContain("  - [Simple graph and 1,811 reactions makes for a very short email headline]"
+      + "(https://www.amplenote.com/notes/tasks/open-task)\n");
+    expect(body.slice(0, body.indexOf("```"))).not.toContain("[^");
   });
 
   // ----------------------------------------------------------------------------------------------
