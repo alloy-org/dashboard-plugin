@@ -59,7 +59,7 @@ function PlanNoteIcon() {
 //   - {Function} onOpenPlanNote - Publishes the plan and hands the user off to the note in Amplenote.
 //   - {Function} onSelectStep - Receives the key of a completed step the user asked to return to.
 //   - {Array<object>} progressRows - Rows from progressRowsFromContext.
-//   - {string} quarterLabel - The quarter being planned, as "Q4 2026", naming the note the link opens.
+//   - {string} quarterLabel - The quarter key, such as "2026-Q4", displayed with a space in the note link.
 // @returns {JSX.Element} The progress sidebar.
 function WizardProgressSidebar({ headingText = "Quarterly plan", isOpeningPlanNote, onOpenPlanNote, onSelectStep,
     progressRows, quarterLabel }) {
@@ -100,8 +100,8 @@ function WizardProgressSidebar({ headingText = "Quarterly plan", isOpeningPlanNo
         type="button">
         <PlanNoteIcon />
         <span className="plan-note-text">
-          <span className="plan-note-label">{ `${ quarterLabel } Plan note` }</span>
-          <span className="plan-note-hint">{ isOpeningPlanNote ? "Opening…" : "Opens in Amplenote" }</span>
+          <span className="plan-note-label">{ `Open ${ quarterLabel.replace("-", " ") } Planning Note` }</span>
+          { isOpeningPlanNote ? <span className="plan-note-hint">Opening…</span> : null }
         </span>
       </button>
     </aside>

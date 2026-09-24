@@ -186,6 +186,16 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   };
 
   // ----------------------------------------------------------------------------------------------
+  // @desc Honor a planning-note request after the current page saves, before any normal step navigation.
+  // @returns {boolean} True when note publication and navigation have started.
+  const consumePendingPlanNote = () => {
+    if (!planNoteRequestRef.current) return false;
+    planNoteRequestRef.current = false;
+    openQuarterlyPlanNote();
+    return true;
+  };
+
+  // ----------------------------------------------------------------------------------------------
   // @desc Open the step a sidebar jump is waiting on, if one is, and clear that request either way.
   // @returns {boolean} True when a pending jump was applied, so the caller leaves its own navigation alone.
   const consumePendingStepKey = () => {
@@ -222,18 +232,20 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   // @desc Move to the projects page and discover the projects that carry the quarter's intents. The step change
   //   comes first so the user watches discovery run on the page whose list it fills, rather than waiting on the
   //   intent page for something to happen elsewhere. Returning while an earlier discovery is still running
-  //   reopens that same project page without starting a duplicate request.
+  //   reopens that same project page without starting a duplicate request. A pending planning-note request
+  //   opens the saved plan instead of advancing to discovery.
   const handleFindProjects = async () => {
+    if (consumePendingPlanNote()) return;
     setStepKey("projects");
     if (isDiscovering) return;
     await discoverProspects();
   };
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Apply the project page direction selected by Back or Next after that page confirms its draft saved. A
-  //   sidebar jump waiting on that same save takes precedence, since it names the step to open outright rather
-  //   than a direction to step in.
+  // @desc After projects, cadence, or quarter name saves, honor a pending planning-note request or sidebar
+  //   jump before applying the page direction selected by Back or Next.
   const handleProjectNavigation = () => {
+    if (consumePendingPlanNote()) return;
     if (consumePendingStepKey()) return;
     handleStepChange(projectNavigationDirectionRef.current);
   };
@@ -272,14 +284,9 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
 
   // ----------------------------------------------------------------------------------------------
   // @desc Leave the final page once it has saved whatever the user selected: Back returns to the page before it,
-  //   View Quarterly Plan opens the plan note over the page, and Done has nowhere further to go, so it closes the
-  //   wizard.
+  //   View Quarterly Plan consumes the pending note request, and Done closes the wizard.
   const handleDoneEnoughNavigation = () => {
-    if (planNoteRequestRef.current) {
-      planNoteRequestRef.current = false;
-      openQuarterlyPlanNote();
-      return;
-    }
+    if (consumePendingPlanNote()) return;
     if (consumePendingStepKey()) return;
     if (projectNavigationDirectionRef.current < 0) {
       handleStepChange(-1);
@@ -367,9 +374,11 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   // @desc Show the quarter's plan note, saving the page's pending selection first so the plan the user reads
   //   includes the answer they just gave rather than only the ones they had already saved. The save runs through
   //   the page's own registered handler, the same path Back and Done take, so a failed write keeps the user on
-  //   the page with its retry rather than opening a note that contradicts what they chose.
+  //   the page with its retry rather than opening a note that contradicts what they chose. Each page consumes
+  //   the note request after saving, including intent, and a new request replaces any failed sidebar jump.
   const handleViewQuarterlyPlan = () => {
-    if (!isNavigatingSaveStep || !stepNavigateRef.current) {
+    pendingStepKeyRef.current = null;
+    if (!stepNavigateRef.current) {
       openQuarterlyPlanNote();
       return;
     }

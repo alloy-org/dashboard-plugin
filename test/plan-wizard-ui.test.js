@@ -1243,6 +1243,52 @@ describe("PlanWizard narrow-width step bar", () => {
     return app;
   }
 
+  // ----------------------------------------------------------------------------------------------
+  // @desc Opening the planning note from either progress control saves the current answer and leaves the
+  //   wizard at its current step until note navigation succeeds, regardless of which page owns the save.
+  it.each(WIZARD_STEPS.map(step => step.key))("opens the planning note from %s without advancing a page", async stepKey => {
+    const app = await createPlannedApp();
+    const onClose = jest.fn();
+    const { cleanup, container } = await renderPlanWizard({ app, onClose });
+    await advanceToStep(container, stepKey);
+    if (stepKey === "intent") await typeInto(workFields(container)[0], "An updated intent for the note");
+    if (stepKey === "quarter-name") await typeInto(container.querySelector(".quarter-name-custom-input"), "An updated quarter name");
+    if (stepKey === "enough-for-today") await clickAndSettle(conditionRadio(container, "two-focus-blocks"));
+    await clickAndSettle(container.querySelector(".progress-bar-summary"));
+    const noteLink = container.querySelector(".progress-bar-panel .progress-plan-note-link");
+    const positionBefore = container.querySelector(".plan-wizard-progress").textContent;
+
+    await clickAndSettle(noteLink);
+
+    const planNote = app.notes.find(note => note.name === "Q4 2026 Work Plan");
+    expect(app.navigate).toHaveBeenCalledWith(`https://www.amplenote.com/notes/${ planNote.uuid }`);
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(container.querySelector(".plan-wizard-progress").textContent).toBe(positionBefore);
+    if (stepKey === "intent") expect(planNote.content).toContain("An updated intent for the note");
+    if (stepKey === "quarter-name") expect(planNote.content).toContain("An updated quarter name");
+    expect(noteLink.textContent).toBe("Open 2026 Q4 Planning Note");
+    await cleanup();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A failed save keeps the planning note closed, and a subsequent Next replaces that failed request.
+  it("keeps the current page when opening the note cannot save its draft", async () => {
+    const app = await createPlannedApp();
+    const { cleanup, container } = await renderPlanWizard({ app });
+    await advanceToStep(container, "quarter-name");
+    await typeInto(container.querySelector(".quarter-name-custom-input"), "A pending quarter name");
+    app.replaceNoteContent.mockRejectedValueOnce(new Error("Amplenote was unreachable"));
+    await clickAndSettle(container.querySelector(".progress-plan-note-link"));
+
+    expect(app.navigate).not.toHaveBeenCalled();
+    expect(container.querySelector(".quarter-name-container")).not.toBeNull();
+    expect(container.querySelector(".plan-error").textContent).toContain("Amplenote was unreachable");
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+    expect(app.navigate).not.toHaveBeenCalled();
+    expect(container.querySelector(".done-enough-container")).not.toBeNull();
+    await cleanup();
+  });
+
   it("offers the step bar once the required steps are answered, and not before", async () => {
     const unplanned = await renderPlanWizard();
     expect(unplanned.container.querySelector(".plan-wizard-progress-bar")).toBeNull();
