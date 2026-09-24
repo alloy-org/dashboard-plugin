@@ -223,8 +223,8 @@ const ProposedAgendaCell = createWidgetCell('proposed-agenda', ProposedAgendaWid
   app, calendarEvents: calendarEventsLoaded ? calendarEvents : null, currentDate, defaultNoteUuid: null,
   providerApiKey, providerEm, taskDomainName, taskDomainUUID, timeFormat,
 }));
-const PlanningCell = createWidgetCell('planning', PlanningWidget, ({ app, config, quarterlyPlans, taskDomainName, taskDomainUUID }) => ({
-  app, gridHeightSize: Number(config?.gridHeightSize) || 1, quarterlyPlans, taskDomainName, taskDomainUUID,
+const PlanningCell = createWidgetCell('planning', PlanningWidget, ({ app, config, onOpenSettings, quarterlyPlans, taskDomainName, taskDomainUUID }) => ({
+  app, gridHeightSize: Number(config?.gridHeightSize) || 1, onOpenSettings, quarterlyPlans, taskDomainName, taskDomainUUID,
 }));
 const QuickActionsCell = createWidgetCell('quick-actions', QuickActionsWidget, pickProps('app', 'onSwapBackground'));
 const QuotesCell = createWidgetCell('quotes', QuotesWidget, ({ app, config }) => ({
@@ -383,7 +383,19 @@ async function saveLayout(app, currentConfigParams, setConfigParams, newRendered
 }
 
 // ------------------------------------------------------------------------------------------
-async function saveSettings(app, dashboardSettingNoteRef, setConfigParams, setFocusState, setTimeFormat, setWeekFormat,
+// @desc Persist the Dashboard Settings popup's fields, mirror them into the embed's settings snapshot and the
+//   dashboard's own state, and close the popup. The snapshot write is what lets code reading pluginSettings()
+//   synchronously — the plan wizard's provider lookup among it — see a key the moment it is saved.
+// @param {object} app - Amplenote embed app proxy.
+// @param {object} dashboardSettingNoteRef - Ref holding the DashboardSettingNote, for the note-stored formats.
+// @param {Function} setConfigParams - Setter for the dashboard's settings state.
+// @param {Function} onSettingsClosed - Closes the popup and runs whatever was waiting on it being closed.
+// @param {Function} setTimeFormat - Setter for the clock format.
+// @param {Function} setWeekFormat - Setter for the week-start format.
+// @param {object} params - The popup's submitted fields: { apiKey, apiKeyProvider, backgroundImageUrl,
+//   backgroundMode, llmProvider, timeFormat, weekFormat }.
+// @returns {Promise<void>} Resolves once the writes have settled and the popup has closed.
+async function saveSettings(app, dashboardSettingNoteRef, setConfigParams, onSettingsClosed, setTimeFormat, setWeekFormat,
     { apiKey, apiKeyProvider, backgroundImageUrl, backgroundMode, llmProvider, timeFormat, weekFormat }) {
   logIfEnabled('[dashboard] handleSettingsSave called with:', { llmProvider, apiKeyProvider, backgroundMode, backgroundImageUrl: backgroundImageUrl != null ? '(set)' : '(unchanged)', timeFormat, weekFormat });
   const providerSettingKey = apiKeyFromProvider(apiKeyProvider || llmProvider);
@@ -417,7 +429,7 @@ async function saveSettings(app, dashboardSettingNoteRef, setConfigParams, setFo
   setConfigParams(prev => ({ ...prev, ...configUpdate }));
   if (timeFormat) setTimeFormat(timeFormat);
   if (weekFormat) setWeekFormat(weekFormat);
-  setFocusState(DASHBOARD_FOCUS.DEFAULT);
+  onSettingsClosed();
 }
 
 function appendMoodRating(setMoodRatings, newRating) {
@@ -448,6 +460,8 @@ export default function DashboardApp({ app, initPromise }) {
   const [weekFormat, setWeekFormat] = useState('sunday');
   const [weeklyVictoryValue, setWeeklyVictoryValue] = useState(null);
   const dashboardSettingNoteRef = useRef(null);
+  // What to run when the Dashboard Settings popup closes, for a widget that sent the user there and wants to resume afterwards. Held only between opening the popup and closing it.
+  const settingsClosedCallbackRef = useRef(null);
   // Crash-breadcrumb session state: a stable device profile + start time for this dashboard load,
   // the pending breadcrumb write promise (so the settle-stamp can be chained after it, avoiding a
   // last-write-wins race), and a flag so we stamp at most once.
@@ -579,9 +593,30 @@ export default function DashboardApp({ app, initPromise }) {
     [app, handleLayoutPersist, handleSelectedProfileChange]
   );
 
+  // ------------------------------------------------------------------------------------------
+  // @desc Open the Dashboard Settings popup, optionally on behalf of a widget that wants to pick up where it
+  //   left off once the user is done there. Plan Builder is that caller: it closes itself to send the user to
+  //   settings for an API key, and reopens when they come back. The callback is held in a ref rather than
+  //   state because it must not be part of what a render reads, and is dropped as soon as it has run.
+  // @param {Function} [onSettingsClosed] - Runs when the popup closes, whether by save or by cancel. Anything
+  //   that is not a function is ignored, so this may safely be used directly as a click handler.
+  const handleOpenSettings = useCallback((onSettingsClosed) => {
+    settingsClosedCallbackRef.current = typeof onSettingsClosed === "function" ? onSettingsClosed : null;
+    setFocusState(DASHBOARD_FOCUS.SETTINGS_CONFIG);
+  }, []);
+
+  // ------------------------------------------------------------------------------------------
+  // @desc Close the Dashboard Settings popup and hand control back to whatever asked to open it.
+  const handleSettingsClosed = useCallback(() => {
+    setFocusState(DASHBOARD_FOCUS.DEFAULT);
+    const onSettingsClosed = settingsClosedCallbackRef.current;
+    settingsClosedCallbackRef.current = null;
+    if (onSettingsClosed) onSettingsClosed();
+  }, []);
+
   const handleSettingsSave = useCallback(
-    (params) => saveSettings(app, dashboardSettingNoteRef, setConfigParams, setFocusState, setTimeFormat, setWeekFormat, params),
-    [app]
+    (params) => saveSettings(app, dashboardSettingNoteRef, setConfigParams, handleSettingsClosed, setTimeFormat, setWeekFormat, params),
+    [app, handleSettingsClosed]
   );
 
   const handleMoodRecorded = useCallback(
@@ -625,10 +660,6 @@ export default function DashboardApp({ app, initPromise }) {
   const { clearFocusedWidget, expandedWidgetId, focusedWidgetId, focusedWidgetSurfaceStyle, isWidgetFocusMode,
     widgetFocusTransforms } = useDashboardWidgetFocus(draggingWidgetId, focusState);
   const { incomingBackgroundUrl, swapBackground, swappedBackgroundUrl } = useBackgroundSwap();
-  const onOpenDreamTaskSettings = useCallback(
-    () => setFocusState(DASHBOARD_FOCUS.SETTINGS_CONFIG),
-    []
-  );
 
   // ------------------------------------------------------------------------------------------
   // @desc Resolve parent-fed widget readiness for the one-shot widget-loaded CustomEvent. Widgets
@@ -682,7 +713,7 @@ export default function DashboardApp({ app, initPromise }) {
         onDateSelect={setSelectedDate}
         onLayoutApply={handleLayoutPersist}
         onMoodRecorded={handleMoodRecorded}
-        onOpenSettings={onOpenDreamTaskSettings}
+        onOpenSettings={handleOpenSettings}
         onReferenceDateChange={setSelectedDate}
         onSelectedProfileChange={handleSelectedProfileChange}
         openTasks={openTasks}
@@ -774,7 +805,7 @@ export default function DashboardApp({ app, initPromise }) {
           <DashboardSettingsPopup
             app={app}
             configParams={configParams}
-            onCancel={() => setFocusState(DASHBOARD_FOCUS.DEFAULT)}
+            onCancel={handleSettingsClosed}
             onOpenMemoryMeasurement={memoryMeasurementEnabled ? () => setFocusState(DASHBOARD_FOCUS.MEMORY_MEASUREMENT) : null}
             onSave={handleSettingsSave}
             pluginNoteUUID={pluginNoteUUID}
@@ -802,7 +833,7 @@ export default function DashboardApp({ app, initPromise }) {
             <button
               className="dashboard-configure-button"
               type="button"
-              onClick={() => { logIfEnabled('[dashboard] opening Settings popup'); setFocusState(DASHBOARD_FOCUS.SETTINGS_CONFIG); }}
+              onClick={() => { logIfEnabled('[dashboard] opening Settings popup'); handleOpenSettings(); }}
               title="Configure LLM provider and API key for AI-powered features"
             >⚙️ Settings</button>
             <button
@@ -859,7 +890,7 @@ export default function DashboardApp({ app, initPromise }) {
                   onLayoutApply={handleLayoutPersist}
                   onSelectedProfileChange={handleSelectedProfileChange}
                   onMoodRecorded={handleMoodRecorded}
-                  onOpenSettings={onOpenDreamTaskSettings}
+                  onOpenSettings={handleOpenSettings}
                   onReferenceDateChange={setSelectedDate}
                   onSwapBackground={swapBackground}
                   openTasks={openTasks}

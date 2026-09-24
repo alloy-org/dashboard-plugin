@@ -1,0 +1,76 @@
+/* Styles for the panel Plan Builder shows instead of its questions when no AI provider is configured.
+ * It sits in the wizard's body column, where the step pages otherwise render, so it is sized as a page of the
+ * dialog rather than as a widget card. */
+
+@use 'theme-tokens' as *;
+
+$provider-key-gate-message-width: 34rem;
+
+.provider-key-gate {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: $sp-md;
+  padding: $sp-xl $sp-md;
+  text-align: center;
+
+  .provider-key-gate-title {
+    color: $color-navy;
+    font-size: $medium-heading-font-size;
+    font-weight: 700;
+    line-height: 1.25;
+    margin: 0;
+  }
+
+  .provider-key-gate-message {
+    color: $color-text-secondary;
+    font-size: $default-font-size;
+    line-height: 1.5;
+    margin: 0;
+    max-width: $provider-key-gate-message-width;
+  }
+
+  .provider-key-gate-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-md;
+    justify-content: center;
+    margin-top: $sp-xs;
+  }
+
+  .provider-key-gate-button {
+    background: none;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    color: $color-navy;
+    cursor: pointer;
+    font-size: $default-font-size;
+    font-weight: 600;
+    line-height: 1.2;
+    padding: $sp-sm $sp-lg;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+    &:hover {
+      border-color: $color-blue;
+      color: $color-blue;
+    }
+
+    &--primary {
+      background: $color-blue;
+      border-color: $color-blue;
+      color: $color-text-on-accent;
+
+      &:hover {
+        background: $color-blue-light;
+        border-color: $color-blue-light;
+        color: $color-text-on-accent;
+      }
+    }
+  }
+
+  .provider-key-gate-footnote {
+    color: $color-text-muted;
+    font-size: $default-font-size;
+    margin: 0;
+  }
+}

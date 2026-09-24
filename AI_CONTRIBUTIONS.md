@@ -5,6 +5,25 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-09-24 — Plan Builder sends a user with no AI provider to Dashboard Settings
+
+**Model:** Claude Opus 5 (1M context)
+**Files created/modified:**
+- `lib/hooks/use-llm-provider-access.js` (created) — `useLlmProviderAccess` reports whether any of the three LLM sources is reachable: a configured API key, a development env token, or the Ample Agent Pro plugin. The Agent Pro lookup runs only when no key is configured, and the result reports itself as still checking until that lookup answers
+- `lib/dashboard/plan-wizard/provider-key-gate.jsx` (created) — `ProviderKeyGate`, the panel Plan Builder shows in place of its questions, with the link to Dashboard Settings and a Cancel
+- `lib/dashboard/styles/provider-key-gate.scss` (created) — Styles for that panel, wrapped in `.provider-key-gate`
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` (modified) — Takes `onOpenSettings`, blocks on a missing provider, and consolidates the eight repeated `!inspectingNoteUuid && !isLoading && !error` render guards into one `rendersPlanContent` flag that also covers the gate
+- `lib/dashboard/planning.jsx` (modified) — Takes `onOpenSettings` and closes Plan Builder before sending the user to settings, reopening the same quarter's builder when the popup closes
+- `lib/dashboard/dashboard.jsx` (modified) — `handleOpenSettings` accepts an optional callback to run when the settings popup closes, held in `settingsClosedCallbackRef`; `handleSettingsClosed` closes the popup and runs it, on both save and cancel. `PlanningCell` now forwards `onOpenSettings`
+- `test/plan-wizard-provider-gate.test.js` (created) — Which provider sources satisfy the gate, and the round trip out to settings and back
+- `test/plan-wizard-ui.test.js`, `test/plan-wizard-data-note.test.js` (modified) — Plant an API key in the settings snapshot, since these suites exercise the pages a user with a provider is shown
+
+**Task:** Give a user opening Plan Builder without an LLM API key a link into Dashboard Settings, and make sure the builder uses the refreshed key when they return.
+**Prompt summary:** "When the user clicks 'Plan Builder' or invokes it by clicking a quarterly plan, if they do not yet have access to an LLM API key, provide a link that will open the Dashboard Settings, where they can input their API key. Ensure that we use the refreshed key when they return to the Plan Builder after visiting Settings"
+**Notes:** The builder closes before settings open rather than layering the popup underneath it: the wizard portals to `document.body` at z-index 1100, above the config popup's 1000, and holds a document-level Escape handler. Reopening mounts a fresh wizard, and `saveSettings` has already mirrored the new key into the embed's settings snapshot through `updatePluginSetting`, so the remounted builder reads it. Ample Agent Pro users keep working with no key, as they did before.
+
+---
+
 ## 2026-09-21 — Shared type scale for dashboard styles
 
 **Model:** Grok 4.7

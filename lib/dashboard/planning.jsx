@@ -179,10 +179,20 @@ function WeeklyPlanSection({ weekLabel, year, weekLoading, weekContent, onCreate
   );
 }
 
-// [Claude claude-4.7-opus] Task: migrate PlanningWidget from createElement to JSX
-// Prompt: "translate this project to render components with JSX instead"
-export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans, taskDomainName = null,
-    taskDomainUUID = null }) {
+// ----------------------------------------------------------------------------------------------
+// @desc The Quarterly Planning widget: two quarter cards, the month and week sections beneath them, and the
+//   Plan Builder overlay either card or the header action opens.
+// @param {object} props - An object with the following properties:
+//   - {object} app - Amplenote embed app proxy.
+//   - {number} [gridHeightSize=1] - Cell height in grid rows; two rows adds the upcoming week's section.
+//   - {object} quarterlyPlans - The current and upcoming quarterly plans, or null while they load.
+//   - {Function|null} [onOpenSettings] - Opens Dashboard Settings, taking a callback to run when that popup
+//     closes. Plan Builder uses it to send a user with no AI provider to settings and to reopen itself after.
+//   - {string|null} [taskDomainName] - Active task domain's display name, or null for All Notes.
+//   - {string|null} [taskDomainUUID] - Active task domain's UUID, or null for All Notes.
+// @returns {JSX.Element} The widget.
+export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings = null, quarterlyPlans,
+    taskDomainName = null, taskDomainUUID = null }) {
   const [activeTab, setActiveTab] = useState(null);
   const [wizardPlan, setWizardPlan] = useState(null);
   const [monthContent, setMonthContent] = useState(null);
@@ -278,6 +288,17 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
   };
 
   // ----------------------------------------------------------------------------------------------
+  // @desc Send a user whose dashboard has no AI provider to Dashboard Settings, and put Plan Builder back in
+  //   front of them once they are done there. The wizard closes first because it portals above the settings
+  //   popup's stacking layer and holds a document-level Escape handler, so leaving it open would bury the very
+  //   popup the user was sent to. Reopening mounts a fresh wizard, which reads the key that was just saved.
+  const handleOpenProviderSettings = () => {
+    const reopenedPlan = wizardPlan;
+    setWizardPlan(null);
+    onOpenSettings(() => setWizardPlan(reopenedPlan));
+  };
+
+  // ----------------------------------------------------------------------------------------------
   // @desc The wizard, when one is open. It renders as a fixed overlay above the whole dashboard rather than
   //   inside the widget body, since a widget cell is far too narrow for a five-page form. Both render branches
   //   below include it so opening the wizard does not depend on the quarterly plans having finished loading.
@@ -285,6 +306,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, quarterlyPlans
   const planWizardOverlay = wizardPlan ? (
     <PlanWizard app={app} domainName={taskDomainName} domainUuid={taskDomainUUID}
       onClose={() => setWizardPlan(null)} onFinished={wizardPlan.mirrorTarget ? handleWizardFinished : null}
+      onOpenSettings={onOpenSettings ? handleOpenProviderSettings : null}
       quarter={wizardPlan.quarter} year={wizardPlan.year} />
   ) : null;
 

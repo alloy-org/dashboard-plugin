@@ -28,6 +28,13 @@
 // rather than rendering the markdown inline: the plan note is a real note the user goes on to work in, and the
 // inline editor would show a copy of it that no longer reflects what they did there.
 //
+// Every page of the builder is produced by reading the user's notes with an LLM, so a dashboard with no AI
+// provider gets the ProviderKeyGate panel in place of the questions rather than the first page and a failure on
+// it. The gate's link leaves for Dashboard Settings instead of layering the settings popup over the wizard: the
+// wizard portals itself above that popup's stacking layer and holds a document-level Escape handler, so the two
+// cannot usefully be open at once. The caller reopens the builder when the settings popup closes, and the
+// remounted builder reads the key that was just saved.
+//
 // A quarter that already has a plan note the user wrote outside Plan Builder — anything other than the default
 // template and the builder's own marked output — puts a View quarterly plan note link in the header, after the
 // quarter's date. That link opens the note as it stands, without publishing, so arriving to plan a quarter does
@@ -42,6 +49,7 @@ import PaceCardsStep from "dashboard/plan-wizard/pace-cards-step";
 import PlanSaveError from "dashboard/plan-wizard/plan-save-error";
 import ProjectSourcesPage from "dashboard/plan-wizard/project-sources-page";
 import ProjectsStep from "dashboard/plan-wizard/projects-step";
+import ProviderKeyGate from "dashboard/plan-wizard/provider-key-gate";
 import QuarterNameStep from "dashboard/plan-wizard/quarter-name-step";
 import { hasCompletedPlanCore, progressRowsFromContext, sidebarLabelFromStep } from "dashboard/plan-wizard/wizard-progress-fields";
 import WizardProgressBar from "dashboard/plan-wizard/wizard-progress-bar";
@@ -49,6 +57,7 @@ import WizardProgressSidebar from "dashboard/plan-wizard/wizard-progress-sidebar
 import { WIZARD_STEPS, wizardStepIndexFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useSuspendWidgetMounting } from "dashboard/widget-mount-suspension";
 import { useElapsingProgress } from "hooks/use-elapsing-progress";
+import useLlmProviderAccess from "hooks/use-llm-provider-access";
 import usePlanWizard, { planScopeKey } from "hooks/use-plan-wizard";
 import useUserEditedPlanNote from "hooks/use-user-edited-plan-note";
 import { WIZARD_LLM_TIMEOUT_SECONDS } from "plan-wizard/plan-models";
@@ -87,11 +96,13 @@ function currentDocumentScrollTop() {
 //   - {Function} onClose - Dismisses the wizard and returns to the planning widget.
 //   - {Function|null} onFinished - Runs after the quarter's plan note has been published, before the wizard
 //     closes or navigates away. Done and View Quarterly Plan call it; Cancel, Escape, and the backdrop do not.
+//   - {Function|null} onOpenSettings - Leaves the wizard for Dashboard Settings, so a user with no AI provider
+//     can add an API key. Null where no caller can open settings, which leaves the gate without its link.
 //   - {number} quarter - Quarter being planned, 1 through 4.
 //   - {number} year - Planning year.
 // @returns {JSX.Element} The wizard.
-export default function PlanWizard({ app, domainName = null, domainUuid = null, onClose, onFinished = null, quarter,
-    year }) {
+export default function PlanWizard({ app, domainName = null, domainUuid = null, onClose, onFinished = null,
+    onOpenSettings = null, quarter, year }) {
   const { consolidateProspects, discoverProspects, discoveryFailureReason, error, intentReading, isConsolidating,
     isDiscovering, isLoading, isLoadingProjectSources, isRefreshing, isSaving, loadProjectSources, planningContext,
     projectSources, refreshPossibilities, reload, saveError, saveGoals, saveProspectDecision, saveProspects,
@@ -114,6 +125,8 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const pendingStepKeyRef = useRef(null);
   const scopeKey = planScopeKey({ domainName, domainUuid, quarter, year });
   const existingPlanNoteUuid = useUserEditedPlanNote({ app, domainName, domainUuid, quarter, year });
+  const { hasLlmProviderAccess, isCheckingLlmProviderAccess } = useLlmProviderAccess(app);
+  const isMissingLlmProvider = !hasLlmProviderAccess && !isCheckingLlmProviderAccess;
   // Measured here rather than in either consumer, so the intent page's link and the reading page it opens show one
   // continuous fill instead of each restarting the bar when it mounts.
   const intentReadingProgress = useElapsingProgress(isRefreshing, INTENT_READING_PROGRESS);
@@ -139,8 +152,10 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const isShowingIntentReading = isViewingIntentReading && step.key === "intent";
   const isShowingProjectSources = isViewingProjectSources && step.key === "projects";
   const isShowingSidePage = isShowingIntentReading || isShowingProjectSources;
-  const rendersProgressSidebar = hasCompletedPlanCore(progressRows) && !inspectingNoteUuid && !isShowingSidePage
-    && !isLoading && !error;
+  // Everything the wizard renders in its body column other than the four states that replace that column
+  // outright: the load, a load failure, the inline note inspector, and the missing-provider gate.
+  const rendersPlanContent = !inspectingNoteUuid && !isLoading && !error && !isMissingLlmProvider;
+  const rendersProgressSidebar = hasCompletedPlanCore(progressRows) && rendersPlanContent && !isShowingSidePage;
 
   // ----------------------------------------------------------------------------------------------
   // @desc Hold the current step's save-then-navigate handler so the shared Back and Next buttons can run it.
@@ -416,14 +431,17 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
           { inspectingNoteUuid ? (
             <NoteEditor app={ app } noteUUID={ inspectingNoteUuid } onBack={ () => setInspectingNoteUuid(null) } />
           ) : null }
-          { !inspectingNoteUuid && !isLoading && !error && isShowingIntentReading ? (
+          { !inspectingNoteUuid && !isLoading && !error && isMissingLlmProvider ? (
+            <ProviderKeyGate onCancel={ onClose } onOpenSettings={ onOpenSettings } />
+          ) : null }
+          { rendersPlanContent && isShowingIntentReading ? (
             <IntentReadingPage { ...{ intentReading, isRefreshing } } directions={ planningContext.possibilities.work }
               onApplyDirection={ handleApplyDirection } onJudgeTheme={ saveThemeJudgement } onReread={ refreshPossibilities }
               onReturn={ () => setIsViewingIntentReading(false) } progressFraction={ intentReadingProgress } />
           ) : null }
           { /* The intent page stays mounted, only hidden, while the reading page is open: its draft lives in its own
             state, and unmounting it would discard whatever the user had typed but not yet saved. */ }
-          { !inspectingNoteUuid && !isLoading && !error && step.key === "intent" ? (
+          { rendersPlanContent && step.key === "intent" ? (
             <div className="plan-wizard-intent-step-frame" hidden={ isShowingIntentReading }>
               <IntentStep { ...{ isRefreshing, isSaving, pendingDirection, planningContext, scopeKey } }
                 onAnswerStateChange={ setHasIntentAnswer } onFindProjects={ handleFindProjects }
@@ -431,14 +449,14 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
                 onRegisterNavigate={ handleRegisterNavigate } onSave={ saveGoals } readingProgress={ intentReadingProgress } />
             </div>
           ) : null }
-          { !inspectingNoteUuid && !isLoading && !error && isShowingProjectSources ? (
+          { rendersPlanContent && isShowingProjectSources ? (
             <ProjectSourcesPage { ...{ isDiscovering, planningContext, projectSources } }
               isLoadingSources={ isLoadingProjectSources } onLoadSources={ loadProjectSources }
               onReturn={ () => setIsViewingProjectSources(false) } progressFraction={ discoveryProgress } />
           ) : null }
           { /* Like the intent page, the projects page stays mounted under its sources page so an unsaved project name
             survives the visit. */ }
-          { !inspectingNoteUuid && !isLoading && !error && step.key === "projects" ? (
+          { rendersPlanContent && step.key === "projects" ? (
             <div className="plan-wizard-projects-step-frame" hidden={ isShowingProjectSources }>
               <ProjectsStep { ...{ discoveryFailureReason, discoveryProgress, isConsolidating, isDiscovering, isSaving,
                 planningContext, scopeKey } }
@@ -447,31 +465,31 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
                 onSave={ saveProspects } onSaveDecision={ saveProspectDecision } />
             </div>
           ) : null }
-          { !inspectingNoteUuid && !isLoading && !error && step.key === "pace-cards" ? (
+          { rendersPlanContent && step.key === "pace-cards" ? (
             <PaceCardsStep { ...{ isSaving, planningContext, scopeKey } }
               onNavigate={ handleProjectNavigation } onRegisterNavigate={ handleRegisterNavigate }
               onSave={ records => saveProspects(records, { updatePlacement: false }) } />
           ) : null }
-          { !inspectingNoteUuid && !isLoading && !error && step.key === "quarter-name" ? (
+          { rendersPlanContent && step.key === "quarter-name" ? (
             <QuarterNameStep { ...{ isSaving, planningContext, scopeKey } }
               onNavigate={ handleProjectNavigation } onRegisterNavigate={ handleRegisterNavigate }
               onSaveName={ saveQuarterAnswer } onSaveProspects={ saveProspects } />
           ) : null }
-          { !inspectingNoteUuid && !isLoading && !error && step.key === "enough-for-today" ? (
+          { rendersPlanContent && step.key === "enough-for-today" ? (
             <DoneEnoughStep { ...{ isSaving, saveError, scopeKey } } answer={ planningContext.dailySufficiency }
               onAnswerStateChange={ setHasDoneEnoughSelection } onNavigate={ handleDoneEnoughNavigation }
               onRegisterNavigate={ handleRegisterNavigate } onSave={ saveQuarterAnswer } />
           ) : null }
-          { !inspectingNoteUuid && planNoteError && !isLoading && !error ? (
+          { rendersPlanContent && planNoteError ? (
             <p className="plan-wizard-plan-note-error" role="alert">
               { `The quarterly plan note could not be opened. ${ planNoteError.message }` }
             </p>
           ) : null }
-          { !inspectingNoteUuid && saveError && !isLoading && !error ? (
+          { rendersPlanContent && saveError ? (
             <PlanSaveError app={ app } noteUuid={ saveError.noteUuid ?? planningContext.noteUuid }
               onOpenDataNote={ handleOpenDataNote } prefix={ SAVE_ERROR_PREFIX[step.key] } saveError={ saveError } />
           ) : null }
-          { !inspectingNoteUuid && !isShowingSidePage && !isLoading && !error ? (
+          { rendersPlanContent && !isShowingSidePage ? (
             <nav className="plan-wizard-navigation">
               { isFirstStep ? (
                 <button className="plan-wizard-cancel" onClick={ onClose } type="button">Cancel</button>

@@ -29,6 +29,12 @@ await jest.unstable_mockModule("plan-wizard/wizard-prompt-runner", () => ({
   }),
 }));
 
+const { SETTING_KEYS } = await import("constants/settings");
+const { setPluginData } = await import("plugin-data");
+// The wizard blocks with its provider gate when no AI provider is reachable, so the suite plants a key: these
+// tests are about the pages a user with a provider is shown, and the gate has its own tests.
+setPluginData({ context: {}, settings: { [SETTING_KEYS.LLM_API_KEY_ANTHROPIC]: "test-anthropic-key" } });
+
 const { defaultQuarterlyTemplate } = await import("constants/quarters");
 const { default: PlanWizard, WIZARD_STEPS } = await import("dashboard/plan-wizard/plan-wizard");
 const { draftPacesFromProspects } = await import("dashboard/plan-wizard/pace-cards-step-fields");
