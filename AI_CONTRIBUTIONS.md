@@ -5,6 +5,22 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-09-24 — Calendar suggestions favor paced projects and follow Plan Builder across the quarter boundary
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files created/modified:**
+- `lib/dashboard/project-plan-quarter.js` (created) — `resolveProjectPlanQuarter` picks the quarter whose plan seeds suggestions. Within Plan Builder's upcoming-quarter lead window (`isWithinUpcomingQuarterLead`, 15 days), the upcoming quarter wins when only it has Plan Builder projects: builder-marked project headings in its plan note, or live prospects in its vision guide
+- `lib/dashboard/proposed-agenda-service.js` (modified) — `_generateFreshSchedule` loads the plan note through the resolver and passes the chosen quarter to project progress and collected ideas. The project prompt now tells the model that "optional" projects come after due ones and that a missing pace is not a reason to suggest work
+- `lib/dashboard/project-progress-service.js` (modified) — `loadProjectProgress` accepts `planQuarter`. Focus months are judged from the plan quarter's first day when that quarter has not begun. The new `projectProgressMarkdown` lists weekly pace and status, with paced projects first
+- `lib/dashboard/project-progress-model.js` (modified) — `projectProgressEvidence` marks only paced projects due and takes an optional `focusDate`
+- `test/project-plan-quarter.test.js` (created), `test/project-progress.test.js` (modified) — Quarter choice, unpaced priority, focus date, and prompt ordering
+
+**Task:** Stop calendar suggestions from surfacing projects without a weekly pace, and use the upcoming quarter's plan when Plan Builder has only built that one.
+**Prompt summary:** "We should deprioritize Projects that do not have a specified weekly cadence... If we are within 2 weeks of the end of a quarter, we should check if Plan Builder projects are present in only one of the quarterly plan notes, and if so, that note should be utilized as the canonical blueprint"
+**Notes:** Suggestions previously read the target day's quarter, while Plan Builder opens the next quarter 15 days early. The lead window reuses Plan Builder's constant rather than a separate 14 days, so the two can't disagree. Unpaced projects used to count as due whenever they had no completion in the past week, and `ensureDueProjectSuggestions` then forced one onto the day with a "no related task" reason. The old prompt also never included pace, which is why the model said "no recorded weekly pace." The background idea collection (`project-task-collection.js`) still uses the current quarter.
+
+---
+
 ## 2026-09-24 — One body-copy size and leading for Proposed Agenda and Dream Task
 
 **Model:** Claude Opus 5 (1M context)

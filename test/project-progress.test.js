@@ -72,6 +72,21 @@ describe("quarterly project evidence", () => {
     expect(projectProgressEvidence(projectRecord(), targetDate).due).toBe(true);
     expect(projectProgressEvidence(projectRecord({ focusMonths: ["2026-10"] }), targetDate).due).toBe(false);
   });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A project with no chosen weekly pace is never forced onto the day, however long it has been idle.
+  it("does not mark a project without a weekly pace due", () => {
+    const evidence = projectProgressEvidence(projectRecord({ blocksPerWeek: null }), targetDate);
+    expect(evidence).toMatchObject({ completedPastWeek: 0, due: false });
+    expect(evidence.reason).toContain("no chosen weekly pace");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A plan borrowed from the upcoming quarter judges its focus months from that quarter's first day.
+  it("checks focus months against an explicit focus date", () => {
+    const project = projectRecord({ focusMonths: ["2026-10"] });
+    expect(projectProgressEvidence(project, targetDate, { focusDate: new Date(2026, 9, 1) }).due).toBe(true);
+  });
 });
 
 describe("project suggestion fallback", () => {
@@ -136,5 +151,32 @@ describe("project progress note", () => {
     expect(markdown).toContain('"completedAt"');
     expect(result.projects[0].relatedTasks).toEqual(["finished-task", "open-task"]);
     expect(app.getCompletedTasks.mock.calls[0][2]).toEqual({ taskDomainUUID: "work-domain" });
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc The prompt lists each project's weekly pace, placing projects without one last and marking them optional.
+  it("orders paced projects first and labels unpaced projects optional", async () => {
+    const content = "# Projects\n\n## Alternative pages\n- Outcome: Publish comparisons\n\n"
+      + "## Launch dashboard\n- Weekly rhythm: Two focused blocks per week\n";
+    const app = { createNote: jest.fn().mockResolvedValue("progress-note"), filterNotes: jest.fn().mockResolvedValue([]),
+      findNote: jest.fn().mockResolvedValue(null), getCompletedTasks: jest.fn().mockResolvedValue([]),
+      getTaskDomainTasks: jest.fn().mockResolvedValue([]), replaceNoteContent: jest.fn().mockResolvedValue(undefined) };
+    const result = await loadProjectProgress(app, { domainName: scope.domainName, domainUuid: scope.domainUuid, quarterlyContent: content, targetDate });
+    expect(result.markdown.indexOf("Launch dashboard")).toBeLessThan(result.markdown.indexOf("Alternative pages"));
+    expect(result.markdown).toContain("Weekly pace: 2 block(s) per week");
+    expect(result.markdown).toMatch(/Weekly pace: none chosen;.*status: optional/);
+    expect(result.projects.find(project => project.summary === "Alternative pages").due).toBe(false);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc An explicit plan quarter scopes the progress note to that quarter rather than the target day's.
+  it("stores progress under the supplied plan quarter", async () => {
+    const app = { createNote: jest.fn().mockResolvedValue("progress-note"), filterNotes: jest.fn().mockResolvedValue([]),
+      findNote: jest.fn().mockResolvedValue(null), getCompletedTasks: jest.fn().mockResolvedValue([]),
+      getTaskDomainTasks: jest.fn().mockResolvedValue([]), replaceNoteContent: jest.fn().mockResolvedValue(undefined) };
+    await loadProjectProgress(app, { domainName: scope.domainName, domainUuid: scope.domainUuid,
+      planQuarter: { quarter: 4, year: 2026 }, quarterlyContent, targetDate });
+    expect(app.createNote.mock.calls[0][0]).toBe("Project Builder Q4 2026 Work Progress");
+    expect(app.replaceNoteContent.mock.calls[0][1]).toContain('"quarterKey": "2026-Q4"');
   });
 });
