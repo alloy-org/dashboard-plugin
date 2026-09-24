@@ -72,8 +72,13 @@ $font-sans: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 
 $font-serif: Georgia, 'Times New Roman', serif;
 
 // Type scale. The custom properties are set on html in global-reset.scss.
-// Body copy is $default-font-size, $large-font-size where the line can take it, and nothing below $smaller-font-size.
-// Headings start at $small-heading-font-size and step up by 4px.
+// Body copy is $body-font-size at $body-line-height, set once on `body` in global-reset.scss and inherited from
+// there: paragraphs, titles, and explanations in a widget name neither property, so every widget reads at the same
+// size and leading. A rule names them only to undo a size an ancestor changed for a different reason. Text that is
+// deliberately larger than body copy steps up through $default-font-size and $large-font-size; nothing goes below
+// $smaller-font-size. Headings start at $small-heading-font-size and step up by 4px.
+$body-font-size: var(--dashboard-body-font-size);
+$body-line-height: var(--dashboard-body-line-height);
 $smaller-font-size: var(--dashboard-smaller-font-size);
 $default-font-size: var(--dashboard-default-font-size);
 $large-font-size: var(--dashboard-large-font-size);

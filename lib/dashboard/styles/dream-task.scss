@@ -28,8 +28,6 @@
   /* Prompt: "print which LLM provider generated the suggestions at the bottom of the widget" */
   .dream-task-llm-attribution {
     color: $color-text-secondary;
-    font-size: $smaller-font-size;
-    line-height: 1.4;
     padding-top: $sp-sm;
   }
 
@@ -55,9 +53,7 @@
 
   .dream-task-goals-text {
     color: $color-text-secondary;
-    font-size: $smaller-font-size;
     font-style: italic;
-    line-height: 1.5;
     margin: 0;
   }
 
@@ -91,9 +87,7 @@
 
   .dream-task-card-title {
     color: $color-navy;
-    font-size: $default-font-size;
     font-weight: 500;
-    line-height: 1.3;
 
     &--clickable {
       cursor: pointer;
@@ -190,8 +184,6 @@
     color: $color-text-secondary;
     cursor: pointer;
     display: -webkit-box;
-    font-size: $smaller-font-size;
-    line-height: 1.5;
     margin: 0;
     overflow: hidden;
     text-overflow: ellipsis;

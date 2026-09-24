@@ -5,6 +5,21 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-09-24 — One body-copy size and leading for Proposed Agenda and Dream Task
+
+**Model:** Claude Opus 5 (1M context)
+**Files created/modified:**
+- `lib/dashboard/styles/global-reset.scss` (modified) — Adds `--dashboard-body-font-size` (13px) and `--dashboard-body-line-height` (1.3), and sets both on `body` so every widget inherits one body size and leading
+- `lib/dashboard/styles/theme-tokens.scss` (modified) — `$body-font-size` and `$body-line-height` name those properties; the type-scale comment now says body copy is inherited and that a rule names a size only to step deliberately above it
+- `lib/dashboard/styles/proposed-agenda.scss` (modified) — The day summary, list, item text, reason, priority description, and pending line drop their own `font-size`/`line-height` and inherit body copy. `.proposed-agenda-text` keeps its 600 weight, `.proposed-agenda-reason` its secondary color
+- `lib/dashboard/styles/dream-task.scss` (modified) — The goals text, card title, card explanation, and LLM attribution do the same. The card title keeps its 500 weight and navy color, the explanation its three-line clamp
+
+**Task:** Reconcile the differing body text in the Proposed Agenda and Dream Task widgets onto one global default.
+**Prompt summary:** "The font for body text in proposed-agenda differs from the body font in dream-task. Let's reconcile them to consume a global default for body text, something like 13px and 1.3 line-spacing"
+**Notes:** The two widgets had drifted apart on both axes: Proposed Agenda set its list to 14px and its prose to 1.4 leading, Dream Task set its card title to 14px/1.3 and its explanation to 13px/1.5. Both now render at 13px/1.3. `$default-font-size` stays 14px for the empty, loading, and error messages both widgets deliberately set a step above body copy, and the badges, buttons, and controls in each widget still name `$smaller-font-size` — the same 13px, kept explicit because they sit inside chrome that may set its own size.
+
+---
+
 ## 2026-09-24 — Plan Builder sends a user with no AI provider to Dashboard Settings
 
 **Model:** Claude Opus 5 (1M context)

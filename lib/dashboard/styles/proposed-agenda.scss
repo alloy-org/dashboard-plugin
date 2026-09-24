@@ -52,7 +52,7 @@
   }
   .proposed-agenda-relative-date { background: $color-bg-secondary; border-radius: 6px; color: $color-text-secondary; font-size: $smaller-font-size; font-weight: 500; padding: 2px 8px; }
   .proposed-agenda-today { background: none; border: 0; color: $color-link; font-size: $smaller-font-size; margin-left: auto; padding: 6px 0; }
-  .proposed-agenda-day-summary { color: $color-text-muted; font-size: $smaller-font-size; line-height: 1.4; margin-top: 2px; }
+  .proposed-agenda-day-summary { color: $color-text-muted; margin-top: 2px; }
   .proposed-agenda-controls { align-items: center; border-bottom: 1px solid $color-border; display: flex; gap: 10px; padding: $sp-sm 0 $sp-md; }
   .proposed-agenda-priority-label, .proposed-agenda-priority-description { color: $color-text-muted; font-size: $smaller-font-size; }
   .proposed-agenda-priority-select {
@@ -71,8 +71,7 @@
     span:first-child { color: $color-link; }
     span:last-child { color: $color-text-muted; }
   }
-  .proposed-agenda-priority-description { line-height: 1.4; }
-  .proposed-agenda-list { display: flex; flex: 1 0 auto; flex-direction: column; font-size: $default-font-size; }
+  .proposed-agenda-list { display: flex; flex: 1 0 auto; flex-direction: column; }
   .proposed-agenda-day-heading { background: $color-bg-secondary; color: $color-text-secondary; font-size: $smaller-font-size; padding: $sp-sm 0; }
   // Intrinsic time/action columns keep row alignment independent of pixel widths and offsets. The action column
   // stays beside the title at every width so a scheduled row costs one line of height, not two.
@@ -91,9 +90,9 @@
   .proposed-agenda-note-link { color: $color-text-muted; font-size: $smaller-font-size; text-decoration: none; }
   a.proposed-agenda-note-link:hover { color: $color-link; text-decoration: underline; }
   .proposed-agenda-content { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .proposed-agenda-text { font-weight: 600; line-height: 1.4; overflow-wrap: anywhere; }
+  .proposed-agenda-text { font-weight: 600; overflow-wrap: anywhere; }
   .proposed-agenda-text p { display: inline; }
-  .proposed-agenda-reason { color: $color-text-secondary; font-size: $smaller-font-size; line-height: 1.4; }
+  .proposed-agenda-reason { color: $color-text-secondary; }
   .proposed-agenda-reason--mobile, .proposed-agenda-reason-toggle { display: none; }
   .proposed-agenda-goal-badge { align-self: flex-start; background: $color-bg-secondary; border: 1px solid $color-border; border-radius: 6px; color: $color-text-secondary; font-size: $smaller-font-size; margin-top: 2px; padding: 0 6px; }
   .proposed-agenda-actions, .proposed-agenda-scheduled-meta { align-items: center; display: flex; flex-shrink: 0; gap: $sp-sm; grid-column: 3; justify-self: end; }
@@ -118,7 +117,7 @@
   .proposed-agenda-dismiss:hover { background: $color-bg-warning; color: $color-danger; }
   .proposed-agenda-scheduled-badge { color: $color-text-muted; font-size: $smaller-font-size; padding: 0 $sp-xs; white-space: nowrap; }
   .proposed-agenda-footer { align-items: center; background: $color-bg-secondary; border-top: 1px solid $color-border; display: flex; gap: $sp-sm; margin-top: $sp-md; padding: $sp-md 0 $sp-sm; }
-  .proposed-agenda-pending { color: $color-text-muted; flex: 1; font-size: $smaller-font-size; line-height: 1.4; }
+  .proposed-agenda-pending { color: $color-text-muted; flex: 1; }
   .proposed-agenda-approve, .proposed-agenda-schedule-all {
     border: 1px solid $color-border;
     border-radius: 8px;
