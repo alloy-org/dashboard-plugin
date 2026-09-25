@@ -5,6 +5,27 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-09-25 — Split data-service.js by responsibility; one timestamp parser; quarter checkbox replaces the status emoji
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files created/modified:**
+- `lib/data-service.js` (deleted) — Its contents moved to the four files below
+- `lib/dashboard-init-service.js` (created) — `fetchDashboardData` and the init payload's settings, mood, and toggle reads. `_softFailed` replaces four copied catch-and-record blocks
+- `lib/task-domain-service.js` (created) — `resolveTaskDomains`, `refreshTaskDomains`, `switchTaskDomain`, `fetchTasksForDomain`. The stored-setting parse, domain normalization, and selection check were copied between resolve and refresh and are now shared
+- `lib/quarterly-plan-service.js` (created) — `findQuarterlyPlans`, `emptyQuarterlyPlans`, `getMonthlyPlanContent`, `createQuarterlyPlan`, `createOrAppendMonthlyPlan`, `createOrAppendWeeklyPlan`. The three create functions share `_planNoteTarget` and `_createPlanNote`, so creating a note from the weekly path now also records the `createQuarterlyPlan` analytics event
+- `lib/util/task-victory-summary.js` (created) — `taskSummaryFromTasks`: today's tasks, the week's completions, and weekly/daily Victory Value, shared by the dashboard load, the Task Domain switch, and the dev app
+- `lib/util/date-utility.js` (modified) — Adds `millisFromDateInput`, built on `dateFromDateInput`. It replaces eight copies of the seconds-vs-milliseconds conversion in `agenda.jsx`, `day-sketch.jsx`, `graveyard.jsx`, `graveyard-service.js`, `proposed-agenda-obligations.js`, `proposed-agenda-service.js`, `calendar-utility.js`, and `browser-dev-app.js`
+- `lib/constants/quarters.js` (modified) — Adds `quarterMonthNames`, replacing copies in the old data service and the dev app
+- `lib/util/browser-dev-app.js` (modified) — The dev app's fake dashboard load uses `taskSummaryFromTasks` and `quarterMonthNames` in place of its own copies
+- `lib/dashboard/planning.jsx`, `lib/dashboard/styles/planning.scss` (modified) — The quarter card's suggestions checkbox takes the slot of the ✅/🚧 status emoji, which is removed. Its tooltip now also says whether all three months are planned. The checkbox is drawn at twice the native size as a rounded green square with a white check, like ✅
+- `lib/plugin.js`, `lib/dashboard/task-domains.jsx`, `test/task-domains-mobile.test.js`, `lib/plugin-data.js`, `lib/constants/settings.js` (modified) — Point at the new modules
+
+**Task:** Break the data service into files with specific responsibilities and make sure each of its functions exists only once in the project
+**Prompt summary:** "data-service.js looks like a messy mishmash of functionality ... break the file into files with more specific responsibilities than "data", while confirming that its methods appear only once in the project"
+**Scope:** ~480 lines moved or rewritten across 20 files; net lines removed
+**Notes:** Seconds conversions in `dream-task-service.js` and `proposed-agenda-service.js` (`< 1e10 ? raw : raw / 1000`) and the ms-only `timestampMsFromValue` in `shared-notes-service.js` are left alone because they return something different
+
+
 ## 2026-09-25 — Quarter cards get a checkbox deciding whether their plan feeds task suggestions
 
 **Model:** Claude Opus 5.5 (1M context)

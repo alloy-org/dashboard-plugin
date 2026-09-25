@@ -5,15 +5,10 @@ import { buildPlanTargetFromPlans, currentQuarterCardAction } from "dashboard/bu
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
 import PlanWizard from "dashboard/plan-wizard/plan-wizard";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
-import {
-  createOrAppendMonthlyPlan,
-  createOrAppendWeeklyPlan,
-  createQuarterlyPlan,
-  getMonthlyPlanContent,
-} from "data-service";
 import NoteEditor from "note-editor";
 import { mirrorQuarterPlanNote } from "plan-wizard/mirror-quarter-plan";
 import { pluginSettings, updatePluginSetting } from "plugin-data";
+import { createOrAppendMonthlyPlan, createOrAppendWeeklyPlan, createQuarterlyPlan, getMonthlyPlanContent } from "quarterly-plan-service";
 import { useEffect, useState } from "react";
 import { navigateToNote } from "util/goal-notes";
 import { logIfEnabled } from "util/log";
@@ -95,8 +90,10 @@ async function handleCreateWeekPlan(app, plan, weekLabel, setWeekLoading, setWee
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc One quarter's card. A card whose quarter has a plan note also shows a checkbox that decides whether the plan
-//   feeds Dream Task, Proposed Agenda, and calendar suggestions; clicks on it do not reach the card's own handler.
+// @desc One quarter's card. A card whose quarter has a plan note shows a checkbox, in the slot the plan's status
+//   emoji once held, deciding whether the plan feeds Dream Task, Proposed Agenda, and calendar suggestions. Whether
+//   all three months are planned, which that emoji showed, now lives in the checkbox's tooltip. Clicks on the
+//   checkbox do not reach the card's own handler.
 // @param {object} props - An object with the following properties:
 //   - {Function} onCardClick - Opens the quarter's plan or Plan Builder.
 //   - {Function} onSuggestionToggle - Receives the checkbox's new checked state.
@@ -105,36 +102,26 @@ async function handleCreateWeekPlan(app, plan, weekLabel, setWeekLoading, setWee
 // @returns {JSX.Element} The card.
 function QuarterCard({ onCardClick, onSuggestionToggle, plan, usedForSuggestions }) {
   const hasNote = !!plan.noteUUID;
-  const allMonths = !!plan.hasAllMonthlyDetails;
   const cardClass = 'quarter-card' + (hasNote ? ' quarter-card--has-plan' : '');
   const quarterLabel = plan.domainName ? `${ plan.label } · ${ plan.domainName }` : plan.label;
 
-  const indicatorIcon = allMonths ? '✅' : '🚧';
-  const indicatorTip = allMonths
-    ? 'All 3 months in this quarter have been planned.'
-    : 'Monthly details are missing for one or more months — this plan is a work in progress.';
-  const toggleTip = usedForSuggestions
+  const suggestionTip = usedForSuggestions
     ? `${ plan.label } projects are used when suggesting tasks. Uncheck to leave them out.`
     : `${ plan.label } projects are left out of task suggestions. Check to include them.`;
+  const monthsTip = plan.hasAllMonthlyDetails ? 'All 3 months in this quarter have been planned.'
+    : 'Monthly details are missing for one or more months.';
 
   return (
     <div className={cardClass} onClick={onCardClick}>
-      <div className="quarter-label-row">
-        <span className="quarter-label">{quarterLabel}</span>
+      <span className="quarter-label">{quarterLabel}</span>
+      <div className="quarter-status-row">
+        <span className="quarter-status">{hasNote ? '📝 Open Plan' : '+ Create Plan'}</span>
         {hasNote ? (
-          <DashboardTippy content={toggleTip} placement="bottom">
+          <DashboardTippy content={`${ suggestionTip } ${ monthsTip }`} placement="bottom">
             <label className="quarter-suggestion-toggle" onClick={(event) => event.stopPropagation()}>
               <input checked={usedForSuggestions} onChange={(event) => onSuggestionToggle(event.target.checked)}
                 type="checkbox" />
             </label>
-          </DashboardTippy>
-        ) : null}
-      </div>
-      <div className="quarter-status-row">
-        <span className="quarter-status">{hasNote ? '📝 Open Plan' : '+ Create Plan'}</span>
-        {hasNote ? (
-          <DashboardTippy content={indicatorTip} placement="bottom">
-            <span className="quarter-plan-indicator" onClick={(e) => e.stopPropagation()}>{indicatorIcon}</span>
           </DashboardTippy>
         ) : null}
       </div>

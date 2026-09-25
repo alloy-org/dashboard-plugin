@@ -12,7 +12,7 @@ import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-ma
 // [Claude] Task: use shared `formatDateKey` from date-utility (single YYYY-MM-DD implementation)
 // Prompt: "DRY formatDateKey in date-utility.js; consumed by agenda, tests, use-domain-tasks"
 // Date: 2026-03-24 | Model: claude-sonnet-4-6
-import { formatDateKey } from "util/date-utility"
+import { formatDateKey, millisFromDateInput } from "util/date-utility"
 import { logIfEnabled } from "util/log"
 import "styles/agenda.scss"
 
@@ -92,25 +92,11 @@ export default function AgendaWidget({ app, calendarEvents, currentDate, selecte
     return 'priority-normal';
   };
 
-  // [Claude] Task: normalize timestamps to ms and format in local timezone
-  // Prompt: "ensure agenda times are in the time zone of the local user"
-  // Date: 2026-03-08 | Model: claude-4.6-opus-high-thinking
-  const toMillis = (timestamp) => {
-    if (!timestamp) return null;
-    if (timestamp instanceof Date) return timestamp.getTime();
-    if (typeof timestamp === 'number') return timestamp < 1e10 ? timestamp * 1000 : timestamp;
-    if (typeof timestamp === 'string') {
-      const parsed = new Date(timestamp).getTime();
-      return Number.isNaN(parsed) ? null : parsed;
-    }
-    return null;
-  };
-
   // [OpenAI GPT-5.5] Task: guard agenda event duration against serialized mobile event dates
   // Prompt: "After restoring the ability of mobile to retrieve calendar events, agenda errors on mobile"
   const calendarEventDurationMinutes = (event) => {
-    const endMs = toMillis(event?.end);
-    const startMs = toMillis(event?.start);
+    const endMs = millisFromDateInput(event?.end);
+    const startMs = millisFromDateInput(event?.start);
     if (endMs == null || startMs == null || endMs <= startMs) return null;
     return Math.round((endMs - startMs) / 60000);
   };
@@ -118,7 +104,7 @@ export default function AgendaWidget({ app, calendarEvents, currentDate, selecte
   // [Claude claude-4.6-opus-high-thinking] Task: format times using timeFormat prop
   // Prompt: "components that render times should utilize timeFormat prop"
   const formatTime = (timestamp) => {
-    const ms = toMillis(timestamp);
+    const ms = millisFromDateInput(timestamp);
     if (!ms) return '';
     const options = timeFormat === '24h'
       ? { hour: '2-digit', minute: '2-digit', hour12: false }
@@ -181,7 +167,7 @@ export default function AgendaWidget({ app, calendarEvents, currentDate, selecte
   // Date: 2026-03-24 | Model: claude-sonnet-4-6
   const visibleTasksForDate = (tasksForDate) => {
     return tasksForDate.filter((task) => {
-      const hideUntilMs = toMillis(task.hideUntil);
+      const hideUntilMs = millisFromDateInput(task.hideUntil);
       if (hideUntilMs == null) return true;
       return hideUntilMs <= nowMs;
     });
@@ -192,7 +178,7 @@ export default function AgendaWidget({ app, calendarEvents, currentDate, selecte
   const sortTimeFromAgendaItem = (dateKey, item) => {
     if (item.type === 'event' && item.event.allDay) return new Date(`${ dateKey }T00:00:00`).getTime();
     const timestamp = item.type === 'event' ? item.event.start : (item.task.startAt || item.task.deadline);
-    const sortTime = toMillis(timestamp);
+    const sortTime = millisFromDateInput(timestamp);
     return sortTime == null ? Number.POSITIVE_INFINITY : sortTime;
   };
 
@@ -225,8 +211,8 @@ export default function AgendaWidget({ app, calendarEvents, currentDate, selecte
   ) : null;
 
   const renderTaskItem = (item) => {
-    const startMs = toMillis(item.task.startAt);
-    const endMs = toMillis(item.task.endAt);
+    const startMs = millisFromDateInput(item.task.startAt);
+    const endMs = millisFromDateInput(item.task.endAt);
     const hasDuration = startMs && endMs && endMs > startMs;
     return (
       <div

@@ -5,7 +5,7 @@
  * Prompt summary: "allow user to choose which Task Domain their dashboard focuses on"
  */
 import { useState } from "react";
-import { refreshTaskDomains, switchTaskDomain } from "data-service";
+import { refreshTaskDomains, switchTaskDomain } from "task-domain-service";
 import { logIfEnabled } from "util/log";
 import "styles/task-domains.scss"
 

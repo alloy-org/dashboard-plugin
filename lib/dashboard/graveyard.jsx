@@ -13,6 +13,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import "styles/graveyard.scss";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import { graveyardMeadowUrl } from "util/background-splash-images";
+import { millisFromDateInput } from "util/date-utility";
 import { logIfEnabled } from "util/log";
 import { snapDashboardAction } from "util/plausible";
 import WidgetWrapper from "widget-wrapper";
@@ -78,12 +79,8 @@ function RefreshLink({ isRefreshing, onRefresh }) {
 
 // [OpenAI gpt-5.4] Task: normalize graveyard task timestamps for compact row and tooltip metadata
 function taskCreatedAtDate(task) {
-  if (!task?.createdAt) return null;
-  const rawTimestamp = Number(task.createdAt);
-  if (!Number.isFinite(rawTimestamp)) return null;
-  const millis = rawTimestamp < 1e10 ? rawTimestamp * 1000 : rawTimestamp;
-  const createdAt = new Date(millis);
-  return Number.isNaN(createdAt.getTime()) ? null : createdAt;
+  const createdAtMillis = millisFromDateInput(task?.createdAt);
+  return createdAtMillis === null ? null : new Date(createdAtMillis);
 }
 
 // [OpenAI gpt-5.4] Task: format graveyard row timestamp differently for compact 1-column cards

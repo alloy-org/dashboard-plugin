@@ -11,7 +11,7 @@ import { createRoot } from "react-dom/client";
 
 const switchTaskDomain = jest.fn(async () => ({ tasks: [] }));
 
-await jest.unstable_mockModule("data-service", async () => ({
+await jest.unstable_mockModule("task-domain-service", async () => ({
   refreshTaskDomains: jest.fn(async () => null),
   switchTaskDomain,
 }));

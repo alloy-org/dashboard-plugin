@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DASHBOARD_NOTE_TAG } from "constants/settings";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
-import { dateFromDateInput, dateKeyFromDateInput, formatHourLabel } from "util/date-utility";
+import { dateFromDateInput, dateKeyFromDateInput, formatHourLabel, millisFromDateInput } from "util/date-utility";
 import WidgetWrapper from "widget-wrapper";
 import { logIfEnabled } from "util/log";
 import { stripMarkdown } from "util/utility";
@@ -90,19 +90,12 @@ function emptyEntries() {
   return e;
 }
 
-function toMillis(timestamp) {
-  if (!timestamp) return null;
-  if (timestamp instanceof Date) return timestamp.getTime();
-  if (typeof timestamp === "number") return timestamp < 1e10 ? timestamp * 1000 : timestamp;
-  return null;
-}
-
 function hoursToPrefillForTask(task) {
-  const startMs = toMillis(task?.startAt);
+  const startMs = millisFromDateInput(task?.startAt);
   if (!startMs) return [];
   const startHour = new Date(startMs).getHours();
   const hours = [startHour];
-  const endMs = toMillis(task?.endAt);
+  const endMs = millisFromDateInput(task?.endAt);
   if (!endMs || endMs <= startMs) return hours;
   const fullHoursInDuration = Math.floor((endMs - startMs) / (60 * 60 * 1000));
   for (let offset = 1; offset < fullHoursInDuration; offset += 1) {
