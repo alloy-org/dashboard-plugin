@@ -117,7 +117,7 @@ function LoadingState({ dateControl }) {
     <WidgetWrapper widgetId={ WIDGET_ID }>
       { dateControl }
       <div className="proposed-agenda-loading">
-        <span aria-hidden="true" className="proposed-agenda-spinner">⟳</span>
+        <div className="proposed-agenda-spinner" />
         <p>Drafting your hour-by-hour schedule …</p>
       </div>
     </WidgetWrapper>

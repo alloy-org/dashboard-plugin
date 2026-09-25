@@ -133,7 +133,14 @@
   .proposed-agenda-dismiss-all { background: none; border: 0; color: $color-text-muted; font-size: $smaller-font-size; margin-left: auto; padding: 0; }
   .proposed-agenda-message, .proposed-agenda-loading { align-items: center; color: $color-text-secondary; display: flex; flex-direction: column; font-size: $default-font-size; gap: 10px; padding: 24px; text-align: center; }
   .proposed-agenda-retry { background: transparent; border: 1px solid $color-border; border-radius: 8px; color: $color-link; padding: 6px 14px; }
-  .proposed-agenda-spinner { animation: proposed-agenda-spin 0.8s linear infinite; color: $color-link; font-size: 1.75em; }
+  .proposed-agenda-spinner {
+    animation: spin 0.8s linear infinite;
+    border: 3px solid $color-border;
+    border-radius: 50%;
+    border-top-color: $color-blue;
+    height: 24px;
+    width: 24px;
+  }
 
   @container (max-width: 600px) {
     .widget-header { flex-wrap: wrap; }
@@ -164,5 +171,4 @@
     .proposed-agenda-reason--mobile { background: $color-bg-secondary; border-radius: 6px; display: block; grid-column: 1 / -1; padding: $sp-sm; }
     .proposed-agenda-reason-toggle { background: none; border: 0; color: $color-link; display: inline-flex; margin-left: 5px; }
   }
-  @keyframes proposed-agenda-spin { to { transform: rotate(360deg); } }
 }
