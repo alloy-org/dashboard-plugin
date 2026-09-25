@@ -49,6 +49,7 @@ import PaceCardsStep from "dashboard/plan-wizard/pace-cards-step";
 import PlanSaveError from "dashboard/plan-wizard/plan-save-error";
 import ProjectSourcesPage from "dashboard/plan-wizard/project-sources-page";
 import ProjectsStep from "dashboard/plan-wizard/projects-step";
+import { hasEnoughPacedProjects } from "dashboard/plan-wizard/projects-step-fields";
 import ProviderKeyGate from "dashboard/plan-wizard/provider-key-gate";
 import QuarterNameStep from "dashboard/plan-wizard/quarter-name-step";
 import { hasCompletedPlanCore, progressRowsFromContext, sidebarLabelFromStep } from "dashboard/plan-wizard/wizard-progress-fields";
@@ -233,11 +234,13 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   //   comes first so the user watches discovery run on the page whose list it fills, rather than waiting on the
   //   intent page for something to happen elsewhere. Returning while an earlier discovery is still running
   //   reopens that same project page without starting a duplicate request. A pending planning-note request
-  //   opens the saved plan instead of advancing to discovery.
+  //   opens the saved plan instead of advancing to discovery. A plan that already holds seven paced professional
+  //   projects or three paced personal ones skips discovery, so the page opens straight to the projects to adjust;
+  //   the page's own Suggest button still runs a pass on request.
   const handleFindProjects = async () => {
     if (consumePendingPlanNote()) return;
     setStepKey("projects");
-    if (isDiscovering) return;
+    if (isDiscovering || hasEnoughPacedProjects(planningContext.prospects)) return;
     await discoverProspects();
   };
 

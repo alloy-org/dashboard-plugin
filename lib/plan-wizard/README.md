@@ -228,6 +228,10 @@ bullet, a month's Focus — the user's text stays first and project names are ap
 - Focus and Keep warm projects become `##` blocks under `# Projects`; Keep warm is marked `[builder: keep warm]`.
   A rewrite carries the user's `Outcome`, `Constraints`, and `Done enough when` values forward from the block it
   replaces, since the wizard never asks about those.
+- A project the user marked Complete (`completedAt` on its ActionProspect) keeps its block after the live ones,
+  marked `[builder: complete]` and led by a `- Status: Completed YYYY-MM-DD` bullet. It is left off the
+  day-of-week and month Focus lines, and `contentWithoutCompletedProjects` removes its block from the plan content
+  that Proposed Agenda and Dream Task send to the model.
 - Not now projects become plain bullets under `# Not This Quarter`. They are bullets rather than `- [ ]`
   checkboxes on purpose: publishing must not create tasks in the user's lists. The done-enough answer, appended
   under `## Success Looks Like`, is a plain bullet for the same reason.

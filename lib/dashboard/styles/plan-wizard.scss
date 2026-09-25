@@ -1130,8 +1130,65 @@ $pace-slice-other-color: #e87ba4;
       }
     }
 
-    .project-row-emphasis {
+    /* A finished project stays on the page as a record of what the quarter delivered, darkened so the eye moves
+     * past it to the projects still in play. */
+    .project-row--completed {
+      background: $color-project-complete-bg;
+    }
+
+    .project-row-footer {
+      align-items: end;
+      display: grid;
+      gap: $sp-md;
+      grid-template-columns: minmax(0, 1fr) auto;
       margin-top: auto;
+
+      @include breakpoint($breakpoint-large-phone) {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .project-row-status {
+      border-left: 1px solid $color-border;
+      padding-left: $sp-md;
+
+      .project-row-emphasis-label {
+        text-align: center;
+      }
+
+      @include breakpoint($breakpoint-large-phone) {
+        border-left: 0;
+        padding-left: 0;
+
+        .project-row-emphasis-label {
+          text-align: left;
+        }
+      }
+    }
+
+    .project-row-status-button {
+      background: transparent;
+      border: 1px dashed $color-border;
+      color: $color-project-complete;
+      font-size: $smaller-font-size;
+      padding: $sp-sm $sp-md;
+      white-space: nowrap;
+
+      &:hover:not(:disabled) {
+        border-color: $color-project-complete;
+      }
+    }
+
+    .project-row-status-button--done {
+      background: $color-project-complete;
+      border: 1px solid $color-project-complete;
+      color: $color-text-on-accent;
+      font-weight: 600;
+
+      &:hover:not(:disabled) {
+        background: $color-project-complete;
+        opacity: 0.9;
+      }
     }
 
     .project-row-emphasis-label {

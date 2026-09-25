@@ -5,6 +5,29 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-09-25 — Projects can be marked Complete; a well-stocked plan skips project discovery
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files created/modified:**
+- `lib/plan-wizard/action-prospect.js`, `lib/plan-wizard/plan-models.js` (modified) — ActionProspect gains a nullable `completedAt` timestamp, with a new `isCompletedActionProspect` helper
+- `lib/plan-wizard/quarterly-plan-markdown.js` (modified) — Adds `COMPLETE_MARKER` (`[builder: complete]`), `isCompleteMarkedText`, and `contentWithoutCompletedProjects`, which removes completed project blocks from plan content before it goes into a prompt
+- `lib/plan-wizard/quarterly-plan-publication.js`, `lib/plan-wizard/quarterly-plan-merge.js`, `lib/plan-wizard/quarterly-plan-publisher.js` (modified) — Completed projects are published as `completedProjects`: Complete-marked blocks with a Status bullet, placed after live projects and left off the weekday, month, and Not This Quarter lines. Save verification checks for them too
+- `lib/dashboard/project-progress-model.js`, `lib/dashboard/project-plan-quarter.js` (modified) — Completed prospects and Complete-marked plan blocks are no longer live projects
+- `lib/dashboard/proposed-agenda-service.js`, `lib/dream-task-service.js` (modified) — Remove completed blocks from the plan content sent to the model. Proposed Agenda also limits collected project ideas to live projects
+- `lib/dashboard/plan-wizard/pace-cards-step-fields.js`, `lib/dashboard/plan-wizard/quarter-name-step-fields.js` (modified) — Leave completed projects off the pace page and the timeline
+- `lib/dashboard/plan-wizard/projects-step-fields.js` (modified) — Rows carry `completedAt`. Adds `completionRecordFromRow`, plus `hasEnoughPacedProjects` with `PACED_PROJECT_DISCOVERY_LIMITS` (7 professional, 3 personal)
+- `lib/dashboard/plan-wizard/project-card.jsx`, `lib/dashboard/plan-wizard/projects-step.jsx` (modified) — Each card gets a Status column with a Complete/Done toggle. Marking a project done darkens the card, disables emphasis, and fires canvas-confetti once the save succeeds
+- `lib/hooks/use-plan-wizard.js` (modified) — `saveProspectDecision` accepts `{ shouldPublish }` and republishes the plan note in the background
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` (modified) — `handleFindProjects` skips discovery once `hasEnoughPacedProjects` is true
+- `lib/dashboard/styles/plan-wizard.scss`, `theme-light.scss`, `theme-dark.scss`, `theme-tokens.scss` (modified) — Styles for the status column and completed card, with new `project-complete` color tokens
+- `lib/plan-wizard/README.md` (modified) — Documents the Complete marker
+- `test/plan-wizard-project-completion.test.js` (created) — Tests persistence, plan note designation, prompt stripping, progress exclusion, the discovery limits, and the card's Status control
+
+**Task:** Let a Plan Builder project be marked Complete so suggestion surfaces stop drawing from it, and skip discovery when the plan already has enough paced projects.
+**Prompt summary:** "update the list of Projects with new design that allows for a Project to have its status designated as 'Complete' ... bypass the lookup of additional Projects ... use the confetti plugin to celebrate the completed project, and darken its background coloring"
+
+---
+
 ## 2026-09-24 — Project task store links tasks whose Rich Footnotes carry images
 
 **Model:** Claude Opus 5.5 (1M context)

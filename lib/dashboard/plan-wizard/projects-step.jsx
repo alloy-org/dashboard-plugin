@@ -12,8 +12,8 @@
 
 import { IntentReadingProgressBar } from "dashboard/plan-wizard/intent-reading-page";
 import ProjectCard from "dashboard/plan-wizard/project-card";
-import { draftRowsFromProspects, emptyProjectRow, priorityRecordFromRow, prospectRecordsFromDraftRows,
-  rejectionRecordFromRow } from "dashboard/plan-wizard/projects-step-fields";
+import { completionRecordFromRow, draftRowsFromProspects, emptyProjectRow, priorityRecordFromRow,
+  prospectRecordsFromDraftRows, rejectionRecordFromRow } from "dashboard/plan-wizard/projects-step-fields";
 import { useRegisteredNavigate } from "dashboard/plan-wizard/step-navigation";
 import { clusterProspectsByEvidence } from "plan-wizard/prospect-similarity";
 import { wizardStepFromKey } from "dashboard/plan-wizard/wizard-steps";
@@ -87,7 +87,8 @@ function ProjectSourcesLink({ discoveryProgress, isDiscovering, onOpenSources })
 //   - {Function|null} onOpenSources - Shows the sources page, leaving this page mounted underneath it.
 //   - {Function} onRegisterNavigate - Publishes this page's Back/Next handler to the wizard's shared navigation.
 //   - {Function} onSave - Receives prospect records and resolves true when the write succeeded.
-//   - {Function} onSaveDecision - Persists one card decision without entering page-wide saving state.
+//   - {Function} onSaveDecision - Persists one card decision without entering page-wide saving state; pass
+//     { shouldPublish: true } to also bring the quarterly plan note up to date.
 //   - {object} planningContext - Stored goals and prospects for the scope.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 // @returns {JSX.Element} The projects page.
@@ -133,6 +134,23 @@ export default function ProjectsStep({ discoveryFailureReason = null, discoveryP
     if (!didSave) return;
     setDraftRows(previous => previous.filter(candidate => candidate.uuid !== row.uuid));
   }, [onSave]);
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Mark one card's project Complete or reopen it, then republish the plan note so the agenda and task
+  //   suggestions that read it stop, or resume, drawing on the project.
+  // @param {object} row - Stored project being marked.
+  // @param {boolean} shouldComplete - True to mark the project finished, false to reopen it.
+  // @returns {Promise<boolean>} Whether the decision saved.
+  const handleSetCompletion = useCallback(async (row, shouldComplete) => {
+    const capturedAt = new Date().toISOString();
+    const completedAt = shouldComplete ? capturedAt : null;
+    const didSave = await onSaveDecision([completionRecordFromRow(row, completedAt, capturedAt)], { shouldPublish: true });
+    if (!didSave) return false;
+    setDraftRows(previous => previous.map(candidate => (candidate.uuid === row.uuid
+      ? { ...candidate, approvalStatusEm: candidate.approvalStatusEm === "awaitingJudgement" ? "humanAffirmed"
+        : candidate.approvalStatusEm, completedAt, isStored: true } : candidate)));
+    return true;
+  }, [onSaveDecision]);
 
   // ----------------------------------------------------------------------------------------------
   // @desc Persist one card's Focus, Keep warm, or Not now decision immediately and reflect it on that card.
@@ -202,7 +220,8 @@ export default function ProjectsStep({ discoveryFailureReason = null, discoveryP
             <div className="projects-step-card-grid">
               { categoryRows.map(row => (
                 <ProjectCard { ...{ row } } isDisabled={ isSaving } key={ row.uuid }
-                  onChangeSummary={ handleChangeRow } onReject={ handleReject } onSetPriority={ handleSetPriority } />
+                  onChangeSummary={ handleChangeRow } onReject={ handleReject } onSetCompletion={ handleSetCompletion }
+                  onSetPriority={ handleSetPriority } />
               )) }
             </div>
             <div className="plan-actions">
