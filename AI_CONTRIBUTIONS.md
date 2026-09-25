@@ -5,6 +5,27 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-09-25 — Quarter cards get a checkbox deciding whether their plan feeds task suggestions
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files created/modified:**
+- `lib/util/quarterly-plan-toggles.js` (created) — Stores each quarter's checkbox as true/false/null in the `dashboard_quarterly_plan_toggles` setting, keyed by Task Domain. A null state counts as checked once the quarter begins within 15 days, and a past quarter never counts. `promotedQuarterlyPlanToggles` writes true for a planned quarter with a null state inside that window and drops entries for quarters that have ended
+- `lib/constants/quarters.js` (modified) — Adds `daysUntilQuarterStart`, `hasQuarterEnded`, `quarterAfter`, `quarterFromDate`, `quarterFromLabel`, and `quarterStartDate`
+- `lib/constants/settings.js` (modified) — Adds `SETTING_KEYS.QUARTERLY_PLAN_TOGGLES`
+- `lib/dashboard/project-plan-quarter.js` (rewritten) — `resolveProjectPlanQuarter`, which guessed a single quarter from which plan had Plan Builder projects, is replaced by `loadEnabledQuarterlyPlans` (every enabled quarter among the target day's quarter and the next one) and `combinedQuarterlyContent`
+- `lib/dashboard/proposed-agenda-service.js` (modified) — `_enabledPlansProjectContext` loads plan content, project progress, and collected ideas for each enabled quarter and merges them. Calendar suggestions go through this path too
+- `lib/dream-task-service.js` (modified) — `_loadEnabledPlanningContent` builds the quarterly, monthly, and weekly content from enabled quarters only
+- `lib/data-service.js` (modified) — Dashboard load calls `app.context.refreshSettings` (waits at most 3s), promotes toggles, and passes them to the embed. The Task Domain switch promotes the new domain's toggles
+- `lib/dashboard/planning.jsx`, `lib/dashboard/styles/planning.scss` (modified) — Each quarter card with a plan note shows the checkbox next to its label, with a tooltip explaining it
+- `test/project-plan-quarter.test.js` (rewritten), `test/quarterly-plan-toggles.test.js` (created)
+
+**Task:** Let the user uncheck a quarter to keep its projects out of Dream Task, Proposed Agenda, and calendar suggestions, and check an upcoming quarter to use its projects early
+**Prompt summary:** "the checkbox for a quarter can be unchecked to remove that quarterly plan from the roster of plans used to suggest tasks ... store the quarterly checkbox state as true/false/null ... in plugin's settings"
+**Scope:** ~350 lines across 11 files
+**Notes:** When both quarters are enabled, both plans go to the LLM, each under a "### Plan for Qn YYYY" heading. With one plan the prompt is unchanged
+
+---
+
 ## 2026-09-25 — Projects can be marked Complete; a well-stocked plan skips project discovery
 
 **Model:** Claude Opus 5.5 (1M context)

@@ -1,6 +1,6 @@
 // Quarterly Planning widget
 import { getQuarterMonths, getUpcomingWeekMonday, formatWeekLabel, quarterLabel } from "constants/quarters";
-import { IS_DEV_ENVIRONMENT } from "constants/settings";
+import { IS_DEV_ENVIRONMENT, SETTING_KEYS } from "constants/settings";
 import { buildPlanTargetFromPlans, currentQuarterCardAction } from "dashboard/build-plan-quarter";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
 import PlanWizard from "dashboard/plan-wizard/plan-wizard";
@@ -13,9 +13,12 @@ import {
 } from "data-service";
 import NoteEditor from "note-editor";
 import { mirrorQuarterPlanNote } from "plan-wizard/mirror-quarter-plan";
+import { pluginSettings, updatePluginSetting } from "plugin-data";
 import { useEffect, useState } from "react";
 import { navigateToNote } from "util/goal-notes";
 import { logIfEnabled } from "util/log";
+import { isQuarterPlanEnabled, quarterlyPlanTogglesFromSetting, quarterlyPlanTogglesWithState,
+  storedQuarterToggle } from "util/quarterly-plan-toggles";
 import { renderBlockMarkdown } from "util/utility";
 import WidgetWrapper from "widget-wrapper";
 import "styles/planning.scss"
@@ -91,9 +94,16 @@ async function handleCreateWeekPlan(app, plan, weekLabel, setWeekLoading, setWee
   }
 }
 
-// [Claude claude-4.7-opus] Task: convert renderQuarterCard to JSX component
-// Prompt: "translate this project to render components with JSX instead"
-function QuarterCard({ plan, onCardClick }) {
+// ----------------------------------------------------------------------------------------------
+// @desc One quarter's card. A card whose quarter has a plan note also shows a checkbox that decides whether the plan
+//   feeds Dream Task, Proposed Agenda, and calendar suggestions; clicks on it do not reach the card's own handler.
+// @param {object} props - An object with the following properties:
+//   - {Function} onCardClick - Opens the quarter's plan or Plan Builder.
+//   - {Function} onSuggestionToggle - Receives the checkbox's new checked state.
+//   - {object} plan - The quarter's plan, carrying label, noteUUID, hasAllMonthlyDetails, and domainName.
+//   - {boolean} usedForSuggestions - Whether the checkbox is checked.
+// @returns {JSX.Element} The card.
+function QuarterCard({ onCardClick, onSuggestionToggle, plan, usedForSuggestions }) {
   const hasNote = !!plan.noteUUID;
   const allMonths = !!plan.hasAllMonthlyDetails;
   const cardClass = 'quarter-card' + (hasNote ? ' quarter-card--has-plan' : '');
@@ -103,10 +113,23 @@ function QuarterCard({ plan, onCardClick }) {
   const indicatorTip = allMonths
     ? 'All 3 months in this quarter have been planned.'
     : 'Monthly details are missing for one or more months — this plan is a work in progress.';
+  const toggleTip = usedForSuggestions
+    ? `${ plan.label } projects are used when suggesting tasks. Uncheck to leave them out.`
+    : `${ plan.label } projects are left out of task suggestions. Check to include them.`;
 
   return (
     <div className={cardClass} onClick={onCardClick}>
-      <span className="quarter-label">{quarterLabel}</span>
+      <div className="quarter-label-row">
+        <span className="quarter-label">{quarterLabel}</span>
+        {hasNote ? (
+          <DashboardTippy content={toggleTip} placement="bottom">
+            <label className="quarter-suggestion-toggle" onClick={(event) => event.stopPropagation()}>
+              <input checked={usedForSuggestions} onChange={(event) => onSuggestionToggle(event.target.checked)}
+                type="checkbox" />
+            </label>
+          </DashboardTippy>
+        ) : null}
+      </div>
       <div className="quarter-status-row">
         <span className="quarter-status">{hasNote ? '📝 Open Plan' : '+ Create Plan'}</span>
         {hasNote ? (
@@ -180,6 +203,13 @@ function WeeklyPlanSection({ weekLabel, year, weekLoading, weekContent, onCreate
 }
 
 // ----------------------------------------------------------------------------------------------
+// @desc Read the quarterly plan checkbox states from the embed's settings snapshot.
+// @returns {object} Parsed toggles, as returned by quarterlyPlanTogglesFromSetting.
+function storedPlanToggles() {
+  return quarterlyPlanTogglesFromSetting(pluginSettings()[SETTING_KEYS.QUARTERLY_PLAN_TOGGLES]);
+}
+
+// ----------------------------------------------------------------------------------------------
 // @desc The Quarterly Planning widget: two quarter cards, the month and week sections beneath them, and the
 //   Plan Builder overlay either card or the header action opens.
 // @param {object} props - An object with the following properties:
@@ -202,6 +232,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [editingNoteUUID, setEditingNoteUUID] = useState(null);
   const [mirroredCurrentNoteUuid, setMirroredCurrentNoteUuid] = useState(null);
+  const [planToggles, setPlanToggles] = useState(() => storedPlanToggles());
 
   const isTwoTall = gridHeightSize >= 2;
   const currentPlan = quarterlyPlans?.current
@@ -239,6 +270,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
     setInitialLoadDone(false);
     setMirroredCurrentNoteUuid(null);
     setWizardPlan(null);
+    setPlanToggles(storedPlanToggles());
   }, [domainName]);
 
   useEffect(() => {
@@ -354,14 +386,34 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
     setWizardPlan({ mirrorTarget: action.mirrorTarget, quarter: action.quarterPlan.quarter, year: action.quarterPlan.year });
   };
 
+  // ----------------------------------------------------------------------------------------------
+  // @desc Save a quarter card's checkbox, mirroring it into the settings snapshot the suggestion services read.
+  // @param {object} plan - The card's plan, carrying quarter and year.
+  // @param {boolean} enabled - The checkbox's new state.
+  const handleSuggestionToggle = (plan, enabled) => {
+    const nextToggles = quarterlyPlanTogglesWithState(planToggles, { domainUuid: taskDomainUUID, enabled,
+      quarter: plan.quarter, year: plan.year });
+    const serialized = JSON.stringify(nextToggles);
+    setPlanToggles(nextToggles);
+    updatePluginSetting(SETTING_KEYS.QUARTERLY_PLAN_TOGGLES, serialized);
+    Promise.resolve(app.setSetting(SETTING_KEYS.QUARTERLY_PLAN_TOGGLES, serialized)).catch(error =>
+      logIfEnabled("[planning] could not save the quarterly plan checkbox", error?.message || error));
+  };
+
+  // @desc Whether a card's checkbox shows as checked, applying the lead-window default to a quarter never toggled.
+  const isUsedForSuggestions = plan => isQuarterPlanEnabled({ quarter: plan.quarter, year: plan.year,
+    storedState: storedQuarterToggle(planToggles, { domainUuid: taskDomainUUID, quarter: plan.quarter, year: plan.year }) });
+
   return (
     <WidgetWrapper headerActions={headerActions} title={widgetTitle} widgetId="planning">
       <div className="planning-quarters">
         {[currentPlan, nextPlan].map(plan => (
           <QuarterCard
             key={plan.label}
-            plan={plan}
             onCardClick={() => handleQuarterCardClick(plan)}
+            onSuggestionToggle={enabled => handleSuggestionToggle(plan, enabled)}
+            plan={plan}
+            usedForSuggestions={isUsedForSuggestions(plan)}
           />
         ))}
       </div>

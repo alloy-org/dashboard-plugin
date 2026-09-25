@@ -56,6 +56,25 @@ $planning-transition-duration: 0.15s;
       font-weight: 700;
     }
 
+    .quarter-label-row {
+      align-items: center;
+      display: flex;
+      gap: $sp-sm;
+      justify-content: space-between;
+      min-width: 0;
+    }
+
+    .quarter-suggestion-toggle {
+      cursor: pointer;
+      display: flex;
+      flex-shrink: 0;
+
+      input {
+        cursor: pointer;
+        margin: 0;
+      }
+    }
+
     .quarter-status-row {
       align-items: center;
       display: flex;
