@@ -5,6 +5,58 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-09-28 — One lookup decides whether Ample Agent Pro is installed
+
+**Model:** Grok 4.7
+**Files created/modified:**
+- `lib/providers/ai-provider-settings.js` (modified) — `findAmpleAgentProNote` looks up the Ample Agent Pro note and treats a missing note, a thrown lookup, or an app that cannot search notes as not installed
+- `lib/quarterly-plan-service.js` (modified) — The planning splash uses that lookup instead of `_ampleAgentProInstalled`
+- `lib/dream-task-service.js`, `lib/dashboard/proposed-agenda-service.js`, `lib/providers/fetch-ai-provider.js` (modified) — Generation and the plugin prompt retry use the same lookup
+- `lib/hooks/use-llm-provider-access.js`, `lib/dashboard/dream-task.jsx`, `lib/dashboard/proposed-agenda.jsx` (modified) — The provider-access gate and the keyless provider choosers use the same lookup
+- `test/ample-agent-pro-note.test.js` (created) — The lookup returns the note, or null when it is missing, throws, or cannot run
+
+**Task:** Consolidate the Ample Agent Pro note check
+**Prompt summary:** "consolidate the methods used to check for the existence of a functional Agent Pro note"
+**Scope:** ~40 lines, replacing six copies of the same findNote call
+
+---
+
+## 2026-09-28 — Starter notes are skipped from the note handle while All Notes tasks are gathered
+
+**Model:** Grok 4.7
+**Files created/modified:**
+- `lib/util/all-notes-tasks.js` (modified) — `_allNotesTasks` skips a note whose tags include starter-notes, or a child of that tag, before reading its tasks. The tag list is the one already on the note handle from the task-list scan
+- `lib/util/starter-notes.js` (deleted) — The follow-up `filterNotes({ tag: "starter-notes" })` is gone
+- `lib/quarterly-plan-service.js`, `lib/dream-task-service.js`, `lib/dashboard/proposed-agenda-service.js`, `lib/plan-wizard/intent-evidence.js` (modified) — Stop calling that follow-up filter. The All Notes scan has already left those tasks out
+- `test/all-notes-tasks.test.js` (created), `test/quarterly-plan-entry.test.js` (modified) — The import splash counts tasks from notes that are not tagged starter-notes, and starter notes do not use up the scan cap
+
+**Task:** Drop the extra starter-notes tag lookup
+**Prompt summary:** "We don't want to trigger an extra filterNotes in tasksOmittingStarterNotes on behalf of evaluating tag list. We can/should filter the tasks in such notes during the _allNotesTasks step"
+**Scope:** ~40 lines moved from a second note query into the existing task-list scan
+
+---
+
+## 2026-09-28 — Quarterly Planning shows an import, AI, or video splash before a plan exists
+
+**Model:** Grok 4.7
+**Files created/modified:**
+- `lib/quarterly-plan-service.js` (modified) — `resolveQuarterlyPlanEntry` chooses import (under 25 tasks), needs-ai (25 or more, no Agent Pro note and no key that answers a one-word status check), or ready
+- `lib/util/starter-notes.js` (created) — Drops tasks whose notes carry the starter-notes tag
+- `lib/dashboard/quarterly-plan-entry.jsx` (created) — The three splashes, including import navigate targets, the Agent Pro listing, plugin settings, and the YouTube embed
+- `lib/dashboard/styles/quarterly-plan-entry.scss` (created) — Styles for those splashes
+- `lib/dashboard/planning.jsx` (modified) — Renders the splash while neither quarter has a plan note, and opens Plan Builder on the quarter the header action would have opened
+- `lib/providers/ai-provider-settings.js` (modified) — Shares the Agent Pro listing URL with the existing upsell
+- `lib/dashboard/no-config-upsell.jsx` (modified) — Uses that shared URL
+- `lib/dream-task-service.js`, `lib/dashboard/proposed-agenda-service.js`, `lib/plan-wizard/intent-evidence.js` (modified) — Recommendation task lists omit starter notes
+- `test/quarterly-plan-entry.test.js`, `test/quarterly-plan-entry-splash.test.js` (created) — Entry decision and splash behavior
+- `test/planning-build-plan.test.js`, `test/plan-wizard-provider-gate.test.js`, `test/app.test.js`, `test/dream-task-service.test.js` (modified) — Follow the splash that replaced the empty quarter cards
+
+**Task:** Add the three Quarterly Planning entry states from the new design
+**Prompt summary:** "create a few new states for lib/quarterly-plan-service.js" for under 25 tasks, 25 or more without Agent Pro or a working LLM key, and 25 or more with a working key, embedding the planning video
+**Scope:** ~700 lines added across the service, splash, starter-note filter, and tests
+
+---
+
 ## 2026-09-25 — Split data-service.js by responsibility; one timestamp parser; quarter checkbox replaces the status emoji
 
 **Model:** Claude Opus 5.5 (1M context)

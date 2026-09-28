@@ -9,7 +9,7 @@ import { buildAvailableTimeSlots, fetchSchedulingOccupancy, resolveDreamTaskSche
 import LlmProviderSelector from "llm-provider-selector";
 import NoConfigUpsell from "no-config-upsell";
 import { pluginSettings } from "plugin-data";
-import { AMPLE_AGENT_PRO_NOTE_NAME, providerNameFromProviderEm } from "providers/ai-provider-settings";
+import { findAmpleAgentProNote, providerNameFromProviderEm } from "providers/ai-provider-settings";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { DASHBOARD_TASKS_UPDATED_EVENT } from "hooks/use-dashboard-task-updates";
@@ -542,8 +542,7 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   // Prompt: "LLMs with no keys should only be visible if we are prompting prior to calling the external Agent Pro plugin"
   useEffect(() => {
     let cancelled = false;
-    Promise.resolve(app.findNote({ name: AMPLE_AGENT_PRO_NOTE_NAME }))
-      .then(note => { if (!cancelled) setAmpleAgentProAvailable(!!note); });
+    findAmpleAgentProNote(app).then(note => { if (!cancelled) setAmpleAgentProAvailable(!!note); });
     return () => { cancelled = true; };
   }, [app]);
 

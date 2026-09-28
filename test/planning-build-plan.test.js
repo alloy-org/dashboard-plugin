@@ -80,19 +80,19 @@ async function clickAndSettle(element) {
 describe("PlanningWidget build plan", () => {
   it("names the current quarter until 15 days before the next one", async () => {
     const { cleanup, container } = await renderPlanning({ now: new Date(2026, 8, 15) });
-    expect(container.querySelector(".widget-header-action").title).toContain("Q3 2026");
+    expect(container.querySelector(".plan-entry-scratch").title).toContain("Q3 2026");
     await cleanup();
   });
 
   it("names the upcoming quarter once it is 15 days away", async () => {
     const { cleanup, container } = await renderPlanning({ now: new Date(2026, 8, 16) });
-    expect(container.querySelector(".widget-header-action").title).toContain("Q4 2026");
+    expect(container.querySelector(".plan-entry-scratch").title).toContain("Q4 2026");
     await cleanup();
   });
 
   it("opens the upcoming quarter from Build plan inside the lead window", async () => {
     const { cleanup, container } = await renderPlanning({ app: createPlanWizardApp(), now: new Date(2026, 8, 21) });
-    await clickAndSettle(container.querySelector(".widget-header-action"));
+    await clickAndSettle(container.querySelector(".plan-entry-scratch"));
     expect(document.body.querySelector(".plan-wizard-title-quarter").textContent).toBe("Q4 2026");
     await cleanup();
   });
@@ -118,14 +118,14 @@ describe("PlanningWidget build plan", () => {
 
   it("opens the upcoming wizard from the current card when neither quarter has a plan", async () => {
     const { cleanup, container } = await renderPlanning({ app: createPlanWizardApp(), now: new Date(2026, 8, 21) });
-    await clickAndSettle(container.querySelector(".quarter-card"));
+    await clickAndSettle(container.querySelector(".plan-entry-scratch"));
     expect(document.body.querySelector(".plan-wizard-title-quarter").textContent).toBe("Q4 2026");
     await cleanup();
   });
 
   it("opens the current quarter from its card outside the lead window", async () => {
     const { cleanup, container } = await renderPlanning({ app: createPlanWizardApp(), now: new Date(2026, 8, 1) });
-    await clickAndSettle(container.querySelector(".quarter-card"));
+    await clickAndSettle(container.querySelector(".plan-entry-scratch"));
     expect(document.body.querySelector(".plan-wizard-title-quarter").textContent).toBe("Q3 2026");
     await cleanup();
   });

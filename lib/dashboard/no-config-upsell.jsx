@@ -2,11 +2,10 @@
 // Prompt summary: "When a widget has no available LLM key, print a NoConfig upsell equivalent to the one Goal
 //   Coach (DreamTask) shows, but highlighting different features. Extract the upsell into a standalone component
 //   called by both DreamTask and Proposed Agenda, parameterized by the features it highlights."
+import { AMPLE_AGENT_PRO_URL } from "providers/ai-provider-settings";
 import WidgetWrapper from "widget-wrapper";
 
 import "styles/no-config-upsell.scss";
-
-const AMPLE_AGENT_PRO_URL = "https://www.amplenote.com/plugins/ample_agent_pro";
 const DEFAULT_HEADLINE = "Unlock 21 AI features — no API key needed";
 const DEFAULT_SUBHEAD = "Amplenote provides free access to frontier models for writing, task management, research, and more.";
 

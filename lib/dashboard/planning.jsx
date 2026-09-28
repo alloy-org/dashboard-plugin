@@ -8,6 +8,7 @@ import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import NoteEditor from "note-editor";
 import { mirrorQuarterPlanNote } from "plan-wizard/mirror-quarter-plan";
 import { pluginSettings, updatePluginSetting } from "plugin-data";
+import QuarterlyPlanEntry from "quarterly-plan-entry";
 import { createOrAppendMonthlyPlan, createOrAppendWeeklyPlan, createQuarterlyPlan, getMonthlyPlanContent } from "quarterly-plan-service";
 import { useEffect, useState } from "react";
 import { navigateToNote } from "util/goal-notes";
@@ -219,6 +220,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   const [initialLoadDone, setInitialLoadDone] = useState(false);
   const [editingNoteUUID, setEditingNoteUUID] = useState(null);
   const [mirroredCurrentNoteUuid, setMirroredCurrentNoteUuid] = useState(null);
+  const [planEntrySettled, setPlanEntrySettled] = useState(false);
   const [planToggles, setPlanToggles] = useState(() => storedPlanToggles());
 
   const isTwoTall = gridHeightSize >= 2;
@@ -240,14 +242,16 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   const buildPlanTitle = wizardQuarterPlan
     ? `Gather your intents and build a plan for ${ quarterLabel(wizardQuarterPlan.year, wizardQuarterPlan.quarter) }`
     : "";
-  const headerActions = canStartWizard ? (
+  const showPlanEntry = !!(wizardQuarterPlan?.quarter && !currentPlan?.noteUUID && !nextPlan?.noteUUID);
+  const headerActions = canStartWizard && !showPlanEntry ? (
     <button className="widget-header-action" onClick={ () => setWizardPlan({ mirrorTarget: null,
       quarter: wizardQuarterPlan.quarter, year: wizardQuarterPlan.year }) } title={ buildPlanTitle } type="button">
       ✨ Build plan
     </button>
   ) : null;
+  const planEntryLoaded = showPlanEntry ? planEntrySettled : initialLoadDone && !monthLoading && (!isTwoTall || !weekLoading);
 
-  useWidgetLoadedEvent('planning', plansReady && initialLoadDone && !monthLoading && (!isTwoTall || !weekLoading));
+  useWidgetLoadedEvent('planning', plansReady && planEntryLoaded);
 
   // Reset month/week UI when the Task Domain (and therefore the plan note set) changes.
   useEffect(() => {
@@ -257,17 +261,18 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
     setInitialLoadDone(false);
     setMirroredCurrentNoteUuid(null);
     setWizardPlan(null);
+    setPlanEntrySettled(false);
     setPlanToggles(storedPlanToggles());
   }, [domainName]);
 
   useEffect(() => {
-    if (!plansReady || initialLoadDone) return;
+    if (!plansReady || initialLoadDone || showPlanEntry) return;
     const currentMonth = months.find(m => m.current);
     if (currentMonth) {
       setInitialLoadDone(true);
       handleMonthClick(app, currentMonth, monthClickDeps);
     }
-  }, [domainName, initialLoadDone, plansReady]);
+  }, [domainName, initialLoadDone, plansReady, showPlanEntry]);
 
   useEffect(() => {
     if (!plansReady || !isTwoTall) return;
@@ -333,6 +338,18 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
     return (
       <WidgetWrapper title={widgetTitle} widgetId="planning">
         <p className="planning-empty">Loading quarterly plans…</p>
+        {planWizardOverlay}
+      </WidgetWrapper>
+    );
+  }
+
+  if (showPlanEntry) {
+    const openTargetPlan = () => setWizardPlan({ mirrorTarget: null, quarter: wizardQuarterPlan.quarter, year: wizardQuarterPlan.year });
+    return (
+      <WidgetWrapper title={widgetTitle} widgetId="planning">
+        <QuarterlyPlanEntry app={app} domainUuid={taskDomainUUID} onBuildPlan={openTargetPlan}
+          onOpenSettings={onOpenSettings} onSettled={() => setPlanEntrySettled(true)} plan={wizardQuarterPlan}
+          planTitle={buildPlanTitle} />
         {planWizardOverlay}
       </WidgetWrapper>
     );

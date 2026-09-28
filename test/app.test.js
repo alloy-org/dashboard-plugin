@@ -285,11 +285,11 @@ describe('DashboardApp', () => {
       expect(container.querySelector('.dashboard-error')).toBeNull();
     });
 
-    it('renders the Planning widget showing the current and next quarters', () => {
+    it('renders the Planning widget inviting a plan when none exists yet', async () => {
+      await flushAsync();
       const widget = container.querySelector('.widget-planning');
       expect(widget).not.toBeNull();
-      // Both quarter cards should be present (current Q and next Q).
-      expect(widget.querySelectorAll('.quarter-card').length).toBe(2);
+      expect(widget.querySelector('.quarterly-plan-entry--import')).not.toBeNull();
     });
 
     it('renders the Mood widget with 5 emoji selector buttons', () => {

@@ -181,7 +181,7 @@ describe("analyzeDreamTasks (requires provider API key from .env)", () => {
     await analyzeDreamTasks(app, { noteName, minimumTaskCount: 1 });
 
     expect(app.filterNotes).toHaveBeenCalled();
-    const filterCall = app.filterNotes.mock.calls[0][0];
+    const filterCall = app.filterNotes.mock.calls.map(call => call[0]).find(query => query?.query);
     // Domain-scoped titles insert the Task Domain before "Plan" ("Q3 2026 Work Plan"); a domain-less
     // quarter still uses the legacy "Q3 2026 Plan".
     expect(filterCall.query).toMatch(/^Q\d \d{4}(?: .+)? Plan$/);

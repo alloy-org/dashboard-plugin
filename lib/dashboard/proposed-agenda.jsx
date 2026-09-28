@@ -15,7 +15,7 @@ import { DEFAULT_PRIORITY_KEY } from "proposed-agenda-priority";
 import ProposedAgendaPriorityControl from "proposed-agenda-priority-control";
 import { agendaRowsGroupedByDay } from "proposed-agenda-range";
 import { resolveProposedAgendaDate } from "proposed-agenda-service";
-import { AMPLE_AGENT_PRO_NOTE_NAME } from "providers/ai-provider-settings";
+import { findAmpleAgentProNote } from "providers/ai-provider-settings";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "styles/proposed-agenda.scss";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
@@ -270,8 +270,7 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   // the user has no local key for, because the chosen provider is passed to Agent Pro as an argument.
   useEffect(() => {
     let cancelled = false;
-    Promise.resolve(app.findNote({ name: AMPLE_AGENT_PRO_NOTE_NAME }))
-      .then(note => { if (!cancelled) setAmpleAgentProAvailable(!!note); });
+    findAmpleAgentProNote(app).then(note => { if (!cancelled) setAmpleAgentProAvailable(!!note); });
     return () => { cancelled = true; };
   }, [app]);
 
