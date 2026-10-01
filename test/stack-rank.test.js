@@ -1,17 +1,23 @@
 // Verify the Jev stack-rank pipeline: task outlines are read from note markdown, the user terms dictionary is
 // parsed and merged without touching user-written bullets, discovered terms must come from a project's wording,
-// batches map Jev's zero-indexed scores onto the 1–10 scale, and — when JEV_ACCESS_TOKEN is set — a live Jev call
-// rates a task that serves the project above one that does not.
+// batches map Jev's zero-indexed scores onto the 1–10 scale, each project's minimum match score is chosen and kept
+// per quarter, Plan Builder's pass re-ranks only stale projects, and — when JEV_ACCESS_TOKEN is set — a live Jev
+// call rates a task that serves the project above one that does not.
 import { jest } from "@jest/globals";
 import dotenv from "dotenv";
 import fetch from "isomorphic-fetch";
 import { relevantDictionaryTerms } from "plan-wizard/stack-rank/build-project-task-context";
 import { acceptedDictionaryTerms } from "plan-wizard/stack-rank/dictionary-term-discovery";
+import { acceptedRankedTasks, matchScoresWithProjectScore, persistPrunedMatchScores,
+  storedMinimumMatchScore } from "plan-wizard/stack-rank/project-match-scores";
 import { prospectiveTaskDetails, taskOutlineFromNoteContent } from "plan-wizard/stack-rank/prospective-task-details";
 import { jevRequestForBatch, rankProspectiveTasks } from "plan-wizard/stack-rank/rank-prospective-tasks";
+import { refreshStaleProjectRankings } from "plan-wizard/stack-rank/refresh-stale-project-rankings";
+import { prepareProjectTaskRanker } from "plan-wizard/stack-rank/stack-rank-project-tasks";
 import { dictionaryEntriesFromContent, examinedProjectSummaries, mergedDictionaryContent,
   openUserTermsDictionary } from "plan-wizard/stack-rank/user-terms-dictionary";
-import { stackRankProjectTasks } from "plan-wizard/stack-rank/stack-rank-project-tasks";
+import { pluginSettings, setPluginData } from "plugin-data";
+import { storedProjectRecords } from "project-task-store";
 import { initialProjectTaskStoreMarkdown, projectSectionHeadingText, projectSectionMarkdown } from "project-task-store-markdown";
 import { jevRouteFromAccessToken, requestJevAnswers } from "providers/jev-client";
 
@@ -21,6 +27,52 @@ const JEV_ACCESS_TOKEN = process.env.JEV_ACCESS_TOKEN;
 const itIfJevToken = JEV_ACCESS_TOKEN ? it : it.skip;
 const DIFF_DIGEST_PROJECT = { nextAction: "Draft the Diff Digest onboarding email", relatedTaskRecords: [
   { taskText: "Pick the Diff Digest send day", taskUuid: "related-1" }], summary: "Diff Digest launch", uuid: "project-1" };
+
+// ----------------------------------------------------------------------------------------------
+// @desc Build ranked tasks with the given ratings, highest first, as rankProspectiveTasks returns them.
+// @param {Array<number>} ratings - One rating per task.
+// @returns {Array<object>} Ranked tasks.
+function rankedTasksFromRatings(ratings) {
+  const rankedTasks = ratings.map((rating, index) => ({ confidence: 0.8, rating, taskText: `Task ${ index }`,
+    taskUuid: `task-${ index }` }));
+  return rankedTasks.sort((first, second) => second.rating - first.rating);
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Mock the app bridge over in-memory notes keyed by name, with whole-note and section-scoped writes.
+// @param {object} notes - { [name]: { content, uuid } }, mutated by writes.
+// @param {Array<object>} tasks - Tasks the domain returns.
+// @returns {object} App mock.
+function notesApp(notes, tasks) {
+  const noteFromUuid = uuid => Object.values(notes).find(note => note.uuid === uuid);
+  return {
+    createNote: jest.fn(async name => { notes[name] = { content: "", uuid: `${ name }-uuid` }; return `${ name }-uuid`; }),
+    findNote: jest.fn(async ({ name, uuid }) => (uuid ? { name: noteFromUuid(uuid)?.name || "GitClear", tags: ["work"], uuid }
+      : notes[name] || null)),
+    getNoteContent: jest.fn(async ({ uuid }) => noteFromUuid(uuid)?.content ?? ""),
+    getTaskDomainTasks: jest.fn().mockResolvedValue(tasks),
+    replaceNoteContent: jest.fn(async ({ uuid }, body, options) => {
+      const note = noteFromUuid(uuid);
+      if (!options?.section) { note.content = body; return true; }
+      const headingLine = `${ "#".repeat(options.section.heading.level) } ${ options.section.heading.text }\n`;
+      const bodyStart = note.content.indexOf(headingLine) + headingLine.length;
+      const nextHeading = note.content.slice(bodyStart).search(/^#{1,2} /m);
+      const bodyEnd = nextHeading < 0 ? note.content.length : bodyStart + nextHeading;
+      note.content = `${ note.content.slice(0, bodyStart) }${ body }${ note.content.slice(bodyEnd) }`;
+      return true;
+    }),
+    setSetting: jest.fn().mockResolvedValue(true),
+  };
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Render a project task store holding the given project records under Active projects.
+// @param {Array<object>} projects - Project records.
+// @returns {string} Store note markdown.
+function storeContentFromProjects(projects) {
+  const sections = projects.map(project => `## ${ projectSectionHeadingText(project) }\n\n${ projectSectionMarkdown(project) }`);
+  return initialProjectTaskStoreMarkdown().replace("# Active projects\n", `# Active projects\n${ sections.join("\n") }\n`);
+}
 
 // ----------------------------------------------------------------------------------------------
 // @desc Build a task detail shaped like prospectiveTaskDetails output.
@@ -150,36 +202,109 @@ describe("rankProspectiveTasks", () => {
   });
 });
 
-describe("stackRankProjectTasks", () => {
-  it("ranks each stored project's unassociated open tasks and grows the dictionary from new projects", async () => {
-    const storeContent = initialProjectTaskStoreMarkdown().replace("# Active projects\n",
-      `# Active projects\n## ${ projectSectionHeadingText(DIFF_DIGEST_PROJECT) }\n\n${ projectSectionMarkdown(DIFF_DIGEST_PROJECT) }\n`);
-    const notes = { "Project Tasks Q4 2026 Work": { content: storeContent, uuid: "store-note" } };
+describe("acceptedRankedTasks", () => {
+  it("accepts tasks rated 5 or higher", () => {
+    const selection = acceptedRankedTasks(rankedTasksFromRatings([9.1, 5, 4.9, 1.2]));
+    expect(selection.minimumMatchScore).toBe(5);
+    expect(selection.acceptedTasks.map(task => task.rating)).toEqual([9.1, 5]);
+  });
+
+  it("raises a competitive project's minimum to 7 once more than 20 tasks clear 5", () => {
+    const ratings = [...Array(17).fill(6), 7.5, 8, 9.2];
+    expect(acceptedRankedTasks(rankedTasksFromRatings(ratings)).acceptedTasks).toHaveLength(20);
+    const competitive = acceptedRankedTasks(rankedTasksFromRatings([...ratings, 5.5]));
+    expect(competitive.minimumMatchScore).toBe(7);
+    expect(competitive.acceptedTasks.map(task => task.rating)).toEqual([9.2, 8, 7.5]);
+  });
+
+  it("keeps the top 20 at 5 when a competitive project has nothing at 7", () => {
+    const selection = acceptedRankedTasks(rankedTasksFromRatings(Array(25).fill(6)));
+    expect(selection).toMatchObject({ minimumMatchScore: 5 });
+    expect(selection.acceptedTasks).toHaveLength(20);
+  });
+
+  it("allows up to three leads rated from 3 when nothing reaches 5", () => {
+    const selection = acceptedRankedTasks(rankedTasksFromRatings([4.8, 4.2, 3.9, 3.1, 2.9]));
+    expect(selection.minimumMatchScore).toBe(3);
+    expect(selection.acceptedTasks.map(task => task.rating)).toEqual([4.8, 4.2, 3.9]);
+  });
+
+  it("applies the stored minimum when some batches went unrated", () => {
+    const selection = acceptedRankedTasks(rankedTasksFromRatings([7.4, 6.1]), { isComplete: false,
+      storedMinimumMatchScore: 7 });
+    expect(selection).toEqual({ acceptedTasks: [expect.objectContaining({ rating: 7.4 })], minimumMatchScore: 7 });
+  });
+});
+
+describe("project match scores setting", () => {
+  it("stores minimums by domain, quarter, and project, and drops ended quarters on load", async () => {
+    const scores = matchScoresWithProjectScore({ "all-notes": { "Q2 2026": { old: 5 } } }, { domainUuid: "work-domain",
+      minimumMatchScore: 7, projectUuid: "project-1", quarter: 4, year: 2026 });
+    expect(storedMinimumMatchScore(scores, { domainUuid: "work-domain", projectUuid: "project-1", quarter: 4,
+      year: 2026 })).toBe(7);
+    const app = { setSetting: jest.fn().mockResolvedValue(true) };
+    const pruned = await persistPrunedMatchScores(app, { now: new Date(2026, 9, 1), rawSetting: JSON.stringify(scores) });
+    expect(JSON.parse(pruned)).toEqual({ "work-domain": { "Q4 2026": { "project-1": 7 } } });
+    expect(app.setSetting).toHaveBeenCalledWith("dashboard_project_match_scores", pruned);
+  });
+});
+
+describe("prepareProjectTaskRanker", () => {
+  beforeEach(() => setPluginData({ settings: {} }));
+
+  it("returns no ranker without a Jev key", async () => {
+    expect(await prepareProjectTaskRanker({}, { domainName: "Work", domainUuid: "work-domain", tasks: [] })).toBeNull();
+  });
+
+  it("grows the dictionary, rates the unassociated pool, and saves the project's minimum match score", async () => {
+    const notes = { "Project Tasks Q4 2026 Work": { content: storeContentFromProjects([DIFF_DIGEST_PROJECT]),
+      uuid: "store-note" } };
     const tasks = [{ content: "Pick the Diff Digest send day", noteUUID: "note-1", updatedAt: 3, uuid: "related-1" },
       { content: "Diff Digest landing copy", noteUUID: "note-1", updatedAt: 2, uuid: "open-1" },
+      { content: "Buy dog food", noteUUID: "note-1", updatedAt: 2, uuid: "open-2" },
       { completedAt: 1790000000, content: "Done already", noteUUID: "note-1", updatedAt: 1, uuid: "done-1" }];
-    const app = {
-      createNote: jest.fn(async name => { notes[name] = { content: "", uuid: "dictionary-note" }; return "dictionary-note"; }),
-      findNote: jest.fn(async ({ name, uuid }) => (uuid ? { name: "GitClear", tags: ["work"], uuid } : notes[name] || null)),
-      getNoteContent: jest.fn(async ({ uuid }) => Object.values(notes).find(note => note.uuid === uuid)?.content ?? ""),
-      getTaskDomainTasks: jest.fn().mockResolvedValue(tasks),
-      replaceNoteContent: jest.fn(async ({ uuid }, body) => {
-        Object.values(notes).find(note => note.uuid === uuid).content = body;
-        return true;
-      }),
-    };
+    const app = notesApp(notes, tasks);
     const promptRunner = jest.fn().mockResolvedValue({ terms: [{ definition: "GitClear's weekly code-change email",
       term: "Diff Digest" }] });
-    const requestAnswers = jest.fn().mockResolvedValue({ answers: { task_1: { confidence: 0.9, score: 8, type: "score" } } });
-    const result = await stackRankProjectTasks(app, { accessToken: "token", domainName: "Work", domainUuid: "work-domain",
-      now: new Date(2026, 9, 1), promptRunner, requestAnswers });
-    expect(result.dictionaryChanges.addedTerms).toEqual(["Diff Digest"]);
+    const requestAnswers = jest.fn().mockResolvedValue({ answers: { task_1: { confidence: 0.9, score: 8, type: "score" },
+      task_2: { confidence: 0.9, score: 0, type: "score" } } });
+    const ranker = await prepareProjectTaskRanker(app, { accessToken: "token", domainName: "Work",
+      domainUuid: "work-domain", now: new Date(2026, 9, 1), promptRunner, requestAnswers, tasks });
+    expect(ranker.dictionaryChanges.addedTerms).toEqual(["Diff Digest"]);
     expect(notes["User terms dictionary 2026"].content).toContain("- Diff Digest launch (examined 2026-10-01)");
-    expect(result.projectRankings).toEqual([{ failures: [], inputTokens: 0, projectSummary: "Diff Digest launch",
-      projectUuid: "project-1", rankedTasks: [{ confidence: 0.9, noteName: "GitClear", rating: 9,
-        taskText: "Diff Digest landing copy", taskUuid: "open-1" }] }]);
+    const ranking = await ranker.rankProject(DIFF_DIGEST_PROJECT, DIFF_DIGEST_PROJECT.relatedTaskRecords);
+    expect(ranking).toEqual({ acceptedTasks: [{ matchScore: 9, taskText: "Diff Digest landing copy", taskUuid: "open-1" }],
+      failureReason: null, minimumMatchScore: 5, ratedCount: 2 });
     expect(requestAnswers.mock.calls[0][0].state.userTermsDictionary).toEqual({
       "Diff Digest": "GitClear's weekly code-change email" });
+    const savedScores = JSON.parse(pluginSettings().dashboard_project_match_scores);
+    expect(savedScores).toEqual({ "work-domain": { "Q4 2026": { "project-1": 5 } } });
+    expect(app.setSetting).toHaveBeenCalledWith("dashboard_project_match_scores", JSON.stringify(savedScores));
+  });
+});
+
+describe("refreshStaleProjectRankings", () => {
+  it("re-ranks only projects Jev has not ranked within three days, leaving the collection timestamp alone", async () => {
+    const staleProject = { ...DIFF_DIGEST_PROJECT, lastAttemptedAt: "2026-09-30T12:00:00.000Z",
+      lastRankedAt: "2026-09-20T12:00:00.000Z", relatedTasks: ["related-1"] };
+    const freshProject = { lastRankedAt: "2026-09-30T12:00:00.000Z", relatedTaskRecords: [], relatedTasks: [],
+      summary: "Recently ranked", uuid: "project-2" };
+    const notes = { "Project Tasks Q4 2026 Work": { content: storeContentFromProjects([staleProject, freshProject]),
+      uuid: "store-note" } };
+    const tasks = [{ content: "Pick the Diff Digest send day", uuid: "related-1" }, { content: "Landing copy", uuid: "open-1" }];
+    const rankProject = jest.fn().mockResolvedValue({ acceptedTasks: [{ matchScore: 7.7, taskText: "Landing copy",
+      taskUuid: "open-1" }], failureReason: null, minimumMatchScore: 5 });
+    const rankerFactory = jest.fn().mockResolvedValue({ dictionaryChanges: {}, rankProject });
+    const now = new Date("2026-10-01T12:00:00.000Z");
+    const result = await refreshStaleProjectRankings(notesApp(notes, tasks), { accessToken: "token", domainName: "Work",
+      domainUuid: "work-domain", now, rankerFactory, refineDictionary: false });
+    expect(result).toEqual({ failures: 0, rankedCount: 1, skippedReason: null });
+    expect(rankerFactory.mock.calls[0][1]).toMatchObject({ refineDictionary: false });
+    expect(rankProject).toHaveBeenCalledTimes(1);
+    const stored = storedProjectRecords(notes["Project Tasks Q4 2026 Work"].content).recordsByUuid.get("project-1");
+    expect(stored).toMatchObject({ lastAttemptedAt: "2026-09-30T12:00:00.000Z", lastRankedAt: now.toISOString(),
+      relatedTasks: ["related-1", "open-1"] });
+    expect(stored.relatedTaskRecords.map(task => task.taskUuid)).toEqual(["related-1", "open-1"]);
   });
 });
 

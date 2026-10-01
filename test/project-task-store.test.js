@@ -277,6 +277,49 @@ describe("background project task collection", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
+  // @desc With a Jev ranker, the tasks it accepts join the project before ideas are requested and the provider is
+  //   offered no pool. Only a task accepted at the default minimum is remembered in relatedTasks.
+  it("associates the tasks Jev accepts and leaves the provider only ideas to suggest", async () => {
+    const app = storeApp({ tasks: [{ content: "Launch dashboard date picker", uuid: "open-task" },
+      { content: "Rework the week grid header", uuid: "ranked-task" }, { content: "Tidy widget CSS", uuid: "lead-task" }] });
+    const rankProject = jest.fn().mockResolvedValue({ acceptedTasks: [
+      { matchScore: 8.2, taskText: "Rework the week grid header", taskUuid: "ranked-task" },
+      { matchScore: 4.1, taskText: "Tidy widget CSS", taskUuid: "lead-task" }], failureReason: null, minimumMatchScore: 3 });
+    const rankerFactory = jest.fn().mockResolvedValue({ rankProject });
+    const ideaGenerator = jest.fn(async (_app, { project }) => {
+      expect(project.candidateTaskRecords).toEqual([]);
+      expect(project.relatedTaskRecords.map(task => task.taskUuid)).toEqual(["open-task", "ranked-task", "lead-task"]);
+      return { failureReason: null, foundTasks: [], suggestedTasks: [] };
+    });
+    const now = new Date("2026-09-19T12:00:00.000Z");
+    await collectProjectTasks(app, { domainName: scope.domainName, domainUuid: scope.domainUuid, ideaGenerator, now,
+      quarterlyContent, rankerFactory });
+    expect(rankerFactory.mock.calls[0][1]).toMatchObject({ refineDictionary: true });
+    expect(rankProject.mock.calls[0][1]).toEqual([{ taskText: "Launch dashboard date picker", taskUuid: "open-task" }]);
+    const stored = [...storedProjectRecords(app.noteContent).recordsByUuid.values()][0];
+    expect(stored.relatedTaskRecords.find(task => task.taskUuid === "ranked-task").matchScore).toBe(8.2);
+    expect(stored.relatedTasks).toContain("ranked-task");
+    expect(stored.relatedTasks).not.toContain("lead-task");
+    expect(stored.lastRankedAt).toBe(now.toISOString());
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A ranking that fails outright hands attribution back to the provider, as though no Jev key were set.
+  it("offers the provider its pool when Jev ranking fails", async () => {
+    const app = storeApp({ tasks: [{ content: "Rework the week grid header", uuid: "unmatched-task" }] });
+    const rankerFactory = jest.fn().mockResolvedValue({ rankProject: jest.fn().mockRejectedValue(new Error("CORS")) });
+    const ideaGenerator = jest.fn(async (_app, { project }) => {
+      expect(project.candidateTaskRecords.map(task => task.taskUuid)).toEqual(["unmatched-task"]);
+      return { failureReason: null, foundTasks: [], suggestedTasks: [] };
+    });
+    const result = await collectProjectTasks(app, { domainName: scope.domainName, domainUuid: scope.domainUuid,
+      ideaGenerator, now: new Date("2026-09-19T12:00:00.000Z"), quarterlyContent, rankerFactory });
+    expect(result).toMatchObject({ attempted: 1, failures: 0 });
+    expect(ideaGenerator).toHaveBeenCalledTimes(1);
+    expect([...storedProjectRecords(app.noteContent).recordsByUuid.values()][0].lastRankedAt).toBeNull();
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc An idea naming an earlier one in beforeTask replaces it where it stood, so the user judges one
   //   refined suggestion rather than two phrasings of it. An idea naming nothing is added alongside.
   it("replaces a superseded idea in place and appends a new one", async () => {

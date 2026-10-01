@@ -39,6 +39,10 @@
 // template and the builder's own marked output — puts a View quarterly plan note link in the header, after the
 // quarter's date. That link opens the note as it stands, without publishing, so arriving to plan a quarter does
 // not rewrite the writing they already did there.
+//
+// Opening the builder also refreshes the Jev rankings that decide which tasks the current quarter's projects hold.
+// The background collection pass stands down while the builder covers the dashboard, so the builder starts its own
+// pass over the projects Jev has not ranked in the last three days.
 
 import { quarterLabel as displayQuarterLabel } from "constants/quarters";
 import NoteEditor from "dashboard/note-editor";
@@ -60,6 +64,7 @@ import { useSuspendWidgetMounting } from "dashboard/widget-mount-suspension";
 import { useElapsingProgress } from "hooks/use-elapsing-progress";
 import useLlmProviderAccess from "hooks/use-llm-provider-access";
 import usePlanWizard, { planScopeKey } from "hooks/use-plan-wizard";
+import { useProjectTaskRanking } from "hooks/use-project-task-ranking";
 import useUserEditedPlanNote from "hooks/use-user-edited-plan-note";
 import { WIZARD_LLM_TIMEOUT_SECONDS } from "plan-wizard/plan-models";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -127,6 +132,9 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const scopeKey = planScopeKey({ domainName, domainUuid, quarter, year });
   const existingPlanNoteUuid = useUserEditedPlanNote({ app, domainName, domainUuid, quarter, year });
   const { hasLlmProviderAccess, isCheckingLlmProviderAccess } = useLlmProviderAccess(app);
+  // Entering the builder refreshes the current quarter's Jev task rankings, once the builder is not mid-request.
+  useProjectTaskRanking({ app, domainName, domainUuid,
+    isAwaitingProvider: isLoading || isDiscovering || isConsolidating || isRefreshing || isCheckingLlmProviderAccess });
   const isMissingLlmProvider = !hasLlmProviderAccess && !isCheckingLlmProviderAccess;
   // Measured here rather than in either consumer, so the intent page's link and the reading page it opens show one
   // continuous fill instead of each restarting the bar when it mounts.

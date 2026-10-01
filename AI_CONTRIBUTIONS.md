@@ -5,6 +5,31 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-01 — Jev rankings decide which tasks a project holds, in the background pass and on entering Plan Builder
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files created/modified:**
+- `lib/plan-wizard/stack-rank/project-match-scores.js` (created) — Accepts tasks rated 5+, raises a project with more than 20 to 7, falls back to three leads rated 3+, and stores each project's minimum per domain and quarter, pruned on load like the quarterly plan checkboxes
+- `lib/plan-wizard/stack-rank/refresh-stale-project-rankings.js` (created) — Plan Builder's pass: re-ranks stored projects not ranked in 72 hours, writing only their task associations
+- `lib/hooks/use-project-task-ranking.js` (created) — Starts that pass once Plan Builder has been idle, so the dictionary's provider call never competes with one the user is waiting on
+- `lib/dashboard/project-candidate-tasks.js` (created) — The unassociated open-task pool rule, moved out of the collection pass so the ranker can share it without an import cycle
+- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` (rewritten) — `prepareProjectTaskRanker` refreshes the dictionary and returns a ranker that rates a 500-task pool per project with a detail cache, and saves the project's minimum
+- `lib/dashboard/project-task-collection.js` (modified) — Ranks each refreshed project with Jev when a key is set; Jev's accepted tasks replace the provider's attribution pool, falling back to it when ranking fails
+- `lib/plan-wizard/stack-rank/rank-prospective-tasks.js` (modified) — Runs four batches at once and raises the batch to 20 tasks, after a live check that 20 still discriminate
+- `lib/plan-wizard/stack-rank/prospective-task-details.js` (modified) — Sends the note's last-opened date, as the nearest signal the API offers to a view count
+- `lib/plan-wizard/stack-rank/build-project-task-context.js` (modified) — Accepts the caller's projects so the background pass discovers terms for projects new to the store
+- `lib/dashboard/project-task-store-markdown.js` (modified) — Persists `lastRankedAt`
+- `lib/dashboard-init-service.js` (modified) — Prunes and carries the match scores setting, and carries the Jev key into the embed's settings
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` (modified) — Uses the ranking hook
+- `lib/constants/settings.js` (modified) — Adds `SETTING_KEYS.PROJECT_MATCH_SCORES`
+- `test/stack-rank.test.js`, `test/project-task-store.test.js` (modified) — Threshold rules, setting pruning, the ranker, Plan Builder's pass, and the collection pass with a ranker that succeeds and one that fails
+
+**Task:** Connect the Jev stack rank to Plan Builder entry and the periodic project refresh, with per-project minimum match scores
+**Prompt summary:** "submit 250-500 tasks to Jev ... only accept tasks with a similarity score of 5/10 or higher ... persist the minimum match score per project in our plugin settings"
+**Scope:** ~450 lines across four new modules, nine edits, and two test files
+
+---
+
 ## 2026-10-01 — Jev stack-ranks prospective tasks against projects, with a user terms dictionary
 
 **Model:** Claude Opus 5.5 (1M context)
