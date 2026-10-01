@@ -20,7 +20,7 @@ async function renderIndicator(app) {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Cover confirmed updates, unavailable APIs, failures, and pointer/keyboard tooltip access across the bridge.
+// @desc Cover updates, unavailable APIs, failures, tooltip access, and click navigation to Jots across the bridge.
 describe("Dashboard update indicator", () => {
   beforeEach(() => {
     container = document.createElement("div");
@@ -35,7 +35,9 @@ describe("Dashboard update indicator", () => {
 
   it.each(["mouseenter", "focusin", "click"])("shows the exact update instructions on %s", async eventName => {
     const context = { checkForUpdates: jest.fn().mockResolvedValue(true) };
-    const app = { checkForUpdates: () => plugin.onEmbedCall({ context }, "checkForUpdates") };
+    const navigate = jest.fn().mockResolvedValue(true);
+    const app = { checkForUpdates: () => plugin.onEmbedCall({ context }, "checkForUpdates"),
+      navigate: url => plugin.onEmbedCall({ navigate }, "navigate", url) };
     await renderIndicator(app);
     expect(context.checkForUpdates).toHaveBeenCalledTimes(1);
     expect(context.checkForUpdates.mock.contexts[0]).toBe(context);
@@ -48,6 +50,12 @@ describe("Dashboard update indicator", () => {
     });
     expect(reference._tippy.state.isVisible).toBe(true);
     expect(document.querySelector(".tippy-content").textContent).toBe(updateMessage);
+    if (eventName === "click") {
+      expect(navigate).toHaveBeenCalledTimes(1);
+      expect(navigate).toHaveBeenCalledWith("https://www.amplenote.com/notes/jots");
+    } else {
+      expect(navigate).not.toHaveBeenCalled();
+    }
   });
 
   it.each([false, null, undefined, { error: "offline" }, "true"])("hides unconfirmed update result %p", async result => {
