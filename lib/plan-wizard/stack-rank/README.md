@@ -1,4 +1,5 @@
-Rate how applicable each prospective task is to each current project, using TypeSafe's Jev decision model.
+Rate how applicable each prospective task is to each current project, using TypeSafe's Jev decision model, or the
+generative provider's fast model when no Jev key is set.
 
 # Pipeline
 
@@ -10,7 +11,7 @@ stands down while the builder is open. Both passes prepare one ranker and then r
 import { prepareProjectTaskRanker } from "plan-wizard/stack-rank/stack-rank-project-tasks";
 
 const ranker = await prepareProjectTaskRanker(app, { domainName, domainUuid, projects, refineDictionary, tasks });
-// null when no Jev Access Token is set
+// null when neither a Jev key nor a generative provider is available
 const { acceptedTasks, failureReason, minimumMatchScore } = await ranker.rankProject(project, matchedTaskRecords);
 ```
 
@@ -23,14 +24,15 @@ const { acceptedTasks, failureReason, minimumMatchScore } = await ranker.rankPro
    for.
 3. `stack-rank-project-tasks.js` draws each project's pool with `dashboard/project-candidate-tasks.js`, the same
    rule the generative provider's pool uses. The pool holds open tasks not already associated with the project,
-   capped at the 500 most recently updated. Task details are cached across the pass's projects.
+   capped at the 500 most recently updated for Jev, or the 150 most recently updated for the fast model. Task
+   details are cached across the pass's projects.
 4. `prospective-task-details.js` describes each pooled task. The details are its note's name, tags, and last-opened
    date, `isParent`, its parent task, and up to five child tasks. The task API exposes only `isParent`, so the
    outline is read from note markdown by indentation. The API has no view counts; the note's last-opened date is the
    closest available signal.
 5. `rank-prospective-tasks.js` sends batches of 20, four at a time. Each batch is a single `state` holding the
    project, up to 8 of its existing tasks, and the dictionary terms the batch mentions, plus one 1–10 `score`
-   question per task.
+   question per task. With the fast model, batches are 25 tasks, two at a time (see **Fast-model rating** below).
 6. `project-match-scores.js` picks the accepted tasks:
    - By default a project accepts tasks rated 5 or higher.
    - A project with more than 20 such tasks raises its minimum to 7. If nothing rates 7, it keeps its top 20 at 5.
@@ -61,6 +63,20 @@ or edited.
 Cost: a live 20-task batch used about 320 input tokens per task, so a project's first ranking over a full 500-task
 pool is roughly 160k input tokens. Later rankings send only new or edited tasks.
 
+# Fast-model rating
+
+Without a Jev key, `prepareProjectTaskRanker` rates with the generative provider's fast model instead, provided a
+provider key is set or Ample Agent Pro is installed. `generative-task-scores.js` renders the same state and score
+questions a Jev batch carries as one prompt, using the same rubric, and asks for `{ "ratings": { "task_1": 7, … } }`.
+It sends the prompt through `raceWizardPrompt` with `wizardLlmOptions`, the fast model Plan Builder uses. The reply is
+converted to Jev's zero-indexed score answers, so the rating cache, thresholds, and stored ratings work as they do
+for Jev. A rating outside 1–10, or one the reply leaves out, leaves that task unrated.
+
+Because a generative prompt costs far more per task, the pool is capped at 150 tasks. In Plan Builder, a fast-model
+pass also stops before its next project once the builder is waiting on the provider again, so rating never delays a
+page the user is on. Ratings from either rater share one cache, so a Jev key added later rates only tasks that are
+new, edited, or newly inside its larger pool.
+
 # User terms dictionary
 
 The note is archived, tagged `plugins/dashboard`, and seeded with `Amplenote` and `Dashboard`. Each bullet reads
@@ -74,6 +90,14 @@ before they are sent anywhere.
 can fall between whole numbers. The live API rejects `null` rubric entries even though the SDK's types allow them.
 
 TypeSafe's endpoint refuses browser origins: its CORS preflight returns 400 for amplenote.com, `null`, and
-localhost. Inside Amplenote, set **Jev Access Token** to an OpenRouter key (`sk-or-…`), which routes to OpenRouter's
-`/api/v1/systemone`. That route allows any origin. A TypeSafe key works from Node, which is how
-`test/stack-rank.test.js` makes its live call when `JEV_ACCESS_TOKEN` is set in `.env`.
+localhost. **Jev Access Token** accepts either key:
+
+- An OpenRouter key (`sk-or-…`) goes straight to OpenRouter's `/api/v1/systemone`, which allows any origin.
+- From a browser, a TypeSafe key goes through the plugin CORS proxy Worker at `aged-sunset-proxy.amplenote.workers.dev`,
+  as `?apiurl=https://api.typesafe.ai/v1/systemone`. The Worker passes the user's own `Authorization` header
+  through and strips the browser's Origin. Its source is `doc/cloudflare/plugin-cors-proxy.js`.
+- From Node, a TypeSafe key goes to TypeSafe directly. That is how `test/stack-rank.test.js` makes its live call when
+  `JEV_ACCESS_TOKEN` is set in `.env`.
+
+In the dev environment, `JEV_ACCESS_TOKEN` from `.env` is injected into the bundle and used whenever the setting is
+empty.

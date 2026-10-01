@@ -5,6 +5,36 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-01 — Rate project tasks with the fast model when no Jev key is set; route TypeSafe keys through the CORS proxy
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files created:**
+- `lib/plan-wizard/stack-rank/generative-task-scores.js` — Renders a Jev batch's state and score questions as a fast-model prompt, converts its 1–10 ratings to Jev's answer shape, and decides whether a provider or Ample Agent Pro can rate
+- `doc/cloudflare/plugin-cors-proxy.js` — Plugin CORS proxy Worker extended to forward api.typesafe.ai with the caller's own Authorization and no browser Origin
+
+**Files modified:**
+- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` — Chooses Jev or the fast model per pass (`projectTaskScorer`), with a 150-task pool and batches of 25, two at a time, for the fast model; the dev Jev key is used when the setting is empty
+- `lib/plan-wizard/stack-rank/refresh-stale-project-rankings.js` — Runs with either scorer, and stops a fast-model pass while the builder waits on the provider
+- `lib/hooks/use-project-task-ranking.js` — Tells the pass when the builder is waiting on the provider
+- `lib/providers/jev-client.js` — Sends a TypeSafe key through the CORS proxy from a browser
+- `lib/constants/settings.js`, `dev/dev-server.js` — Inject `JEV_ACCESS_TOKEN` from `.env` into the dev bundle
+- `lib/plan-wizard/stack-rank/rank-prospective-tasks.js`, `lib/dashboard/project-task-collection.js` — Wording no longer assumes Jev is the rater
+- `lib/plan-wizard/stack-rank/README.md`, `test/stack-rank.test.js` — Document and test the fast-model scorer, the proxy route, and the busy-provider stop
+
+---
+
+## 2026-10-01 — Always log in dev builds; diagnose Vision Guide save verification failures
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files modified:**
+- `lib/util/log.js` — `logIfEnabled` logs whenever the bundle was built with `NODE_ENV` "development" (the dev server), regardless of the Console Logging setting; the production define folds the check away.
+- `lib/plan-wizard/vision-guide-repository.js` — Adds `logSaveVerificationMismatch`, called before both "save verification failed" throws, naming the leaf, the differing fields, and the missing/unexpected/changed record identities. The bucket-leaf check no longer dereferences a missing read-back range.
+- `lib/util/browser-dev-app.js` — `getNoteContent` and `replaceNoteContent` log failed or rejected dev-server requests instead of silently returning empty content or false.
+
+**Validation:** 275 plan-wizard/log/browser-dev-app tests passed; `npm run build` and the production bundle smoke test passed. Discovery followed by save against a copy of the dev Vision Guide succeeded in Node, so the browser-only failure is left to the new diagnostics.
+
+---
+
 ## 2026-10-01 — Show Dashboard update availability beside Settings
 
 **Model:** GPT-6 (Codex)

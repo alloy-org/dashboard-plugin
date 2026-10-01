@@ -6,14 +6,16 @@
 import { jest } from "@jest/globals";
 import dotenv from "dotenv";
 import fetch from "isomorphic-fetch";
+import { SETTING_KEYS } from "constants/settings";
 import { relevantDictionaryTerms } from "plan-wizard/stack-rank/build-project-task-context";
 import { acceptedDictionaryTerms } from "plan-wizard/stack-rank/dictionary-term-discovery";
 import { acceptedRankedTasks, matchScoresWithProjectScore, persistPrunedMatchScores,
   storedMinimumMatchScore } from "plan-wizard/stack-rank/project-match-scores";
+import { generativeScorePrompt, generativeScoreRequester } from "plan-wizard/stack-rank/generative-task-scores";
 import { prospectiveTaskDetails, taskOutlineFromNoteContent } from "plan-wizard/stack-rank/prospective-task-details";
 import { jevRequestForBatch, rankProspectiveTasks } from "plan-wizard/stack-rank/rank-prospective-tasks";
 import { refreshStaleProjectRankings } from "plan-wizard/stack-rank/refresh-stale-project-rankings";
-import { prepareProjectTaskRanker } from "plan-wizard/stack-rank/stack-rank-project-tasks";
+import { GENERATIVE_CANDIDATE_TASK_LIMIT, prepareProjectTaskRanker } from "plan-wizard/stack-rank/stack-rank-project-tasks";
 import { taskMatchScoresByProject, taskRatingKey } from "plan-wizard/stack-rank/task-rating-cache";
 import { dictionaryEntriesFromContent, examinedProjectSummaries, mergedDictionaryContent,
   openUserTermsDictionary } from "plan-wizard/stack-rank/user-terms-dictionary";
@@ -253,8 +255,29 @@ describe("project match scores setting", () => {
 describe("prepareProjectTaskRanker", () => {
   beforeEach(() => setPluginData({ settings: {} }));
 
-  it("returns no ranker without a Jev key", async () => {
+  it("returns no ranker when neither Jev nor a generative provider can rate", async () => {
     expect(await prepareProjectTaskRanker({}, { domainName: "Work", domainUuid: "work-domain", tasks: [] })).toBeNull();
+  });
+
+  it("rates the 150 most recent tasks with the fast model, 25 to a prompt, when no Jev key is set", async () => {
+    setPluginData({ settings: { [SETTING_KEYS.LLM_API_KEY_OPENAI]: "an-openai-key" } });
+    const tasks = Array.from({ length: 200 }, (_value, index) => ({ content: `Task number ${ index }`, noteUUID: "note-1",
+      updatedAt: index, uuid: `open-${ index }` }));
+    const promptRunner = jest.fn(async (_app, prompt) => {
+      const questionNames = [...prompt.matchAll(/^- (task_\d+):/gm)].map(match => match[1]);
+      const ratings = Object.fromEntries(questionNames.map(questionName => [questionName, 2]));
+      if (prompt.includes("Task number 199")) ratings.task_1 = 8;
+      return { ratings };
+    });
+    const ranker = await prepareProjectTaskRanker(notesApp({}, tasks), { domainName: "Work", domainUuid: "work-domain",
+      now: new Date(2026, 9, 1), projects: [DIFF_DIGEST_PROJECT], promptRunner, refineDictionary: false, tasks });
+    expect(ranker.scorerEm).toBe("generative");
+    const ranking = await ranker.rankProject(DIFF_DIGEST_PROJECT, []);
+    expect(promptRunner).toHaveBeenCalledTimes(GENERATIVE_CANDIDATE_TASK_LIMIT / 25);
+    expect(ranking.ratedCount).toBe(GENERATIVE_CANDIDATE_TASK_LIMIT);
+    expect(ranking.acceptedTasks).toEqual([{ matchScore: 8, taskText: "Task number 199", taskUuid: "open-199" }]);
+    const ratedTexts = promptRunner.mock.calls.map(([, prompt]) => prompt).join("\n");
+    expect(ratedTexts).not.toContain("Task number 49\"");
   });
 
   it("grows the dictionary, rates the unassociated pool, and saves the project's minimum match score", async () => {
@@ -314,6 +337,22 @@ describe("prepareProjectTaskRanker", () => {
   });
 });
 
+describe("generative task scores", () => {
+  it("asks for one rating per Jev question and converts the reply to Jev's zero-indexed score answers", async () => {
+    const { questions, state } = jevRequestForBatch(DIFF_DIGEST_PROJECT, [taskDetail({ taskText: "Diff Digest landing copy" }),
+      taskDetail({ taskText: "Buy dog food", taskUuid: "task-2" }), taskDetail({ taskText: "Renew passport", taskUuid: "task-3" })], {});
+    const prompt = generativeScorePrompt(questions, state);
+    expect(prompt).toContain("10: directly advances the project's outcome or its stated next action");
+    expect(prompt).toContain('"Diff Digest landing copy"');
+    expect(prompt).toContain('{"ratings":{"task_1":1,"task_2":1,"task_3":1}}');
+    const promptRunner = jest.fn().mockResolvedValue({ ratings: { task_1: 9, task_2: "1.5", task_3: 14 } });
+    const { answers } = await generativeScoreRequester({}, { promptRunner })({ questions, state });
+    expect(answers).toEqual({ task_1: { confidence: 0, score: 8, type: "score" }, task_2: { confidence: 0, score: 0.5, type: "score" } });
+    await expect(generativeScoreRequester({}, { promptRunner: jest.fn().mockResolvedValue({}) })({ questions, state }))
+      .rejects.toThrow("The fast model returned no ratings");
+  });
+});
+
 describe("taskMatchScoresByProject", () => {
   it("reads kept tasks' scores from their records and the rest from the sparse ratings", () => {
     const storedProjects = [{ jevRatings: { "a1b2c3d4:task-low": 2.2 }, relatedTaskRecords: [{ taskText: "By name",
@@ -347,16 +386,36 @@ describe("refreshStaleProjectRankings", () => {
       relatedTasks: ["related-1", "open-1"] });
     expect(stored.relatedTaskRecords.map(task => task.taskUuid)).toEqual(["related-1", "open-1"]);
   });
+
+  it("stops a fast-model pass while the builder waits on the provider", async () => {
+    const staleProject = { ...DIFF_DIGEST_PROJECT, lastRankedAt: "2026-09-20T12:00:00.000Z", relatedTasks: [] };
+    const notes = { "Project Tasks Q4 2026 Work": { content: storeContentFromProjects([staleProject]), uuid: "store-note" } };
+    const rankProject = jest.fn();
+    const rankerFactory = jest.fn().mockResolvedValue({ dictionaryChanges: {}, rankProject, scorerEm: "generative" });
+    const result = await refreshStaleProjectRankings(notesApp(notes, []), { accessToken: "token", domainName: "Work",
+      domainUuid: "work-domain", isProviderBusy: () => true, now: new Date("2026-10-01T12:00:00.000Z"), rankerFactory });
+    expect(result).toEqual({ failures: 0, rankedCount: 0, skippedReason: null });
+    expect(rankProject).not.toHaveBeenCalled();
+  });
+
+  it("skips the pass when neither Jev nor a generative provider can rate", async () => {
+    setPluginData({ settings: {} });
+    const result = await refreshStaleProjectRankings({}, { domainName: "Work", domainUuid: "work-domain" });
+    expect(result).toEqual({ failures: 0, rankedCount: 0, skippedReason: "noScorer" });
+  });
 });
 
 describe("Jev client", () => {
-  it("routes OpenRouter keys through OpenRouter, which accepts browser origins", () => {
+  it("routes OpenRouter keys to OpenRouter, and a browser's TypeSafe keys through the CORS proxy", () => {
     expect(jevRouteFromAccessToken("sk-or-v1-abc").routeEm).toBe("openrouter");
-    expect(jevRouteFromAccessToken("ts-abc").routeEm).toBe("typesafe");
+    expect(jevRouteFromAccessToken("ts-abc").endpoint).toBe(
+      "https://aged-sunset-proxy.amplenote.workers.dev?apiurl=https%3A%2F%2Fapi.typesafe.ai%2Fv1%2Fsystemone");
+    expect(jevRouteFromAccessToken("ts-abc", { useProxy: false })).toMatchObject({ endpoint: "https://api.typesafe.ai/v1/systemone",
+      routeEm: "typesafe" });
   });
 
   itIfJevToken("rates a task serving the project above an unrelated one (live Jev call)", async () => {
-    const requestAnswers = options => requestJevAnswers({ ...options, fetchImplementation: fetch });
+    const requestAnswers = options => requestJevAnswers({ ...options, fetchImplementation: fetch, useProxy: false });
     const dictionary = relevantDictionaryTerms({ "Diff Digest": "GitClear's weekly email that summarizes the code "
       + "changes a team made" }, [DIFF_DIGEST_PROJECT.summary]);
     const taskDetails = [taskDetail({ noteName: "Errands", taskText: "Buy dog food", taskUuid: "unrelated" }),

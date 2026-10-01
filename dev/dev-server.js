@@ -27,7 +27,7 @@ const devDir = __dirname;
 // DEV_ENV_TOKEN_VAR_NAMES / devTokenFromProvider in lib/constants/settings.js — a token read by
 // devLlmOverride but missing here would read as undefined in the bundle (the original OpenAI-only bug).
 const DEV_LLM_TOKEN_VAR_NAMES = ["OPEN_AI_ACCESS_TOKEN", "ANTHROPIC_AI_ACCESS_TOKEN",
-  "GROK_AI_ACCESS_TOKEN", "GEMINI_AI_ACCESS_TOKEN"];
+  "GROK_AI_ACCESS_TOKEN", "GEMINI_AI_ACCESS_TOKEN", "JEV_ACCESS_TOKEN"];
 
 // ----------------------------------------------------------------------------------------------
 // @desc Build the esbuild `define` entries that inject each dev LLM token as a literal process.env.X
