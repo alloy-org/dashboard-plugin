@@ -67,7 +67,7 @@ describe("resolveQuarterlyPlanEntry", () => {
     expect(entry.kind).toBe("import");
     expect(entry.applicableTaskCount).toBe(7);
     expect(entry.importSources.map(source => source.label)).toEqual(["Evernote", "Obsidian", "Todoist", "Notion", "Markdown"]);
-    expect(entry.importSources[0].url).toBe("https://www.amplenote.com/account/import_export#evernote");
+    expect(entry.importSources[0].url).toBe("https://www.amplenote.com/help/import_notes_and_tasks_overview#___import_from_evernote");
     expect(app.getNoteTasks).toHaveBeenCalledTimes(1);
     expect(app.getNoteTasks).toHaveBeenCalledWith({ uuid: "real-note" }, { includeDone: false });
     expect(app.filterNotes).toHaveBeenCalledTimes(1);

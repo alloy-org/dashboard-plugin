@@ -21,6 +21,11 @@ const QUARTERLY_PLANS = {
   current: { domainName: "Work", hasAllMonthlyDetails: false, label: "Q3 2026", noteUUID: null, quarter: 3, year: 2026 },
   next: { domainName: "Work", hasAllMonthlyDetails: false, label: "Q4 2026", noteUUID: null, quarter: 4, year: 2026 },
 };
+// The builder picks between the current and next quarter by the real date, so the clock is held inside Q3 2026 to
+// match QUARTERLY_PLANS. Only Date is faked; the settle loop still relies on real timers and microtasks.
+const PINNED_NOW = new Date(2026, 8, 20);
+const REAL_TIMER_APIS = ["cancelAnimationFrame", "cancelIdleCallback", "clearImmediate", "clearInterval", "clearTimeout", "hrtime",
+  "nextTick", "performance", "queueMicrotask", "requestAnimationFrame", "requestIdleCallback", "setImmediate", "setInterval", "setTimeout"];
 
 // ----------------------------------------------------------------------------------------------
 // @desc Flush the promise chains the widget's month load, the wizard's plan read, and the Ample Agent Pro
@@ -87,11 +92,13 @@ function appWithAmpleAgentPro() {
 
 describe("PlanWizard provider gate", () => {
   beforeEach(() => {
+    jest.useFakeTimers({ doNotFake: REAL_TIMER_APIS, now: PINNED_NOW });
     setPluginData({ context: {}, settings: {} });
   });
 
   afterEach(() => {
     document.body.innerHTML = "";
+    jest.useRealTimers();
   });
 
   it("blocks the questions with the gate when no provider is reachable", async () => {

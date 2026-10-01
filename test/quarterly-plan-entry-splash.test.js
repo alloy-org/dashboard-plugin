@@ -29,8 +29,8 @@ const sharedEntry = {
   agentProPriceLabel: "$8",
   agentProUrl: "https://www.amplenote.com/plugins/ample_agent_pro",
   importSources: [
-    { id: "evernote", label: "Evernote", url: "https://www.amplenote.com/account/import_export#evernote" },
-    { id: "obsidian", label: "Obsidian", url: "https://www.amplenote.com/account/import_export#obsidian" },
+    { id: "evernote", label: "Evernote", url: "https://www.amplenote.com/help/import_notes_and_tasks_overview#___import_from_evernote" },
+    { id: "obsidian", label: "Obsidian", url: "https://www.amplenote.com/help/import_notes_and_tasks_overview#___import_from_obsidian" },
   ],
   taskThreshold: 25,
   videoEmbedUrl: "https://www.youtube.com/embed/zyLI9KCziNU?start=5",
@@ -97,7 +97,7 @@ describe("Planning quarterly plan splash", () => {
     expect(container.textContent).toContain("7 tasks in your notes");
     const evernote = [...container.querySelectorAll(".plan-entry-source")].find(button => button.textContent.includes("Evernote"));
     await act(async () => { evernote.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
-    expect(app.navigate).toHaveBeenCalledWith("https://www.amplenote.com/account/import_export#evernote");
+    expect(app.navigate).toHaveBeenCalledWith("https://www.amplenote.com/help/import_notes_and_tasks_overview#___import_from_evernote");
 
     await act(async () => { container.querySelector(".plan-entry-scratch").dispatchEvent(new MouseEvent("click", { bubbles: true })); });
     await settle();

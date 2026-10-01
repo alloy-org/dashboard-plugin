@@ -63,7 +63,9 @@ describe("persistPromotedQuarterlyPlanToggles", () => {
   // @desc The setting is written only when promotion changed something.
   it("writes the setting only on change", async () => {
     const app = { setSetting: jest.fn().mockResolvedValue(true) };
-    const rawSetting = JSON.stringify({ d: { "Q3 2026": true } });
+    // Promotion drops ended quarters, so the stored toggle must be for the quarter in progress to survive unchanged.
+    const currentLabel = `Q${ Math.floor(new Date().getMonth() / 3) + 1 } ${ new Date().getFullYear() }`;
+    const rawSetting = JSON.stringify({ d: { [currentLabel]: true } });
     const unchanged = await persistPromotedQuarterlyPlanToggles(app, { domainUuid: "d", plans: [], rawSetting });
     expect(unchanged).toBe(rawSetting);
     expect(app.setSetting).not.toHaveBeenCalled();
