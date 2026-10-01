@@ -5,6 +5,21 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-01 — Show Dashboard update availability beside Settings
+
+**Model:** GPT-6 (Codex)
+**Files created/modified:**
+- `lib/plugin.js` — Bridges the current plugin's optional `app.context.checkForUpdates()` method to the embed.
+- `lib/dashboard/dashboard-update-indicator.jsx` (created) — Checks without blocking dashboard loading and shows an update icon with the requested Jots instructions on hover, focus, or tap.
+- `lib/dashboard/dashboard.jsx` — Places the update indicator immediately beside Settings.
+- `test/dashboard-update-indicator.test.js` (created) — Exercises host bridging, missing APIs, failed checks, stale results, and actual tooltip interactions.
+- `build/compiled.js` — Rebuilt production plugin with the update indicator.
+
+**Validation:** All 35 focused component, plugin, and production bundle tests passed; `npm run build` passed.
+**Implementation assumption:** The public API reference does not define the update check's return type. Only an explicit boolean `true` displays the indicator; unknown responses remain hidden pending confirmation of the live API contract.
+
+---
+
 ## 2026-10-01 — Show each task's Jev similarity score on the projects Sources page
 
 **Model:** Claude Opus 5.5 (1M context)

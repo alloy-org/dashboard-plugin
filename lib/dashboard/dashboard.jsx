@@ -15,6 +15,7 @@ import { DashboardLoadContext, useDashboardLoadTracker, useReportWidgetLoaded, u
 import DashboardLayoutPopup from 'dashboard-layout-popup';
 import DashboardSettingNote from "dashboard-setting-note";
 import DashboardSettingsPopup from 'dashboard-settings-popup';
+import DashboardUpdateIndicator from 'dashboard-update-indicator';
 import DaySketchWidget from 'day-sketch';
 import DebugConsoleWidget from 'debug-console';
 import { useDashboardDrag } from 'draggable-heading';
@@ -830,6 +831,7 @@ export default function DashboardApp({ app, initPromise }) {
             onDomainChange={handleDomainChange}
           />
           <div className="dashboard-toolbar-actions">
+            <DashboardUpdateIndicator app={app} />
             <button
               className="dashboard-configure-button"
               type="button"
