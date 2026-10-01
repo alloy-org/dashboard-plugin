@@ -17,6 +17,15 @@ $plan-entry-video-background: #152033;
     margin: 0;
   }
 
+  .plan-entry-heading-row {
+    align-items: center;
+    display: flex;
+    gap: $sp-md;
+    justify-content: space-between;
+
+    .plan-entry-title { flex: 1 1 auto; min-width: 0; }
+  }
+
   .plan-entry-copy,
   .plan-entry-footnote {
     color: $color-text-secondary;
@@ -105,6 +114,7 @@ $plan-entry-video-background: #152033;
 
   .plan-entry-scratch,
   .plan-entry-build,
+  .plan-entry-begin,
   .plan-entry-choice-button--primary {
     background: $color-accent;
     border-color: $color-accent;
@@ -112,6 +122,17 @@ $plan-entry-video-background: #152033;
     padding: $sp-sm $sp-lg;
 
     &:hover { filter: brightness(0.96); }
+  }
+
+  .plan-entry-begin {
+    border: 1px solid $color-accent;
+    border-radius: $radius-md;
+    cursor: pointer;
+    flex: 0 0 auto;
+    font-size: $smaller-font-size;
+    font-weight: 600;
+    padding: $sp-xs $sp-md;
+    white-space: nowrap;
   }
 
   .plan-entry-scratch,

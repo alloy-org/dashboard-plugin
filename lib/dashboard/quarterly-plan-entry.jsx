@@ -161,7 +161,8 @@ function NeedsAiEntry({ entry, onNavigate, onOpenSettings, plan }) {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Enough tasks and a working model. The video explains the builder, then the button opens it.
+// @desc Enough tasks and a working model. The headline row carries a Begin button so Plan Builder can be opened
+//   without scrolling past the video; the button below the benefits opens it too.
 // @param {Object} props - { entry, onBuildPlan, plan }
 // @returns {JSX.Element} The ready splash
 function ReadyPlanEntry({ entry, onBuildPlan, plan }) {
@@ -169,7 +170,10 @@ function ReadyPlanEntry({ entry, onBuildPlan, plan }) {
   return (
     <div className="quarterly-plan-entry quarterly-plan-entry--ready">
       { startsPhrase ? <p className="plan-entry-starts">{ startsPhrase }</p> : null }
-      <h3 className="plan-entry-title">{ readyHeadline(plan) }</h3>
+      <div className="plan-entry-heading-row">
+        <h3 className="plan-entry-title">{ readyHeadline(plan) }</h3>
+        <button className="plan-entry-begin" onClick={ onBuildPlan } type="button">Begin Quarterly Plan</button>
+      </div>
       <p className="plan-entry-copy">You have { entry.applicableTaskCount } tasks to build from. The Plan Builder turns
         them into a handful of quarterly goals, then keeps your daily agenda pointed at them.</p>
       <div className="plan-entry-video">

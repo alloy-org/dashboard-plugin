@@ -132,4 +132,15 @@ describe("Planning quarterly plan splash", () => {
     expect(document.body.querySelector(".plan-wizard-title-quarter").textContent).toBe("Q4 2026");
     await cleanup();
   });
+
+  it("opens Plan Builder from the Begin button beside the ready headline", async () => {
+    const { cleanup, container } = await renderSplash({ ...sharedEntry, applicableTaskCount: 142, kind: "ready" });
+
+    const beginButton = container.querySelector(".plan-entry-heading-row .plan-entry-begin");
+    expect(beginButton.textContent).toBe("Begin Quarterly Plan");
+    await act(async () => { beginButton.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    await settle();
+    expect(document.body.querySelector(".plan-wizard-title-quarter").textContent).toBe("Q4 2026");
+    await cleanup();
+  });
 });

@@ -106,7 +106,7 @@ describe("resolveQuarterlyPlanEntry", () => {
     const [calledApp, plugin, prompt, , apiKey, jsonResponse, timeoutSeconds] = llmPrompt.mock.calls[0];
     expect(calledApp).toBe(app);
     expect(plugin).toBeNull();
-    expect(prompt).toBe("Reply with ok.");
+    expect(prompt).toBe('Reply with the JSON {"ok": true}.');
     expect(apiKey).toBe("sk-test-key");
     expect(jsonResponse).toBe(false);
     expect(timeoutSeconds).toBe(10);
