@@ -5,17 +5,29 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-01 — Show each task's Jev similarity score on the projects Sources page
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files modified:**
+- `lib/plan-wizard/stack-rank/task-rating-cache.js` — Adds `taskMatchScoresByProject`, reading kept tasks' scores from their records and the rest from the sparse ratings
+- `lib/plan-wizard/plan-wizard-service.js` — The sources summary carries `matchScoresByProjectUuid`, read from the quarter's project task store and empty when it cannot be read
+- `lib/dashboard/plan-wizard/project-sources-page-fields.js` — `projectTaskItems` attaches each task's `matchScore` for the row's project
+- `lib/dashboard/plan-wizard/project-sources-page.jsx` — The task detail line leads with "Similarity 7.7/10" when Jev has rated the task
+- `test/plan-wizard-project-sources.test.js`, `test/stack-rank.test.js` — Score lookup per project and the unrated case
+
+---
+
 ## 2026-10-01 — Cache Jev ratings by a checksum of project summary and task text
 
 **Model:** Claude Opus 5.5 (1M context)
 **Files created/modified:**
-- `lib/plan-wizard/stack-rank/task-rating-cache.js` (created) — Checksums each project-and-task pairing, splits a pool into cached and unrated tasks, and keeps only the ratings the current pool still produces
+- `lib/plan-wizard/stack-rank/task-rating-cache.js` (created) — Keys each rating `checksum:taskUuid`, the checksum digesting the project summary with the task text; splits a pool into cached and unrated tasks, and keeps only ratings of pooled tasks the project did not keep
 - `lib/util/text-digest.js` (created) — The FNV-1a digest prospect discovery used, shared so the rating cache can use it too
-- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` (modified) — `rankProject` takes the project's stored ratings, sends Jev only the uncached tasks, and returns the ratings to store
+- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` (modified) — `rankProject` takes the project's stored ratings, sends Jev only the uncached tasks, and returns the sparse ratings to store
 - `lib/plan-wizard/stack-rank/refresh-stale-project-rankings.js`, `lib/dashboard/project-task-collection.js` (modified) — Pass each project's stored ratings to the ranker and write back the returned ones; a failed ranking keeps the stored ratings
-- `lib/dashboard/project-task-store-markdown.js` (modified) — Persists `jevRatings` in each project's payload
+- `lib/dashboard/project-task-store-markdown.js` (modified) — Renders the ratings as one JSON line in a labelled code block beside the payload, and lifts that block out before parsing the payload
 - `lib/plan-wizard/prospect-discovery.js` (modified) — `summaryDigest` uses the shared digest
-- `test/stack-rank.test.js`, `test/project-task-store.test.js` (modified) — Cache hits, edited task and renamed project invalidation, and ratings carried through both passes
+- `test/stack-rank.test.js`, `test/project-task-store.test.js` (modified) — Cache hits, edited task and renamed project invalidation, sparse storage, the ratings block round trip, and ratings carried through both passes
 
 ---
 

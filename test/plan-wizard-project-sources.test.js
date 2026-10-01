@@ -111,6 +111,17 @@ describe("projectTaskItems", () => {
     expect(tasks.map(task => task.uuid)).toEqual(["task-key", "task-open", "task-done"]);
     expect(unreadTaskCount).toBe(1);
   });
+
+  it("carries each task's similarity score for this project, null when Jev has not rated it", () => {
+    const [projectRow] = sourceProjectRows([prospect({ evidence: [{ taskUuid: "task-rated" }, { taskUuid: "task-unrated" }] })]);
+    const taskByUuid = { "task-rated": { completedAt: null, isImportant: false, text: "Rated" },
+      "task-unrated": { completedAt: null, isImportant: false, text: "Unrated" } };
+    const matchScoresByProjectUuid = { [projectRow.uuid]: { "task-rated": 7.7 }, "other-project": { "task-unrated": 2 } };
+
+    const { tasks } = projectTaskItems(projectRow, { matchScoresByProjectUuid, taskByUuid });
+
+    expect(tasks.map(task => [task.uuid, task.matchScore])).toEqual([["task-rated", 7.7], ["task-unrated", null]]);
+  });
 });
 
 describe("hasThinSources", () => {

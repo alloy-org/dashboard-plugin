@@ -14,7 +14,7 @@ import { prospectiveTaskDetails, taskOutlineFromNoteContent } from "plan-wizard/
 import { jevRequestForBatch, rankProspectiveTasks } from "plan-wizard/stack-rank/rank-prospective-tasks";
 import { refreshStaleProjectRankings } from "plan-wizard/stack-rank/refresh-stale-project-rankings";
 import { prepareProjectTaskRanker } from "plan-wizard/stack-rank/stack-rank-project-tasks";
-import { taskRatingKey } from "plan-wizard/stack-rank/task-rating-cache";
+import { taskMatchScoresByProject, taskRatingKey } from "plan-wizard/stack-rank/task-rating-cache";
 import { dictionaryEntriesFromContent, examinedProjectSummaries, mergedDictionaryContent,
   openUserTermsDictionary } from "plan-wizard/stack-rank/user-terms-dictionary";
 import { pluginSettings, setPluginData } from "plugin-data";
@@ -311,6 +311,14 @@ describe("prepareProjectTaskRanker", () => {
     expect(requestAnswers).toHaveBeenCalledTimes(1);
     expect(repeatRanking.acceptedTasks).toEqual([]);
     expect(repeatRanking.taskRatings).toEqual(ranking.taskRatings);
+  });
+});
+
+describe("taskMatchScoresByProject", () => {
+  it("reads kept tasks' scores from their records and the rest from the sparse ratings", () => {
+    const storedProjects = [{ jevRatings: { "a1b2c3d4:task-low": 2.2 }, relatedTaskRecords: [{ taskText: "By name",
+      taskUuid: "task-named" }, { matchScore: 8.1, taskText: "Kept", taskUuid: "task-kept" }], uuid: "project-1" }];
+    expect(taskMatchScoresByProject(storedProjects)).toEqual({ "project-1": { "task-kept": 8.1, "task-low": 2.2 } });
   });
 });
 

@@ -48,11 +48,13 @@ function sourcesStatusText({ isDiscovering, isLoadingSources }) {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Describe a cited task's standing beneath its text, as "Important · Finished Sep 14 · Support log".
+// @desc Describe a cited task's standing beneath its text, as "Similarity 7.7/10 · Important · Finished Sep 14 ·
+//   Support log". The similarity is Jev's rating of the task against the project, shown only once Jev has rated it.
 // @param {object} task - Item from projectTaskItems.
 // @returns {string} The parts that apply, joined.
 function projectTaskDetail(task) {
   const detailParts = [];
+  if (Number.isFinite(task.matchScore)) detailParts.push(`Similarity ${ task.matchScore }/10`);
   if (task.isImportant) detailParts.push("Important");
   if (task.completedAt) {
     const finishedOn = new Date(task.completedAt).toLocaleDateString(undefined, { day: "numeric", month: "short" });
