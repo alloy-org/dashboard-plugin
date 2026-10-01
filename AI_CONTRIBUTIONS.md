@@ -5,6 +5,28 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-01 — Jev stack-ranks prospective tasks against projects, with a user terms dictionary
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files created/modified:**
+- `lib/providers/jev-client.js` (created) — Sends System One requests to TypeSafe, or to OpenRouter for an `sk-or-` key, since TypeSafe refuses browser origins. Also builds score questions
+- `lib/plan-wizard/stack-rank/build-project-task-context.js` (created) — Reads the quarter's stored projects and the dictionary, runs term discovery on projects not yet examined, and narrows the dictionary to the terms a request mentions
+- `lib/plan-wizard/stack-rank/user-terms-dictionary.js` (created) — Archived `User terms dictionary {year}` note: seeding, bullet parsing with Rich Footnotes resolved, `[builder]` ownership, and the Examined projects list
+- `lib/plan-wizard/stack-rank/dictionary-term-discovery.js` (created) — Asks the generative provider for terms; keeps only those that occur in a project's wording
+- `lib/plan-wizard/stack-rank/prospective-task-details.js` (created) — Note name and tags, plus the parent/child outline read from note indentation
+- `lib/plan-wizard/stack-rank/rank-prospective-tasks.js` (created) — Batches tasks into Jev score questions and maps the 0-indexed scores onto a 1–10 rating
+- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` (created) — Runs the whole pipeline for every current project
+- `lib/plan-wizard/stack-rank/README.md` (created) — Pipeline, dictionary format, and Jev routing notes
+- `lib/dashboard/project-task-collection.js` (modified) — Exports `_candidateTaskRecords` so the stack rank rates the same pool
+- `lib/constants/settings.js` (modified) — Adds `SETTING_KEYS.JEV_ACCESS_TOKEN`
+- `test/stack-rank.test.js` (created) — Outline parsing, dictionary merge, term filtering, batching, the orchestrator, and a live Jev call gated on `JEV_ACCESS_TOKEN`
+
+**Task:** Stack-rank prospective tasks per Project with Jev, backed by a growing notebook terms dictionary
+**Prompt summary:** "connecting 'prospective tasks' with Projects using Jev from Typesafe to have it stack rank how applicable each prospective task is to the Project being evaluated" with a "User terms dictionary {year}" archived note in a new "stack-rank" subfolder
+**Scope:** ~800 lines across seven new modules, two small edits, and one test file
+
+---
+
 ## 2026-09-28 — One lookup decides whether Ample Agent Pro is installed
 
 **Model:** Grok 4.7
