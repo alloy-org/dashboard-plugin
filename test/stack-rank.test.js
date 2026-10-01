@@ -14,6 +14,7 @@ import { prospectiveTaskDetails, taskOutlineFromNoteContent } from "plan-wizard/
 import { jevRequestForBatch, rankProspectiveTasks } from "plan-wizard/stack-rank/rank-prospective-tasks";
 import { refreshStaleProjectRankings } from "plan-wizard/stack-rank/refresh-stale-project-rankings";
 import { prepareProjectTaskRanker } from "plan-wizard/stack-rank/stack-rank-project-tasks";
+import { taskRatingKey } from "plan-wizard/stack-rank/task-rating-cache";
 import { dictionaryEntriesFromContent, examinedProjectSummaries, mergedDictionaryContent,
   openUserTermsDictionary } from "plan-wizard/stack-rank/user-terms-dictionary";
 import { pluginSettings, setPluginData } from "plugin-data";
@@ -273,19 +274,49 @@ describe("prepareProjectTaskRanker", () => {
     expect(ranker.dictionaryChanges.addedTerms).toEqual(["Diff Digest"]);
     expect(notes["User terms dictionary 2026"].content).toContain("- Diff Digest launch (examined 2026-10-01)");
     const ranking = await ranker.rankProject(DIFF_DIGEST_PROJECT, DIFF_DIGEST_PROJECT.relatedTaskRecords);
+    const dogFoodKey = taskRatingKey("Diff Digest launch", { taskText: "Buy dog food", taskUuid: "open-2" });
     expect(ranking).toEqual({ acceptedTasks: [{ matchScore: 9, taskText: "Diff Digest landing copy", taskUuid: "open-1" }],
-      failureReason: null, minimumMatchScore: 5, ratedCount: 2 });
+      failureReason: null, minimumMatchScore: 5, ratedCount: 2, taskRatings: { [dogFoodKey]: 1 } });
     expect(requestAnswers.mock.calls[0][0].state.userTermsDictionary).toEqual({
       "Diff Digest": "GitClear's weekly code-change email" });
     const savedScores = JSON.parse(pluginSettings().dashboard_project_match_scores);
     expect(savedScores).toEqual({ "work-domain": { "Q4 2026": { "project-1": 5 } } });
     expect(app.setSetting).toHaveBeenCalledWith("dashboard_project_match_scores", JSON.stringify(savedScores));
   });
+
+  it("sends only tasks whose project and task text have no stored rating, and stores only those it did not keep", async () => {
+    const tasks = [{ content: "Diff Digest landing copy", noteUUID: "note-1", updatedAt: 2, uuid: "open-1" },
+      { content: "Buy dog food today", noteUUID: "note-1", updatedAt: 2, uuid: "open-2" },
+      { content: "Renew passport", noteUUID: "note-1", updatedAt: 2, uuid: "open-3" }];
+    const app = notesApp({}, tasks);
+    const requestAnswers = jest.fn().mockResolvedValue({ answers: { task_1: { confidence: 0.9, score: 1, type: "score" },
+      task_2: { confidence: 0.9, score: 0, type: "score" } } });
+    const ranker = await prepareProjectTaskRanker(app, { accessToken: "token", domainName: "Work",
+      domainUuid: "work-domain", now: new Date(2026, 9, 1), projects: [DIFF_DIGEST_PROJECT], refineDictionary: false,
+      requestAnswers, tasks });
+    const landingKey = taskRatingKey("Diff Digest launch", { taskText: "Diff Digest landing copy", taskUuid: "open-1" });
+    const editedTaskKey = taskRatingKey("Diff Digest launch", { taskText: "Buy dog food", taskUuid: "open-2" });
+    const renamedProjectKey = taskRatingKey("Diff Digest", { taskText: "Renew passport", taskUuid: "open-3" });
+    const storedRatings = { [editedTaskKey]: 1, [landingKey]: 9, [renamedProjectKey]: 2 };
+    const ranking = await ranker.rankProject(DIFF_DIGEST_PROJECT, [], { storedRatings });
+    expect(requestAnswers).toHaveBeenCalledTimes(1);
+    const sentTexts = Object.values(requestAnswers.mock.calls[0][0].state.prospectiveTasks).map(task => task.text);
+    expect(sentTexts).toEqual(["Buy dog food today", "Renew passport"]);
+    expect(ranking.acceptedTasks).toEqual([{ matchScore: 9, taskText: "Diff Digest landing copy", taskUuid: "open-1" }]);
+    const dogFoodKey = taskRatingKey("Diff Digest launch", { taskText: "Buy dog food today", taskUuid: "open-2" });
+    const passportKey = taskRatingKey("Diff Digest launch", { taskText: "Renew passport", taskUuid: "open-3" });
+    expect(ranking.taskRatings).toEqual({ [dogFoodKey]: 2, [passportKey]: 1 });
+    const repeatRanking = await ranker.rankProject(DIFF_DIGEST_PROJECT, [{ taskText: "Diff Digest landing copy",
+      taskUuid: "open-1" }], { storedRatings: ranking.taskRatings });
+    expect(requestAnswers).toHaveBeenCalledTimes(1);
+    expect(repeatRanking.acceptedTasks).toEqual([]);
+    expect(repeatRanking.taskRatings).toEqual(ranking.taskRatings);
+  });
 });
 
 describe("refreshStaleProjectRankings", () => {
   it("re-ranks only projects Jev has not ranked within three days, leaving the collection timestamp alone", async () => {
-    const staleProject = { ...DIFF_DIGEST_PROJECT, lastAttemptedAt: "2026-09-30T12:00:00.000Z",
+    const staleProject = { ...DIFF_DIGEST_PROJECT, jevRatings: { stale1234: 3 }, lastAttemptedAt: "2026-09-30T12:00:00.000Z",
       lastRankedAt: "2026-09-20T12:00:00.000Z", relatedTasks: ["related-1"] };
     const freshProject = { lastRankedAt: "2026-09-30T12:00:00.000Z", relatedTaskRecords: [], relatedTasks: [],
       summary: "Recently ranked", uuid: "project-2" };
@@ -293,7 +324,7 @@ describe("refreshStaleProjectRankings", () => {
       uuid: "store-note" } };
     const tasks = [{ content: "Pick the Diff Digest send day", uuid: "related-1" }, { content: "Landing copy", uuid: "open-1" }];
     const rankProject = jest.fn().mockResolvedValue({ acceptedTasks: [{ matchScore: 7.7, taskText: "Landing copy",
-      taskUuid: "open-1" }], failureReason: null, minimumMatchScore: 5 });
+      taskUuid: "open-1" }], failureReason: null, minimumMatchScore: 5, taskRatings: { abc12345: 7.7 } });
     const rankerFactory = jest.fn().mockResolvedValue({ dictionaryChanges: {}, rankProject });
     const now = new Date("2026-10-01T12:00:00.000Z");
     const result = await refreshStaleProjectRankings(notesApp(notes, tasks), { accessToken: "token", domainName: "Work",
@@ -301,8 +332,10 @@ describe("refreshStaleProjectRankings", () => {
     expect(result).toEqual({ failures: 0, rankedCount: 1, skippedReason: null });
     expect(rankerFactory.mock.calls[0][1]).toMatchObject({ refineDictionary: false });
     expect(rankProject).toHaveBeenCalledTimes(1);
+    expect(rankProject.mock.calls[0][2]).toEqual({ storedRatings: { stale1234: 3 } });
     const stored = storedProjectRecords(notes["Project Tasks Q4 2026 Work"].content).recordsByUuid.get("project-1");
-    expect(stored).toMatchObject({ lastAttemptedAt: "2026-09-30T12:00:00.000Z", lastRankedAt: now.toISOString(),
+    expect(stored).toMatchObject({ jevRatings: { abc12345: 7.7 }, lastAttemptedAt: "2026-09-30T12:00:00.000Z",
+      lastRankedAt: now.toISOString(),
       relatedTasks: ["related-1", "open-1"] });
     expect(stored.relatedTaskRecords.map(task => task.taskUuid)).toEqual(["related-1", "open-1"]);
   });

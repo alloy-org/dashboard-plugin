@@ -5,7 +5,7 @@ import { jest } from "@jest/globals";
 import { guideHeadingRanges } from "plan-wizard/vision-guide-markdown";
 import { collectProjectTasks } from "project-task-collection";
 import { projectNeedsRefresh, projectsToRefresh, shouldRefreshAnotherProject } from "project-refresh-schedule";
-import { initialProjectTaskStoreMarkdown, projectSectionHeadingText,
+import { initialProjectTaskStoreMarkdown, projectRecordFromSection, projectSectionHeadingText,
   projectSectionMarkdown } from "project-task-store-markdown";
 import { collectedIdeasMarkdown, openProjectTaskStore, readCollectedProjectTasks, storedProjectRecords,
   writeProjectSection } from "project-task-store";
@@ -146,6 +146,18 @@ describe("project task store sections", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc Writing one project leaves every other project's section untouched, which is what makes a
   //   progressive pass safe to interrupt.
+  it("keeps Jev ratings on one line in their own block, out of the JSON payload", () => {
+    const jevRatings = { "a1b2c3d4:task-1": 1.1, "e5f6a7b8:task-2": 4.4 };
+    const markdown = projectSectionMarkdown({ jevRatings, relatedTaskRecords: [], summary: "Launch", uuid: "project-1" });
+    expect(markdown).toContain(`\n\`\`\`\n${ JSON.stringify(jevRatings) }\n\`\`\`\n`);
+    expect(markdown.match(/^```json$/gm)).toHaveLength(1);
+    expect(markdown).not.toMatch(/"jevRatings"/);
+    expect(projectRecordFromSection(markdown).jevRatings).toEqual(jevRatings);
+    const withoutRatings = projectSectionMarkdown({ relatedTaskRecords: [], summary: "Launch", uuid: "project-1" });
+    expect(withoutRatings).not.toContain("Jev ratings");
+    expect(projectRecordFromSection(withoutRatings).jevRatings).toEqual({});
+  });
+
   it("adds and then replaces a single project section in place", async () => {
     const app = storeApp({ content: initialProjectTaskStoreMarkdown() });
     const store = await openProjectTaskStore(app, scope);
@@ -284,7 +296,8 @@ describe("background project task collection", () => {
       { content: "Rework the week grid header", uuid: "ranked-task" }, { content: "Tidy widget CSS", uuid: "lead-task" }] });
     const rankProject = jest.fn().mockResolvedValue({ acceptedTasks: [
       { matchScore: 8.2, taskText: "Rework the week grid header", taskUuid: "ranked-task" },
-      { matchScore: 4.1, taskText: "Tidy widget CSS", taskUuid: "lead-task" }], failureReason: null, minimumMatchScore: 3 });
+      { matchScore: 4.1, taskText: "Tidy widget CSS", taskUuid: "lead-task" }], failureReason: null, minimumMatchScore: 3,
+      taskRatings: { a1b2c3d4: 4.1 } });
     const rankerFactory = jest.fn().mockResolvedValue({ rankProject });
     const ideaGenerator = jest.fn(async (_app, { project }) => {
       expect(project.candidateTaskRecords).toEqual([]);
@@ -301,6 +314,7 @@ describe("background project task collection", () => {
     expect(stored.relatedTasks).toContain("ranked-task");
     expect(stored.relatedTasks).not.toContain("lead-task");
     expect(stored.lastRankedAt).toBe(now.toISOString());
+    expect(stored.jevRatings).toEqual({ a1b2c3d4: 4.1 });
   });
 
   // ----------------------------------------------------------------------------------------------

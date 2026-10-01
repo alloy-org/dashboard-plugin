@@ -45,8 +45,13 @@ added to `relatedTasks`, so the project keeps them. Fallback leads are rated aga
 a project, the generative provider gets no attribution pool and only suggests ideas. If ranking fails outright, the
 provider attributes tasks as it did before Jev.
 
-Cost: a live 20-task batch used about 320 input tokens per task, so a full 500-task pool is roughly 160k input
-tokens per project.
+Each project's payload in the project task store note keeps `jevRatings`, Jev's rating of each pooled task keyed by
+a checksum of the project's summary and the task's text (`task-rating-cache.js`). A task with a stored rating is not
+sent again. Rewording the project or the task changes the checksum, so the task is rated afresh. A rating is dropped
+once no pooled task produces its checksum, for example after the task is completed, edited, or accepted.
+
+Cost: a live 20-task batch used about 320 input tokens per task, so a project's first ranking over a full 500-task
+pool is roughly 160k input tokens. Later rankings send only new or edited tasks.
 
 # User terms dictionary
 

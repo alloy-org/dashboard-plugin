@@ -5,6 +5,20 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-01 — Cache Jev ratings by a checksum of project summary and task text
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files created/modified:**
+- `lib/plan-wizard/stack-rank/task-rating-cache.js` (created) — Checksums each project-and-task pairing, splits a pool into cached and unrated tasks, and keeps only the ratings the current pool still produces
+- `lib/util/text-digest.js` (created) — The FNV-1a digest prospect discovery used, shared so the rating cache can use it too
+- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` (modified) — `rankProject` takes the project's stored ratings, sends Jev only the uncached tasks, and returns the ratings to store
+- `lib/plan-wizard/stack-rank/refresh-stale-project-rankings.js`, `lib/dashboard/project-task-collection.js` (modified) — Pass each project's stored ratings to the ranker and write back the returned ones; a failed ranking keeps the stored ratings
+- `lib/dashboard/project-task-store-markdown.js` (modified) — Persists `jevRatings` in each project's payload
+- `lib/plan-wizard/prospect-discovery.js` (modified) — `summaryDigest` uses the shared digest
+- `test/stack-rank.test.js`, `test/project-task-store.test.js` (modified) — Cache hits, edited task and renamed project invalidation, and ratings carried through both passes
+
+---
+
 ## 2026-10-01 — Jev rankings decide which tasks a project holds, in the background pass and on entering Plan Builder
 
 **Model:** Claude Opus 5.5 (1M context)
