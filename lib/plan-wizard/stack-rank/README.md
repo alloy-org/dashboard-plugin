@@ -24,9 +24,10 @@ const { acceptedTasks, failureReason, minimumMatchScore } = await ranker.rankPro
    and does not write text. A proposed term is kept only if it occurs in the wording of a project it was proposed
    for.
 3. `stack-rank-project-tasks.js` draws each project's pool with `dashboard/project-candidate-tasks.js`, the same
-   rule the generative provider's pool uses. The pool holds open tasks not already associated with the project,
-   capped at the 500 most recently updated for Jev, or the 150 most recently updated for the fast model. Task
-   details are cached across the pass's projects.
+   rule the generative provider's pool uses. The first ranking holds open tasks not already associated with the
+   project, capped at the 500 most recently updated for Jev, or the 150 most recently updated for the fast model.
+   A project that already has `lastRankedAt` submits only tasks created after that time. A cited task with no
+   similarity score is still submitted. Task details are cached across the pass's projects.
 4. `prospective-task-details.js` describes each pooled task. The details are its note's name, tags, and last-opened
    date, `isParent`, its parent task, and up to five child tasks. The task API exposes only `isParent`, so the
    outline is read from note markdown by indentation. The API has no view counts; the note's last-opened date is the
@@ -48,21 +49,22 @@ added to `relatedTasks`, so the project keeps them. Fallback leads are rated aga
 a project, the generative provider gets no attribution pool and only suggests ideas. If ranking fails outright, the
 provider attributes tasks as it did before Jev.
 
-Each project's section in the project task store note keeps Jev's ratings in a code block, under the line
-`Jev ratings of tasks the project did not keep, by checksum:task UUID:`. The block holds one line of JSON:
+Each project's section records `lastRankedAt`. A later ranking does not send tasks created before that time, so the
+note does not keep a rating for every task the pool contained. The code block under `Jev ratings of tasks the project
+did not keep, by checksum:task UUID:` holds scores for cited tasks only:
 
 ```
-{"3f9a01c2:5e1b…":1.1,"b7d4e590:a20c…":4.4}
+{"3f9a01c2:5e1b…":6.2}
 ```
 
-The checksum digests the project's summary together with the task's text (`task-rating-cache.js`), so rewording
-either one invalidates the rating and the task is rated again. A task with a valid rating is not sent to Jev. The
-ratings are sparse: a task the project keeps (accepted at 5 or higher) appears only in the bullet list and is never
-written to the block, and a rating is dropped once its task leaves the pool, for example when the task is completed
-or edited.
+The checksum digests the project's summary together with the task's text (`task-rating-cache.js`). A cited task with
+a valid rating is not sent again. A task the project keeps (accepted at 5 or higher) appears in the bullet list and
+is not written to the block. Ratings for tasks the sources page does not cite are dropped the next time the store is
+opened for a ranking pass, each project in its own section write.
 
 Cost: a live 20-task batch used about 320 input tokens per task, so a project's first ranking over a full 500-task
-pool is roughly 160k input tokens. Later rankings send only new or edited tasks.
+pool is roughly 160k input tokens. Later rankings send only tasks created since `lastRankedAt`, plus cited tasks
+that still have no score. A batch that fails leaves `lastRankedAt` unchanged, so the missed tasks are sent again.
 
 # Fast-model rating
 

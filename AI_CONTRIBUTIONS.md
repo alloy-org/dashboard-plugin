@@ -5,6 +5,20 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-02 — Rank only tasks created since the previous ranking
+
+**Model:** Grok 4.7
+**Files modified:**
+- `lib/dashboard/project-candidate-tasks.js` — A pool with `createdAfter` includes only tasks created later than that time
+- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` — After `lastRankedAt`, the pool is tasks created since then, and only a cited task's rating is stored
+- `lib/plan-wizard/stack-rank/task-rating-cache.js` — Drops stored ratings that do not belong to a cited task
+- `lib/plan-wizard/stack-rank/refresh-stale-project-rankings.js` — Rewrites each project without its uncited ratings, and moves `lastRankedAt` only when the pool ranking finishes
+- `lib/dashboard/project-task-collection.js` — Leaves `lastRankedAt` in place when a batch failed
+- `lib/plan-wizard/stack-rank/README.md` — Describes the creation-time cutoff
+- `test/stack-rank.test.js` — A later pass sends a new task and a cited old task, and drops an uncited rating without ranking
+
+---
+
 ## 2026-10-02 — Log Jev ranking time, parallelism, and token use per project
 
 **Model:** Grok 4.7
