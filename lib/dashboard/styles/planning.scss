@@ -15,11 +15,75 @@ $quarter-toggle-size: 26px;
 /* Prompt: "styles for quarterly plan cards and month tab navigation" */
 /* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .widget-planning {
+  .planning-header-actions {
+    align-items: center;
+    display: flex;
+    gap: $sp-sm;
+  }
+
+  .planning-return-quarter {
+    background: $color-bg-card;
+    border: 1px solid $color-border;
+    border-radius: 999px;
+    color: $color-text-secondary;
+    cursor: pointer;
+    font-size: $smaller-font-size;
+    font-weight: 600;
+    padding: 2px $sp-sm;
+    white-space: nowrap;
+
+    &:hover {
+      border-color: $color-blue;
+      color: $color-navy;
+    }
+  }
+
+  .planning-quarter-row {
+    align-items: stretch;
+    display: flex;
+    gap: $sp-xs;
+    margin-bottom: $sp-lg;
+  }
+
   .planning-quarters {
     display: flex;
+    flex: 1 1 auto;
     flex-wrap: wrap;
     gap: $sp-lg;
-    margin-bottom: $sp-lg;
+    min-width: 0;
+  }
+
+  .quarter-page-button {
+    align-items: center;
+    align-self: center;
+    background: transparent;
+    border: 0;
+    color: $color-text-muted;
+    cursor: pointer;
+    display: flex;
+    flex: 0 0 auto;
+    gap: 1px;
+    justify-content: center;
+    padding: $sp-xs 2px;
+
+    &:hover { color: $color-navy; }
+
+    &:focus-visible {
+      outline: $planning-border-width solid $color-blue;
+      outline-offset: 2px;
+    }
+  }
+
+  .quarter-page-chevron {
+    height: 16px;
+    width: 16px;
+  }
+
+  .quarter-page-label {
+    font-size: $smaller-font-size;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    writing-mode: vertical-rl;
   }
 
   /* [Claude] Task: quarter card base styles; --has-plan modifier for solid border + green bg */
@@ -52,10 +116,45 @@ $quarter-toggle-size: 26px;
       }
     }
 
+    &--past:not(.quarter-card--unrecorded):not(.quarter-card--pending) {
+      background: $color-bg-page;
+      border-style: solid;
+    }
+
+    &--pending,
+    &--unrecorded {
+      background: transparent;
+      border-style: dashed;
+      cursor: default;
+
+      &:hover { border-color: $color-border; }
+    }
+
+    &--unrecorded .quarter-status { color: $color-text-muted; }
+
+    .quarter-label-row {
+      align-items: flex-start;
+      display: flex;
+      gap: $sp-sm;
+      justify-content: space-between;
+    }
+
     .quarter-label {
       color: $color-navy;
       font-size: $large-font-size;
       font-weight: 700;
+    }
+
+    .quarter-past-badge {
+      background: $color-bg-secondary;
+      border-radius: 999px;
+      color: $color-text-muted;
+      flex-shrink: 0;
+      font-size: $smaller-font-size;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      padding: 1px $sp-sm;
+      text-transform: uppercase;
     }
 
     .quarter-suggestion-toggle {
@@ -156,6 +255,12 @@ $quarter-toggle-size: 26px;
     font-size: $default-font-size;
     font-weight: 700;
     margin-bottom: $sp-sm;
+  }
+
+  .month-content-unrecorded {
+    color: $color-text-secondary;
+    font-size: $smaller-font-size;
+    margin: 0;
   }
 
   /* [Claude] Task: month content text — block markdown with tight spacing and list styles */

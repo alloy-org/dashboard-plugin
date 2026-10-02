@@ -12,6 +12,7 @@ await jest.unstable_mockModule("quarterly-plan-service", () => ({
   createOrAppendMonthlyPlan: jest.fn(),
   createOrAppendWeeklyPlan: jest.fn(),
   createQuarterlyPlan: jest.fn(),
+  findQuarterPlan: jest.fn(async () => null),
   getMonthlyPlanContent: jest.fn(async () => ({ content: "", found: false })),
   resolveQuarterlyPlanEntry: (...args) => resolveQuarterlyPlanEntry(...args),
 }));

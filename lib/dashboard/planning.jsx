@@ -1,16 +1,21 @@
 // Quarterly Planning widget
-import { getQuarterMonths, getUpcomingWeekMonday, formatWeekLabel, quarterLabel } from "constants/quarters";
+import { formatWeekLabel, getQuarterMonths, getUpcomingWeekMonday, hasQuarterEnded,
+  quarterLabel } from "constants/quarters";
 import { IS_DEV_ENVIRONMENT, SETTING_KEYS } from "constants/settings";
 import { buildPlanTargetFromPlans, currentQuarterCardAction } from "dashboard/build-plan-quarter";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
 import PlanWizard from "dashboard/plan-wizard/plan-wizard";
+import { quarterPageWindow, quarterPlanForPage, quartersMatch } from "dashboard/quarter-page";
+import QuarterPageButton from "dashboard/quarter-page-button";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import NoteEditor from "note-editor";
 import { mirrorQuarterPlanNote } from "plan-wizard/mirror-quarter-plan";
+import { resolveBegunQuarterPlan } from "plan-wizard/plan-begun";
 import { pluginSettings, updatePluginSetting } from "plugin-data";
 import QuarterlyPlanEntry from "quarterly-plan-entry";
-import { createOrAppendMonthlyPlan, createOrAppendWeeklyPlan, createQuarterlyPlan, getMonthlyPlanContent } from "quarterly-plan-service";
-import { useEffect, useState } from "react";
+import { createOrAppendMonthlyPlan, createOrAppendWeeklyPlan, createQuarterlyPlan, findQuarterPlan,
+  getMonthlyPlanContent } from "quarterly-plan-service";
+import { useEffect, useRef, useState } from "react";
 import { navigateToNote } from "util/goal-notes";
 import { logIfEnabled } from "util/log";
 import { isQuarterPlanEnabled, quarterlyPlanTogglesFromSetting, quarterlyPlanTogglesWithState,
@@ -96,15 +101,27 @@ async function handleCreateWeekPlan(app, plan, weekLabel, setWeekLoading, setWee
 //   all three months are planned, which that emoji showed, now lives in the checkbox's tooltip. Clicks on the
 //   checkbox do not reach the card's own handler.
 // @param {object} props - An object with the following properties:
+//   - {boolean} isPast - The quarter has ended. A past card with no note does not offer to create one.
 //   - {Function} onCardClick - Opens the quarter's plan or Plan Builder.
 //   - {Function} onSuggestionToggle - Receives the checkbox's new checked state.
-//   - {object} plan - The quarter's plan, carrying label, noteUUID, hasAllMonthlyDetails, and domainName.
+//   - {object} plan - The quarter's plan, carrying label, noteUUID, hasAllMonthlyDetails, domainName, and pending.
 //   - {boolean} usedForSuggestions - Whether the checkbox is checked.
 // @returns {JSX.Element} The card.
-function QuarterCard({ onCardClick, onSuggestionToggle, plan, usedForSuggestions }) {
+function QuarterCard({ isPast, onCardClick, onSuggestionToggle, plan, usedForSuggestions }) {
   const hasNote = !!plan.noteUUID;
-  const cardClass = 'quarter-card' + (hasNote ? ' quarter-card--has-plan' : '');
-  const quarterLabel = plan.domainName ? `${ plan.label } · ${ plan.domainName }` : plan.label;
+  const isPending = !!plan.pending;
+  const isUnrecorded = isPast && !hasNote && !isPending;
+  const cardClassNames = ["quarter-card"];
+  if (hasNote && !isPast) cardClassNames.push("quarter-card--has-plan");
+  if (isPast) cardClassNames.push("quarter-card--past");
+  if (isPending) cardClassNames.push("quarter-card--pending");
+  if (isUnrecorded) cardClassNames.push("quarter-card--unrecorded");
+  const quarterTitle = plan.domainName ? `${ plan.label } · ${ plan.domainName }` : plan.label;
+  let statusText = "+ Create Plan";
+  if (isPending) statusText = "Loading…";
+  else if (isUnrecorded) statusText = "No plan recorded";
+  else if (hasNote) statusText = "📝 Open Plan";
+  const showSuggestionToggle = hasNote && !isPast && !isPending;
 
   const suggestionTip = usedForSuggestions
     ? `${ plan.label } projects are used when suggesting tasks. Uncheck to leave them out.`
@@ -113,11 +130,14 @@ function QuarterCard({ onCardClick, onSuggestionToggle, plan, usedForSuggestions
     : 'Monthly details are missing for one or more months.';
 
   return (
-    <div className={cardClass} onClick={onCardClick}>
-      <span className="quarter-label">{quarterLabel}</span>
+    <div className={ cardClassNames.join(" ") } onClick={ isPending || isUnrecorded ? undefined : onCardClick }>
+      <div className="quarter-label-row">
+        <span className="quarter-label">{ quarterTitle }</span>
+        { isPast ? <span className="quarter-past-badge">Past</span> : null }
+      </div>
       <div className="quarter-status-row">
-        <span className="quarter-status">{hasNote ? '📝 Open Plan' : '+ Create Plan'}</span>
-        {hasNote ? (
+        <span className="quarter-status">{ statusText }</span>
+        { showSuggestionToggle ? (
           <DashboardTippy content={`${ suggestionTip } ${ monthsTip }`} placement="bottom">
             <label className="quarter-suggestion-toggle" onClick={(event) => event.stopPropagation()}>
               <input checked={usedForSuggestions} onChange={(event) => onSuggestionToggle(event.target.checked)}
@@ -130,11 +150,28 @@ function QuarterCard({ onCardClick, onSuggestionToggle, plan, usedForSuggestions
   );
 }
 
+// ----------------------------------------------------------------------------------------------
+// @desc A past quarter with no plan note has nothing to open and nothing to create.
+// @param {object|null} monthContent - The month area's payload, including its plan.
+// @returns {boolean} True when the area should say that no plan was recorded.
+function monthContentIsUnrecorded(monthContent) {
+  if (!monthContent?.plan || monthContent.plan.noteUUID || monthContent.plan.pending) return false;
+  return hasQuarterEnded({ quarter: monthContent.plan.quarter, year: monthContent.plan.year });
+}
+
 function MonthContentArea({ monthLoading, monthContent, onCreatePlan }) {
   if (monthLoading) {
     return <div className="month-content-loading">Loading…</div>;
   }
   if (!monthContent) return null;
+  if (monthContentIsUnrecorded(monthContent)) {
+    return (
+      <div className="month-content">
+        <div className="month-content-header">{ `${ monthContent.monthName } ${ monthContent.year }` }</div>
+        <p className="month-content-unrecorded">{ `No plan was recorded for ${ monthContent.plan.label }.` }</p>
+      </div>
+    );
+  }
   if (monthContent.found) {
     return (
       <div className="month-content">
@@ -198,8 +235,8 @@ function storedPlanToggles() {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc The Quarterly Planning widget: two quarter cards, the month and week sections beneath them, and the
-//   Plan Builder overlay either card or the header action opens.
+// @desc The Quarterly Planning widget: two quarter cards, side buttons that step to a past or future quarter,
+//   the month and week sections beneath them, and the Plan Builder overlay a card or the header action opens.
 // @param {object} props - An object with the following properties:
 //   - {object} app - Amplenote embed app proxy.
 //   - {number} [gridHeightSize=1] - Cell height in grid rows; two rows adds the upcoming week's section.
@@ -222,17 +259,40 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   const [mirroredCurrentNoteUuid, setMirroredCurrentNoteUuid] = useState(null);
   const [planEntrySettled, setPlanEntrySettled] = useState(false);
   const [planToggles, setPlanToggles] = useState(() => storedPlanToggles());
+  const [pageOffset, setPageOffset] = useState(0);
+  const [pagedPlans, setPagedPlans] = useState(null);
+  const [pageLoadGeneration, setPageLoadGeneration] = useState(0);
+  const [discoveredPlanNote, setDiscoveredPlanNote] = useState(null);
+  const [planHasBegun, setPlanHasBegun] = useState(null);
+  const monthRequestId = useRef(0);
 
   const isTwoTall = gridHeightSize >= 2;
-  const currentPlan = quarterlyPlans?.current
-    ? { ...quarterlyPlans.current, noteUUID: quarterlyPlans.current.noteUUID || mirroredCurrentNoteUuid }
+  // ----------------------------------------------------------------------------------------------
+  // @desc The plan note found after the dashboard loaded, when it belongs to this card's quarter.
+  // @param {object|null} plan - A current or next quarter from the dashboard payload.
+  // @returns {string|null} That note's UUID, or null when this card is a different quarter.
+  const discoveredNoteUuid = plan => {
+    if (!plan?.quarter || !discoveredPlanNote?.noteUUID) return null;
+    if (plan.quarter !== discoveredPlanNote.quarter || plan.year !== discoveredPlanNote.year) return null;
+    return discoveredPlanNote.noteUUID;
+  };
+  const currentNoteUuid = quarterlyPlans?.current?.noteUUID || mirroredCurrentNoteUuid
+    || discoveredNoteUuid(quarterlyPlans?.current);
+  const nextNoteUuid = quarterlyPlans?.next?.noteUUID || discoveredNoteUuid(quarterlyPlans?.next);
+  const currentPlan = quarterlyPlans?.current ? { ...quarterlyPlans.current, noteUUID: currentNoteUuid }
     : null;
-  const nextPlan = quarterlyPlans?.next ?? null;
+  const nextPlan = quarterlyPlans?.next ? { ...quarterlyPlans.next, noteUUID: nextNoteUuid } : null;
   const plansReady = !!(currentPlan && nextPlan);
   const displayedPlans = { current: currentPlan, next: nextPlan };
   const domainName = currentPlan?.domainName || nextPlan?.domainName || null;
-  const months = plansReady ? getQuarterMonths(currentPlan, nextPlan) : [];
-  const monthClickDeps = { activeTab, setActiveTab, setMonthLoading, setMonthContent };
+  const pageWindow = currentPlan?.quarter ? quarterPageWindow({ anchorQuarter: currentPlan.quarter,
+    anchorYear: currentPlan.year, pageOffset }) : null;
+  const leftPlan = pageWindow ? quarterPlanForPage({ currentPlan, domainName, nextPlan, pagedPlans, pageOffset,
+    quarter: pageWindow.earlier }) : null;
+  const rightPlan = pageWindow ? quarterPlanForPage({ currentPlan, domainName, nextPlan, pagedPlans, pageOffset,
+    quarter: pageWindow.later }) : null;
+  const pagePending = !!(leftPlan?.pending || rightPlan?.pending);
+  const viewedMonths = leftPlan && rightPlan && !pagePending ? getQuarterMonths(leftPlan, rightPlan) : [];
   const createPlanDeps = { setMonthLoading, setMonthContent };
   const upcomingMonday = getUpcomingWeekMonday();
   const weekLabel = formatWeekLabel(upcomingMonday);
@@ -242,16 +302,44 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   const buildPlanTitle = wizardQuarterPlan
     ? `Gather your intents and build a plan for ${ quarterLabel(wizardQuarterPlan.year, wizardQuarterPlan.quarter) }`
     : "";
-  const showPlanEntry = !!(wizardQuarterPlan?.quarter && !currentPlan?.noteUUID && !nextPlan?.noteUUID);
-  const headerActions = canStartWizard && !showPlanEntry ? (
+  const planNotesMissing = !!(wizardQuarterPlan?.quarter && !currentPlan?.noteUUID && !nextPlan?.noteUUID);
+  const checkingPlanProgress = planNotesMissing && planHasBegun === null;
+  const showPlanEntry = planNotesMissing && planHasBegun === false;
+  const weekSectionVisible = isTwoTall && pageOffset === 0;
+  const buildPlanAction = canStartWizard && !showPlanEntry && !checkingPlanProgress ? (
     <button className="widget-header-action" onClick={ () => setWizardPlan({ mirrorTarget: null,
       quarter: wizardQuarterPlan.quarter, year: wizardQuarterPlan.year }) } title={ buildPlanTitle } type="button">
       ✨ Build plan
     </button>
   ) : null;
-  const planEntryLoaded = showPlanEntry ? planEntrySettled : initialLoadDone && !monthLoading && (!isTwoTall || !weekLoading);
+  const returnToCurrentAction = pageOffset !== 0 && currentPlan?.label ? (
+    <button className="planning-return-quarter" onClick={ () => setPageOffset(0) } type="button">
+      { `↩ Back to ${ currentPlan.label }` }
+    </button>
+  ) : null;
+  const headerActions = buildPlanAction || returnToCurrentAction ? (
+    <div className="planning-header-actions">{ returnToCurrentAction }{ buildPlanAction }</div>
+  ) : null;
+  const planEntryLoaded = checkingPlanProgress ? false : showPlanEntry ? planEntrySettled
+    : initialLoadDone && !monthLoading && !pagePending && (!weekSectionVisible || !weekLoading);
+  const viewedQuarterKey = !plansReady || showPlanEntry || checkingPlanProgress || pagePending ? ""
+    : `${ domainName ?? "" }|${ leftPlan.label }|${ leftPlan.noteUUID ?? "" }|${ rightPlan.label }|${ rightPlan.noteUUID ?? "" }`;
 
   useWidgetLoadedEvent('planning', plansReady && planEntryLoaded);
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Open one month, ignoring the result when a newer page or click has started since.
+  // @param {object} month - A month from getQuarterMonths, carrying index, full, and plan.
+  // @param {number|null} activeMonthIndex - The month already open. The same month clicked again closes.
+  const openPlanningMonth = (month, activeMonthIndex) => {
+    const requestId = monthRequestId.current + 1;
+    monthRequestId.current = requestId;
+    const isCurrentRequest = () => monthRequestId.current === requestId;
+    return handleMonthClick(app, month, { activeTab: activeMonthIndex,
+      setActiveTab: value => { if (isCurrentRequest()) setActiveTab(value); },
+      setMonthContent: value => { if (isCurrentRequest()) setMonthContent(value); },
+      setMonthLoading: value => { if (isCurrentRequest()) setMonthLoading(value); } });
+  };
 
   // Reset month/week UI when the Task Domain (and therefore the plan note set) changes.
   useEffect(() => {
@@ -260,22 +348,88 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
     setWeekContent(null);
     setInitialLoadDone(false);
     setMirroredCurrentNoteUuid(null);
+    setDiscoveredPlanNote(null);
+    setPlanHasBegun(null);
+    setPageOffset(0);
+    setPagedPlans(null);
     setWizardPlan(null);
     setPlanEntrySettled(false);
     setPlanToggles(storedPlanToggles());
   }, [domainName]);
 
+  // Drop the month that belonged to the previous pair. A newer openPlanningMonth call ignores its result.
   useEffect(() => {
-    if (!plansReady || initialLoadDone || showPlanEntry) return;
-    const currentMonth = months.find(m => m.current);
-    if (currentMonth) {
-      setInitialLoadDone(true);
-      handleMonthClick(app, currentMonth, monthClickDeps);
-    }
-  }, [domainName, initialLoadDone, plansReady, showPlanEntry]);
+    monthRequestId.current += 1;
+    setActiveTab(null);
+    setMonthContent(null);
+  }, [pageOffset]);
 
   useEffect(() => {
-    if (!plansReady || !isTwoTall) return;
+    if (!viewedQuarterKey) return undefined;
+    const monthsForPage = getQuarterMonths(leftPlan, rightPlan);
+    const today = new Date();
+    const currentMonth = monthsForPage.find(month => month.index === today.getMonth()
+      && month.plan.year === today.getFullYear());
+    const monthToOpen = currentMonth || monthsForPage[0];
+    if (!monthToOpen) return undefined;
+    setInitialLoadDone(true);
+    openPlanningMonth(monthToOpen, null);
+    return undefined;
+  }, [viewedQuarterKey]);
+
+  useEffect(() => {
+    if (!plansReady || pageOffset === 0 || !currentPlan?.quarter) return undefined;
+    const windowForPage = quarterPageWindow({ anchorQuarter: currentPlan.quarter, anchorYear: currentPlan.year,
+      pageOffset });
+    const earlierKnown = [currentPlan, nextPlan].find(plan => quartersMatch(plan, windowForPage.earlier)) || null;
+    const laterKnown = [currentPlan, nextPlan].find(plan => quartersMatch(plan, windowForPage.later)) || null;
+    if (earlierKnown && laterKnown) return undefined;
+    let active = true;
+    const requestedOffset = pageOffset;
+    Promise.all([
+      earlierKnown ? Promise.resolve(earlierKnown) : findQuarterPlan(app, { ...windowForPage.earlier, domainName }),
+      laterKnown ? Promise.resolve(laterKnown) : findQuarterPlan(app, { ...windowForPage.later, domainName }),
+    ]).then(([earlier, later]) => {
+      if (active) setPagedPlans({ earlier, later, pageOffset: requestedOffset });
+    }).catch(error => {
+      if (!active) return;
+      logIfEnabled("[planning] could not load the quarter page", error?.message || error);
+      const emptyPlan = quarter => ({ ...quarter, domainName, hasAllMonthlyDetails: false, noteUUID: null });
+      const earlierPlan = earlierKnown || emptyPlan(windowForPage.earlier);
+      const laterPlan = laterKnown || emptyPlan(windowForPage.later);
+      setPagedPlans({ earlier: earlierPlan, later: laterPlan, pageOffset: requestedOffset });
+    });
+    return () => { active = false; };
+  }, [app, currentPlan?.noteUUID, currentPlan?.quarter, currentPlan?.year, domainName, nextPlan?.noteUUID,
+    nextPlan?.quarter, nextPlan?.year, pageLoadGeneration, pageOffset, plansReady]);
+
+  // A plan note in the dashboard payload is enough. Otherwise read the Vision Guide (and look the note up
+  // again) so answers saved in Plan Builder dismiss the splash even when no quarterly plan note exists yet.
+  useEffect(() => {
+    if (!plansReady || !wizardQuarterPlan?.quarter) return undefined;
+    const quarter = wizardQuarterPlan.quarter;
+    const year = wizardQuarterPlan.year;
+    if (currentPlan?.noteUUID || nextPlan?.noteUUID) {
+      setPlanHasBegun(true);
+      return undefined;
+    }
+    let active = true;
+    setPlanHasBegun(null);
+    const lookup = resolveBegunQuarterPlan(app, {
+      domainName: taskDomainName, domainUuid: taskDomainUUID, quarter, year });
+    lookup.then(result => {
+      if (!active || result.quarter !== quarter || result.year !== year) return;
+      if (result.noteUUID) {
+        setDiscoveredPlanNote({ noteUUID: result.noteUUID, quarter: result.quarter, year: result.year });
+      }
+      setPlanHasBegun(!!result.begun);
+    });
+    return () => { active = false; };
+  }, [app, currentPlan?.noteUUID, nextPlan?.noteUUID, pageLoadGeneration, plansReady, taskDomainName,
+    taskDomainUUID, wizardQuarterPlan?.quarter, wizardQuarterPlan?.year]);
+
+  useEffect(() => {
+    if (!plansReady || !weekSectionVisible) return;
     const noteUUID = currentPlan?.noteUUID;
     if (!noteUUID) return;
     setWeekLoading(true);
@@ -286,7 +440,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
       })
       .catch(() => setWeekContent({ found: false, content: null }))
       .finally(() => setWeekLoading(false));
-  }, [currentPlan?.noteUUID, isTwoTall, plansReady, weekLabel]);
+  }, [currentPlan?.noteUUID, plansReady, weekLabel, weekSectionVisible]);
 
   if (editingNoteUUID && IS_DEV_ENVIRONMENT) {
     return (
@@ -329,7 +483,8 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   // @returns {JSX.Element|null} The wizard overlay, or null when no plan is being edited.
   const planWizardOverlay = wizardPlan ? (
     <PlanWizard app={app} domainName={taskDomainName} domainUuid={taskDomainUUID}
-      onClose={() => setWizardPlan(null)} onFinished={wizardPlan.mirrorTarget ? handleWizardFinished : null}
+      onClose={ () => { setWizardPlan(null); setPageLoadGeneration(generation => generation + 1); } }
+      onFinished={wizardPlan.mirrorTarget ? handleWizardFinished : null}
       onOpenSettings={onOpenSettings ? handleOpenProviderSettings : null}
       quarter={wizardPlan.quarter} year={wizardPlan.year} />
   ) : null;
@@ -338,6 +493,15 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
     return (
       <WidgetWrapper title={widgetTitle} widgetId="planning">
         <p className="planning-empty">Loading quarterly plans…</p>
+        {planWizardOverlay}
+      </WidgetWrapper>
+    );
+  }
+
+  if (checkingPlanProgress) {
+    return (
+      <WidgetWrapper title={widgetTitle} widgetId="planning">
+        <p className="planning-empty">Checking your plan…</p>
         {planWizardOverlay}
       </WidgetWrapper>
     );
@@ -372,6 +536,8 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   //   - {string|null} noteUUID - UUID of the existing plan note, absent until a plan has been created.
   // @returns {Promise<void>} Resolves once the wizard has been opened, the plan copied, or the note handled.
   const handleQuarterCardClick = async (plan) => {
+    if (plan.pending) return;
+    if (!plan.noteUUID && hasQuarterEnded({ quarter: plan.quarter, year: plan.year })) return;
     if (!(plan.quarter && plan.year)) {
       const result = await handleOpenPlan(app, plan);
       handleDevEdit(result);
@@ -410,27 +576,34 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
 
   return (
     <WidgetWrapper headerActions={headerActions} title={widgetTitle} widgetId="planning">
-      <div className="planning-quarters">
-        {[currentPlan, nextPlan].map(plan => (
-          <QuarterCard
-            key={plan.label}
-            onCardClick={() => handleQuarterCardClick(plan)}
-            onSuggestionToggle={enabled => handleSuggestionToggle(plan, enabled)}
-            plan={plan}
-            usedForSuggestions={isUsedForSuggestions(plan)}
-          />
-        ))}
+      <div className="planning-quarter-row">
+        <QuarterPageButton direction="previous" onClick={ () => setPageOffset(offset => offset - 1) }
+          quarter={ pageWindow.previous } />
+        <div className="planning-quarters">
+          {[leftPlan, rightPlan].map(plan => (
+            <QuarterCard
+              isPast={ hasQuarterEnded({ quarter: plan.quarter, year: plan.year }) }
+              key={ plan.label }
+              onCardClick={ () => handleQuarterCardClick(plan) }
+              onSuggestionToggle={ enabled => handleSuggestionToggle(plan, enabled) }
+              plan={ plan }
+              usedForSuggestions={ isUsedForSuggestions(plan) }
+            />
+          ))}
+        </div>
+        <QuarterPageButton direction="following" onClick={ () => setPageOffset(offset => offset + 1) }
+          quarter={ pageWindow.following } />
       </div>
       <div className="month-tabs">
-        {months.map(m => (
+        {viewedMonths.map(month => (
           <button
-            key={m.index}
-            className={'month-tab' + (m.index === activeTab ? ' active' : '')}
-            onClick={() => handleMonthClick(app, m, monthClickDeps)}
-          >{m.short}</button>
+            className={ "month-tab" + (month.index === activeTab ? " active" : "") }
+            key={ month.index }
+            onClick={ () => openPlanningMonth(month, activeTab) }
+          >{ month.short }</button>
         ))}
       </div>
-      {activeTab !== null ? (
+      {activeTab !== null && !pagePending ? (
         <div className="month-content-area">
           <MonthContentArea
             monthLoading={monthLoading}
@@ -442,7 +615,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
           />
         </div>
       ) : null}
-      {isTwoTall ? (
+      {weekSectionVisible ? (
         <WeeklyPlanSection
           weekLabel={weekLabel}
           year={currentPlan.year}

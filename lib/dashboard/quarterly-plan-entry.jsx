@@ -1,6 +1,6 @@
-// The splash Quarterly Planning shows until the quarter it would open in Plan Builder has a note: import
-// when there are fewer than 25 tasks, connect AI when there are enough tasks but no working model, and a
-// video invitation once both are in place.
+// The splash Quarterly Planning shows until this quarter's plan has been begun — a plan note, or answers
+// saved in Plan Builder. The splash is import when there are fewer than 25 tasks, connect AI when there
+// are enough tasks but no working model, and a video invitation once both are in place.
 import { daysUntilQuarterStart, quarterMonthNames, quarterStartDate } from "constants/quarters";
 import { resolveQuarterlyPlanEntry } from "quarterly-plan-service";
 import { useEffect, useState } from "react";

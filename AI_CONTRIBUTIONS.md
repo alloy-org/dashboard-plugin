@@ -5,6 +5,36 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-02 — Hide the quarterly plan splash once Plan Builder has saved answers
+
+**Model:** Grok 4.7
+**Files created:**
+- `lib/plan-wizard/plan-begun.js` — Reads the Vision Guide and the quarter's plan note to decide the plan has been begun
+- `test/plan-begun.test.js` — Which saved goals, answers, and projects count as begun
+- `test/planning-plan-begun.test.js` — The splash stays until answers or a plan note exist, including after the wizard closes
+
+**Files modified:**
+- `lib/dashboard/planning.jsx` — Checks for a begun plan when neither quarter card has a note, and applies a plan note found after the dashboard loaded
+- `lib/dashboard/quarterly-plan-entry.jsx` — Describes the splash as waiting on a begun plan, not only a note
+
+---
+
+## 2026-10-02 — Step the Quarterly Planning cards to a past or future quarter
+
+**Model:** Grok 4.7
+**Files created:**
+- `lib/dashboard/quarter-page.js` — Which two quarters a pager offset shows, and which loaded plan backs each card
+- `lib/dashboard/quarter-page-button.jsx` — Side button whose vertical label is the quarter a click brings into view
+- `test/quarter-page.test.js` — Quarter shifting, including the year boundary
+- `test/planning-quarter-pager.test.js` — Side buttons, past-quarter cards, and the return to the current quarter
+
+**Files modified:**
+- `lib/dashboard/planning.jsx` — Renders the pager, loads quarters the dashboard did not already fetch, and marks an ended quarter with no note as unrecorded
+- `lib/dashboard/styles/planning.scss` — Side buttons, the Past badge, the return control, and the unrecorded month message
+- `lib/quarterly-plan-service.js` — `findQuarterPlan` looks up one quarter's plan note for the pager
+
+---
+
 ## 2026-10-01 — Rate project tasks with the fast model when no Jev key is set; route TypeSafe keys through the CORS proxy
 
 **Model:** Claude Opus 5.5 (1M context)
