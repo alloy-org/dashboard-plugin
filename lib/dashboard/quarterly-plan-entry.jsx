@@ -76,14 +76,61 @@ function BenefitIcon({ name }) {
   );
 }
 
+const IMPORT_LINK_COPIED_MESSAGE = "Import link copied. Open a new tab to paste";
+
+// ----------------------------------------------------------------------------------------------
+// @desc Copy a help URL while the click is still the active gesture. The dashboard embed is sandboxed, so a
+//   selected textarea is tried before the async Clipboard API.
+// @param {string} text - The import help URL
+// @returns {Promise<boolean>} Whether either copy path reported success
+async function writeClipboardText(text) {
+  if (writeClipboardTextFromTextarea(text)) return true;
+  try {
+    if (!navigator.clipboard?.writeText) return false;
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Copy through a temporary textarea. This still works in the embed when the Clipboard API is blocked.
+// @param {string} text - The import help URL
+// @returns {boolean} Whether document.execCommand reported success
+function writeClipboardTextFromTextarea(text) {
+  const textarea = document.createElement("textarea");
+  textarea.setAttribute("readonly", "");
+  textarea.style.left = "-9999px";
+  textarea.style.position = "fixed";
+  textarea.value = text;
+  document.body.appendChild(textarea);
+  textarea.select();
+  let copied = false;
+  try {
+    copied = document.execCommand("copy");
+  } catch {
+    copied = false;
+  }
+  textarea.remove();
+  return copied;
+}
+
 // ----------------------------------------------------------------------------------------------
 // @desc Import splash: progress toward 25 tasks, a button per importer, and a path that builds from scratch.
+//   An importer still navigates to its help page, and copies that link so it can be pasted into a new tab.
 // @param {Object} props - { entry, onBuildPlan, onNavigate, planTitle }
 // @returns {JSX.Element} The import splash
 function ImportTasksEntry({ entry, onBuildPlan, onNavigate, planTitle }) {
+  const [importLinkCopied, setImportLinkCopied] = useState(false);
   const taskCount = entry.applicableTaskCount;
   const filledPercent = Math.min(100, Math.round((taskCount / entry.taskThreshold) * 100));
   const taskLabel = taskCount === 1 ? "1 task in your notes" : `${ taskCount } tasks in your notes`;
+  const openImportSource = async (url) => {
+    const copied = await writeClipboardText(url);
+    if (copied) setImportLinkCopied(true);
+    onNavigate(url);
+  };
   return (
     <div className="quarterly-plan-entry quarterly-plan-entry--import">
       <h3 className="plan-entry-title">Start your plan from what you've already been doing</h3>
@@ -102,12 +149,14 @@ function ImportTasksEntry({ entry, onBuildPlan, onNavigate, planTitle }) {
       <p className="plan-entry-kicker">Import tasks from</p>
       <div className="plan-entry-sources">
         { entry.importSources.map(source => (
-          <button className="plan-entry-source" key={ source.id } onClick={ () => onNavigate(source.url) } type="button">
+          <button className="plan-entry-source" key={ source.id } type="button"
+            onClick={ () => openImportSource(source.url) }>
             <ImportSourceIcon sourceId={ source.id } />
             { source.label }
           </button>
         )) }
       </div>
+      { importLinkCopied ? <p className="plan-entry-import-copied">{ IMPORT_LINK_COPIED_MESSAGE }</p> : null }
       <p className="plan-entry-divider">or</p>
       <button className="plan-entry-scratch" onClick={ onBuildPlan } title={ planTitle } type="button">
         ✦ Build my plan from scratch

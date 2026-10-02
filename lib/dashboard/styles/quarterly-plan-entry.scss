@@ -105,6 +105,14 @@ $plan-entry-video-background: #152033;
     width: 22px;
   }
 
+  .plan-entry-import-copied {
+    color: $color-navy;
+    font-size: $smaller-font-size;
+    font-weight: 600;
+    margin: 0;
+    text-align: center;
+  }
+
   .plan-entry-divider {
     color: $color-text-muted;
     font-size: $smaller-font-size;

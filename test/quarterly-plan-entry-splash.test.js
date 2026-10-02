@@ -92,17 +92,35 @@ describe("Planning quarterly plan splash", () => {
   afterEach(() => { document.body.innerHTML = ""; });
 
   it("links each importer and still lets the user build from scratch", async () => {
-    const { app, cleanup, container } = await renderSplash({ ...sharedEntry, applicableTaskCount: 7, kind: "import" });
+    const writeText = jest.fn().mockResolvedValue(undefined);
+    const clipboard = navigator.clipboard;
+    const execCommand = document.execCommand;
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+    document.execCommand = jest.fn(() => false);
+    let cleanup = async () => {};
+    try {
+      const { app, cleanup: unmount, container } = await renderSplash({ ...sharedEntry, applicableTaskCount: 7, kind: "import" });
+      cleanup = unmount;
 
-    expect(container.textContent).toContain("7 tasks in your notes");
-    const evernote = [...container.querySelectorAll(".plan-entry-source")].find(button => button.textContent.includes("Evernote"));
-    await act(async () => { evernote.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
-    expect(app.navigate).toHaveBeenCalledWith("https://www.amplenote.com/help/import_notes_and_tasks_overview#___import_from_evernote");
+      expect(container.textContent).toContain("7 tasks in your notes");
+      expect(container.textContent).not.toContain("Import link copied. Open a new tab to paste");
+      const evernote = [...container.querySelectorAll(".plan-entry-source")].find(button => button.textContent.includes("Evernote"));
+      await act(async () => { evernote.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+      const importUrl = "https://www.amplenote.com/help/import_notes_and_tasks_overview#___import_from_evernote";
+      expect(app.navigate).toHaveBeenCalledWith(importUrl);
+      expect(writeText).toHaveBeenCalledWith(importUrl);
+      const copiedMessage = container.querySelector(".plan-entry-import-copied");
+      expect(copiedMessage.textContent).toBe("Import link copied. Open a new tab to paste");
+      expect(copiedMessage.previousElementSibling.className).toBe("plan-entry-sources");
 
-    await act(async () => { container.querySelector(".plan-entry-scratch").dispatchEvent(new MouseEvent("click", { bubbles: true })); });
-    await settle();
-    expect(document.body.querySelector(".plan-wizard-title-quarter").textContent).toBe("Q4 2026");
-    await cleanup();
+      await act(async () => { container.querySelector(".plan-entry-scratch").dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+      await settle();
+      expect(document.body.querySelector(".plan-wizard-title-quarter").textContent).toBe("Q4 2026");
+    } finally {
+      document.execCommand = execCommand;
+      Object.defineProperty(navigator, "clipboard", { configurable: true, value: clipboard });
+      await cleanup();
+    }
   });
 
   it("opens Agent Pro and plugin settings from the no-AI splash", async () => {
