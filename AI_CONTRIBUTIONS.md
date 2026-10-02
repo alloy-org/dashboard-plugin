@@ -5,6 +5,15 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-02 — Log Jev ranking time, parallelism, and token use per project
+
+**Model:** Grok 4.7
+**Files modified:**
+- `lib/plan-wizard/stack-rank/rank-prospective-tasks.js` — The per-project ranking log records wall-clock time, whether more than one batch ran at once, and input and output tokens
+- `test/stack-rank.test.js` — The ranking log reports tokens and a parallel run when two batches are in flight
+
+---
+
 ## 2026-10-02 — Rank through the Jev proxy when Ample Agent Pro is installed
 
 **Model:** Grok 4.7

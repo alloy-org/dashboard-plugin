@@ -24,6 +24,7 @@ import { storedProjectRecords } from "project-task-store";
 import { initialProjectTaskStoreMarkdown, projectSectionHeadingText, projectSectionMarkdown } from "project-task-store-markdown";
 import { AMPLE_AGENT_PRO_UUID } from "providers/ai-provider-settings";
 import { jevRouteFromAccessToken, requestJevAnswers } from "providers/jev-client";
+import { setLoggingEnabled } from "util/log";
 
 dotenv.config();
 
@@ -195,15 +196,22 @@ describe("rankProspectiveTasks", () => {
   it("shifts scores onto the 1–10 scale, orders by rating, and records a failed batch", async () => {
     const requestAnswers = jest.fn()
       .mockResolvedValueOnce({ answers: { task_1: { confidence: 0.9, score: 0.4, type: "score" },
-        task_2: { confidence: 0.8, score: 8.6, type: "score" } }, usage: { input_tokens: 300 } })
+        task_2: { confidence: 0.8, score: 8.6, type: "score" } }, usage: { input_tokens: 300, output_tokens: 20 } })
       .mockRejectedValueOnce(new Error("Jev answered 429: slow down"));
     const taskDetails = [taskDetail({ taskText: "Buy dog food", taskUuid: "a" }),
       taskDetail({ taskText: "Diff Digest landing copy", taskUuid: "b" }), taskDetail({ taskUuid: "c" })];
+    setLoggingEnabled(true);
+    const log = jest.spyOn(console, "log").mockImplementation(() => {});
     const result = await rankProspectiveTasks({ accessToken: "token", batchSize: 2, dictionary: {},
       project: DIFF_DIGEST_PROJECT, requestAnswers, taskDetails });
+    const projectLog = log.mock.calls.find(call => call[0] === "[rank-prospective-tasks] ranked project");
+    log.mockRestore();
+    setLoggingEnabled(false);
     expect(result.rankedTasks.map(task => [task.taskUuid, task.rating])).toEqual([["b", 9.6], ["a", 1.4]]);
     expect(result.failures).toEqual([{ reason: "Jev answered 429: slow down", taskUuids: ["c"] }]);
     expect(result.inputTokens).toBe(300);
+    expect(projectLog[1]).toMatchObject({ inputTokens: 300, outputTokens: 20, ranInParallel: true });
+    expect(projectLog[1].elapsedMilliseconds).toEqual(expect.any(Number));
   });
 });
 
