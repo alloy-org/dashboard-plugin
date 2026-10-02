@@ -90,7 +90,7 @@ before they are sent anywhere.
 can fall between whole numbers. The live API rejects `null` rubric entries even though the SDK's types allow them.
 
 TypeSafe's endpoint refuses browser origins: its CORS preflight returns 400 for amplenote.com, `null`, and
-localhost. **Jev Access Token** accepts either key:
+localhost. **Jev Access Token**, entered by choosing Jev in Dashboard Settings' LLM Provider dropdown, accepts either key:
 
 - An OpenRouter key (`sk-or-…`) goes straight to OpenRouter's `/api/v1/systemone`, which allows any origin.
 - From a browser, a TypeSafe key goes through the plugin CORS proxy Worker at `aged-sunset-proxy.amplenote.workers.dev`,

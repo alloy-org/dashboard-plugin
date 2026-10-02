@@ -8,7 +8,7 @@ import { Component, memo, useEffect, useState, useCallback, useRef, useMemo } fr
 import PlanningWidget from 'planning';
 import AgendaWidget from 'agenda';
 import CalendarWidget from 'calendar';
-import { apiKeyBucketFromLlmProvider, apiKeyFromProvider, DASHBOARD_FOCUS, DEFAULT_DASHBOARD_COMPONENTS,
+import { apiKeyBucketFromLlmProvider, apiKeyFromProvider, apiKeySettingFromKeyProvider, DASHBOARD_FOCUS, DEFAULT_DASHBOARD_COMPONENTS,
   IS_DEV_ENVIRONMENT, SETTING_KEYS } from 'constants/settings';
 import { reportPriorCrashIfAny, stampBreadcrumbSettled, writeRenderBreadcrumb } from "crash-breadcrumb";
 import { DashboardLoadContext, useDashboardLoadTracker, useReportWidgetLoaded, useWidgetLoadedEvent } from 'dashboard-load-tracking';
@@ -399,7 +399,7 @@ async function saveLayout(app, currentConfigParams, setConfigParams, newRendered
 async function saveSettings(app, dashboardSettingNoteRef, setConfigParams, onSettingsClosed, setTimeFormat, setWeekFormat,
     { apiKey, apiKeyProvider, backgroundImageUrl, backgroundMode, llmProvider, timeFormat, weekFormat }) {
   logIfEnabled('[dashboard] handleSettingsSave called with:', { llmProvider, apiKeyProvider, backgroundMode, backgroundImageUrl: backgroundImageUrl != null ? '(set)' : '(unchanged)', timeFormat, weekFormat });
-  const providerSettingKey = apiKeyFromProvider(apiKeyProvider || llmProvider);
+  const providerSettingKey = apiKeySettingFromKeyProvider(apiKeyProvider || llmProvider);
   const saves = [
     app.setSetting(SETTING_KEYS.LLM_PROVIDER_MODEL, llmProvider),
     app.setSetting(SETTING_KEYS.BACKGROUND_IMAGE_URL, backgroundImageUrl || ''),

@@ -6,12 +6,15 @@
  */
 import ConfigPopup from 'config-popup';
 import { PROVIDER_API_KEY_RETRIEVE_URL } from 'constants/llm-providers';
-import { apiKeyFromProvider, BACKGROUND_MODE_OPTIONS, BUILD_DATE, SETTING_KEYS } from 'constants/settings';
+import { apiKeySettingFromKeyProvider, BACKGROUND_MODE_OPTIONS, BUILD_DATE, JEV_KEY_PROVIDER, SETTING_KEYS } from 'constants/settings';
 import useBackgroundUploadFields from 'hooks/use-background-upload-fields';
 import { useState } from 'react';
 import { logIfEnabled } from "util/log";
 import "styles/dashboard-settings-popup.scss"
 
+// An option marked keyOnly edits a key without becoming the LLM Provider setting: Jev rates tasks against projects
+// but cannot write text, so choosing it leaves the generative provider chosen before it in place. keyLinkName names
+// the service the key retrieval link opens when it is not the option's own label.
 const LLM_OPTIONS = [
   { value: 'none',            label: 'None (disable AI features)', apiKeyProvider: null },
   { value: 'openai',           label: 'OpenAI ChatGPT', apiKeyProvider: 'openai' },
@@ -19,6 +22,7 @@ const LLM_OPTIONS = [
   { value: 'anthropic-sonnet', label: 'Anthropic Sonnet',         apiKeyProvider: 'anthropic' },
   { value: 'gemini',           label: 'Google Gemini',            apiKeyProvider: 'gemini' },
   { value: 'grok',             label: 'Grok',                     apiKeyProvider: 'grok' },
+  { value: 'jev',              label: 'Jev (task ranking only)',  apiKeyProvider: JEV_KEY_PROVIDER, keyLinkName: 'OpenRouter', keyOnly: true },
 ];
 
 // ------------------------------------------------------------------------------------------
@@ -58,12 +62,27 @@ function _apiKeyLinkPlatformHints() {
 }
 
 // ------------------------------------------------------------------------------------------
+// @desc Explain what a key-only option's key is used for, naming the generative provider that stays selected.
+// @param {string} generativeProvider - The LLM_OPTIONS value that will be saved as the LLM Provider setting.
+// @returns {string} One or two sentences for the hint beneath the provider dropdown.
+function _jevKeyHint(generativeProvider) {
+  const generativeOption = LLM_OPTIONS.find(option => option.value === generativeProvider);
+  const generativeSentence = !generativeOption || generativeOption.value === 'none' ? 'other AI features stay disabled.'
+    : `other AI features keep using ${ generativeOption.label }.`;
+  const rankingSentence = 'Jev rates your tasks against each quarterly project, accepting a TypeSafe or OpenRouter key. '
+    + 'Without one, ranking falls back to your LLM provider or Ample Agent Pro.';
+  return `${ rankingSentence } Jev does not write text, so ${ generativeSentence }`;
+}
+
+// ------------------------------------------------------------------------------------------
 // @desc Renders the AI Provider section: LLM dropdown and API key input with show/hide toggle.
+// @param {object} props - Includes keyOnlyHint, a sentence shown under the dropdown while a key-only option such as
+//   Jev is selected, or null otherwise.
 // [Claude claude-4.6-opus-high-thinking] Task: extract AI provider section into local render function
 // Prompt: "break the settings popup render into local functions per section"
 // [Claude claude-4.7-opus] Task: convert AI provider section to JSX component
 // Prompt: "translate this project to render components with JSX instead"
-function AiProviderSection({ apiKey, apiKeyVisible, linkParenthetical, note, onApiKeyChange, onProviderChange,
+function AiProviderSection({ apiKey, apiKeyVisible, keyOnlyHint, linkParenthetical, note, onApiKeyChange, onProviderChange,
     onToggleKeyVisibility, providerApiKeyUrl, providerName, selectedProvider }) {
   return (
     <div className="dashboard-settings-section section">
@@ -84,6 +103,7 @@ function AiProviderSection({ apiKey, apiKeyVisible, linkParenthetical, note, onA
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
+          {keyOnlyHint ? <p className="dashboard-settings-api-key-hint">{keyOnlyHint}</p> : null}
         </div>
         <div className="config-line">
           <div className="config-field-label">API Key</div>
@@ -263,7 +283,7 @@ function BuildVersionFooter() {
 // Date: 2026-04-04 | Model: claude-4.6-opus-high-thinking
 function _storedKeyForProvider(configParams, apiKeyProvider) {
   if (!apiKeyProvider) return '';
-  const settingKey = apiKeyFromProvider(apiKeyProvider);
+  const settingKey = apiKeySettingFromKeyProvider(apiKeyProvider);
   return (settingKey && configParams?.[settingKey]) || '';
 }
 
@@ -290,6 +310,8 @@ export default function DashboardSettingsPopup({ app, configParams, onCancel, on
   const [apiKey, setApiKey] = useState(_storedKeyForProvider(configParams, initialOption.apiKeyProvider));
   const [apiKeyVisible, setApiKeyVisible] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(currentLlmProvider || 'openai');
+  // The provider saved as LLM Provider: the last selected option that is not key-only
+  const [generativeProvider, setGenerativeProvider] = useState(currentLlmProvider || 'openai');
   const [timeFormatLocal, setTimeFormatLocal] = useState(initialTimeFormat || 'meridian');
   const [weekFormatLocal, setWeekFormatLocal] = useState(initialWeekFormat || 'sunday');
 
@@ -308,7 +330,8 @@ export default function DashboardSettingsPopup({ app, configParams, onCancel, on
 
   const providerOption = LLM_OPTIONS.find(o => o.value === selectedProvider) || LLM_OPTIONS[0];
   const apiKeyUrl = PROVIDER_API_KEY_RETRIEVE_URL[providerOption.apiKeyProvider];
-  const providerName = LLM_OPTIONS.find(opt => opt.value === selectedProvider)?.label;
+  const providerName = providerOption.keyLinkName || providerOption.label;
+  const keyOnlyHint = providerOption.keyOnly ? _jevKeyHint(generativeProvider) : null;
 
   // [Claude] Task: auto-populate API key when provider changes, if a key was previously stored
   // Prompt: "auto-populate the API key for that provider, if the user previously added it"
@@ -316,6 +339,7 @@ export default function DashboardSettingsPopup({ app, configParams, onCancel, on
   const handleProviderChange = (newProviderValue) => {
     setSelectedProvider(newProviderValue);
     const newOption = LLM_OPTIONS.find(o => o.value === newProviderValue) || LLM_OPTIONS[0];
+    if (!newOption.keyOnly) setGenerativeProvider(newProviderValue);
     const storedKey = _storedKeyForProvider(configParams, newOption.apiKeyProvider);
     setApiKey(storedKey);
   };
@@ -332,7 +356,7 @@ export default function DashboardSettingsPopup({ app, configParams, onCancel, on
         apiKeyProvider: providerOption.apiKeyProvider,
         backgroundImageUrl,
         backgroundMode,
-        llmProvider: selectedProvider,
+        llmProvider: generativeProvider,
         timeFormat: timeFormatLocal,
         weekFormat: weekFormatLocal,
       })}
@@ -356,6 +380,7 @@ export default function DashboardSettingsPopup({ app, configParams, onCancel, on
         <AiProviderSection
           apiKey={apiKey}
           apiKeyVisible={apiKeyVisible}
+          keyOnlyHint={keyOnlyHint}
           linkParenthetical={linkParenthetical}
           note={apiKeyLinkNote}
           onApiKeyChange={setApiKey}
