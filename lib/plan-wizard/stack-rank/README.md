@@ -94,9 +94,9 @@ TypeSafe's endpoint refuses browser origins: its CORS preflight returns 400 for 
 localhost. **Jev Access Token**, entered by choosing Jev in Dashboard Settings' LLM Provider dropdown, accepts either key:
 
 - An OpenRouter key (`sk-or-…`) goes straight to OpenRouter's `/api/v1/systemone`, which allows any origin.
-- From a browser, a TypeSafe key goes through the plugin CORS proxy Worker at `aged-sunset-proxy.amplenote.workers.dev`,
-  as `?apiurl=https://api.typesafe.ai/v1/systemone`. The Worker passes the user's own `Authorization` header
-  through and strips the browser's Origin. Its source is `doc/cloudflare/plugin-cors-proxy.js`.
+- From a browser, a TypeSafe key goes through `CORS_PROXY` (`wispy-darkness-7716.amplenote.workers.dev`),
+  as `?apiurl=https://api.typesafe.ai/v1/systemone`. An installed Ample Agent Pro note uses that same address
+  with no Authorization header.
 - From Node, a TypeSafe key goes to TypeSafe directly. That is how `test/stack-rank.test.js` makes its live call when
   `JEV_ACCESS_TOKEN` is set in `.env`.
 

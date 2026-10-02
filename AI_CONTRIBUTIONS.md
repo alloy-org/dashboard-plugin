@@ -9,7 +9,7 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 **Model:** Grok 4.7
 **Files modified:**
-- `lib/providers/jev-client.js` — Calls the CORS proxy with Jev's URL and model and no Authorization header when Agent Pro authorizes the call
+- `lib/providers/jev-client.js` — Calls `CORS_PROXY` with Jev's URL and model and no Authorization header when Agent Pro authorizes the call
 - `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` — Chooses Jev when an Ample Agent Pro note is present, ahead of the fast model
 - `lib/plan-wizard/stack-rank/generative-task-scores.js` — Drops the Agent Pro check from the fast-model path
 - `lib/hooks/use-project-task-ranking.js`, `lib/dashboard/project-task-collection.js`, `lib/plan-wizard/stack-rank/README.md` — Describe the Agent Pro proxy path

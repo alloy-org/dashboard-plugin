@@ -6,7 +6,7 @@
 import { jest } from "@jest/globals";
 import dotenv from "dotenv";
 import fetch from "isomorphic-fetch";
-import { SETTING_KEYS } from "constants/settings";
+import { CORS_PROXY, SETTING_KEYS } from "constants/settings";
 import { relevantDictionaryTerms } from "plan-wizard/stack-rank/build-project-task-context";
 import { acceptedDictionaryTerms } from "plan-wizard/stack-rank/dictionary-term-discovery";
 import { acceptedRankedTasks, matchScoresWithProjectScore, persistPrunedMatchScores,
@@ -298,7 +298,7 @@ describe("prepareProjectTaskRanker", () => {
       expect(ranking.acceptedTasks).toEqual([{ matchScore: 9, taskText: "Diff Digest landing copy", taskUuid: "open-1" }]);
       const [endpoint, request] = fetchImplementation.mock.calls[0];
       const proxyTarget = encodeURIComponent("https://api.typesafe.ai/v1/systemone");
-      expect(endpoint).toBe(`https://aged-sunset-proxy.amplenote.workers.dev?apiurl=${ proxyTarget }`);
+      expect(endpoint).toBe(`${ CORS_PROXY }?apiurl=${ proxyTarget }`);
       expect(JSON.parse(request.body).model).toBe("jev-latest");
       expect(request.headers.Authorization).toBeUndefined();
     } finally {
@@ -477,7 +477,7 @@ describe("Jev client", () => {
   it("routes OpenRouter keys to OpenRouter, and a browser's TypeSafe keys through the CORS proxy", () => {
     expect(jevRouteFromAccessToken("sk-or-v1-abc").routeEm).toBe("openrouter");
     expect(jevRouteFromAccessToken("ts-abc").endpoint).toBe(
-      "https://aged-sunset-proxy.amplenote.workers.dev?apiurl=https%3A%2F%2Fapi.typesafe.ai%2Fv1%2Fsystemone");
+      `${ CORS_PROXY }?apiurl=https%3A%2F%2Fapi.typesafe.ai%2Fv1%2Fsystemone`);
     expect(jevRouteFromAccessToken("ts-abc", { useProxy: false })).toMatchObject({ endpoint: "https://api.typesafe.ai/v1/systemone",
       routeEm: "typesafe" });
   });
