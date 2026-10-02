@@ -5,6 +5,19 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-02 — Score cited project tasks that still have no similarity
+
+**Model:** Grok 4.7
+**Files modified:**
+- `lib/plan-wizard/stack-rank/refresh-stale-project-rankings.js` — Ranks a project whose cited tasks have no similarity score, even when it was ranked recently, using Jev or Agent Pro's fast model
+- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` — Rates those cited tasks and keeps the rating even when the project already holds the task
+- `lib/plan-wizard/stack-rank/rank-prospective-tasks.js` — Logs each failed batch's reason
+- `lib/plan-wizard/plan-wizard-service.js` — Re-reads stored similarity scores
+- `lib/hooks/use-plan-wizard.js`, `lib/hooks/use-project-task-ranking.js`, `lib/dashboard/plan-wizard/plan-wizard.jsx` — Refreshes the sources page after a ranking pass writes scores
+- `test/stack-rank.test.js` — A fresh project is still ranked for an unscored cited task
+
+---
+
 ## 2026-10-02 — Hide the quarterly plan splash once Plan Builder has saved answers
 
 **Model:** Grok 4.7

@@ -111,8 +111,9 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
     onOpenSettings = null, quarter, year }) {
   const { consolidateProspects, discoverProspects, discoveryFailureReason, error, intentReading, isConsolidating,
     isDiscovering, isLoading, isLoadingProjectSources, isRefreshing, isSaving, loadProjectSources, planningContext,
-    projectSources, refreshPossibilities, reload, saveError, saveGoals, saveProspectDecision, saveProspects,
-    saveQuarterAnswer, saveThemeJudgement, viewQuarterlyPlan } = usePlanWizard({ app, domainName, domainUuid, quarter, year });
+    projectSources, refreshPossibilities, reload, reloadProjectSourceScores, saveError, saveGoals,
+    saveProspectDecision, saveProspects, saveQuarterAnswer, saveThemeJudgement,
+    viewQuarterlyPlan } = usePlanWizard({ app, domainName, domainUuid, quarter, year });
   const [stepKey, setStepKey] = useState(WIZARD_STEPS[0].key);
   const [hasIntentAnswer, setHasIntentAnswer] = useState(false);
   const [hasDoneEnoughSelection, setHasDoneEnoughSelection] = useState(false);
@@ -134,7 +135,8 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const { hasLlmProviderAccess, isCheckingLlmProviderAccess } = useLlmProviderAccess(app);
   // Entering the builder refreshes the current quarter's Jev task rankings, once the builder is not mid-request.
   useProjectTaskRanking({ app, domainName, domainUuid,
-    isAwaitingProvider: isLoading || isDiscovering || isConsolidating || isRefreshing || isCheckingLlmProviderAccess });
+    isAwaitingProvider: isLoading || isDiscovering || isConsolidating || isRefreshing || isCheckingLlmProviderAccess,
+    onRanked: reloadProjectSourceScores, quarter, year });
   const isMissingLlmProvider = !hasLlmProviderAccess && !isCheckingLlmProviderAccess;
   // Measured here rather than in either consumer, so the intent page's link and the reading page it opens show one
   // continuous fill instead of each restarting the bar when it mounts.
