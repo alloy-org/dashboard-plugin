@@ -2,6 +2,7 @@ import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
 import { setPluginData } from "plugin-data";
 import { SAMPLE_TASKS } from "./fixtures/tasks.js";
+import { mockFetchAiProvider } from "./mock-fetch-ai-provider.js";
 
 const PLAN_NOTE_UUID = "plan-note-uuid";
 
@@ -9,9 +10,7 @@ const PLAN_NOTE_UUID = "plan-note-uuid";
 let lastPromptSent = null;
 const llmMock = jest.fn();
 
-await jest.unstable_mockModule("providers/fetch-ai-provider", async () => ({
-  llmPromptWithPluginFallback: (...args) => llmMock(...args),
-}));
+await mockFetchAiProvider({ llmPromptWithPluginFallback: (...args) => llmMock(...args) });
 
 const { generateProposedAgenda, scheduleProposedActivity } = await import("proposed-agenda-service");
 

@@ -3,15 +3,14 @@ import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { SETTING_KEYS } from "constants/settings";
 import { SAMPLE_TASKS } from "./fixtures/tasks.js";
+import { mockFetchAiProvider } from "./mock-fetch-ai-provider.js";
 
 const SECONDS_PER_DAY = 24 * 60 * 60;
 const SECONDS_PER_MINUTE = 60;
 
 const llmMock = jest.fn();
 
-await jest.unstable_mockModule("providers/fetch-ai-provider", async () => ({
-  llmPromptWithPluginFallback: (...args) => llmMock(...args),
-}));
+await mockFetchAiProvider({ llmPromptWithPluginFallback: (...args) => llmMock(...args) });
 
 const { default: ProposedAgendaWidget } = await import("proposed-agenda");
 const { setPluginData } = await import("plugin-data");

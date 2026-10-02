@@ -14,6 +14,7 @@ import { initialVisionGuideMarkdown } from "plan-wizard/vision-guide-markdown";
 import { VISION_GUIDE_TAG } from "plan-wizard/vision-guide-notes";
 import { setPluginData } from "plugin-data";
 import { SAMPLE_TASKS } from "./fixtures/tasks.js";
+import { mockFetchAiProvider } from "./mock-fetch-ai-provider.js";
 
 const PLAN_NOTE_UUID = "plan-note-uuid";
 const FIVE_PM = 17;
@@ -24,9 +25,7 @@ const SECONDS_PER_DAY = 24 * 60 * 60;
 let lastPromptSent = null;
 const llmMock = jest.fn();
 
-await jest.unstable_mockModule("providers/fetch-ai-provider", async () => ({
-  llmPromptWithPluginFallback: (...args) => llmMock(...args),
-}));
+await mockFetchAiProvider({ llmPromptWithPluginFallback: (...args) => llmMock(...args) });
 
 const { generateProposedAgenda, resolveProposedAgendaDate, scheduleProposedActivity } =
   await import("proposed-agenda-service");

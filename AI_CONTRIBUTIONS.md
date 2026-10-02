@@ -19,6 +19,7 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 - `lib/dream-task-service.js`, `lib/dashboard/dream-task.jsx`, `lib/dashboard/dream-task-internals.js` — Use the ranked tasks when a ranker is available, and promote the next one when a card is rejected
 - `lib/dashboard/proposed-agenda-service.js`, `lib/dashboard/proposed-agenda.jsx`, `lib/dashboard/proposed-agenda-suggest-action.js`, `lib/dashboard/proposed-agenda-archive.js`, `lib/dashboard/proposed-agenda-range.js`, `lib/dashboard/proposed-agenda-llm-generator.js` — Slot the ranked tasks into the agenda and calendar, and refill a rejected hour from the reserves
 - `test/ranked-task-suggestions.test.js` — Covers project selection, both rankers, hour placement, rejection refill, and the suggestion log
+- `test/mock-fetch-ai-provider.js` — One provider mock for the suites that load Jev and the generative prompt, with the suite's own fallback call passed in
 
 **Task:** Swap suggested tasks and agendas to Jev when it is available, with a generative stack-rank fallback
 **Prompt summary:** "swap all of our suggested task and agenda infrastructure to utilize Jev when available" and, when it is not, "ask the generative model to return a stack ranked list of applicable tasks" from the project task note. Dream task returns two tasks not suggested in three days. Agenda and calendar suggestions slot the best fifteen onto free hours. Rejected tasks are replaced from that ranking, and every task shown is appended under the project's "{taskUuid} suggested" heading.

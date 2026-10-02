@@ -2,14 +2,13 @@
 // wins. The behavior that matters is what the sequential fallback could not do — a slow Agent Pro must not delay
 // a fast direct provider, and a fast failure from either source must not settle the race against a slower success.
 import { jest } from "@jest/globals";
+import { mockFetchAiProvider } from "./mock-fetch-ai-provider.js";
 
 const agentProMock = jest.fn();
 const llmPromptMock = jest.fn();
 
-await jest.unstable_mockModule("providers/fetch-ai-provider", () => ({
-  agentProPrompt: (...args) => agentProMock(...args),
-  llmPrompt: (...args) => llmPromptMock(...args),
-}));
+await mockFetchAiProvider({ agentProPrompt: (...args) => agentProMock(...args),
+  llmPrompt: (...args) => llmPromptMock(...args) });
 
 const { raceWizardPrompt } = await import("plan-wizard/wizard-prompt-runner");
 

@@ -5,13 +5,12 @@
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
 import { setPluginData } from "plugin-data";
+import { mockFetchAiProvider } from "./mock-fetch-ai-provider.js";
 
 let lastPromptSent = null;
 const llmMock = jest.fn();
 
-await jest.unstable_mockModule("providers/fetch-ai-provider", async () => ({
-  llmPromptWithPluginFallback: (...args) => llmMock(...args),
-}));
+await mockFetchAiProvider({ llmPromptWithPluginFallback: (...args) => llmMock(...args) });
 
 const { analyzeDreamTasks } = await import("dream-task-service");
 

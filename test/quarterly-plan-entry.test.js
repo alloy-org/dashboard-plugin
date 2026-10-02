@@ -5,11 +5,10 @@
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
 import { setPluginData } from "plugin-data";
+import { mockFetchAiProvider } from "./mock-fetch-ai-provider.js";
 
 const llmPrompt = jest.fn();
-await jest.unstable_mockModule("providers/fetch-ai-provider", () => ({
-  llmPrompt: (...args) => llmPrompt(...args),
-}));
+await mockFetchAiProvider({ llmPrompt: (...args) => llmPrompt(...args) });
 
 const { resolveQuarterlyPlanEntry } = await import("quarterly-plan-service");
 const { AMPLE_AGENT_PRO_NOTE_NAME, AMPLE_AGENT_PRO_URL } = await import("providers/ai-provider-settings");

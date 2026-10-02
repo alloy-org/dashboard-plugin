@@ -6,14 +6,13 @@ import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
 import { setPluginData } from "plugin-data";
 import { localMidnightFromDateInput } from "util/date-utility";
+import { mockFetchAiProvider } from "./mock-fetch-ai-provider.js";
 
 // The LLM call is mocked so the composed prompt can be captured and no network is touched.
 let lastPromptSent = null;
 const llmMock = jest.fn();
 
-await jest.unstable_mockModule("providers/fetch-ai-provider", async () => ({
-  llmPromptWithPluginFallback: (...args) => llmMock(...args),
-}));
+await mockFetchAiProvider({ llmPromptWithPluginFallback: (...args) => llmMock(...args) });
 
 const { AGENDA_DECISION, decisionLogNoteName, recordAgendaDecisions } = await import("proposed-agenda-decision-log");
 const { generateProposedAgenda } = await import("proposed-agenda-service");
