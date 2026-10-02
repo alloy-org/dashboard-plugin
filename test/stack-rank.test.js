@@ -349,14 +349,45 @@ describe("prepareProjectTaskRanker", () => {
     const ranker = await prepareProjectTaskRanker(app, { accessToken: "token", domainName: "Work",
       domainUuid: "work-domain", now: new Date(2026, 9, 2), projects: [project], refineDictionary: false,
       requestAnswers, tasks });
+    setLoggingEnabled(true);
+    const log = jest.spyOn(console, "log").mockImplementation(() => {});
     const ranking = await ranker.rankProject(project, [], { requiredTaskRecords: [{ taskText: "Cited old task",
       taskUuid: "cited-1" }] });
+    const projectLog = log.mock.calls.find(call => call[0] === "[stack-rank-project-tasks] ranked project");
+    log.mockRestore();
+    setLoggingEnabled(false);
     expect(requestAnswers).toHaveBeenCalledTimes(1);
+    expect(projectLog[1]).toMatchObject({ candidateCount: 1, createdAfter: rankedAt, excludedBeforeCreatedAfter: 2,
+      excludedWithoutCreatedAt: 0, limitToRequiredTasks: false, requiredCount: 1, sentCount: 2 });
     const sentTexts = Object.values(requestAnswers.mock.calls[0][0].state.prospectiveTasks).map(task => task.text);
     expect(sentTexts).toEqual(["New errand", "Cited old task"]);
     const citedKey = taskRatingKey("Diff Digest launch", { taskText: "Cited old task", taskUuid: "cited-1" });
     expect(ranking.taskRatings).toEqual({ [citedKey]: 1 });
     expect(ranking.rankingIncomplete).toBe(false);
+  });
+
+  it("logs a createdAfter cutoff that leaves Jev nothing to rate", async () => {
+    const rankedAt = "2026-10-01T00:00:00.000Z";
+    const project = { ...DIFF_DIGEST_PROJECT, lastRankedAt: rankedAt };
+    const tasks = [
+      { content: "Older errand", createdAt: "2026-09-01T00:00:00.000Z", noteUUID: "note-1", uuid: "old-1" },
+      { content: "Undated errand", noteUUID: "note-1", uuid: "undated-1" },
+      { content: "Already associated", createdAt: "2026-09-01T00:00:00.000Z", noteUUID: "note-1", uuid: "related-1" }];
+    const requestAnswers = jest.fn();
+    const ranker = await prepareProjectTaskRanker(notesApp({}, tasks), { accessToken: "token", domainName: "Work",
+      domainUuid: "work-domain", now: new Date(2026, 9, 2), projects: [project], refineDictionary: false,
+      requestAnswers, tasks });
+    setLoggingEnabled(true);
+    const log = jest.spyOn(console, "log").mockImplementation(() => {});
+    const ranking = await ranker.rankProject(project, [{ taskText: "Already associated", taskUuid: "related-1" }]);
+    const projectLog = log.mock.calls.find(call => call[0] === "[stack-rank-project-tasks] ranked project");
+    log.mockRestore();
+    setLoggingEnabled(false);
+    expect(requestAnswers).not.toHaveBeenCalled();
+    expect(ranking).toMatchObject({ acceptedTasks: [], minimumMatchScore: null, rankingIncomplete: false, ratedCount: 0 });
+    expect(projectLog[1]).toEqual({ acceptedCount: 0, cachedCount: 0, candidateCount: 0, createdAfter: rankedAt,
+      excludedBeforeCreatedAfter: 1, excludedWithoutCreatedAt: 1, limitToRequiredTasks: false, minimumMatchScore: null,
+      project: "Diff Digest launch", rankingIncomplete: false, requiredCount: 0, scorerEm: "jev", sentCount: 0 });
   });
 });
 

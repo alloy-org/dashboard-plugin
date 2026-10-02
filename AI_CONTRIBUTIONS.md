@@ -5,6 +5,48 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-02 — Rank today's project tasks with Jev, or the generative model when Jev is unavailable
+
+**Model:** Grok 4.7
+**Files modified:**
+- `lib/dashboard/day-project-candidates.js` — Selects weekday, open-cadence, and coming-week deadline projects and nests their stored tasks with a rationale
+- `lib/dashboard/suggestion-task-rank.js` — Asks Jev to score those tasks, and otherwise asks the generative model for a stack-ranked UUID list
+- `lib/dashboard/suggestion-task-slots.js` — Places the best matches on free hours, leaving 30 minutes around other plans and the task's own duration
+- `lib/dashboard/ranked-task-suggestions.js` — Serves two fresh dream tasks or fifteen agenda matches, and records each task that is shown
+- `lib/dashboard/project-suggestion-log.js`, `lib/dashboard/project-task-store.js`, `lib/dashboard/project-task-store-markdown.js` — Append each shown task UUID under an h3 on that project's store section
+- `lib/dashboard/project-progress-model.js` — Carries deadline and priority onto the projects the agenda already loads
+- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` — Exposes the Jev or Agent Pro requester the suggestion ranking uses
+- `lib/dream-task-service.js`, `lib/dashboard/dream-task.jsx`, `lib/dashboard/dream-task-internals.js` — Use the ranked tasks when a ranker is available, and promote the next one when a card is rejected
+- `lib/dashboard/proposed-agenda-service.js`, `lib/dashboard/proposed-agenda.jsx`, `lib/dashboard/proposed-agenda-suggest-action.js`, `lib/dashboard/proposed-agenda-archive.js`, `lib/dashboard/proposed-agenda-range.js`, `lib/dashboard/proposed-agenda-llm-generator.js` — Slot the ranked tasks into the agenda and calendar, and refill a rejected hour from the reserves
+- `test/ranked-task-suggestions.test.js` — Covers project selection, both rankers, hour placement, rejection refill, and the suggestion log
+
+**Task:** Swap suggested tasks and agendas to Jev when it is available, with a generative stack-rank fallback
+**Prompt summary:** "swap all of our suggested task and agenda infrastructure to utilize Jev when available" and, when it is not, "ask the generative model to return a stack ranked list of applicable tasks" from the project task note. Dream task returns two tasks not suggested in three days. Agenda and calendar suggestions slot the best fifteen onto free hours. Rejected tasks are replaced from that ranking, and every task shown is appended under the project's "{taskUuid} suggested" heading.
+
+---
+
+## 2026-10-02 — Alphabetize arguments added for ranked reserves
+
+**Model:** Grok 4.7
+**Files modified:**
+- `lib/dashboard/dream-task-internals.js` — `setReserveTasks` sits with the other setters in alphabetical order
+- `lib/dashboard/dream-task.jsx` — The analysis-result call and the reserve promotion pass arguments in that order
+- `lib/dashboard/project-progress-model.js` — `deadlineOn` and `priorityEm` sit in alphabetical order on the project record
+- `lib/dashboard/proposed-agenda-service.js` — A reconciled agenda lists `dismissedKeys` before `reserveTasks`
+- `lib/dream-task-service.js` — Reserve arguments precede `tasks` on the note writers, and cached results list their fields alphabetically
+
+---
+
+## 2026-10-02 — Log when a createdAfter cutoff empties a Jev ranking pool
+
+**Model:** Grok 4.7
+**Files modified:**
+- `lib/dashboard/project-candidate-tasks.js` — The candidate pool reports how many open tasks a `createdAfter` cutoff dropped for being older, and how many it dropped because their creation time could not be read
+- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` — The per-project ranking log includes that cutoff, those two counts, and the candidate and required pool sizes
+- `test/stack-rank.test.js` — A later pass names the cutoff, and a pool of only older or undated tasks is logged as nothing sent
+
+---
+
 ## 2026-10-02 — Rank only tasks created since the previous ranking
 
 **Model:** Grok 4.7

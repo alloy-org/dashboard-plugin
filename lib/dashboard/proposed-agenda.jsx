@@ -5,7 +5,7 @@ import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import LlmProviderSelector from "llm-provider-selector";
 import NoConfigUpsell from "no-config-upsell";
 import { pluginSettings, updatePluginSetting } from "plugin-data";
-import { PROPOSED_TASK_STATUS } from "proposed-agenda-archive";
+import { PROPOSED_TASK_STATUS, saveAgendaReplacement } from "proposed-agenda-archive";
 import ProposedAgendaDateControl from "proposed-agenda-date-control";
 import { activityKey, approveAllProposed, mergedAgendaRows, pendingCount, recordProposedRowStatuses,
   runProposedAgendaGeneration, scheduleProposedRow } from "proposed-agenda-llm-generator";
@@ -16,6 +16,7 @@ import ProposedAgendaPriorityControl from "proposed-agenda-priority-control";
 import { agendaRowsGroupedByDay } from "proposed-agenda-range";
 import { resolveProposedAgendaDate } from "proposed-agenda-service";
 import { findAmpleAgentProNote } from "providers/ai-provider-settings";
+import { refillAndRecordSuggestion } from "ranked-task-suggestions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "styles/proposed-agenda.scss";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
@@ -168,6 +169,7 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   const [recordDomainName, setRecordDomainName] = useState(taskDomainName || "All Notes");
   const [recordDomainUuid, setRecordDomainUuid] = useState(taskDomainUUID || null);
   const [recordProviderEm, setRecordProviderEm] = useState(null);
+  const [reserveTasks, setReserveTasks] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
   const generationRef = useRef(0);
   const [scheduledKeys, setScheduledKeys] = useState(() => new Set());
@@ -187,7 +189,8 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   const runGeneration = useCallback(({ forceRegenerate = false } = {}) => {
     const generation = ++generationRef.current;
     const setters = { setApproving, setAttribution, setDateLabel, setDismissedKeys, setError, setIsFutureDay,
-      setLoading, setObligations, setProjectNotice, setProposed, setRecordDomainName, setRecordDomainUuid, setRecordProviderEm, setScheduledKeys };
+      setLoading, setObligations, setProjectNotice, setProposed, setRecordDomainName, setRecordDomainUuid,
+      setRecordProviderEm, setReserveTasks, setScheduledKeys };
     const guardedSetters = Object.fromEntries(Object.entries(setters).map(([name, setter]) =>
       [name, value => { if (generation === generationRef.current) setter(value); }]));
     return runProposedAgendaGeneration(app, { calendarEvents, currentDate, dateRange, domainName: taskDomainName,
@@ -226,7 +229,23 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
     event.preventDefault();
     setDismissedKeys(previous => new Set(previous).add(activityKey(row)));
     recordProposedRowStatuses(app, llmDateRecord, [row], PROPOSED_TASK_STATUS.DISMISSED);
-  }, [app, llmDateRecord]);
+    const sameDay = activity => activity.targetMidnightSeconds === row.targetMidnightSeconds;
+    const sameDayActivities = proposed.filter(activity => sameDay(activity) && !dismissedKeys.has(activityKey(activity))
+      && activityKey(activity) !== activityKey(row));
+    const nowMinutes = isFutureDay ? null : new Date().getHours() * 60 + new Date().getMinutes();
+    const targetDate = row.targetMidnightSeconds ? new Date(row.targetMidnightSeconds * 1000) : llmDateRecord.date;
+    refillAndRecordSuggestion(app, { activities: sameDayActivities, domainName: recordDomainName,
+      domainUuid: recordDomainUuid, nowMinutes, obligations: obligations.filter(sameDay),
+      preferredStartMinutes: row.startMinutes, reserveTasks: reserveTasks.filter(sameDay), targetDate,
+      targetMidnightSeconds: row.targetMidnightSeconds }).then(refill => {
+      if (!refill.placed) return;
+      setProposed(previous => [...previous, refill.placed]);
+      setReserveTasks(previous => [...previous.filter(task => !sameDay(task)), ...refill.reserveTasks]);
+      saveAgendaReplacement(app, { activity: refill.placed, date: targetDate, domainName: recordDomainName,
+        domainUuid: recordDomainUuid, priorityKey, providerEm: recordProviderEm, reserveTasks: refill.reserveTasks });
+    });
+  }, [app, dismissedKeys, isFutureDay, llmDateRecord, obligations, priorityKey, proposed, recordDomainName,
+    recordDomainUuid, recordProviderEm, reserveTasks]);
 
   const onDismissAll = useCallback(() => {
     const dismissing = proposed.filter(a => !scheduledKeys.has(activityKey(a)));

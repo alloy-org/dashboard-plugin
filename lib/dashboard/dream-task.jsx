@@ -6,10 +6,12 @@ import { _loadSeenUuidsMap, _maxTasksFromGrid, _recordSeenUuids, _taskGenerateCo
 } from "dream-task-internals";
 import { buildAvailableTimeSlots, fetchSchedulingOccupancy, resolveDreamTaskScheduleSelection,
   scheduledDreamTaskResultFromStartAt } from "dream-task-schedule";
+import { promoteDreamTaskReserve } from "dream-task-service";
 import LlmProviderSelector from "llm-provider-selector";
 import NoConfigUpsell from "no-config-upsell";
 import { pluginSettings } from "plugin-data";
 import { findAmpleAgentProNote, providerNameFromProviderEm } from "providers/ai-provider-settings";
+import { recordShownTaskSuggestions } from "ranked-task-suggestions";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { DASHBOARD_TASKS_UPDATED_EVENT } from "hooks/use-dashboard-task-updates";
@@ -328,7 +330,8 @@ function DreamTaskHeaderActions({ noteUUID, onOpenNote, onReseed }) {
 // DreamTask widget — custom hooks, state, effects, and composition
 // =============================================================================
 
-function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks) {
+function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks, { reserveTasks, setReserveTasks, taskDomainName,
+    taskDomainUUID }) {
   const [dismissingTaskKeys, setDismissingTaskKeys] = useState(() => new Set());
   const [expandedExplanationKeys, setExpandedExplanationKeys] = useState(() => new Set());
 
@@ -389,8 +392,17 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks) {
     event.preventDefault();
     const removedAt = new Date().toISOString();
     await patchTaskMetadata(dreamTask, { completedAt: null, removedAt });
+    const replacement = reserveTasks[0];
+    if (replacement) {
+      const remaining = reserveTasks.slice(1);
+      setReserveTasks(remaining);
+      setTasks(previous => [...(previous || []), replacement]);
+      await promoteDreamTaskReserve(app, noteUUID, remaining, replacement);
+      await recordShownTaskSuggestions(app, { domainName: taskDomainName, domainUuid: taskDomainUUID,
+        suggestions: [replacement], targetDate: new Date() });
+    }
     removeTaskAfterFade(dreamTask);
-  }, [patchTaskMetadata, removeTaskAfterFade]);
+  }, [app, noteUUID, patchTaskMetadata, removeTaskAfterFade, reserveTasks, taskDomainName, taskDomainUUID]);
 
   const onScheduleTask = useCallback(async (event, dreamTask) => {
     event.preventDefault();
@@ -450,6 +462,7 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   const [defaultNoteUUID, setDefaultNoteUUID] = useState(null);
   const [llmAttributionFooter, setLlmAttributionFooter] = useState(null);
   const [providerPopupOpen, setProviderPopupOpen] = useState(false);
+  const [reserveTasks, setReserveTasks] = useState([]);
   const [ampleAgentProAvailable, setAmpleAgentProAvailable] = useState(false);
   const [, setSeenUuidsMap] = useState(() => _loadSeenUuidsMap());
   const analysisRunIdRef = useRef(0);
@@ -471,7 +484,8 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   const previousTaskGenerateCountRef = useRef(taskGenerateCount);
 
   const { dismissingTaskKeys, expandedExplanationKeys, onCompleteTask, onPreserveTask, onRemoveTask,
-    onScheduleTask, onToggleExplanation, resetActionState } = useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks);
+    onScheduleTask, onToggleExplanation, resetActionState } = useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks,
+    { reserveTasks, setReserveTasks, taskDomainName, taskDomainUUID });
 
   const recordTaskUuids = useCallback(async (shownUuids, currentMap) => {
     const uuids = (shownUuids || []).filter(Boolean);
@@ -504,10 +518,8 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
       }
       if (analysisRunId !== analysisRunIdRef.current) return;
       const applyStart = performance.now();
-      await applyDreamTaskAnalysisResult(result, {
-        providerName: providerNameForRun,
-        app, recordTaskUuids, setError, setTasks, setNoteUUID, setDefaultNoteUUID, setLlmAttributionFooter,
-      });
+      await applyDreamTaskAnalysisResult(result, { app, providerName: providerNameForRun, recordTaskUuids,
+        setDefaultNoteUUID, setError, setLlmAttributionFooter, setNoteUUID, setReserveTasks, setTasks });
       logIfEnabled(`[DreamTask] applyDreamTaskAnalysisResult took ${(performance.now() - applyStart).toFixed(1)}ms`);
     } catch (err) {
       if (analysisRunId !== analysisRunIdRef.current) return;
