@@ -281,6 +281,31 @@ describe("prepareProjectTaskRanker", () => {
     expect(ratedTexts).not.toContain("Task number 49\"");
   });
 
+  it("rates through the Jev proxy when Ample Agent Pro is installed and no Jev key is set", async () => {
+    const tasks = [{ content: "Diff Digest landing copy", noteUUID: "note-1", updatedAt: 2, uuid: "open-1" }];
+    const notes = { "Ample Agent Pro": { content: "", uuid: "agent-pro" },
+      GitClear: { content: "- [ ] Diff Digest landing copy\n", uuid: "note-1" } };
+    const fetchImplementation = jest.fn(async () => ({ ok: true, text: async () => JSON.stringify({
+      answers: { task_1: { confidence: 0.4, score: 8, type: "score" } }, model: "jev-latest" }) }));
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = fetchImplementation;
+    try {
+      const ranker = await prepareProjectTaskRanker(notesApp(notes, tasks), { domainName: "Work", domainUuid: "work-domain",
+        now: new Date(2026, 9, 1), projects: [DIFF_DIGEST_PROJECT], refineDictionary: false, tasks });
+      expect(ranker.scorerEm).toBe("jev");
+      const ranking = await ranker.rankProject(DIFF_DIGEST_PROJECT, []);
+      expect(ranking.failureReason).toBeNull();
+      expect(ranking.acceptedTasks).toEqual([{ matchScore: 9, taskText: "Diff Digest landing copy", taskUuid: "open-1" }]);
+      const [endpoint, request] = fetchImplementation.mock.calls[0];
+      const proxyTarget = encodeURIComponent("https://api.typesafe.ai/v1/systemone");
+      expect(endpoint).toBe(`https://aged-sunset-proxy.amplenote.workers.dev?apiurl=${ proxyTarget }`);
+      expect(JSON.parse(request.body).model).toBe("jev-latest");
+      expect(request.headers.Authorization).toBeUndefined();
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   it("grows the dictionary, rates the unassociated pool, and saves the project's minimum match score", async () => {
     const notes = { "Project Tasks Q4 2026 Work": { content: storeContentFromProjects([DIFF_DIGEST_PROJECT]),
       uuid: "store-note" } };

@@ -1,5 +1,6 @@
-Rate how applicable each prospective task is to each current project, using TypeSafe's Jev decision model, or the
-generative provider's fast model when no Jev key is set.
+Rate how applicable each prospective task is to each current project, using TypeSafe's Jev decision model. A Jev
+Access Token uses that key. An installed Ample Agent Pro note calls the CORS proxy with Jev's URL and model and no
+local key. The generative provider's fast model rates only when neither of those is available and a provider key is.
 
 # Pipeline
 
@@ -11,7 +12,7 @@ stands down while the builder is open. Both passes prepare one ranker and then r
 import { prepareProjectTaskRanker } from "plan-wizard/stack-rank/stack-rank-project-tasks";
 
 const ranker = await prepareProjectTaskRanker(app, { domainName, domainUuid, projects, refineDictionary, tasks });
-// null when neither a Jev key nor a generative provider is available
+// null when no Jev key, Ample Agent Pro note, or generative provider is available
 const { acceptedTasks, failureReason, minimumMatchScore } = await ranker.rankProject(project, matchedTaskRecords);
 ```
 
@@ -65,8 +66,8 @@ pool is roughly 160k input tokens. Later rankings send only new or edited tasks.
 
 # Fast-model rating
 
-Without a Jev key, `prepareProjectTaskRanker` rates with the generative provider's fast model instead, provided a
-provider key is set or Ample Agent Pro is installed. `generative-task-scores.js` renders the same state and score
+Without a Jev key and without Ample Agent Pro, `prepareProjectTaskRanker` rates with the generative provider's fast
+model instead, provided a provider key is set. `generative-task-scores.js` renders the same state and score
 questions a Jev batch carries as one prompt, using the same rubric, and asks for `{ "ratings": { "task_1": 7, … } }`.
 It sends the prompt through `raceWizardPrompt` with `wizardLlmOptions`, the fast model Plan Builder uses. The reply is
 converted to Jev's zero-indexed score answers, so the rating cache, thresholds, and stored ratings work as they do
