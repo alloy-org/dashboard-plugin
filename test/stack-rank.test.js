@@ -286,8 +286,7 @@ describe("prepareProjectTaskRanker", () => {
     const tasks = [{ content: "Diff Digest landing copy", noteUUID: "note-1", updatedAt: 2, uuid: "open-1" }];
     const notes = { "Ample Agent Pro": { content: "", uuid: "agent-pro" },
       GitClear: { content: "- [ ] Diff Digest landing copy\n", uuid: "note-1" } };
-    const callPlugin = jest.fn(async () => ({ answers: { task_1: { confidence: 0.4, score: 8, type: "score" } },
-      model: "jev-latest" }));
+    const callPlugin = jest.fn(async () => ({ model: "jev-latest", scores: { task_1: 9, task_2: 20 } }));
     const app = { ...notesApp(notes, tasks), callPlugin };
     const ranker = await prepareProjectTaskRanker(app, { domainName: "Work", domainUuid: "work-domain",
       now: new Date(2026, 9, 1), projects: [DIFF_DIGEST_PROJECT], refineDictionary: false, tasks });

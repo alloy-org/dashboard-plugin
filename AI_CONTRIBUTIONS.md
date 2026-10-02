@@ -11,7 +11,7 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 **Files modified:**
 - `lib/providers/fetch-ai-provider.js` — Forwards an optional request URL to Agent Pro after the model id
 - `lib/providers/jev-client.js` — Sends a browser TypeSafe key through `aged-sunset-proxy`, the Worker Agent Pro calls; the unused `wispy-darkness` constant is not that proxy
-- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` — Asks Agent Pro, through callPlugin, to call `jev-latest` at `https://api.typesafe.ai/v1/systemone` when no Jev key is set
+- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` — Asks Agent Pro to call Jev, and reads its `scores` map of 1–10 ratings as similarity scores
 - `lib/plan-wizard/stack-rank/generative-task-scores.js` — Drops the Agent Pro check from the fast-model path
 - `lib/hooks/use-project-task-ranking.js`, `lib/dashboard/project-task-collection.js`, `lib/plan-wizard/stack-rank/README.md` — Describe the Agent Pro proxy path
 - `test/stack-rank.test.js` — An Agent Pro note is asked to call `jev-latest` at the Jev URL, with no proxy request
