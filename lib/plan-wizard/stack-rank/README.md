@@ -1,6 +1,6 @@
 Rate how applicable each prospective task is to each current project, using TypeSafe's Jev decision model. A Jev
-Access Token uses that key. An installed Ample Agent Pro note calls the CORS proxy with Jev's URL and model and no
-local key. The generative provider's fast model rates only when neither of those is available and a provider key is.
+Access Token uses that key. An installed Ample Agent Pro note is asked, through callPlugin, to call Jev's model at
+Jev's URL. The generative provider's fast model rates only when neither of those is available and a provider key is.
 
 # Pipeline
 
@@ -94,9 +94,9 @@ TypeSafe's endpoint refuses browser origins: its CORS preflight returns 400 for 
 localhost. **Jev Access Token**, entered by choosing Jev in Dashboard Settings' LLM Provider dropdown, accepts either key:
 
 - An OpenRouter key (`sk-or-…`) goes straight to OpenRouter's `/api/v1/systemone`, which allows any origin.
-- From a browser, a TypeSafe key goes through `CORS_PROXY` (`wispy-darkness-7716.amplenote.workers.dev`),
-  as `?apiurl=https://api.typesafe.ai/v1/systemone`. An installed Ample Agent Pro note uses that same address
-  with no Authorization header.
+- From a browser, a TypeSafe key goes through `aged-sunset-proxy.amplenote.workers.dev`, the Worker Ample Agent Pro
+  uses for Tinify, as `?apiurl=https://api.typesafe.ai/v1/systemone`. An installed Ample Agent Pro note is not sent there: Agent Pro
+  receives the System One body, the model `jev-latest`, and `https://api.typesafe.ai/v1/systemone`.
 - From Node, a TypeSafe key goes to TypeSafe directly. That is how `test/stack-rank.test.js` makes its live call when
   `JEV_ACCESS_TOKEN` is set in `.env`.
 

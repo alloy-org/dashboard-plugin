@@ -9,11 +9,12 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 **Model:** Grok 4.7
 **Files modified:**
-- `lib/providers/jev-client.js` — Calls `CORS_PROXY` with Jev's URL and model and no Authorization header when Agent Pro authorizes the call
-- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` — Chooses Jev when an Ample Agent Pro note is present, ahead of the fast model
+- `lib/providers/fetch-ai-provider.js` — Forwards an optional request URL to Agent Pro after the model id
+- `lib/providers/jev-client.js` — Sends a browser TypeSafe key through `aged-sunset-proxy`, the Worker Agent Pro calls; the unused `wispy-darkness` constant is not that proxy
+- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` — Asks Agent Pro, through callPlugin, to call `jev-latest` at `https://api.typesafe.ai/v1/systemone` when no Jev key is set
 - `lib/plan-wizard/stack-rank/generative-task-scores.js` — Drops the Agent Pro check from the fast-model path
 - `lib/hooks/use-project-task-ranking.js`, `lib/dashboard/project-task-collection.js`, `lib/plan-wizard/stack-rank/README.md` — Describe the Agent Pro proxy path
-- `test/stack-rank.test.js` — An Agent Pro note sends the proxy request with model `jev-latest` and no token
+- `test/stack-rank.test.js` — An Agent Pro note is asked to call `jev-latest` at the Jev URL, with no proxy request
 
 ---
 

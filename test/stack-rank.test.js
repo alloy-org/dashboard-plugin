@@ -6,7 +6,7 @@
 import { jest } from "@jest/globals";
 import dotenv from "dotenv";
 import fetch from "isomorphic-fetch";
-import { CORS_PROXY, SETTING_KEYS } from "constants/settings";
+import { SETTING_KEYS } from "constants/settings";
 import { relevantDictionaryTerms } from "plan-wizard/stack-rank/build-project-task-context";
 import { acceptedDictionaryTerms } from "plan-wizard/stack-rank/dictionary-term-discovery";
 import { acceptedRankedTasks, matchScoresWithProjectScore, persistPrunedMatchScores,
@@ -22,6 +22,7 @@ import { dictionaryEntriesFromContent, examinedProjectSummaries, mergedDictionar
 import { pluginSettings, setPluginData } from "plugin-data";
 import { storedProjectRecords } from "project-task-store";
 import { initialProjectTaskStoreMarkdown, projectSectionHeadingText, projectSectionMarkdown } from "project-task-store-markdown";
+import { AMPLE_AGENT_PRO_UUID } from "providers/ai-provider-settings";
 import { jevRouteFromAccessToken, requestJevAnswers } from "providers/jev-client";
 
 dotenv.config();
@@ -281,29 +282,25 @@ describe("prepareProjectTaskRanker", () => {
     expect(ratedTexts).not.toContain("Task number 49\"");
   });
 
-  it("rates through the Jev proxy when Ample Agent Pro is installed and no Jev key is set", async () => {
+  it("asks Ample Agent Pro to call Jev when no Jev key is set", async () => {
     const tasks = [{ content: "Diff Digest landing copy", noteUUID: "note-1", updatedAt: 2, uuid: "open-1" }];
     const notes = { "Ample Agent Pro": { content: "", uuid: "agent-pro" },
       GitClear: { content: "- [ ] Diff Digest landing copy\n", uuid: "note-1" } };
-    const fetchImplementation = jest.fn(async () => ({ ok: true, text: async () => JSON.stringify({
-      answers: { task_1: { confidence: 0.4, score: 8, type: "score" } }, model: "jev-latest" }) }));
-    const originalFetch = globalThis.fetch;
-    globalThis.fetch = fetchImplementation;
-    try {
-      const ranker = await prepareProjectTaskRanker(notesApp(notes, tasks), { domainName: "Work", domainUuid: "work-domain",
-        now: new Date(2026, 9, 1), projects: [DIFF_DIGEST_PROJECT], refineDictionary: false, tasks });
-      expect(ranker.scorerEm).toBe("jev");
-      const ranking = await ranker.rankProject(DIFF_DIGEST_PROJECT, []);
-      expect(ranking.failureReason).toBeNull();
-      expect(ranking.acceptedTasks).toEqual([{ matchScore: 9, taskText: "Diff Digest landing copy", taskUuid: "open-1" }]);
-      const [endpoint, request] = fetchImplementation.mock.calls[0];
-      const proxyTarget = encodeURIComponent("https://api.typesafe.ai/v1/systemone");
-      expect(endpoint).toBe(`${ CORS_PROXY }?apiurl=${ proxyTarget }`);
-      expect(JSON.parse(request.body).model).toBe("jev-latest");
-      expect(request.headers.Authorization).toBeUndefined();
-    } finally {
-      globalThis.fetch = originalFetch;
-    }
+    const callPlugin = jest.fn(async () => ({ answers: { task_1: { confidence: 0.4, score: 8, type: "score" } },
+      model: "jev-latest" }));
+    const app = { ...notesApp(notes, tasks), callPlugin };
+    const ranker = await prepareProjectTaskRanker(app, { domainName: "Work", domainUuid: "work-domain",
+      now: new Date(2026, 9, 1), projects: [DIFF_DIGEST_PROJECT], refineDictionary: false, tasks });
+    expect(ranker.scorerEm).toBe("jev");
+    const ranking = await ranker.rankProject(DIFF_DIGEST_PROJECT, []);
+    expect(ranking.failureReason).toBeNull();
+    expect(ranking.acceptedTasks).toEqual([{ matchScore: 9, taskText: "Diff Digest landing copy", taskUuid: "open-1" }]);
+    const [noteHandle, instructions, prompt, model, endpoint] = callPlugin.mock.calls[0];
+    expect(noteHandle).toEqual({ source: AMPLE_AGENT_PRO_UUID });
+    expect(instructions).toBe("");
+    expect(JSON.parse(prompt).model).toBe("jev-latest");
+    expect(model).toBe("jev-latest");
+    expect(endpoint).toBe("https://api.typesafe.ai/v1/systemone");
   });
 
   it("grows the dictionary, rates the unassociated pool, and saves the project's minimum match score", async () => {
@@ -477,7 +474,7 @@ describe("Jev client", () => {
   it("routes OpenRouter keys to OpenRouter, and a browser's TypeSafe keys through the CORS proxy", () => {
     expect(jevRouteFromAccessToken("sk-or-v1-abc").routeEm).toBe("openrouter");
     expect(jevRouteFromAccessToken("ts-abc").endpoint).toBe(
-      `${ CORS_PROXY }?apiurl=https%3A%2F%2Fapi.typesafe.ai%2Fv1%2Fsystemone`);
+      "https://aged-sunset-proxy.amplenote.workers.dev?apiurl=https%3A%2F%2Fapi.typesafe.ai%2Fv1%2Fsystemone");
     expect(jevRouteFromAccessToken("ts-abc", { useProxy: false })).toMatchObject({ endpoint: "https://api.typesafe.ai/v1/systemone",
       routeEm: "typesafe" });
   });
