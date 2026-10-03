@@ -45,7 +45,10 @@ export function QueueJobSection({ allJobs, filters, jobs, now, onFiltersChange }
       {jobs.length === 0 ? <p className="queue-inspector-empty">No jobs match.</p> : (
         <table className="queue-inspector-table">
           <thead>
-            <tr><th>Job</th><th>Priority</th><th>Status</th><th>Resource</th><th>Attempt</th><th>Enqueued</th><th>Started</th><th>Waiting because</th></tr>
+            <tr>
+              <th>Job</th><th>Priority</th><th>Status</th><th>Resource</th><th>Attempt</th><th>Enqueued</th><th>Started</th>
+              <th>Waiting because</th>
+            </tr>
           </thead>
           <tbody>
             {jobs.map(job => (
@@ -114,7 +117,8 @@ export function QueueOverviewSection({ now, overview }) {
     ["Waiting reasons", waitingReasons.length ? waitingReasons.map(([reason, count]) => `${ reason } ${ count }`).join(", ") : "None"],
     ["Last progress", formattedAge(overview.lastProgressAt, now)],
     ["Project coverage", "Unavailable until project maintenance runs on the queue"],
-    ["Durable history", "Unavailable until durable jobs exist; this view shows this session only"],
+    ["Durable history", overview.durableEnabled ? "Saved work and history below, read when opened"
+      : "Unavailable: durable work is switched off; this view shows this session only"],
   ];
   return (
     <section className="queue-inspector-section">

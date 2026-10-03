@@ -5,6 +5,33 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-03 — Phase 5 of the work queue: durable execution and diagnostic history
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/dashboard-work-job.js` (created) — `DashboardWorkJob`: validated plain-JSON durable records with schema version, desired/attempt/succeeded revisions, attempt tokens, claims with leases, checkpoints, and pending/running/retryWaiting/blockedConfiguration/completed/failed/superseded transitions that refuse stale attempts
+- `lib/dashboard/work-queue/dashboard-work-repository.js` (created) — `DashboardWorkRepository`: per-scope archived "Dashboard Work Queue" note; save/coalesce, claim, renew, checkpoint, complete, fail, release, supersede, expired-claim recovery, configuration resume, bounded retention of finished jobs, and preservation of records or notes a newer version wrote
+- `lib/dashboard/work-queue/durable-work-runner.js` (created) — `DurableWorkRunner`: saves requests before enqueueing, writes output before acknowledging, completes interrupted attempts via `appliedRevision` without rerunning, discards stale attempts, retries with jittered backoff, waits for configuration, keeps claims across yields, releases claims on cancel or dispose
+- `lib/dashboard/work-queue/dashboard-work-handlers.js` (created) — `workHandlerRegistry`; the production list is empty until Phase 6 adds handlers
+- `lib/dashboard/work-queue/dashboard-work-diagnostics-store.js` (created) — `DashboardWorkDiagnosticsStore`: batched, sanitized outcome history (100 per scope, seven days) in an archived "Dashboard Work History" note, written through the note writer outside the queue, with failures counted and isolated
+- `lib/dashboard/work-queue/dashboard-provider-dispatch.js`, `dashboard-app-dispatch.js` (created) — Per-request generative/Jev, app read, and note write permits for running jobs
+- `lib/dashboard/work-queue/dashboard-json-note.js` (created) — Shared read/write of archived notes holding a fenced JSON payload
+- `lib/dashboard/work-queue/dashboard-queue-durable-sections.jsx` (created) — Inspector sections for saved work (other sessions' claims shown as unverified) and durable history
+- `lib/dashboard/work-queue/dashboard-resource-budget.js` — Waiting `acquire` served foreground first, with abort support; background requests yield to waiting foreground ones
+- `lib/dashboard/work-queue/dashboard-work-policy.js` — Claim lease, attempt limit, retry delays, and failure classification
+- `lib/dashboard/work-queue/dashboard-work-runtime.js` — Dispatchers in the job context; optional repository, handlers, and history store composing a durable runner
+- `lib/dashboard/work-queue/dashboard-work-features.js` — `DURABLE_WORK_ENABLED`, off until Phase 6
+- `lib/hooks/use-dashboard-work-queue.js` — Creates the durable parts when switched on and recovers saved work after the load gate opens or the scope changes
+- `lib/hooks/use-dashboard-queue-diagnostics.js` — `useDashboardQueueHistory` reads saved work and history on open and on refresh
+- `lib/dashboard/work-queue/dashboard-queue-inspector.jsx`, `dashboard-queue-inspector-model.js`, `dashboard-queue-inspector-sections.jsx` — Saved work and history sections, `savedJobRows`, durable availability in the overview
+- `doc/plan-dashboard-work-queue.md` — Records Phase 5's scope as built
+- `test/dashboard-work-repository.test.js`, `test/durable-work-runner.test.js`, `test/dashboard-work-diagnostics-store.test.js`, `test/dashboard-work-dispatch.test.js`, `test/work-queue-test-notes.js` (created); `test/dashboard-queue-inspector.test.js` extended
+
+**Task:** Implement Phase 5 of the dashboard work queue plan
+**Prompt summary:** "Let's move to next phase"
+
+---
+
 ## 2026-10-03 — Phase 4 of the work queue: admin Queue inspector
 
 **Model:** Claude Opus 5.5

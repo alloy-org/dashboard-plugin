@@ -1,15 +1,20 @@
 // Exercise the admin Queue inspector: its model's filters, overview, urgent render rows and outcomes; a live view of a
 // deliberately stalled scheduler that inspection does not change; throttled updates without Console Logging;
-// unsubscribing when closed; and the Debug Console offering the Queue view only under the admin tools policy.
+// unsubscribing when closed; saved jobs and durable history read on open, with other sessions' claims never shown as
+// running; and the Debug Console offering the Queue view only under the admin tools policy.
 import { jest } from "@jest/globals";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
-import { ALL_JOBS_FILTER, filteredJobs, queueInspectorView, queueOverview, recentOutcomes,
+import { ALL_JOBS_FILTER, filteredJobs, queueInspectorView, queueOverview, recentOutcomes, savedJobRows,
   urgentRenderRows } from "dashboard/work-queue/dashboard-queue-inspector-model";
+import DashboardWorkDiagnosticsStore from "dashboard/work-queue/dashboard-work-diagnostics-store";
+import { workHandlerRegistry } from "dashboard/work-queue/dashboard-work-handlers";
+import DashboardWorkRepository from "dashboard/work-queue/dashboard-work-repository";
 import { DashboardWorkProvider } from "dashboard/work-queue/dashboard-work-context";
 import { createDashboardWorkRuntime } from "dashboard/work-queue/dashboard-work-runtime";
 import WidgetMountCoordinator from "dashboard/work-queue/widget-mount-coordinator";
 import { setLoggingEnabled } from "util/log";
+import { workQueueNotesApp } from "./work-queue-test-notes";
 
 const { default: DashboardQueueInspector } = await import("dashboard/work-queue/dashboard-queue-inspector");
 const { default: DebugConsoleWidget } = await import("debug-console");
@@ -77,6 +82,31 @@ describe("Queue inspector model", () => {
   });
 });
 
+describe("Saved job rows", () => {
+  // ----------------------------------------------------------------------------------------------
+  // @desc Another session's claim is shown as claimed and unverified, a lapsed claim as lapsed, and this session's
+  //   attempt as running; unfinished work sorts before finished work.
+  it("separates this session's attempts from other sessions' claims", () => {
+    const now = 100_000;
+    const job = fields => ({ attempt: 1, claimExpiresAt: null, cursor: null, desiredRevision: "r1", lastFailure: null,
+      nextEligibleAt: null, ownerId: null, status: "pending", succeededAt: null, succeededRevision: null, type: "rank", updatedAt: 1, ...fields });
+    const rows = savedJobRows([
+      job({ key: "done", status: "completed", updatedAt: 5 }),
+      job({ claimExpiresAt: now + 1000, key: "remote", ownerId: "other", status: "running" }),
+      job({ claimExpiresAt: now - 1, key: "lapsed", ownerId: "other", status: "running" }),
+      job({ claimExpiresAt: now + 1000, key: "local", ownerId: "me", status: "running" }),
+      job({ key: "retry", nextEligibleAt: now + 30_000, status: "retryWaiting" }),
+    ], { now, sessionId: "me" });
+    expect(rows.map(row => [row.key, row.statusLabel])).toEqual([
+      ["remote", "Claimed by another session (other), not verified running"],
+      ["lapsed", "Claim lapsed; resumes on the next recovery"],
+      ["local", "Running in this session"],
+      ["retry", "Retrying in 30.0 s"],
+      ["done", "completed"],
+    ]);
+  });
+});
+
 describe("DashboardQueueInspector", () => {
   afterEach(() => {
     jest.useRealTimers();
@@ -95,7 +125,7 @@ describe("DashboardQueueInspector", () => {
     await flush();
     expect(container.textContent).toContain("Every permit for its resource is in use");
     expect(container.textContent).toContain("Held, watchdog armed");
-    expect(container.textContent).toContain("Unavailable until durable jobs exist");
+    expect(container.textContent).toContain("Unavailable: durable work is switched off");
     expect(JSON.stringify(runtime.scheduler.snapshot().jobs)).toBe(jobsBefore);
     expect(JSON.stringify(runtime.diagnostics.snapshot().counters)).toBe(countersBefore);
     expect(mounted).toEqual(["agenda"]);
@@ -123,6 +153,31 @@ describe("DashboardQueueInspector", () => {
     expect(runtime.scheduler.listeners.size).toBe(0);
     expect(runtime.diagnostics.listeners.size).toBe(0);
     expect(coordinator.listeners.size).toBe(0);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc With durable work on, opening the inspector reads the scope's saved jobs and history once, and shows another
+  //   session's claimed job without calling it running.
+  it("reads saved work and durable history when opened", async () => {
+    const app = workQueueNotesApp();
+    const scopeKey = "domain-1:Q4 2026";
+    const otherRepository = new DashboardWorkRepository({ app });
+    await otherRepository.saveJob(scopeKey, { desiredRevision: "r1", key: "rankProjectTasks:project-9", type: "rankProjectTasks" });
+    await otherRepository.claim(scopeKey, "rankProjectTasks:project-9", { ownerId: "other-session", token: "other-session:1" });
+    const history = new DashboardWorkDiagnosticsStore({ app, sessionId: "other-session" });
+    history.recordOutcome(scopeKey, { jobKey: "ideas:project-9", jobType: "ideas", status: "completed" });
+    await history.dispose();
+    const runtime = createDashboardWorkRuntime({ diagnosticsStore: new DashboardWorkDiagnosticsStore({ app }),
+      handlers: workHandlerRegistry([]), repository: new DashboardWorkRepository({ app }) });
+    runtime.scheduler.setScope(scopeKey);
+    const readSpy = jest.spyOn(runtime.repository, "readAll");
+    const { container, root } = render(createElement(DashboardQueueInspector, { work: { mountCoordinator: null, runtime } }));
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
+    expect(container.textContent).toContain("Claimed by another session (other-session), not verified running");
+    expect(container.textContent).toContain("ideas:project-9");
+    expect(readSpy).toHaveBeenCalledTimes(1);
+    act(() => root.unmount());
+    runtime.dispose();
   });
 
   // ----------------------------------------------------------------------------------------------

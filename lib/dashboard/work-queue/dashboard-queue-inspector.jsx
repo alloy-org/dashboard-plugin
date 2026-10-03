@@ -1,11 +1,13 @@
 // The admin Queue inspector, shown inside the Debug Console when admin tools are available. It answers what is
 // running, why each job is waiting, and whether the queue is making progress, from the scheduler's own snapshots
-// rather than from Console Logging. It is read-only: it adds no job controls, and copying or downloading a snapshot
+// rather than from Console Logging, and shows the scope's saved durable jobs and their history when durable work is on.
+// It is read-only: it adds no job controls, and copying or downloading a snapshot
 // exports the sanitized copy diagnostics produce without retrying, resuming, or reprioritizing anything.
+import { DurableHistorySection, SavedWorkSection } from "dashboard/work-queue/dashboard-queue-durable-sections";
 import { ALL_JOBS_FILTER, filteredJobs, queueOverview, recentOutcomes, urgentRenderRows } from "dashboard/work-queue/dashboard-queue-inspector-model";
 import { QueueJobSection, QueueOutcomeSection, QueueOverviewSection, QueueResourceSection, QueueTimingSection,
   UrgentRenderSection } from "dashboard/work-queue/dashboard-queue-inspector-sections";
-import useDashboardQueueDiagnostics from "hooks/use-dashboard-queue-diagnostics";
+import useDashboardQueueDiagnostics, { useDashboardQueueHistory } from "hooks/use-dashboard-queue-diagnostics";
 import { useState } from "react";
 import { logAlways } from "util/log";
 
@@ -16,6 +18,7 @@ import "dashboard/styles/dashboard-queue-inspector.scss";
 // @param {object} props - { work }: { mountCoordinator, runtime } as the Dashboard provides it, or null.
 export default function DashboardQueueInspector({ work }) {
   const view = useDashboardQueueDiagnostics(work);
+  const { durable, loading, refresh } = useDashboardQueueHistory(work);
   const [filters, setFilters] = useState(ALL_JOBS_FILTER);
   const [exportStatus, setExportStatus] = useState("");
 
@@ -65,6 +68,8 @@ export default function DashboardQueueInspector({ work }) {
       <QueueResourceSection resources={view.scheduler.resources} />
       <QueueOutcomeSection now={view.capturedAt} outcomes={recentOutcomes(view.diagnostics.events)} />
       <QueueTimingSection timings={view.diagnostics.timings} />
+      <SavedWorkSection durable={durable} loading={loading} now={view.capturedAt} onRefresh={refresh} sessionId={view.session.sessionId} />
+      <DurableHistorySection history={durable?.history || null} now={view.capturedAt} sessionId={view.session.sessionId} />
     </div>
   );
 }

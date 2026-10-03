@@ -638,6 +638,18 @@ Verify queue recovery, retry/backoff, serializer versions, permit limits across 
 retention/failure isolation. Add `test/dashboard-work-diagnostics-store.test.js`. Keep live maintenance disabled until
 phase 6 supplies resumable handlers; the existing maintenance route remains functional during this foundation phase.
 
+As built, durable execution lives in `work-queue/durable-work-runner.js`, which the runtime composes only when given
+a repository and handlers; `DURABLE_WORK_ENABLED` in `dashboard-work-features.js` stays false, so the Dashboard reads
+and creates no queue or history note until phase 6 registers handlers. Queue and history notes are archived, one per
+scope, named `Dashboard Work Queue <scopeKey>` and `Dashboard Work History <scopeKey>`, each a fenced JSON block written
+whole through `work-queue/dashboard-json-note.js`; their payloads are small and bounded, so section updates were not
+needed. A durable job keeps its in-memory key, so the inspector's live rows and saved rows match. A yielded attempt
+keeps its claim and renews it on resume; a lapsed claim returns the job to pending with its cursor. Handlers report the
+revision their output already reflects through `appliedRevision`, which is how an interrupted attempt completes without
+rerunning. Nested provider and app calls wait for permits through `DashboardResourceBudget#acquire`, so a handler that
+uses the dispatchers should declare no scheduler resource. Records and notes a newer schema wrote are preserved, not
+rewritten.
+
 ### Phase 6 Project maintenance migration
 
 Add `DashboardTaskSnapshot`, its store, `QuarterProjectWorkPlanner`, reconciliation/ranking handlers, and resumable
