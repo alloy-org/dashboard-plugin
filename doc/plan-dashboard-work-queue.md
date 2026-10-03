@@ -566,6 +566,11 @@ Add `QuarterProjectRepository` and `DashboardNoteWriter` at the inventory paths.
 through them, keeping public compatibility exports. Reuse the current setters, `fromStoreSection`, `toStoreSection`,
 and `toProgressRecord`; keep note conversion in `quarter-project-serialization.js`. Adopt authoritative guide/store
 fields with detached collections. Defer queue-specific fields and idea schema changes to their consuming phases.
+Before a pass reads the store, and before each serialized write, the note writer calls
+[`app.context.refreshNotesList`](https://www.amplenote.com/help/developing_amplenote_plugins/app_interface#app.context.refreshNotesList)
+(the embed reaches it through a `refreshNotesList` bridge action), reusing a success for one minute. Amplenote documents
+that it refreshes note metadata without guaranteeing changed content has arrived, so it narrows, not closes, the window
+in which a freshly opened client reads stale notes before spending provider requests on them.
 
 Verify repository and note-writer tests plus existing QuarterProject, project-task-store, progress, and ranking suites.
 Include two concurrent results, two recommendation dates, failed writes, and unchanged UI snapshots. The stop point

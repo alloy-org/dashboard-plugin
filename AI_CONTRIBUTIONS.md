@@ -5,6 +5,26 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-03 — Phase 1 of the work queue: QuarterProjectRepository and DashboardNoteWriter
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/dashboard-note-writer.js` (created) — `DashboardNoteWriter`: serializes each note's read-then-write updates per execution context (`update`, `forApp`), and refreshes the notes list through `app.context.refreshNotesList` (or the embed bridge) before reads and writes, trusting a success for one minute
+- `lib/dashboard/quarter-project-repository.js` (created) — `QuarterProjectRepository`: `readStored`, `readOne`, `readMany` (live projects joined to the store with detached collections), `applyResult` (applies a pass's setters to the freshly read project under the note writer), and `recordShownTasks`
+- `lib/dashboard/quarter-project.js` — Adds `detachedCopy` for per-caller instances
+- `lib/dashboard/project-task-collection.js` — Reads through the repository; the pass's result is a patch (`_collectedTaskResult`, `_applyCollectedTaskResult`) committed with `applyResult`, so it no longer overwrites fields another pass wrote mid-pass
+- `lib/plan-wizard/stack-rank/refresh-stale-project-rankings.js` — Ranking and score compaction commit through the repository; the hand-built write chain is gone
+- `lib/dashboard/ranked-task-suggestions.js` — Reads via `readMany`, sets day evidence on request-owned copies, and logs shown tasks via `recordShownTasks`
+- `lib/dashboard/project-task-store.js` — `recordProjectTaskSuggestions` moved to the repository; unreadable sections are logged on read
+- `lib/plugin.js` — `refreshNotesList` embed action
+- `doc/plan-dashboard-work-queue.md` — Records the notes-list refresh in Phase 1
+- `test/dashboard-note-writer.test.js`, `test/quarter-project-repository.test.js` (created)
+
+**Task:** Implement Phase 1 of the dashboard work queue plan, refreshing the notes list before passes read notes
+**Prompt summary:** "Well I guess we better get started" / "DashboardNoteWriter should take advantage of a new api ... to ensure that we have retrieved all the latest notes before we begin to dash off LLM responses"
+
+---
+
 ## 2026-10-03 — Give QuarterProject a typed constructor, setters, and its own serialization
 
 **Model:** Claude Opus 5.5
