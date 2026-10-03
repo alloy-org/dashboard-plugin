@@ -6,21 +6,22 @@ import { taskRatingKey } from "plan-wizard/stack-rank/task-rating-cache";
 import { guideHeadingRanges } from "plan-wizard/vision-guide-markdown";
 import { collectProjectTasks } from "project-task-collection";
 import { projectNeedsRefresh, projectsToRefresh, shouldRefreshAnotherProject } from "project-refresh-schedule";
-import { initialProjectTaskStoreMarkdown, LEGACY_JEV_RATINGS_LABEL, projectRecordFromSection, projectSectionHeadingText,
-  projectSectionMarkdown, SIMILARITY_SCORES_LABEL } from "project-task-store-markdown";
+import { initialProjectTaskStoreMarkdown, projectSectionHeadingText } from "project-task-store-markdown";
 import { collectedIdeasMarkdown, openProjectTaskStore, readCollectedProjectTasks, storedProjectRecords,
   writeProjectSection } from "project-task-store";
+import QuarterProject from "quarter-project";
+import { LEGACY_JEV_RATINGS_LABEL, SIMILARITY_SCORES_LABEL } from "quarter-project-serialization";
 
 const scope = { domainName: "Work", domainUuid: "work-domain", quarter: 3, quarterKey: "2026-Q3", year: 2026 };
 const quarterlyContent = "# Projects\n\n## Launch dashboard\n- Weekly rhythm: Two focused blocks per week\n- Outcome: Ship the date picker\n";
 
 // ----------------------------------------------------------------------------------------------
-// @desc Build a store-shaped project record with overridable lists.
+// @desc Build a project as the store holds it, with overridable fields.
 // @param {object} overrides - Fields to replace.
-// @returns {object} Project record.
-function storeRecord(overrides = {}) {
-  return { completedTasks: [], lastAttemptedAt: "2026-09-18T12:00:00.000Z", relatedTaskRecords: [],
-    relatedTasks: [], suggestedTasks: [], summary: "Launch dashboard", uuid: "project-uuid", ...overrides };
+// @returns {QuarterProject} Project.
+function storedProject(overrides = {}) {
+  return new QuarterProject({ summary: "Launch dashboard", uuid: "project-uuid", lastAttemptedAt: "2026-09-18T12:00:00.000Z",
+    ...overrides });
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -57,11 +58,11 @@ describe("project task store sections", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc A rendered project section parses back into the record it was written from.
   it("round-trips a project record through its rendered section", () => {
-    const record = storeRecord({ completedTasks: [{ completedAt: "2026-09-14T10:00:00.000Z", taskUuid: "done-task" }],
+    const record = storedProject({ completedTasks: [{ completedAt: "2026-09-14T10:00:00.000Z", taskUuid: "done-task" }],
       relatedTaskRecords: [{ taskText: "Draft release notes", taskUuid: "open-task" }],
       suggestedTasks: [{ generatedAt: "2026-09-18T12:00:00.000Z", taskText: "Audit widget memory" }] });
     const content = initialProjectTaskStoreMarkdown().replace("# Past projects",
-      `## ${ record.summary } (project:${ record.uuid })\n\n${ projectSectionMarkdown(record) }\n# Past projects`);
+      `## ${ record.summary } (project:${ record.uuid })\n\n${ record.toStoreSection() }\n# Past projects`);
     const { recordsByUuid, unreadableHeadings } = storedProjectRecords(content);
     expect(unreadableHeadings).toEqual([]);
     expect(recordsByUuid.get("project-uuid")).toMatchObject({ isActive: true, summary: "Launch dashboard" });
@@ -74,10 +75,10 @@ describe("project task store sections", () => {
   //   reference must be flattened before it is wrapped in the task link, or the note renders bare
   //   `](https://...)` fragments where the brackets failed to pair.
   it("flattens markdown inside task text so the task link stays intact", () => {
-    const body = projectSectionMarkdown(storeRecord({
+    const body = storedProject({
       relatedTaskRecords: [{ taskText: "Implement the [Spiral as a dashboard component](https://www.amplenote.com/notes/abc)",
         taskUuid: "open-task" }],
-      suggestedTasks: [{ generatedAt: "2026-09-18T12:00:00.000Z", taskText: "Check the spec before shipping" }] }));
+      suggestedTasks: [{ generatedAt: "2026-09-18T12:00:00.000Z", taskText: "Check the spec before shipping" }] }).toStoreSection();
     expect(body).toContain("  - [Implement the Spiral as a dashboard component](https://www.amplenote.com/notes/tasks/open-task)");
     expect(body).toContain("  - Check the spec before shipping");
     const renderedLists = body.slice(0, body.indexOf("```"));
@@ -88,9 +89,9 @@ describe("project task store sections", () => {
   // @desc Amplenote footnote numbers are positional within the content being written, so references carried in
   //   from a suggested task are renumbered from 1 in first-cited order across the section, each with a definition.
   it("renumbers carried footnote references from one and defines each", () => {
-    const body = projectSectionMarkdown(storeRecord({
+    const body = storedProject({
       suggestedTasks: [{ generatedAt: "2026-09-18T12:00:00.000Z",
-        taskText: "Revisit the [rollout plan][^2] alongside the [meter][^7]" }] }));
+        taskText: "Revisit the [rollout plan][^2] alongside the [meter][^7]" }] }).toStoreSection();
     expect(body).toContain("  - Revisit the rollout plan[^1] alongside the meter[^2]");
     expect(body).toContain("\n[^1]: Referenced from the source task: rollout plan");
     expect(body).toContain("\n[^2]: Referenced from the source task: meter");
@@ -105,7 +106,7 @@ describe("project task store sections", () => {
       + "[^3]: [Simple graph and 1,811 reactions]()\n\n    Captured from linkedin.com at 4:11pm\n\n"
       + "    ![](https://images.amplenote.com/graph.png)\n\n"
       + "[^4]: [makes for a very short email headline]()\n\n    Captured from mail.google.com at 4:21pm\n";
-    const body = projectSectionMarkdown(storeRecord({ relatedTaskRecords: [{ taskText, taskUuid: "open-task" }] }));
+    const body = storedProject({ relatedTaskRecords: [{ taskText, taskUuid: "open-task" }] }).toStoreSection();
     expect(body).toContain("  - [Simple graph and 1,811 reactions makes for a very short email headline]"
       + "(https://www.amplenote.com/notes/tasks/open-task)\n");
     expect(body.slice(0, body.indexOf("```"))).not.toContain("[^");
@@ -116,9 +117,9 @@ describe("project task store sections", () => {
   //   payload no longer repeats them.
   it("reads existing tasks back from their list rather than the payload", () => {
     const rawText = "Implement the [Spiral](https://www.amplenote.com/notes/abc)";
-    const record = storeRecord({ relatedTaskRecords: [{ taskText: rawText, taskUuid: "open-task" },
+    const record = storedProject({ relatedTaskRecords: [{ taskText: rawText, taskUuid: "open-task" },
       { taskText: "Draft release notes", taskUuid: "named-task" }], taskSimilarityScores: { "a1b2c3d4:open-task": 7.4 } });
-    const body = projectSectionMarkdown(record);
+    const body = record.toStoreSection();
     expect(body.slice(body.indexOf("```json"))).not.toContain("Implement the");
     const content = initialProjectTaskStoreMarkdown().replace("# Past projects",
       `## ${ projectSectionHeadingText(record) }\n\n${ body }\n# Past projects`);
@@ -137,7 +138,7 @@ describe("project task store sections", () => {
       uuid: "project-1" };
     const legacySection = `- Last attempted: never\n\n\`\`\`json\n${ JSON.stringify(payload) }\n\`\`\`\n\n`
       + `${ LEGACY_JEV_RATINGS_LABEL }\n\n\`\`\`\n{"e5f6a7b8:task-cited":2.5}\n\`\`\`\n`;
-    const record = projectRecordFromSection(legacySection);
+    const record = QuarterProject.fromStoreSection(legacySection);
     expect(record.relatedTaskRecords.map(task => task.taskUuid)).toEqual(["task-kept", "task-low"]);
     expect(record.taskSimilarityScores).toEqual({ "e5f6a7b8:task-cited": 2.5,
       [taskRatingKey("Launch", { taskText: "Kept", taskUuid: "task-kept" })]: 8.1 });
@@ -155,9 +156,9 @@ describe("project task store sections", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc The human-readable lists render beside the payload, so the note is readable without parsing JSON.
   it("renders the three task lists above the payload", () => {
-    const body = projectSectionMarkdown(storeRecord({
+    const body = storedProject({
       completedTasks: [{ completedAt: "2026-09-14T10:00:00.000Z", taskUuid: "done-task" }],
-      relatedTaskRecords: [{ taskText: "Draft release notes", taskUuid: "open-task" }] }));
+      relatedTaskRecords: [{ taskText: "Draft release notes", taskUuid: "open-task" }] }).toStoreSection();
     expect(body).toContain("- Last attempted: 2026-09-18T12:00:00.000Z");
     expect(body).toContain("Draft release notes");
     expect(body).toContain("- Suggested tasks\n  - (none yet)");
@@ -169,24 +170,24 @@ describe("project task store sections", () => {
   //   progressive pass safe to interrupt.
   it("keeps the similarity hash on one line in its own block, sorted by task UUID, out of the JSON payload", () => {
     const taskSimilarityScores = { "e5f6a7b8:task-2": 6.4, "a1b2c3d4:task-1": 7.1 };
-    const markdown = projectSectionMarkdown({ relatedTaskRecords: [], relatedTasks: ["task-1", "task-named"],
-      summary: "Launch", taskSimilarityScores, uuid: "project-1" });
+    const markdown = new QuarterProject({ summary: "Launch", uuid: "project-1", relatedTasks: ["task-1", "task-named"],
+      taskSimilarityScores }).toStoreSection();
     expect(markdown).toContain('\n```\n{"a1b2c3d4:task-1":7.1,"e5f6a7b8:task-2":6.4}\n```\n');
     expect(markdown.match(/^```json$/gm)).toHaveLength(1);
     expect(markdown).not.toMatch(/"taskSimilarityScores"/);
-    const record = projectRecordFromSection(markdown);
+    const record = QuarterProject.fromStoreSection(markdown);
     expect(record.taskSimilarityScores).toEqual(taskSimilarityScores);
     expect(record.relatedTasks).toEqual(["task-named"]);
-    const withoutScores = projectSectionMarkdown({ relatedTaskRecords: [], summary: "Launch", uuid: "project-1" });
+    const withoutScores = new QuarterProject({ summary: "Launch", uuid: "project-1" }).toStoreSection();
     expect(withoutScores).not.toContain(SIMILARITY_SCORES_LABEL);
-    expect(projectRecordFromSection(withoutScores).taskSimilarityScores).toEqual({});
+    expect(QuarterProject.fromStoreSection(withoutScores).taskSimilarityScores).toEqual({});
   });
 
   it("says how many tasks the similarity search has reached", () => {
-    const markdown = projectSectionMarkdown({ relatedTaskRecords: [], similaritySearchedTaskCount: 1000,
-      similaritySearchPageCount: 2, summary: "Launch", uuid: "project-1" });
+    const markdown = new QuarterProject({ summary: "Launch", uuid: "project-1", similaritySearchedTaskCount: 1000,
+      similaritySearchPageCount: 2 }).toStoreSection();
     expect(markdown).toContain("- Last attempted: never\n- Searched 1000 tasks for similarity\n");
-    expect(projectRecordFromSection(markdown)).toMatchObject({ similaritySearchedTaskCount: 1000,
+    expect(QuarterProject.fromStoreSection(markdown)).toMatchObject({ similaritySearchedTaskCount: 1000,
       similaritySearchPageCount: 2 });
   });
 
@@ -194,11 +195,11 @@ describe("project task store sections", () => {
     const app = storeApp({ content: initialProjectTaskStoreMarkdown() });
     const store = await openProjectTaskStore(app, scope);
     let content = await writeProjectSection(app, { content: store.content, noteHandle: store.noteHandle,
-      project: storeRecord() });
+      project: storedProject() });
     content = await writeProjectSection(app, { content, noteHandle: store.noteHandle,
-      project: storeRecord({ summary: "Second project", uuid: "second-uuid" }) });
+      project: storedProject({ summary: "Second project", uuid: "second-uuid" }) });
     const updated = await writeProjectSection(app, { content, noteHandle: store.noteHandle,
-      project: storeRecord({ suggestedTasks: [{ generatedAt: "2026-09-19T00:00:00.000Z", taskText: "New idea" }] }) });
+      project: storedProject({ suggestedTasks: [{ generatedAt: "2026-09-19T00:00:00.000Z", taskText: "New idea" }] }) });
     const { recordsByUuid } = storedProjectRecords(updated);
     expect([...recordsByUuid.keys()].sort()).toEqual(["project-uuid", "second-uuid"]);
     expect(recordsByUuid.get("project-uuid").suggestedTasks[0].taskText).toBe("New idea");
@@ -215,7 +216,7 @@ describe("project task store sections", () => {
     const app = storeApp({ content: initialProjectTaskStoreMarkdown() });
     const store = await openProjectTaskStore(app, scope);
     const content = await writeProjectSection(app, { content: store.content, isActive: false,
-      noteHandle: store.noteHandle, project: storeRecord() });
+      noteHandle: store.noteHandle, project: storedProject() });
     expect(storedProjectRecords(content).recordsByUuid.get("project-uuid").isActive).toBe(false);
   });
 
@@ -317,7 +318,7 @@ describe("background project task collection", () => {
     const stored = [...storedProjectRecords(app.noteContent).recordsByUuid.values()][0];
     expect(stored.relatedTaskRecords.map(task => task.taskUuid).sort()).toEqual(["open-task", "unmatched-task"]);
     expect(stored.relatedTasks).toContain("unmatched-task");
-    expect(stored.candidateTaskRecords).toBeUndefined();
+    expect(stored.candidateTaskRecords).toEqual([]);
   });
 
   // ----------------------------------------------------------------------------------------------
@@ -430,8 +431,8 @@ describe("background project task collection", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc Stored ideas reach the agenda prompt only for projects that actually hold them.
   it("renders collected ideas for the agenda prompt", () => {
-    const records = [storeRecord({ suggestedTasks: [{ generatedAt: "2026-09-19T12:00:00.000Z", taskText: "Audit widget memory" }] }),
-      storeRecord({ summary: "Empty project", uuid: "empty-uuid" })];
+    const records = [storedProject({ suggestedTasks: [{ generatedAt: "2026-09-19T12:00:00.000Z", taskText: "Audit widget memory" }] }),
+      storedProject({ summary: "Empty project", uuid: "empty-uuid" })];
     const markdown = collectedIdeasMarkdown(records);
     expect(markdown).toContain("Launch dashboard (project:project-uuid)");
     expect(markdown).toContain("  - Audit widget memory");

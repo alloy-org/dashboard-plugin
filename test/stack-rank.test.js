@@ -22,8 +22,9 @@ import { dictionaryEntriesFromContent, examinedProjectSummaries, mergedDictionar
   openUserTermsDictionary } from "plan-wizard/stack-rank/user-terms-dictionary";
 import { pluginSettings, setPluginData } from "plugin-data";
 import { storedProjectRecords } from "project-task-store";
-import { initialProjectTaskStoreMarkdown, projectSectionHeadingText, projectSectionMarkdown } from "project-task-store-markdown";
+import { initialProjectTaskStoreMarkdown, projectSectionHeadingText } from "project-task-store-markdown";
 import { AMPLE_AGENT_PRO_UUID } from "providers/ai-provider-settings";
+import QuarterProject from "quarter-project";
 import { jevRouteFromAccessToken, requestJevAnswers } from "providers/jev-client";
 import { setLoggingEnabled } from "util/log";
 
@@ -77,7 +78,7 @@ function notesApp(notes, tasks) {
 // @param {Array<object>} projects - Project records.
 // @returns {string} Store note markdown.
 function storeContentFromProjects(projects) {
-  const sections = projects.map(project => `## ${ projectSectionHeadingText(project) }\n\n${ projectSectionMarkdown(project) }`);
+  const sections = projects.map(project => `## ${ projectSectionHeadingText(project) }\n\n${ QuarterProject.from(project).toStoreSection() }`);
   return initialProjectTaskStoreMarkdown().replace("# Active projects\n", `# Active projects\n${ sections.join("\n") }\n`);
 }
 

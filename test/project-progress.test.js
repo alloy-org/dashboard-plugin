@@ -4,21 +4,13 @@ import { GUIDE_SCHEMA_VERSION } from "plan-wizard/plan-models";
 import { initialVisionGuideMarkdown } from "plan-wizard/vision-guide-markdown";
 import { readVisionGuide } from "plan-wizard/vision-guide-repository";
 import { ensureDueProjectSuggestions } from "project-agenda-suggestions";
-import { projectMatchesTask, projectProgressEvidence, projectWithTaskEvidence, quarterlyProgressProjects } from "project-progress-model";
+import { quarterlyProgressProjects } from "project-progress-model";
 import { loadProjectProgress } from "project-progress-service";
+import QuarterProject from "quarter-project";
 
 const targetDate = new Date(2026, 8, 18);
 const scope = { domainName: "Work", domainUuid: "work-domain", quarter: 3, quarterKey: "2026-Q3", year: 2026 };
 const quarterlyContent = "# Projects\n\n## Launch dashboard\n- Weekly rhythm: Two focused blocks per week\n- Outcome: Ship the date picker\n";
-
-// ----------------------------------------------------------------------------------------------
-// @desc Build a hand-authored project with its persisted UUID and optionally overridden evidence.
-// @param {object} overrides - Fields to replace on the sample project.
-// @returns {object} Project record.
-function projectRecord(overrides = {}) {
-  return { blocksPerWeek: 2, completedTasks: [], relatedTasks: ["source-task"], summary: "Launch dashboard",
-    uuid: "project-uuid", ...overrides };
-}
 
 describe("quarterly project evidence", () => {
   // ----------------------------------------------------------------------------------------------
@@ -47,36 +39,41 @@ describe("quarterly project evidence", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc A linked task counts once even when both its source and dated agenda checkbox were completed.
   it("counts actual completions once and excludes future completions", () => {
-    const project = projectRecord({ completedTasks: [
+    const project = new QuarterProject({ summary: "Launch dashboard", uuid: "project-uuid", blocksPerWeek: 2, completedTasks: [
       { completedAt: "2026-09-16T12:00:00Z", taskUuid: "source-task" },
       { completedAt: "2026-09-16T14:00:00Z", sourceTaskUuid: "source-task", taskUuid: "agenda-task" },
       { completedAt: "2026-09-22T12:00:00Z", taskUuid: "future-task" }] });
-    expect(projectProgressEvidence(project, targetDate)).toMatchObject({ completedPastWeek: 1, completedThisWeek: 1, due: true });
-    expect(projectProgressEvidence(project, targetDate).reason).toContain("2 blocks per week");
+    expect(project.progressEvidence(targetDate)).toMatchObject({ completedPastWeek: 1, completedThisWeek: 1, due: true });
+    expect(project.progressEvidence(targetDate).reason).toContain("2 blocks per week");
   });
 
   // ----------------------------------------------------------------------------------------------
   // @desc Dismissal and reopening are not progress, while older observations remain available for later dates.
   it("removes reopened evidence and retains unobserved completions", () => {
-    const project = projectRecord({ completedTasks: [{ completedAt: "2026-09-16T12:00:00Z", taskUuid: "source-task" },
-      { completedAt: "2026-08-01T12:00:00Z", taskUuid: "old-task" }] });
-    const updated = projectWithTaskEvidence(project, [{ uuid: "source-task" },
+    const project = new QuarterProject({ summary: "Launch dashboard", uuid: "project-uuid",
+      completedTasks: [{ completedAt: "2026-09-16T12:00:00Z", taskUuid: "source-task" },
+        { completedAt: "2026-08-01T12:00:00Z", taskUuid: "old-task" }], relatedTasks: ["source-task"] });
+    project.recordObservedTasks([{ uuid: "source-task" },
       { completedAt: 1789740000, content: "Launch dashboard", dismissedAt: 1789740000, uuid: "dismissed-task" }]);
-    expect(updated.completedTasks).toEqual([{ completedAt: "2026-08-01T12:00:00Z", taskUuid: "old-task" }]);
-    expect(projectMatchesTask(project, { content: "Unrelated work", uuid: "unrelated" })).toBe(false);
+    expect(project.completedTasks).toEqual([{ completedAt: "2026-08-01T12:00:00Z", taskUuid: "old-task" }]);
+    expect(project.matchesTask({ content: "Unrelated work", uuid: "unrelated" })).toBe(false);
   });
 
   // ----------------------------------------------------------------------------------------------
   // @desc Historical completions and future-month allocations never create false overdue claims.
   it("marks a neglected project due but respects focus months", () => {
-    expect(projectProgressEvidence(projectRecord(), targetDate).due).toBe(true);
-    expect(projectProgressEvidence(projectRecord({ focusMonths: ["2026-10"] }), targetDate).due).toBe(false);
+    const wholeQuarterProject = new QuarterProject({ summary: "Launch dashboard", uuid: "project-uuid", blocksPerWeek: 2 });
+    const octoberProject = new QuarterProject({ summary: "Launch dashboard", uuid: "project-uuid", blocksPerWeek: 2,
+      focusMonths: ["2026-10"] });
+    expect(wholeQuarterProject.progressEvidence(targetDate).due).toBe(true);
+    expect(octoberProject.progressEvidence(targetDate).due).toBe(false);
   });
 
   // ----------------------------------------------------------------------------------------------
   // @desc A project with no chosen weekly pace is never forced onto the day, however long it has been idle.
   it("does not mark a project without a weekly pace due", () => {
-    const evidence = projectProgressEvidence(projectRecord({ blocksPerWeek: null }), targetDate);
+    const project = new QuarterProject({ summary: "Launch dashboard", uuid: "project-uuid" });
+    const evidence = project.progressEvidence(targetDate);
     expect(evidence).toMatchObject({ completedPastWeek: 0, due: false });
     expect(evidence.reason).toContain("no chosen weekly pace");
   });
@@ -84,8 +81,9 @@ describe("quarterly project evidence", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc A plan borrowed from the upcoming quarter judges its focus months from that quarter's first day.
   it("checks focus months against an explicit focus date", () => {
-    const project = projectRecord({ focusMonths: ["2026-10"] });
-    expect(projectProgressEvidence(project, targetDate, { focusDate: new Date(2026, 9, 1) }).due).toBe(true);
+    const project = new QuarterProject({ summary: "Launch dashboard", uuid: "project-uuid", blocksPerWeek: 2,
+      focusMonths: ["2026-10"] });
+    expect(project.progressEvidence(targetDate, { focusDate: new Date(2026, 9, 1) }).due).toBe(true);
   });
 });
 
@@ -93,7 +91,9 @@ describe("project suggestion fallback", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc An empty model reply cannot omit a project with no completed action in the past week.
   it("adds a real project task in a free slot with the recorded pace reason", () => {
-    const project = { ...projectRecord(), ...projectProgressEvidence(projectRecord(), targetDate) };
+    const project = new QuarterProject({ summary: "Launch dashboard", uuid: "project-uuid", blocksPerWeek: 2,
+      relatedTasks: ["source-task"] });
+    project.setProgressEvidence(targetDate);
     const result = ensureDueProjectSuggestions([], { nowMinutes: null,
       obligations: [{ durationMinutes: 120, startMinutes: 540 }], projects: [project], targetDate,
       tasks: [{ taskText: "Build the picker", taskUuid: "source-task" }] });
@@ -104,7 +104,8 @@ describe("project suggestion fallback", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc A completely occupied day yields an untimed action rather than an overlapping calendar proposal.
   it("keeps full-day project suggestions untimed", () => {
-    const project = { ...projectRecord(), due: true, reason: "No completed task this week" };
+    const project = new QuarterProject({ summary: "Launch dashboard", uuid: "project-uuid", blocksPerWeek: 2 });
+    project.setProgressEvidence(targetDate);
     const result = ensureDueProjectSuggestions([], { nowMinutes: null,
       obligations: [{ durationMinutes: 540, startMinutes: 540 }], projects: [project], targetDate, tasks: [] });
     expect(result.activities).toEqual([]);

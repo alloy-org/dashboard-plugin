@@ -5,6 +5,50 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-03 — Give QuarterProject a typed constructor, setters, and its own serialization
+
+**Model:** Claude Opus 5.5
+**Files modified:**
+- `lib/dashboard/quarter-project.js` — Declares each field as a class field with its type and purpose; the constructor takes the required `summary` and `uuid`, then nullable fields, then defaulted collections, and every field is always present. `withFields`, `withProgressEvidence`, and `withTaskEvidence` give way to in-place setters (`addRelatedTaskUuids`, `adoptStoreFields`, `markRanked`, `recordObservedTasks`, `recordShownTasks`, `setAttemptedAt`, `setCandidateTasks`, `setCompletedTasks`, `setProgressEvidence`, `setRelatedTaskRecords`, `setSimilarityScores`, `setSuggestedTasks`). Adds `fromStoreSection`, `toProgressRecord`, `toStoreRecord`, and `toStoreSection`; drops the planning-model marker now that the progress note receives plain records
+- `lib/dashboard/quarter-project-serialization.js` (created) — The store section's render and parse helpers, moved from `project-task-store-markdown.js`, plus the progress and store record shapes
+- `lib/dashboard/project-task-store-markdown.js` — Reduced to the store's root headings and project heading text
+- `lib/dashboard/project-task-store.js`, `lib/dashboard/project-progress-service.js`, `lib/dashboard/project-task-collection.js`, `lib/dashboard/day-project-candidates.js`, `lib/dashboard/ranked-task-suggestions.js`, `lib/dashboard/project-agenda-suggestions.js`, `lib/plan-wizard/stack-rank/refresh-stale-project-rankings.js` — Call the setters and serialization methods; `_rankingFields` becomes `_recordRanking`
+- `test/quarter-project.test.js`, `test/project-progress.test.js`, `test/project-task-store.test.js`, `test/ranked-task-suggestions.test.js`, `test/stack-rank.test.js` — Construct `QuarterProject`s directly and use the class's serialization
+
+**Task:** Address review of the QuarterProject class: tests use it directly, required/optional/defaulted constructor arguments, typed field declarations, setter names, and class-owned serialization in a concern file
+**Prompt summary:** "It's tempting to want to give the various attributes types and a comment about their purpose within the class... The withFields and withEvidence functions seem like they should be something more like setRelatedTasks and setCandidateTasks?... make the class responsible for more of its serialization and deserialization"
+
+---
+
+## 2026-10-03 — Specify queue classes and QuarterProject integration
+
+**Model:** GPT-6
+**Files modified:**
+- `doc/plan-dashboard-work-queue.md` — Incorporates the WIP QuarterProject class, explicit domain/repository boundaries,
+  a concrete class and file inventory, urgent viewport-driven mount scheduling, phased migration, and named tests.
+
+**Task:** Evolve the existing plan into an implementation design for project work and urgent component rendering.
+Documentation only; no runtime code changed or tests run.
+
+---
+
+## 2026-10-03 — Convert the quarter's project record to a QuarterProject class
+
+**Model:** Claude Opus 5.5
+**Files modified:**
+- `lib/dashboard/quarter-project.js` (created) — `QuarterProject`: declares every project field, and owns `matchesTask`, `progressEvidence`, `similarTaskUuids`, `storedPayload`, `withFields`, `withProgressEvidence`, and `withTaskEvidence`
+- `lib/dashboard/project-progress-model.js` — Keeps only `quarterlyProgressProjects`, which now builds `QuarterProject`s; `projectMatchesTask`, `projectProgressEvidence`, and `projectWithTaskEvidence` moved onto the class
+- `lib/dashboard/project-task-store-markdown.js` — `_storedProjectPayload` replaced by `QuarterProject#storedPayload`
+- `lib/dashboard/project-task-store.js` — Stored records are read back as `QuarterProject`s; suggestion logging derives copies with `withFields`
+- `lib/dashboard/project-progress-service.js`, `lib/dashboard/project-agenda-suggestions.js`, `lib/dashboard/project-task-collection.js`, `lib/dashboard/ranked-task-suggestions.js`, `lib/dashboard/day-project-candidates.js`, `lib/plan-wizard/stack-rank/refresh-stale-project-rankings.js` — Object spreads and free-function calls replaced with `QuarterProject` methods
+- `lib/plan-wizard/stack-rank/README.md` — Names `QuarterProject#matchesTask`
+- `test/quarter-project.test.js` (created), `test/project-progress.test.js` — Cover the class contract and call its methods
+
+**Task:** Consolidate the project record's definition and project-owned logic into one appropriately named class
+**Prompt summary:** "convert a project to an appropriately named class, so we can consolidate a Project's definition to a file that can also implement methods that should be owned by the project logic instead of random modules that use it."
+
+---
+
 ## 2026-10-03 — One similarity hash per project, parallel Jev ranking, and a second search page
 
 **Model:** Claude Opus 5.5

@@ -1,7 +1,7 @@
 // The day-project selection, Jev and generative ranking, hour placement, and the project-note suggestion log.
 import { dayProjectGroups, deadlineWithinComingWeek } from "day-project-candidates";
-import { projectRecordFromSection, projectSectionMarkdown } from "project-task-store-markdown";
 import { suggestionSectionsMarkdown } from "project-suggestion-log";
+import QuarterProject from "quarter-project";
 import { generativeRankPrompt, rankedTasksFromAnswers, rankedTasksFromUuidList, suggestionQuestions } from "suggestion-task-rank";
 import { refillRejectedSuggestion, slotRankedTasks, tasksNotRecentlySuggested } from "suggestion-task-slots";
 
@@ -11,14 +11,15 @@ const TUESDAY = new Date(2026, 9, 6, 15, 0, 0);
 // @desc A live project plus the tasks the quarterly project note already stored for it.
 // @param {object} project - Fields that differ from a Tuesday Focus project.
 // @param {Array<object>} [records] - Stored task records.
-// @returns {object} { projects, storedRecords }.
+// @returns {object} { projects, storedRecords }, each holding one QuarterProject; the live one carries day evidence.
 function projectsWithTasks(project = {}, records) {
-  const base = { blocksPerWeek: 1, completedTasks: [], completedThisWeek: 0, deadlineOn: null,
-    paceEm: "oneSubstantialBlock", preferredWeekdays: ["tuesday"], priorityEm: "quarterFocus",
-    summary: "Automate GitClear enterprise pipeline", uuid: "project-1", ...project };
-  const storedRecords = [{ relatedTaskRecords: records || [{ matchScore: 8.6, taskText: "Sign up for GrokBot", taskUuid: "task-1" }],
-    taskSuggestions: project.taskSuggestions || [], uuid: base.uuid }];
-  return { projects: [base], storedRecords };
+  const base = new QuarterProject({ summary: "Automate GitClear enterprise pipeline", uuid: "project-1", blocksPerWeek: 1,
+    paceEm: "oneSubstantialBlock", preferredWeekdays: ["tuesday"], priorityEm: "quarterFocus", ...project });
+  base.setProgressEvidence(TUESDAY);
+  const stored = new QuarterProject({ summary: base.summary, uuid: base.uuid,
+    relatedTaskRecords: records || [{ matchScore: 8.6, taskText: "Sign up for GrokBot", taskUuid: "task-1" }],
+    taskSuggestions: project.taskSuggestions || [] });
+  return { projects: [base], storedRecords: [stored] };
 }
 
 describe("day project candidates", () => {
@@ -139,7 +140,7 @@ describe("project suggestion log", () => {
       { suggestedAt: "2026-10-06T18:00:00.000Z", taskUuid: "task-1" }];
     expect(suggestionSectionsMarkdown(taskSuggestions)).toContain("### task-1 suggested");
     expect(suggestionSectionsMarkdown(taskSuggestions)).toContain("- task-1 — 2026-10-06T18:00:00.000Z");
-    const markdown = projectSectionMarkdown({ relatedTaskRecords: [], summary: "Launch", taskSuggestions, uuid: "project-1" });
-    expect(projectRecordFromSection(markdown).taskSuggestions).toEqual(taskSuggestions);
+    const markdown = new QuarterProject({ summary: "Launch", uuid: "project-1", taskSuggestions }).toStoreSection();
+    expect(QuarterProject.fromStoreSection(markdown).taskSuggestions).toEqual(taskSuggestions);
   });
 });

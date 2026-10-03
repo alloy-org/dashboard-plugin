@@ -68,7 +68,7 @@ it is rated again, and it leaves the hash if it now rates below 6. Low scores fo
 dropped the next time Plan Builder opens the store.
 
 The hash is the only place a score is stored. The payload's `relatedTasks` leaves out the tasks the hash rates
-similar, and `projectMatchesTask` counts those tasks toward the project's progress. The existing tasks are written
+similar, and `QuarterProject#matchesTask` counts those tasks toward the project's progress. The existing tasks are written
 once, as the `Existing tasks` list, and read back from that list's task links. Sections written before the hash
 existed are read as before. Their kept tasks' `matchScore`s and their `Jev ratings…` block fold into the hash on the
 next write.
