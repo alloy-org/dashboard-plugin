@@ -1,17 +1,22 @@
-<!-- Implementation plan for progressively refreshing Dashboard knowledge and suggestions. -->
+<!-- Implementation plan for scheduling Dashboard component mounts, project knowledge, and suggestions. -->
 # Dashboard background work queue implementation plan
 
-Recommend one resumable work coordinator, shared by Dashboard and Plan Builder, which runs small jobs after the
-Dashboard is usable. Keep the existing Project Tasks and dictionary notes as durable results. Show cached suggestions
-immediately, refresh their inputs progressively, and publish replacements without making widget load depend on LLMs.
+Recommend one work scheduler, shared by Dashboard and Plan Builder, with an urgent, transient lane for mounting
+components and durable lanes for progressively refreshing project knowledge and suggestions. Urgent mounts start
+before Dashboard settles and whenever the user scrolls; maintenance starts after the Dashboard is usable.
+Instantiate `QuarterProject` at every project data boundary and update owned instances through its setters.
+Keep the existing Project Tasks and dictionary notes as durable results, with cached suggestions serving widgets.
 
-This plan is based on the working tree inspected October 3, 2026, including the existing uncommitted changes to project
-ranking and storage. It proposes implementation; the queue and behavior changes described below have not been built.
+This plan is based on the working tree inspected October 3, 2026, including the revised mutable `QuarterProject` class
+and its separate serialization module. It proposes implementation; the scheduler, class extensions, and behavior
+changes described below have not been built. Existing classes/files and proposed additions are identified separately
+in the implementation inventory. The implementation phases below define independent human-reviewed commit boundaries.
 
 ## Existing behavior and missing pieces
 
 | Requested behavior | Present in the working tree | Work still needed |
 | --- | --- | --- |
+| Mount newly visible components promptly | Per-widget viewport observation, placeholders, mount-once behavior, and overlay suspension | Shared mount admission, visible versus near-viewport priority, cancellation, and coordination with background resource use |
 | Discover and refine notebook terms | An annual dictionary, protected user definitions, term discovery from project and task text, relevant definitions supplied to ranking | Revisit changed task evidence; search notebook content for richer definitions; record evidence and refinement freshness independently of discovery |
 | Refresh project similarity | Jev, Agent Pro delegation, and generative fallback; checksum cache; incremental task pools; limited deeper search for empty projects | Reliable new and edited task triggers; context-aware cache invalidation; per-visit coverage target; resumable batches and global request limits |
 | Generate and rate novel tasks | Up to three ideas per generation, stored per project, with refinement of prior ideas | Explicit Intent context and completed task text; stable idea identity; independent actionability ratings; inclusion in the main daily ranking path |
@@ -20,6 +25,21 @@ ranking and storage. It proposes implementation; the queue and behavior changes 
 
 The key implementation points are:
 
+- [`quarter-project.js`](../lib/dashboard/quarter-project.js) requires `summary` and `uuid`, declares every field,
+  and defaults unset values and collections. It mutates through setters and commands including `adoptStoreFields`,
+  `markRanked`, `recordObservedTasks`, `recordShownTasks`, `setProgressEvidence`, `setRelatedTaskRecords`,
+  `setSimilarityScores`, and `setSuggestedTasks`. `from` returns an existing instance unchanged; it is not a clone.
+- [`quarter-project-serialization.js`](../lib/dashboard/quarter-project-serialization.js) owns the progress/store
+  record shapes and store-section parsing/rendering. The class exposes `fromStoreSection`, `toProgressRecord`,
+  `toStoreRecord`, and `toStoreSection`. New durable fields must be added deliberately to the constructor, appropriate
+  serialization shape, and store adoption rules. Setters and `adoptStoreFields` can retain supplied collection references.
+- [`lazy-widget-mount.jsx`](../lib/dashboard/lazy-widget-mount.jsx) uses a separate observer per widget with a
+  400-pixel margin and immediately admits each intersecting widget. Overlay release can mount several at once.
+  There is no common prioritized mount queue yet.
+- [`dashboard-load-tracking.js`](../lib/dashboard/dashboard-load-tracking.js) treats deferred placeholders as
+  settled and reports React mount separately from the `dashboard:widget-loaded` data-readiness event. Its aggregate
+  settle callback does not establish that all visible data/provider work has finished; the scheduler must track
+  ongoing foreground demand separately.
 - [`use-project-task-collection.js`](../lib/hooks/use-project-task-collection.js) starts once per mounted Dashboard,
   four seconds after `handleDashboardSettled`. An overlay can cancel that opportunity without resuming on close.
   [`project-task-collection.js`](../lib/dashboard/project-task-collection.js) prepares the dictionary/ranker, then
@@ -44,12 +64,188 @@ The key implementation points are:
 - [`wizard-prompt-runner.js`](../lib/plan-wizard/wizard-prompt-runner.js) races Agent Pro and the direct provider,
   leaving the losing request running. Reusing that runner for every maintenance job can spend two requests per job.
 
-## Coordinator and execution model
+## QuarterProject ownership and boundaries
 
-Use a plain JavaScript coordinator with injected clock, storage, app interface, and provider request functions.
-One React hook supplies Dashboard lifecycle signals. Plan Builder submits work and foreground-busy signals to the
-same coordinator instead of starting an independent maintenance loop. Keep shared services React-free so Calendar's
-host action can read the same prepared results without importing hooks or browser APIs.
+Keep `QuarterProject` as the domain object for a committed quarter project. `ActionProspect` remains the Plan Builder
+candidate/approval object; the queue does not replace it. `quarterlyProgressProjects` remains the source adapter that
+combines the guide, plan prose, and stored evidence into `QuarterProject` instances. Matching, completion rules,
+candidate eligibility, and the application of validated project results belong to the project class. Network calls,
+queue policy, locks, and React state belong to collaborating services.
+
+Use this boundary contract throughout reads, construction, refinement, and recommendations:
+
+1. `QuarterProjectRepository.readMany(scope)` reads stored records and authoritative live planning choices, then
+   returns `QuarterProject[]`. Expose `readStored(scope)` separately for historical/retired evidence. Raw markdown
+   parsers may return records internally; public project consumers receive instances.
+2. New guide/plan projects pass through `quarterlyProgressProjects`; legacy JSON and any app-bridge response are
+   hydrated with `QuarterProject.from`, and store sections with `QuarterProject.fromStoreSection`. Class prototypes
+   do not survive JSON/bridge transport. Neither `toStoreRecord()` nor `toProgressRecord()` is a complete transport
+   snapshot: each intentionally omits fields owned by the other representation. Preserve both note contracts.
+3. A job persists only scope, project UUID, revisions, and its cursor. At execution it obtains a fresh instance from
+   the repository. It reads that isolated instance to prepare work and returns a validated result patch. At commit,
+   the repository applies the patch through setters on a freshly read instance; it never persists a captured live
+   class instance in the queue or exposes an uncommitted mutation to another job.
+4. Recommendation services call `setProgressEvidence(targetDate)` and the proposed `taskCandidates(...)` on an
+   instance owned by that recommendation request. When they only need computed evidence, they can call the existing
+   non-mutating `progressEvidence(targetDate)`. Plain card/activity records retain project and candidate identity.
+5. `QuarterProjectRepository.applyResult(...)` re-reads under the note writer, checks the job's input revision,
+   applies only fields that job owns, and publishes a project revision after a successful write.
+
+Use the existing setters for result application. Add only the behavior and state the queue needs; do not restore the
+removed copy-returning methods. The implementation map is:
+
+| Existing API or proposed extension | Responsibility |
+| --- | --- |
+| `taskCandidates({ excludeCandidateIds, now, openTasks })` | Return eligible existing tasks and rated ideas belonging to this project; delegate shared formatting to a pure helper if needed |
+| Existing `setSimilarityScores`, `setRelatedTaskRecords`, and `markRanked` | The repository validates/merges a batch result, then sets the affected fields; call `markRanked` only after the entire required pool succeeds |
+| Existing `setSuggestedTasks(ideas, { generatedAt })` | Set the validated merge of generated/refined ideas, retaining identities and decisions; supply generation time only when new ideas were generated |
+| Existing `setSuggestedTasks(ratedIdeas)` | Apply ratings to matching idea text revisions without changing generation time; no separate copy-returning rating method |
+| Existing `recordObservedTasks`, `setCompletedTasks`, and `recordShownTasks` | Record observed evidence and actual exposure while keeping generation separate from display |
+| Proposed `recordRefreshSuccess(result)` | Mutate operation-specific successful input revision, time, and watermark; partial success cannot advance the whole project |
+| Declared `linkedGoalUuids` | Carry `ActionProspect.linkedGoalUuids` through source construction; resolve selected Intent text from the guide rather than inventing a second Intent identity system |
+| Declared `projectRevision` and `refreshState` | Persist project output revision plus operation-specific successful revisions/times and watermarks |
+| Extended completion and idea records | Preserve available completion text/source identity and generated idea identity, ratings, revisions, and decisions |
+
+Keep domain/quarter identity in the repository's resolved scope and include it in every job/cache key; project UUID
+alone is insufficient. `QuarterProject` is intentionally mutable. The repository gives each job, recommendation date,
+and UI publication its own instance with detached nested collections. Cached plain snapshots may be shared for reading,
+but mutable project objects cannot be shared across concurrent jobs or with React state. `QuarterProject.from(existing)`
+and `adoptStoreFields` do not create that isolation. Build detached instances from declared-field snapshots, including
+task records and scores, rather than round-tripping an incomplete note record.
+
+Replace changed arrays/maps through setters. In particular, pass a fresh hash to `setSimilarityScores` instead of
+editing the existing hash in place, because the WeakMap cache keys by hash identity. A failed write discards its working
+instance without publishing it. After success publish a new revision/snapshot reference so React subscribers can notice
+the change. Tests must prove that parallel jobs, different target dates, and preexisting UI snapshots remain isolated.
+
+Document each field's source of truth. Guide-owned pace, priority, deadline, and next-action values are rehydrated from
+the live guide; stored evidence cannot overwrite them. Plan-note projects preserve their corresponding source choices.
+`toStoreRecord()` omits some of these choices while `toProgressRecord()` includes them; repository reads must merge
+their authoritative source before recommending work. Extend the constructor's explicit fields/defaults and
+`quarter-project-serialization.js` when adding refresh state or goal linkage. Add store-owned refresh fields to
+`STORE_OWNED_FIELDS` so `adoptStoreFields` retains them, while goal linkage follows its guide/progress authority.
+Preserve the existing completion-adoption rule deliberately and test it against newer observations. Day-specific
+`due`, `reason`, and completion counts remain transient and cannot be accepted as persisted constructor inputs.
+
+Derive each job's input revision from the fields that operation actually reads. `projectRevision` is an output/cache
+notification revision, not a universal freshness key: successful refresh timestamps or queue status must not make
+their own job stale. In particular, similarity results invalidate idea/day inputs where relevant, but they do not
+automatically invalidate the similarity input that produced them.
+
+Do not grow the class into an orchestration layer. Keep its public project behavior there, while extracting substantial
+pure implementation details into `quarter-project-task-candidates.js` and `quarter-project-refresh-state.js` as needed
+to respect the project's file-size conventions. Continue using `quarter-project-serialization.js` for note formats;
+`project-task-store-markdown.js` now owns only note roots and project headings. These pure helpers cannot import
+repositories or scheduling modules.
+
+## Scheduler classes and files
+
+These are concrete target files, not requests to create empty scaffolding. Classes own state or invariants; stateless
+policies and job handlers remain functions. Avoid one subclass per job type. Implement each file when its phase
+needs it, with behavior documentation and attribution only in `AI_CONTRIBUTIONS.md`.
+
+### Shared domain and execution classes
+
+All files in this table must remain React-free and host-compatible, including their full import graphs.
+
+| Class | File and status | State and public contract |
+| --- | --- | --- |
+| `QuarterProject` | Extend `lib/dashboard/quarter-project.js` | Reuse mutable setters and serialization methods; add candidate selection and successful-refresh state only when needed; no timers or app interface |
+| `QuarterProjectRepository` | Add `lib/dashboard/quarter-project-repository.js` | Inject app and note writer; `readMany`, `readStored`, `readOne`, `applyResult`; wraps existing project store/source adapters rather than creating a competing store |
+| `DashboardWorkJob` | Add `lib/dashboard/work-queue/dashboard-work-job.js` | Validates serializable durable job records, identity, attempt tokens, transitions, and checkpoints; no executable callback or project snapshot in its persisted payload |
+| `DashboardWorkScheduler` | Add `lib/dashboard/work-queue/dashboard-work-scheduler.js` | Owns ready work, coalescing, foreground demand, scope generations, and subscribers; `enqueue`, `promote`, `cancel`, `runReady`, `setForegroundDemand`, `setScope`, `subscribe`, `dispose` |
+| `DashboardResourceBudget` | Add `lib/dashboard/work-queue/dashboard-resource-budget.js` | Tracks independent mount, bridge-read, generative, Jev, and write permits; `tryAcquire`, `release`, `setForegroundDemand`; release handles are idempotent |
+| `DashboardWorkRepository` | Add `lib/dashboard/work-queue/dashboard-work-repository.js` | Durable queue reads/writes and recovery; `readPending`, `saveJob`, `checkpoint`, `complete`, `recoverExpired`; uses section updates and bounded retention |
+| `DashboardNoteWriter` | Add `lib/dashboard/work-queue/dashboard-note-writer.js` | Serializes read-transform-write per note in one runtime; `update` accepts a transform over the latest content; failures release the chain |
+| `DashboardTaskSnapshot` | Add `lib/dashboard/work-queue/dashboard-task-snapshot.js` | Owns a domain's observed task revisions/change sequence; `reconcile`, `changesSince`, `snapshot`; distinguishes complete snapshots from partial observations |
+| `QuarterProjectWorkPlanner` | Add `lib/dashboard/work-queue/quarter-project-work-planner.js` | Owns per-visit project coverage and plans desired jobs from instances and revisions; `plan`, `recordSuccess`, `coverage`; scheduling policy is not a method on `QuarterProject` |
+
+Supporting shared modules have one concern each:
+
+| File to add | Exports and responsibility |
+| --- | --- |
+| `lib/dashboard/work-queue/dashboard-work-policy.js` | Priority categories, fairness, resource caps, retry delays, and admission rules as testable functions/constants |
+| `lib/dashboard/work-queue/dashboard-work-handlers.js` | Registry mapping durable job types to handlers and input validators; imports host-compatible handlers only |
+| `lib/dashboard/work-queue/dashboard-work-runtime.js` | `createDashboardWorkRuntime` composition factory that injects app, clock, repositories, provider access, and event publication |
+| `lib/dashboard/work-queue/dashboard-work-diagnostics.js` | Bounded queue timing/counter snapshots integrated with existing logging; no prompt bodies or unbounded event history |
+| `lib/dashboard/work-queue/dashboard-work-diagnostics-store.js` | Bounded persisted completion/failure summaries for inspection after reopening; shares the note writer and excludes its own housekeeping from queue metrics |
+| `lib/dashboard/work-queue/dashboard-task-snapshot-store.js` | Versioned persistence and compaction for the task evidence index/change sequence; separate from small job metadata |
+| `lib/dashboard/work-queue/dashboard-provider-dispatch.js` | Resource-aware Jev/generative requests and sequential maintenance fallback; all nested batches acquire permits here |
+| `lib/dashboard/work-queue/dashboard-app-dispatch.js` | Priority-aware app reads with explicit request context; writes delegate to `DashboardNoteWriter`; avoid mutable global priority across concurrent calls |
+
+One runtime is created for a mounted Dashboard and shared with its widgets and Plan Builder. Host Calendar actions
+create a bounded host runtime over the same stores. They do not share an in-memory singleton with the embed or acquire
+browser behavior through the handler registry. Cross-context coordination retains the best-effort limits described below.
+
+### Browser mounting adapter and React integration
+
+The scheduler handles admission of component mounts and local publish callbacks; React still controls reconciliation
+and commit. It is not a replacement React renderer, and ordinary widget state updates do not all become queue jobs.
+
+| Class or export | File and status | Responsibility |
+| --- | --- | --- |
+| `WidgetMountCoordinator` | Add `lib/dashboard/work-queue/widget-mount-coordinator.js` | Browser-only class; owns shared viewport/near-viewport observers, mount registrations and generation tokens; `register`, `updateVisibility`, `requestMount`, `reportCommitted`, `unregister`, `dispose` |
+| `createBrowserWorkDriver` | Add `lib/dashboard/work-queue/browser-work-driver.js` | Browser-only scheduling adapter for frame callbacks, yielding, visibility, and wake timers; plugs into the shared scheduler |
+| `DashboardWorkProvider` and `useDashboardWork` | Add `lib/dashboard/work-queue/dashboard-work-context.jsx` | Provide one runtime to the mounted Dashboard tree without publishing the whole changing queue into React state |
+| `useDashboardWorkQueue` | Add `lib/hooks/use-dashboard-work-queue.js` | Create/clean up runtime and connect scope, load gate, task updates, visibility, and foreground/overlay demand; subscriptions select small stable snapshots |
+| `LazyWidgetMount` | Modify `lib/dashboard/lazy-widget-mount.jsx` | Preserve placeholders and mount-once behavior; register a mount callback and supply the placeholder node to `WidgetMountCoordinator` |
+| Mount suspension exports | Split `lib/dashboard/widget-mount-suspension.js`; add `lib/hooks/use-widget-mount-suspension.js` | Keep the counted suspension state and subscriptions React-free in the existing file; move its React hooks into the new hook file and update callers |
+| Load/mount reporters | Modify `lib/dashboard/dashboard-load-tracking.js` and `lib/dashboard/dashboard.jsx` | Report commit/error/cancellation separately from usable data; preserve existing aggregate analytics and memory-measurement events |
+| `DashboardQueueInspector` | Add `lib/dashboard/work-queue/dashboard-queue-inspector.jsx` | Admin Queue view inside the existing Debug Console; subscribes to diagnostics and displays filters, waiting reasons, progress, failures, and timings |
+| `useDashboardQueueDiagnostics` | Add `lib/hooks/use-dashboard-queue-diagnostics.js` | Select/throttle inspector snapshots while open; load durable history on demand; unsubscribe while closed |
+| Admin tools availability | Add `lib/dashboard/dashboard-admin-tools.js`; modify `dashboard.jsx` and `debug-console.jsx` | Centralize the existing debug-tools availability rule so the Queue view and existing tools use one policy |
+| Inspector styles | Add `lib/dashboard/styles/dashboard-queue-inspector.scss` | Scope all rules under the inspector's root `.dashboard-queue-inspector` class |
+
+Mount requests are transient records keyed by dashboard session, widget identity, and registration generation. Their
+callbacks, DOM references, visibility, and commit state stay in memory; never write a render request into an Amplenote
+note or block a mount on queue recovery, note lookup, a provider permit, or an unrelated running job.
+
+### Job handler and result files
+
+Paths below are relative to `lib/`. All additions here are host-compatible function modules, and project-specific
+handlers read isolated `QuarterProject` instances and commit result patches through the repository.
+
+| Durable job type | Handler file to add | Reuse and result |
+| --- | --- | --- |
+| `reconcileProjects` | `dashboard/work-queue/jobs/reconcile-projects.js` | Existing source adapter plus `DashboardTaskSnapshot`; update evidence and ask the planner for jobs |
+| `discoverDictionaryTerms` | `dashboard/work-queue/jobs/discover-dictionary-terms.js` | Existing discovery and dictionary modules, keyed by changed evidence digest |
+| `collectTermEvidence` | `dashboard/work-queue/jobs/collect-term-evidence.js` | New `plan-wizard/stack-rank/dictionary-term-evidence.js` for search, bounded note reads, full footnote resolution, and passage selection |
+| `refineDictionaryTerm` | `dashboard/work-queue/jobs/refine-dictionary-term.js` | New `plan-wizard/stack-rank/dictionary-term-refinement.js`; ownership-aware definition commit and affected-project invalidation |
+| `rankProjectTasks` | `dashboard/work-queue/jobs/rank-project-tasks.js` | Existing ranker/cache logic; checkpoint batches and commit via score/association setters; `markRanked` only on full success |
+| `generateProjectIdeas` | `dashboard/work-queue/jobs/generate-project-ideas.js` | Extend `dashboard/project-task-ideas.js`; validate/merge ideas and commit with `setSuggestedTasks` |
+| `rateProjectIdeas` | `dashboard/work-queue/jobs/rate-project-ideas.js` | New `dashboard/project-task-idea-ratings.js`; validate IDs/text revisions and set updated ideas without restamping generation |
+| `prepareDayRanking` | `dashboard/work-queue/jobs/prepare-day-ranking.js` | Existing day groups/ranker with mixed candidates; persist one context-specific ranked list |
+| `prepareDreamTasks` | `dashboard/work-queue/jobs/prepare-dream-tasks.js` | Existing Dream Task selection/reserves and daily note format, without recording exposure |
+| `prepareProposedAgenda` | `dashboard/work-queue/jobs/prepare-proposed-agenda.js` | Existing slotting, obligations, agenda cache, and decision reconciliation |
+
+Add `dashboard/day-ranking-store.js` for the shared ranked-list cache and `dashboard/project-task-idea-records.js`
+for pure idea validation, migration, and identity handling. Extend `user-terms-dictionary.js` to persist term evidence
+metadata and revisions without rewriting protected definitions. Reuse `ranked-task-suggestions.js` as the public
+recommendation facade, separating preparation from `recordShownTaskSuggestions`. An idea is a typed record owned by
+`QuarterProject`; it does not require another orchestration class.
+
+## Scheduler execution contract
+
+Inject clock, storage, app access, provider access, and browser wake functions. Plan Builder submits work and foreground
+signals to the shared scheduler instead of starting an independent maintenance loop. Keep browser adapter imports out
+of all host services.
+
+`DashboardWorkScheduler.runReady()` admits eligible work and returns control; it must not await an entire queue drain.
+Each admitted async operation registers its completion independently. Choose the highest-priority job whose dependency
+and resource requirements are satisfied, skipping blocked jobs so a pending provider request cannot hold up a mount.
+Release provider/read permits when that operation ends, before waiting for subsequent work, and recheck priority at
+every batch boundary. Note serialization deliberately spans its fresh read, transform, and write; coordinate its read
+and write permits without recursive acquisition. Never retain a note-write lock across a provider call.
+
+Handlers expose `run({ context, job, signal })` and return a result status, checkpoint, affected revisions, and optional
+follow-up descriptors. A handler may return `yielded`, `completed`, or `superseded`; retry/configuration failures carry
+structured reasons. The runtime applies typed results through the correct repository before acknowledging completion.
+Handlers cannot launch detached child batches outside the dispatcher. In-flight cancellation remains cooperative.
+
+If a visible widget needs a result already queued as maintenance, promote that existing job and only its necessary
+prerequisites. Propagate foreground priority to their provider/bridge requests, retain hard capacity limits, and avoid
+waiting for unrelated dictionary refinement or project coverage. When the final requesting widget unsubscribes,
+remove its foreground demand; any still-useful durable work returns to its ordinary priority.
 
 Make one job one resumable unit: one dictionary discovery batch, one term's evidence lookup, one definition refinement,
 one project's rating batch, one project's idea generation, one idea-rating batch, or one day's suggestion preparation.
@@ -70,15 +266,23 @@ ideas to be current before any useful suggestion becomes available.
 
 ### Scheduling and responsiveness
 
-Retain the existing settled callback and four-second grace period as the initial maintenance gate. Change widget
-loading so a cache result or a usable empty state counts as settled even while suggestions are being prepared; a
-widget must never wait for a job that itself waits for that widget to settle. A cold visible widget may request a
-high-priority preparation job after first render.
+Mount work is eligible immediately. Use initial viewport classification and the existing settled callback plus a
+four-second grace period as the initial maintenance gate; also check foreground demand at admission time. Do not
+reinterpret the existing aggregate mount/deferred analytics as proof of data readiness. A usable cached or empty
+widget shell can coexist with pending data; a cold widget's foreground preparation bypasses the maintenance gate.
+This prevents a widget waiting for a job that itself waits for the widget to settle.
+
+Use priority categories `visibleRender`, `foregroundData`, `nearViewportRender`, `visibleRefresh`, and `maintenance`.
+Select work separately for each resource; these categories are not a single serial promise chain. Local render
+callbacks always outrank background local work. Maintenance aging never promotes it above visible rendering. Track
+foreground demand after initial settle as well, so scrolling restores priority without resetting the visit.
 
 Use the following initial policies, then tune them from measurements:
 
 | Resource or concern | Proposed policy |
 | --- | --- |
+| Visible mounts | Admit one new widget per frame initially; release its mount permit on commit/error, then admit another on a later frame; no provider or data-readiness wait |
+| Near-viewport mounts | Preserve the initial 400-pixel lookahead, but admit only when no visible mount is waiting and foreground pressure is low |
 | Interactive work | User-requested refresh and missing visible suggestions take priority; pause new maintenance requests while Plan Builder awaits generation |
 | Generative requests | One background request globally per coordinator; use one provider path, then sequential fallback on failure |
 | Jev requests | Four background batch requests globally, shared across projects; reduce concurrency during interaction |
@@ -100,6 +304,45 @@ every five minutes when foreground work is idle, because local events do not cap
 Use weighted fairness within background work: allocate most rating opportunities to the project coverage target,
 but reserve progress for dictionary and idea work. Raise the priority of jobs that have waited across visits. A
 failed or unusually large project must not prevent other projects from advancing.
+
+### Scrolling and urgent component renders
+
+`WidgetMountCoordinator` uses shared observers for the actual viewport and the 400-pixel lookahead region so it can
+distinguish urgent from speculative mounts. Observe the actual scroll container. Observer callbacks enqueue/promote
+small requests and return promptly; they do not parse project notes or hydrate a notebook. Intersection observation
+is asynchronous and a positive root margin expands the observed region, as documented by the
+[Intersection Observer API](https://developer.mozilla.org/en-US/docs/Web/API/Intersection_Observer_API).
+
+On a scroll into view, promote the widget's existing request rather than enqueueing another. If it leaves view before
+admission, demote or cancel the speculative request. Repeated callbacks, rapid direction changes, StrictMode cleanup,
+and layout edits must not produce duplicate mounts. Revalidate the registration generation when a callback runs;
+unregistering removes its callback, observer references, and foreground demand. Once mounted, retain the widget's
+existing state when it scrolls away.
+
+Schedule only the brief mount admission/state update in a frame callback. Release the mount permit from a committed
+reporter or error boundary, not immediately after `setMounted(true)`; React may commit later. A cancelled registration
+or bounded commit watchdog must release a stuck permit without requesting a second mount of the same generation.
+Do not wait for `dashboard:widget-loaded`, because network data can remain pending while other visible shells mount.
+Frame callbacks run before repaint and are generally paused in hidden tabs; they are not a place for heavy computation
+or a promise of a completed paint. See
+[requestAnimationFrame](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame).
+
+While visible mounts are queued, defer new maintenance CPU chunks and provider requests. An already-running remote
+request may complete, but its parsing and publication yield to visible rendering where practical. Large synchronous
+JSON parsing or a single expensive component render cannot be preempted by a queue; bound payloads, reduce component
+work, and use measured commit duration to adjust speculative admission. One mount per frame is a starting cap, not
+a guarantee that a mount fits within a frame.
+
+Overlay suspension holds only the covered Dashboard's mount requests. The active overlay's own urgent UI remains
+eligible. On the last overlay release, refresh visibility and drain visible requests first across frames; do not
+replay every historical intersection at once. Keep the immediate-mount override used by the memory-measurement
+harness explicit. Without IntersectionObserver, admit all widgets through bounded fallback mounting so none remains
+a placeholder forever; without frame callbacks, use the browser driver's timer fallback.
+
+Example: a Jev batch is in flight when the user scrolls to Agenda. Its mount request runs on the next available frame,
+independently of Jev. Agenda commits a shell and releases its mount permit; another visible widget can then mount.
+Agenda's missing data requests priority through the app/provider dispatcher. Maintenance resumes admission once the
+visible mount backlog and foreground pressure clear, using its saved cursor.
 
 ### Project coverage per visit
 
@@ -253,29 +496,232 @@ Calendar host invocations read persisted results and can perform bounded foregro
 assume timers or detached promises survive an embed closing or a host invocation returning. Durable pending work resumes
 at the next authorized plugin execution opportunity.
 
-## Implementation order and verification
+## Admin queue observability
 
-1. **Coordinator and storage foundation.** Add small React-free modules under `lib/dashboard/work-queue/` for policy,
-   runner, repository, and shared write coordination, plus `use-dashboard-work-queue.js`. Adapt both existing refresh
-   entry points to enqueue jobs and retire their independent loops. Add resource admission at actual provider/bridge
-   calls so nested helpers cannot bypass limits. Preserve existing output schemas initially.
-2. **Project freshness and coverage.** Extract a resumable project/batch rating operation; add task-change reconciliation,
-   per-project successful watermarks, context revisions, and the coverage target. Reuse task details across projects.
-3. **Dictionary enrichment.** Add evidence lookup and definition-refinement jobs, ownership-aware writes, provenance,
-   and targeted rating invalidation. Keep discovery independently schedulable.
-4. **Rated ideas.** Extend completion evidence and idea persistence, add the actionability rubric, then support mixed
-   existing/generated candidates throughout ranking, reserves, and acceptance. Keep legacy records readable.
-5. **Prepared suggestions.** Separate preparation from exposure, add shared daily ranking persistence, and connect
-   invalidations to Dream Task, Proposed Agenda, and Calendar with stable visible state.
+Provide a Queue view in the existing Debug Console, available through the same admin/developer tools policy. The
+current Dashboard uses `debug_console`, development environment/host checks, and a designated plugin identity; there
+is no separate authenticated administrator role in this code. Extract that existing policy into
+`dashboard-admin-tools.js` rather than introducing a second inconsistent check. This is an operator UI for the current
+user's Dashboard and notes, not a way to inspect other users' queues. Gate both the entry point and diagnostics access
+through that policy. Any later host diagnostics endpoint must check host-side access too; a hidden button is not
+authorization. The initial inspector needs no new host endpoint and no expression evaluation.
 
-Ship each phase behind a queue enable setting until its output and performance are verified. Never run the legacy
-maintenance loops and queue for the same scope simultaneously. A rollback may use retained output notes without
-running pending jobs from the new queue.
+The Queue view must answer “what is running, why is this waiting, and is the queue making progress?” without requiring
+Console Logging to be enabled. Add the following views using structured scheduler events and snapshots:
 
-Use deterministic clock/provider tests for priority, global concurrency, fairness, budget yielding, the project quota,
-overlay resume, domain switches, and failures isolated to one job. Simulate interruption after result persistence but
-before acknowledgement, expired claims, concurrent result patches, and obsolete responses. Verify that a write failure
-does not poison later jobs and that duplicate execution does not duplicate ideas or recorded completions.
+| View | Required information |
+| --- | --- |
+| Overview | Runtime/session, scope, enabled features, foreground demand, overlay/visibility/load gate, counts by status, oldest pending age, last successful progress, and project coverage versus target |
+| Active and pending work | Job ID/type, project or term identity, priority, dependencies, resource needed, input revision, attempt, checkpoint progress, enqueue/start times, next eligible time, and explicit waiting reason |
+| Urgent renders | Widget ID, actual versus near visibility, priority promotion, admission/commit times, mount permit/watchdog state, and overlay-held requests |
+| Resources | Used/available permits for mounts, app reads, generative requests, Jev and writes; pending foreground versus maintenance demand |
+| Recent outcomes | Completed, superseded, cancelled and failed jobs, sanitized failure classification, retry/backoff, provider timing/token usage when supplied, and output revision |
+
+Use waiting reason codes such as `loadGate`, `overlay`, `hidden`, `foregroundDemand`, `resourceBusy`, `dependency`,
+`retryBackoff`, and `missingConfiguration`, with a readable explanation. Filters cover scope, job type, priority,
+status, and project. Distinguish current-runtime live state from persisted observations of another runtime: show its
+last-observed time and claim expiry, and never label an unverified remote request as definitely running.
+
+Expose `snapshot()`, `subscribe(listener)`, and `exportSnapshot()` from the diagnostics module. Copy/download a
+sanitized snapshot from the Queue view for troubleshooting. Keep inspection read-only in this implementation;
+opening the view or exporting it must not retry jobs, resume paused work, or change priority.
+
+Capture cheap counters and a bounded in-memory event ring from phase 2; propose 200 events initially. From phase 5,
+retain up to 100 compact outcome records for at most seven days per queue scope, checkpointed in low-priority batches.
+Persisted pending/running job metadata already lives in the queue repository. Label history gaps or unavailable
+durable storage explicitly. Do not store every scroll event, prompt, notebook snippet, API key, or raw provider error
+body; sanitize diagnostic fields at emission and again at export. Diagnostic persistence failure must not fail work.
+
+Throttle live inspector updates to at most four per second while open, unsubscribe when closed, and read durable
+history only on open or explicit refresh. Keep its own shell accessible even when the work queue is paused or stalled;
+do not enqueue its diagnostic read behind the job being diagnosed. Count diagnostic storage separately so it cannot
+create a self-observation loop. Include the inspector in mobile performance checks.
+
+## Implementation phases and commit boundaries
+
+Each phase below is a separately reviewable commit-sized change or a short cohesive series. Every commit must build,
+include the tests for the behavior it changes, and leave the current feature path usable. Commit the implementation
+and its tests together. Add fields, migrations, and imports only when their first consumer arrives; do not import
+future handler files or commit empty scaffolding. Update `AI_CONTRIBUTIONS.md` with each implemented part.
+
+These are proposed boundaries for the human to review and commit; this planning task creates no commits. All phases
+remain unimplemented. The current mutable class and serialization extraction are the baseline, not work to redo.
+
+| Phase | Commit scope | Prerequisite | Safe stop point |
+| --- | --- | --- | --- |
+| 1 | Isolated project repository and serialized writes | Current class | Existing behavior uses the repository; no scheduler changes |
+| 2 | Scheduler, resource budgets and diagnostics contract | None beyond current code | Tested execution core with no production maintenance activation |
+| 3 | Urgent component mounting | 2 | Prioritized rendering can ship while legacy maintenance remains selected |
+| 4 | Admin Queue inspector | 2 and 3 | Admins can inspect live rendering and scheduler state before maintenance rollout |
+| 5 | Durable jobs and resource-aware dispatch | 1, 2 and 4 | Durable recovery and history are testable; live maintenance still uses one selected path |
+| 6 | Resumable project maintenance and coverage | 3 and 5 | Queue can replace both legacy passes without losing existing discovery or idea generation |
+| 7 | Evidence-based dictionary refinement | 6 | Better definitions are independent of idea rating and prepared suggestions |
+| 8 | Generated idea ratings and mixed candidates | 6; 7 recommended | Existing daily consumers can recommend rated ideas without requiring background preparation |
+| 9 | Shared daily preparation and cache consumers | 8 | Dream Task, Proposed Agenda and Calendar consume prepared output |
+| 10 | Default rollout and legacy cleanup | 7, 8 and 9 | Verified queue behavior becomes the default; obsolete orchestration is removed |
+
+### Phase 1 Project repository and mutable instance ownership
+
+Add `QuarterProjectRepository` and `DashboardNoteWriter` at the inventory paths. Route existing store reads and writes
+through them, keeping public compatibility exports. Reuse the current setters, `fromStoreSection`, `toStoreSection`,
+and `toProgressRecord`; keep note conversion in `quarter-project-serialization.js`. Adopt authoritative guide/store
+fields with detached collections. Defer queue-specific fields and idea schema changes to their consuming phases.
+
+Verify repository and note-writer tests plus existing QuarterProject, project-task-store, progress, and ranking suites.
+Include two concurrent results, two recommendation dates, failed writes, and unchanged UI snapshots. The stop point
+preserves today's behavior and note formats with no timer or rendering change.
+
+### Phase 2 Scheduling core and diagnostic events
+
+Add `DashboardWorkScheduler`, `DashboardResourceBudget`, policy/runtime/diagnostics modules, and their focused tests.
+The runtime accepts an injected optional job repository and registry; it must operate without durable services until
+phase 5. Implement priority, independent resource admission, cancellation, coalescing, waiting reasons, and bounded
+diagnostic snapshots now so the inspector observes real scheduler state rather than reconstructing it from logs.
+
+Verify a controlled unresolved provider promise cannot block another resource, and cancellation releases permits
+without duplicate completion. This commit does not activate production maintenance or require a queue note.
+
+### Phase 3 Urgent rendering integration
+
+Add `WidgetMountCoordinator`, browser driver, context, and `useDashboardWorkQueue`. Modify `LazyWidgetMount`, load
+reporters, Dashboard wiring, and suspension hooks as listed in the inventory. Introduce a render-scheduler switch
+independent of maintenance selection; until phase 6, legacy maintenance continues through its existing path.
+
+Verify mount coordinator, lazy mount, load tracking and integration tests, then fast scroll and overlay-release behavior
+in the browser. This commit can ship independently: rendering works if persistence is unavailable or never initialized.
+Reverting its switch restores the existing lazy mount path without changing project data.
+
+### Phase 4 Admin Queue inspector
+
+Add `DashboardQueueInspector`, `useDashboardQueueDiagnostics`, scoped styles, and the shared admin tools policy helper.
+Extend the existing Debug Console with the Queue view and sanitized copy/download. Add
+`test/dashboard-queue-inspector.test.js`, `test/dashboard-work-diagnostics.test.js`, and
+`test/dashboard-admin-tools.test.js`. Runtime states absent before phase 5 are shown as unavailable, not fabricated.
+
+Verify the existing admin gate, live updates without Console Logging, explicit waiting reasons, filters, export
+redaction, throttling, cleanup, and inspection of a deliberately stalled scheduler. This phase ships a useful live
+inspector before any durable maintenance is enabled; it adds no job control actions.
+
+### Phase 5 Durable execution and diagnostic history
+
+Add `DashboardWorkJob`, `DashboardWorkRepository`, diagnostics store, and app/provider dispatchers. Extend the runtime
+with repository recovery and a handler registry that registers only implemented handlers. Add durable success/failure
+history to the inspector. Record output-before-acknowledgement and stale-attempt rejection semantics in tests.
+
+Verify queue recovery, retry/backoff, serializer versions, permit limits across nested provider calls, and diagnostic
+retention/failure isolation. Add `test/dashboard-work-diagnostics-store.test.js`. Keep live maintenance disabled until
+phase 6 supplies resumable handlers; the existing maintenance route remains functional during this foundation phase.
+
+### Phase 6 Project maintenance migration
+
+Add `DashboardTaskSnapshot`, its store, `QuarterProjectWorkPlanner`, reconciliation/ranking handlers, and resumable
+ranker operations. Add `projectRevision`, operation `refreshState`, and `recordRefreshSuccess` to the class, with the
+appropriate constructor defaults, serialization, store adoption, and legacy-read tests in the same commit series.
+Use existing score/association setters and `markRanked` at the fully successful boundary.
+
+Wrap existing dictionary discovery and idea generation as separate handlers in this phase so selecting the queue
+does not silently remove existing behavior. They retain today's prompts/schema; richer evidence and ratings arrive
+later. Ranking reads the latest usable dictionary instead of awaiting discovery. Implement all nested resource
+admission before switching live traffic. Preserve partial batch results and the distinct-project visit quota.
+
+For reviewable commits, split this phase into 6a task change tracking and persisted revisions, 6b checkpointed handlers
+with equivalence tests, and 6c routing both refresh hooks through the queue. Only 6c enables queued maintenance. Keep
+the legacy compatibility path selected until then; once selected, never run both routes for the same scope. The stop
+point supports today's maintenance plus change detection, recovery, coverage, and admin progress/failure visibility.
+
+### Phase 7 Dictionary enrichment
+
+Add term evidence/refinement services and handlers, extend dictionary provenance/revision persistence, and add targeted
+project invalidation. Extend the inspector with term identity, lookup/refinement progress and meaningful empty-result
+outcomes. Keep all user-owned definition and Rich Footnote preservation rules.
+
+Verify refinement, ownership, source selection, cooldown, and score invalidation tests. This phase can be disabled
+independently while ordinary discovery, ranking, ideas, and urgent rendering continue working.
+
+### Phase 8 Rated ideas and recommendation candidates
+
+Add idea records/rating helpers and the rating handler; enhance the existing generation handler. Extend completion
+text/source evidence and `linkedGoalUuids` through constructor, source adapters and serialization. Use
+`setSuggestedTasks` for generated and rated ideas; rating alone must not change their generation time. Add the
+project's `taskCandidates` method and migrate identity handling through daily ranking, reserves and acceptance.
+
+Commit schema/legacy normalization and generation context as 8a, then independent rating and all mixed-candidate
+consumer support together as 8b. Existing ideas remain unrated/ineligible for the new path until rated. Verify idea
+revision/decision handling, same-text deduplication, actionability, completion history and acceptance retries. The stop
+point uses existing on-demand daily generators, so background preparation is not a hidden dependency.
+
+### Phase 9 Prepared daily output
+
+Add `day-ranking-store.js` and day-ranking, Dream Task, and Proposed Agenda preparation handlers. Refactor existing
+recommendation facades to separate preparation from exposure. Update widget consumers and Calendar's bounded host
+runtime, preserving current caches, live-task checks, decisions and fallback behavior.
+
+Split into 9a shared ranking persistence plus prepare/read/exposure separation, then 9b consumer subscriptions and
+background activation. Until 9b, existing foreground generation remains the selected behavior. Verify cross-surface
+context keys, no exposure on prefetch, unchanged accepted/dismissed choices, cold-cache settling, and native Calendar
+output. Admins must be able to follow a project revision through preparation to the published result revision.
+
+### Phase 10 Rollout and cleanup
+
+Use recorded admin diagnostics and mobile/browser checks to compare rendering latency, provider contention, project
+coverage and error recovery with each feature enabled. Change defaults only after those acceptance checks pass.
+Then remove unused legacy timers/loops and temporary compatibility routes in a separate cleanup commit. Keep output
+formats backward-readable and document the oldest compatible rollback version before removing a legacy writer;
+older writers that drop new metadata cannot be assumed safe merely because they can parse the notes.
+
+Run the relevant regression suites, production build and host smoke test. This phase is operational activation and
+cleanup, not a prerequisite for reviewing or committing phases 1–9. Each earlier stop point remains buildable.
+
+### Integration map
+
+Concrete integration changes:
+
+- `lib/dashboard/dashboard.jsx` provides the single runtime before lazy children render, passes current domain/scope,
+  and supplies commit/error signals from `createWidgetCell`. It retains the memory harness's `mountImmediately` path.
+- `lib/hooks/use-project-task-collection.js` and `lib/hooks/use-project-task-ranking.js` become thin enqueue adapters
+  during migration, then fold into `useDashboardWorkQueue` and the Builder's foreground requests. Remove their
+  independent timers and once-per-mount guards after both callers are migrated.
+- `lib/dashboard/project-refresh-schedule.js` contributes its useful staleness policy to the work planner; remove the
+  unbounded catch-up loop and replace its once-per-pass budget with scheduler admission and coverage accounting.
+- `lib/dashboard/project-task-collection.js` and
+  `lib/plan-wizard/stack-rank/refresh-stale-project-rankings.js` retain compatibility exports while their orchestration
+  is extracted into handlers. Their domain transformations call `QuarterProject` methods.
+- `lib/hooks/use-dashboard-task-updates.js` sends observations to `DashboardTaskSnapshot` and invalidates affected
+  work, while preserving the immediate existing widget update behavior.
+- `lib/dashboard/day-project-candidates.js` qualifies projects for the day and asks each hydrated project's
+  `taskCandidates` for its candidate records. `suggestion-task-rank.js` and `suggestion-task-slots.js` carry the
+  shared `task:`/`idea:` identity through ranking, reserve promotion, and deduplication.
+- `lib/dashboard/dream-task.jsx` and `lib/dashboard/proposed-agenda.jsx` subscribe to narrow result revisions, promote
+  jobs for missing visible data, and keep stable cached UI. An accepted result updates the relevant surface, not the
+  whole Dashboard tree on every queue transition.
+- `lib/dashboard/proposed-agenda-suggest-action.js` reads prepared output through a bounded host runtime. Neither
+  it nor `lib/plugin.js` imports the browser driver, mount coordinator, context, or React hook.
+
+Keep urgent rendering and maintenance activation independently selectable. Later enrichment features can be disabled
+without disabling either foundation. Never run legacy maintenance and queued maintenance for the same scope
+simultaneously. A rollback may read retained outputs without resuming new jobs, but verify that its writers preserve
+the current schema. Feature activation and commit readiness are separate decisions.
+
+### Verification across phases
+
+Add or extend the following focused tests. Use injected clocks, frame callbacks, observers, and controlled promises;
+do not make tests wait real seconds for a scheduling window.
+
+| Test file | Required behavior |
+| --- | --- |
+| Extend `test/quarter-project.test.js` | Required identity/defaults, mutable setter semantics, replacement score-map cache correctness, serialization/adoption of new fields, and deliberate omission of day evidence |
+| Add `test/quarter-project-repository.test.js` | Detached instance/collection ownership, guide-versus-store authority, JSON rehydration, different recommendation dates, failed-write isolation, legacy migration, stale result rejection, and field-level merges from overlapping jobs |
+| Add `test/dashboard-work-scheduler.test.js` | Promotion/deduplication, resource-independent dispatch, foreground inheritance, fairness, domain cancellation, no drain-wide await, and no self-invalidating refresh loop |
+| Add `test/dashboard-resource-budget.test.js` | Global nested-batch limits, idempotent release, no permits held across resources, and foreground requests overtaking pending maintenance |
+| Add `test/dashboard-work-repository.test.js` | Versioned persistence, checkpoint recovery, interruption after output commit, expired claims, retries, and bounded history |
+| Add `test/dashboard-note-writer.test.js` | Same-note serialization, fresh merge inputs, preservation of user-owned definitions, and failures not poisoning later writes |
+| Add `test/widget-mount-coordinator.test.js`; extend `test/lazy-widget-mount.test.js` | Visible/near priority, many entries in one observer batch, scroll reversal, promotion, one admission per frame, commit/error/watchdog release, nested overlays, missing-observer fallback, removed widgets, and StrictMode cleanup |
+| Add `test/dashboard-work-integration.test.js`; extend `test/dashboard-load-tracking.test.js` | A visible mount completes while a provider promise remains pending; offscreen placeholders still settle; late scroll does not reset initial analytics or project coverage; cold data does not deadlock mounting |
+| Add `test/dashboard-task-snapshot.test.js` and `test/quarter-project-work-planner.test.js` | Old-task edits, reopen/completion observations, partial fetches, successful watermarks, distinct-project quotas, and background work retained across visits |
+| Add `test/dictionary-term-refinement.test.js` and `test/project-task-idea-ratings.test.js` | Bounded sourced passages with full footnotes, protected definitions, revision invalidation, independent actionability, and changed/rejected idea handling |
+| Add `test/day-ranking-store.test.js`; extend existing suggestion suites | Shared context keys, exposure separated from preparation, mixed candidate reserves, and preserved user decisions |
+| Add `test/dashboard-work-diagnostics.test.js` and `test/dashboard-work-diagnostics-store.test.js` | Explicit waiting reasons, bounded events/history, post-reopen outcomes, sanitized export, stale remote observations, and telemetry failures not failing jobs |
+| Add `test/dashboard-queue-inspector.test.js` and `test/dashboard-admin-tools.test.js` | Existing admin/debug availability policy, observation without Console Logging, filters, update throttling/cleanup, and inspection without mutating or depending on the stalled queue |
 
 Regression scenarios should cover a low-rated old task edited into a good match, new tasks during the 72-hour window,
 dictionary changes invalidating scores, user-owned definition protection, full Rich Footnote evidence, unrated idea
@@ -291,9 +737,16 @@ provider responses. The acceptance criterion is no maintenance provider work bef
 request waiting behind newly admitted maintenance, and no material regression in measured first usable load latency.
 Track an already-running non-cancellable request separately; priority cannot retroactively preempt it.
 
+Also measure visibility-to-admission and visibility-to-commit latency, mount backlog, React commit duration, and long
+main-thread tasks during fast scrolling and overlay dismissal. Verify on mobile that a pending LLM request never holds
+up admission of a visible component. Measure actual commit cost rather than treating a cheap state setter as proof of
+a cheap render. Browser verification should exercise rapid scrolling, layout changes, and foreground data contention;
+no library upgrade or bundler code splitting is required by this design.
+
 Run focused Jest suites with `NODE_OPTIONS=--experimental-vm-modules` during implementation. For shared services or host
 imports, finish with `npm run build` and the production smoke test:
 `NODE_OPTIONS=--experimental-vm-modules npx jest --runInBand --runTestsByPath test/production-plugin.test.js --no-coverage`.
 
-The first milestone should deliver resumability, shared request limits, and reliable project coverage. Those changes
-make every later improvement safe to run progressively without putting it on the user's Dashboard loading path.
+Urgent rendering and the admin inspector can ship after phases 3 and 4. Queued project maintenance becomes usable after
+phase 6; dictionary enrichment, rated ideas, and prepared suggestions can then ship independently in phases 7–9.
+There is no requirement to combine these phases into one commit or wait for the entire vision before shipping a part.
