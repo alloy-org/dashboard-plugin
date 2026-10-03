@@ -215,9 +215,34 @@ describe("project task store sections", () => {
   it("writes retired projects under the past-projects root", async () => {
     const app = storeApp({ content: initialProjectTaskStoreMarkdown() });
     const store = await openProjectTaskStore(app, scope);
-    const content = await writeProjectSection(app, { content: store.content, isActive: false,
-      noteHandle: store.noteHandle, project: storedProject() });
+    const content = await writeProjectSection(app, { content: store.content, noteHandle: store.noteHandle,
+      project: storedProject({ isActive: false }) });
     expect(storedProjectRecords(content).recordsByUuid.get("project-uuid").isActive).toBe(false);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A project whose isActive changed moves to the other root, keeping its neighbors where they were, and moves
+  //   back when it returns to the plan.
+  it("moves a project's section between the roots when its isActive changes", async () => {
+    const app = storeApp({ content: initialProjectTaskStoreMarkdown() });
+    const store = await openProjectTaskStore(app, scope);
+    let content = await writeProjectSection(app, { content: store.content, noteHandle: store.noteHandle,
+      project: storedProject() });
+    content = await writeProjectSection(app, { content, noteHandle: store.noteHandle,
+      project: storedProject({ summary: "Second project", uuid: "second-uuid" }) });
+    const retired = await writeProjectSection(app, { content, noteHandle: store.noteHandle,
+      project: storedProject({ isActive: false }) });
+    const retiredRecords = storedProjectRecords(retired).recordsByUuid;
+    expect(retired).toBe(app.noteContent);
+    expect(retiredRecords.get("project-uuid").isActive).toBe(false);
+    expect(retiredRecords.get("second-uuid").isActive).toBe(true);
+    expect(retired.match(/\(project:project-uuid\)/g)).toHaveLength(1);
+    const restored = await writeProjectSection(app, { content: retired, noteHandle: store.noteHandle,
+      project: storedProject() });
+    const restoredRecords = storedProjectRecords(restored).recordsByUuid;
+    expect(restoredRecords.get("project-uuid").isActive).toBe(true);
+    expect(restoredRecords.get("project-uuid").lastAttemptedAt).toBe("2026-09-18T12:00:00.000Z");
+    expect(restored.trimEnd().endsWith("# Past projects")).toBe(true);
   });
 
   // ----------------------------------------------------------------------------------------------

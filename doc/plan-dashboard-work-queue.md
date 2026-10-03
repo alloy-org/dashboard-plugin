@@ -586,6 +586,11 @@ diagnostic snapshots now so the inspector observes real scheduler state rather t
 Verify a controlled unresolved provider promise cannot block another resource, and cancellation releases permits
 without duplicate completion. This commit does not activate production maintenance or require a queue note.
 
+As built, jobs carry their own `run` functions; the handler registry and the optional job repository arrive with
+their first consumers in phase 5, so the runtime takes neither yet. The in-memory job records live in
+`work-queue/scheduled-work-job.js`, apart from the durable `DashboardWorkJob` that phase 5 adds. Admission conditions
+(`hidden`, `loadSettled`, `overlayHeld`) are set through `setConditions`, which phase 3 wires to the Dashboard.
+
 ### Phase 3 Urgent rendering integration
 
 Add `WidgetMountCoordinator`, browser driver, context, and `useDashboardWorkQueue`. Modify `LazyWidgetMount`, load

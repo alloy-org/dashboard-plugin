@@ -5,6 +5,29 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-03 — Phase 2 of the work queue: scheduler, resource budget, and diagnostics; retired projects move to Past projects
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/dashboard-work-policy.js` (created) — Priority categories, per-resource limits, waiting reasons, and `admissionWaitingReason`
+- `lib/dashboard/work-queue/dashboard-resource-budget.js` (created) — `DashboardResourceBudget`: independent permits per resource with idempotent release handles, reserving one permit of each resource for foreground work under demand
+- `lib/dashboard/work-queue/dashboard-work-scheduler.js` (created) — `DashboardWorkScheduler`: `enqueue` (coalescing, one replacement for a running key), `promote`, `cancel`, `runReady` (non-draining, skips blocked jobs), `setConditions`, `setForegroundDemand` (promotes demanded jobs and their prerequisites), `setScope`, `snapshot`, `subscribe`, `dispose`; yielded jobs resume from their checkpoint
+- `lib/dashboard/work-queue/scheduled-work-job.js` (created) — In-memory job records: request validation, settle-once promises, coalescing, effective category
+- `lib/dashboard/work-queue/dashboard-work-diagnostics.js` (created) — `DashboardWorkDiagnostics`: bounded event ring, counters, run/wait timings, batched subscribers, and sanitized `exportSnapshot`
+- `lib/dashboard/work-queue/dashboard-work-runtime.js` (created) — `createDashboardWorkRuntime` composing budget, diagnostics, and scheduler
+- `lib/dashboard/project-task-store.js` — `writeProjectSection` places a section by the project's `isActive`, moving it between "Active projects" and "Past projects" with a whole-note write when it changed
+- `lib/dashboard/quarter-project.js` — Adds `setActive`
+- `lib/dashboard/quarter-project-repository.js` — `applyResult` writes by the project's own `isActive` instead of an option
+- `lib/dashboard/project-task-collection.js` — Retiring sets the project inactive so its section moves; a live project is set active, restoring one the store had retired
+- `lib/plan-wizard/stack-rank/refresh-stale-project-rankings.js` — Drops the removed `isActive` option
+- `doc/plan-dashboard-work-queue.md` — Records Phase 2's scope as built
+- `test/dashboard-work-scheduler.test.js`, `test/dashboard-resource-budget.test.js`, `test/dashboard-work-diagnostics.test.js` (created); `test/project-task-store.test.js`, `test/quarter-project-repository.test.js` extended
+
+**Task:** Implement Phase 2 of the dashboard work queue plan, and make a retired project's section move to Past projects
+**Prompt summary:** "Yes, a retired project should save isActive as false when it is moved to the retired section. ... Please proceed with the next phase of the plan"
+
+---
+
 ## 2026-10-03 — Phase 1 of the work queue: QuarterProjectRepository and DashboardNoteWriter
 
 **Model:** Claude Opus 5.5

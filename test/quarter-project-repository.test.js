@@ -164,6 +164,21 @@ describe("QuarterProjectRepository results", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
+  // @desc Retiring a project moves it beneath Past projects, where readers see it inactive; a live source project
+  //   moves it back.
+  it("retires a project into Past projects and restores it from the live plan", async () => {
+    const app = storeApp({ content: storeContent([storedProject()]) });
+    const repository = new QuarterProjectRepository({ app, noteWriter: new DashboardNoteWriter({ app }) });
+    await repository.applyResult(scope, { apply: project => project.setActive(false), projectUuid: "project-uuid" });
+    await expect(repository.readStored(scope)).resolves.toEqual([]);
+    await expect(repository.readOne(scope, "project-uuid")).resolves.toMatchObject({ isActive: false,
+      taskSuggestions: storedProject().taskSuggestions });
+    const { projects } = await repository.readMany(scope, { guide: guideWithProject() });
+    await repository.applyResult(scope, { apply: project => project.setActive(true), sourceProject: projects[0] });
+    await expect(repository.readOne(scope, "project-uuid")).resolves.toMatchObject({ blocksPerWeek: 2, isActive: true });
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc A project the store has never held is created, along with the store itself, from its summary and UUID.
   it("creates the store and a new project's section", async () => {
     const app = storeApp();
