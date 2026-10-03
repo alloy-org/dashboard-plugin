@@ -5,6 +5,39 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-03 — One similarity hash per project, parallel Jev ranking, and a second search page
+
+**Model:** Claude Opus 5.5
+**Files modified:**
+- `lib/plan-wizard/stack-rank/task-rating-cache.js` — The similarity hash: tasks rated 6 or higher plus cited tasks, sorted by task UUID; re-checked by checksum each pass
+- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` — Re-checks the hash's open tasks, searches a second page once for a project with too few similar tasks, and returns the merged hash and search progress
+- `lib/plan-wizard/stack-rank/refresh-stale-project-rankings.js` — Ranks Jev projects six at a time with serialized writes, includes never-ranked guide projects and projects due a second page, and compacts the hash
+- `lib/plan-wizard/stack-rank/project-match-scores.js` — Default minimum match score raised from 5 to 6
+- `lib/dashboard/project-task-store-markdown.js` — Writes the hash in its own block and the existing tasks only as their list, shows the searched task count, and folds pre-hash sections into the hash
+- `lib/dashboard/project-task-store.js` — Appends a new project after the last project section instead of rewriting the whole root; can read retired projects
+- `lib/dashboard/project-task-collection.js` — Stores the hash and search progress from the background pass
+- `lib/dashboard/project-progress-model.js` — `projectMatchesTask` counts hash-similar tasks, with an option to leave them out while ranking
+- `lib/dashboard/plan-wizard/project-sources-page-fields.js`, `lib/dashboard/plan-wizard/project-sources-page.jsx` — Project counts leave out cited tasks rated below 6, matching the expanded list
+- `lib/plan-wizard/stack-rank/README.md` — Documents the hash, the search depth, and the parallel pass
+- `test/stack-rank.test.js`, `test/project-task-store.test.js`, `test/plan-wizard-project-sources.test.js` — Cover the above
+
+**Task:** Record similarity scores for every unrated project in parallel when Jev is available, keep the sources page counts in step with the score filter, search a second page when the first found nothing, and store one sorted similarity hash per project instead of redundant related-task lists
+**Prompt summary:** "ensure that we have recorded their similarity score ratings (submit in parallel)", "ensure that the numbers shown on the Project Sources page change", "retrieve the second most recent 500 tasks", and "just keep one list ... in a sorted-by-uuid hash of { [checksum:taskuuid]: similarity score }", re-submitting tasks whose checksum changed.
+
+---
+
+## 2026-10-03 — Plan progressive Dashboard background work
+
+**Model:** GPT-6
+**Files added:**
+- `doc/plan-dashboard-work-queue.md` — Architecture assessment and implementation plan for resumable background jobs,
+  dictionary enrichment, incremental similarity refresh, rated task ideas, and prepared daily suggestions.
+
+**Task:** Investigate the current implementation and recommend how to complete the requested Dashboard queue vision
+without delaying perceived load time. Documentation only; no runtime code changed or tests run.
+
+---
+
 ## 2026-10-02 — Rank today's project tasks with Jev, or the generative model when Jev is unavailable
 
 **Model:** Grok 4.7

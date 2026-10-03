@@ -99,8 +99,20 @@ function ProjectSourcesTaskList({ projectRow, projectSources }) {
 }
 
 // ----------------------------------------------------------------------------------------------
+// @desc Describe how many tasks a project row serves: its count, that every cited task rated as dissimilar, or that
+//   the user named it without citing any.
+// @param {object} projectRow - Row from sourceProjectRows.
+// @returns {string} The count label.
+function projectTaskCountLabel(projectRow) {
+  if (projectRow.servedTaskCount > 0) return countedNoun(projectRow.servedTaskCount, "task");
+  if (projectRow.citedTaskCount > 0) return "No similar tasks";
+  return "Named by you";
+}
+
+// ----------------------------------------------------------------------------------------------
 // @desc One project with the number of tasks it serves, marked when the user has already chosen its cadence. A
-//   project that cites tasks opens on click to list them; one the user named has none to list.
+//   project that cites tasks opens on click to list them; one the user named, or whose cited tasks all rated below
+//   the similarity minimum, has none to list.
 // @param {object} params - An object with the following properties:
 //   - {object} projectRow - Row from sourceProjectRows.
 //   - {object|null} projectSources - Summary from projectSourcesFromEvidence, or null while it is collected.
@@ -125,7 +137,7 @@ function ProjectSourcesProject({ projectRow, projectSources }) {
         </span>
       ) : null }
       <span className="project-sources-project-count">
-        { hasTasks ? countedNoun(projectRow.servedTaskCount, "task") : "Named by you" }
+        { projectTaskCountLabel(projectRow) }
       </span>
       { hasTasks ? (
         <svg aria-hidden="true" className="project-sources-project-chevron" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" /></svg>
@@ -164,7 +176,7 @@ export default function ProjectSourcesPage({ isDiscovering, isLoadingSources, on
     progressFraction, projectSources }) {
   const intents = planningContext.goals;
   const sourceNotes = projectSources?.notes ?? [];
-  const projectRows = sourceProjectRows(planningContext.prospects);
+  const projectRows = sourceProjectRows(planningContext.prospects, projectSources?.matchScoresByProjectUuid ?? null);
   const revealedIntentCount = useStaggeredReveal(intents.length, true, INTENT_REVEAL_MS);
   const hasRevealedIntents = revealedIntentCount >= intents.length;
   const revealedNoteCount = useStaggeredReveal(sourceNotes.length, hasRevealedIntents && Boolean(projectSources),

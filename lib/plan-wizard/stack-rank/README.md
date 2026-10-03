@@ -6,7 +6,10 @@ Jev's URL. The generative provider's fast model rates only when neither of those
 
 Two passes rank projects. The background collection pass (`lib/dashboard/project-task-collection.js`) ranks each
 project it refreshes. Plan Builder runs `refresh-stale-project-rankings.js` on opening, because the background pass
-stands down while the builder is open. Both passes prepare one ranker and then rank project by project:
+stands down while the builder is open. That pass ranks stale projects, guide projects the store has never ranked,
+projects due a second search page, and projects with unscored cited tasks. With Jev it ranks up to six projects at
+once and writes their sections one at a time; with the fast model it ranks one at a time. Both passes prepare one
+ranker and then rank project by project:
 
 ```javascript
 import { prepareProjectTaskRanker } from "plan-wizard/stack-rank/stack-rank-project-tasks";
@@ -27,7 +30,8 @@ const { acceptedTasks, failureReason, minimumMatchScore } = await ranker.rankPro
    rule the generative provider's pool uses. The first ranking holds open tasks not already associated with the
    project, capped at the 500 most recently updated for Jev, or the 150 most recently updated for the fast model.
    A project that already has `lastRankedAt` submits only tasks created after that time. A cited task with no
-   similarity score is still submitted. Task details are cached across the pass's projects.
+   similarity score is still submitted, and so is every open task in the project's similarity hash (see below).
+   Task details are cached across the pass's projects.
 4. `prospective-task-details.js` describes each pooled task. The details are its note's name, tags, and last-opened
    date, `isParent`, its parent task, and up to five child tasks. The task API exposes only `isParent`, so the
    outline is read from note markdown by indentation. The API has no view counts; the note's last-opened date is the
@@ -36,35 +40,59 @@ const { acceptedTasks, failureReason, minimumMatchScore } = await ranker.rankPro
    project, up to 8 of its existing tasks, and the dictionary terms the batch mentions, plus one 1–10 `score`
    question per task. With the fast model, batches are 25 tasks, two at a time (see **Fast-model rating** below).
 6. `project-match-scores.js` picks the accepted tasks:
-   - By default a project accepts tasks rated 5 or higher.
-   - A project with more than 20 such tasks raises its minimum to 7. If nothing rates 7, it keeps its top 20 at 5.
-   - A project with nothing at 5 takes up to three tasks rated 3 or higher.
+   - By default a project accepts tasks rated 6 or higher.
+   - A project with more than 20 such tasks raises its minimum to 7. If nothing rates 7, it keeps its top 20 at 6.
+   - A project with nothing at 6 takes up to three tasks rated 3 or higher.
    - When some batches failed, the project's stored minimum applies instead.
 
    Each project's minimum is saved in the `dashboard_project_match_scores` setting, keyed by domain, then quarter,
    then project. Dashboard load drops ended quarters, the way it does for the Quarterly Planning checkboxes.
 
-Accepted tasks join the project's `relatedTaskRecords` with their `matchScore`. Tasks rated 5 or higher are also
-added to `relatedTasks`, so the project keeps them. Fallback leads are rated again on the next pass. When Jev ranks
-a project, the generative provider gets no attribution pool and only suggests ideas. If ranking fails outright, the
-provider attributes tasks as it did before Jev.
+Accepted tasks join the project's `relatedTaskRecords` with their `matchScore`. When Jev ranks a project, the
+generative provider gets no attribution pool and only suggests ideas. If ranking fails outright, the provider
+attributes tasks as it did before Jev.
 
-Each project's section records `lastRankedAt`. A later ranking does not send tasks created before that time, so the
-note does not keep a rating for every task the pool contained. The code block under `Jev ratings of tasks the project
-did not keep, by checksum:task UUID:` holds scores for cited tasks only:
+# Similarity hash
+
+Each project's section in `Project Tasks Q{n} {year} {domain}` holds its similarity scores in one code block under
+`Task similarity scores, by checksum:task UUID, sorted by task UUID:`:
 
 ```
-{"3f9a01c2:5e1b…":6.2}
+{"3f9a01c2:0b7e…":7.4,"9c21d0e4:5e1b…":2.1}
 ```
 
-The checksum digests the project's summary together with the task's text (`task-rating-cache.js`). A cited task with
-a valid rating is not sent again. A task the project keeps (accepted at 5 or higher) appears in the bullet list and
-is not written to the block. Ratings for tasks the sources page does not cite are dropped the next time the store is
-opened for a ranking pass, each project in its own section write.
+The checksum digests the project's summary together with the task's text (`task-rating-cache.js`). The hash holds
+every task rated 6 or higher, plus the tasks the sources page cites, whatever their score. Each pass re-checks the
+hash's open tasks. A task whose text is unchanged is read from the hash. A task that was edited gets a new key, so
+it is rated again, and it leaves the hash if it now rates below 6. Low scores for tasks the page does not cite are
+dropped the next time Plan Builder opens the store.
+
+The hash is the only place a score is stored. The payload's `relatedTasks` leaves out the tasks the hash rates
+similar, and `projectMatchesTask` counts those tasks toward the project's progress. The existing tasks are written
+once, as the `Existing tasks` list, and read back from that list's task links. Sections written before the hash
+existed are read as before. Their kept tasks' `matchScore`s and their `Jev ratings…` block fold into the hash on the
+next write.
+
+The sources page leaves out cited tasks rated below 6, both from the project's task count and from the list it
+opens to. Tasks not yet rated are still shown.
+
+# Search depth
+
+The first ranking searches one page: the 500 most recently updated open tasks for Jev, or 150 for the fast model.
+The section records `similaritySearchedTaskCount` and `similaritySearchPageCount`, and shows the first as `- Searched
+N tasks for similarity`. A project whose first page was full is due a second page once, under these conditions:
+
+- Jev: it found no task rated 6 or higher.
+- Fast model: it found fewer than three, and the tasks created since its last ranking would not fill a page.
+
+The second page is the next 500 (or 150) most recently updated open tasks, whatever their age, sent alongside the
+tasks created since the last ranking. The searched count then reads 1000 (or less, when fewer tasks exist). A
+project ranked before the count was recorded is assumed to have searched one full page.
 
 Cost: a live 20-task batch used about 320 input tokens per task, so a project's first ranking over a full 500-task
-pool is roughly 160k input tokens. Later rankings send only tasks created since `lastRankedAt`, plus cited tasks
-that still have no score. A batch that fails leaves `lastRankedAt` unchanged, so the missed tasks are sent again.
+pool is roughly 160k input tokens, and a second page as much again. Later rankings send only tasks created since
+`lastRankedAt`, plus cited tasks that still have no score and edited tasks from the hash. A batch that fails leaves
+`lastRankedAt` and the search progress unchanged, so the missed tasks are sent again.
 
 # Fast-model rating
 

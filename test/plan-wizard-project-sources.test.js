@@ -90,11 +90,24 @@ describe("sourceProjectRows", () => {
     ]);
 
     expect(rows).toEqual([
-      { paceLabel: "Two focused blocks per week", servedTaskCount: 2, servedTaskUuids: ["task-a", "task-b"],
-        summary: "Paced project", userCategoryEm: "work", uuid: "prospect-paced" },
-      { paceLabel: null, servedTaskCount: 0, servedTaskUuids: [], summary: "Named project", userCategoryEm: "work",
-        uuid: "prospect-named" },
+      { citedTaskCount: 2, paceLabel: "Two focused blocks per week", servedTaskCount: 2,
+        servedTaskUuids: ["task-a", "task-b"], summary: "Paced project", userCategoryEm: "work", uuid: "prospect-paced" },
+      { citedTaskCount: 0, paceLabel: null, servedTaskCount: 0, servedTaskUuids: [], summary: "Named project",
+        userCategoryEm: "work", uuid: "prospect-named" },
     ]);
+  });
+
+  it("leaves cited tasks rated below 6 out of a project's count, keeping tasks not yet rated", () => {
+    const prospects = [prospect({ evidence: [{ taskUuid: "task-similar" }, { taskUuid: "task-dissimilar" },
+      { taskUuid: "task-unrated" }], uuid: "prospect-scored" })];
+    const scores = { "prospect-scored": { "task-dissimilar": 5.9, "task-similar": 6 } };
+
+    const [row] = sourceProjectRows(prospects, scores);
+
+    expect(row).toMatchObject({ citedTaskCount: 3, servedTaskCount: 2, servedTaskUuids: ["task-similar", "task-unrated"] });
+    const { tasks } = projectTaskItems(row, { matchScoresByProjectUuid: scores, taskByUuid: {
+      "task-similar": { text: "Similar" }, "task-unrated": { text: "Unrated" } } });
+    expect(tasks).toHaveLength(row.servedTaskCount);
   });
 });
 

@@ -2,11 +2,12 @@
 // that a background pass associates tasks, folds in provider-found tasks and superseded ideas, and picks its
 // projects by the staleness window first and the cycling time budget after.
 import { jest } from "@jest/globals";
+import { taskRatingKey } from "plan-wizard/stack-rank/task-rating-cache";
 import { guideHeadingRanges } from "plan-wizard/vision-guide-markdown";
 import { collectProjectTasks } from "project-task-collection";
 import { projectNeedsRefresh, projectsToRefresh, shouldRefreshAnotherProject } from "project-refresh-schedule";
-import { initialProjectTaskStoreMarkdown, projectRecordFromSection, projectSectionHeadingText,
-  projectSectionMarkdown } from "project-task-store-markdown";
+import { initialProjectTaskStoreMarkdown, LEGACY_JEV_RATINGS_LABEL, projectRecordFromSection, projectSectionHeadingText,
+  projectSectionMarkdown, SIMILARITY_SCORES_LABEL } from "project-task-store-markdown";
 import { collectedIdeasMarkdown, openProjectTaskStore, readCollectedProjectTasks, storedProjectRecords,
   writeProjectSection } from "project-task-store";
 
@@ -111,15 +112,35 @@ describe("project task store sections", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc The payload keeps the task text exactly as stored, so flattening is presentation-only and the
-  //   next pass still compares against the real task content.
-  it("leaves the stored payload text unflattened", () => {
+  // @desc The existing tasks are written once, as their list, and read back from it with their hash scores; the
+  //   payload no longer repeats them.
+  it("reads existing tasks back from their list rather than the payload", () => {
     const rawText = "Implement the [Spiral](https://www.amplenote.com/notes/abc)";
-    const record = storeRecord({ relatedTaskRecords: [{ taskText: rawText, taskUuid: "open-task" }] });
+    const record = storeRecord({ relatedTaskRecords: [{ taskText: rawText, taskUuid: "open-task" },
+      { taskText: "Draft release notes", taskUuid: "named-task" }], taskSimilarityScores: { "a1b2c3d4:open-task": 7.4 } });
+    const body = projectSectionMarkdown(record);
+    expect(body.slice(body.indexOf("```json"))).not.toContain("Implement the");
     const content = initialProjectTaskStoreMarkdown().replace("# Past projects",
-      `## ${ projectSectionHeadingText(record) }\n\n${ projectSectionMarkdown(record) }\n# Past projects`);
+      `## ${ projectSectionHeadingText(record) }\n\n${ body }\n# Past projects`);
     const { recordsByUuid } = storedProjectRecords(content);
-    expect(recordsByUuid.get("project-uuid").relatedTaskRecords[0].taskText).toBe(rawText);
+    expect(recordsByUuid.get("project-uuid").relatedTaskRecords).toEqual([
+      { matchScore: 7.4, taskText: "Implement the Spiral", taskUuid: "open-task" },
+      { taskText: "Draft release notes", taskUuid: "named-task" }]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A section written before the similarity hash keeps its payload's task list, and its kept tasks' scores
+  //   and sparse Jev ratings become hash entries, so nothing is rated again.
+  it("folds a pre-hash section's scores into the similarity hash", () => {
+    const payload = { relatedTaskRecords: [{ matchScore: 8.1, taskText: "Kept", taskUuid: "task-kept" },
+      { matchScore: 5.2, taskText: "Below the bar", taskUuid: "task-low" }], relatedTasks: [], summary: "Launch",
+      uuid: "project-1" };
+    const legacySection = `- Last attempted: never\n\n\`\`\`json\n${ JSON.stringify(payload) }\n\`\`\`\n\n`
+      + `${ LEGACY_JEV_RATINGS_LABEL }\n\n\`\`\`\n{"e5f6a7b8:task-cited":2.5}\n\`\`\`\n`;
+    const record = projectRecordFromSection(legacySection);
+    expect(record.relatedTaskRecords.map(task => task.taskUuid)).toEqual(["task-kept", "task-low"]);
+    expect(record.taskSimilarityScores).toEqual({ "e5f6a7b8:task-cited": 2.5,
+      [taskRatingKey("Launch", { taskText: "Kept", taskUuid: "task-kept" })]: 8.1 });
   });
 
   // ----------------------------------------------------------------------------------------------
@@ -146,16 +167,27 @@ describe("project task store sections", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc Writing one project leaves every other project's section untouched, which is what makes a
   //   progressive pass safe to interrupt.
-  it("keeps Jev ratings on one line in their own block, out of the JSON payload", () => {
-    const jevRatings = { "a1b2c3d4:task-1": 1.1, "e5f6a7b8:task-2": 4.4 };
-    const markdown = projectSectionMarkdown({ jevRatings, relatedTaskRecords: [], summary: "Launch", uuid: "project-1" });
-    expect(markdown).toContain(`\n\`\`\`\n${ JSON.stringify(jevRatings) }\n\`\`\`\n`);
+  it("keeps the similarity hash on one line in its own block, sorted by task UUID, out of the JSON payload", () => {
+    const taskSimilarityScores = { "e5f6a7b8:task-2": 6.4, "a1b2c3d4:task-1": 7.1 };
+    const markdown = projectSectionMarkdown({ relatedTaskRecords: [], relatedTasks: ["task-1", "task-named"],
+      summary: "Launch", taskSimilarityScores, uuid: "project-1" });
+    expect(markdown).toContain('\n```\n{"a1b2c3d4:task-1":7.1,"e5f6a7b8:task-2":6.4}\n```\n');
     expect(markdown.match(/^```json$/gm)).toHaveLength(1);
-    expect(markdown).not.toMatch(/"jevRatings"/);
-    expect(projectRecordFromSection(markdown).jevRatings).toEqual(jevRatings);
-    const withoutRatings = projectSectionMarkdown({ relatedTaskRecords: [], summary: "Launch", uuid: "project-1" });
-    expect(withoutRatings).not.toContain("Jev ratings");
-    expect(projectRecordFromSection(withoutRatings).jevRatings).toEqual({});
+    expect(markdown).not.toMatch(/"taskSimilarityScores"/);
+    const record = projectRecordFromSection(markdown);
+    expect(record.taskSimilarityScores).toEqual(taskSimilarityScores);
+    expect(record.relatedTasks).toEqual(["task-named"]);
+    const withoutScores = projectSectionMarkdown({ relatedTaskRecords: [], summary: "Launch", uuid: "project-1" });
+    expect(withoutScores).not.toContain(SIMILARITY_SCORES_LABEL);
+    expect(projectRecordFromSection(withoutScores).taskSimilarityScores).toEqual({});
+  });
+
+  it("says how many tasks the similarity search has reached", () => {
+    const markdown = projectSectionMarkdown({ relatedTaskRecords: [], similaritySearchedTaskCount: 1000,
+      similaritySearchPageCount: 2, summary: "Launch", uuid: "project-1" });
+    expect(markdown).toContain("- Last attempted: never\n- Searched 1000 tasks for similarity\n");
+    expect(projectRecordFromSection(markdown)).toMatchObject({ similaritySearchedTaskCount: 1000,
+      similaritySearchPageCount: 2 });
   });
 
   it("adds and then replaces a single project section in place", async () => {
@@ -290,14 +322,15 @@ describe("background project task collection", () => {
 
   // ----------------------------------------------------------------------------------------------
   // @desc With a Jev ranker, the tasks it accepts join the project before ideas are requested and the provider is
-  //   offered no pool. Only a task accepted at the default minimum is remembered in relatedTasks.
+  //   offered no pool. Accepted tasks are remembered in the similarity hash rather than in relatedTasks.
   it("associates the tasks Jev accepts and leaves the provider only ideas to suggest", async () => {
     const app = storeApp({ tasks: [{ content: "Launch dashboard date picker", uuid: "open-task" },
       { content: "Rework the week grid header", uuid: "ranked-task" }, { content: "Tidy widget CSS", uuid: "lead-task" }] });
     const rankProject = jest.fn().mockResolvedValue({ acceptedTasks: [
       { matchScore: 8.2, taskText: "Rework the week grid header", taskUuid: "ranked-task" },
       { matchScore: 4.1, taskText: "Tidy widget CSS", taskUuid: "lead-task" }], failureReason: null, minimumMatchScore: 3,
-      taskRatings: { a1b2c3d4: 4.1 } });
+      searchProgress: { similaritySearchPageCount: 1, similaritySearchedTaskCount: 2 },
+      taskSimilarityScores: { "a1b2c3d4:ranked-task": 8.2 } });
     const rankerFactory = jest.fn().mockResolvedValue({ rankProject });
     const ideaGenerator = jest.fn(async (_app, { project }) => {
       expect(project.candidateTaskRecords).toEqual([]);
@@ -311,10 +344,11 @@ describe("background project task collection", () => {
     expect(rankProject.mock.calls[0][1]).toEqual([{ taskText: "Launch dashboard date picker", taskUuid: "open-task" }]);
     const stored = [...storedProjectRecords(app.noteContent).recordsByUuid.values()][0];
     expect(stored.relatedTaskRecords.find(task => task.taskUuid === "ranked-task").matchScore).toBe(8.2);
-    expect(stored.relatedTasks).toContain("ranked-task");
+    expect(stored.relatedTasks).not.toContain("ranked-task");
     expect(stored.relatedTasks).not.toContain("lead-task");
     expect(stored.lastRankedAt).toBe(now.toISOString());
-    expect(stored.jevRatings).toEqual({ a1b2c3d4: 4.1 });
+    expect(stored).toMatchObject({ similaritySearchedTaskCount: 2, similaritySearchPageCount: 1,
+      taskSimilarityScores: { "a1b2c3d4:ranked-task": 8.2 } });
   });
 
   // ----------------------------------------------------------------------------------------------
