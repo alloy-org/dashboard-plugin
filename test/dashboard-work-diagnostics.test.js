@@ -1,5 +1,5 @@
-// Exercise DashboardWorkDiagnostics: the bounded event ring, counters and timings, batched notification, and the
-// sanitizing of recorded and exported fields.
+// Exercise DashboardWorkDiagnostics: the bounded event ring, counters and timings, the last progress time, batched
+// notification, and the sanitizing of recorded and exported fields, including widget mounts and the runtime session.
 import DashboardWorkDiagnostics, { sanitizedValue } from "dashboard/work-queue/dashboard-work-diagnostics";
 
 describe("DashboardWorkDiagnostics", () => {
@@ -38,6 +38,27 @@ describe("DashboardWorkDiagnostics", () => {
     expect(exported.scheduler.jobs).toEqual([{ key: "rank:project", status: "pending" }]);
     expect(exported.exportedAt).toBe("2026-10-03T00:00:00.000Z");
     expect(new DashboardWorkDiagnostics().exportSnapshot().scheduler).toBeNull();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc The last progress time follows completed and checkpointed jobs only, and an export passes widget mounts and
+  //   the runtime session through their own allow-lists.
+  it("tracks the last progress and sanitizes exported mounts and session", () => {
+    let now = 10;
+    const diagnostics = new DashboardWorkDiagnostics({ clock: () => now });
+    expect(diagnostics.snapshot().lastProgressAt).toBeNull();
+    diagnostics.record({ type: "completed" });
+    now = 20;
+    diagnostics.record({ type: "yielded" });
+    now = 30;
+    diagnostics.record({ type: "failed" });
+    expect(diagnostics.snapshot().lastProgressAt).toBe(20);
+    const mountSnapshot = { widgets: [{ element: { tagName: "DIV" }, status: "mounting", watchdogActive: true,
+      widgetId: `agenda-${ "b".repeat(40) }` }] };
+    const exported = diagnostics.exportSnapshot(null, { mountSnapshot, session: { secret: "x", sessionId: "abc", startedAt: 1 } });
+    expect(exported.mounts).toEqual([{ status: "mounting", watchdogActive: true, widgetId: "agenda-[redacted]" }]);
+    expect(exported.session).toEqual({ sessionId: "abc", startedAt: 1 });
+    expect(diagnostics.exportSnapshot().mounts).toBeNull();
   });
 
   // ----------------------------------------------------------------------------------------------

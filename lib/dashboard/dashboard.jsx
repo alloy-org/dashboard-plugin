@@ -9,9 +9,9 @@ import PlanningWidget from 'planning';
 import AgendaWidget from 'agenda';
 import CalendarWidget from 'calendar';
 import { quarterFromDate } from 'constants/quarters';
-import { apiKeyBucketFromLlmProvider, apiKeyFromProvider, apiKeySettingFromKeyProvider, DASHBOARD_FOCUS, DEFAULT_DASHBOARD_COMPONENTS,
-  IS_DEV_ENVIRONMENT, SETTING_KEYS } from 'constants/settings';
+import { apiKeyBucketFromLlmProvider, apiKeyFromProvider, apiKeySettingFromKeyProvider, DASHBOARD_FOCUS, DEFAULT_DASHBOARD_COMPONENTS, SETTING_KEYS } from 'constants/settings';
 import { reportPriorCrashIfAny, stampBreadcrumbSettled, writeRenderBreadcrumb } from "crash-breadcrumb";
+import { dashboardAdminToolsAvailability } from 'dashboard-admin-tools';
 import { DashboardLoadContext, useDashboardLoadTracker, useReportWidgetLoaded, useWidgetLoadedEvent } from 'dashboard-load-tracking';
 import DashboardLayoutPopup from 'dashboard-layout-popup';
 import DashboardSettingNote from "dashboard-setting-note";
@@ -39,7 +39,7 @@ import MoodWidget from 'mood';
 import NotePeekWidget from 'note-peek';
 import PeakHoursWidget from 'peak-hours';
 import ProposedAgendaWidget from 'proposed-agenda';
-import { pluginContext, setPluginData, updatePluginSetting } from "plugin-data";
+import { setPluginData, updatePluginSetting } from "plugin-data";
 import QuotesWidget from 'quotes';
 import QuickActionsWidget from 'quick-actions';
 import RecentNotesWidget from 'recent-notes';
@@ -47,7 +47,6 @@ import SharedNotesWidget from 'shared-notes';
 import TaskDomains from 'task-domains';
 import { backgroundSplashUrl } from 'util/background-splash-images';
 import { dateKeyFromDateInput, localMidnightFromDateInput, weekStartFromDateInput } from 'util/date-utility';
-import { servedFromDevServer } from 'util/dev-environment';
 import { logIfEnabled, setLoggingEnabled } from "util/log";
 import { snapDashboardAction } from "util/plausible";
 import { captureDashboardException, captureDashboardMessage, capturePluginFailure, logSentryStatus } from "util/sentry-reporting";
@@ -212,7 +211,7 @@ const CalendarCell = createWidgetCell('calendar', CalendarWidget, ({ app, comple
   app, completedTasksByDate, currentDate, gridHeightSize: config?.gridHeightSize, gridWidthSize: config?.gridWidthSize,
   onDateSelect, onOpenSettings, openTasks, selectedDate, weekFormat,
 }));
-const DebugConsoleCell = createWidgetCell('debug-console', DebugConsoleWidget, pickProps('app'));
+const DebugConsoleCell = createWidgetCell('debug-console', DebugConsoleWidget, pickProps('adminToolsEnabled', 'app'));
 const EnergyPerHabitCell = createWidgetCell('energy-per-habit', EnergyPerHabitWidget, pickProps('app'));
 const DreamTaskCell = createWidgetCell('dream-task', DreamTaskWidget, ({ app, config, onOpenSettings, providerApiKey,
     providerEm, taskDomainName, taskDomainUUID }) => ({
@@ -782,14 +781,13 @@ export default function DashboardApp({ app, initPromise }) {
         animation: `${ BACKGROUND_FADE_ANIMATION_NAME } ${ BACKGROUND_FADE_DURATION_MS }ms ease-in-out forwards` }
     : null;
 
-  const debugToolsEnabled = String(configParams[SETTING_KEYS.DEBUG_CONSOLE] || '').trim() === 'true';
-  const devServerHosted = servedFromDevServer();
-  const debugConsoleEnabled = debugToolsEnabled || IS_DEV_ENVIRONMENT || devServerHosted || pluginContext().pluginUUID === "6da03574-0f4b-11f1-ba9e-11ba9c716f59";
+  const adminTools = dashboardAdminToolsAvailability(configParams);
+  const debugConsoleEnabled = adminTools.enabled;
   const memoryMeasurementEnabled = debugConsoleEnabled;
   if (debugConsoleEnabled) {
-    logIfEnabled(`[dashboard] Debug console enabled (setting "${ configParams[SETTING_KEYS.DEBUG_CONSOLE] || "(empty)" }", dev bundle ${ IS_DEV_ENVIRONMENT }, dev server ${ devServerHosted }, plugin ${ pluginContext().pluginUUID }), including in layout popup`);
+    logIfEnabled(`[dashboard] Debug console enabled (setting "${ adminTools.settingValue || "(empty)" }", dev bundle ${ adminTools.developmentBundle }, dev server ${ adminTools.devServerHosted }, plugin ${ adminTools.pluginUuid }), including in layout popup`);
   } else {
-    logIfEnabled(`[dashboard] Debug console disabled (${ SETTING_KEYS.DEBUG_CONSOLE } is '${ configParams?.[SETTING_KEYS.DEBUG_CONSOLE] }', dev bundle ${ IS_DEV_ENVIRONMENT }, dev server ${ devServerHosted }, pluginUUID ${ pluginContext().pluginUUID }), excluding from layout popup`);
+    logIfEnabled(`[dashboard] Debug console disabled (${ SETTING_KEYS.DEBUG_CONSOLE } is '${ adminTools.settingValue }', dev bundle ${ adminTools.developmentBundle }, dev server ${ adminTools.devServerHosted }, pluginUUID ${ adminTools.pluginUuid }), excluding from layout popup`);
   }
   const layoutPopupExcludeWidgetIds = debugConsoleEnabled ? [] : ['debug-console'];
 
@@ -883,6 +881,7 @@ export default function DashboardApp({ app, initPromise }) {
               return (
                 <CellComponent
                   key={widgetId}
+                  adminToolsEnabled={debugConsoleEnabled}
                   agendaTasks={agendaTasks}
                   app={app}
                   calendarEvents={calendarEvents}

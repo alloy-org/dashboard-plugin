@@ -5,6 +5,29 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-03 — Phase 4 of the work queue: admin Queue inspector
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/dashboard-admin-tools.js` (created) — `adminToolsAvailability` and `dashboardAdminToolsAvailability`: the one admin/debug tools policy (Debug Console setting, development bundle, dev server, designated plugin) extracted from the Dashboard
+- `lib/dashboard/work-queue/dashboard-queue-inspector.jsx` (created) — `DashboardQueueInspector`: read-only Queue view with sanitized copy and download
+- `lib/dashboard/work-queue/dashboard-queue-inspector-sections.jsx` (created) — Overview, filtered active/pending jobs, urgent renders, resources, recent outcomes, and timings sections; states unavailable before durable jobs are labelled as such
+- `lib/dashboard/work-queue/dashboard-queue-inspector-model.js` (created) — React-free view capture, job filters, overview summary, widget/job pairing, and outcome selection
+- `lib/hooks/use-dashboard-queue-diagnostics.js` (created) — Subscribes only while the inspector is open; at most four refreshes a second plus a one-second tick
+- `lib/dashboard/styles/dashboard-queue-inspector.scss` (created) — Inspector styles scoped under `.dashboard-queue-inspector`
+- `lib/dashboard/work-queue/widget-mount-coordinator.js` — Request, admission, commit, and release times; `snapshot` and `subscribe`
+- `lib/dashboard/work-queue/dashboard-work-diagnostics.js` — Last progress time; exports sanitize widget mounts and the runtime session through allow-lists
+- `lib/dashboard/work-queue/dashboard-work-runtime.js` — Runtime session identity; `exportSnapshot` accepts the mount snapshot
+- `lib/dashboard/debug-console.jsx` — Log/Queue toggle shown only under the admin tools policy
+- `lib/dashboard/dashboard.jsx` — Uses the shared admin tools policy and passes it to the Debug Console
+- `doc/plan-dashboard-work-queue.md` — Records Phase 4's scope as built
+- `test/dashboard-queue-inspector.test.js`, `test/dashboard-admin-tools.test.js` (created); `test/dashboard-work-diagnostics.test.js` and `test/widget-mount-coordinator.test.js` extended
+
+**Task:** Implement Phase 4 of the dashboard work queue plan
+**Prompt summary:** "Continue with the next phase"
+
+---
+
 ## 2026-10-03 — Phase 3 of the work queue: scheduled widget mounting
 
 **Model:** Claude Opus 5.5

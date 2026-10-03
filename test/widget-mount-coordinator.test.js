@@ -13,8 +13,8 @@ async function flush() {
 // ----------------------------------------------------------------------------------------------
 // @desc A coordinator over a runtime whose admission passes run only when the test calls pass(), with stub observers
 //   the test reports through and timers it fires by hand. A pass first lets pending completions release their permits,
-//   as they would before the next frame.
-// @returns {object} { coordinator, fireTimers, mounted, pass, register, report, runtime }.
+//   as they would before the next frame. The coordinator's clock reads the time setNow last set.
+// @returns {object} { coordinator, fireTimers, mounted, pass, register, report, runtime, setNow }.
 function harness() {
   const runtime = createDashboardWorkRuntime({ requestRun: () => {} });
   const createdObservers = [];
@@ -25,7 +25,8 @@ function harness() {
   };
   const timers = new Map();
   let timerId = 0;
-  const coordinator = new WidgetMountCoordinator({ clearTimer: id => timers.delete(id),
+  let now = 0;
+  const coordinator = new WidgetMountCoordinator({ clearTimer: id => timers.delete(id), clock: () => now,
     createObserver, scheduler: runtime.scheduler,
     setTimer: callback => { timers.set(++timerId, callback); return timerId; } });
   const mounted = [];
@@ -45,7 +46,8 @@ function harness() {
   const fireTimers = () => {
     for (const [id, callback] of [...timers]) { timers.delete(id); callback(); }
   };
-  return { coordinator, fireTimers, mounted, pass, register, report, runtime };
+  const setNow = milliseconds => { now = milliseconds; };
+  return { coordinator, fireTimers, mounted, pass, register, report, runtime, setNow };
 }
 
 describe("WidgetMountCoordinator", () => {
@@ -166,5 +168,35 @@ describe("WidgetMountCoordinator", () => {
     coordinator.dispose();
     await flush();
     expect(runtime.scheduler.snapshot().jobs.map(job => job.key)).toEqual(["rank:project"]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc The snapshot an inspector reads records each widget's request, admission, and commit times and what released
+  //   its permit, and subscribers hear one notification per batch of changes until they unsubscribe.
+  it("describes registrations with their times and release reasons", async () => {
+    const { coordinator, fireTimers, pass, register, report, setNow } = harness();
+    let notifications = 0;
+    const unsubscribe = coordinator.subscribe(() => { notifications += 1; });
+    const generations = { agenda: register("agenda"), mood: register("mood") };
+    setNow(100);
+    report(1, { agenda: true, mood: true });
+    await flush();
+    expect(notifications).toBe(1);
+    setNow(150);
+    await pass();
+    setNow(400);
+    coordinator.reportCommitted("agenda", generations.agenda);
+    await pass();
+    fireTimers();
+    const widgets = Object.fromEntries(coordinator.snapshot().widgets.map(widget => [widget.widgetId, widget]));
+    expect(widgets.agenda).toMatchObject({ admittedAt: 150, committedAt: 400, releasedBy: "commit", requestedAt: 100,
+      status: "mounted", visible: true, watchdogActive: false });
+    expect(widgets.mood).toMatchObject({ admittedAt: 400, committedAt: null, releasedBy: "watchdog", status: "mounting" });
+    unsubscribe();
+    const notificationsBefore = notifications;
+    coordinator.unregister("mood", generations.mood);
+    await flush();
+    expect(notifications).toBe(notificationsBefore);
+    expect(coordinator.snapshot().widgets.map(widget => widget.widgetId)).toEqual(["agenda"]);
   });
 });

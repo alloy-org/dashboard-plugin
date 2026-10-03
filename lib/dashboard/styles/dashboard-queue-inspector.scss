@@ -1,0 +1,121 @@
+// Styles for the admin Queue inspector inside the Debug Console: a toolbar, an overview list, filters, and compact
+// tables that scroll sideways on a narrow screen rather than widening the widget.
+@use 'theme-tokens' as *;
+
+.dashboard-queue-inspector {
+  color: $color-text;
+  font-size: $smaller-font-size;
+  padding: $sp-xs $sp-sm $sp-sm;
+
+  .queue-inspector-toolbar {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-xs;
+    margin-bottom: $sp-sm;
+
+    button {
+      background: none;
+      border: 1px solid $color-border;
+      border-radius: 3px;
+      color: $color-text-muted;
+      cursor: pointer;
+      font-size: $smaller-font-size;
+      padding: 2px 6px;
+
+      &:hover {
+        background: $color-bg-page-hover;
+        color: $color-text;
+      }
+    }
+  }
+
+  .queue-inspector-status {
+    color: $color-text-secondary;
+  }
+
+  .queue-inspector-section {
+    margin-bottom: $sp-md;
+    overflow-x: auto;
+
+    h4 {
+      font-size: $smaller-font-size;
+      font-weight: 600;
+      margin: 0 0 $sp-xs;
+      text-transform: uppercase;
+    }
+  }
+
+  .queue-inspector-overview {
+    display: grid;
+    gap: 2px $sp-sm;
+    grid-template-columns: max-content 1fr;
+    margin: 0;
+
+    dt {
+      color: $color-text-secondary;
+    }
+
+    dd {
+      margin: 0;
+    }
+  }
+
+  .queue-inspector-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-xs $sp-sm;
+    margin-bottom: $sp-xs;
+  }
+
+  .queue-inspector-filter {
+    align-items: center;
+    display: flex;
+    gap: $sp-xs;
+
+    span {
+      color: $color-text-secondary;
+    }
+
+    select,
+    input {
+      font-size: $smaller-font-size;
+      max-width: 160px;
+    }
+  }
+
+  .queue-inspector-table {
+    border-collapse: collapse;
+    min-width: 100%;
+
+    th,
+    td {
+      border-bottom: 1px solid $color-border;
+      padding: 2px $sp-xs;
+      text-align: left;
+      vertical-align: top;
+      white-space: nowrap;
+    }
+
+    th {
+      color: $color-text-secondary;
+      font-weight: 600;
+    }
+  }
+
+  .queue-inspector-detail {
+    color: $color-text-muted;
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .queue-inspector-outcome--failed td {
+    color: $color-danger;
+  }
+
+  .queue-inspector-empty {
+    color: $color-text-muted;
+    margin: 0;
+  }
+}

@@ -619,6 +619,15 @@ Verify the existing admin gate, live updates without Console Logging, explicit w
 redaction, throttling, cleanup, and inspection of a deliberately stalled scheduler. This phase ships a useful live
 inspector before any durable maintenance is enabled; it adds no job control actions.
 
+As built, the Queue view is a Log/Queue toggle in the Debug Console's header, offered only when
+`dashboard-admin-tools.js` allows admin tools; the Dashboard's Debug Console and memory measurement read the same
+policy. The inspector's selection and filtering live in React-free `work-queue/dashboard-queue-inspector-model.js`, and
+its sections in `work-queue/dashboard-queue-inspector-sections.jsx`. `WidgetMountCoordinator` gained `snapshot` and
+`subscribe` with request, admission, commit and release times, so urgent renders show visibility-to-admission and
+admission-to-commit durations and what released each permit. The project filter matches text in a job key, which holds
+the project identity of project work. Project coverage, durable history, dependencies and checkpoint progress, and
+observations from other runtimes are labelled unavailable until phases 5 and 6 supply them.
+
 ### Phase 5 Durable execution and diagnostic history
 
 Add `DashboardWorkJob`, `DashboardWorkRepository`, diagnostics store, and app/provider dispatchers. Extend the runtime

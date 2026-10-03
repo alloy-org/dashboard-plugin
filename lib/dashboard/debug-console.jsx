@@ -1,3 +1,5 @@
+import DashboardQueueInspector from "dashboard/work-queue/dashboard-queue-inspector";
+import { useDashboardWork } from "dashboard/work-queue/dashboard-work-context";
 import { runDebugEvaluationSession } from "debug-evaluate-service";
 import { useEffect, useRef, useState } from "react";
 import { addLogListener, getLogBuffer, logAlways, removeLogListener } from "util/log";
@@ -29,11 +31,17 @@ function formatArgs(args) {
 
 // ------------------------------------------------------------------------------------------
 // @desc Render the scrollable log viewer, following new entries as they arrive. The header's Debug button
-//   opens an expression prompt evaluated by the plugin host, whose result lands in this same log.
-// @param {object} app - Amplenote app bridge, needed only by the expression evaluator.
-export default function DebugConsoleWidget({ app }) {
+//   opens an expression prompt evaluated by the plugin host, whose result lands in this same log. When admin tools
+//   are available, a Queue button switches to the work queue inspector, which subscribes only while it is shown.
+// @param {object} props - An object with the following properties:
+//   - {boolean} adminToolsEnabled - Whether the admin tools policy allows the Queue inspector
+//   - {object} app - Amplenote app bridge, needed only by the expression evaluator
+export default function DebugConsoleWidget({ adminToolsEnabled, app }) {
   const [entries, setEntries] = useState(() => getLogBuffer());
+  const [queueShown, setQueueShown] = useState(false);
   const scrollRef = useRef(null);
+  const work = useDashboardWork();
+  const queueInspectorShown = Boolean(adminToolsEnabled) && queueShown;
 
   useEffect(() => {
     function onEntry(entry) {
@@ -50,7 +58,7 @@ export default function DebugConsoleWidget({ app }) {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [entries]);
+  }, [entries, queueInspectorShown]);
 
   const handleClear = () => setEntries([]);
   // The session is fire-and-forget: it owns its own dialogs, and a rejection (a host that refuses to prompt)
@@ -59,8 +67,8 @@ export default function DebugConsoleWidget({ app }) {
     runDebugEvaluationSession(app).catch(error => logAlways('[debug-console] evaluation session failed:', error));
   };
 
-  const headerActions = (
-    <div className="debug-console__header-actions">
+  const logActions = (
+    <>
       <button
         className="debug-console__header-button"
         type="button"
@@ -77,25 +85,44 @@ export default function DebugConsoleWidget({ app }) {
       >
         Clear
       </button>
+    </>
+  );
+  const headerActions = (
+    <div className="debug-console__header-actions">
+      {adminToolsEnabled ? (
+        <button
+          className="debug-console__header-button"
+          type="button"
+          aria-pressed={queueInspectorShown}
+          onClick={() => setQueueShown(shown => !shown)}
+          title={queueInspectorShown ? "Return to the log" : "Inspect the Dashboard work queue"}
+        >
+          {queueInspectorShown ? "Log" : "Queue"}
+        </button>
+      ) : null}
+      {queueInspectorShown ? null : logActions}
+    </div>
+  );
+  const logEntries = (
+    <div className="debug-console" ref={scrollRef}>
+      {entries.length === 0
+        ? <div className="debug-console__empty">No log messages yet. Enable Console Logging in Settings to
+            start capturing messages, or press Debug to evaluate an expression in the plugin host.</div>
+        : entries.map(entry => (
+            <div key={entry.id} className="debug-console__entry">
+              <span className="debug-console__timestamp">
+                {new Date(entry.ts).toISOString().slice(11, 23)}
+              </span>
+              <span className="debug-console__message">{formatArgs(entry.args)}</span>
+            </div>
+          ))
+      }
     </div>
   );
 
   return (
     <WidgetWrapper widgetId={WIDGET_ID} headerActions={headerActions}>
-      <div className="debug-console" ref={scrollRef}>
-        {entries.length === 0
-          ? <div className="debug-console__empty">No log messages yet. Enable Console Logging in Settings to
-              start capturing messages, or press Debug to evaluate an expression in the plugin host.</div>
-          : entries.map(entry => (
-              <div key={entry.id} className="debug-console__entry">
-                <span className="debug-console__timestamp">
-                  {new Date(entry.ts).toISOString().slice(11, 23)}
-                </span>
-                <span className="debug-console__message">{formatArgs(entry.args)}</span>
-              </div>
-            ))
-        }
-      </div>
+      {queueInspectorShown ? <DashboardQueueInspector work={work} /> : logEntries}
     </WidgetWrapper>
   );
 }
