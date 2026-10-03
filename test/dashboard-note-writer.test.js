@@ -1,7 +1,7 @@
 // Exercise DashboardNoteWriter's per-note serialization and its notes-list refresh, on the host and over the bridge.
 import { jest } from "@jest/globals";
 import plugin from "plugin";
-import DashboardNoteWriter, { NOTES_LIST_FRESH_MILLISECONDS } from "work-queue/dashboard-note-writer";
+import DashboardNoteWriter, { NOTES_LIST_FRESH_MILLISECONDS } from "dashboard/work-queue/dashboard-note-writer";
 
 // ----------------------------------------------------------------------------------------------
 // @desc A promise with its resolve function exposed, so a test decides when an update finishes.

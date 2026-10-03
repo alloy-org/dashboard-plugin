@@ -5,6 +5,29 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-03 — Phase 3 of the work queue: scheduled widget mounting
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/widget-mount-coordinator.js` (created) — `WidgetMountCoordinator`: shared viewport and lookahead IntersectionObservers, one mount job per widget (visible before near-viewport), promotion, withdrawal and lowering as the widget scrolls, generation tokens, and permit release on commit, unregistration, or a commit watchdog
+- `lib/dashboard/work-queue/browser-work-driver.js` (created) — `createBrowserWorkDriver`: one admission pass per animation frame, a timer while the page is hidden or frames are unavailable, and visibility subscriptions
+- `lib/dashboard/work-queue/dashboard-work-context.jsx` (created) — `DashboardWorkProvider` and `useDashboardWork`
+- `lib/dashboard/work-queue/dashboard-work-features.js` (created) — `SCHEDULED_WIDGET_MOUNTING_ENABLED` render-scheduler switch
+- `lib/hooks/use-dashboard-work-queue.js` (created) — Creates and disposes the runtime, driver, and coordinator; feeds scope, visibility, overlay suspension, and the settled load gate (with grace) to the scheduler
+- `lib/hooks/use-widget-mount-suspension.js` (created) — React hooks moved out of `widget-mount-suspension.js`, which is now React-free
+- `lib/dashboard/lazy-widget-mount.jsx` — Scheduled mount path through the coordinator when the Dashboard provides one; the existing observed path otherwise
+- `lib/dashboard/dashboard.jsx` — Provides the work runtime to the grid, passes the domain/quarter scope, and opens the load gate on settle
+- `lib/dashboard/work-queue/dashboard-work-policy.js` — Adds `LOAD_GATE_GRACE_MILLISECONDS`
+- `lib/dashboard/work-queue/*.js` — Imports use `dashboard/work-queue/...`, which esbuild resolves from any directory
+- `lib/dashboard/widget-mount-suspension.js`, `lib/dashboard/plan-wizard/plan-wizard.jsx` — Suspension hooks split into the hooks file
+- `doc/plan-dashboard-work-queue.md` — Records Phase 3's scope as built
+- `test/widget-mount-coordinator.test.js`, `test/browser-work-driver.test.js` (created); `test/lazy-widget-mount.test.js` extended
+
+**Task:** Implement Phase 3 of the dashboard work queue plan
+**Prompt summary:** "Proceed with the plan"
+
+---
+
 ## 2026-10-03 — Phase 2 of the work queue: scheduler, resource budget, and diagnostics; retired projects move to Past projects
 
 **Model:** Claude Opus 5.5

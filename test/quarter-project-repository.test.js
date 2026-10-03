@@ -4,7 +4,7 @@ import { guideHeadingRanges } from "plan-wizard/vision-guide-markdown";
 import { initialProjectTaskStoreMarkdown } from "project-task-store-markdown";
 import QuarterProject from "quarter-project";
 import QuarterProjectRepository from "quarter-project-repository";
-import DashboardNoteWriter from "work-queue/dashboard-note-writer";
+import DashboardNoteWriter from "dashboard/work-queue/dashboard-note-writer";
 
 const scope = { domainName: "Work", domainUuid: "work-domain", quarter: 3, quarterKey: "2026-Q3", year: 2026 };
 

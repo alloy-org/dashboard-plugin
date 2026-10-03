@@ -8,6 +8,7 @@ import { Component, memo, useEffect, useState, useCallback, useRef, useMemo } fr
 import PlanningWidget from 'planning';
 import AgendaWidget from 'agenda';
 import CalendarWidget from 'calendar';
+import { quarterFromDate } from 'constants/quarters';
 import { apiKeyBucketFromLlmProvider, apiKeyFromProvider, apiKeySettingFromKeyProvider, DASHBOARD_FOCUS, DEFAULT_DASHBOARD_COMPONENTS,
   IS_DEV_ENVIRONMENT, SETTING_KEYS } from 'constants/settings';
 import { reportPriorCrashIfAny, stampBreadcrumbSettled, writeRenderBreadcrumb } from "crash-breadcrumb";
@@ -27,6 +28,7 @@ import useBackgroundSwap, { BACKGROUND_FADE_ANIMATION_NAME, BACKGROUND_FADE_DURA
 import useCompletedTasks from 'hooks/use-completed-tasks';
 import useDashboardLayout from 'hooks/use-dashboard-layout';
 import useDashboardTaskUpdates from 'hooks/use-dashboard-task-updates';
+import useDashboardWorkQueue from 'hooks/use-dashboard-work-queue';
 import useDomainTasks from 'hooks/use-domain-tasks';
 import useExternalCalendarEvents from 'hooks/use-external-calendar-events';
 import { useProjectTaskCollection } from 'hooks/use-project-task-collection';
@@ -53,6 +55,8 @@ import { useWidgetLoadTiming } from "util/widget-timing";
 import { WidgetSizeContext } from "widget-wrapper";
 import WidgetMemoryMeasurementPopup from "widget-memory-measurement-popup";
 import VictoryValueWidget from 'victory-value';
+import { DashboardWorkProvider } from "dashboard/work-queue/dashboard-work-context";
+import { SCHEDULED_WIDGET_MOUNTING_ENABLED } from "dashboard/work-queue/dashboard-work-features";
 import { deviceProfile as readDeviceProfile, isMemoryConstrainedDevice } from "util/device-profile";
 import { logMemorySample, startMemorySampling } from "util/memory-instrumentation";
 
@@ -460,6 +464,9 @@ export default function DashboardApp({ app, initPromise }) {
   const [timeFormat, setTimeFormat] = useState('meridian');
   const [weekFormat, setWeekFormat] = useState('sunday');
   const [weeklyVictoryValue, setWeeklyVictoryValue] = useState(null);
+  const workScopeKey = `${ activeTaskDomain || "all" }:${ quarterFromDate(currentDate ? localMidnightFromDateInput(currentDate) : new Date()).label }`;
+  const { reportLoadSettled, work } = useDashboardWorkQueue({ app, enabled: SCHEDULED_WIDGET_MOUNTING_ENABLED,
+    scopeKey: workScopeKey });
   const dashboardSettingNoteRef = useRef(null);
   // What to run when the Dashboard Settings popup closes, for a widget that sent the user there and wants to resume afterwards. Held only between opening the popup and closing it.
   const settingsClosedCallbackRef = useRef(null);
@@ -635,9 +642,11 @@ export default function DashboardApp({ app, initPromise }) {
   //   Settling is also the dashboard's cue that nothing is left competing for bandwidth, so this is where the
   //   background project/task association pass is started. It is kicked off ahead of the breadcrumb guard
   //   because that guard returns early on a second settle, and the collection pass keeps its own once-per-mount
-  //   guard; the pass must not inherit the breadcrumb's stamped-already condition.
+  //   guard; the pass must not inherit the breadcrumb's stamped-already condition. The work queue's maintenance gate
+  //   opens on the same signal, after its grace period.
   const handleDashboardSettled = useCallback(() => {
     startProjectTaskCollection();
+    reportLoadSettled();
     if (breadcrumbStampedRef.current || !breadcrumbWriteRef.current) return;
     breadcrumbStampedRef.current = true;
     logMemorySample('load-settle');
@@ -646,7 +655,7 @@ export default function DashboardApp({ app, initPromise }) {
       stampBreadcrumbSettled(app, { deviceProfile: deviceProfileRef.current, settledAt: Date.now(),
         startedAt: breadcrumbStartedAtRef.current, widgetIds: written.widgetIds });
     });
-  }, [app, startProjectTaskCollection]);
+  }, [app, reportLoadSettled, startProjectTaskCollection]);
 
   useDashboardTaskUpdates({ activeTaskDomain, app, onDomainChange, openTasks });
 
@@ -857,6 +866,7 @@ export default function DashboardApp({ app, initPromise }) {
             />
           ) : null}
           <DashboardLoadContext.Provider value={loadTracker}>
+          <DashboardWorkProvider value={work}>
           <div
             className={`dashboard-grid${draggingWidgetId ? ' dashboard-grid--dragging' : ''}${isWidgetFocusMode ? ' dashboard-grid--focused' : ''}`}
           >
@@ -911,6 +921,7 @@ export default function DashboardApp({ app, initPromise }) {
               );
             }).filter(Boolean)}
           </div>
+          </DashboardWorkProvider>
           </DashboardLoadContext.Provider>
         </div>
       </div>) : null}

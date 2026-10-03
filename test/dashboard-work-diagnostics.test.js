@@ -1,6 +1,6 @@
 // Exercise DashboardWorkDiagnostics: the bounded event ring, counters and timings, batched notification, and the
 // sanitizing of recorded and exported fields.
-import DashboardWorkDiagnostics, { sanitizedValue } from "work-queue/dashboard-work-diagnostics";
+import DashboardWorkDiagnostics, { sanitizedValue } from "dashboard/work-queue/dashboard-work-diagnostics";
 
 describe("DashboardWorkDiagnostics", () => {
   // ----------------------------------------------------------------------------------------------

@@ -117,3 +117,57 @@ test("stays suspended until the last of two overlapping overlays releases", () =
   expect(container.querySelector(".real-widget")).not.toBeNull();
   act(() => root.unmount());
 });
+
+// ----------------------------------------------------------------------------------------------
+// @desc Render a LazyWidgetMount under a DashboardWorkProvider whose coordinator uses one stub observer per band and a
+//   runtime whose admission passes the test runs by hand.
+// @returns {object} { container, flushPass, reportVisible, root, runtime }.
+async function renderScheduled() {
+  const { createDashboardWorkRuntime } = await import("dashboard/work-queue/dashboard-work-runtime");
+  const { default: WidgetMountCoordinator } = await import("dashboard/work-queue/widget-mount-coordinator");
+  const { DashboardWorkProvider } = await import("dashboard/work-queue/dashboard-work-context");
+  const runtime = createDashboardWorkRuntime({ requestRun: () => {} });
+  const observers = [];
+  const mountCoordinator = new WidgetMountCoordinator({ createObserver: callback => {
+    const observer = { callback, disconnect() {}, observe(element) { observer.element = element; }, unobserve() {} };
+    observers.push(observer);
+    return observer;
+  }, scheduler: runtime.scheduler });
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  act(() => {
+    root.render(createElement(DashboardLoadContext.Provider, { value: mockTracker() },
+      createElement(DashboardWorkProvider, { value: { mountCoordinator, runtime } },
+        createElement(LazyWidgetMount, { widgetId: "agenda" }, createElement("div", { className: "real-widget" })))));
+  });
+  const reportVisible = () => observers[1].callback([{ isIntersecting: true, target: observers[1].element }]);
+  const flushPass = async () => {
+    await act(async () => {
+      runtime.scheduler.runReady();
+      for (let index = 0; index < 10; index += 1) await Promise.resolve();
+    });
+  };
+  return { container, flushPass, reportVisible, root, runtime };
+}
+
+test("mounts through the coordinator when the Dashboard provides one, releasing the permit on commit", async () => {
+  const { container, flushPass, reportVisible, root, runtime } = await renderScheduled();
+  expect(container.querySelector(".lazy-widget-placeholder")).not.toBeNull();
+  reportVisible();
+  await flushPass();
+  expect(container.querySelector(".real-widget")).not.toBeNull();
+  await flushPass();
+  expect(runtime.budget.snapshot().resources.mount.available).toBe(1);
+  expect(runtime.scheduler.snapshot().jobs).toEqual([]);
+  act(() => root.unmount());
+});
+
+test("withdraws its scheduled mount request when it unmounts before its turn", async () => {
+  const { container, reportVisible, root, runtime } = await renderScheduled();
+  runtime.scheduler.setConditions({ overlayHeld: true });
+  reportVisible();
+  expect(runtime.scheduler.snapshot().jobs.map(job => job.key)).toEqual(["widgetMount:agenda"]);
+  act(() => root.unmount());
+  expect(runtime.scheduler.snapshot().jobs).toEqual([]);
+  expect(container.querySelector(".real-widget")).toBeNull();
+});

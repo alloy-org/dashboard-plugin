@@ -60,12 +60,12 @@ import { hasCompletedPlanCore, progressRowsFromContext, sidebarLabelFromStep } f
 import WizardProgressBar from "dashboard/plan-wizard/wizard-progress-bar";
 import WizardProgressSidebar from "dashboard/plan-wizard/wizard-progress-sidebar";
 import { WIZARD_STEPS, wizardStepIndexFromKey } from "dashboard/plan-wizard/wizard-steps";
-import { useSuspendWidgetMounting } from "dashboard/widget-mount-suspension";
 import { useElapsingProgress } from "hooks/use-elapsing-progress";
 import useLlmProviderAccess from "hooks/use-llm-provider-access";
 import usePlanWizard, { planScopeKey } from "hooks/use-plan-wizard";
 import { useProjectTaskRanking } from "hooks/use-project-task-ranking";
 import useUserEditedPlanNote from "hooks/use-user-edited-plan-note";
+import { useSuspendWidgetMounting } from "hooks/use-widget-mount-suspension";
 import { WIZARD_LLM_TIMEOUT_SECONDS } from "plan-wizard/plan-models";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";

@@ -1,9 +1,9 @@
 // Exercise DashboardWorkScheduler: independent resource admission, priority, coalescing, cancellation, foreground
 // demand, waiting reasons, yielding, and scope changes.
-import DashboardResourceBudget from "work-queue/dashboard-resource-budget";
-import DashboardWorkDiagnostics from "work-queue/dashboard-work-diagnostics";
-import { createDashboardWorkRuntime } from "work-queue/dashboard-work-runtime";
-import DashboardWorkScheduler from "work-queue/dashboard-work-scheduler";
+import DashboardResourceBudget from "dashboard/work-queue/dashboard-resource-budget";
+import DashboardWorkDiagnostics from "dashboard/work-queue/dashboard-work-diagnostics";
+import { createDashboardWorkRuntime } from "dashboard/work-queue/dashboard-work-runtime";
+import DashboardWorkScheduler from "dashboard/work-queue/dashboard-work-scheduler";
 
 // ----------------------------------------------------------------------------------------------
 // @desc A promise with its resolve and reject functions exposed, so a test decides when a job finishes.

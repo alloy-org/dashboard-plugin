@@ -1,6 +1,6 @@
 // Exercise DashboardResourceBudget: independent per-resource limits, idempotent release, and the permit maintenance
 // leaves free for foreground work.
-import DashboardResourceBudget from "work-queue/dashboard-resource-budget";
+import DashboardResourceBudget from "dashboard/work-queue/dashboard-resource-budget";
 
 describe("DashboardResourceBudget", () => {
   // ----------------------------------------------------------------------------------------------

@@ -601,6 +601,13 @@ Verify mount coordinator, lazy mount, load tracking and integration tests, then 
 in the browser. This commit can ship independently: rendering works if persistence is unavailable or never initialized.
 Reverting its switch restores the existing lazy mount path without changing project data.
 
+As built, the switch is `SCHEDULED_WIDGET_MOUNTING_ENABLED` in `work-queue/dashboard-work-features.js`. Without
+IntersectionObserver the Dashboard keeps the unscheduled path, which already mounts every widget at once, rather than
+duplicating that fallback in the coordinator. Mount jobs are unscoped, so a domain switch does not withdraw them. The
+existing load reporters were sufficient: a widget that throws before committing unmounts its lazy mount, which
+unregisters it and releases the permit, so `dashboard-load-tracking.js` is unchanged. Task-update wiring waits for
+its first consumer in phase 6.
+
 ### Phase 4 Admin Queue inspector
 
 Add `DashboardQueueInspector`, `useDashboardQueueDiagnostics`, scoped styles, and the shared admin tools policy helper.
