@@ -5,6 +5,26 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-04 — Work queue phase 10 activation isolation and acceptance audit
+
+**Model:** GPT-6 (Codex)
+**Files created/modified:**
+- `lib/hooks/use-dashboard-work-queue.js` — create durable work independently of scheduled widget mounting and observer support; dispose the optional coordinator safely
+- `lib/dashboard/work-queue/dashboard-work-features.js` — select queued maintenance independently of the mounting feature
+- `lib/dashboard/work-queue/dashboard-queue-inspector-model.js`, `dashboard-queue-inspector-sections.jsx`, and `dashboard-queue-inspector.jsx` — report actual mounting and durable runtime availability
+- `test/dashboard-work-activation.test.js` — eight activation combinations, load gate, concurrent foreground/background provider work, and replacement/disposal regression coverage
+- `test/dashboard-queue-inspector.test.js` — verify maintenance-only feature reporting
+- `doc/plan-dashboard-work-queue.md` — recorded-history audit, automated acceptance results, rollback baseline, and remaining browser/mobile and cleanup requirements
+- `build/compiled.js` — regenerated production bundle
+
+**Prompt:** "Let's proceed to phase 10 of doc/plan-dashboard-work-queue.md"
+
+**Validation:** 127 offline suites / 1,187 tests passed; 9 credential-gated live-provider tests skipped. Production build
+and all 6 host smoke tests passed. Browser automation could not connect because its tool rejected the sandbox metadata;
+no browser/mobile latency claim is made. Existing defaults and still-used fallback loops are retained.
+
+---
+
 ## 2026-10-04 — Project task store and project progress notes created archived
 
 **Model:** Claude Opus 5.5

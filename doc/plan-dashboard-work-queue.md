@@ -918,6 +918,72 @@ The generative limit is now two, and `MAINTENANCE_RESOURCE_LIMITS` holds mainten
 background work still makes one generative request at a time while a foreground request is admitted at once. The
 inspector's Resources table shows the cap as "0 of 1" in the Maintenance column.
 
+#### Phase 10 acceptance record — October 4, 2026
+
+Status: activation isolation and automated regression checks pass; browser/mobile acceptance and legacy cleanup
+remain pending. The three existing feature defaults were already `true` at the start of this phase and are unchanged.
+Scheduled mounting and durable maintenance now select their services independently: disabling mounting, or running
+without `IntersectionObserver`, keeps the durable runtime and its load gate. Widgets use their existing unscheduled
+mount behavior. Disabling durable work selects the legacy maintenance pass; disabling both creates no runtime.
+The inspector reports each feature's actual runtime state instead of always claiming mounting is on.
+
+The local archived `Dashboard Work History domain-work-uuid:Q4 2026` note contains 33 outcomes across three sessions,
+from 16:27:08 to 22:24:01 UTC on October 4. These are preexisting observations, not measurements of this patch.
+The recorded successful job durations are:
+
+| Job | Completed outcomes | Distinct job keys | Median duration | Maximum duration |
+| --- | ---: | ---: | ---: | ---: |
+| Reconcile projects | 6 | 1 | 145 ms | 195 ms |
+| Rank project tasks | 4 | 4 | 967 ms | 1,153 ms |
+| Discover dictionary terms | 1 | 1 | 6,493 ms | 6,493 ms |
+| Generate project ideas | 8 | 4 | 11,283 ms | 16,194 ms |
+| Rate project ideas | 4 | 4 | 332 ms | 398 ms |
+| Collect term evidence | 5 | 5 | 79 ms | 207 ms |
+| Refine dictionary term | 2 | 2 | 9,845 ms | 17,142 ms |
+
+The other three outcomes are transient reconciliation failures at attempts 1–3; the same job key has a later
+successful completion. That establishes eventual recovery in the retained history, not that every retry succeeded in
+its original session. Four distinct project ranking keys establish observed coverage, not a per-visit quota: this
+history spans multiple sessions. There is no daily preparation outcome in this sample. Job duration includes work
+besides provider calls and must not be reported as provider latency or token usage.
+
+| Acceptance check | Evidence and result |
+| --- | --- |
+| Independent mounting/maintenance activation | `dashboard-work-activation.test.js`: all eight switch/observer combinations, replacement/disposal, and preserved settle signal pass |
+| Maintenance waits for load gate | Runtime hook test admits no maintenance until settling plus the four-second grace period |
+| Foreground request while generation runs | Runtime hook test completes foreground ranking with background generation still pending; default resource budget retains the reserved generative permit |
+| Scroll, overlays, mount release, recovery, coverage, suggestions | Existing coordinator, scheduler, durable runner, planner, and suggestion regression suites pass with controlled clocks/promises |
+| Full offline regression | 127 suites / 1,187 tests pass; 4 suites / 9 credential-gated live-provider tests skip |
+| Production build and host boundary | `npm run build` passes; production smoke suite passes all 6 tests |
+| Browser/mobile latency and contention comparison | Pending: browser automation failed before connection with `sandbox-state-meta: missing field sandboxPolicy`; no browser measurements were collected |
+
+The initial unrestricted test command encountered provider DNS failures under the network-restricted runner and was
+stopped. The offline regression command used was:
+
+```bash
+OPEN_AI_ACCESS_TOKEN='' ANTHROPIC_AI_ACCESS_TOKEN='' GEMINI_AI_ACCESS_TOKEN='' GROK_AI_ACCESS_TOKEN='' JEV_ACCESS_TOKEN='' NODE_OPTIONS=--experimental-vm-modules npx jest --runInBand --no-coverage
+```
+
+To finish acceptance, compare fresh copies of the same seeded notebook and cache state with mounting and maintenance
+independently enabled/disabled, on desktop and a mobile browser. Capture the Queue inspector overview, resources,
+urgent renders and exported diagnostics together with browser performance traces. Exercise fast scrolling, overlay
+open/close, layout changes, cold Dream Task/agenda, a pending provider request, and reopen after interrupted work.
+Record first usable load, visibility-to-admission/commit, actual React commit duration and long tasks, provider wait,
+background request counts, distinct project coverage per visit, and preparation output revisions. Existing job history
+does not supply all these measurements. Compare enabled/disabled results before accepting the latency criterion above.
+
+The oldest supported rollback target for this change is `9fb5d2b` (the pre-phase-10 baseline); earlier versions have
+not been verified as rollback targets. This patch changes no note format, schema version, project serializer, or
+writer, so that baseline retains the same project refresh state, idea identities/ratings/decisions, completion text,
+linked goals, task snapshots, dictionary evidence, and daily rankings. Build the target source when rolling back.
+Being able to parse a note does not qualify an older writer to rewrite it without losing these fields.
+
+Cleanup remains a separate review boundary. `use-project-task-collection.js` and `collectProjectTasks` still serve
+durable-disabled mode; `use-project-task-ranking.js` and `refreshStaleProjectRankings` still serve other Builder
+quarters as well as durable-disabled mode. `project-refresh-schedule.js` also supplies the active queue planner's
+staleness policy. None is unused. Remove their loops only after migrating these callers and completing the browser
+acceptance above; retain legacy-format readers. No cleanup commit or other commit was created by this work.
+
 ### Integration map
 
 Concrete integration changes:

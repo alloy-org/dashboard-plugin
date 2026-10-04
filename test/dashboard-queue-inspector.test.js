@@ -189,6 +189,7 @@ describe("DashboardQueueInspector", () => {
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 0)); });
     expect(container.textContent).toContain("Claimed by another session (other-session), not verified running");
     expect(container.textContent).toContain("ideas:project-9");
+    expect(container.textContent).toContain("Scheduled widget mounting off; project maintenance on the queue");
     expect(readSpy).toHaveBeenCalledTimes(1);
     act(() => root.unmount());
     runtime.dispose();

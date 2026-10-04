@@ -27,7 +27,7 @@ export default function DashboardQueueInspector({ work }) {
     return (
       <div className="dashboard-queue-inspector">
         <p className="queue-inspector-empty">The work queue is not running in this Dashboard: scheduled widget mounting is
-          switched off, or this browser lacks IntersectionObserver, so widgets mount on their unscheduled path.</p>
+          unavailable and durable maintenance is switched off, so widgets mount on their unscheduled path.</p>
       </div>
     );
   }

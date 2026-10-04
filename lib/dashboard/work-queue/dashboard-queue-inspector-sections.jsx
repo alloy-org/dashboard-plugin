@@ -107,7 +107,7 @@ export function QueueOverviewSection({ now, overview }) {
   const rows = [
     ["Session", `${ overview.session?.sessionId || "—" }, started ${ formattedAge(overview.session?.startedAt, now) }`],
     ["Scope", overview.scopeKey || "—"],
-    ["Features", `Scheduled widget mounting on; project maintenance ${ overview.projectCoverage ? "on the queue" : "on its legacy path" }`],
+    ["Features", `Scheduled widget mounting ${ overview.mountingEnabled ? "on" : "off" }; project maintenance ${ overview.durableEnabled ? "on the queue" : "on its legacy path" }`],
     ["Page", conditions.hidden ? "Hidden: near renders and maintenance paused" : "Visible"],
     ["Overlay", conditions.overlayHeld ? "Holding renders and maintenance" : "None"],
     ["Load gate", conditions.loadSettled ? "Open" : "Closed: maintenance waits for the initial load and its grace period"],
