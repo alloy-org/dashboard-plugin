@@ -26,19 +26,25 @@ function storedProject(overrides = {}) {
 
 // ----------------------------------------------------------------------------------------------
 // @desc Mock the app bridge with an in-memory note whose section writes are applied to the stored content,
-//   modelling that replaceNoteContent takes a bare { uuid } and a { section } option.
+//   modelling that replaceNoteContent takes a bare { uuid } and a { section } option. The domain's task snapshot
+//   note is kept apart from the store note, whole, as the collection pass writes it.
 // @param {object} options - { content, tasks }.
-// @returns {object} App mock carrying `noteContent` for assertions.
+// @returns {object} App mock carrying `noteContent` and `snapshotContent` for assertions.
 function storeApp({ content = null, tasks = [] } = {}) {
-  const state = { noteContent: content };
+  const state = { noteContent: content, snapshotContent: null };
+  const isSnapshotName = name => String(name || "").startsWith("Dashboard Task Snapshot");
   const app = {
-    createNote: jest.fn().mockResolvedValue("store-note"),
+    createNote: jest.fn(async name => (isSnapshotName(name) ? "snapshot-note" : "store-note")),
     filterNotes: jest.fn().mockResolvedValue([]),
-    findNote: jest.fn(async () => (state.noteContent === null ? null : { uuid: "store-note" })),
-    getNoteContent: jest.fn(async () => state.noteContent ?? ""),
+    findNote: jest.fn(async ({ name } = {}) => {
+      if (isSnapshotName(name)) return state.snapshotContent === null ? null : { uuid: "snapshot-note" };
+      return state.noteContent === null ? null : { uuid: "store-note" };
+    }),
+    getNoteContent: jest.fn(async ({ uuid }) => (uuid === "snapshot-note" ? state.snapshotContent : state.noteContent) ?? ""),
     getTaskDomainTasks: jest.fn().mockResolvedValue(tasks),
     replaceNoteContent: jest.fn(async (handle, body, options) => {
       if (typeof handle?.uuid !== "string") throw new Error("Write received a non-uuid handle");
+      if (handle.uuid === "snapshot-note") { state.snapshotContent = body; return true; }
       if (!options?.section) { state.noteContent = body; return true; }
       // Locate the section with the same parser the production code reasons about, so the mock cannot disagree
       // with guideHeadingRanges about where a section body begins and ends.
@@ -51,6 +57,7 @@ function storeApp({ content = null, tasks = [] } = {}) {
     }),
   };
   Object.defineProperty(app, "noteContent", { get: () => state.noteContent });
+  Object.defineProperty(app, "snapshotContent", { get: () => state.snapshotContent });
   return app;
 }
 
@@ -375,6 +382,42 @@ describe("background project task collection", () => {
     expect(stored.lastRankedAt).toBe(now.toISOString());
     expect(stored).toMatchObject({ similaritySearchedTaskCount: 2, similaritySearchPageCount: 1,
       taskSimilarityScores: { "a1b2c3d4:ranked-task": 8.2 } });
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc An older task edited after a project's ranking is pooled on the next pass, though its creation time predates
+  //   the ranking. The project's watermark advances only with a complete ranking, so a ranking with missed batches
+  //   leaves the edit to be pooled again.
+  it("pools older tasks edited since the project's last complete ranking", async () => {
+    const oldTask = { content: "Tidy the backlog", createdAt: 1, uuid: "old-task" };
+    const app = storeApp({ tasks: [oldTask] });
+    const ranking = { acceptedTasks: [], failureReason: null, minimumMatchScore: null, rankingIncomplete: false,
+      searchProgress: null, taskSimilarityScores: {} };
+    const rankProject = jest.fn().mockResolvedValue(ranking);
+    const rankerFactory = jest.fn().mockResolvedValue({ rankProject, scorerEm: "jev" });
+    const ideaGenerator = jest.fn().mockResolvedValue({ failureReason: null, foundTasks: [], suggestedTasks: [] });
+    const options = { domainName: scope.domainName, domainUuid: scope.domainUuid, ideaGenerator, quarterlyContent,
+      rankerFactory };
+    const storedSimilarity = () => [...storedProjectRecords(app.noteContent).recordsByUuid.values()][0].refreshState.similarity;
+    await collectProjectTasks(app, { ...options, now: new Date("2026-09-19T12:00:00.000Z") });
+    expect(rankProject.mock.calls[0][2].changedTaskRecords).toEqual([]);
+    const baseline = storedSimilarity();
+    expect(baseline).toMatchObject({ succeededAt: "2026-09-19T12:00:00.000Z", watermark: { sequence: 1 } });
+    expect(JSON.parse(app.snapshotContent.match(/```json\n([\s\S]*?)\n```/)[1]).snapshotId).toBe(baseline.watermark.snapshotId);
+
+    const editedTask = { ...oldTask, content: "Rework the week grid header" };
+    app.getTaskDomainTasks.mockResolvedValue([editedTask]);
+    rankProject.mockResolvedValueOnce({ ...ranking, rankingIncomplete: true });
+    await collectProjectTasks(app, { ...options, now: new Date("2026-09-20T12:00:00.000Z") });
+    expect(rankProject.mock.calls[1][2].changedTaskRecords).toEqual([{ taskText: "Rework the week grid header",
+      taskUuid: "old-task" }]);
+    expect(storedSimilarity()).toEqual(baseline);
+
+    await collectProjectTasks(app, { ...options, now: new Date("2026-09-21T12:00:00.000Z") });
+    expect(rankProject.mock.calls[2][2].changedTaskRecords).toHaveLength(1);
+    expect(storedSimilarity().watermark.sequence).toBe(2);
+    await collectProjectTasks(app, { ...options, now: new Date("2026-09-22T12:00:00.000Z") });
+    expect(rankProject.mock.calls[3][2].changedTaskRecords).toEqual([]);
   });
 
   // ----------------------------------------------------------------------------------------------

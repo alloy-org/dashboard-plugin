@@ -667,6 +667,23 @@ with equivalence tests, and 6c routing both refresh hooks through the queue. Onl
 the legacy compatibility path selected until then; once selected, never run both routes for the same scope. The stop
 point supports today's maintenance plus change detection, recovery, coverage, and admin progress/failure visibility.
 
+As built, 6a's first consumer is the legacy collection pass, so change tracking fixes the missed-edit gap before the
+queue takes over. `work-queue/dashboard-task-snapshot.js` indexes each task as an eight-character digest of its note
+and text, a status, and a change sequence; `work-queue/dashboard-task-snapshot-store.js` keeps one archived
+`Dashboard Task Snapshot <domainUuid>` note per domain (`all-notes` for the fallback), shared by its quarters and
+rewritten only when an entry changes. A domain read is complete; the All Notes scan is partial and never marks a task
+absent. Past 1,500 tracked tasks the index keeps the most recently updated open tasks, and a watermark older than a
+dropped entry's last change reports itself incomplete. Watermarks carry the index's `snapshotId`, so a replaced note
+is never compared by sequence alone. The pass reconciles once (only when a ranker exists) and passes up to 150 open
+tasks changed since the project's `refreshState.similarity.watermark` to the ranker's new `changedTaskRecords` option,
+which pools them past the creation-time cutoff and keeps only similar ones in the hash. A complete ranking records
+`recordRefreshSuccess("similarity", ...)` with the snapshot's watermark; a ranking with missed batches records nothing.
+The similarity input revision digests the project summary and scorer, leaving dictionary context to phase 7.
+`projectRevision` advances in `QuarterProjectRepository.applyResult` only when a field readers consume changes, never
+for refresh times, refresh state, or the shown-task log. Refresh-state helpers live in `quarter-project-refresh-state.js`.
+`use-dashboard-task-updates.js` is unchanged: with no runtime-held snapshot before 6c, the next pass's reconciliation
+already sees a local edit, so event-driven invalidation waits for queued maintenance.
+
 ### Phase 7 Dictionary enrichment
 
 Add term evidence/refinement services and handlers, extend dictionary provenance/revision persistence, and add targeted

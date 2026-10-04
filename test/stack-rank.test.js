@@ -392,10 +392,29 @@ describe("prepareProjectTaskRanker", () => {
     setLoggingEnabled(false);
     expect(requestAnswers).not.toHaveBeenCalled();
     expect(ranking).toMatchObject({ acceptedTasks: [], minimumMatchScore: null, rankingIncomplete: false, ratedCount: 0 });
-    expect(projectLog[1]).toEqual({ acceptedCount: 0, cachedCount: 0, candidateCount: 0, createdAfter: rankedAt,
+    expect(projectLog[1]).toEqual({ acceptedCount: 0, cachedCount: 0, candidateCount: 0, changedCount: 0, createdAfter: rankedAt,
       excludedBeforeCreatedAfter: 1, excludedWithoutCreatedAt: 1, limitToRequiredTasks: false, minimumMatchScore: null,
       project: "Diff Digest launch", rankingIncomplete: false, recheckedCount: 0, requiredCount: 0, scorerEm: "jev",
       searchProgress: null, sentCount: 0 });
+  });
+
+  it("pools changed older tasks past the createdAfter cutoff, keeping only similar ones in the hash", async () => {
+    const project = { ...DIFF_DIGEST_PROJECT, lastRankedAt: "2026-10-01T00:00:00.000Z", similaritySearchPageCount: 2 };
+    const tasks = [{ content: "Diff Digest pricing page", createdAt: "2026-09-01T00:00:00.000Z", uuid: "edited-1" },
+      { content: "Buy dog food", createdAt: "2026-09-01T00:00:00.000Z", uuid: "edited-2" },
+      { content: "Already associated", createdAt: "2026-09-01T00:00:00.000Z", uuid: "related-1" }];
+    const requestAnswers = jest.fn().mockResolvedValue({ answers: { task_1: { confidence: 0.9, score: 8, type: "score" },
+      task_2: { confidence: 0.9, score: 0, type: "score" } } });
+    const ranker = await prepareProjectTaskRanker(notesApp({}, tasks), { accessToken: "token", domainName: "Work",
+      domainUuid: "work-domain", now: new Date(2026, 9, 2), projects: [project], refineDictionary: false,
+      requestAnswers, tasks });
+    const changedTaskRecords = tasks.map(task => ({ taskText: task.content, taskUuid: task.uuid }));
+    const ranking = await ranker.rankProject(project, [{ taskText: "Already associated", taskUuid: "related-1" }],
+      { changedTaskRecords });
+    const sentTexts = Object.values(requestAnswers.mock.calls[0][0].state.prospectiveTasks).map(task => task.text);
+    expect(sentTexts).toEqual(["Diff Digest pricing page", "Buy dog food"]);
+    expect(ranking.acceptedTasks.map(task => task.taskUuid)).toEqual(["edited-1"]);
+    expect(Object.keys(ranking.taskSimilarityScores).map(ratingKey => ratingKey.split(":")[1])).toEqual(["edited-1"]);
   });
 
   it("re-checks a similar task by checksum, reusing its score until its text changes", async () => {

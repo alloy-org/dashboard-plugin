@@ -145,6 +145,23 @@ describe("QuarterProjectRepository results", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
+  // @desc The written project's revision advances past the stored one when the result changed what readers consume,
+  //   and stays put for a result that only recorded bookkeeping, such as an attempt time or a shown task.
+  it("advances the project revision only for results readers consume", async () => {
+    const app = storeApp({ content: storeContent([storedProject({ projectRevision: 4 })]) });
+    const repository = new QuarterProjectRepository({ app, noteWriter: new DashboardNoteWriter({ app }) });
+    const attempted = await repository.applyResult(scope, { apply: project => project.setAttemptedAt("2026-09-21T00:00:00.000Z"),
+      projectUuid: "project-uuid" });
+    await repository.recordShownTasks(scope, { shownAt: "2026-09-21T12:00:00.000Z",
+      suggestions: [{ projectUuid: "project-uuid", taskUuid: "open-task" }] });
+    expect(attempted.projectRevision).toBe(4);
+    const scored = await repository.applyResult(scope, { apply: project => project.setSimilarityScores({ "abc123:open-task": 8 }),
+      projectUuid: "project-uuid" });
+    expect(scored.projectRevision).toBe(5);
+    await expect(repository.readOne(scope, "project-uuid")).resolves.toMatchObject({ projectRevision: 5 });
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc A result that fails while being applied writes nothing, and the next result to the note still lands.
   it("leaves the store untouched when a result fails, without blocking the next", async () => {
     const app = storeApp({ content: storeContent([storedProject()]) });

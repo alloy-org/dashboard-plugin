@@ -5,6 +5,26 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-03 — Phase 6a of the work queue: task change tracking and persisted refresh revisions
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/dashboard-task-snapshot.js` (created) — `DashboardTaskSnapshot`: per-domain task index of digest, status, and change sequence; complete versus partial reconciliation, absent marking, capacity by update time, compaction bookkeeping, `changesSince` with identity-checked watermarks, and a compact record format
+- `lib/dashboard/work-queue/dashboard-task-snapshot-store.js` (created) — `DashboardTaskSnapshotStore`: one archived "Dashboard Task Snapshot" note per domain, reconciled through the note writer, written only on change, never overwriting a note it cannot read
+- `lib/dashboard/quarter-project-refresh-state.js` (created) — Refresh operations, per-operation success records, output-revision comparison, and the similarity input revision
+- `lib/dashboard/quarter-project.js` — `projectRevision` and `refreshState` fields (store-owned), `advanceProjectRevision`, `recordRefreshSuccess`
+- `lib/dashboard/quarter-project-serialization.js` — Store payload carries the revision and refresh state
+- `lib/dashboard/quarter-project-repository.js` — `applyResult` advances the revision only when consumed fields change
+- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` — `changedTaskRecords` ranking option pools changed older tasks past the creation-time cutoff
+- `lib/dashboard/project-task-collection.js` — Reconciles the domain snapshot each pass, pools each project's changed tasks, records similarity success with its watermark after a complete ranking
+- `doc/plan-dashboard-work-queue.md` — Records Phase 6a's scope as built
+- `test/dashboard-task-snapshot.test.js` (created); `test/quarter-project.test.js`, `test/quarter-project-repository.test.js`, `test/project-task-store.test.js`, `test/stack-rank.test.js` extended
+
+**Task:** Implement Phase 6a of the dashboard work queue plan
+**Prompt summary:** "Let's tackle the next phase of the plan to implement job queueing for Dashboard"
+
+---
+
 ## 2026-10-03 — Phase 5 of the work queue: durable execution and diagnostic history
 
 **Model:** Claude Opus 5.5
