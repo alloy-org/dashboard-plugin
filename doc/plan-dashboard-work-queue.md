@@ -851,6 +851,31 @@ background activation. Until 9b, existing foreground generation remains the sele
 context keys, no exposure on prefetch, unchanged accepted/dismissed choices, cold-cache settling, and native Calendar
 output. Admins must be able to follow a project revision through preparation to the published result revision.
 
+As built, 9a adds `lib/dashboard/day-ranking-store.js` and the `prepareDayRanking` job
+(`work-queue/jobs/prepare-day-ranking.js`). One archived `Dashboard Day Ranking <domainUuid>` JSON note per domain
+(`all-notes` for the fallback) keeps rankings by local day and revision. A revision is the scorer (`jev` or `generative`)
+plus a digest of everything the ranker is shown (project names, rationales, and candidates), except each candidate's
+`minutesSinceRecommended`, so showing a suggestion never invalidates a ranking. Showing it also needs no provider
+request. The scope, enabled quarters, target date, and decisions reach the revision through the candidates they
+produce. A ranking stores only `[candidateId, rankerRating]` pairs, rebuilt with `rankedTasksFromRatings` from the
+candidates as currently listed, so durations, notes, and recency are current. The note keeps at most three rankings per
+day, four days, and sixty candidates, never days before today, and never overwrites a note a newer schema wrote.
+`prepareDayRanking` in `ranked-task-suggestions.js` builds the groups, reuses a stored ranking at their revision, or
+asks the ranker and stores the answer. It reports `noCandidates`, `noRanker`, `unanswered`, `ranked`, or `stored`.
+Dream Task, the agenda, and Calendar all go through it, so a foreground cache hit makes no provider request. Two of
+these surfaces share a ranking only when they would ask the same question. Dream Task's request and the agenda's
+qualify only when their projects agree. The agenda draws its projects from the progress notes of every enabled
+quarter, and Dream Task's exclusion of cards already on screen changes the question. Preparation records nothing:
+`agendaSuggestionsFromProjects` no longer logs exposure. `generateProposedAgenda` records the ranked activities it
+presents, and on reconciliation only the replacements it slots. Before, every freshly slotted activity was recorded,
+including those not shown. Replacements now keep their project UUID. Dream Task already recorded at presentation.
+`rankDayTasks` accepts a `providerDispatch`, so the job's Jev or generative request takes a permit. The job takes
+`{ dateKey, domainName, domainUuid }`, builds candidates as Dream Task does (the quarter's projects with its guide and
+the domain's open tasks), and needs no `appliedRevision`: a current stored ranking completes it without a request. It
+retires when no project offers a candidate and waits for configuration when nothing can rank. It is registered but not
+yet submitted. The Dream Task and agenda preparation jobs, the "not yet shown" markers that cached daily notes and agenda
+records will need once something prepares them unseen, and a read-only path for the Calendar host all arrive with 9b.
+
 ### Phase 10 Rollout and cleanup
 
 Use recorded admin diagnostics and mobile/browser checks to compare rendering latency, provider contention, project

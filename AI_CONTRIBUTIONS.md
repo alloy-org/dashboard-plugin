@@ -5,6 +5,24 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-04 — Phase 9a: shared day ranking store, preparation without exposure
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/day-ranking-store.js` (created) — `DayRankingStore` keeps each domain's rankings by day and revision in an archived JSON note, as candidate ID and ranker rating pairs; bounded per day, days, and candidates; past days dropped; a newer schema's note never overwritten
+- `lib/dashboard/work-queue/jobs/prepare-day-ranking.js` (created) — `prepareDayRanking` job: builds Dream Task's candidates, reuses a current stored ranking or ranks through provider permits and stores it; retires without candidates, waits for configuration without a ranker
+- `lib/dashboard/suggestion-task-rank.js` — `dayRankingRevision` (ranker-visible state without recency), `rankedTasksFromRatings`, `rankerRating` on ranked candidates, `providerDispatch`/`scorerEm`/`signal` options for `rankDayTasks`
+- `lib/dashboard/ranked-task-suggestions.js` — `prepareDayRanking` with reported outcomes; Dream Task and agenda facades reuse stored rankings; the agenda facade no longer records exposure
+- `lib/dashboard/proposed-agenda-service.js` — Records exposure for the ranked activities it presents, and only the replacements when reconciling; replacements keep their project
+- `lib/dashboard/work-queue/dashboard-work-handlers.js` — Registers the day ranking handler
+- `test/day-ranking-store.test.js` (created) — Revision stability, bounded store and newer-schema protection, reuse across hours and surfaces without a provider request, no exposure on preparation, invalidation by changed candidates, job outcomes
+- `test/project-maintenance-jobs.test.js` — Registry includes the new job type
+- `doc/plan-dashboard-work-queue.md` — "As built" notes for 9a
+
+**Task:** Persist one shared ranking per day and question so Dream Task, the agenda, and Calendar reuse it, and separate preparing a ranking from recording that a suggestion was shown
+
+---
+
 ## 2026-10-04 — Phase 8b: idea actionability ratings and mixed task/idea recommendation candidates
 
 **Model:** Claude Opus 5.5
