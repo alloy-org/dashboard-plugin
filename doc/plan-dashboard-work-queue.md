@@ -732,6 +732,18 @@ outcomes. Keep all user-owned definition and Rich Footnote preservation rules.
 Verify refinement, ownership, source selection, cooldown, and score invalidation tests. This phase can be disabled
 independently while ordinary discovery, ranking, ideas, and urgent rendering continue working.
 
+Split for review into 7a definition-change invalidation, 7b term evidence collection, and 7c refinement and its
+scheduling. As built, 7a re-rates only the open tasks whose text names a term whose definition changed, never every
+task a project's summary relates to. `plan-wizard/stack-rank/dictionary-term-revisions.js` keeps an archived
+`User terms dictionary <year> revisions` JSON note with each term's definition digest and the change sequence at which
+it last differed; the first record is a baseline at sequence 0, so adopting it re-rated nothing. Whoever changed a
+definition (discovery, later refinement, or the user by hand), the next reader that ranks notices it: the ranking job
+observes the dictionary its ranker read, and the similarity success records `dictionaryPosition` ({ revisionsId,
+sequence }). A project's next ranking pools the open tasks naming a term changed since that position (at most 150) as
+`rescoredTaskRecords`, which bypass their cached rating, so a low-rated task discarded from the hash is reconsidered
+too. `reconcileProjects` counts those tasks per ranked project and the planner forces a ranking when there are any.
+The rating key and `similarityInputRevision` are unchanged, so no other stored score is invalidated.
+
 ### Phase 8 Rated ideas and recommendation candidates
 
 Add idea records/rating helpers and the rating handler; enhance the existing generation handler. Extend completion

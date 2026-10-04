@@ -1,7 +1,8 @@
 // Verify the queued project maintenance handlers against the background collection pass: dictionary discovery, task
 // ranking, and idea generation run as separate jobs leave a project's store section as one collection pass does, a
 // large ranking pauses between rounds of batches with its similar ratings saved, a ranking resumed by another session
-// restarts from those saved ratings, and failed provider work fails the attempt for the queue to retry.
+// restarts from those saved ratings, a changed definition re-rates only the tasks that mention it, and failed provider
+// work fails the attempt for the queue to retry.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
 import { collectProjectTasks } from "dashboard/project-task-collection";
@@ -37,14 +38,17 @@ async function runToEnd(handler, { context, cursor = null, input }) {
 
 // ----------------------------------------------------------------------------------------------
 // @desc The stored project, with the bookkeeping two routes record differently set aside: its output revision, which
-//   counts writes, the ideas refresh only the queue records, and the snapshot identity each run generates.
+//   counts writes, the ideas refresh and dictionary position only the queue records, and the snapshot identity each
+//   run generates.
 // @param {object} app - From maintenanceApp.
 // @returns {Promise<string>} The project's store section.
 async function comparableSection(app) {
   const [project] = await readCollectedProjectTasks(app, { ...SCOPE_INPUT, quarterKey: "2026-Q3" });
   const similarity = project.refreshState.similarity;
   project.projectRevision = 0;
-  project.refreshState = similarity ? { similarity: { ...similarity, watermark: { sequence: similarity.watermark?.sequence } } } : {};
+  const comparableSimilarity = { ...similarity, watermark: { sequence: similarity?.watermark?.sequence } };
+  delete comparableSimilarity.dictionaryPosition;
+  project.refreshState = similarity ? { similarity: comparableSimilarity } : {};
   return project.toStoreSection();
 }
 
@@ -140,6 +144,39 @@ describe("project maintenance jobs", () => {
     const [finished] = await readCollectedProjectTasks(app, { ...SCOPE_INPUT, quarterKey: "2026-Q3" });
     expect(finished.lastRankedAt).toBe(NOW.toISOString());
     expect(result.revision).toBe(refreshRevision(finished.refreshState, "similarity"));
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc After terms are added to the dictionary, the next ranking re-rates only the open tasks that name them: the
+  //   widget tasks the hash already rated similar and the chart tasks it rated low and discarded. A ranking after that,
+  //   with nothing changed, sends nothing.
+  it("re-rates only the tasks that mention a changed definition", async () => {
+    const app = maintenanceApp({ tasks: backlogTasks() });
+    const context = jobContext(app);
+    const input = { ...SCOPE_INPUT, projectUuid: await storedProjectUuid(app) };
+    const requestAnswers = ratingRequest();
+    const handler = createRankProjectTasksHandler({ rankerFactory: (currentApp, options) => prepareProjectTaskRanker(currentApp,
+      { ...options, requestAnswers }) });
+    await runToEnd(handler, { context, input });
+    const [firstRanked] = await readCollectedProjectTasks(app, { ...SCOPE_INPUT, quarterKey: "2026-Q3" });
+    expect(firstRanked.refreshState.similarity.dictionaryPosition).toMatchObject({ sequence: 0 });
+
+    const dictionaryHandle = await app.findNote({ name: "User terms dictionary 2026" });
+    const dictionaryContent = app.noteContent("User terms dictionary 2026");
+    const addedTerms = "- **widget**: A card on the Dashboard.\n- **chart**: A plotted Dashboard widget.\n\n# Examined projects";
+    await app.replaceNoteContent(dictionaryHandle, dictionaryContent.replace("\n# Examined projects", addedTerms));
+    requestAnswers.mockClear();
+    await runToEnd(handler, { context, input });
+    const resentTexts = requestAnswers.mock.calls.flatMap(([{ state }]) => Object.values(state.prospectiveTasks)
+      .map(task => task.text));
+    expect(resentTexts.sort()).toEqual(["Sketch chart idea 3", "Sketch chart idea 43", "Sketch chart idea 83",
+      "Tune widget layout 37", "Tune widget layout 67", "Tune widget layout 7", "Tune widget layout 97"]);
+    const [secondRanked] = await readCollectedProjectTasks(app, { ...SCOPE_INPUT, quarterKey: "2026-Q3" });
+    expect(secondRanked.refreshState.similarity.dictionaryPosition).toMatchObject({ sequence: 1 });
+
+    requestAnswers.mockClear();
+    await runToEnd(handler, { context, input });
+    expect(requestAnswers).not.toHaveBeenCalled();
   });
 
   // ----------------------------------------------------------------------------------------------

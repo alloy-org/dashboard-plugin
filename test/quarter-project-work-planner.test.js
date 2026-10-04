@@ -1,8 +1,9 @@
 // Verify how queued project maintenance is planned: which projects a visit refreshes and in what order, how many are
 // in flight at once, when ideas are asked for alone, how rankings wait inside dictionary discovery while it has projects
-// to examine, how a reconciliation aligns the store with the live plan before any job names a project, and that one
-// reconciliation submitted to a work runtime discovers terms, ranks a project, and then asks for its ideas, leaving a
-// second reconciliation nothing to do, and still ranks when discovery fails.
+// to examine, when a changed definition forces a ranking, how a reconciliation aligns the store with the live plan
+// before any job names a project, and that one reconciliation submitted to a work runtime discovers terms, ranks a
+// project, and then asks for its ideas, leaving a second reconciliation nothing to do, and still ranks when discovery
+// fails.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
 import { readCollectedProjectTasks } from "dashboard/project-task-store";
@@ -52,12 +53,12 @@ function storedProject(uuid, { hoursAgo = 1, ideasHoursAgo = hoursAgo, ideasRevi
 // @desc Plan a quarter whose live projects are the stored ones.
 // @param {QuarterProjectWorkPlanner} planner - The planner.
 // @param {Array<QuarterProject>} storedProjects - Stored projects.
-// @param {object} [options] - { dictionaryDiscoveryDue = false, scorerEm = "jev" }.
+// @param {object} [options] - { dictionaryDiscoveryDue = false, scorerEm = "jev", termChangedCounts = new Map() }.
 // @returns {Array<object>} The planned requests.
-function planned(planner, storedProjects, { dictionaryDiscoveryDue = false, scorerEm = "jev" } = {}) {
+function planned(planner, storedProjects, { dictionaryDiscoveryDue = false, scorerEm = "jev", termChangedCounts = new Map() } = {}) {
   const projects = storedProjects.map(project => new QuarterProject({ summary: project.summary, uuid: project.uuid }));
   return planner.plan({ dictionaryDiscoveryDue, input: SCOPE_INPUT, now: NOW, projects, scopeKey: SCOPE_KEY, scorerEm,
-    storedProjects, taskWatermark: WATERMARK });
+    storedProjects, taskWatermark: WATERMARK, termChangedCounts });
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -174,6 +175,17 @@ describe("QuarterProjectWorkPlanner", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
+  // @desc A current project with open tasks mentioning a term whose definition changed is forced a ranking, which
+  //   re-rates those tasks; a current project with none stays checked.
+  it("ranks a current project whose tasks mention a changed definition", () => {
+    const planner = new QuarterProjectWorkPlanner();
+    const storedProjects = [storedProject("mentions-term"), storedProject("unaffected")];
+    const requests = planned(planner, storedProjects, { termChangedCounts: new Map([["mentions-term", 3]]) });
+    expect(requests.slice(1)).toEqual([expect.objectContaining({ desiredRevision: null, key: "rankProjectTasks:mentions-term" })]);
+    expect(planner.coverage(SCOPE_KEY)).toMatchObject({ checked: 1, submitted: 1 });
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc With nothing to rate, a project's associations are refreshed on the staleness of its last refresh, and no
   //   dictionary discovery is planned.
   it("refreshes associations on the staleness window when nothing can rate", () => {
@@ -245,6 +257,34 @@ describe("reconcileProjects", () => {
     expect(requestAnswers.mock.calls.length).toBe(ratingCalls);
     expect(ideaGenerator).toHaveBeenCalledTimes(1);
     expect(planner.coverage(SCOPE_KEY)).toMatchObject({ checked: 1, covered: 1, inFlight: 0 });
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A term the user adds to the dictionary by hand makes the next reconciliation rank the project again, and that
+  //   ranking sends only the tasks that name the term.
+  it("ranks a current project again for the tasks that name a term the user added", async () => {
+    const app = maintenanceApp({ tasks: backlogTasks() });
+    const requestAnswers = ratingRequest();
+    const ideaGenerator = jest.fn().mockResolvedValue({ failureReason: null, foundTasks: [], suggestedTasks: [GENERATED_IDEA] });
+    const planner = new QuarterProjectWorkPlanner();
+    const discoveryRunner = jest.fn().mockResolvedValue(DISCOVERED_TERMS);
+    const { outcomes, repository, runtime } = maintenanceRuntime(app, { discoveryRunner, ideaGenerator, planner, requestAnswers });
+    await runtime.durable.submit(projectReconciliationRequest(SCOPE_INPUT, { requestedAt: 1 }));
+    await settledJobs(repository, jobs => jobs.length === 4 && jobs.every(job => job.status === "completed"));
+
+    const dictionaryHandle = await app.findNote({ name: "User terms dictionary 2026" });
+    const dictionaryContent = app.noteContent("User terms dictionary 2026");
+    await app.replaceNoteContent(dictionaryHandle, dictionaryContent.replace("\n# Examined projects",
+      "- **widget**: A card on the Dashboard.\n\n# Examined projects"));
+    requestAnswers.mockClear();
+    const rankingCount = () => outcomes.filter(outcome => outcome.jobType === "rankProjectTasks" && outcome.status === "completed").length;
+    await runtime.durable.submit(projectReconciliationRequest(SCOPE_INPUT, { requestedAt: 2 }));
+    await settledJobs(repository, () => rankingCount() === 2);
+    runtime.dispose();
+    const resentTexts = requestAnswers.mock.calls.flatMap(([{ state }]) => Object.values(state.prospectiveTasks)
+      .map(task => task.text));
+    expect(resentTexts.sort()).toEqual(["Tune widget layout 37", "Tune widget layout 67", "Tune widget layout 7",
+      "Tune widget layout 97"]);
   });
 
   // ----------------------------------------------------------------------------------------------

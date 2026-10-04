@@ -394,8 +394,8 @@ describe("prepareProjectTaskRanker", () => {
     expect(ranking).toMatchObject({ acceptedTasks: [], minimumMatchScore: null, rankingIncomplete: false, ratedCount: 0 });
     expect(projectLog[1]).toEqual({ acceptedCount: 0, cachedCount: 0, candidateCount: 0, changedCount: 0, createdAfter: rankedAt,
       excludedBeforeCreatedAfter: 1, excludedWithoutCreatedAt: 1, limitToRequiredTasks: false, minimumMatchScore: null,
-      project: "Diff Digest launch", rankingIncomplete: false, recheckedCount: 0, requiredCount: 0, scorerEm: "jev",
-      searchProgress: null, sentCount: 0 });
+      project: "Diff Digest launch", rankingIncomplete: false, recheckedCount: 0, requiredCount: 0, rescoredCount: 0,
+      scorerEm: "jev", searchProgress: null, sentCount: 0 });
   });
 
   it("pools changed older tasks past the createdAfter cutoff, keeping only similar ones in the hash", async () => {

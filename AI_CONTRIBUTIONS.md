@@ -5,6 +5,24 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-04 — Phase 7a: changed dictionary definitions re-rate only the tasks that name them
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/plan-wizard/stack-rank/dictionary-term-revisions.js` (created) — Archived "User terms dictionary {year} revisions" JSON note recording each definition's digest and change sequence; baseline on first record; `termsChangedSince`, `termChangedTaskRecords`, `storedDictionaryTermRevisions`
+- `lib/plan-wizard/stack-rank/user-terms-dictionary.js` — `readUserTermsDictionary`, a read that never creates or seeds the note
+- `lib/plan-wizard/stack-rank/build-project-task-context.js` — `unexaminedDictionaryProjects` reads through it
+- `lib/plan-wizard/stack-rank/task-rating-cache.js`, `project-ranking-progress.js`, `stack-rank-project-tasks.js` — `rescoredTaskRecords` are pooled and rated again despite a stored rating; the ranker exposes the dictionary it read
+- `lib/dashboard/quarter-project-refresh-state.js`, `quarter-project.js`, `project-collection-steps.js` — The similarity success records an optional `dictionaryPosition`, kept when a refresh supplies none
+- `lib/dashboard/work-queue/jobs/rank-project-tasks.js` — Records definition changes before ranking, re-rates open tasks naming a term changed since the project's last complete ranking, and records the position on success
+- `lib/dashboard/work-queue/jobs/reconcile-projects.js`, `quarter-project-work-planner.js` — Count those tasks per project and force a ranking when there are any
+- `test/dictionary-term-revisions.test.js` (created), `test/project-maintenance-jobs.test.js`, `test/quarter-project-work-planner.test.js`, `test/stack-rank.test.js` — Baseline, change sequences, task selection, re-rating only named tasks, and the reconciliation that triggers it
+- `doc/plan-dashboard-work-queue.md` — "As built" notes for 7a
+
+**Task:** Make dictionary definition changes reach task similarity scores, re-rating only tasks that mention a changed term
+
+---
+
 ## 2026-10-04 — Rankings wait for dictionary discovery; clearer saved-work labels
 
 **Model:** Claude Opus 5.5
