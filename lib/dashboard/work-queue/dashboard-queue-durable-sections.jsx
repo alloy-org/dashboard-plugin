@@ -1,6 +1,7 @@
 // The admin Queue inspector's durable sections: the jobs saved in the current scope's queue note, including those
-// claimed by other sessions, and the outcomes kept in its history note. Both are read when the inspector opens or the
-// operator refreshes, and are labelled unavailable rather than empty when durable work is off or a note is unreadable.
+// claimed by other sessions, the outcomes kept in its history note, and each dictionary term's evidence and refinement.
+// All are read when the inspector opens or the operator refreshes, and are labelled unavailable rather than empty when
+// durable work is off or a note is unreadable.
 import { formattedAge, formattedDuration, formattedRevision, savedJobRows } from "dashboard/work-queue/dashboard-queue-inspector-model";
 
 // ------------------------------------------------------------------------------------------
@@ -91,6 +92,48 @@ export function SavedWorkSection({ durable, loading, now, onRefresh, sessionId }
                 <td>{row.cursor === null ? "—" : "Checkpoint saved"}</td>
                 <td>{formattedAge(row.updatedAt, now)}</td>
                 <td>{row.lastFailure ? `${ row.lastFailure.classification }: ${ row.lastFailure.message }` : "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc Each dictionary term's evidence collection and refinement, in dictionary order, with what happens next, so an
+//   operator can tell a term whose search found nothing from one not yet looked at.
+// @param {object} props - { now, terms }: terms is { error, rows } from useDashboardQueueHistory, or null.
+export function DictionaryTermSection({ now, terms }) {
+  if (!terms) return null;
+  const at = time => (time ? formattedAge(Date.parse(time), now) : "—");
+  return (
+    <section className="queue-inspector-section">
+      <h4>Dictionary terms ({terms.rows.length})</h4>
+      {terms.error && <p className="queue-inspector-empty">Dictionary or evidence note unreadable: {terms.error}</p>}
+      {terms.rows.length === 0 ? <p className="queue-inspector-empty">This year has no dictionary terms yet.</p> : (
+        <table className="queue-inspector-table">
+          <thead>
+            <tr><th>Term</th><th>Evidence</th><th>Refinement</th><th>Next</th></tr>
+          </thead>
+          <tbody>
+            {terms.rows.map(row => (
+              <tr key={row.term}>
+                <td>{row.term}<div className="queue-inspector-detail">{row.isBuilderOwned ? "Plugin-owned" : "User-written"}</div></td>
+                <td>
+                  {row.evidenceOutcome || "—"}
+                  {row.collectedAt ? <div className="queue-inspector-detail">{`${ row.passageCount } passages from ${ row.sourceCount } `
+                    + `notes, ${ at(row.collectedAt) }`}</div> : null}
+                </td>
+                <td>
+                  {row.refinementOutcome ? `${ row.refinementOutcome }${ row.evidenceQuality ? ` (${ row.evidenceQuality })` : "" }` : "—"}
+                  {row.refinementAttemptedAt ? <div className="queue-inspector-detail">{`Tried ${ at(row.refinementAttemptedAt) }; `
+                    + `last rewritten ${ at(row.refinedAt) }`}</div> : null}
+                  {row.keptReason ? <div className="queue-inspector-detail">{row.keptReason}</div> : null}
+                  {row.uncertainty ? <div className="queue-inspector-detail">Uncertain: {row.uncertainty}</div> : null}
+                </td>
+                <td>{row.nextStep}</td>
               </tr>
             ))}
           </tbody>

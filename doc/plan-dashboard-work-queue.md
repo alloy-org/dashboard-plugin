@@ -744,8 +744,8 @@ sequence }). A project's next ranking pools the open tasks naming a term changed
 too. `reconcileProjects` counts those tasks per ranked project and the planner forces a ranking when there are any.
 The rating key and `similarityInputRevision` are unchanged, so no other stored score is invalidated.
 
-As built, 7b adds `plan-wizard/stack-rank/dictionary-term-evidence.js` and the `collectTermEvidence` job, which nothing
-submits until 7c schedules it. A collection searches `"<term>"` with `app.searchNotes` (the relevance-sorted
+As built, 7b adds `plan-wizard/stack-rank/dictionary-term-evidence.js` and the `collectTermEvidence` job, which 7c
+schedules. A collection searches `"<term>"` with `app.searchNotes` (the relevance-sorted
 `filterNotes` query when a client lacks it), and the bare term when the quoted search yields no passage, reading at
 most eight notes in all. Notes tagged `plugins/dashboard` or beneath it (the dictionary and its revisions and evidence
 notes, the queue, the planning notes) are never read. Passages are cut only where the term is a whole word: each block
@@ -755,10 +755,32 @@ kept once, notes take turns (at most three passages each, ten in all, 12,000 cha
 `found`, `noPassages`, or `noMatchingNotes`. The archived `User terms dictionary <year> evidence` JSON note keeps one
 record per term with its passages, source note UUIDs and content digests, and a `sourceDigest` 7c can compare to tell
 whether a term's evidence changed; past 60,000 characters of passages the oldest records drop theirs and keep their
-sources. The job is keyed `collectTermEvidence:<year>:<term>`, retires when the dictionary no longer defines the term,
+sources. The job is keyed `collectTermEvidence:<year>:<term>`, retires when the dictionary no longer defines the term
+(as built in 7c, also when the user has adopted it),
 and holds one app read permit for the bounded collection. Exact-phrase behavior of the quoted search is not yet
 verified against Amplenote; passages are checked locally, so a looser search costs reads but never admits a passage
 that lacks the term.
+
+As built, 7c adds `plan-wizard/stack-rank/dictionary-term-refinement.js`, `dictionary-term-schedule.js`, and the
+`refineDictionaryTerm` job. Each reconciliation with a rater appends evidence collections for at most two `[builder]`
+terms: never collected first, then terms whose open tasks changed (a digest of the task texts naming the term, saved
+with the evidence, rechecked at most daily), then terms whose evidence is past the seven-day cooldown, the most
+mentioned first within each. The cooldown governs looking; a provider is asked only when a collection's `sourceDigest`
+differs from the one the term was last refined from, and the collection submits that refinement as its follow-up.
+Term jobs run in the reconciling quarter's queue scope rather than an annual one; the shared evidence note makes a
+second domain see the evidence as current, and the refinement's revision is the source digest, so domains do not
+refine the same evidence twice. The prompt numbers the passages with their note names and asks for a decision, a
+definition, cited passage numbers, an evidence grade, and uncertainty; a rewrite is accepted only when it is graded
+strong or partial, cites a passage shown, is 20–500 characters, and differs from the current definition. Commits go
+through the note writer after a fresh read and are skipped when the term is gone, no longer ends in `[builder]`, or has
+a different definition than the one sent (the job then retires so the next collection retries). Discovery's dictionary
+write now uses the same writer and merges into a fresh read. The evidence record keeps `refinement` ({ attemptedAt,
+citedNoteUuids, evidenceQuality, keptReason, outcome, refinedAt, sourceDigest, uncertainty }) across collections, and
+a refinement releases the passages it read. The revisions note from 7a notices a changed definition at the next
+ranking, so only tasks naming the term are re-rated. The inspector lists each term's owner, evidence outcome (including
+no matching notes or no passages), refinement outcome and grade, and next step. Prompts do not yet carry project
+summaries, so relationships to projects come only from the passages. `DICTIONARY_REFINEMENT_ENABLED` turns the
+scheduling off while saved term jobs still finish.
 
 ### Phase 8 Rated ideas and recommendation candidates
 

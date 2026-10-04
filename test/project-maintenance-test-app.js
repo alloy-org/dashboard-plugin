@@ -1,5 +1,6 @@
 // The in-memory notebook and fixtures the project maintenance tests share: a quarterly plan with one project, a
-// backlog of tasks a rater finds similar or not, a Jev stand-in, and a job context like the one a work runtime gives.
+// backlog of tasks a rater finds similar or not, a Jev stand-in, a job context like the one a work runtime gives, and
+// a searchable notebook for the dictionary term tests.
 import { jest } from "@jest/globals";
 import QuarterProjectRepository from "dashboard/quarter-project-repository";
 import { createAppDispatch } from "dashboard/work-queue/dashboard-app-dispatch";
@@ -115,4 +116,43 @@ export async function storedProjectUuid(app) {
   await new QuarterProjectRepository({ app }).applyResult(scope, { apply: () => {}, projectUuid: PROJECT_UUID,
     summary: "Launch dashboard" });
   return PROJECT_UUID;
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc An in-memory notebook whose full search matches a quoted query as a phrase and an unquoted one by its words,
+//   best matches being the notes listed first.
+// @param {Array<object>} seedNotes - { content, name, tags }.
+// @returns {object} App mock carrying `noteContent(name)` and the `searchNotes` mock for assertions.
+export function notebookApp(seedNotes) {
+  const notes = new Map(seedNotes.map((note, index) => [`seed-${ index + 1 }`, { tags: [], ...note }]));
+  let sequence = 0;
+  const entryNamed = name => [...notes.entries()].find(([, note]) => note.name === name) || null;
+  const matchesQuery = (content, query) => {
+    const lowered = content.toLowerCase();
+    if (query.startsWith("\"")) return lowered.includes(query.slice(1, -1).toLowerCase());
+    return query.toLowerCase().split(/\s+/).every(word => lowered.includes(word));
+  };
+  const app = {
+    createNote: async (name, tags = []) => {
+      sequence += 1;
+      notes.set(`created-${ sequence }`, { content: "", name, tags });
+      return `created-${ sequence }`;
+    },
+    findNote: async ({ name, uuid }) => {
+      if (uuid) return notes.has(uuid) ? { name: notes.get(uuid).name, uuid } : null;
+      const entry = entryNamed(name);
+      return entry ? { name, uuid: entry[0] } : null;
+    },
+    getNoteContent: jest.fn(async ({ uuid }) => notes.get(uuid)?.content ?? ""),
+    noteContent: name => entryNamed(name)?.[1].content ?? null,
+    replaceNoteContent: async ({ uuid }, content) => {
+      notes.get(uuid).content = content;
+      return true;
+    },
+    searchNotes: jest.fn(async query => {
+      const matching = [...notes.entries()].filter(([, note]) => matchesQuery(note.content, query));
+      return matching.map(([uuid, note]) => ({ name: note.name, tags: note.tags, uuid }));
+    }),
+  };
+  return app;
 }

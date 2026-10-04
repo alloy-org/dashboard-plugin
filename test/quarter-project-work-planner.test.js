@@ -63,7 +63,8 @@ function planned(planner, storedProjects, { dictionaryDiscoveryDue = false, scor
 
 // ----------------------------------------------------------------------------------------------
 // @desc A work runtime over the maintenance test app with every project maintenance handler registered, its outcomes
-//   counted by the planner and listed in the order they arrive.
+//   counted by the planner and listed in the order they arrive. Term evidence is not scheduled, so the jobs counted are
+//   the quarter's project work alone.
 // @param {object} app - From maintenanceApp.
 // @param {object} options - { discoveryRunner, ideaGenerator, planner, requestAnswers }.
 // @returns {object} { outcomes, repository, runtime }.
@@ -73,7 +74,7 @@ function maintenanceRuntime(app, { discoveryRunner, ideaGenerator, planner, requ
     createGenerateProjectIdeasHandler({ ideaGenerator }),
     createRankProjectTasksHandler({ rankerFactory: (currentApp, options) => prepareProjectTaskRanker(currentApp,
       { ...options, requestAnswers }) }),
-    createReconcileProjectsHandler({ planner, taskScorer: async () => "jev" }),
+    createReconcileProjectsHandler({ planner, taskScorer: async () => "jev", termEvidenceScheduler: null }),
   ]);
   const clock = () => NOW.getTime();
   const repository = new DashboardWorkRepository({ app, clock });

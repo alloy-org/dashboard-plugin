@@ -5,6 +5,27 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-04 — Phase 7c: refine plugin-owned dictionary definitions from their evidence, and schedule it
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/plan-wizard/stack-rank/dictionary-term-refinement.js` (created) — Refinement prompt over numbered passages; `acceptedTermRefinement` accepts only a cited rewrite on strong or partial evidence that says something new; `committedTermDefinition` writes through the note writer after rechecking that the term exists, still ends in `[builder]`, and still has the definition the refinement read
+- `lib/plan-wizard/stack-rank/dictionary-term-schedule.js` (created) — `dueTermEvidence`/`dueTermEvidenceRequests` pick at most two plugin-owned terms per visit (never collected, then changed task mentions after a day, then the seven-day cooldown, most mentioned first); `termRefinementDue`; `termProgressRows`/`readTermProgress` for the inspector
+- `lib/dashboard/work-queue/jobs/refine-dictionary-term.js` (created) — `refineDictionaryTerm` job keyed by year and term with the evidence's source digest as its revision; records the outcome and releases the passages; retires to retry when the definition changed mid-request; configuration failure without a provider
+- `lib/plan-wizard/stack-rank/dictionary-term-evidence-store.js` — Keeps a term's refinement across collections; `recordedTermRefinement`
+- `lib/dashboard/work-queue/jobs/collect-term-evidence.js` — Saves the task-mention digest, retires for a user-owned term, and requests a refinement for new evidence
+- `lib/dashboard/work-queue/jobs/project-job-requests.js` — `termRefinementRequest`; evidence requests carry a request-time revision and mention digest
+- `lib/dashboard/work-queue/jobs/reconcile-projects.js`, `dashboard-work-handlers.js`, `dashboard-work-features.js` — Reconciliation appends the due term collections; handler registered; `DICTIONARY_REFINEMENT_ENABLED` switch
+- `lib/plan-wizard/stack-rank/build-project-task-context.js` — Discovery's dictionary write is serialized through the note writer and merged into a fresh read
+- `lib/plan-wizard/stack-rank/dictionary-term-discovery.js` — `termPattern`, shared by `textContainsTerm`
+- `lib/hooks/use-dashboard-queue-diagnostics.js`, `lib/hooks/use-dashboard-work-queue.js`, `lib/dashboard/work-queue/dashboard-queue-durable-sections.jsx`, `dashboard-queue-inspector.jsx` — Inspector "Dictionary terms" section with each term's evidence, refinement, and next step
+- `test/dictionary-term-refinement.test.js` (created), `test/dictionary-term-evidence.test.js`, `test/project-maintenance-test-app.js`, `test/project-maintenance-jobs.test.js`, `test/quarter-project-work-planner.test.js` — Acceptance rules, commit and ownership, once-per-evidence, failures, scheduling, progress rows; shared notebook mock
+- `doc/plan-dashboard-work-queue.md` — "As built" notes for 7c
+
+**Task:** Refine plugin-owned dictionary definitions from notebook evidence on a bounded, cooldown-governed schedule
+
+---
+
 ## 2026-10-04 — Phase 7b: collect each dictionary term's evidence from the notebook
 
 **Model:** Claude Opus 5.5

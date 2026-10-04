@@ -1,9 +1,10 @@
 // The admin Queue inspector, shown inside the Debug Console when admin tools are available. It answers what is
 // running, why each job is waiting, and whether the queue is making progress, from the scheduler's own snapshots
-// rather than from Console Logging, and shows the scope's saved durable jobs and their history when durable work is on.
+// rather than from Console Logging, and shows the scope's saved durable jobs, their history, and each dictionary term's
+// evidence and refinement progress when durable work is on.
 // It is read-only: it adds no job controls, and copying or downloading a snapshot
 // exports the sanitized copy diagnostics produce without retrying, resuming, or reprioritizing anything.
-import { DurableHistorySection, SavedWorkSection } from "dashboard/work-queue/dashboard-queue-durable-sections";
+import { DictionaryTermSection, DurableHistorySection, SavedWorkSection } from "dashboard/work-queue/dashboard-queue-durable-sections";
 import { ALL_JOBS_FILTER, filteredJobs, queueOverview, recentOutcomes, urgentRenderRows } from "dashboard/work-queue/dashboard-queue-inspector-model";
 import { QueueJobSection, QueueOutcomeSection, QueueOverviewSection, QueueResourceSection, QueueTimingSection,
   UrgentRenderSection } from "dashboard/work-queue/dashboard-queue-inspector-sections";
@@ -70,6 +71,7 @@ export default function DashboardQueueInspector({ work }) {
       <QueueTimingSection timings={view.diagnostics.timings} />
       <SavedWorkSection durable={durable} loading={loading} now={view.capturedAt} onRefresh={refresh} sessionId={view.session.sessionId} />
       <DurableHistorySection history={durable?.history || null} now={view.capturedAt} sessionId={view.session.sessionId} />
+      <DictionaryTermSection now={view.capturedAt} terms={durable?.terms || null} />
     </div>
   );
 }

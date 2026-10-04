@@ -3,7 +3,6 @@
 // collection skips notes the plugin maintains, keeps a copied passage once, spreads passages across notes, bounds the
 // notes it reads, and falls back to an unquoted search; the job saves the record or retires when the term is gone; and
 // the store gives up the oldest records' passages first when they outgrow the note.
-import { jest } from "@jest/globals";
 import { createCollectTermEvidenceHandler } from "dashboard/work-queue/jobs/collect-term-evidence";
 import { termEvidenceRequest } from "dashboard/work-queue/jobs/project-job-requests";
 import DashboardNoteWriter from "dashboard/work-queue/dashboard-note-writer";
@@ -11,48 +10,9 @@ import { collectTermEvidence, EVIDENCE_OUTCOMES, MAXIMUM_EVIDENCE_NOTES_READ, MA
   termPassagesFromContent } from "plan-wizard/stack-rank/dictionary-term-evidence";
 import { MAXIMUM_STORED_PASSAGE_CHARACTERS, savedTermEvidence,
   storedTermEvidence } from "plan-wizard/stack-rank/dictionary-term-evidence-store";
-import { jobContext, NOW } from "./project-maintenance-test-app";
+import { jobContext, notebookApp, NOW } from "./project-maintenance-test-app";
 
 const YEAR = 2026;
-
-// ----------------------------------------------------------------------------------------------
-// @desc An in-memory notebook whose full search matches a quoted query as a phrase and an unquoted one by its words,
-//   best matches being the notes listed first.
-// @param {Array<object>} seedNotes - { content, name, tags }.
-// @returns {object} App mock carrying `noteContent(name)` and the `searchNotes` mock for assertions.
-function notebookApp(seedNotes) {
-  const notes = new Map(seedNotes.map((note, index) => [`seed-${ index + 1 }`, { tags: [], ...note }]));
-  let sequence = 0;
-  const entryNamed = name => [...notes.entries()].find(([, note]) => note.name === name) || null;
-  const matchesQuery = (content, query) => {
-    const lowered = content.toLowerCase();
-    if (query.startsWith("\"")) return lowered.includes(query.slice(1, -1).toLowerCase());
-    return query.toLowerCase().split(/\s+/).every(word => lowered.includes(word));
-  };
-  const app = {
-    createNote: async (name, tags = []) => {
-      sequence += 1;
-      notes.set(`created-${ sequence }`, { content: "", name, tags });
-      return `created-${ sequence }`;
-    },
-    findNote: async ({ name, uuid }) => {
-      if (uuid) return notes.has(uuid) ? { name: notes.get(uuid).name, uuid } : null;
-      const entry = entryNamed(name);
-      return entry ? { name, uuid: entry[0] } : null;
-    },
-    getNoteContent: jest.fn(async ({ uuid }) => notes.get(uuid)?.content ?? ""),
-    noteContent: name => entryNamed(name)?.[1].content ?? null,
-    replaceNoteContent: async ({ uuid }, content) => {
-      notes.get(uuid).content = content;
-      return true;
-    },
-    searchNotes: jest.fn(async query => {
-      const matching = [...notes.entries()].filter(([, note]) => matchesQuery(note.content, query));
-      return matching.map(([uuid, note]) => ({ name: note.name, tags: note.tags, uuid }));
-    }),
-  };
-  return app;
-}
 
 // ----------------------------------------------------------------------------------------------
 // @desc An evidence record carrying one passage of a given length, for exercising the store's passage budget.
@@ -146,7 +106,8 @@ describe("dictionary term evidence", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc The job saves the term's evidence to the year's evidence note, and retires once the dictionary drops the term.
+  // @desc The job saves the term's evidence to the year's evidence note and asks for a refinement of the new evidence, and
+//   retires once the dictionary drops the term.
   it("saves a defined term's evidence and retires for a removed term", async () => {
     const app = notebookApp([
       { content: "# Terms\n- **Widget**: A card. [builder]\n", name: "User terms dictionary 2026", tags: ["plugins/dashboard"] },
@@ -154,11 +115,13 @@ describe("dictionary term evidence", () => {
     ]);
     const handler = createCollectTermEvidenceHandler();
     const request = termEvidenceRequest({ term: " Widget ", year: YEAR });
-    expect(request).toMatchObject({ entityId: "widget", input: { term: "Widget", year: YEAR }, key: "collectTermEvidence:2026:widget" });
+    expect(request).toMatchObject({ entityId: "widget", input: { mentionDigest: null, term: "Widget", year: YEAR },
+      key: "collectTermEvidence:2026:widget" });
     const job = { attempt: 1, category: "maintenance", cursor: null, desiredRevision: null, entityId: request.entityId,
       input: request.input, key: request.key, scopeKey: "work-domain:Q3 2026", type: handler.type };
     const result = await handler.run({ context: jobContext(app), job, signal: null });
-    expect(result).toEqual({ outcome: EVIDENCE_OUTCOMES.found, passageCount: 1, sourceCount: 1, term: "Widget" });
+    expect(result).toMatchObject({ outcome: EVIDENCE_OUTCOMES.found, passageCount: 1, sourceCount: 1, term: "Widget" });
+    expect(result.followUps.map(followUp => followUp.key)).toEqual(["refineDictionaryTerm:2026:widget"]);
     const stored = await storedTermEvidence(app, { year: YEAR });
     expect(stored.widget.passages).toEqual([{ noteUuid: "seed-2", text: "The widget grid ships Friday." }]);
     const gadgetJob = { ...job, input: { term: "Gadget", year: YEAR }, key: "collectTermEvidence:2026:gadget" };
