@@ -5,6 +5,20 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-04 — Work queue phase 10: generative permit held free for foreground work
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/dashboard-work-policy.js` — `RESOURCE_LIMITS.generative` raised to 2; new `MAINTENANCE_RESOURCE_LIMITS` caps maintenance at one generative permit
+- `lib/dashboard/work-queue/dashboard-resource-budget.js` — `maintenanceLimits` option and `_maintenanceLimit`; `tryAcquire` holds maintenance to it at all times; `snapshot` reports `maintenanceLimit`
+- `lib/dashboard/work-queue/dashboard-queue-inspector-sections.jsx` — Resources table shows a capped maintenance count as "0 of 1"
+- `test/dashboard-resource-budget.test.js` — maintenance cap without foreground demand; default reserves a foreground generative permit
+- `test/dashboard-work-scheduler.test.js` — two single-permit lifecycle tests pin `generative: 1`
+
+**Prompt:** "We are up to phase 10 of @doc/plan-dashboard-work-queue.md, here is the queue log, has a couple jobs of longer than 20s" / "Proceed with proposed fix"
+
+---
+
 ## 2026-10-04 — Dream Task Reseed generates a new batch
 
 **Model:** Claude Opus 5.5

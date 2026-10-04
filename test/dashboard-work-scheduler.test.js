@@ -170,7 +170,7 @@ describe("DashboardWorkScheduler job lifecycle", () => {
   // @desc Cancelling a running job aborts its signal and frees its permit at once; its late result is ignored, so it
   //   settles exactly once and the next job can take the permit.
   it("releases a cancelled job's permit without completing it twice", async () => {
-    const { budget, diagnostics, scheduler } = manualScheduler();
+    const { budget, diagnostics, scheduler } = manualScheduler({ limits: { generative: 1 } });
     const providerCall = deferred();
     let signal = null;
     const started = [];
@@ -195,7 +195,7 @@ describe("DashboardWorkScheduler job lifecycle", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc A thrown error fails the job, releases its permit, and is recorded for diagnostics.
   it("fails a job that throws and frees its permit", async () => {
-    const { budget, diagnostics, scheduler } = manualScheduler();
+    const { budget, diagnostics, scheduler } = manualScheduler({ limits: { generative: 1 } });
     const outcome = scheduler.enqueue({ key: "generate:ideas", resource: "generative",
       run: async () => { throw new Error("provider unavailable"); } });
     scheduler.runReady();

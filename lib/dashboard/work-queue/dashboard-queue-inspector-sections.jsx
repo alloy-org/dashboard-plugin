@@ -131,7 +131,8 @@ export function QueueOverviewSection({ now, overview }) {
 }
 
 // ------------------------------------------------------------------------------------------
-// @desc Permits in use and free for each resource, split between foreground work and maintenance.
+// @desc Permits in use and free for each resource, split between foreground work and maintenance. A resource that
+//   holds maintenance below its limit shows the cap beside maintenance's count, as "0 of 1".
 // @param {object} props - { resources }: from the scheduler snapshot.
 export function QueueResourceSection({ resources }) {
   return (
@@ -142,7 +143,7 @@ export function QueueResourceSection({ resources }) {
         <tbody>
           {Object.entries(resources).map(([resource, permits]) => (
             <tr key={resource}>
-              <td>{resource}</td><td>{permits.limit}</td><td>{permits.foreground}</td><td>{permits.maintenance}</td><td>{permits.available}</td>
+              <td>{resource}</td><td>{permits.limit}</td><td>{permits.foreground}</td><td>{_maintenancePermits(permits)}</td><td>{permits.available}</td>
             </tr>
           ))}
         </tbody>
@@ -227,4 +228,13 @@ function _projectCoverageText(coverage) {
   if (!coverage.target) return "No reconciliation has planned this scope yet";
   return `${ coverage.covered } of ${ coverage.target } covered: ${ coverage.succeeded } refreshed (${ coverage.rated } ranked), `
     + `${ coverage.checked } current; ${ coverage.inFlight } in flight, ${ coverage.failed } failed`;
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc The maintenance cell's text: the permits maintenance holds, with its cap when that is below the full limit.
+// @param {object} permits - { limit, maintenance, maintenanceLimit } from the scheduler snapshot.
+// @returns {string|number} The count, or "<count> of <cap>".
+function _maintenancePermits({ limit, maintenance, maintenanceLimit }) {
+  if (!Number.isInteger(maintenanceLimit) || maintenanceLimit >= limit) return maintenance;
+  return `${ maintenance } of ${ maintenanceLimit }`;
 }

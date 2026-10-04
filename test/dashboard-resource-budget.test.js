@@ -12,7 +12,7 @@ describe("DashboardResourceBudget", () => {
     expect(budget.tryAcquire("jev")).toBeNull();
     expect(budget.tryAcquire("generative")).not.toBeNull();
     expect(budget.tryAcquire("mount", { background: false })).not.toBeNull();
-    expect(budget.snapshot().resources.jev).toEqual({ available: 0, foreground: 0, limit: 2, maintenance: 2 });
+    expect(budget.snapshot().resources.jev).toEqual({ available: 0, foreground: 0, limit: 2, maintenance: 2, maintenanceLimit: 2 });
     expect(() => budget.tryAcquire("telepathy")).toThrow("Unknown work resource");
   });
 
@@ -47,5 +47,33 @@ describe("DashboardResourceBudget", () => {
     budget.setForegroundDemand(false);
     expect(budget.tryAcquire("generative")).not.toBeNull();
     expect(budget.snapshot().foregroundDemand).toBe(false);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A maintenance limit below the full limit holds maintenance to it with no foreground demand at all, so a
+  //   foreground request arriving while maintenance's generative request runs is admitted at once rather than queued.
+  it("holds maintenance below a resource's maintenance limit and leaves the rest to foreground work", async () => {
+    const budget = new DashboardResourceBudget({ limits: { generative: 2, jev: 4 }, maintenanceLimits: { generative: 1 } });
+    const maintenance = budget.tryAcquire("generative");
+    expect(maintenance).not.toBeNull();
+    expect(budget.tryAcquire("generative")).toBeNull();
+    const foreground = await budget.acquire("generative", { background: false });
+    expect(foreground).not.toBeNull();
+    expect(budget.snapshot().resources.generative).toEqual({ available: 0, foreground: 1, limit: 2, maintenance: 1,
+      maintenanceLimit: 1 });
+    expect(budget.snapshot().resources.jev.maintenanceLimit).toBe(4);
+    foreground.release();
+    expect(budget.tryAcquire("generative")).toBeNull();
+    maintenance.release();
+    expect(budget.tryAcquire("generative")).not.toBeNull();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc The policy's defaults leave one generative permit that maintenance can never take.
+  it("reserves a generative permit for foreground work by default", () => {
+    const budget = new DashboardResourceBudget();
+    expect(budget.tryAcquire("generative")).not.toBeNull();
+    expect(budget.tryAcquire("generative")).toBeNull();
+    expect(budget.tryAcquire("generative", { background: false })).not.toBeNull();
   });
 });

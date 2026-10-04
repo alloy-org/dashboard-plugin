@@ -911,6 +911,13 @@ older writers that drop new metadata cannot be assumed safe merely because they 
 Run the relevant regression suites, production build and host smoke test. This phase is operational activation and
 cleanup, not a prerequisite for reviewing or committing phases 1–9. Each earlier stop point remains buildable.
 
+As measured so far, maintenance generative requests (idea generation, definition refinement) take 15–25 seconds each.
+With one generative permit shared by all priorities, a foreground request, such as a cold Dream Task or agenda ranked
+by the generative model when Jev is unavailable, waited behind one already in flight, since priority cannot preempt it.
+The generative limit is now two, and `MAINTENANCE_RESOURCE_LIMITS` holds maintenance to one of them at all times, so
+background work still makes one generative request at a time while a foreground request is admitted at once. The
+inspector's Resources table shows the cap as "0 of 1" in the Maintenance column.
+
 ### Integration map
 
 Concrete integration changes:
