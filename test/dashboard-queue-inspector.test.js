@@ -5,7 +5,7 @@
 import { jest } from "@jest/globals";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
-import { ALL_JOBS_FILTER, filteredJobs, queueInspectorView, queueOverview, recentOutcomes, savedJobRows,
+import { ALL_JOBS_FILTER, filteredJobs, formattedRevision, queueInspectorView, queueOverview, recentOutcomes, savedJobRows,
   urgentRenderRows } from "dashboard/work-queue/dashboard-queue-inspector-model";
 import DashboardWorkDiagnosticsStore from "dashboard/work-queue/dashboard-work-diagnostics-store";
 import { workHandlerRegistry } from "dashboard/work-queue/dashboard-work-handlers";
@@ -96,14 +96,28 @@ describe("Saved job rows", () => {
       job({ claimExpiresAt: now - 1, key: "lapsed", ownerId: "other", status: "running" }),
       job({ claimExpiresAt: now + 1000, key: "local", ownerId: "me", status: "running" }),
       job({ key: "retry", nextEligibleAt: now + 30_000, status: "retryWaiting" }),
+      job({ key: "retry-due", nextEligibleAt: now - 5, status: "retryWaiting", updatedAt: 0 }),
     ], { now, sessionId: "me" });
     expect(rows.map(row => [row.key, row.statusLabel])).toEqual([
       ["remote", "Claimed by another session (other), not verified running"],
       ["lapsed", "Claim lapsed; resumes on the next recovery"],
       ["local", "Running in this session"],
       ["retry", "Retrying in 30.0 s"],
+      ["retry-due", "Retry due"],
       ["done", "completed"],
     ]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A revision that reads as a recent request time, as a reconciliation's does, is shown as an age; any other
+  //   revision is shown as written.
+  it("shows a request-time revision as an age", () => {
+    const now = 1_791_131_623_195;
+    expect(formattedRevision("1791131585195", now)).toBe("38.0 s ago");
+    expect(formattedRevision(1_791_131_585_195, now)).toBe("38.0 s ago");
+    expect(formattedRevision("a1b2c3d4@snapshot:5", now)).toBe("a1b2c3d4@snapshot:5");
+    expect(formattedRevision("1", now)).toBe("1");
+    expect(formattedRevision(null, now)).toBe("—");
   });
 });
 

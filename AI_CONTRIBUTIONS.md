@@ -5,6 +5,23 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-04 — Rankings wait for dictionary discovery; clearer saved-work labels
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/plan-wizard/stack-rank/build-project-task-context.js` — `unexaminedDictionaryProjects`, a read-only check for projects the terms dictionary has not examined, sharing its filter with discovery
+- `lib/dashboard/work-queue/jobs/reconcile-projects.js` — Checks the dictionary when a rater exists and tells the planner whether discovery is due
+- `lib/dashboard/work-queue/quarter-project-work-planner.js` — While discovery is due, holds the ranking requests inside the discovery request, under a revision that always runs
+- `lib/dashboard/work-queue/jobs/project-job-requests.js` — `dictionaryDiscoveryRequest` accepts `heldRequests`
+- `lib/dashboard/work-queue/jobs/discover-dictionary-terms.js` — Submits held requests as follow-ups on success, and attaches them to the error on failure; validates them
+- `lib/dashboard/work-queue/durable-work-runner.js` — Submits follow-ups an attempt's error carries, after recording the failure
+- `lib/dashboard/work-queue/dashboard-queue-inspector-model.js`, `dashboard-queue-durable-sections.jsx` — "Retry due" for a retry whose time has passed; `formattedRevision` shows request-time revisions as an age
+- `test/quarter-project-work-planner.test.js`, `test/dashboard-queue-inspector.test.js` — Held rankings, discovery-before-ranking order, ranking after a failed discovery, and the new labels
+
+**Task:** Make project rankings read the terms dictionary discovery grows, instead of racing it
+
+---
+
 ## 2026-10-04 — Work queue timers safe to call as methods
 
 **Model:** Claude Opus 5.5

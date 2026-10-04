@@ -1,7 +1,7 @@
 // The admin Queue inspector's durable sections: the jobs saved in the current scope's queue note, including those
 // claimed by other sessions, and the outcomes kept in its history note. Both are read when the inspector opens or the
 // operator refreshes, and are labelled unavailable rather than empty when durable work is off or a note is unreadable.
-import { formattedAge, formattedDuration, savedJobRows } from "dashboard/work-queue/dashboard-queue-inspector-model";
+import { formattedAge, formattedDuration, formattedRevision, savedJobRows } from "dashboard/work-queue/dashboard-queue-inspector-model";
 
 // ------------------------------------------------------------------------------------------
 // @desc Outcomes of durable jobs from this and earlier sessions, newest first, with how saving history has gone.
@@ -83,9 +83,9 @@ export function SavedWorkSection({ durable, loading, now, onRefresh, sessionId }
                   {row.claimExpiresAt ? <div className="queue-inspector-detail">{_claimText(row.claimExpiresAt, now)}</div> : null}
                 </td>
                 <td>{row.attempt}</td>
-                <td>{row.desiredRevision ?? "—"}</td>
-                <td>
-                  {row.succeededRevision ?? "—"}
+                <td title={row.desiredRevision ?? undefined}>{formattedRevision(row.desiredRevision, now)}</td>
+                <td title={row.succeededRevision ?? undefined}>
+                  {formattedRevision(row.succeededRevision, now)}
                   {row.succeededAt ? <div className="queue-inspector-detail">{formattedAge(row.succeededAt, now)}</div> : null}
                 </td>
                 <td>{row.cursor === null ? "—" : "Checkpoint saved"}</td>
