@@ -5,6 +5,29 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-03 — Phase 6b of the work queue: checkpointed project maintenance handlers
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/plan-wizard/stack-rank/project-ranking-progress.js` (created) — `ProjectRankingProgress`: a ranking's drawn pool rated in slices of whole batches, partial similarity scores for a pause, and the same finish as one uninterrupted ranking
+- `lib/plan-wizard/stack-rank/agent-pro-jev-requester.js` (created) — Ample Agent Pro Jev requester, moved out of the ranker
+- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` — `beginRanking` and `sliceSize` beside `rankProject`, which now composes them; optional `providerDispatch` admits each rating request through the work runtime's permits
+- `lib/plan-wizard/stack-rank/project-match-scores.js` — `selectionWithStoredMinimum`, moved from the ranker
+- `lib/dashboard/project-collection-steps.js` (created) — Per-project refresh steps shared by the collection pass and the queue handlers: matching, association, snapshot reconciliation, change selection, idea merging
+- `lib/dashboard/project-task-collection.js` — Uses the shared steps
+- `lib/dashboard/project-task-ideas.js` — Reports `requestFailed` apart from an unusable answer
+- `lib/dashboard/quarter-project-refresh-state.js` — `ideasInputRevision` and `refreshRevision`
+- `lib/dashboard/work-queue/jobs/project-job-inputs.js` (created) — Job input validation, scope, live project and task reads, dispatched prompt runner
+- `lib/dashboard/work-queue/jobs/rank-project-tasks.js` (created) — `rankProjectTasks` handler: one round of batches per turn, partial scores saved at each pause, ranking time and similarity success only on full success, failures retried
+- `lib/dashboard/work-queue/jobs/generate-project-ideas.js` (created) — `generateProjectIdeas` handler
+- `lib/dashboard/work-queue/jobs/discover-dictionary-terms.js` (created) — `discoverDictionaryTerms` handler
+- `lib/dashboard/work-queue/dashboard-work-handlers.js` — Registers the three handlers
+- `test/project-maintenance-jobs.test.js` (created) — Equivalence with the collection pass (Jev and no-scorer), pause and cross-session restart, missed batches, ideas failure, registry, and a durable runtime run
+- `test/stack-rank.test.js` — Sliced ranking equals an uninterrupted one
+- `doc/plan-dashboard-work-queue.md` — Records Phase 6b's scope as built
+
+---
+
 ## 2026-10-03 — Phase 6a of the work queue: task change tracking and persisted refresh revisions
 
 **Model:** Claude Opus 5.5

@@ -684,6 +684,23 @@ for refresh times, refresh state, or the shown-task log. Refresh-state helpers l
 `use-dashboard-task-updates.js` is unchanged: with no runtime-held snapshot before 6c, the next pass's reconciliation
 already sees a local edit, so event-driven invalidation waits for queued maintenance.
 
+As built, 6b adds three handlers under `work-queue/jobs/`, registered but run only once 6c submits them:
+`discoverDictionaryTerms` (per quarter), `rankProjectTasks` and `generateProjectIdeas` (per project). Their input is
+`{ domainName, domainUuid, quarter, year }` plus `projectUuid`; everything else is read fresh each attempt. The
+collection pass's per-project steps moved to `project-collection-steps.js`, which both routes call, and tests show
+discovery, ranking, and ideas run as jobs leave the store section and dictionary as one pass does. The ranker gained
+`beginRanking`, returning a `ProjectRankingProgress` that rates one round of concurrent batches per turn; `rankProject`
+is that rated whole. A paused ranking saves its similar and cited ratings to the hash and keeps the rest in memory under
+a `progressId` in the cursor, since the 2,000-character cursor cannot hold a pool's low ratings; a session resuming
+another's job restarts the ranking, reading the saved ratings from cache. `markRanked` and the similarity success move
+only on full success. A ranking that fails outright or misses batches still writes its associations and partial scores,
+then fails the attempt for backoff, rather than handing attribution to the idea prompt as the pass does; the ideas job
+offers its pool only when nothing can rate. Provider requests take runtime permits through `providerDispatch`, and the
+task read takes an app read permit; note reads inside task details do not yet. Job revisions come from
+`refreshRevision` (similarity) and `ideasInputRevision`; dictionary progress stays in the dictionary note's examined
+list. The planner, `reconcileProjects` (which must store a plan-only project before a job names its UUID, since an
+unstored one gets a fresh UUID on each read), and routing remain for 6c.
+
 ### Phase 7 Dictionary enrichment
 
 Add term evidence/refinement services and handlers, extend dictionary provenance/revision persistence, and add targeted

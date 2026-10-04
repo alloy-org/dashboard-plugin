@@ -417,6 +417,33 @@ describe("prepareProjectTaskRanker", () => {
     expect(Object.keys(ranking.taskSimilarityScores).map(ratingKey => ratingKey.split(":")[1])).toEqual(["edited-1"]);
   });
 
+  it("rates a pool in slices of whole batches with the result of one uninterrupted ranking", async () => {
+    const tasks = Array.from({ length: 130 }, (_value, index) => ({ content: index % 9 === 0 ? `Diff Digest task ${ index }`
+      : `Errand ${ index }`, noteUUID: "note-1", updatedAt: index, uuid: `open-${ index }` }));
+    const answersFor = ({ questions, state }) => ({ answers: Object.fromEntries(Object.keys(questions).map(questionName => {
+      const text = state.prospectiveTasks[questionName].text;
+      const score = text.startsWith("Diff Digest") ? 7 + (Number(text.split(" ").pop()) % 3) : 2;
+      return [questionName, { confidence: 0.5, score, type: "score" }];
+    })) });
+    const rankWith = async sliced => {
+      const requestAnswers = jest.fn(async request => answersFor(request));
+      const ranker = await prepareProjectTaskRanker(notesApp({}, tasks), { accessToken: "token", domainName: "Work",
+        domainUuid: "work-domain", now: new Date(2026, 9, 2), projects: [DIFF_DIGEST_PROJECT], refineDictionary: false,
+        requestAnswers, tasks });
+      if (!sliced) return { ranking: await ranker.rankProject(DIFF_DIGEST_PROJECT, []), requestAnswers };
+      const progress = ranker.beginRanking(DIFF_DIGEST_PROJECT, []);
+      const sliceCounts = [];
+      while (progress.remainingCount > 0) sliceCounts.push(await progress.rateNext(ranker.sliceSize));
+      return { ranking: await progress.finish(), requestAnswers, sliceCounts };
+    };
+    const whole = await rankWith(false);
+    const sliced = await rankWith(true);
+    expect(sliced.sliceCounts).toEqual([80, 50]);
+    expect(sliced.requestAnswers).toHaveBeenCalledTimes(whole.requestAnswers.mock.calls.length);
+    expect(sliced.ranking).toEqual(whole.ranking);
+    expect(sliced.ranking.acceptedTasks.length).toBeGreaterThan(10);
+  });
+
   it("re-checks a similar task by checksum, reusing its score until its text changes", async () => {
     const project = { ...DIFF_DIGEST_PROJECT, lastRankedAt: "2026-10-01T00:00:00.000Z", similaritySearchPageCount: 2 };
     const unchangedKey = taskRatingKey(project.summary, { taskText: "Diff Digest landing copy", taskUuid: "similar-1" });
