@@ -5,6 +5,21 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-04 — Proposed Agenda keeps suggestions off already-scheduled times
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/suggestion-task-slots.js` — new `activitiesClearOfObligations` moves suggestions that overlap an obligation to the next free hour (or drops them); shared `_clockFromMinutes`
+- `lib/dashboard/proposed-agenda-service.js` — `_reconcileCachedAgenda` re-checks a cached agenda's pending suggestions (and stale-slot replacements) against the day's current obligations and stores the moved times; new `_pendingActivitiesClearOfObligations`
+- `lib/dashboard/proposed-agenda-obligations.js` — `requestTodayObligations` ignores an Agenda broadcast for a different day than the one being planned and derives that day directly
+- `test/ranked-task-suggestions.test.js` — relocation and drop cases
+- `test/proposed-agenda-archive.test.js` — cached suggestion moves off an event added after generation
+- `test/proposed-agenda-obligations.test.js` (created) — broadcast accepted for the planned day, bypassed for another day
+
+**Prompt:** "When there are existing events or scheduled tasks, then Proposed Agenda should not suggest a task at the time that has something already scheduled. Currently suggested tasks do not regard existing Agenda schedule"
+
+---
+
 ## 2026-10-04 — Work queue phase 10: generative permit held free for foreground work
 
 **Model:** Claude Opus 5.5

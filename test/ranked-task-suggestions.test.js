@@ -3,7 +3,7 @@ import { dayProjectGroups, deadlineWithinComingWeek } from "day-project-candidat
 import { suggestionSectionsMarkdown } from "project-suggestion-log";
 import QuarterProject from "quarter-project";
 import { generativeRankPrompt, rankedTasksFromAnswers, rankedTasksFromCandidateIds, suggestionQuestions } from "suggestion-task-rank";
-import { refillRejectedSuggestion, slotRankedTasks, tasksNotRecentlySuggested } from "suggestion-task-slots";
+import { activitiesClearOfObligations, refillRejectedSuggestion, slotRankedTasks, tasksNotRecentlySuggested } from "suggestion-task-slots";
 
 const TUESDAY = new Date(2026, 9, 6, 15, 0, 0);
 
@@ -131,6 +131,28 @@ describe("suggestion slots", () => {
     expect(refill.placed.taskUuid).toBe("spare");
     expect(refill.placed.startTime).toBe("10:00");
     expect(refill.reserveTasks).toEqual([]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A suggestion under a newly scheduled event moves to the next free hour; one clear of it keeps its time.
+  it("moves a suggestion that overlaps an obligation and leaves the others in place", () => {
+    const covered = { durationMinutes: 60, startMinutes: 9 * 60, startTime: "09:00", title: "Covered" };
+    const clear = { durationMinutes: 30, startMinutes: 14 * 60, startTime: "14:00", title: "Clear" };
+    const meeting = { durationMinutes: 60, startMinutes: 9 * 60 + 30 };
+    const placement = activitiesClearOfObligations([covered, clear], { obligations: [meeting] });
+    expect(placement.activities.map(activity => [activity.title, activity.startTime])).toEqual([["Covered", "11:00"],
+      ["Clear", "14:00"]]);
+    expect(placement).toMatchObject({ droppedCount: 0, movedCount: 1 });
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc With the rest of the working day taken, an overlapping suggestion is dropped rather than left on the event.
+  it("drops an overlapping suggestion when no free hour remains", () => {
+    const covered = { durationMinutes: 60, startMinutes: 16 * 60, startTime: "16:00", title: "Covered" };
+    const lateMeeting = { durationMinutes: 120, startMinutes: 16 * 60 };
+    const placement = activitiesClearOfObligations([covered], { nowMinutes: 15 * 60 + 30, obligations: [lateMeeting] });
+    expect(placement.activities).toEqual([]);
+    expect(placement.droppedCount).toBe(1);
   });
 });
 

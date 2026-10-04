@@ -344,6 +344,23 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
     expect(app.getTask).toHaveBeenCalledWith("task-2");
   });
 
+  it("moves a cached suggestion off an event scheduled after the agenda was generated", async () => {
+    const app = buildGenerationApp();
+    await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    const meeting = { durationMinutes: 60, source: "event", startMinutes: 540, taskUuid: null, title: "Standup" };
+
+    const cached = await generateProposedAgenda(app, { obligations: [meeting], priorityKey: PRIORITY, targetDate: DATE });
+
+    expect(cached.fromCache).toBe(true);
+    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+    const morning = cached.activities.find(activity => activity.title === "Gen 1 morning");
+    expect(morning.startMinutes).toBeGreaterThanOrEqual(meeting.startMinutes + meeting.durationMinutes);
+    expect(morning.startTime).toBe(`${ String(morning.startMinutes / 60).padStart(2, "0") }:00`);
+    const storedAgain = await generateProposedAgenda(app, { obligations: [meeting], priorityKey: PRIORITY, targetDate: DATE });
+    const storedMorning = storedAgain.activities.find(activity => activity.title === "Gen 1 morning");
+    expect(storedMorning.startMinutes).toBe(morning.startMinutes);
+  });
+
   it("drops a completed suggestion and re-queries the LLM to replace it in the same slot", async () => {
     const app = buildGenerationApp(TWO_CALL_SCHEDULES);
     await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
