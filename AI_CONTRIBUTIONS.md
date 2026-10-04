@@ -5,6 +5,23 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-04 — Phase 7b: collect each dictionary term's evidence from the notebook
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/plan-wizard/stack-rank/dictionary-term-evidence.js` (created) — `collectTermEvidence`: quoted search with unquoted fallback, at most eight notes read, plugin-tagged notes excluded, passages cut where the term is a whole word with their heading and resolved Rich Footnotes, uncited footnotes naming the term as passages of their own, copies kept once, passages spread across notes, bounded sizes, and named empty outcomes
+- `lib/plan-wizard/stack-rank/dictionary-term-evidence-store.js` (created) — Archived "User terms dictionary {year} evidence" JSON note holding one record per term; the oldest records give up their passages first when the note outgrows its budget
+- `lib/dashboard/work-queue/jobs/collect-term-evidence.js` (created) — `collectTermEvidence` job: retires when the dictionary no longer defines the term, otherwise collects under one read permit and saves the record
+- `lib/dashboard/work-queue/jobs/project-job-requests.js` — `COLLECT_TERM_EVIDENCE_JOB_TYPE` and `termEvidenceRequest`, keyed by year and term
+- `lib/dashboard/work-queue/dashboard-work-handlers.js` — Registers the handler
+- `lib/dashboard/work-queue/jobs/rank-project-tasks.js` — Rewrapped an import over 150 characters
+- `test/dictionary-term-evidence.test.js` (created), `test/project-maintenance-jobs.test.js` — Passage cutting, footnotes, selection, bounds, fallback, the job, the store budget, and the registry
+- `doc/plan-dashboard-work-queue.md` — "As built" notes for 7b
+
+**Task:** Gather the notebook passages a later refinement will reason over for each dictionary term, without a provider call
+
+---
+
 ## 2026-10-04 — Phase 7a: changed dictionary definitions re-rate only the tasks that name them
 
 **Model:** Claude Opus 5.5
