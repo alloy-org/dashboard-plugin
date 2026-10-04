@@ -78,10 +78,12 @@ function futureWeekdayWindow() {
     startAt: Math.floor(monday.getTime() / 1000) };
 }
 
+// The default answer proposes the fixture's one open task with no start time, so it stays a candidate on whichever day
+// the widget plans; a scheduled task would be an obligation on its own day, as task-7 is on Mondays reached from Sunday.
 beforeEach(() => {
   llmMock.mockReset();
   llmMock.mockResolvedValue({ activities: [{ durationMinutes: 60, reason: "Highest-leverage item of the day.",
-    startTime: "09:00", taskUuid: "task-7", title: "Update budget" }] });
+    startTime: "09:00", taskUuid: "task-16", title: "Rotate GK azure key" }] });
 });
 
 describe("ProposedAgendaWidget date range", () => {

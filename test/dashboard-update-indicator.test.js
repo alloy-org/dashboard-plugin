@@ -7,7 +7,7 @@ import plugin from "plugin";
 const realTippy = jest.requireActual("../node_modules/tippy.js/dist/tippy.cjs.js").default;
 await jest.unstable_mockModule("tippy.js", () => ({ default: realTippy }));
 const { default: DashboardUpdateIndicator } = await import("dashboard-update-indicator");
-const updateMessage = 'A newer version of Dashboard is available. Visit Jots and click "Update Mission Control Dashboard" to get the latest.';
+const updateMessage = 'A newer version of Dashboard is available. Click to visit Jots, then click the "Update Mission Control Dashboard plugin" to retrieve the latest. No restart necessary.';
 
 let container, root;
 

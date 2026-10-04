@@ -30,7 +30,7 @@ const sharedEntry = {
   agentProPriceLabel: "$8",
   agentProUrl: "https://www.amplenote.com/plugins/ample_agent_pro",
   importSources: [
-    { id: "evernote", label: "Evernote", url: "https://www.amplenote.com/help/import_notes_and_tasks_overview#___import_from_evernote" },
+    { id: "evernote", label: "Evernote", url: "https://www.amplenote.com/help/import_notes_and_tasks_overview#_Import_from_Evernote" },
     { id: "obsidian", label: "Obsidian", url: "https://www.amplenote.com/help/import_notes_and_tasks_overview#___import_from_obsidian" },
   ],
   taskThreshold: 25,
@@ -107,7 +107,7 @@ describe("Planning quarterly plan splash", () => {
       expect(container.textContent).not.toContain("Import link copied. Open a new tab to paste");
       const evernote = [...container.querySelectorAll(".plan-entry-source")].find(button => button.textContent.includes("Evernote"));
       await act(async () => { evernote.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
-      const importUrl = "https://www.amplenote.com/help/import_notes_and_tasks_overview#___import_from_evernote";
+      const importUrl = "https://www.amplenote.com/help/import_notes_and_tasks_overview#_Import_from_Evernote";
       expect(app.navigate).toHaveBeenCalledWith(importUrl);
       expect(writeText).toHaveBeenCalledWith(importUrl);
       const copiedMessage = container.querySelector(".plan-entry-import-copied");
