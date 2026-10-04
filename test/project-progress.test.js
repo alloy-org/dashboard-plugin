@@ -147,6 +147,7 @@ describe("project progress note", () => {
       replaceNoteContent: jest.fn().mockResolvedValue(undefined) };
     const result = await loadProjectProgress(app, { domainName: scope.domainName, domainUuid: scope.domainUuid, quarterlyContent, targetDate });
     expect(app.createNote.mock.calls[0][0]).toBe("Project Builder Q3 2026 Work Progress");
+    expect(app.createNote.mock.calls[0][2]).toEqual({ archive: true });
     const markdown = app.replaceNoteContent.mock.calls[0][1];
     expect(markdown).toContain(result.projects[0].uuid);
     expect(markdown).toContain('"completedAt"');

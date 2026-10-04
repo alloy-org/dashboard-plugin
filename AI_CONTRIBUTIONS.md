@@ -5,6 +5,19 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-04 — Project task store and project progress notes created archived
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/project-task-store.js` — `openProjectTaskStore` creates the "Project Tasks Q… …" note archived
+- `lib/dashboard/project-progress-service.js` — `writeProjectProgress` creates the "Project Builder Q… … Progress" note archived
+- `test/project-task-store.test.js` — an absent store is created archived
+- `test/project-progress.test.js` — first generation creates the progress note archived
+
+**Prompt:** "We currently create two notes that should not be visible to the user, and possibly should not exist: \"Project Tasks QX YYYY [Task domain]\" and \"Project Builder QX YYYY Progress\". Unclear if the latter needs to exist, but if so it should be archived"
+
+---
+
 ## 2026-10-04 — Proposed Agenda keeps suggestions off already-scheduled times
 
 **Model:** Claude Opus 5.5

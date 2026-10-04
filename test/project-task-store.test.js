@@ -7,7 +7,7 @@ import { guideHeadingRanges } from "plan-wizard/vision-guide-markdown";
 import { collectProjectTasks } from "project-task-collection";
 import { projectNeedsRefresh, projectsToRefresh, shouldRefreshAnotherProject } from "project-refresh-schedule";
 import { initialProjectTaskStoreMarkdown, projectSectionHeadingText } from "project-task-store-markdown";
-import { collectedIdeasMarkdown, openProjectTaskStore, readCollectedProjectTasks, storedProjectRecords,
+import { collectedIdeasMarkdown, openProjectTaskStore, projectTaskStoreNoteName, readCollectedProjectTasks, storedProjectRecords,
   writeProjectSection } from "project-task-store";
 import QuarterProject from "quarter-project";
 import { LEGACY_JEV_RATINGS_LABEL, SIMILARITY_SCORES_LABEL } from "quarter-project-serialization";
@@ -259,6 +259,14 @@ describe("project task store sections", () => {
     await expect(readCollectedProjectTasks(app, scope)).resolves.toEqual([]);
     expect(app.createNote).not.toHaveBeenCalled();
     expect(app.replaceNoteContent).not.toHaveBeenCalled();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc The store is plugin data rather than a note the user reads, so it is created archived.
+  it("creates an absent store as an archived note", async () => {
+    const app = storeApp();
+    await openProjectTaskStore(app, scope);
+    expect(app.createNote).toHaveBeenCalledWith(projectTaskStoreNoteName(scope), expect.any(Array), { archive: true });
   });
 });
 
