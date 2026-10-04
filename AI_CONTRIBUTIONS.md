@@ -5,6 +5,24 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-04 — Phase 8a: idea records, completion text, linked intents, and idea generation context
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/project-idea-records.js` (created) — Idea records with stable `ideaId`, project, source revision, superseded idea, and open/accepted/dismissed status; text-only ideas normalize to open ones with IDs derived from project and comparison key; `mergedIdeaRecords`, `ideasAcceptedByTasks`, bounded decided history
+- `lib/dashboard/quarter-project.js` — `linkedGoalUuids` field; ideas normalized on construction and `setSuggestedTasks`; `observedCompletionRecord` keeps completion text and note
+- `lib/dashboard/quarter-project-serialization.js` — Persists `linkedGoalUuids`; store lists only open ideas and completions by their text
+- `lib/dashboard/project-collection-steps.js` — Ideas that became tasks are marked accepted rather than dropped; merge via idea records with source revision; `projectIntentTexts`; completions keep text
+- `lib/dashboard/project-task-ideas.js` — Prompt leads with linked intents and lists completed work (counting what it leaves out), open, accepted, and turned-down ideas; restated completions and decided ideas are dropped
+- `lib/dashboard/quarter-project-refresh-state.js` — Ideas input revision includes linked intents only when a project has some; `linkedGoalUuids` is an output field
+- `lib/dashboard/project-progress-model.js`, `project-task-collection.js`, `project-task-store.js`, `work-queue/jobs/generate-project-ideas.js` — Carry linked intents from the guide into generation; the agenda prompt reads only open ideas
+- `test/project-idea-records.test.js` (created) — Legacy normalization, store round trip, merge and supersession, bounded history, acceptance, prompt context, intent lookup, revision stability, completion text
+- `doc/plan-dashboard-work-queue.md` — "As built" notes for 8a
+
+**Task:** Give generated ideas durable identities and decisions, and generate them from intent, project, completion, and idea-history context
+
+---
+
 ## 2026-10-04 — Phase 7c: refine plugin-owned dictionary definitions from their evidence, and schedule it
 
 **Model:** Claude Opus 5.5

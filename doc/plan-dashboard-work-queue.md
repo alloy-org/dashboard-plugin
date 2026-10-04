@@ -794,6 +794,26 @@ consumer support together as 8b. Existing ideas remain unrated/ineligible for th
 revision/decision handling, same-text deduplication, actionability, completion history and acceptance retries. The stop
 point uses existing on-demand daily generators, so background preparation is not a hidden dependency.
 
+As built, 8a adds `lib/dashboard/project-idea-records.js`. A project's `suggestedTasks` hold idea records ({ ideaId,
+projectUuid, taskText, generatedAt, sourceRevision, supersedesIdeaId, status, decidedAt, acceptedTaskUuid }), status
+being `open`, `accepted`, or `dismissed`. A text-only legacy idea reads as an open idea whose `ideaId` digests its
+project UUID and comparison key (lowercase words without punctuation), so every reader agrees on it before a write
+stores it; unknown fields are kept. A new idea records the ideas input revision it was generated from, and a
+`beforeTask` refinement replaces the open idea it names and records its ID. An idea matching any held idea, an
+associated task, or a completed task by comparison key is not added, so a trivial rewording of a decided idea does not
+return. An open idea that has become an open task is marked accepted with that task's UUID instead of being dropped;
+decided ideas past twenty are dropped, the earliest decided first. The store's Suggested tasks list and the agenda's
+collected ideas show only open ideas; the payload keeps all. Nothing yet sets `dismissed`, and ideas carry no rating:
+both arrive with 8b. Completions record `taskText` and `noteUuid` when observed with them, and a completion observed
+again keeps them, so older records gain text gradually as the task API still returns them; text never observed stays
+absent. `QuarterProject.linkedGoalUuids` comes from the prospect, is persisted in both notes, and is a plan-owned output
+field. The idea prompt leads with the linked intents' texts from the guide by rank, then lists completions with text,
+the most recent forty, saying how many it left out and how many have no text, then open, accepted, and turned-down
+ideas. The chunked summary of very large completion histories is not built; the prompt states what it omitted instead.
+The ideas input revision appends the linked intent UUIDs only when there are some, so the change does not regenerate
+every project's ideas at once. Rolling back to a pre-8a writer keeps idea text but drops identities and decisions,
+which re-derive as open ideas.
+
 ### Phase 9 Prepared daily output
 
 Add `day-ranking-store.js` and day-ranking, Dream Task, and Proposed Agenda preparation handlers. Refactor existing
