@@ -876,6 +876,30 @@ retires when no project offers a candidate and waits for configuration when noth
 yet submitted. The Dream Task and agenda preparation jobs, the "not yet shown" markers that cached daily notes and agenda
 records will need once something prepares them unseen, and a read-only path for the Calendar host all arrive with 9b.
 
+As built, 9b activates the `prepareDayRanking` job and routes cold widgets through it. It writes nothing to Dream
+Task's daily note or the agenda's records, so neither needs a "not yet shown" marker. The provider ranking is the only
+expensive step and the store already shares it. Choosing cards and placing activities stays in the widget, because it
+depends on grid size, the time of day, the calendar, and the chosen priority. `dayRankingRequest` keys a preparation by
+domain and day. The job derives which questions to ask from the day (`dayRankingSurfaces`): Dream Task's on the current
+day, and the agenda's on any later day and on the current day until the agenda moves on in the late afternoon. The
+agenda's question uses `agendaRankingProjects`, the enabled quarters' progress projects read exactly as a fresh
+schedule reads them. The revision digests project names, rationales, and candidates, not UUIDs, so when the two
+questions agree the agenda finds Dream Task's ranking stored and no second request is sent. The job reports each
+question's outcome, and its output revision names each question's ranking revision, which the history keeps.
+`DayPreparationTrigger`, run by `useProjectMaintenanceQueue`, submits the preparation at maintenance priority once no
+project job of the visit is in flight and 30 seconds pass without one finishing. It covers today and, once the agenda
+has moved on, the agenda's day. A reconciliation that changed nothing prepares again only if the days have changed.
+On a cache miss, Dream Task (excluding nothing) and the agenda call `preparedDayRankingAwaiter`, which submits that
+day's preparation as `foregroundData`. It therefore runs before the load gate, its requests go ahead of maintenance, it
+coalesces with a background preparation for the same day, and it pauses new maintenance. The widget then ranks as
+before and reads the stored ranking. The wait never fails the widget: it ends when the job completes or fails, when the
+queue does not run it (`notQueued`, for example because another session holds it), when it cannot be submitted, or
+after 45 seconds. In each case the widget ranks inline as in 9a. A Dream Task generation that excludes cards asks a
+different question, so it ranks inline. Calendar host invocations get no preparer: they read the agenda cache and the
+ranking store, and rank inline on a miss within their existing three-day bound. The Dream Task and agenda preparation
+handlers this phase first listed are not built, and settle timing is unchanged: a cold widget still holds its own
+loading state until its ranking returns, but foreground data never waits for the load gate.
+
 ### Phase 10 Rollout and cleanup
 
 Use recorded admin diagnostics and mobile/browser checks to compare rendering latency, provider contention, project

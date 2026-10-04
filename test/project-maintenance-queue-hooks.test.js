@@ -1,13 +1,15 @@
 // Verify how the Dashboard and Plan Builder hand project maintenance to the work queue: the Dashboard submits its
 // quarter's reconciliation once its load settles and again after a burst of task changes, and Plan Builder planning the
 // Dashboard's quarter submits the reconciliation as foreground work and re-reads scores as queued rankings complete,
-// instead of running its own ranking pass.
+// instead of running its own ranking pass. Once a visit's project jobs have finished and gone quiet, the Dashboard
+// prepares the day's shared ranking.
 import { jest } from "@jest/globals";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 
 const { DashboardWorkProvider } = await import("dashboard/work-queue/dashboard-work-context");
 const { DASHBOARD_TASKS_UPDATED_EVENT } = await import("hooks/use-dashboard-task-updates");
+const { DAY_PREPARATION_QUIET_MILLISECONDS } = await import("dashboard/work-queue/day-preparation-trigger");
 const { TASK_CHANGE_DEBOUNCE_MILLISECONDS, useProjectMaintenanceQueue } = await import("hooks/use-project-maintenance-queue");
 const { useProjectTaskRanking } = await import("hooks/use-project-task-ranking");
 
@@ -15,16 +17,19 @@ const SCOPE_KEY = "work-domain:Q3 2026";
 
 // ----------------------------------------------------------------------------------------------
 // @desc A stand-in for the Dashboard's work: a durable runner that records submissions and hands outcome listeners
-//   back to the test, under a scheduler in the given scope.
+//   back to the test, under a scheduler in the given scope, and a planner reporting the given project jobs in flight.
 // @param {string} scopeKey - The scheduler's scope.
+// @param {object} [options] - { inFlight = 0 }.
 // @returns {object} { listeners, work }.
-function fakeWork(scopeKey) {
+function fakeWork(scopeKey, { inFlight = 0 } = {}) {
   const listeners = [];
-  const durable = { submit: jest.fn(async request => request), subscribeOutcomes: jest.fn(listener => {
-    listeners.push(listener);
-    return () => listeners.splice(listeners.indexOf(listener), 1);
-  }) };
-  return { listeners, work: { runtime: { durable, scheduler: { scopeKey } } } };
+  const durable = { submit: jest.fn(async request => request), submitAll: jest.fn(async requests => requests),
+    subscribeOutcomes: jest.fn(listener => {
+      listeners.push(listener);
+      return () => listeners.splice(listeners.indexOf(listener), 1);
+    }) };
+  const planner = { coverage: jest.fn(() => ({ inFlight })) };
+  return { listeners, work: { planner, runtime: { durable, scheduler: { scopeKey } } } };
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -73,6 +78,33 @@ describe("project maintenance hooks", () => {
       jest.advanceTimersByTime(TASK_CHANGE_DEBOUNCE_MILLISECONDS);
     });
     expect(work.runtime.durable.submit).toHaveBeenCalledTimes(2);
+    await unmount();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A reconciliation in the Dashboard's scope, with no project job left in flight, prepares today's ranking once
+  //   the quiet period passes; an outcome from another scope does not.
+  it("prepares the day's ranking once the visit's project jobs have gone quiet", async () => {
+    jest.setSystemTime(new Date(2026, 8, 17, 10, 0));
+    const { listeners, work } = fakeWork(SCOPE_KEY);
+    const { result, unmount } = await renderHook(() => useProjectMaintenanceQueue({ domainName: "Work", domainUuid: "work-domain",
+      enabled: true, quarter: 3, scopeKey: SCOPE_KEY, work, year: 2026 }), work);
+    await act(async () => result.current());
+    await act(async () => {
+      for (const listener of listeners) listener({ jobType: "rankProjectTasks", scopeKey: "other-domain:Q3 2026", status: "completed" });
+      jest.advanceTimersByTime(DAY_PREPARATION_QUIET_MILLISECONDS);
+    });
+    expect(work.runtime.durable.submitAll).not.toHaveBeenCalled();
+    await act(async () => {
+      for (const listener of listeners) listener({ jobType: "reconcileProjects", scopeKey: SCOPE_KEY, status: "completed" });
+      jest.advanceTimersByTime(DAY_PREPARATION_QUIET_MILLISECONDS);
+    });
+    expect(work.runtime.durable.submitAll).toHaveBeenCalledTimes(1);
+    const [requests, options] = work.runtime.durable.submitAll.mock.calls[0];
+    expect(options).toEqual({ scopeKey: SCOPE_KEY });
+    expect(requests).toEqual([expect.objectContaining({ category: "maintenance", input: { dateKey: "2026-09-17", domainName: "Work",
+      domainUuid: "work-domain" }, key: "prepareDayRanking:work-domain:2026-09-17", type: "prepareDayRanking" })]);
+    expect(work.planner.coverage).toHaveBeenCalledWith(SCOPE_KEY);
     await unmount();
   });
 

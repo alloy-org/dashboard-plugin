@@ -13,8 +13,10 @@ import { pluginSettings } from "plugin-data";
 import { IDEA_STATUSES } from "project-idea-records";
 import { findAmpleAgentProNote, providerNameFromProviderEm } from "providers/ai-provider-settings";
 import { recordShownTaskSuggestions } from "ranked-task-suggestions";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
+import { useDashboardWork } from "dashboard/work-queue/dashboard-work-context";
+import { preparedDayRankingAwaiter } from "dashboard/work-queue/prepared-day-ranking";
 import { DASHBOARD_TASKS_UPDATED_EVENT } from "hooks/use-dashboard-task-updates";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import { logIfEnabled } from "util/log";
@@ -490,6 +492,12 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   const [, setSeenUuidsMap] = useState(() => _loadSeenUuidsMap());
   const analysisRunIdRef = useRef(0);
   const listRef = useRef(null);
+  // A cold generation has the Dashboard's work queue prepare the day's shared ranking first; read through a ref so the
+  // runtime arriving after mount does not re-create runAnalysis.
+  const work = useDashboardWork();
+  const rankingPreparer = useMemo(() => preparedDayRankingAwaiter(work?.runtime?.durable || null), [work]);
+  const rankingPreparerRef = useRef(rankingPreparer);
+  rankingPreparerRef.current = rankingPreparer;
   const renderCountRef = useRef(0);
   renderCountRef.current += 1;
 
@@ -532,7 +540,7 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
     try {
       const fetchStart = performance.now();
       const result = await fetchDreamTaskSuggestions(app, {
-        excludeUuids, options, proposedTasksNoteName, maxTasks: taskGenerateCount
+        excludeUuids, options, proposedTasksNoteName, maxTasks: taskGenerateCount, rankingPreparer: rankingPreparerRef.current
       });
       logIfEnabled(`[DreamTask] fetchDreamTaskSuggestions took ${(performance.now() - fetchStart).toFixed(1)}ms`,
         { cached: result?.cached, taskCount: result?.tasks?.length ?? 0, errorCode: result?.errorCode ?? null, noteUUID: result?.noteUUID ?? null });

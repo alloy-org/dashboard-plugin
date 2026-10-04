@@ -5,6 +5,28 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-04 — Phase 9b: background day preparation and cold-cache promotion through the work queue
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/jobs/prepare-day-ranking.js` — `dayRankingRequest` (one key per domain and day), `dayRankingSurfaces` (Dream Task on the current day, the agenda on later days and on the current day until it moves on); the job asks each planning surface's question, the agenda's from `agendaRankingProjects`, and reports per-surface outcomes and revisions
+- `lib/dashboard/work-queue/day-preparation-trigger.js` (created) — `DayPreparationTrigger` prepares the day once the visit's project jobs have finished and gone quiet, again only after candidates change or the days do; `dayPreparationDateKeys`
+- `lib/dashboard/work-queue/prepared-day-ranking.js` (created) — `preparedDayRankingAwaiter`: a cold widget submits the day's preparation as foreground data and waits, bounded, for that job's outcome
+- `lib/dashboard/work-queue/dashboard-work-scheduler.js` — `holds(key)`
+- `lib/hooks/use-project-maintenance-queue.js` — Submits the day's preparation through the trigger
+- `lib/dashboard/proposed-agenda-service.js` — `agendaRankingProjects`; `rankingPreparer` option run before a fresh schedule ranks the day
+- `lib/dashboard/proposed-agenda-range.js`, `proposed-agenda-llm-generator.js`, `proposed-agenda.jsx` — Pass the widget's `rankingPreparer` through
+- `lib/dream-task-service.js`, `lib/dashboard/dream-task-internals.js`, `lib/dashboard/dream-task.jsx` — `rankingPreparer` before a generation that excludes nothing
+- `test/day-preparation.test.js` (created) — Surfaces and request keys, one request when Dream Task's and the agenda's questions agree, later and past days, trigger quiet period and staleness, awaiter outcomes and fallbacks, foreground preparation before the load settles reused by the widget
+- `test/prepared-day-ranking-consumers.test.js` (created) — Dream Task and the agenda call the preparer on a cold generation; an excluding Dream Task generation does not
+- `test/project-maintenance-queue-hooks.test.js` — The Dashboard submits the day's preparation once project jobs are quiet
+- `test/day-ranking-store.test.js` — Job result shape
+- `doc/plan-dashboard-work-queue.md` — "As built" notes for 9b
+
+**Task:** Activate background preparation of the shared day ranking and route cold Dream Task and agenda rankings through the work queue
+
+---
+
 ## 2026-10-04 — Phase 9a: shared day ranking store, preparation without exposure
 
 **Model:** Claude Opus 5.5

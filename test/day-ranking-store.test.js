@@ -168,8 +168,8 @@ describe("prepareDayRanking job", () => {
     const handler = createPrepareDayRankingHandler({ requestAnswers });
     const first = await handler.run({ context: jobContext(app), job, signal: null });
     const second = await handler.run({ context: jobContext(app), job, signal: null });
-    expect(first).toMatchObject({ outcome: "ranked", revision: expect.stringMatching(/^jev:/) });
-    expect(second).toEqual({ outcome: "stored", revision: first.revision });
+    expect(first).toMatchObject({ outcomes: { dreamTask: "ranked" }, revision: expect.stringMatching(/^dreamTask=jev:/) });
+    expect(second).toEqual({ outcomes: { dreamTask: "stored" }, revision: first.revision });
     expect(requestAnswers).toHaveBeenCalledTimes(1);
     expect(() => handler.validateInput({ ...job.input, dateKey: "tomorrow" })).toThrow("dateKey");
   });

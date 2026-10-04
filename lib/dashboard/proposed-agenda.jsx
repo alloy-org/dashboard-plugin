@@ -2,6 +2,8 @@
 import { PROVIDER_DEFAULT_MODEL } from "constants/llm-providers";
 import { configuredProviderEms, SETTING_KEYS } from "constants/settings";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
+import { useDashboardWork } from "dashboard/work-queue/dashboard-work-context";
+import { preparedDayRankingAwaiter } from "dashboard/work-queue/prepared-day-ranking";
 import LlmProviderSelector from "llm-provider-selector";
 import NoConfigUpsell from "no-config-upsell";
 import { pluginSettings, updatePluginSetting } from "plugin-data";
@@ -173,6 +175,12 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   const [selectedDate, setSelectedDate] = useState(null);
   const generationRef = useRef(0);
   const [scheduledKeys, setScheduledKeys] = useState(() => new Set());
+  // A cache miss has the Dashboard's work queue prepare the day's shared ranking first; read through a ref so the
+  // runtime arriving after mount does not regenerate the agenda.
+  const work = useDashboardWork();
+  const rankingPreparer = useMemo(() => preparedDayRankingAwaiter(work?.runtime?.durable || null), [work]);
+  const rankingPreparerRef = useRef(rankingPreparer);
+  rankingPreparerRef.current = rankingPreparer;
   const listRef = useRef(null);
 
   // Identifies the domain-specific stored monthly line currently on screen so status changes cannot mutate
@@ -196,7 +204,7 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
     return runProposedAgendaGeneration(app, { calendarEvents, currentDate, dateRange, domainName: taskDomainName,
       domainUuid: taskDomainUUID, explicitDate: selectedDate, forceRegenerate,
       isCurrentGeneration: () => generation === generationRef.current, priorityKey,
-      providerEm: modelProviderEm, ...guardedSetters }).catch(error => {
+      providerEm: modelProviderEm, rankingPreparer: rankingPreparerRef.current, ...guardedSetters }).catch(error => {
       guardedSetters.setError({ error: error?.message || "Could not prepare the agenda. Please try again.",
         errorCode: "agenda_error", noteUuid: error?.noteUuid || null });
       guardedSetters.setProposed([]);
