@@ -5,6 +5,16 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-04 — Work queue timers safe to call as methods
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/work-timers.js` (created) — `startWorkTimer` and `cancelWorkTimer`, defaults that call the timer globals without a receiver, so browsers do not throw "Illegal invocation"
+- `lib/dashboard/work-queue/widget-mount-coordinator.js`, `durable-work-runner.js`, `dashboard-work-diagnostics-store.js`, `dashboard-work-runtime.js` — Default to those timers instead of the native `setTimeout` and `clearTimeout`
+- `test/work-timers.test.js` (created) — Runs each class's default timers under globals that reject a receiver as the browser does
+
+---
+
 ## 2026-10-04 — Phase 6c of the work queue: planned project maintenance through the queue
 
 **Model:** Claude Opus 5.5
