@@ -2,7 +2,7 @@
 import { dayProjectGroups, deadlineWithinComingWeek } from "day-project-candidates";
 import { suggestionSectionsMarkdown } from "project-suggestion-log";
 import QuarterProject from "quarter-project";
-import { generativeRankPrompt, rankedTasksFromAnswers, rankedTasksFromUuidList, suggestionQuestions } from "suggestion-task-rank";
+import { generativeRankPrompt, rankedTasksFromAnswers, rankedTasksFromCandidateIds, suggestionQuestions } from "suggestion-task-rank";
 import { refillRejectedSuggestion, slotRankedTasks, tasksNotRecentlySuggested } from "suggestion-task-slots";
 
 const TUESDAY = new Date(2026, 9, 6, 15, 0, 0);
@@ -76,8 +76,8 @@ describe("suggestion ranking", () => {
   // @desc The state Jev sees nests each task under its project rationale.
   it("nests task candidates under the project rationale", () => {
     const { state } = suggestionQuestions(groups);
-    expect(state.projects["Automate GitClear enterprise pipeline"].taskCandidates[0]).toEqual({
-      minutesSinceRecommended: null, score: 8.6, text: "Sign up for GrokBot", uuid: "task-1" });
+    expect(state.projects["Automate GitClear enterprise pipeline"].taskCandidates[0]).toEqual({ candidateId: "task:task-1",
+      kind: "existing task", minutesSinceRecommended: null, score: 8.6, text: "Sign up for GrokBot" });
   });
 
   // ----------------------------------------------------------------------------------------------
@@ -89,12 +89,14 @@ describe("suggestion ranking", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc The generative model is asked for a stack-ranked UUID list, and that order is kept.
-  it("keeps the generative model's stack rank and drops unknown uuids", () => {
+  // @desc The generative model is asked for a stack-ranked candidate ID list, and that order is kept; a bare task UUID
+  //   from an older reply still names its task.
+  it("keeps the generative model's stack rank and drops unknown candidates", () => {
     const { listed, state } = suggestionQuestions(groups);
-    expect(generativeRankPrompt(state)).toContain('"rankedTaskUuids"');
-    const second = { ...listed[0], candidate: { ...listed[0].candidate, text: "Second", uuid: "task-2" } };
-    const ranked = rankedTasksFromUuidList([listed[0], second], ["task-2", "missing", "task-1"]);
+    expect(generativeRankPrompt(state)).toContain('"rankedCandidateIds"');
+    const second = { ...listed[0], candidate: { ...listed[0].candidate, candidateId: "task:task-2", text: "Second",
+      uuid: "task-2" } };
+    const ranked = rankedTasksFromCandidateIds([listed[0], second], ["task:task-2", "missing", "task-1"]);
     expect(ranked.map(task => task.taskUuid)).toEqual(["task-2", "task-1"]);
     expect(ranked[0].rating).toBeGreaterThan(ranked[1].rating);
   });

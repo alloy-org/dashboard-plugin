@@ -1,7 +1,7 @@
 import confetti from "canvas-confetti";
 import { apiKeyFromProvider, configuredProviderEms, devTokenPresent, SETTING_KEYS } from "constants/settings";
-import { _loadSeenUuidsMap, _maxTasksFromGrid, _recordSeenUuids, _taskGenerateCount,
-  applyDreamTaskAnalysisResult, fetchDreamTaskSuggestions, handleOpenSettings, handleTaskClick,
+import { _loadSeenUuidsMap, _maxTasksFromGrid, _recordSeenUuids, _taskGenerateCount, acceptedIdeaCard,
+  applyDreamTaskAnalysisResult, fetchDreamTaskSuggestions, handleOpenSettings, handleTaskClick, recordDreamIdeaDecision,
   requestDreamTaskRefreshExcludingRecent, shouldFetchMoreTasksAfterGridGrowth, updateDreamTaskTaskMetadata,
 } from "dream-task-internals";
 import { buildAvailableTimeSlots, fetchSchedulingOccupancy, resolveDreamTaskScheduleSelection,
@@ -10,6 +10,7 @@ import { promoteDreamTaskReserve } from "dream-task-service";
 import LlmProviderSelector from "llm-provider-selector";
 import NoConfigUpsell from "no-config-upsell";
 import { pluginSettings } from "plugin-data";
+import { IDEA_STATUSES } from "project-idea-records";
 import { findAmpleAgentProNote, providerNameFromProviderEm } from "providers/ai-provider-settings";
 import { recordShownTaskSuggestions } from "ranked-task-suggestions";
 import { useEffect, useState, useCallback, useRef } from "react";
@@ -374,9 +375,13 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks, { reserve
     fireConfettiForTask(event);
     const completedNoteUUID = dreamTask.uuid ? null : await dailyJotNoteUuidFromToday(app);
     const completedAt = await markTaskComplete(app, completedNoteUUID, dreamTask);
-    if (completedAt) await patchTaskMetadata(dreamTask, { completedAt, removedAt: null });
+    if (completedAt) {
+      await patchTaskMetadata(dreamTask, { completedAt, removedAt: null });
+      await recordDreamIdeaDecision(app, dreamTask, { domainName: taskDomainName, domainUuid: taskDomainUUID,
+        status: IDEA_STATUSES.accepted });
+    }
     removeTaskAfterFade(dreamTask);
-  }, [app, fireConfettiForTask, patchTaskMetadata, removeTaskAfterFade]);
+  }, [app, fireConfettiForTask, patchTaskMetadata, removeTaskAfterFade, taskDomainName, taskDomainUUID]);
 
   const onPreserveTask = useCallback(async (event, dreamTask) => {
     event.preventDefault();
@@ -392,6 +397,8 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks, { reserve
     event.preventDefault();
     const removedAt = new Date().toISOString();
     await patchTaskMetadata(dreamTask, { completedAt: null, removedAt });
+    await recordDreamIdeaDecision(app, dreamTask, { domainName: taskDomainName, domainUuid: taskDomainUUID,
+      status: IDEA_STATUSES.dismissed });
     const replacement = reserveTasks[0];
     if (replacement) {
       const remaining = reserveTasks.slice(1);
@@ -409,10 +416,10 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks, { reserve
     const { events, tasks: scheduledTasks } = await fetchSchedulingOccupancy(app);
     const now = new Date();
     const todaySlots = buildAvailableTimeSlots(now, events, scheduledTasks);
-    const selection = await resolveDreamTaskScheduleSelection(app, { defaultNoteUUID, now, task: dreamTask,
-      todaySlots });
+    const card = await acceptedIdeaCard(app, dreamTask, { domainName: taskDomainName, domainUuid: taskDomainUUID });
+    const selection = await resolveDreamTaskScheduleSelection(app, { defaultNoteUUID, now, task: card, todaySlots });
     if (!selection) return;
-    const taskToSchedule = selection.noteUUID ? { ...dreamTask, noteUUID: selection.noteUUID } : dreamTask;
+    const taskToSchedule = selection.noteUUID ? { ...card, noteUUID: selection.noteUUID } : card;
     const result = await scheduledDreamTaskResultFromStartAt(app, defaultNoteUUID, selection.startAt, taskToSchedule);
     if (!result.taskUuid) {
       logIfEnabled('[DreamTask] Schedule failed', result);
@@ -422,6 +429,8 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks, { reserve
     }
     snapDashboardAction("approveDreamTask", { via: "schedule" });
     await patchTaskMetadata(dreamTask, { taskUuid: result.taskUuid });
+    await recordDreamIdeaDecision(app, dreamTask, { acceptedTaskUuid: result.taskUuid, domainName: taskDomainName,
+      domainUuid: taskDomainUUID, status: IDEA_STATUSES.accepted });
     const key = _taskKey(dreamTask);
     setTasks(previous => (previous || []).map(candidate => (
       _taskKey(candidate) === key
@@ -437,7 +446,21 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks, { reserve
       });
       window.dispatchEvent(taskUpdateEvent);
     }
-  }, [app, defaultNoteUUID, patchTaskMetadata, setTasks]);
+  }, [app, defaultNoteUUID, patchTaskMetadata, setTasks, taskDomainName, taskDomainUUID]);
+
+  // ------------------------------------------------------------------------------------------
+  // @desc Open a card's task, or create it from an invented or idea card. A card that now points at a task is
+  //   recorded on the daily note and becomes an existing-task card, so clicking it again opens that task.
+  // @param {object} dreamTask - The clicked card.
+  const onTaskClick = useCallback(async (dreamTask) => {
+    const accepted = await handleTaskClick(app, dreamTask, defaultNoteUUID, { domainName: taskDomainName,
+      domainUuid: taskDomainUUID });
+    if (!accepted) return;
+    await patchTaskMetadata(dreamTask, { taskUuid: accepted.taskUuid });
+    const key = _taskKey(dreamTask);
+    setTasks(previous => (previous || []).map(candidate => (_taskKey(candidate) === key
+      ? { ...candidate, isExisting: true, noteUUID: accepted.noteUUID, uuid: accepted.taskUuid } : candidate)));
+  }, [app, defaultNoteUUID, patchTaskMetadata, setTasks, taskDomainName, taskDomainUUID]);
 
   const onToggleExplanation = useCallback((dreamTask) => {
     const key = _taskKey(dreamTask);
@@ -449,7 +472,7 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks, { reserve
   }, []);
 
   return { dismissingTaskKeys, expandedExplanationKeys, onCompleteTask, onPreserveTask, onRemoveTask,
-    onScheduleTask, onToggleExplanation, resetActionState };
+    onScheduleTask, onTaskClick, onToggleExplanation, resetActionState };
 }
 
 // ------------------------------------------------------------------------------------------
@@ -484,7 +507,7 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   const previousTaskGenerateCountRef = useRef(taskGenerateCount);
 
   const { dismissingTaskKeys, expandedExplanationKeys, onCompleteTask, onPreserveTask, onRemoveTask,
-    onScheduleTask, onToggleExplanation, resetActionState } = useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks,
+    onScheduleTask, onTaskClick, onToggleExplanation, resetActionState } = useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks,
     { reserveTasks, setReserveTasks, taskDomainName, taskDomainUUID });
 
   const recordTaskUuids = useCallback(async (shownUuids, currentMap) => {
@@ -614,8 +637,6 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
 
   const headerActions = <DreamTaskHeaderActions noteUUID={noteUUID} onOpenNote={onOpenNote} onReseed={onReseed} />;
   const noteLink = <NoteLink noteUUID={noteUUID} onOpenNote={onOpenNote} />;
-  const onTaskClick = (task) => handleTaskClick(app, task, defaultNoteUUID);
-
   return (
     <>
       <ConfiguredBody

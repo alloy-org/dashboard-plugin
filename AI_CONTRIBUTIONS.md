@@ -5,6 +5,31 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-04 — Phase 8b: idea actionability ratings and mixed task/idea recommendation candidates
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/project-task-idea-ratings.js` (created) — Actionability and relevance score questions per idea, `ideaRatingPrompt` for the fast model, `ratingFromScoreAnswer` scale adapter, `ideasAwaitingRating` (text change voids a rating; unanswered retried after 72 hours), `ideaRatingsRevision`, `ratedIdeaRecords`, `ideaRecommendable` thresholds
+- `lib/dashboard/work-queue/jobs/rate-project-ideas.js` (created) — `rateProjectIdeas` job: Jev or generative rating through provider permits, ratings written without restamping generation, `ideaRatings` refresh success and applied revision, configuration wait without a rater
+- `lib/dashboard/quarter-project-task-candidates.js` (created) — `projectTaskCandidates` with `task:`/`idea:` candidate IDs, recommendable ideas beside open tasks, `suggestionCandidateId`
+- `lib/dashboard/quarter-project.js` — `taskCandidates`, `decideIdeas`, idea-aware `recordShownTasks`
+- `lib/dashboard/project-idea-records.js` — `decidedIdeaRecords` for idempotent acceptance and dismissal
+- `lib/dashboard/project-suggestion-log.js` — Idea exposure entries and `minutesSinceIdeaRecommended`
+- `lib/dashboard/quarter-project-repository.js` — `decideIdeas`; shown ideas in `recordShownTasks`
+- `lib/dashboard/quarter-project-refresh-state.js` — `ideaRatings` refresh operation
+- `lib/dashboard/work-queue/quarter-project-work-planner.js`, `jobs/project-job-requests.js`, `jobs/generate-project-ideas.js`, `dashboard-work-handlers.js` — Rating requests planned alone or as an ideas follow-up; rating outcomes count toward coverage; handler registered
+- `lib/plan-wizard/stack-rank/generative-task-scores.js` — `promptBuilder` option for other rating prompts
+- `lib/dashboard/day-project-candidates.js`, `suggestion-task-rank.js`, `suggestion-task-slots.js`, `ranked-task-suggestions.js` — Candidate identity through grouping, Jev/generative ranking (`rankedCandidateIds`, idea handicap, idea rationale), slotting, reserves, shown log; `existingTaskForAcceptedIdea`, `recordSuggestedIdeaDecisions`
+- `lib/dream-task-service.js`, `lib/dashboard/dream-task-internals.js`, `lib/dashboard/dream-task.jsx` — Idea identity in the daily note and reserves; click, schedule, complete accept and remove dismisses an idea, reusing a task the idea already became
+- `lib/dashboard/proposed-agenda-archive.js`, `proposed-agenda-service.js`, `proposed-agenda-llm-generator.js`, `proposed-agenda-suggest-action.js` — Idea identity in agenda records and reserves; scheduling accepts an idea (reusing its task), dismissal dismisses it; Calendar refill by candidate ID
+- `test/project-task-idea-ratings.test.js` (created) — Rating questions and scale, awaiting/eligibility rules, rating job, mixed candidates, ranking handicap, slotting, decisions, exposure, Dream Task and agenda acceptance retries
+- `test/quarter-project-work-planner.test.js`, `test/ranked-task-suggestions.test.js`, `test/project-maintenance-jobs.test.js` — Rating in the planned sequence, candidate IDs in ranking, registry
+- `doc/plan-dashboard-work-queue.md` — "As built" notes for 8b
+
+**Task:** Rate generated ideas for actionability independently of similarity, and let rated ideas compete with existing tasks through daily ranking, reserves, exposure, acceptance, and dismissal
+
+---
+
 ## 2026-10-04 — Phase 8a: idea records, completion text, linked intents, and idea generation context
 
 **Model:** Claude Opus 5.5

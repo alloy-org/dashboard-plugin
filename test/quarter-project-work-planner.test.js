@@ -1,12 +1,13 @@
 // Verify how queued project maintenance is planned: which projects a visit refreshes and in what order, how many are
-// in flight at once, when ideas are asked for alone, how rankings wait inside dictionary discovery while it has projects
-// to examine, when a changed definition forces a ranking, how a reconciliation aligns the store with the live plan
-// before any job names a project, and that one reconciliation submitted to a work runtime discovers terms, ranks a
-// project, and then asks for its ideas, leaving a second reconciliation nothing to do, and still ranks when discovery
-// fails.
+// in flight at once, when ideas are asked for alone, when unrated ideas are rated alone, how rankings wait inside
+// dictionary discovery while it has projects to examine, when a changed definition forces a ranking, how a
+// reconciliation aligns the store with the live plan before any job names a project, and that one reconciliation
+// submitted to a work runtime discovers terms, ranks a project, and then asks for its ideas and their rating, leaving
+// a second reconciliation nothing to do, and still ranks when discovery fails.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
 import { readCollectedProjectTasks } from "dashboard/project-task-store";
+import { ideaRatingsRevision } from "dashboard/project-task-idea-ratings";
 import QuarterProject from "dashboard/quarter-project";
 import { ideasInputRevision, similarityInputRevision } from "dashboard/quarter-project-refresh-state";
 import QuarterProjectRepository from "dashboard/quarter-project-repository";
@@ -17,6 +18,7 @@ import { createDiscoverDictionaryTermsHandler } from "dashboard/work-queue/jobs/
 import { createGenerateProjectIdeasHandler } from "dashboard/work-queue/jobs/generate-project-ideas";
 import { projectReconciliationRequest } from "dashboard/work-queue/jobs/project-job-requests";
 import { createRankProjectTasksHandler } from "dashboard/work-queue/jobs/rank-project-tasks";
+import { createRateProjectIdeasHandler } from "dashboard/work-queue/jobs/rate-project-ideas";
 import { createReconcileProjectsHandler } from "dashboard/work-queue/jobs/reconcile-projects";
 import QuarterProjectWorkPlanner, { projectCoverageTarget } from "dashboard/work-queue/quarter-project-work-planner";
 import { prepareProjectTaskRanker } from "plan-wizard/stack-rank/stack-rank-project-tasks";
@@ -62,16 +64,28 @@ function planned(planner, storedProjects, { dictionaryDiscoveryDue = false, scor
 }
 
 // ----------------------------------------------------------------------------------------------
+// @desc An idea rating request that rates every question 8 of 10, as Jev's zero-indexed score 7.
+// @returns {function} A jest mock in requestJevAnswers' shape.
+function highIdeaRatings() {
+  return jest.fn(async ({ questions }) => ({ answers: Object.fromEntries(Object.keys(questions).map(questionName => [questionName,
+    { confidence: 0.5, score: 7, type: "score" }])) }));
+}
+
+// ----------------------------------------------------------------------------------------------
 // @desc A work runtime over the maintenance test app with every project maintenance handler registered, its outcomes
 //   counted by the planner and listed in the order they arrive. Term evidence is not scheduled, so the jobs counted are
 //   the quarter's project work alone.
 // @param {object} app - From maintenanceApp.
-// @param {object} options - { discoveryRunner, ideaGenerator, planner, requestAnswers }.
+// @param {object} options - { discoveryRunner, ideaGenerator, ideaRatingAnswers, planner, requestAnswers }: ideaRatingAnswers
+//   answers idea ratings, rating every question 8 when omitted.
 // @returns {object} { outcomes, repository, runtime }.
-function maintenanceRuntime(app, { discoveryRunner, ideaGenerator, planner, requestAnswers }) {
+function maintenanceRuntime(app, { discoveryRunner, ideaGenerator, ideaRatingAnswers = highIdeaRatings(), planner,
+  requestAnswers }) {
+  const taskScorer = async () => "jev";
   const handlers = workHandlerRegistry([
     createDiscoverDictionaryTermsHandler({ promptRunner: discoveryRunner }),
-    createGenerateProjectIdeasHandler({ ideaGenerator }),
+    createGenerateProjectIdeasHandler({ ideaGenerator, taskScorer }),
+    createRateProjectIdeasHandler({ requestAnswers: ideaRatingAnswers, taskScorer }),
     createRankProjectTasksHandler({ rankerFactory: (currentApp, options) => prepareProjectTaskRanker(currentApp,
       { ...options, requestAnswers }) }),
     createReconcileProjectsHandler({ planner, taskScorer: async () => "jev", termEvidenceScheduler: null }),
@@ -162,6 +176,21 @@ describe("QuarterProjectWorkPlanner", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
+  // @desc A project whose ranking and ideas are current is asked for a rating alone while it holds an open idea no
+  //   rating has judged, naming those ideas; once its last rating judged exactly them, or nothing can rate, it is not.
+  it("asks for a rating alone when only a project's ideas await one", () => {
+    const unrated = storedProject("unrated-ideas");
+    unrated.setSuggestedTasks([{ taskText: "Profile the widget grid" }]);
+    const desiredRevision = ideaRatingsRevision(unrated.suggestedTasks, NOW);
+    expect(planned(new QuarterProjectWorkPlanner(), [unrated]).slice(1)).toEqual([expect.objectContaining({
+      category: "maintenance", desiredRevision, key: "rateProjectIdeas:unrated-ideas", type: "rateProjectIdeas" })]);
+    const unratedTypes = planned(new QuarterProjectWorkPlanner(), [unrated], { scorerEm: null }).map(request => request.type);
+    expect(unratedTypes).not.toContain("rateProjectIdeas");
+    unrated.recordRefreshSuccess("ideaRatings", { inputRevision: desiredRevision, succeededAt: NOW.toISOString() });
+    expect(planned(new QuarterProjectWorkPlanner(), [unrated]).slice(1)).toEqual([]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc While the dictionary has projects to examine, rankings ride inside the discovery request, which names a new
   //   revision so it runs even after an earlier discovery completed; ideas requests are not held.
   it("holds rankings inside discovery while the dictionary has projects to examine", () => {
@@ -227,26 +256,31 @@ describe("reconcileProjects", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc Submitted to a work runtime as foreground work, a reconciliation plans discovery at its own priority, and
   //   discovery submits the ranking it held once the dictionary has grown; the finished ranking asks for ideas at
-  //   maintenance priority. A second reconciliation finds the project current, submits nothing, and counts it as checked.
-  it("ranks a project after discovery and then asks for its ideas, from one reconciliation", async () => {
+  //   maintenance priority, and the new idea's actionability rating follows them. A second reconciliation finds the
+  //   project current, submits nothing, and counts it as checked.
+  it("ranks a project after discovery and then asks for its ideas and their rating, from one reconciliation", async () => {
     const app = maintenanceApp({ tasks: backlogTasks() });
     const requestAnswers = ratingRequest();
+    const ideaRatingAnswers = highIdeaRatings();
     const ideaGenerator = jest.fn().mockResolvedValue({ failureReason: null, foundTasks: [], suggestedTasks: [GENERATED_IDEA] });
     const planner = new QuarterProjectWorkPlanner();
     const discoveryRunner = jest.fn().mockResolvedValue(DISCOVERED_TERMS);
-    const { outcomes, repository, runtime } = maintenanceRuntime(app, { discoveryRunner, ideaGenerator, planner, requestAnswers });
-    const allFinished = jobs => jobs.length === 4 && jobs.every(job => job.status === "completed");
+    const { outcomes, repository, runtime } = maintenanceRuntime(app, { discoveryRunner, ideaGenerator, ideaRatingAnswers,
+      planner, requestAnswers });
+    const allFinished = jobs => jobs.length === 5 && jobs.every(job => job.status === "completed");
     await runtime.durable.submit(projectReconciliationRequest(SCOPE_INPUT, { category: "foregroundData", requestedAt: 1 }));
     const jobs = await settledJobs(repository, allFinished);
     const categoryByType = Object.fromEntries(jobs.map(job => [job.type, job.category]));
     expect(categoryByType).toEqual({ discoverDictionaryTerms: "foregroundData", generateProjectIdeas: "maintenance",
-      rankProjectTasks: "foregroundData", reconcileProjects: "foregroundData" });
+      rankProjectTasks: "foregroundData", rateProjectIdeas: "maintenance", reconcileProjects: "foregroundData" });
     const [project] = await readCollectedProjectTasks(app, { ...SCOPE_INPUT, quarterKey: "2026-Q3" });
     expect(project.lastRankedAt).toBe(NOW.toISOString());
     expect(project.suggestedTasks.map(idea => idea.taskText)).toEqual([GENERATED_IDEA.taskText]);
+    expect(project.suggestedTasks[0].rating).toMatchObject({ actionability: 8, raterEm: "jev", relevance: 8 });
+    expect(project.lastSuggestedAt).toBe(NOW.toISOString());
     expect(planner.coverage(SCOPE_KEY)).toMatchObject({ covered: 1, rated: 1, succeeded: 1, target: 1 });
     expect(outcomes.map(outcome => outcome.jobType)).toEqual(["reconcileProjects", "discoverDictionaryTerms", "rankProjectTasks",
-      "generateProjectIdeas"]);
+      "generateProjectIdeas", "rateProjectIdeas"]);
 
     const ratingCalls = requestAnswers.mock.calls.length;
     await runtime.durable.submit(projectReconciliationRequest(SCOPE_INPUT, { requestedAt: 2 }));
@@ -254,9 +288,10 @@ describe("reconcileProjects", () => {
       && job.succeededRevision === "2"));
     runtime.dispose();
     expect(secondJobs.filter(job => job.type !== "reconcileProjects").map(job => job.status)).toEqual(["completed", "completed",
-      "completed"]);
+      "completed", "completed"]);
     expect(requestAnswers.mock.calls.length).toBe(ratingCalls);
     expect(ideaGenerator).toHaveBeenCalledTimes(1);
+    expect(ideaRatingAnswers).toHaveBeenCalledTimes(1);
     expect(planner.coverage(SCOPE_KEY)).toMatchObject({ checked: 1, covered: 1, inFlight: 0 });
   });
 
@@ -298,13 +333,13 @@ describe("reconcileProjects", () => {
     const discoveryRunner = jest.fn().mockRejectedValue(new Error("Provider unavailable"));
     const { repository, runtime } = maintenanceRuntime(app, { discoveryRunner, ideaGenerator, planner,
       requestAnswers: ratingRequest() });
-    const rankingFinished = jobs => jobs.some(job => job.type === "generateProjectIdeas" && job.status === "completed");
+    const rankingFinished = jobs => jobs.some(job => job.type === "rateProjectIdeas" && job.status === "completed");
     await runtime.durable.submit(projectReconciliationRequest(SCOPE_INPUT, { requestedAt: 1 }));
     const jobs = await settledJobs(repository, rankingFinished);
     runtime.dispose();
     const statusByType = Object.fromEntries(jobs.map(job => [job.type, job.status]));
     expect(statusByType).toEqual({ discoverDictionaryTerms: "retryWaiting", generateProjectIdeas: "completed",
-      rankProjectTasks: "completed", reconcileProjects: "completed" });
+      rankProjectTasks: "completed", rateProjectIdeas: "completed", reconcileProjects: "completed" });
     expect(planner.coverage(SCOPE_KEY)).toMatchObject({ covered: 1, rated: 1 });
   });
 });

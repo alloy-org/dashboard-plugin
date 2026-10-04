@@ -814,6 +814,32 @@ The ideas input revision appends the linked intent UUIDs only when there are som
 every project's ideas at once. Rolling back to a pre-8a writer keeps idea text but drops identities and decisions,
 which re-derive as open ideas.
 
+As built, 8b adds `lib/dashboard/project-task-idea-ratings.js`, the `rateProjectIdeas` job
+(`work-queue/jobs/rate-project-ideas.js`), and `lib/dashboard/quarter-project-task-candidates.js`. A rating asks two
+score questions per open idea, actionability (specific, feasible, unblocked, startable in one work block) and relevance
+to the project and its intents (a restatement of open or completed work rates 1), through Jev or, without it, the fast
+model via `generativeScoreRequester`, which now takes a `promptBuilder`; `ratingFromScoreAnswer` is the one place Jev's
+zero-indexed score becomes 1–10. Each idea stores `rating` ({ actionability, ratedAt, ratedTextKey, raterEm,
+relevance }); a rating whose `ratedTextKey` no longer matches the idea's comparison key is void, and one the rater left
+unanswered is asked again after 72 hours. Ratings are written with `setSuggestedTasks` and no generation time, and the
+job records an `ideaRatings` refresh success whose revision names the ideas it judged. An ideas job that added ideas
+submits the rating as its follow-up when something can rate; the planner asks for a rating alone for a project whose
+ranking and ideas are current but which holds unrated open ideas, so legacy ideas are rated gradually. The legacy
+collection pass does not rate, so its ideas stay ineligible. `QuarterProject#taskCandidates({ excludeIds, now,
+openTaskByUuid })` returns the open tasks (as before) and at most two ideas rated at least 7 for actionability and 6
+for relevance, never one restating an open or completed task, each with a `task:<uuid>` or `idea:<ideaId>`
+`candidateId`; an idea's `uuid` is null. The ranker states the candidate's kind and an idea's actionability, accepts a
+`rankedCandidateIds` reply (a bare task UUID still names its task), takes 0.5 from an idea's rating so a comparable
+existing task wins, and adds a sentence explaining the new action to its rationale. Slots, agenda reserves, Calendar's
+refill, and Dream Task's daily note (`<!-- idea:<ideaId> project:<projectUuid> -->`) and reserves carry the idea
+identity. Showing an idea logs `{ ideaId, suggestedAt }` in the project's suggestion log, which does not advance
+`projectRevision`. Accepting an idea records `accepted` with the task it became through
+`QuarterProjectRepository#decideIdeas`: Dream Task's click, schedule, and complete (complete makes no task UUID, so the
+idea is accepted without one), and agenda scheduling, which becomes a dated project step. Before creating a task, both
+surfaces ask `existingTaskForAcceptedIdea` and reuse the task an idea already became, and a retried acceptance keeps
+the first task. Removing a Dream Task idea card or dismissing an agenda idea row dismisses the idea. Calendar reports no
+decisions, so an idea accepted there is recognized later by `ideasAcceptedByTasks` when its task is associated.
+
 ### Phase 9 Prepared daily output
 
 Add `day-ranking-store.js` and day-ranking, Dream Task, and Proposed Agenda preparation handlers. Refactor existing

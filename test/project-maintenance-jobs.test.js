@@ -214,11 +214,11 @@ describe("project maintenance jobs", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc The registry runs all five job types, and refuses a project job without a project or an evidence job without a term.
+  // @desc The registry runs every maintenance job type, and refuses a project job without a project or an evidence job without a term.
   it("registers the maintenance handlers and validates their input", () => {
     const registry = workHandlerRegistry(dashboardWorkHandlers());
     expect([...registry.keys()].sort()).toEqual(["collectTermEvidence", "discoverDictionaryTerms", "generateProjectIdeas",
-      "rankProjectTasks", "reconcileProjects", "refineDictionaryTerm"]);
+      "rankProjectTasks", "rateProjectIdeas", "reconcileProjects", "refineDictionaryTerm"]);
     expect(() => registry.get("collectTermEvidence").validateInput({ term: " ", year: 2026 })).toThrow("term");
     expect(() => registry.get("reconcileProjects").validateInput(SCOPE_INPUT)).not.toThrow();
     expect(() => registry.get("rankProjectTasks").validateInput(SCOPE_INPUT)).toThrow("projectUuid");
