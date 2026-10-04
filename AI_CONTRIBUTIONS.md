@@ -5,6 +5,19 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-04 — Dream Task Reseed generates a new batch
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dream-task-service.js` — `analyzeDreamTasks` takes `forceRefresh`: it skips the cached-note return, excludes the note's cards from the new batch, and carries only preserved cards into the result
+- `lib/dashboard/dream-task-internals.js` — `fetchDreamTaskSuggestions` forwards `forceRefresh`
+- `lib/dashboard/dream-task.jsx` — Reseed passes `forceRefresh: true`
+- `test/dream-task-reseed.test.js` — cached note served without force; forced refresh replaces unpreserved cards
+
+**Prompt:** "Clicking "Reseed" link in dream-task-service.js does not change the tasks shown"
+
+---
+
 ## 2026-10-04 — Phase 9b: background day preparation and cold-cache promotion through the work queue
 
 **Model:** Claude Opus 5.5

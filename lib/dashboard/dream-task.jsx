@@ -626,7 +626,8 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
     setTasks(null);
     resetActionState();
     setLlmAttributionFooter(null);
-    const reseedOptions = providerEmOverride ? { providerEmOverride } : {};
+    // A reseed always generates a new batch, even when today's note already holds enough cards.
+    const reseedOptions = providerEmOverride ? { forceRefresh: true, providerEmOverride } : { forceRefresh: true };
     requestDreamTaskRefreshExcludingRecent(runAnalysis, taskGenerateCount, reseedOptions);
   };
 
