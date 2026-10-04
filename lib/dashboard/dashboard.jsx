@@ -31,6 +31,7 @@ import useDashboardTaskUpdates from 'hooks/use-dashboard-task-updates';
 import useDashboardWorkQueue from 'hooks/use-dashboard-work-queue';
 import useDomainTasks from 'hooks/use-domain-tasks';
 import useExternalCalendarEvents from 'hooks/use-external-calendar-events';
+import { useProjectMaintenanceQueue } from 'hooks/use-project-maintenance-queue';
 import { useProjectTaskCollection } from 'hooks/use-project-task-collection';
 import LayoutPickerWidget, { saveLayoutWithProfile } from 'layout-picker';
 import { WIDGET_REGISTRY } from 'layout-profiles';
@@ -55,7 +56,8 @@ import { WidgetSizeContext } from "widget-wrapper";
 import WidgetMemoryMeasurementPopup from "widget-memory-measurement-popup";
 import VictoryValueWidget from 'victory-value';
 import { DashboardWorkProvider } from "dashboard/work-queue/dashboard-work-context";
-import { SCHEDULED_WIDGET_MOUNTING_ENABLED } from "dashboard/work-queue/dashboard-work-features";
+import { SCHEDULED_WIDGET_MOUNTING_ENABLED, queuedMaintenanceSelected } from "dashboard/work-queue/dashboard-work-features";
+import { projectWorkScopeKey } from "dashboard/work-queue/jobs/project-job-requests";
 import { deviceProfile as readDeviceProfile, isMemoryConstrainedDevice } from "util/device-profile";
 import { logMemorySample, startMemorySampling } from "util/memory-instrumentation";
 
@@ -446,8 +448,11 @@ export default function DashboardApp({ app, initPromise }) {
   const { activeTaskDomain, buildAgendaTasksByDate, initializeDomainTasks,
     onDomainChange, openTasks, taskDomains } = useDomainTasks();
   const activeTaskDomainName = taskDomains.find(domain => domain.uuid === activeTaskDomain)?.name || "All Notes";
+  // Project maintenance runs through the work queue when it is selected, and through the background collection pass
+  // otherwise; never both for one scope.
+  const maintenanceQueued = queuedMaintenanceSelected();
   const startProjectTaskCollection = useProjectTaskCollection({ app, domainName: activeTaskDomainName,
-    domainUuid: activeTaskDomain });
+    domainUuid: activeTaskDomain, enabled: !maintenanceQueued });
   const { completedTasksByDate, completedTasksLoaded, fetchCompletedTasks } = useCompletedTasks(app);
 
   const { calendarEvents, calendarEventsLoaded } = useExternalCalendarEvents(app, activeTaskDomain);
@@ -463,9 +468,12 @@ export default function DashboardApp({ app, initPromise }) {
   const [timeFormat, setTimeFormat] = useState('meridian');
   const [weekFormat, setWeekFormat] = useState('sunday');
   const [weeklyVictoryValue, setWeeklyVictoryValue] = useState(null);
-  const workScopeKey = `${ activeTaskDomain || "all" }:${ quarterFromDate(currentDate ? localMidnightFromDateInput(currentDate) : new Date()).label }`;
+  const workQuarter = quarterFromDate(currentDate ? localMidnightFromDateInput(currentDate) : new Date());
+  const workScopeKey = projectWorkScopeKey({ domainUuid: activeTaskDomain, quarter: workQuarter.quarter, year: workQuarter.year });
   const { reportLoadSettled, work } = useDashboardWorkQueue({ app, enabled: SCHEDULED_WIDGET_MOUNTING_ENABLED,
     scopeKey: workScopeKey });
+  const startQueuedMaintenance = useProjectMaintenanceQueue({ domainName: activeTaskDomainName, domainUuid: activeTaskDomain,
+    enabled: maintenanceQueued, quarter: workQuarter.quarter, scopeKey: workScopeKey, work, year: workQuarter.year });
   const dashboardSettingNoteRef = useRef(null);
   // What to run when the Dashboard Settings popup closes, for a widget that sent the user there and wants to resume afterwards. Held only between opening the popup and closing it.
   const settingsClosedCallbackRef = useRef(null);
@@ -641,10 +649,12 @@ export default function DashboardApp({ app, initPromise }) {
   //   Settling is also the dashboard's cue that nothing is left competing for bandwidth, so this is where the
   //   background project/task association pass is started. It is kicked off ahead of the breadcrumb guard
   //   because that guard returns early on a second settle, and the collection pass keeps its own once-per-mount
-  //   guard; the pass must not inherit the breadcrumb's stamped-already condition. The work queue's maintenance gate
-  //   opens on the same signal, after its grace period.
+  //   guard; the pass must not inherit the breadcrumb's stamped-already condition. When maintenance is queued, the
+  //   pass stays off and the same signal submits the quarter's reconciliation instead. The work queue's maintenance
+  //   gate opens on this signal too, after its grace period.
   const handleDashboardSettled = useCallback(() => {
     startProjectTaskCollection();
+    startQueuedMaintenance();
     reportLoadSettled();
     if (breadcrumbStampedRef.current || !breadcrumbWriteRef.current) return;
     breadcrumbStampedRef.current = true;
@@ -654,7 +664,7 @@ export default function DashboardApp({ app, initPromise }) {
       stampBreadcrumbSettled(app, { deviceProfile: deviceProfileRef.current, settledAt: Date.now(),
         startedAt: breadcrumbStartedAtRef.current, widgetIds: written.widgetIds });
     });
-  }, [app, reportLoadSettled, startProjectTaskCollection]);
+  }, [app, reportLoadSettled, startProjectTaskCollection, startQueuedMaintenance]);
 
   useDashboardTaskUpdates({ activeTaskDomain, app, onDomainChange, openTasks });
 

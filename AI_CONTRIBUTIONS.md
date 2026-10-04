@@ -5,6 +5,37 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-04 — Phase 6c of the work queue: planned project maintenance through the queue
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/quarter-project-work-planner.js` (created) — `QuarterProjectWorkPlanner`: due-project selection (changed, never ranked, no tasks, oldest), the visit's coverage target and in-flight cap, ideas-only requests, and per-scope coverage counts fed by job outcomes
+- `lib/dashboard/work-queue/jobs/reconcile-projects.js` (created) — `reconcileProjects` handler: stores plan-only projects, retires departed ones, refreshes the task snapshot, counts unscored cited tasks, and returns the planner's requests as follow-ups
+- `lib/dashboard/work-queue/jobs/project-job-requests.js` (created) — Job type names, request builders with one key per type and project, and the shared work scope key
+- `lib/plan-wizard/stack-rank/cited-task-records.js` (created) — Guide prospects, unscored cited tasks, and synthetic task coverage, moved out of Plan Builder's ranking pass so the queue can share them
+- `lib/hooks/use-project-maintenance-queue.js` (created) — Submits the Dashboard quarter's reconciliation on settle, on scope change, every five minutes, and after task changes
+- `lib/dashboard/work-queue/durable-work-runner.js` — `submitAll`, completed attempts' `followUps` submitted at the finished job's category, `subscribeOutcomes`
+- `lib/dashboard/work-queue/dashboard-work-repository.js` — `saveJobs` saves several requests in one queue note write
+- `lib/dashboard/work-queue/dashboard-work-handlers.js` — `dashboardWorkHandlers({ planner })` replaces the fixed list and adds the reconciliation
+- `lib/dashboard/work-queue/dashboard-work-features.js` — `DURABLE_WORK_ENABLED` on; `queuedMaintenanceSelected`
+- `lib/dashboard/work-queue/jobs/project-job-inputs.js` — `jobPriorityContext`, a two-minute shared task read, `generativeProviderAvailable`, guide and stored projects among the inputs
+- `lib/dashboard/work-queue/jobs/rank-project-tasks.js` — Pools unscored cited tasks; a finished ranking asks for due ideas as a follow-up
+- `lib/dashboard/work-queue/jobs/generate-project-ideas.js` — A failed request with no provider configured waits for configuration
+- `lib/dashboard/work-queue/jobs/discover-dictionary-terms.js` — Runs at its job's priority
+- `lib/dashboard/work-queue/dashboard-queue-inspector-model.js`, `dashboard-queue-inspector-sections.jsx` — Project coverage in the Queue overview
+- `lib/hooks/use-dashboard-work-queue.js` — One planner per runtime, fed by durable outcomes
+- `lib/hooks/use-project-task-ranking.js` — Plan Builder submits a foreground reconciliation for the Dashboard's quarter and re-reads scores as rankings complete
+- `lib/dashboard/dashboard.jsx` — Selects the queue or the collection pass, never both; shared scope key
+- `lib/plan-wizard/stack-rank/refresh-stale-project-rankings.js` — Uses the moved cited-task helpers
+- `lib/plan-wizard/stack-rank/README.md` — Notes the queued route
+- `test/quarter-project-work-planner.test.js` (created) — Planner ordering, in-flight cap, coverage, ideas-only and no-scorer plans, reconciliation's store alignment, and one reconciliation run through a runtime to ranking and ideas
+- `test/project-maintenance-queue-hooks.test.js` (created) — Dashboard and Plan Builder submission and routing
+- `test/project-maintenance-test-app.js` (created) — Fixtures shared by the maintenance tests, moved from the 6b test
+- `test/project-maintenance-jobs.test.js` — Uses the shared fixtures and the handler factory
+- `doc/plan-dashboard-work-queue.md` — Records Phase 6c's scope as built
+
+---
+
 ## 2026-10-03 — Phase 6b of the work queue: checkpointed project maintenance handlers
 
 **Model:** Claude Opus 5.5

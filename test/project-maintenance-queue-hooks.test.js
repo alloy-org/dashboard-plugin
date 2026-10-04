@@ -1,0 +1,127 @@
+// Verify how the Dashboard and Plan Builder hand project maintenance to the work queue: the Dashboard submits its
+// quarter's reconciliation once its load settles and again after a burst of task changes, and Plan Builder planning the
+// Dashboard's quarter submits the reconciliation as foreground work and re-reads scores as queued rankings complete,
+// instead of running its own ranking pass.
+import { jest } from "@jest/globals";
+import { act, createElement } from "react";
+import { createRoot } from "react-dom/client";
+
+const { DashboardWorkProvider } = await import("dashboard/work-queue/dashboard-work-context");
+const { DASHBOARD_TASKS_UPDATED_EVENT } = await import("hooks/use-dashboard-task-updates");
+const { TASK_CHANGE_DEBOUNCE_MILLISECONDS, useProjectMaintenanceQueue } = await import("hooks/use-project-maintenance-queue");
+const { useProjectTaskRanking } = await import("hooks/use-project-task-ranking");
+
+const SCOPE_KEY = "work-domain:Q3 2026";
+
+// ----------------------------------------------------------------------------------------------
+// @desc A stand-in for the Dashboard's work: a durable runner that records submissions and hands outcome listeners
+//   back to the test, under a scheduler in the given scope.
+// @param {string} scopeKey - The scheduler's scope.
+// @returns {object} { listeners, work }.
+function fakeWork(scopeKey) {
+  const listeners = [];
+  const durable = { submit: jest.fn(async request => request), subscribeOutcomes: jest.fn(listener => {
+    listeners.push(listener);
+    return () => listeners.splice(listeners.indexOf(listener), 1);
+  }) };
+  return { listeners, work: { runtime: { durable, scheduler: { scopeKey } } } };
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Render a component that calls a hook inside the Dashboard's work provider.
+// @param {function} useHook - The hook, called with no arguments.
+// @param {object} work - The work the provider supplies.
+// @returns {Promise<object>} { result, unmount }: result.current is the hook's latest return value.
+async function renderHook(useHook, work) {
+  const result = { current: null };
+  const Probe = () => {
+    result.current = useHook();
+    return null;
+  };
+  const root = createRoot(document.createElement("div"));
+  await act(async () => root.render(createElement(DashboardWorkProvider, { value: work }, createElement(Probe))));
+  return { result, unmount: () => act(() => root.unmount()) };
+}
+
+describe("project maintenance hooks", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    globalThis.IntersectionObserver = class IntersectionObserverStub {};
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+    delete globalThis.IntersectionObserver;
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Nothing is submitted until the load settles; then the quarter's reconciliation is, and a burst of task
+  //   changes submits one more once it quiets down.
+  it("submits the Dashboard's reconciliation on settle and after task changes", async () => {
+    const { work } = fakeWork(SCOPE_KEY);
+    const { result, unmount } = await renderHook(() => useProjectMaintenanceQueue({ domainName: "Work", domainUuid: "work-domain",
+      enabled: true, quarter: 3, scopeKey: SCOPE_KEY, work, year: 2026 }), work);
+    expect(work.runtime.durable.submit).not.toHaveBeenCalled();
+    await act(async () => result.current());
+    expect(work.runtime.durable.submit).toHaveBeenCalledTimes(1);
+    expect(work.runtime.durable.submit.mock.calls[0][0]).toMatchObject({ category: "maintenance",
+      input: { domainName: "Work", domainUuid: "work-domain", quarter: 3, year: 2026 }, key: "reconcileProjects:2026-Q3",
+      scopeKey: SCOPE_KEY, type: "reconcileProjects" });
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent(DASHBOARD_TASKS_UPDATED_EVENT, { detail: {} }));
+      window.dispatchEvent(new CustomEvent(DASHBOARD_TASKS_UPDATED_EVENT, { detail: {} }));
+      jest.advanceTimersByTime(TASK_CHANGE_DEBOUNCE_MILLISECONDS);
+    });
+    expect(work.runtime.durable.submit).toHaveBeenCalledTimes(2);
+    await unmount();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc With queued maintenance turned off for the Dashboard, settling submits nothing.
+  it("submits nothing when the queue is not selected", async () => {
+    const { work } = fakeWork(SCOPE_KEY);
+    const { result, unmount } = await renderHook(() => useProjectMaintenanceQueue({ domainName: "Work", domainUuid: "work-domain",
+      enabled: false, quarter: 3, scopeKey: SCOPE_KEY, work, year: 2026 }), work);
+    await act(async () => result.current());
+    expect(work.runtime.durable.submit).not.toHaveBeenCalled();
+    await unmount();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Plan Builder planning the Dashboard's quarter submits a foreground reconciliation once idle, reads no tasks
+  //   for a pass of its own, and re-reads scores after a queued ranking in its scope completes.
+  it("routes Plan Builder's ranking through the queue for the Dashboard's quarter", async () => {
+    const { listeners, work } = fakeWork(SCOPE_KEY);
+    const app = { getTaskDomainTasks: jest.fn(async () => []) };
+    const onRanked = jest.fn();
+    const { unmount } = await renderHook(() => useProjectTaskRanking({ app, domainName: "Work", domainUuid: "work-domain",
+      isAwaitingProvider: false, onRanked, quarter: 3, year: 2026 }), work);
+    await act(async () => jest.advanceTimersByTime(3000));
+    expect(work.runtime.durable.submit).toHaveBeenCalledTimes(1);
+    expect(work.runtime.durable.submit.mock.calls[0][0]).toMatchObject({ category: "foregroundData", scopeKey: SCOPE_KEY,
+      type: "reconcileProjects" });
+    expect(app.getTaskDomainTasks).not.toHaveBeenCalled();
+    await act(async () => {
+      for (const listener of listeners) {
+        listener({ entityId: "elsewhere", jobType: "rankProjectTasks", scopeKey: "other-domain:Q3 2026", status: "completed" });
+        listener({ entityId: "project", jobType: "rankProjectTasks", scopeKey: SCOPE_KEY, status: "completed" });
+      }
+      jest.advanceTimersByTime(1000);
+    });
+    expect(onRanked).toHaveBeenCalledTimes(1);
+    await unmount();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Plan Builder planning another quarter leaves the Dashboard's queue alone.
+  it("leaves the queue alone when Plan Builder plans another quarter", async () => {
+    const { work } = fakeWork(SCOPE_KEY);
+    const app = { getTaskDomainTasks: jest.fn(async () => []) };
+    const { unmount } = await renderHook(() => useProjectTaskRanking({ app, domainName: "Work", domainUuid: "work-domain",
+      isAwaitingProvider: false, quarter: 4, year: 2026 }), work);
+    await act(async () => jest.advanceTimersByTime(3000));
+    expect(work.runtime.durable.submit).not.toHaveBeenCalled();
+    expect(work.runtime.durable.subscribeOutcomes).not.toHaveBeenCalled();
+    await unmount();
+  });
+});

@@ -107,7 +107,7 @@ export function QueueOverviewSection({ now, overview }) {
   const rows = [
     ["Session", `${ overview.session?.sessionId || "—" }, started ${ formattedAge(overview.session?.startedAt, now) }`],
     ["Scope", overview.scopeKey || "—"],
-    ["Features", "Scheduled widget mounting on; project maintenance on its legacy path"],
+    ["Features", `Scheduled widget mounting on; project maintenance ${ overview.projectCoverage ? "on the queue" : "on its legacy path" }`],
     ["Page", conditions.hidden ? "Hidden: near renders and maintenance paused" : "Visible"],
     ["Overlay", conditions.overlayHeld ? "Holding renders and maintenance" : "None"],
     ["Load gate", conditions.loadSettled ? "Open" : "Closed: maintenance waits for the initial load and its grace period"],
@@ -116,7 +116,7 @@ export function QueueOverviewSection({ now, overview }) {
     ["Oldest pending", formattedDuration(overview.oldestPendingMilliseconds)],
     ["Waiting reasons", waitingReasons.length ? waitingReasons.map(([reason, count]) => `${ reason } ${ count }`).join(", ") : "None"],
     ["Last progress", formattedAge(overview.lastProgressAt, now)],
-    ["Project coverage", "Unavailable until project maintenance runs on the queue"],
+    ["Project coverage", _projectCoverageText(overview.projectCoverage)],
     ["Durable history", overview.durableEnabled ? "Saved work and history below, read when opened"
       : "Unavailable: durable work is switched off; this view shows this session only"],
   ];
@@ -212,4 +212,19 @@ export function UrgentRenderSection({ now, rows }) {
       )}
     </section>
   );
+}
+
+// ------------------------------------------------------------------------------------------
+// Local helpers
+// ------------------------------------------------------------------------------------------
+
+// ------------------------------------------------------------------------------------------
+// @desc Describe this visit's project coverage in one line.
+// @param {object|null} coverage - From QuarterProjectWorkPlanner#coverage, or null without queued maintenance.
+// @returns {string} Such as "3 of 5 covered: 2 refreshed (1 ranked), 1 current; 1 in flight, 0 failed".
+function _projectCoverageText(coverage) {
+  if (!coverage) return "Unavailable: project maintenance runs on its legacy path";
+  if (!coverage.target) return "No reconciliation has planned this scope yet";
+  return `${ coverage.covered } of ${ coverage.target } covered: ${ coverage.succeeded } refreshed (${ coverage.rated } ranked), `
+    + `${ coverage.checked } current; ${ coverage.inFlight } in flight, ${ coverage.failed } failed`;
 }

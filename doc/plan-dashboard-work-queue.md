@@ -701,6 +701,28 @@ task read takes an app read permit; note reads inside task details do not yet. J
 list. The planner, `reconcileProjects` (which must store a plan-only project before a job names its UUID, since an
 unstored one gets a fresh UUID on each read), and routing remain for 6c.
 
+As built, 6c turns `DURABLE_WORK_ENABLED` on. `queuedMaintenanceSelected` (true only with scheduled mounting and
+IntersectionObserver) picks one route: the Dashboard's settle submits `reconcileProjects` through
+`use-project-maintenance-queue.js` and the collection pass stays off, or the reverse. The hook submits again on a scope
+change, every five minutes, and 15 seconds after a burst of `dashboard:tasks-updated`; `use-dashboard-task-updates.js`
+is unchanged. Plan Builder submits the same job as `foregroundData` when it plans the Dashboard's quarter and re-reads
+scores as rankings complete; for another quarter it keeps its own pass, since the queue holds only the Dashboard's
+scope. The reconciliation stores plan-only projects and retires departed ones, reconciles the task snapshot when a
+rater exists, and returns `QuarterProjectWorkPlanner#plan`'s requests as `followUps`, which the runner submits after
+acknowledging the job, in one queue write and at the job's category. A ranking is due when changed (its similarity
+revision differs from `<inputRevision>@<snapshotId>:<sequence>`, requested at that revision), or forced with a null
+revision when never ranked, past 72 hours, due its second page, or missing a cited score. The rank job now pools the
+sources page's unscored cited tasks (`cited-task-records.js`) and asks for ideas as a follow-up when
+`ideasRefreshDue`; current-ranking projects get an ideas job alone. Ideas always run as maintenance. Due projects are
+taken changed, never ranked, no tasks, then oldest, with at most the visit target
+(`min(N, max(5, ceil(N / 2)))`) in flight; finished ones free slots for the next reconciliation. Current projects count
+as checked; the Queue overview shows checked, refreshed, ranked, in-flight and failed counts. Two fixes surfaced here:
+a job in a foreground category takes foreground permits (`jobPriorityContext`), since its own foreground pressure
+otherwise starves its single-permit generative requests, and the planner digests ideas inputs from the live project
+with store fields adopted, as the ideas job does. A runtime's jobs share one task read for two minutes. An ideas
+request that fails with no provider configured waits for configuration. The builder pass's compaction of low uncited
+scores does not run on the queued route.
+
 ### Phase 7 Dictionary enrichment
 
 Add term evidence/refinement services and handlers, extend dictionary provenance/revision persistence, and add targeted

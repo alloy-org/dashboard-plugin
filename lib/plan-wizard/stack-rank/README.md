@@ -9,7 +9,10 @@ project it refreshes. Plan Builder runs `refresh-stale-project-rankings.js` on o
 stands down while the builder is open. That pass ranks stale projects, guide projects the store has never ranked,
 projects due a second search page, and projects with unscored cited tasks. With Jev it ranks up to six projects at
 once and writes their sections one at a time; with the fast model it ranks one at a time. Both passes prepare one
-ranker and then rank project by project:
+ranker and then rank project by project. When the Dashboard's work queue runs project maintenance, neither pass runs
+for the Dashboard's quarter: its `reconcileProjects` job plans one `rankProjectTasks` job per due project, which pools
+the unscored cited tasks from `cited-task-records.js` as Plan Builder's pass does (see
+`lib/dashboard/work-queue/quarter-project-work-planner.js`).
 
 ```javascript
 import { prepareProjectTaskRanker } from "plan-wizard/stack-rank/stack-rank-project-tasks";
