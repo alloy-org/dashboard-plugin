@@ -4,6 +4,7 @@ import { formatWeekLabel, getQuarterMonths, getUpcomingWeekMonday, hasQuarterEnd
 import { IS_DEV_ENVIRONMENT, SETTING_KEYS } from "constants/settings";
 import { buildPlanTargetFromPlans, currentQuarterCardAction } from "dashboard/build-plan-quarter";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
+import MonthFocusPlan, { MonthIntensityMeter } from "dashboard/month-focus-plan";
 import PlanWizard from "dashboard/plan-wizard/plan-wizard";
 import { quarterPageWindow, quarterPlanForPage, quartersMatch } from "dashboard/quarter-page";
 import QuarterPageButton from "dashboard/quarter-page-button";
@@ -11,10 +12,11 @@ import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import useQuarterPlanProgress, { quarterProgressKey } from "hooks/use-quarter-plan-progress";
 import NoteEditor from "note-editor";
 import { mirrorQuarterPlanNote } from "plan-wizard/mirror-quarter-plan";
+import { monthFocusProjects } from "plan-wizard/month-focus-projects";
 import { pluginSettings, updatePluginSetting } from "plugin-data";
 import QuarterlyPlanEntry from "quarterly-plan-entry";
 import { createOrAppendMonthlyPlan, createOrAppendWeeklyPlan, createQuarterlyPlan, findQuarterPlan,
-  getMonthlyPlanContent } from "quarterly-plan-service";
+  getMonthlyPlanContent, starMonthFocusProject } from "quarterly-plan-service";
 import { useEffect, useRef, useState } from "react";
 import { navigateToNote } from "util/goal-notes";
 import { logIfEnabled } from "util/log";
@@ -163,7 +165,12 @@ function monthContentIsUnrecorded(monthContent) {
   return hasQuarterEnded({ quarter: monthContent.plan.quarter, year: monthContent.plan.year });
 }
 
-function MonthContentArea({ monthLoading, monthContent, onCreatePlan }) {
+// ----------------------------------------------------------------------------------------------
+// @desc The open month: a loading line, the unrecorded notice, the month's starrable projects, or a link that
+//   creates the month's section.
+// @param {object} props - { monthContent, monthLoading, onCreatePlan, onStarProject }
+// @returns {JSX.Element|null} The month's area
+function MonthContentArea({ monthContent, monthLoading, onCreatePlan, onStarProject }) {
   if (monthLoading) {
     return <div className="month-content-loading">Loading…</div>;
   }
@@ -177,17 +184,7 @@ function MonthContentArea({ monthLoading, monthContent, onCreatePlan }) {
     );
   }
   if (monthContent.found) {
-    return (
-      <div className="month-content">
-        <div className="month-content-header">{monthContent.monthName}</div>
-        <div
-          className="month-content-text"
-          dangerouslySetInnerHTML={{
-            __html: renderBlockMarkdown(monthContent.content) || '<p>(Empty section)</p>'
-          }}
-        />
-      </div>
-    );
+    return <MonthFocusPlan content={ monthContent.content } monthName={ monthContent.monthName } onStarProject={ onStarProject } />;
   }
   return (
     <div className="month-content-empty">
@@ -504,6 +501,23 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
     );
   }
 
+  // ----------------------------------------------------------------------------------------------
+  // @desc Save the open month's focus star into its Focus bullet, then show the section as saved.
+  // @param {string|null} starredLabel - Project label to star, or null to clear the month's star.
+  // @returns {Promise<void>} Rejects when the note could not be saved.
+  const handleStarMonthProject = async (starredLabel) => {
+    const starredMonth = monthContent;
+    if (!starredMonth?.plan?.noteUUID) return;
+    const result = await starMonthFocusProject(app, { monthName: starredMonth.monthName,
+      noteUUID: starredMonth.plan.noteUUID, starredLabel });
+    const isSameMonth = previous => previous?.monthName === starredMonth.monthName
+      && previous?.plan?.noteUUID === starredMonth.plan.noteUUID;
+    setMonthContent(previous => isSameMonth(previous) ? { ...previous, content: result.content } : previous);
+  };
+
+  const monthProjectCount = monthContent?.found && !monthLoading
+    ? monthFocusProjects(monthContent.content).projects.length : null;
+
   const handleDevEdit = (result) => {
     if (result?.devEdit && result.noteUUID) {
       setEditingNoteUUID(result.noteUUID);
@@ -580,6 +594,9 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
         <QuarterPageButton direction="following" onClick={ () => setPageOffset(offset => offset + 1) }
           quarter={ pageWindow.following } />
       </div>
+      {monthProjectCount !== null && activeTab !== null && !pagePending ? (
+        <MonthIntensityMeter monthName={ monthContent.monthName } projectCount={ monthProjectCount } />
+      ) : null}
       <div className="month-tabs">
         {viewedMonths.map(month => (
           <button
@@ -592,12 +609,13 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
       {activeTab !== null && !pagePending ? (
         <div className="month-content-area">
           <MonthContentArea
-            monthLoading={monthLoading}
             monthContent={monthContent}
+            monthLoading={monthLoading}
             onCreatePlan={async () => {
               const result = await handleCreateMonthPlan(app, monthContent, createPlanDeps);
               handleDevEdit(result);
             }}
+            onStarProject={handleStarMonthProject}
           />
         </div>
       ) : null}

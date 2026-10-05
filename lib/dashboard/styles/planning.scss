@@ -298,6 +298,177 @@ $quarter-toggle-size: 26px;
     text-align: center;
   }
 
+  // Meter above the month tabs: one segment per project scheduled in the open month.
+  .month-intensity {
+    --month-intensity-color: #{$color-success};
+    background: $color-bg-card;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    margin-bottom: $sp-md;
+    padding: $sp-md $sp-lg;
+
+    &.month-intensity--ambitious { --month-intensity-color: #{$color-warning}; }
+    &.month-intensity--aggressive { --month-intensity-color: #{$color-danger}; }
+  }
+
+  .month-intensity-heading {
+    align-items: baseline;
+    display: flex;
+    gap: $sp-sm;
+    justify-content: space-between;
+    margin-bottom: $sp-sm;
+  }
+
+  .month-intensity-title {
+    color: $color-navy;
+    font-size: $smaller-font-size;
+    font-weight: 700;
+  }
+
+  .month-intensity-level {
+    color: var(--month-intensity-color);
+    font-size: $medium-heading-font-size;
+    font-weight: 700;
+  }
+
+  .month-intensity-segments,
+  .month-intensity-scale {
+    display: grid;
+    gap: $sp-xs;
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+  }
+
+  .month-intensity-segment {
+    --month-segment-color: #{$color-success};
+    background: color-mix(in srgb, var(--month-segment-color) 18%, transparent);
+    border-radius: 3px;
+    height: 10px;
+
+    &.month-intensity-segment--ambitious { --month-segment-color: #{$color-warning}; }
+    &.month-intensity-segment--aggressive { --month-segment-color: #{$color-danger}; }
+    &.month-intensity-segment--filled { background: var(--month-segment-color); }
+  }
+
+  .month-intensity-scale {
+    margin-top: $sp-xs;
+  }
+
+  .month-intensity-scale-label {
+    color: $color-text-muted;
+    font-size: $smaller-font-size;
+    grid-column-end: span 2;
+    white-space: nowrap;
+
+    &.month-intensity-scale-label--current {
+      color: var(--month-intensity-color);
+      font-weight: 700;
+    }
+  }
+
+  .month-intensity-footer {
+    color: $color-text-secondary;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: $smaller-font-size;
+    gap: $sp-xs $sp-md;
+    justify-content: space-between;
+    margin-top: $sp-sm;
+  }
+
+  .month-intensity-hint {
+    text-align: right;
+  }
+
+  // The open month's projects from its Focus bullet, each with a star choosing the month's focus.
+  .month-focus-plan-header {
+    align-items: baseline;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .month-focus-plan-count {
+    color: $color-text-secondary;
+    font-size: $smaller-font-size;
+    font-weight: 400;
+  }
+
+  .month-focus-callout {
+    align-items: center;
+    border: 1px dashed $color-border;
+    border-radius: $radius-sm;
+    color: $color-text-secondary;
+    display: flex;
+    font-size: $smaller-font-size;
+    gap: $sp-sm;
+    margin-bottom: $sp-sm;
+    padding: $sp-sm $sp-md;
+
+    strong {
+      color: $color-navy;
+      display: block;
+    }
+
+    &.month-focus-callout--chosen {
+      border-color: $color-warning;
+      border-style: solid;
+      color: $color-text;
+
+      .month-project-star-icon { color: $color-warning; }
+    }
+  }
+
+  .month-project-list {
+    list-style: none;
+    margin: 0 0 $sp-sm;
+    padding: 0;
+  }
+
+  .month-project-row {
+    align-items: center;
+    border-bottom: 1px solid $color-border;
+    display: flex;
+    gap: $sp-sm;
+    padding: $sp-xs 0;
+
+    &:last-child { border-bottom: 0; }
+
+    &.month-project-row--starred .month-project-label { font-weight: 700; }
+  }
+
+  .month-project-label {
+    color: $color-text;
+    flex: 1 1 auto;
+    font-size: $smaller-font-size;
+    min-width: 0;
+  }
+
+  .month-project-badge {
+    border: 1px solid $color-border;
+    border-radius: 999px;
+    color: $color-text-secondary;
+    font-size: $smaller-font-size;
+    padding: 0 $sp-sm;
+  }
+
+  .month-project-star {
+    background: none;
+    border: 0;
+    border-radius: $radius-sm;
+    color: $color-text-muted;
+    cursor: pointer;
+    display: flex;
+    padding: $sp-xs;
+
+    &:hover { color: $color-warning; }
+    &[aria-pressed="true"] { color: $color-warning; }
+  }
+
+  .month-project-star-icon {
+    flex: 0 0 auto;
+    height: 18px;
+    width: 18px;
+  }
+
   .create-month-plan-link {
     background: none;
     border: $planning-border-width dashed $color-border;

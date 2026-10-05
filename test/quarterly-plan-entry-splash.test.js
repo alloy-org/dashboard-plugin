@@ -15,6 +15,7 @@ await jest.unstable_mockModule("quarterly-plan-service", () => ({
   findQuarterPlan: jest.fn(async () => null),
   getMonthlyPlanContent: jest.fn(async () => ({ content: "", found: false })),
   resolveQuarterlyPlanEntry: (...args) => resolveQuarterlyPlanEntry(...args),
+  starMonthFocusProject: jest.fn(),
 }));
 await jest.unstable_mockModule("plan-wizard/wizard-prompt-runner", () => ({
   raceWizardPrompt: jest.fn(async () => ({ occupationHypothesis: "", personal: [], work: [] })),

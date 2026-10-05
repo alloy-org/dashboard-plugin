@@ -5,6 +5,25 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-04 — Monthly intensity meter and starred monthly focus project in Quarterly Planning
+
+**Model:** claude-opus-5-5 (1M context)
+**Files created/modified:**
+- `lib/plan-wizard/month-focus-projects.js` (created) — parse a month's Focus bullet into projects, grade the month Focused / Ambitious / Aggressive by project count, and rewrite the bullet so one project carries the ⭐
+- `lib/plan-wizard/quarterly-plan-markdown.js` — `MONTH_FOCUS_STAR`, `isStarredSegment`, `segmentWithoutStar`; `lineWithBuilderSegments` keeps a starred builder project starred across re-publication
+- `lib/quarterly-plan-service.js` — `starMonthFocusProject` saves the star into the plan note and returns the month section as saved
+- `lib/dashboard/month-focus-plan.jsx` (created) — `MonthIntensityMeter` and `MonthFocusPlan` (monthly focus callout, project rows with Builder badge and star toggle, remaining section markdown)
+- `lib/dashboard/planning.jsx` — render the meter above the month tabs and the starrable project list in the month area
+- `lib/dashboard/styles/planning.scss` — meter, callout, and project row styles
+- `test/month-focus-projects.test.js`, `test/planning-month-focus.test.js` (created); `test/quarterly-plan-entry-splash.test.js` — mock the new service export
+- `build/compiled.js` — regenerated
+
+**Prompt:** "refactor presentation of Quarterly Planning such that it indicates the aggressiveness of the monthly plan, based on how many Projects are scheduled for the current month… allow the user to star the Project that should be the monthly focus, and have that reflected in the appropriate section of the Quarterly Plan note"
+
+**Implementation choice:** Projects are the semicolon-separated segments of the month's `- Focus:` bullet (where Plan Builder writes them). Thresholds: ≤2 Focused, 3–4 Ambitious, 5+ Aggressive, over a 10-segment meter.
+
+---
+
 ## 2026-10-04 — Copy all or recent Debug Console entries
 
 **Model:** GPT-6 (Codex)
