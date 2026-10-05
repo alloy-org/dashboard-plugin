@@ -152,8 +152,7 @@ export default function QuarterNameStep({ isSaving, onNavigate, onRegisterNaviga
         </div>
       ) : (
         <p className="plan-empty" role="note">
-          Name a project on the previous steps first — a timeline is a spread of particular work, so there is
-          nothing to place yet.
+          Choose a cadence for an incomplete project on the Project cadence step to place it on the timeline.
         </p>
       ) }
     </div>

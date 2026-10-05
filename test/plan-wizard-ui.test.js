@@ -1537,6 +1537,8 @@ describe("PlanWizard quarter name step", () => {
     const { app, cleanup, container } = await renderPlanWizard();
     await advanceToStep(container, "projects");
     await saveFirstProject(container, "Noteapps rebuild");
+    await advanceToStep(container, "pace-cards");
+    await clickAndSettle(paceChoice(container, "Two focused blocks per week"));
     await advanceToStep(container, "quarter-name");
 
     expect(container.querySelector(".quarter-name-window-label").textContent).toBe("Noteapps rebuild");
@@ -1567,6 +1569,8 @@ describe("PlanWizard quarter name step", () => {
     const { cleanup, container } = await renderPlanWizard();
     await advanceToStep(container, "projects");
     await saveFirstProject(container, "Noteapps rebuild");
+    await advanceToStep(container, "pace-cards");
+    await clickAndSettle(paceChoice(container, "Two focused blocks per week"));
     await advanceToStep(container, "quarter-name");
     const track = container.querySelector(".quarter-name-window-track");
     track.getBoundingClientRect = () => ({ left: 100, width: 900 });
@@ -1604,6 +1608,19 @@ describe("PlanWizard quarter name step", () => {
     expect(Number(endInput.value)).toBeLessThanOrEqual(14);
     expect(container.querySelector(".quarter-name-deadline-note").textContent)
       .toContain("Deadline Oct 15 sits inside the ROI metrics API bar.");
+    await cleanup();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A named project needs a cadence before the timeline offers it a window.
+  it("omits projects without a cadence and explains how to add them to the timeline", async () => {
+    const { cleanup, container } = await renderPlanWizard();
+    await advanceToStep(container, "projects");
+    await saveFirstProject(container, "Still deciding the cadence");
+    await advanceToStep(container, "quarter-name");
+
+    expect(container.querySelector(".quarter-name-window")).toBeNull();
+    expect(container.querySelector(".plan-empty").textContent).toContain("Choose a cadence for an incomplete project");
     await cleanup();
   });
 

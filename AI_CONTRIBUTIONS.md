@@ -5,6 +5,35 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-04 — Give timeline project titles half the available row width
+
+**Model:** GPT-6 (Codex)
+**Files created/modified:**
+- `lib/dashboard/styles/plan-wizard.scss` — replace the fixed title-width cap with equal title and timeline columns; align all three month headings with the track
+- `build/compiled.js` — regenerated production bundle
+
+**Prompt:** "Adjust the bars to consume cumulatively half the screen, so there is more room for the Project Title."
+
+**Validation:** Production build and all 6 production bundle smoke tests passed. Browser verification was unavailable because the browser execution tool rejected the sandbox metadata (`sandboxPolicy` missing).
+
+---
+
+## 2026-10-04 — Limit the Roughly when timeline to projects with a cadence
+
+**Model:** GPT-6 (Codex)
+**Files created/modified:**
+- `lib/dashboard/plan-wizard/quarter-name-step-fields.js` — require a chosen cadence when drafting timeline rows, preserving completed and declined project exclusions
+- `lib/dashboard/plan-wizard/quarter-name-step.jsx` — explain that an incomplete project needs a cadence before it appears on the timeline
+- `test/plan-wizard-quarter-name.test.js` — cover all cadence options and exclude unpaced, completed, and declined projects
+- `test/plan-wizard-ui.test.js` — cover the unpaced empty state and choose a cadence before exercising timeline interactions
+- `build/compiled.js` — regenerated production bundle
+
+**Prompt:** "The 'Roughly when' page shows a plan for every project shown in the Project list. It should only show the projects that have a cadence chosen (without being marked complete)."
+
+**Validation:** 100 targeted helper and wizard UI tests passed; production build and all 6 production bundle smoke tests passed.
+
+---
+
 ## 2026-10-04 — Plan Builder writes the quarterly plan note from the projects page onward
 
 **Model:** Claude Opus 5.5

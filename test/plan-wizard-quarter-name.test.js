@@ -11,11 +11,11 @@ import { FOCUS_WINDOW_COLOR_COUNT, clampFocusWindow, deadlineNoteFromDraft, defa
 const SCOPE = { quarter: 4, year: 2026 };
 
 // ----------------------------------------------------------------------------------------------
-// @desc Build a minimal live prospect for helper tests.
+// @desc Build a minimal live prospect with a chosen cadence for helper tests.
 // @param {object} overrides - Fields to merge onto the default record.
 // @returns {object} Prospect-shaped object.
 function prospect(overrides = {}) {
-  return { approvalStatusEm: "humanProvided", deadlineOn: null, focusMonths: [], priorityEm: "quarterFocus",
+  return { approvalStatusEm: "humanProvided", deadlineOn: null, focusMonths: [], paceEm: "twoFocusedBlocks", priorityEm: "quarterFocus",
     substantiation: "Named while planning", summary: "Noteapps rebuild", userCategoryEm: "work", uuid: "prospect-1",
     ...overrides };
 }
@@ -43,6 +43,26 @@ describe("nameIdeasFromProspects", () => {
 });
 
 describe("focus windows", () => {
+  // ----------------------------------------------------------------------------------------------
+  // @desc Only incomplete, live projects with a chosen cadence receive timeline rows, even with stored months.
+  test("requires a chosen cadence and excludes completed or declined projects", () => {
+    const paces = ["smallMoveMostDays", "twoFocusedBlocks", "oneSubstantialBlock", "deadlineSprint", "maintenanceOnly"];
+    const pacedProspects = paces.map(paceEm => prospect({ paceEm, uuid: paceEm }));
+    const excludedProspects = [
+      prospect({ focusMonths: ["2026-10"], paceEm: null, uuid: "unpaced" }),
+      prospect({ paceEm: undefined, uuid: "missing-pace" }),
+      prospect({ paceEm: "", uuid: "empty-pace" }),
+      prospect({ completedAt: "2026-10-04T12:00:00Z", uuid: "completed" }),
+      prospect({ priorityEm: "notNow", uuid: "parked" }),
+      prospect({ approvalStatusEm: "humanRejected", uuid: "rejected" }),
+      prospect({ approvalStatusEm: "humanRetired", uuid: "removed" }),
+    ];
+    const drafts = draftWindowsFromProspects([...excludedProspects, ...pacedProspects], SCOPE);
+    expect(drafts.map(draft => draft.uuid)).toEqual(paces);
+    expect(drafts.map(draft => draft.colorIndex)).toEqual([0, 1, 2, 3, 4]);
+    expect(draftWindowsFromProspects(excludedProspects, SCOPE)).toEqual([]);
+  });
+
   test("clamps a suggested window so it ends on or before a sprint deadline", () => {
     const { quarterEndOn, quarterStartOn } = quarterBoundsFromScope(SCOPE);
     const window = defaultFocusWindow({ deadlineOn: "2026-10-15", index: 0, quarterEndOn, quarterStartOn, totalCount: 1 });
