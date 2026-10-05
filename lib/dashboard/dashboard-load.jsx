@@ -3,7 +3,6 @@
 // [Claude claude-4.7-opus] Task: migrate dashboard-load entry from createElement to JSX
 // Prompt: "translate this project to render components with JSX instead"
 import { createRoot } from "react-dom/client";
-import { IS_DEV_ENVIRONMENT } from "constants/settings";
 import { createBrowserDevApp } from "util/browser-dev-app";
 import { publishDeviceProfileDiagnostic } from "util/device-profile";
 import { installDashboardSentryReporting, observeEmbedCall } from "util/sentry-reporting";
@@ -51,7 +50,10 @@ const LARGE_PHONE_VIEWPORT_CLASS_NAME = 'dashboard-large-phone-viewport';
 })();
 
 let app, initPromise;
-if (IS_DEV_ENVIRONMENT) {
+// Tested against process.env.NODE_ENV directly rather than IS_DEV_ENVIRONMENT from constants/settings: esbuild does
+// not inline a constant imported from another module, so the imported flag leaves this branch alive in production
+// and ships browser-dev-app with it. The define turns this expression into a literal the minifier can drop.
+if (process.env.NODE_ENV === "development") {
   app = createBrowserDevApp();
   initPromise = app.init();
 } else {

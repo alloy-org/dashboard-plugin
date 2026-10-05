@@ -1,1 +1,1 @@
-export const compiledCSS = '';
+export const compressedCSS = '';

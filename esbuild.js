@@ -12,6 +12,7 @@ import { fileURLToPath } from "url"
 import { assertHostPluginBoundary } from "./host-plugin-boundary.js"
 import { createLibImportsPlugin } from "./lib-imports-plugin.js"
 import { assertInlineScriptSafe } from "./inline-script-safety.js"
+import { gzipToBase64Lines } from "./payload-compression.js"
 import { createScssPlugin } from "./scss-plugin.js"
 
 dotenv.config();
@@ -66,12 +67,16 @@ const jsOutput = clientBuild.outputFiles.find(f => f.path.endsWith('.js'));
 const cssOutput = clientBuild.outputFiles.find(f => f.path.endsWith('.css'));
 const compiledCSS = cssOutput ? cssOutput.text : "";
 
-// The bundle goes into the embed document as an inline <script>, so its bytes are read by the HTML tokenizer. Verify
-// it holds no sequence the tokenizer would treat as markup before it can reach a user's note.
+// The embed's loader now injects the bundle through a script element's textContent, which the HTML tokenizer never
+// reads, so this check is no longer what keeps the document intact. It stays as a guard for any path that inlines
+// the bundle as markup again, such as reverting the compressed payload.
 assertInlineScriptSafe(jsOutput.text);
-const clientScript = jsOutput.text;
+// Gzipped and base64-encoded, the bundle and stylesheet together shrink to under half their raw size in the plugin
+// note's code block, which every Amplenote client parses and holds in memory when the note is opened.
+const compressedClientScript = gzipToBase64Lines(jsOutput.text);
+const compressedCSS = gzipToBase64Lines(compiledCSS);
 
-// Plugin to provide the client bundle as a virtual module
+// Plugin to provide the gzipped, base64-encoded client bundle as a virtual module
 const clientBundlePlugin = {
   name: 'client-bundle',
   setup(build) {
@@ -80,13 +85,13 @@ const clientBundlePlugin = {
       namespace: 'client-bundle',
     }));
     build.onLoad({ filter: /.*/, namespace: 'client-bundle' }, () => ({
-      contents: `export const clientScript = ${JSON.stringify(clientScript)};`,
+      contents: `export const compressedClientScript = ${JSON.stringify(compressedClientScript)};`,
       loader: 'js',
     }));
   }
 };
 
-// Plugin to provide compiled CSS as a virtual module
+// Plugin to provide the gzipped, base64-encoded compiled CSS as a virtual module
 const cssContentPlugin = {
   name: 'css-content',
   setup(build) {
@@ -95,7 +100,7 @@ const cssContentPlugin = {
       namespace: 'css-content',
     }));
     build.onLoad({ filter: /.*/, namespace: 'css-content' }, () => ({
-      contents: `export const compiledCSS = ${JSON.stringify(compiledCSS)};`,
+      contents: `export const compressedCSS = ${JSON.stringify(compressedCSS)};`,
       loader: 'js',
     }));
   }

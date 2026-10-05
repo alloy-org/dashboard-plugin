@@ -5,6 +5,43 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-04 — Copy all or recent Debug Console entries
+
+**Model:** GPT-6 (Codex)
+**Files created/modified:**
+- `lib/dashboard/debug-console.jsx` — add Copy all and Copy recent actions, timestamped clipboard text, empty-state disabling, and success/failure feedback
+- `lib/dashboard/styles/debug-console.scss` — allow header actions to wrap and style clipboard feedback and disabled buttons
+- `lib/util/log.js` — export a shared 2,000-entry retention limit used by both the log buffer and console
+- `test/debug-console.test.js` — verify complete and latest-500 exports, retention across remounts, formatting, Clear, and clipboard rejection
+- `build/compiled.js` — regenerate the production bundle from the current workspace
+
+**Prompt:** "Update Debug Console so that in addition to the 'Debug' 'Queue' and 'Clear' buttons are a 'Copy all' and 'Copy recent' buttons that place the contents of the Debug Console into copy buffer, either all of them or the most recent 500"
+
+**Implementation choice:** Raise the existing 200-entry rolling limit to 2,000 so the latest-500 action is useful while keeping memory bounded. Clipboard exports preserve the displayed timestamp and message formatting, including existing oversized-message truncation.
+
+**Validation:** 12 focused console/queue tests and 7 production bundle smoke tests passed; production build and whitespace validation passed.
+
+---
+
+## 2026-10-04 — Halve compiled.js by gzipping the embed payloads and dropping dev-only client code
+
+**Model:** claude-opus-5-5 (1M context)
+**Files created/modified:**
+- `payload-compression.js` (created) — gzip + base64 encoding of the embed payloads, wrapped onto 1,000-character lines
+- `esbuild.js` — encode the client bundle and stylesheet with `gzipToBase64Lines` before exposing them as virtual modules
+- `lib/embed-html.js` — carry both payloads in `type="text/plain"` elements and add a loader that inflates them with `DecompressionStream`, installs the stylesheet, then runs the bundle; shows a visible message when the API is missing
+- `lib/dashboard/dashboard-load.jsx` — gate the dev branch on `process.env.NODE_ENV` directly so esbuild drops `browser-dev-app` and `dev-sample-notes` (~21 KB) from production
+- `test/payload-compression.test.js` (created), `test/production-plugin.test.js`, `test/stubs/client-bundle.js`, `test/stubs/css-content.js` — round-trip the encoding and inflate the shipped payloads
+- `build/compiled.js` — regenerated production bundle
+
+**Prompt:** "Can the compiled.js file be compressed further without losing fidelity when pasted into a CodeMirror element" → "Proceed"
+
+**Result:** compiled.js went from 1,476,967 to 712,952 bytes, and its longest line from 1.29 MB to 21 KB. The inflated payloads are byte-identical to esbuild's output.
+
+**Validation:** Full Jest suite passed (134 suites / 1,213 tests). Headless Chrome loaded the rendered embed, installed the 246 KB stylesheet, and mounted React with no errors; with `DecompressionStream` removed, it showed the fallback message and reported the error.
+
+---
+
 ## 2026-10-04 — Preserve precise timeline ranges and split title/bar space 35/65
 
 **Model:** GPT-6 (Codex)

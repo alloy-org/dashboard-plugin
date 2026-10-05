@@ -1,6 +1,7 @@
 import { jest } from "@jest/globals";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
+import { gunzipSync } from "node:zlib";
 
 const pluginCode = readFileSync(new URL("../build/compiled.js", import.meta.url), "utf8");
 
@@ -74,13 +75,10 @@ test("debugEvaluate embed action evaluates an expression against the host app", 
 });
 
 // ----------------------------------------------------------------------------------------------
-// @desc Parse the embed document the shipped plugin actually produces, with the environment's real HTML parser.
-//   The client bundle is inlined rather than base64-encoded, so its bytes reach the HTML tokenizer; this is the
-//   end-to-end counterpart to inline-script-safety.js, which makes the same judgement from a state machine at build
-//   time. It asserts on the real artifact, so a bundle whose contents drift into an unsafe arrangement fails here
-//   even if the build-time guard were ever bypassed.
+// @desc Parse the embed document the shipped plugin actually produces, with the environment's real HTML parser, and
+//   confirm the payload elements, the root the client mounts into, and the loader that inflates them all survive.
 // [Claude claude-opus-5 (1M context)] Generated test for: inlining the client bundle into the embed document.
-test("shipped embed document survives HTML parsing with the client bundle inlined", async () => {
+test("shipped embed document survives HTML parsing with compressed payloads", async () => {
   const plugin = runInNewContext(pluginCode, { console: { debug: jest.fn(), error: jest.fn(), log: jest.fn() }, setTimeout });
 
   const embedHTML = await plugin.renderEmbed({ settings: {} });
@@ -88,10 +86,34 @@ test("shipped embed document survives HTML parsing with the client bundle inline
   const parsedDocument = new DOMParser().parseFromString(embedHTML, "text/html");
   const scriptElements = [ ...parsedDocument.querySelectorAll("script") ];
   expect(scriptElements.every(script => !(script.getAttribute("src") || "").startsWith("data:"))).toBe(true);
-  const bundleScript = scriptElements.find(script => script.textContent.length > 10_000);
-  expect(bundleScript).toBeDefined();
-  // The root the client mounts into precedes the bundle, and </body></html> follows it. Both surviving the parse is
-  // what proves the script element opened and closed where it was supposed to.
+  expect(parsedDocument.getElementById("dashboard-script-payload").textContent.length).toBeGreaterThan(10_000);
+  expect(parsedDocument.getElementById("dashboard-css-payload").textContent.length).toBeGreaterThan(1_000);
+  // The root the client mounts into precedes the payloads, and the loader follows them as the body's last element.
+  // Both surviving the parse is what proves every script element opened and closed where it was supposed to.
   expect(parsedDocument.querySelector("#dashboard-root")).not.toBeNull();
   expect(parsedDocument.body.lastElementChild.tagName).toBe("SCRIPT");
+  expect(parsedDocument.body.lastElementChild.textContent).toContain("DecompressionStream");
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Inflate the shipped payloads the way the embed's loader does — atob over the line-wrapped base64, then gzip —
+//   and confirm they decode to a stylesheet and the client bundle. zlib stands in for DecompressionStream, which
+//   jsdom does not provide; both implement the same gzip format.
+test("shipped embed payloads inflate to the stylesheet and client bundle", async () => {
+  const plugin = runInNewContext(pluginCode, { console: { debug: jest.fn(), error: jest.fn(), log: jest.fn() }, setTimeout });
+  const embedHTML = await plugin.renderEmbed({ settings: {} });
+  const parsedDocument = new DOMParser().parseFromString(embedHTML, "text/html");
+  const inflatePayload = elementId => {
+    const base64Text = parsedDocument.getElementById(elementId).textContent;
+    const gzippedBytes = Buffer.from(atob(base64Text), "latin1");
+    return gunzipSync(gzippedBytes).toString("utf8");
+  };
+
+  const clientScript = inflatePayload("dashboard-script-payload");
+  const compiledCSS = inflatePayload("dashboard-css-payload");
+
+  expect(clientScript.length).toBeGreaterThan(100_000);
+  expect(clientScript).toContain("dashboard-root");
+  expect(clientScript).not.toContain("[browser-dev-app]");
+  expect(compiledCSS).toContain(".widget-");
 });

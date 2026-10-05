@@ -1,1 +1,1 @@
-export const clientScript = '';
+export const compressedClientScript = '';

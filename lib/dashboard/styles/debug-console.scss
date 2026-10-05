@@ -55,7 +55,14 @@
 
   .debug-console__header-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 4px;
+  }
+
+  .debug-console__copy-status {
+    color: $color-text-muted;
+    font-size: $smaller-font-size;
+    padding: 4px 8px;
   }
 
   .debug-console__header-button {
@@ -71,6 +78,11 @@
     &:hover {
       background: $color-bg-page-hover;
       color: $color-text;
+    }
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.5;
     }
   }
 }

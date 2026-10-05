@@ -2,7 +2,7 @@ import DashboardQueueInspector from "dashboard/work-queue/dashboard-queue-inspec
 import { useDashboardWork } from "dashboard/work-queue/dashboard-work-context";
 import { runDebugEvaluationSession } from "debug-evaluate-service";
 import { useEffect, useRef, useState } from "react";
-import { addLogListener, getLogBuffer, logAlways, removeLogListener } from "util/log";
+import { addLogListener, getLogBuffer, logAlways, MAX_LOG_BUFFER, removeLogListener } from "util/log";
 import WidgetWrapper from "widget-wrapper";
 
 import "styles/debug-console.scss";
@@ -11,6 +11,7 @@ const WIDGET_ID = "debug-console";
 // Cap each rendered message so a single oversized log (e.g. a large object dump) cannot dominate the
 // scrollable console. 5 KB is enough for useful diagnostics without multi-page walls of text.
 const MAX_MESSAGE_CHARS = 5 * 1024;
+const RECENT_ENTRY_COUNT = 500;
 
 // ------------------------------------------------------------------------------------------
 // @desc Format a log entry's args array into a readable string, truncating when the joined result
@@ -33,21 +34,26 @@ function formatArgs(args) {
 // @desc Render the scrollable log viewer, following new entries as they arrive. The header's Debug button
 //   opens an expression prompt evaluated by the plugin host, whose result lands in this same log. When admin tools
 //   are available, a Queue button switches to the work queue inspector, which subscribes only while it is shown.
+//   Copy buttons export the visible log's retained entries or its latest 500 entries as timestamped plain text.
 // @param {object} props - An object with the following properties:
 //   - {boolean} adminToolsEnabled - Whether the admin tools policy allows the Queue inspector
 //   - {object} app - Amplenote app bridge, needed only by the expression evaluator
 export default function DebugConsoleWidget({ adminToolsEnabled, app }) {
   const [entries, setEntries] = useState(() => getLogBuffer());
+  const [copyStatus, setCopyStatus] = useState("");
   const [queueShown, setQueueShown] = useState(false);
   const scrollRef = useRef(null);
   const work = useDashboardWork();
   const queueInspectorShown = Boolean(adminToolsEnabled) && queueShown;
 
   useEffect(() => {
+    // ------------------------------------------------------------------------------------------
+    // @desc Append incoming entries using the same retention limit as the shared log buffer.
+    // @param {object} entry - Timestamped log entry received from the logging service.
     function onEntry(entry) {
       setEntries(prev => {
         const next = [...prev, entry];
-        return next.length > 200 ? next.slice(-200) : next;
+        return next.length > MAX_LOG_BUFFER ? next.slice(-MAX_LOG_BUFFER) : next;
       });
     }
     addLogListener(onEntry);
@@ -60,7 +66,29 @@ export default function DebugConsoleWidget({ adminToolsEnabled, app }) {
     }
   }, [entries, queueInspectorShown]);
 
-  const handleClear = () => setEntries([]);
+  // ------------------------------------------------------------------------------------------
+  // @desc Clear the displayed entries and any previous clipboard feedback.
+  const handleClear = () => {
+    setEntries([]);
+    setCopyStatus("");
+  };
+
+  // ------------------------------------------------------------------------------------------
+  // @desc Copy the selected entries in chronological order, preserving displayed timestamps and message formatting.
+  // @param {boolean} recentOnly - Whether to include only the latest 500 entries.
+  // @returns {Promise<void>} Resolves after displaying success or clipboard failure feedback.
+  const handleCopy = async recentOnly => {
+    const selectedEntries = recentOnly ? entries.slice(-RECENT_ENTRY_COUNT) : entries;
+    const formattedEntries = selectedEntries.map(entry => `${ new Date(entry.ts).toISOString().slice(11, 23) } ${ formatArgs(entry.args) }`);
+    const copyText = formattedEntries.join('\n');
+    try {
+      await navigator.clipboard.writeText(copyText);
+      setCopyStatus(`Copied ${ selectedEntries.length } entries.`);
+    } catch {
+      setCopyStatus("Copy failed. Clipboard access is unavailable.");
+    }
+  };
+
   // The session is fire-and-forget: it owns its own dialogs, and a rejection (a host that refuses to prompt)
   // has nowhere to surface but the log.
   const handleDebug = () => {
@@ -76,6 +104,24 @@ export default function DebugConsoleWidget({ adminToolsEnabled, app }) {
         title="Evaluate an expression in the plugin host"
       >
         Debug
+      </button>
+      <button
+        className="debug-console__header-button"
+        disabled={entries.length === 0}
+        type="button"
+        onClick={() => handleCopy(false)}
+        title="Copy all retained log entries"
+      >
+        Copy all
+      </button>
+      <button
+        className="debug-console__header-button"
+        disabled={entries.length === 0}
+        type="button"
+        onClick={() => handleCopy(true)}
+        title="Copy the most recent 500 log entries"
+      >
+        Copy recent
       </button>
       <button
         className="debug-console__header-button"
@@ -122,6 +168,7 @@ export default function DebugConsoleWidget({ adminToolsEnabled, app }) {
 
   return (
     <WidgetWrapper widgetId={WIDGET_ID} headerActions={headerActions}>
+      {copyStatus && !queueInspectorShown ? <div className="debug-console__copy-status" role="status">{copyStatus}</div> : null}
       {queueInspectorShown ? <DashboardQueueInspector work={work} /> : logEntries}
     </WidgetWrapper>
   );
