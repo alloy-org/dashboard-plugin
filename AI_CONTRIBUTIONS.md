@@ -5,6 +5,25 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-04 — Preserve precise timeline ranges and split title/bar space 35/65
+
+**Model:** GPT-6 (Codex)
+**Files created/modified:**
+- `lib/dashboard/styles/plan-wizard.scss` — allocate 35% of usable row width to project titles and 65% to date tracks, keeping month headings aligned
+- `lib/dashboard/plan-wizard/quarter-name-step-fields.js`, `quarter-name-step.jsx` — save and restore inclusive `focusStartOn`/`focusEndOn` dates, detect within-month edits, retain legacy month-only ranges, and clear dates when removing a range
+- `lib/plan-wizard/action-prospect.js`, `plan-models.js` — validate paired chronological calendar dates and identify invalid fields in errors
+- `lib/plan-wizard/quarterly-plan-publication.js`, `quarterly-plan-merge.js` — carry the selected range into a Focus window bullet in the quarterly plan note
+- `test/plan-wizard-models.test.js`, `test/plan-wizard-quarter-name.test.js`, `test/plan-wizard-ui.test.js` — validate dates, detect edits retaining the same month buckets, and exercise dragging, saving, reopening, publication, and removal through real persistence
+- `build/compiled.js` — regenerated production bundle
+
+**Prompt:** "Split it 35% for text, 65% for bars" and persist selected ranges at week precision, with discretion over storing dates or week numbers.
+
+**Implementation choice:** Store the exact inclusive calendar dates already represented by each bar. This retains week-level choices and precise drag positions without introducing ambiguous month/week numbering or snapping changes. Continue saving `focusMonths` for existing placement consumers.
+
+**Validation:** Production build passed; 10 suites / 221 tests passed, including the production bundle smoke tests. Browser verification remained unavailable because the browser execution tool rejected sandbox metadata (`sandboxPolicy` missing).
+
+---
+
 ## 2026-10-04 — Give timeline project titles half the available row width
 
 **Model:** GPT-6 (Codex)

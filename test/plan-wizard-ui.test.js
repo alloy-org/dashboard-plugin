@@ -1565,8 +1565,10 @@ describe("PlanWizard quarter name step", () => {
     await cleanup();
   });
 
-  it("drags a bar by its middle while preserving its duration and pulses after release", async () => {
-    const { cleanup, container } = await renderPlanWizard();
+  // ----------------------------------------------------------------------------------------------
+  // @desc Dragged partial-month ranges survive real storage, publication, reopening, and removal.
+  it("drags a bar, persists its dates, restores its position, and clears the saved range", async () => {
+    const { app, cleanup, container } = await renderPlanWizard();
     await advanceToStep(container, "projects");
     await saveFirstProject(container, "Noteapps rebuild");
     await advanceToStep(container, "pace-cards");
@@ -1588,7 +1590,28 @@ describe("PlanWizard quarter name step", () => {
     expect(movedStart).toBeGreaterThan(originalStart);
     expect(movedEnd - movedStart).toBe(originalEnd - originalStart);
     expect(container.querySelector(".quarter-name-bar--pulse")).not.toBeNull();
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.prospects[0]).toMatchObject({ focusEndOn: "2026-11-10", focusStartOn: "2026-10-11" });
+    const planNote = app.notes.find(note => note.tags?.includes("planning/quarterly"));
+    expect(planNote.content).toContain("- Focus window: 2026-10-11 – 2026-11-10");
     await cleanup();
+
+    const reopened = await renderPlanWizard({ app });
+    await advanceToStep(reopened.container, "quarter-name");
+    expect(Number(reopened.container.querySelector(".quarter-name-window-start").value)).toBe(movedStart);
+    expect(Number(reopened.container.querySelector(".quarter-name-window-end").value)).toBe(movedEnd);
+    await clickAndSettle(reopened.container.querySelector(".quarter-name-window-remove"));
+    await clickAndSettle(reopened.container.querySelector(".plan-wizard-next"));
+    const cleared = await readPlanGoals(app, SCOPE);
+    expect(cleared.prospects[0]).toMatchObject({ focusEndOn: null, focusMonths: [], focusStartOn: null });
+    expect(planNote.content).not.toContain("- Focus window:");
+    await reopened.cleanup();
+
+    const clearedWizard = await renderPlanWizard({ app });
+    await advanceToStep(clearedWizard.container, "quarter-name");
+    expect(clearedWizard.container.querySelector(".quarter-name-bar")).toBeNull();
+    await clearedWizard.cleanup();
   });
 
   it("keeps a sprint deadline on or before the suggested bar and names it in the footnote", async () => {

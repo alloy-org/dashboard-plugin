@@ -1,6 +1,6 @@
 // The wizard page that names the quarter and sketches when each active project should concentrate. Three name
 // ideas are drafted from Focus projects (then other live work, then static fallbacks); the user picks one or
-// writes their own. A timeline under that question lets them drag a window per project, stored as focusMonths.
+// writes their own. A timeline stores each project's exact date range along with its month placement buckets.
 
 import ProjectFocusWindow from "dashboard/plan-wizard/project-focus-window";
 import { answerTextFromRecord, hasUnsavedAnswer, quarterAnswerFromDraft } from "dashboard/plan-wizard/quarter-answer-fields";
@@ -97,7 +97,7 @@ export default function QuarterNameStep({ isSaving, onNavigate, onRegisterNaviga
       const didSaveName = await onSaveName(quarterAnswerFromDraft("quarterName", capturedAt, draftName));
       if (!didSaveName) return false;
     }
-    if (windowDraftsNeedSave(windowDrafts, planningContext.prospects)) {
+    if (windowDraftsNeedSave(windowDrafts, planningContext.prospects, scope)) {
       const didSaveWindows = await onSaveProspects(prospectRecordsFromWindowDrafts(windowDrafts, capturedAt));
       if (!didSaveWindows) return false;
     }

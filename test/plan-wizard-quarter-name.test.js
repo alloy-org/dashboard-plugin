@@ -5,8 +5,8 @@ import { FOCUS_WINDOW_EDGE_HIT_PIXELS, movedWindowDraft, pointerOperationFromPos
   projectTooltipHtmlFromDraft, removedWindowDraft,
   windowDraftFromMonthIndex } from "dashboard/plan-wizard/project-focus-window-fields";
 import { FOCUS_WINDOW_COLOR_COUNT, clampFocusWindow, deadlineNoteFromDraft, defaultFocusWindow,
-  draftWindowsFromProspects, focusMonthsFromWindow, focusWindowColorIndex, nameIdeasFromProspects,
-  quarterBoundsFromScope, selectedNameFromRecord, windowDraftsNeedSave } from "dashboard/plan-wizard/quarter-name-step-fields";
+  draftWindowsFromProspects, focusMonthsFromWindow, focusWindowColorIndex, nameIdeasFromProspects, prospectRecordsFromWindowDrafts,
+  quarterBoundsFromScope, selectedNameFromRecord, updatedWindowDraft, windowDraftsNeedSave } from "dashboard/plan-wizard/quarter-name-step-fields";
 
 const SCOPE = { quarter: 4, year: 2026 };
 
@@ -143,8 +143,44 @@ describe("focus windows", () => {
 
   test("reports when stored focusMonths already match the draft, so a no-op Next does not rewrite", () => {
     const drafts = draftWindowsFromProspects([prospect({ focusMonths: ["2026-10"], uuid: "1" })], SCOPE);
-    expect(windowDraftsNeedSave(drafts, [prospect({ focusMonths: drafts[0].focusMonths, uuid: "1" })])).toBe(false);
-    expect(windowDraftsNeedSave(drafts, [prospect({ focusMonths: [], uuid: "1" })])).toBe(true);
+    expect(windowDraftsNeedSave(drafts, [prospect({ focusMonths: drafts[0].focusMonths, uuid: "1" })], SCOPE)).toBe(false);
+    expect(windowDraftsNeedSave(drafts, [prospect({ focusMonths: [], uuid: "1" })], SCOPE)).toBe(true);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A range spanning partial months and edits inside those same months must survive save and restore.
+  test("round-trips exact focus dates and detects edits that retain the same month buckets", () => {
+    const stored = prospect({ focusEndOn: "2026-11-09", focusMonths: ["2026-10", "2026-11"], focusStartOn: "2026-10-12" });
+    const [draft] = draftWindowsFromProspects([stored], SCOPE);
+    expect(draft).toMatchObject({ endOn: "2026-11-09", startOn: "2026-10-12" });
+    expect(windowDraftsNeedSave([draft], [stored], SCOPE)).toBe(false);
+    const resized = updatedWindowDraft(draft, { ...quarterBoundsFromScope(SCOPE), endDay: 46, startDay: 18 });
+    expect(resized.focusMonths).toEqual(stored.focusMonths);
+    expect(windowDraftsNeedSave([resized], [stored], SCOPE)).toBe(true);
+    const [record] = prospectRecordsFromWindowDrafts([resized], "2026-10-04T12:00:00Z");
+    expect(record).toMatchObject({ focusEndOn: "2026-11-16", focusStartOn: "2026-10-19" });
+    const [restored] = draftWindowsFromProspects([{ ...stored, ...record }], SCOPE);
+    expect(restored).toMatchObject({ endOn: resized.endOn, startOn: resized.startOn });
+    expect(windowDraftsNeedSave([restored], [{ ...stored, ...record }], SCOPE)).toBe(false);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Clearing a persisted range clears both date fields and the compatibility month buckets.
+  test("saves range removal without resurrecting the old dates", () => {
+    const stored = prospect({ focusEndOn: "2026-11-09", focusMonths: ["2026-10", "2026-11"], focusStartOn: "2026-10-12" });
+    const [draft] = draftWindowsFromProspects([stored], SCOPE);
+    const removed = removedWindowDraft(draft);
+    expect(windowDraftsNeedSave([removed], [stored], SCOPE)).toBe(true);
+    const [record] = prospectRecordsFromWindowDrafts([removed], "2026-10-04T12:00:00Z");
+    expect(record).toMatchObject({ focusEndOn: null, focusMonths: [], focusStartOn: null });
+    expect(draftWindowsFromProspects([{ ...stored, ...record }], SCOPE)[0]).toMatchObject({ endOn: null, startOn: null });
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Restored date ranges still respect the quarter bounds and any sprint deadline changed on the pace page.
+  test("clamps stored dates to the quarter and sprint deadline", () => {
+    const stored = prospect({ deadlineOn: "2026-11-10", focusEndOn: "2027-01-04", focusStartOn: "2026-09-28" });
+    expect(draftWindowsFromProspects([stored], SCOPE)[0]).toMatchObject({ endOn: "2026-11-10", startOn: "2026-10-01" });
   });
 
   test("selects Write my own when the stored name is not one of the drafted chips", () => {

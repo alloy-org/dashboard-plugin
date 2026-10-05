@@ -1642,11 +1642,11 @@ $pace-slice-other-color: #e87ba4;
     }
 
     // ----------------------------------------------------------------------------------------------
-    // @desc Align the month headings with the track after splitting title and track space equally.
+    // @desc Align the month headings with the track after reserving 35% of available space for titles.
     .quarter-name-months {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      margin-left: calc((100% - 28px) / 2);
+      margin-left: calc((100% - 28px - 2 * $sp-md) * 0.35 + $sp-md);
       margin-right: calc(28px + $sp-md);
     }
 
@@ -1658,11 +1658,11 @@ $pace-slice-other-color: #e87ba4;
     }
 
     // ----------------------------------------------------------------------------------------------
-    // @desc Give project titles and date tracks equal width, reserving space for the remove control.
+    // @desc Split title and date-track space 35/65, reserving space for the remove control.
     .quarter-name-window {
       display: grid;
       gap: $sp-xs $sp-md;
-      grid-template-columns: repeat(2, minmax(0, 1fr)) 28px;
+      grid-template-columns: minmax(0, 35fr) minmax(0, 65fr) 28px;
     }
 
     .quarter-name-window-label-cell {

@@ -139,6 +139,22 @@ test("validates prospect enums, links, and user-provided provenance", () => {
 });
 
 // ----------------------------------------------------------------------------------------------
+// @desc Validate optional focus dates without requiring migration of older month-only prospects.
+test("validates paired focus dates and retains their precision through JSON", () => {
+  expect(new ActionProspect(prospect, scope)).toMatchObject({ focusEndOn: null, focusStartOn: null });
+  const dates = { focusEndOn: "2026-11-09", focusStartOn: "2026-10-12" };
+  const stored = new ActionProspect({ ...prospect, ...dates }, scope);
+  expect(new ActionProspect(copyJsonValue(stored), scope)).toMatchObject(dates);
+  for (const invalid of [
+    { focusEndOn: "2026-11-31", focusStartOn: "2026-10-12" },
+    { focusEndOn: "2026-11-09", focusStartOn: "2026-10-12T00:00:00Z" },
+    { focusEndOn: "2026-10-05", focusStartOn: "2026-10-12" },
+    { focusEndOn: null, focusStartOn: "2026-10-12" },
+    { focusEndOn: "2026-11-09", focusStartOn: null },
+  ]) expect(() => new ActionProspect({ ...prospect, ...invalid }, scope)).toThrow(/focus(Start|End)On/);
+});
+
+// ----------------------------------------------------------------------------------------------
 // @desc Keep a candidate action's identity independent of any Amplenote task, and its approval independent of
 //   whether it has been scheduled.
 // Approving work does not put it on a calendar, so the two states are validated separately.
