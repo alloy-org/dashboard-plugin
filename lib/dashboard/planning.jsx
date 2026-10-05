@@ -8,9 +8,9 @@ import PlanWizard from "dashboard/plan-wizard/plan-wizard";
 import { quarterPageWindow, quarterPlanForPage, quartersMatch } from "dashboard/quarter-page";
 import QuarterPageButton from "dashboard/quarter-page-button";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
+import useQuarterPlanProgress, { quarterProgressKey } from "hooks/use-quarter-plan-progress";
 import NoteEditor from "note-editor";
 import { mirrorQuarterPlanNote } from "plan-wizard/mirror-quarter-plan";
-import { resolveBegunQuarterPlan } from "plan-wizard/plan-begun";
 import { pluginSettings, updatePluginSetting } from "plugin-data";
 import QuarterlyPlanEntry from "quarterly-plan-entry";
 import { createOrAppendMonthlyPlan, createOrAppendWeeklyPlan, createQuarterlyPlan, findQuarterPlan,
@@ -105,14 +105,17 @@ async function handleCreateWeekPlan(app, plan, weekLabel, setWeekLoading, setWee
 //   - {Function} onCardClick - Opens the quarter's plan or Plan Builder.
 //   - {Function} onSuggestionToggle - Receives the checkbox's new checked state.
 //   - {object} plan - The quarter's plan, carrying label, noteUUID, hasAllMonthlyDetails, domainName, and pending.
+//   - {boolean} [planBegun] - Plan Builder holds saved answers for the quarter. Without a plan note yet, the card
+//     reads Continue Plan rather than Create Plan, and still opens Plan Builder.
 //   - {boolean} usedForSuggestions - Whether the checkbox is checked.
 // @returns {JSX.Element} The card.
-function QuarterCard({ isPast, onCardClick, onSuggestionToggle, plan, usedForSuggestions }) {
+function QuarterCard({ isPast, onCardClick, onSuggestionToggle, plan, planBegun = false, usedForSuggestions }) {
   const hasNote = !!plan.noteUUID;
   const isPending = !!plan.pending;
   const isUnrecorded = isPast && !hasNote && !isPending;
+  const isInProgress = planBegun && !hasNote && !isPast && !isPending;
   const cardClassNames = ["quarter-card"];
-  if (hasNote && !isPast) cardClassNames.push("quarter-card--has-plan");
+  if ((hasNote || isInProgress) && !isPast) cardClassNames.push("quarter-card--has-plan");
   if (isPast) cardClassNames.push("quarter-card--past");
   if (isPending) cardClassNames.push("quarter-card--pending");
   if (isUnrecorded) cardClassNames.push("quarter-card--unrecorded");
@@ -121,6 +124,7 @@ function QuarterCard({ isPast, onCardClick, onSuggestionToggle, plan, usedForSug
   if (isPending) statusText = "Loading…";
   else if (isUnrecorded) statusText = "No plan recorded";
   else if (hasNote) statusText = "📝 Open Plan";
+  else if (isInProgress) statusText = "✏️ Continue Plan";
   const showSuggestionToggle = hasNote && !isPast && !isPending;
 
   const suggestionTip = usedForSuggestions
@@ -262,20 +266,27 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   const [pageOffset, setPageOffset] = useState(0);
   const [pagedPlans, setPagedPlans] = useState(null);
   const [pageLoadGeneration, setPageLoadGeneration] = useState(0);
-  const [discoveredPlanNote, setDiscoveredPlanNote] = useState(null);
-  const [planHasBegun, setPlanHasBegun] = useState(null);
   const monthRequestId = useRef(0);
 
   const isTwoTall = gridHeightSize >= 2;
   // ----------------------------------------------------------------------------------------------
+  // @desc Quarters on screen whose plan note the dashboard has not loaded. Each is looked up for saved Plan Builder
+  //   answers, which dismiss the splash and mark the card as a plan in progress, and for a note created since load.
+  const fetchedPagePlans = pagedPlans?.pageOffset === pageOffset ? [pagedPlans.earlier, pagedPlans.later] : [];
+  const visibleLoadedPlans = quarterlyPlans?.current && quarterlyPlans?.next
+    ? [quarterlyPlans.current, quarterlyPlans.next].concat(fetchedPagePlans) : [];
+  const progressTargets = visibleLoadedPlans.filter(plan => plan?.quarter && plan?.year && !plan.noteUUID
+    && !plan.pending && !hasQuarterEnded({ quarter: plan.quarter, year: plan.year }));
+  const progressByQuarter = useQuarterPlanProgress(app, { domainName: taskDomainName, domainUuid: taskDomainUUID,
+    generation: pageLoadGeneration, targets: progressTargets });
+  // @desc Saved Plan Builder progress for one quarter.
+  // @param {object|null} plan - A plan carrying quarter and year.
+  // @returns {object|null} { begun, noteUUID }, or null until that quarter has been looked up.
+  const quarterProgress = plan => (plan?.quarter && plan?.year ? progressByQuarter[quarterProgressKey(plan)] ?? null : null);
   // @desc The plan note found after the dashboard loaded, when it belongs to this card's quarter.
   // @param {object|null} plan - A current or next quarter from the dashboard payload.
-  // @returns {string|null} That note's UUID, or null when this card is a different quarter.
-  const discoveredNoteUuid = plan => {
-    if (!plan?.quarter || !discoveredPlanNote?.noteUUID) return null;
-    if (plan.quarter !== discoveredPlanNote.quarter || plan.year !== discoveredPlanNote.year) return null;
-    return discoveredPlanNote.noteUUID;
-  };
+  // @returns {string|null} That note's UUID, or null when none has been found.
+  const discoveredNoteUuid = plan => quarterProgress(plan)?.noteUUID || null;
   const currentNoteUuid = quarterlyPlans?.current?.noteUUID || mirroredCurrentNoteUuid
     || discoveredNoteUuid(quarterlyPlans?.current);
   const nextNoteUuid = quarterlyPlans?.next?.noteUUID || discoveredNoteUuid(quarterlyPlans?.next);
@@ -303,8 +314,9 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
     ? `Gather your intents and build a plan for ${ quarterLabel(wizardQuarterPlan.year, wizardQuarterPlan.quarter) }`
     : "";
   const planNotesMissing = !!(wizardQuarterPlan?.quarter && !currentPlan?.noteUUID && !nextPlan?.noteUUID);
-  const checkingPlanProgress = planNotesMissing && planHasBegun === null;
-  const showPlanEntry = planNotesMissing && planHasBegun === false;
+  const wizardQuarterProgress = quarterProgress(wizardQuarterPlan);
+  const checkingPlanProgress = planNotesMissing && !wizardQuarterProgress;
+  const showPlanEntry = planNotesMissing && wizardQuarterProgress?.begun === false;
   const weekSectionVisible = isTwoTall && pageOffset === 0;
   const buildPlanAction = canStartWizard && !showPlanEntry && !checkingPlanProgress ? (
     <button className="widget-header-action" onClick={ () => setWizardPlan({ mirrorTarget: null,
@@ -348,8 +360,6 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
     setWeekContent(null);
     setInitialLoadDone(false);
     setMirroredCurrentNoteUuid(null);
-    setDiscoveredPlanNote(null);
-    setPlanHasBegun(null);
     setPageOffset(0);
     setPagedPlans(null);
     setWizardPlan(null);
@@ -402,31 +412,6 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
     return () => { active = false; };
   }, [app, currentPlan?.noteUUID, currentPlan?.quarter, currentPlan?.year, domainName, nextPlan?.noteUUID,
     nextPlan?.quarter, nextPlan?.year, pageLoadGeneration, pageOffset, plansReady]);
-
-  // A plan note in the dashboard payload is enough. Otherwise read the Vision Guide (and look the note up
-  // again) so answers saved in Plan Builder dismiss the splash even when no quarterly plan note exists yet.
-  useEffect(() => {
-    if (!plansReady || !wizardQuarterPlan?.quarter) return undefined;
-    const quarter = wizardQuarterPlan.quarter;
-    const year = wizardQuarterPlan.year;
-    if (currentPlan?.noteUUID || nextPlan?.noteUUID) {
-      setPlanHasBegun(true);
-      return undefined;
-    }
-    let active = true;
-    setPlanHasBegun(null);
-    const lookup = resolveBegunQuarterPlan(app, {
-      domainName: taskDomainName, domainUuid: taskDomainUUID, quarter, year });
-    lookup.then(result => {
-      if (!active || result.quarter !== quarter || result.year !== year) return;
-      if (result.noteUUID) {
-        setDiscoveredPlanNote({ noteUUID: result.noteUUID, quarter: result.quarter, year: result.year });
-      }
-      setPlanHasBegun(!!result.begun);
-    });
-    return () => { active = false; };
-  }, [app, currentPlan?.noteUUID, nextPlan?.noteUUID, pageLoadGeneration, plansReady, taskDomainName,
-    taskDomainUUID, wizardQuarterPlan?.quarter, wizardQuarterPlan?.year]);
 
   useEffect(() => {
     if (!plansReady || !weekSectionVisible) return;
@@ -587,6 +572,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
               onCardClick={ () => handleQuarterCardClick(plan) }
               onSuggestionToggle={ enabled => handleSuggestionToggle(plan, enabled) }
               plan={ plan }
+              planBegun={ !!quarterProgress(plan)?.begun }
               usedForSuggestions={ isUsedForSuggestions(plan) }
             />
           ))}

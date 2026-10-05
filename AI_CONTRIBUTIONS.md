@@ -5,6 +5,38 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-04 — Plan Builder writes the quarterly plan note from the projects page onward
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/hooks/use-plan-wizard.js` — `publishStoredPlan` and `isPublishing`; every plan note publication now runs through one queue so concurrent first publications cannot each create a note
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` — publish the plan note whenever the user leaves the projects page or any later page (except Back from projects to intents), holding navigation behind "Saving…" until it finishes
+- `lib/util/browser-dev-app.js`, `dev/dev-server.js` — a name query in the browser dev app also returns on-disk note files with that exact title, so the plan note is found rather than created again on each publication
+- `test/plan-wizard-plan-note-publication.test.js` — new: note created on Next after only card decisions, none on Back to intents, one note kept up to date on later pages
+- `test/browser-dev-app-prompt.test.js` — name query reaches the dev server's note files
+- `build/compiled.js` — regenerated production bundle
+
+**Prompt:** "By the time the user has clicked 'Next' on their list of projects, we should write the Quarterly Plan note (including its dev environment file on disk), and should write to that note for each of the next steps as well"
+
+**Validation:** 132 suites / 1,200 tests passed; production build and 6 host smoke tests passed. The new publication tests fail against the previous wizard.
+
+---
+
+## 2026-10-04 — Quarter cards show a begun plan as Continue Plan
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/hooks/use-quarter-plan-progress.js` — new hook looking up saved Plan Builder answers and plan notes for each visible, unended quarter without a loaded note, once per reload generation
+- `lib/dashboard/planning.jsx` — quarter cards with saved answers but no plan note read "✏️ Continue Plan" with the planned styling; the splash decision and discovered-note overlay read the hook's results in place of the single-quarter lookup
+- `test/planning-plan-begun.test.js` — per-quarter lookup mock; Continue Plan and lookup-order expectations
+- `build/compiled.js` — regenerated production bundle
+
+**Prompt:** "I have clicked Q4 2026 and chosen a handful of projects and set a handful of dates, but the component still shows 'Create Plan' as the link, when it should show there is already a plan configured"
+
+**Validation:** 131 suites / 1,196 tests passed; production build and 6 host smoke tests passed; verified in the dev dashboard that Q4 2026 reads Continue Plan.
+
+---
+
 ## 2026-10-04 — Work queue phase 10 activation isolation and acceptance audit
 
 **Model:** GPT-6 (Codex)

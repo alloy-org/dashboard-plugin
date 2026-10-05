@@ -21,6 +21,24 @@ describe("browser dev app note writes", () => {
   });
 });
 
+// ----------------------------------------------------------------------------------------------
+// @desc A note the browser created by name lives on disk rather than among the samples, so a name query must ask the
+//   dev server for it; otherwise each quarterly plan publication fails to find the note and creates another.
+describe("browser dev app note name queries", () => {
+  it("finds a note file by its exact title alongside the matching samples", async () => {
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn(async () => ({ json: async () => [{ name: "Q4 2026 Work Plan", uuid: "plan-file" }] }));
+    try {
+      const app = createBrowserDevApp();
+      const handles = await app.filterNotes({ query: "Q4 2026 Work Plan" });
+      expect(handles.map(handle => handle.uuid)).toContain("plan-file");
+      expect(global.fetch.mock.calls[0][0]).toBe("/api/note-filter?query=Q4+2026+Work+Plan");
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+});
+
 // [Claude gpt-5.3-codex] Generated tests for: browser dev app prompt modal behavior
 describe("browser dev app prompt modal", () => {
   beforeEach(() => {

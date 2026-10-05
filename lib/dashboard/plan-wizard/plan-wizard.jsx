@@ -110,8 +110,8 @@ function currentDocumentScrollTop() {
 export default function PlanWizard({ app, domainName = null, domainUuid = null, onClose, onFinished = null,
     onOpenSettings = null, quarter, year }) {
   const { consolidateProspects, discoverProspects, discoveryFailureReason, error, intentReading, isConsolidating,
-    isDiscovering, isLoading, isLoadingProjectSources, isRefreshing, isSaving, loadProjectSources, planningContext,
-    projectSources, refreshPossibilities, reload, reloadProjectSourceScores, saveError, saveGoals,
+    isDiscovering, isLoading, isLoadingProjectSources, isPublishing, isRefreshing, isSaving, loadProjectSources,
+    planningContext, projectSources, publishStoredPlan, refreshPossibilities, reload, reloadProjectSourceScores, saveError, saveGoals,
     saveProspectDecision, saveProspects, saveQuarterAnswer, saveThemeJudgement,
     viewQuarterlyPlan } = usePlanWizard({ app, domainName, domainUuid, quarter, year });
   const [stepKey, setStepKey] = useState(WIZARD_STEPS[0].key);
@@ -154,7 +154,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const isNavigatingSaveStep = ["enough-for-today", "pace-cards", "projects", "quarter-name"].includes(step.key);
   const hasPersistedIntent = planningContext.goals.length > 0;
   const advanceLabel = isLastStep ? "Done" : "Next";
-  const advanceButtonLabel = (isFirstStep || isNavigatingSaveStep) && (isSaving || isOpeningPlanNote) ? "Saving…" : advanceLabel;
+  const advanceButtonLabel = (isFirstStep || isNavigatingSaveStep) && (isSaving || isPublishing || isOpeningPlanNote) ? "Saving…" : advanceLabel;
   const progressRows = progressRowsFromContext({ currentStepKey: step.key, planningContext, wizardSteps: WIZARD_STEPS });
   // The grid column and the rail itself are gated on one flag, so the body never reserves a column for a sidebar
   // it is not rendering: loading, a load failure, and the inline note editor each take the whole width. The same
@@ -255,10 +255,22 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   };
 
   // ----------------------------------------------------------------------------------------------
-  // @desc After projects, cadence, or quarter name saves, honor a pending planning-note request or sidebar
-  //   jump before applying the page direction selected by Back or Next.
-  const handleProjectNavigation = () => {
+  // @desc Bring the quarter's plan note up to date as the user leaves the projects page or any page after it, so
+  //   the note exists once the projects are chosen and carries each later page's answers. Going Back from the
+  //   projects page to the intents leaves the note alone, since no project has been settled on that way.
+  // @returns {Promise<void>} Resolves once the publication has finished or its failure has been logged.
+  const publishOnPageChange = async () => {
+    const isReturningToIntent = step.key === "projects" && !pendingStepKeyRef.current && projectNavigationDirectionRef.current < 0;
+    if (isReturningToIntent) return;
+    await publishStoredPlan();
+  };
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc After projects, cadence, or quarter name saves, honor a pending planning-note request, which publishes on
+  //   its own, or else publish the plan note and then apply the sidebar jump or the direction Back or Next chose.
+  const handleProjectNavigation = async () => {
     if (consumePendingPlanNote()) return;
+    await publishOnPageChange();
     if (consumePendingStepKey()) return;
     handleStepChange(projectNavigationDirectionRef.current);
   };
@@ -296,10 +308,12 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   };
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Leave the final page once it has saved whatever the user selected: Back returns to the page before it,
-  //   View Quarterly Plan consumes the pending note request, and Done closes the wizard.
-  const handleDoneEnoughNavigation = () => {
+  // @desc Leave the final page once it has saved whatever the user selected: View Quarterly Plan consumes the pending
+  //   note request, and otherwise the plan note is published before Back returns to the page before it or Done
+  //   closes the wizard.
+  const handleDoneEnoughNavigation = async () => {
     if (consumePendingPlanNote()) return;
+    await publishOnPageChange();
     if (consumePendingStepKey()) return;
     if (projectNavigationDirectionRef.current < 0) {
       handleStepChange(-1);
@@ -516,13 +530,13 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
               { isFirstStep ? (
                 <button className="plan-wizard-cancel" onClick={ onClose } type="button">Cancel</button>
               ) : (
-                <button className="plan-wizard-back" disabled={ isNavigatingSaveStep && isSaving }
+                <button className="plan-wizard-back" disabled={ isNavigatingSaveStep && (isSaving || isPublishing) }
                   onClick={ isNavigatingSaveStep ? () => handleNavigateStep(-1) : () => handleStepChange(-1) }
                   type="button">Back</button>
               ) }
               <div className="plan-wizard-advance-group">
                 { isLastStep ? (
-                  <button className="plan-wizard-view-plan" disabled={ isOpeningPlanNote || isSaving }
+                  <button className="plan-wizard-view-plan" disabled={ isOpeningPlanNote || isSaving || isPublishing }
                     onClick={ handleViewQuarterlyPlan } type="button">
                     { isOpeningPlanNote ? "Opening…" : "View Quarterly Plan" }
                   </button>
@@ -530,7 +544,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
                 <button className="plan-wizard-next"
                   disabled={ (isLastStep && (!hasDoneEnoughSelection || isOpeningPlanNote))
                     || (isFirstStep && ((!hasIntentAnswer && !hasPersistedIntent) || isSaving))
-                    || (isNavigatingSaveStep && (isSaving || isOpeningPlanNote)) }
+                    || (isNavigatingSaveStep && (isSaving || isPublishing || isOpeningPlanNote)) }
                   onClick={ isFirstStep || isNavigatingSaveStep ? () => handleNavigateStep(1) : () => handleStepChange(1) }
                   type="button">
                   { advanceButtonLabel }

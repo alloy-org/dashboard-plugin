@@ -73,6 +73,27 @@ async function renderPlanning() {
 }
 
 // ----------------------------------------------------------------------------------------------
+// @desc Answer each quarter's lookup from a table, so only the quarters named in it have been begun.
+// @param {object} progressByQuarter - Map of quarter number to { begun, noteUUID }. Missing quarters are not begun.
+function mockQuarterProgress(progressByQuarter) {
+  resolveBegunQuarterPlan.mockImplementation(async (app, { quarter, year }) => {
+    const progress = progressByQuarter[quarter] ?? { begun: false, noteUUID: null };
+    return { ...progress, quarter, year };
+  });
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc The status text on the card for one quarter.
+// @param {HTMLElement} container - The widget's mount point.
+// @param {string} label - The quarter's label, such as "Q4 2026".
+// @returns {string|null} The card's status text, or null when no card shows that quarter.
+function cardStatus(container, label) {
+  const cards = [...container.querySelectorAll(".quarter-card")];
+  const card = cards.find(candidate => candidate.querySelector(".quarter-label")?.textContent.startsWith(label));
+  return card ? card.querySelector(".quarter-status").textContent : null;
+}
+
+// ----------------------------------------------------------------------------------------------
 // @desc Click an element the way the widget's handlers listen, then let the resulting promises settle.
 // @param {HTMLElement} element - Element that owns the onClick.
 async function clickAndSettle(element) {
@@ -87,7 +108,7 @@ describe("Planning begun-plan detection", () => {
   });
 
   it("keeps the splash when the quarter has no saved answers and no plan note", async () => {
-    resolveBegunQuarterPlan.mockResolvedValue({ begun: false, noteUUID: null, quarter: 4, year: 2026 });
+    mockQuarterProgress({});
     const { cleanup, container } = await renderPlanning();
     try {
       expect(container.querySelector(".plan-entry-title")).not.toBeNull();
@@ -98,13 +119,13 @@ describe("Planning begun-plan detection", () => {
     }
   });
 
-  it("shows the quarter cards once saved answers exist, even without a plan note", async () => {
-    resolveBegunQuarterPlan.mockResolvedValue({ begun: true, noteUUID: null, quarter: 4, year: 2026 });
+  it("shows the begun quarter as Continue Plan once saved answers exist, even without a plan note", async () => {
+    mockQuarterProgress({ 4: { begun: true, noteUUID: null } });
     const { cleanup, container } = await renderPlanning();
     try {
       expect(container.querySelector(".plan-entry-title")).toBeNull();
-      expect(container.textContent).toContain("Q4 2026");
-      expect(container.textContent).toContain("Create Plan");
+      expect(cardStatus(container, "Q4 2026")).toBe("✏️ Continue Plan");
+      expect(cardStatus(container, "Q1 2027")).toBe("+ Create Plan");
       expect(container.textContent).not.toContain("Set your Q4 2026 plan");
     } finally {
       await cleanup();
@@ -112,21 +133,21 @@ describe("Planning begun-plan detection", () => {
   });
 
   it("shows Open Plan when the lookup finds a plan note the dashboard had not loaded", async () => {
-    resolveBegunQuarterPlan.mockResolvedValue({ begun: true, noteUUID: "q4-note", quarter: 4, year: 2026 });
+    mockQuarterProgress({ 4: { begun: true, noteUUID: "q4-note" } });
     const { cleanup, container } = await renderPlanning();
     try {
       expect(container.querySelector(".plan-entry-title")).toBeNull();
-      expect(container.textContent).toContain("Open Plan");
+      expect(cardStatus(container, "Q4 2026")).toBe("📝 Open Plan");
     } finally {
       await cleanup();
     }
   });
 
   it("leaves the splash after the wizard closes once answers have been saved", async () => {
-    resolveBegunQuarterPlan.mockResolvedValueOnce({ begun: false, noteUUID: null, quarter: 4, year: 2026 });
-    resolveBegunQuarterPlan.mockResolvedValue({ begun: true, noteUUID: null, quarter: 4, year: 2026 });
+    mockQuarterProgress({});
     const { cleanup, container } = await renderPlanning();
     try {
+      mockQuarterProgress({ 4: { begun: true, noteUUID: null } });
       const startPlan = container.querySelector(".plan-entry-scratch, .plan-entry-begin, .plan-entry-build");
       expect(startPlan).not.toBeNull();
       await clickAndSettle(startPlan);
@@ -134,8 +155,9 @@ describe("Planning begun-plan detection", () => {
       expect(backdrop).not.toBeNull();
       await clickAndSettle(backdrop);
       expect(container.querySelector(".plan-entry-title")).toBeNull();
-      expect(container.textContent).toContain("Create Plan");
-      expect(resolveBegunQuarterPlan).toHaveBeenCalledTimes(2);
+      expect(cardStatus(container, "Q4 2026")).toBe("✏️ Continue Plan");
+      const lookedUpQuarters = resolveBegunQuarterPlan.mock.calls.map(([, scope]) => `Q${ scope.quarter } ${ scope.year }`);
+      expect(lookedUpQuarters).toEqual(["Q4 2026", "Q1 2027", "Q4 2026", "Q1 2027"]);
     } finally {
       await cleanup();
     }

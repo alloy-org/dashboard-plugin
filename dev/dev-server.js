@@ -326,18 +326,21 @@ function handleNoteAppendApi(req, res) {
 
 // ----------------------------------------------------------------------------------------------
 // @desc Answer filterNotes queries against the file-backed dev notes, so a browser client can find notes it
-//   created through /api/note-create by tag and archive group rather than only through the in-memory samples.
-// @param {object} req - Node request; tag and group arrive as query parameters.
+//   created through /api/note-create by tag, exact title, and archive group rather than only through the in-memory
+//   samples.
+// @param {object} req - Node request; tag, query, and group arrive as query parameters.
 // @param {object} res - Node response, answered with an array of note handles.
 // @returns {boolean} Whether this handler took the request.
 function handleNoteFilterApi(req, res) {
   if (req.method !== "GET") return false;
   const parsedUrl = new URL(req.url, "http://localhost");
   const group = parsedUrl.searchParams.get("group");
+  const query = parsedUrl.searchParams.get("query");
   const tag = parsedUrl.searchParams.get("tag");
   const app = createDevApp();
   const options = {};
   if (group) options.group = group;
+  if (query) options.query = query;
   if (tag) options.tag = tag;
   Promise.resolve(app.filterNotes(options)).then(handles => {
     res.writeHead(200, { "Content-Type": "application/json" });
