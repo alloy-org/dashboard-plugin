@@ -5,6 +5,18 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-05 — Hand-off diagnostics for calendar "Suggest" producing no visible suggestions
+
+**Model:** claude-opus-5-5 (1M context)
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda-suggest-action.js` — `_requestDiagnostics` (readable window, schedulable task shape, runtime timezone), `_suggestionDiagnostics` (per-suggestion flags: taskUUID not in `schedulableTasks`, outside window, in past, ms-scale, non-positive duration, missing explanation); log per-day offered/dismissed counts and failed days, the `setScheduledTasks` response, and its absence
+- `lib/plugin.js` — log the count returned to the host
+- `build/compiled.js` — regenerated
+
+**Prompt:** "Clicking 'Suggest' button on calendar does not produce any suggestions in spite of 7 Projects and numerous applicable tasks. Ensure that we have sufficient logging to better diagnose how this could occur"
+
+---
+
 ## 2026-10-04 — Monthly intensity meter and starred monthly focus project in Quarterly Planning
 
 **Model:** claude-opus-5-5 (1M context)
