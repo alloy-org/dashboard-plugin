@@ -5,6 +5,18 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-05 — Log which working-day hours Suggest treats as open
+
+**Model:** Grok 4.7
+**Files created/modified:**
+- `lib/dashboard/suggestion-task-slots.js` — `suggestionHourAvailability` lists open hours from 09:00–18:00, the obligations that close an hour (including the half-hour buffer and an assumed duration), and placed suggestions that sit on a closed hour
+- `lib/dashboard/proposed-agenda-suggest-action.js` — log `[proposed-agenda-suggest] suggestion hours` for each day, including cache hits
+- `test/ranked-task-suggestions.test.js` — hours closed by the current time, and hours closed by an event plus its buffer
+
+**Prompt:** "Perhaps it is possible that the suggester is incorrectly interpreting what times of day are open and available for a task suggestion? Not sure if our existing console log reveals what times of day were deemed available, but it should"
+
+---
+
 ## 2026-10-05 — Hand-off diagnostics for calendar "Suggest" producing no visible suggestions
 
 **Model:** claude-opus-5-5 (1M context)

@@ -3,7 +3,8 @@ import { dayProjectGroups, deadlineWithinComingWeek } from "day-project-candidat
 import { suggestionSectionsMarkdown } from "project-suggestion-log";
 import QuarterProject from "quarter-project";
 import { generativeRankPrompt, rankedTasksFromAnswers, rankedTasksFromCandidateIds, suggestionQuestions } from "suggestion-task-rank";
-import { activitiesClearOfObligations, refillRejectedSuggestion, slotRankedTasks, tasksNotRecentlySuggested } from "suggestion-task-slots";
+import { activitiesClearOfObligations, refillRejectedSuggestion, slotRankedTasks, suggestionHourAvailability,
+  tasksNotRecentlySuggested } from "suggestion-task-slots";
 
 const TUESDAY = new Date(2026, 9, 6, 15, 0, 0);
 
@@ -153,6 +154,38 @@ describe("suggestion slots", () => {
     const placement = activitiesClearOfObligations([covered], { nowMinutes: 15 * 60 + 30, obligations: [lateMeeting] });
     expect(placement.activities).toEqual([]);
     expect(placement.droppedCount).toBe(1);
+  });
+});
+
+describe("suggestion hour availability", () => {
+  // ----------------------------------------------------------------------------------------------
+  // @desc Today after 16:00 leaves only 17:00 as a candidate, and a cached morning suggestion is reported on a
+  //   closed hour. A task obligation with no duration is logged as an assumed half hour.
+  it("closes hours before now and names the obligation that blocks the one hour left", () => {
+    const availability = suggestionHourAvailability({
+      activities: [{ durationMinutes: 30, startMinutes: 9 * 60, startTime: "09:00" }],
+      nowMinutes: 16 * 60 + 19,
+      obligations: [{ source: "task", startMinutes: 17 * 60, title: "Standup" }],
+    });
+    expect(availability.earliestStart).toBe("17:00");
+    expect(availability.openHours).toEqual([]);
+    expect(availability.occupied).toEqual(["17:00-17:30 (task, duration assumed) Standup"]);
+    expect(availability.placedOnClosedHour).toEqual([{ reason: "beforeNow", startTime: "09:00" }]);
+    expect(availability.eventObligationCount).toBe(0);
+    expect(availability.taskObligationCount).toBe(1);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A future day starts at 09:00. A one-hour event also closes the following hour, because placement
+  //   keeps 30 minutes of space after an obligation.
+  it("keeps a future day open except the hours an event and its buffer close", () => {
+    const availability = suggestionHourAvailability({ nowMinutes: null,
+      obligations: [{ durationMinutes: 60, source: "event", startMinutes: 10 * 60, title: "Planning" }] });
+    expect(availability.earliestStart).toBe("09:00");
+    expect(availability.openHours).toEqual(["09:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"]);
+    expect(availability.closedHours.filter(entry => entry.reason === "occupied").map(entry => entry.hour))
+      .toEqual(["10:00", "11:00"]);
+    expect(availability.eventObligationCount).toBe(1);
   });
 });
 
