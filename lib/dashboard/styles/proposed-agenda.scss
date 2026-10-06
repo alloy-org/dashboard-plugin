@@ -122,6 +122,7 @@
   .proposed-agenda-text { font-weight: 600; overflow-wrap: anywhere; }
   .proposed-agenda-text p { display: inline; }
   .proposed-agenda-reason { color: $color-text-secondary; }
+  .proposed-agenda-reason--desktop { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .proposed-agenda-reason--mobile, .proposed-agenda-reason-toggle { display: none; }
   .proposed-agenda-goal-badge { align-self: flex-start; background: $color-bg-secondary; border: 1px solid $color-border; border-radius: 6px; color: $color-text-secondary; font-size: $smaller-font-size; margin-top: 2px; padding: 0 6px; }
   .proposed-agenda-actions, .proposed-agenda-scheduled-meta { align-items: center; display: flex; flex-shrink: 0; gap: $sp-sm; grid-column: 3; justify-self: end; }

@@ -5,6 +5,18 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-06 — One-line Proposed Agenda rationale with hover tooltip
+
+**Model:** claude-opus-5-5
+**Files modified:**
+- `lib/dashboard/proposed-agenda.jsx` — new `useReasonTooltip` hook attaches a tippy tooltip (500ms show delay, plain-text content) holding the full rationale to the desktop reason line; it only shows when the line is truncated.
+- `lib/dashboard/styles/proposed-agenda.scss` — `.proposed-agenda-reason--desktop` clamps to one line with an ellipsis.
+
+**Task:** Limit each proposed task's rationale to one line and show the full rationale in a tooltip after a 500ms hover.
+**Prompt summary:** "Let's update the \"Rationale\" explanation for each Proposed Agenda tasks so that it is limited to one line only. If the user hovers on it for 500ms, then let's show the full rationale in a tooltip"
+
+---
+
 ## 2026-10-06 — Spell out parent-suffix class names in stylesheets
 
 **Model:** grok-4.7

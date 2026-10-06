@@ -20,7 +20,9 @@ import { resolveProposedAgendaDate } from "proposed-agenda-service";
 import { findAmpleAgentProNote } from "providers/ai-provider-settings";
 import { refillAndRecordSuggestion } from "ranked-task-suggestions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import "styles/dashboard-tippy.scss";
 import "styles/proposed-agenda.scss";
+import tippy from "tippy.js";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import { calendarEventDateFromValue } from "util/calendar-utility";
 import { dateFromDateInput, dateKeyFromDateInput, formatClockLabel } from "util/date-utility";
@@ -52,6 +54,25 @@ function _modelName(providerEm) {
 }
 
 // ----------------------------------------------------------------------------------------------
+// @desc Attach a tooltip holding the full rationale to the one-line reason element. The tooltip waits 500ms of
+//   hover before appearing, and only appears when the line is truncated, since otherwise it would repeat what
+//   is already visible. Content is set as plain text because the rationale is LLM-written.
+// @param {string|null} reason - The full rationale text, or null when the row has none.
+// @returns {object} A ref to place on the reason element.
+function useReasonTooltip(reason) {
+  const reasonRef = useRef(null);
+  useEffect(() => {
+    if (!reason || !reasonRef.current) return undefined;
+    const reasonElement = reasonRef.current;
+    const instance = tippy(reasonElement, { arrow: true, content: reason, delay: [500, 0], duration: [120, 80],
+      maxWidth: 360, offset: [0, 8], onShow: () => reasonElement.scrollWidth > reasonElement.clientWidth,
+      placement: "bottom-start", theme: "dashboard" });
+    return () => instance.destroy();
+  }, [reason]);
+  return reasonRef;
+}
+
+// ----------------------------------------------------------------------------------------------
 // @desc One agenda row. Already-scheduled obligations and just-scheduled proposals retain readable titles with a
 //   "Scheduled" badge; pending proposals show their reason plus Add-to-schedule and dismiss controls. A "Note"
 //   link beneath the timestamp opens the note backing the row's task (when one is linkable).
@@ -62,6 +83,7 @@ function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, ti
   const titleHtml = amplenoteMarkdownRender(row.title) || row.title;
   const hasNote = !!(row.noteUuid || row.taskUuid);
   const hasReason = !row.isObligation && !!row.reason;
+  const reasonRef = useReasonTooltip(hasReason ? row.reason : null);
   return (
     <div className={ `proposed-agenda-item${ isScheduled ? " proposed-agenda-item--scheduled" : "" }` }>
       <div className="proposed-agenda-item-main">
@@ -86,7 +108,9 @@ function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, ti
                   type="button">ⓘ</button>
               : null }
           </span>
-          { hasReason ? <span className="proposed-agenda-reason proposed-agenda-reason--desktop">{ row.reason }</span> : null }
+          { hasReason
+            ? <span className="proposed-agenda-reason proposed-agenda-reason--desktop" ref={ reasonRef }>{ row.reason }</span>
+            : null }
           { row.projectUuid ? <span className="proposed-agenda-goal-badge">☆ Quarterly goal</span> : null }
         </div>
         { isScheduled
