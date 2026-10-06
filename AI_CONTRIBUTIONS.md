@@ -5,6 +5,16 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-06 — Align proposed agenda rationales with calendar explanations
+
+**Model:** GPT-6 (Codex)
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda.jsx` — Use the calendar explanation formatter for the agenda's desktop rationale, hover tooltip, and expanded mobile rationale. Show the project first, then the completion benefit, followed by the preferred weekday when applicable.
+
+**Task:** Replace raw ranking reasons such as "The user picked this..." with the same project and benefit explanation shown in the calendar.
+
+---
+
 ## 2026-10-06 — Keep calendar suggestions clear of long tasks and calendar events
 
 **Model:** claude-opus-5-5

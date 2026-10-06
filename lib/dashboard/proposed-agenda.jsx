@@ -1,4 +1,5 @@
 // Render the proposed agenda with date navigation, priority choices, and scheduling actions.
+import { calendarSuggestionExplanation } from "calendar-suggestion-explanation";
 import { PROVIDER_DEFAULT_MODEL } from "constants/llm-providers";
 import { configuredProviderEms, SETTING_KEYS } from "constants/settings";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
@@ -74,16 +75,19 @@ function useReasonTooltip(reason) {
 
 // ----------------------------------------------------------------------------------------------
 // @desc One agenda row. Already-scheduled obligations and just-scheduled proposals retain readable titles with a
-//   "Scheduled" badge; pending proposals show their reason plus Add-to-schedule and dismiss controls. A "Note"
-//   link beneath the timestamp opens the note backing the row's task (when one is linkable).
+//   "Scheduled" badge; proposals explain their project, completion benefit, and applicable preferred weekday using
+//   the calendar's formatter. Pending proposals also show Add-to-schedule and dismiss controls. A "Note" link
+//   beneath the timestamp opens the note backing the row's task (when one is linkable).
 // @param {object} props - { onDismiss, onOpenNote, onSchedule, row, scheduledKeys, timeFormat }.
+// @returns {JSX.Element} Agenda row with the same explanation in desktop, tooltip, and expanded mobile views.
 function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, timeFormat }) {
   const [reasonExpanded, setReasonExpanded] = useState(false);
   const isScheduled = row.isObligation || scheduledKeys.has(activityKey(row));
   const titleHtml = amplenoteMarkdownRender(row.title) || row.title;
   const hasNote = !!(row.noteUuid || row.taskUuid);
-  const hasReason = !row.isObligation && !!row.reason;
-  const reasonRef = useReasonTooltip(hasReason ? row.reason : null);
+  const reason = row.isObligation ? "" : calendarSuggestionExplanation(row);
+  const hasReason = !!reason;
+  const reasonRef = useReasonTooltip(hasReason ? reason : null);
   return (
     <div className={ `proposed-agenda-item${ isScheduled ? " proposed-agenda-item--scheduled" : "" }` }>
       <div className="proposed-agenda-item-main">
@@ -109,7 +113,7 @@ function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, ti
               : null }
           </span>
           { hasReason
-            ? <span className="proposed-agenda-reason proposed-agenda-reason--desktop" ref={ reasonRef }>{ row.reason }</span>
+            ? <span className="proposed-agenda-reason proposed-agenda-reason--desktop" ref={ reasonRef }>{ reason }</span>
             : null }
           { row.projectUuid ? <span className="proposed-agenda-goal-badge">☆ Quarterly goal</span> : null }
         </div>
@@ -132,7 +136,7 @@ function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, ti
         }
       </div>
       { hasReason && reasonExpanded
-        ? <div className="proposed-agenda-reason proposed-agenda-reason--mobile">{ row.reason }</div> : null }
+        ? <div className="proposed-agenda-reason proposed-agenda-reason--mobile">{ reason }</div> : null }
     </div>
   );
 }
