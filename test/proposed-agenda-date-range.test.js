@@ -23,7 +23,7 @@ await mockFetchAiProvider({ llmPromptWithPluginFallback: (...args) => llmMock(..
 const { activityKey, mergedAgendaRows } = await import("proposed-agenda-llm-generator");
 const { proposedTaskKey } = await import("proposed-agenda-archive");
 const { agendaRowsGroupedByDay, proposedAgendaDaysInRange } = await import("proposed-agenda-range");
-const { suggestScheduledTasksFromDashboard } = await import("proposed-agenda-suggest-action");
+const { calendarSuggestionFromActivity, suggestScheduledTasksFromDashboard } = await import("proposed-agenda-suggest-action");
 
 // ----------------------------------------------------------------------------------------------
 // @desc Build a plugin-side Amplenote app stub: fixture tasks, a quarterly plan note, and the note-writing
@@ -239,6 +239,18 @@ describe("suggestScheduledTasksFromDashboard", () => {
     expect(suggestions).toHaveLength(1);
     expect(suggestions[0].endAt - suggestions[0].startAt).toBe(30 * SECONDS_PER_MINUTE);
     expect(suggestions[0].explanation).toMatch(/10:00am/);
+  });
+
+  // Amplenote requires a new task to name the note it will be created in, so an idea's suggestion carries its note as
+  // task.noteUUID, and a new task with no note is withheld rather than offered for the calendar to reject.
+  it("names the destination note on every new-task suggestion", () => {
+    const activity = { durationMinutes: 30, ideaId: "idea-1", noteUuid: "project-note", reason: "Moves the launch forward.",
+      startMinutes: 9 * 60, targetMidnightSeconds: midnightSeconds(new Date()), taskUuid: null, title: "Email the beta testers" };
+    const suggestion = calendarSuggestionFromActivity(activity);
+    expect(suggestion.task).toEqual({ content: "Email the beta testers", noteUUID: "project-note" });
+    expect(suggestion.taskUUID).toBeUndefined();
+    expect(calendarSuggestionFromActivity({ ...activity, noteUuid: null })).toBeNull();
+    expect(calendarSuggestionFromActivity({ ...activity, noteUuid: null, taskUuid: "task-7" }).taskUUID).toBe("task-7");
   });
 
   // A host without setScheduledTasks (or one that rejects the call) still gets the full set back from the

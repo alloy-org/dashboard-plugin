@@ -32,7 +32,7 @@ describe("idea records", () => {
     const second = normalizedIdeaRecords(legacy, { projectUuid: PROJECT_UUID });
     expect(first).toEqual(second);
     expect(first).toEqual([{ acceptedTaskUuid: null, decidedAt: null, generatedAt: "2026-09-18T12:00:00.000Z",
-      ideaId: ideaIdFor(PROJECT_UUID, "Audit widget memory"), projectUuid: PROJECT_UUID, sourceRevision: null,
+      ideaId: ideaIdFor(PROJECT_UUID, "Audit widget memory"), noteUuid: null, projectUuid: PROJECT_UUID, sourceRevision: null,
       status: IDEA_STATUSES.open, supersedesIdeaId: null, taskText: "Audit widget memory" }]);
     const kept = normalizedIdeaRecords([{ futureField: 7, taskText: "Cap the cache" }], { projectUuid: PROJECT_UUID });
     expect(kept[0].futureField).toBe(7);
@@ -127,6 +127,36 @@ describe("idea generation context", () => {
     expect(prompt).toContain("Earlier ideas the user took on as tasks:\n- Sketch the picker");
     expect(prompt).toContain("Do not suggest these again, reworded or not:\n- Rewrite the dashboard");
     expect(result.suggestedTasks.map(idea => idea.taskText)).toEqual(["Benchmark the date picker"]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc The prompt lists the recently updated task notes, the project's own note first, and asks each idea to name one;
+  //   an idea keeps a note the prompt offered, falls back to the project's note for one it did not, and the merged
+  //   record stores the note so the calendar can create the task there.
+  it("files each idea in an offered note, falling back to the project's note", async () => {
+    const subject = project({ primaryNoteUuid: "project-note" });
+    const destinationNotes = [{ name: "Inbox", uuid: "inbox-note" }, { name: "Launch dashboard", uuid: "project-note" }];
+    const promptRunner = jest.fn().mockResolvedValue({ foundTasks: [], ideas: [
+      { beforeTask: null, noteUuid: "inbox-note", taskText: "Email the beta testers" },
+      { beforeTask: null, noteUuid: "invented-note", taskText: "Benchmark the date picker" },
+      { beforeTask: null, taskText: "Draft the release notes" }] });
+    const result = await generateProjectTaskIdeas({}, { destinationNotes, project: subject, promptRunner, quarterlyContext: null });
+    const prompt = promptRunner.mock.calls[0][1];
+    expect(prompt).toContain("each shown as [uuid] name:\n- [project-note] Launch dashboard (this project's own note)\n"
+      + "- [inbox-note] Inbox\n");
+    expect(prompt).toContain(`"noteUuid": "..."`);
+    expect(result.suggestedTasks.map(idea => idea.noteUuid)).toEqual(["inbox-note", "project-note", "project-note"]);
+    const { ideas } = mergedIdeaRecords([], result.suggestedTasks, { projectUuid: PROJECT_UUID, sourceRevision: "rev" });
+    expect(ideas.map(idea => idea.noteUuid)).toEqual(["inbox-note", "project-note", "project-note"]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Without notes to offer, the prompt asks for no note and ideas take the project's note, or none without one.
+  it("asks for no note when none are offered", async () => {
+    const promptRunner = jest.fn().mockResolvedValue({ foundTasks: [], ideas: [{ beforeTask: null, taskText: "Email the beta testers" }] });
+    const result = await generateProjectTaskIdeas({}, { project: project(), promptRunner, quarterlyContext: null });
+    expect(promptRunner.mock.calls[0][1]).not.toContain("noteUuid");
+    expect(result.suggestedTasks[0].noteUuid).toBeNull();
   });
 
   // ----------------------------------------------------------------------------------------------

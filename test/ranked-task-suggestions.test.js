@@ -37,6 +37,27 @@ describe("day project candidates", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
+  // @desc Current project-note tasks compete with saved tasks, and Important survives the limit and ranking state.
+  it("includes current Important tasks even before background association", () => {
+    const records = Array.from({ length: 8 }, (_, index) => ({ matchScore: 10, taskText: `Stored ${ index }`,
+      taskUuid: `stored-${ index }` }));
+    const context = projectsWithTasks({ primaryNoteUuid: "project-note" }, records);
+    const openTasks = [{ important: true, noteUuid: "project-note", taskText: "Ship the fix", taskUuid: "important" },
+      { completedAt: 123, noteUuid: "project-note", taskText: "Finished", taskUuid: "finished" },
+      { noteUuid: "project-note", scheduledOnTarget: true, taskText: "Scheduled", taskUuid: "scheduled" }];
+    const [group] = dayProjectGroups({ now: TUESDAY, openTasks, ...context });
+    expect(group.taskCandidates).toHaveLength(8);
+    expect(group.taskCandidates[0]).toMatchObject({ important: true, text: "Ship the fix", uuid: "important" });
+    expect(group.taskCandidates.some(task => ["finished", "scheduled"].includes(task.uuid))).toBe(false);
+    const { listed, questions, state } = suggestionQuestions([group]);
+    expect(state.projects[group.summary].taskCandidates[0].userPriority).toBe('[User deemed "Important"]');
+    expect(JSON.stringify(questions.task_1)).toContain("explicit user priority");
+    expect(generativeRankPrompt(state)).toContain("strong relevance evidence");
+    const ranked = rankedTasksFromAnswers(listed, { task_1: { score: 9, type: "score" }, task_2: { score: 7, type: "score" } });
+    expect(slotRankedTasks(ranked, {}).activities[0]).toMatchObject({ isExisting: true, taskUuid: "important" });
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc Keep warm with no weekday still qualifies, and says how many of its tasks were finished this week.
   it("includes a cadence with no weekday and reports this week's completions", () => {
     const { projects, storedRecords } = projectsWithTasks({ paceEm: "oneSubstantialBlock", preferredWeekdays: [],

@@ -5,6 +5,44 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-05 — Include current Important tasks in calendar suggestion ranking
+
+**Model:** GPT-6
+**Files modified:** `lib/dashboard/quarter-project-task-candidates.js`, `lib/dashboard/suggestion-task-rank.js`,
+`test/ranked-task-suggestions.test.js`
+
+**Task:** Join current project-matching tasks with stored associations, retain Important candidates before the
+per-project limit, and pass `[User deemed "Important"]` as strong relevance evidence to both rankers. Use current
+text and omit completed, dismissed, or already scheduled candidates. Added a candidate-to-calendar regression.
+
+---
+
+## 2026-10-05 — Give every calendar task idea a destination note
+
+**Model:** claude-opus-5-5[1m]
+**Files created/modified:**
+- `lib/dashboard/task-destination-notes.js` (created — `recentTaskDestinationNotes` reads task-bearing notes updated in
+  the last 90 days with one `filterNotes({ group: "taskLists" }, "updated")` call, scoped to the Task Domain, leaving out
+  Dashboard-tagged and starter notes, newest first, capped at 60)
+- `lib/dashboard/project-task-ideas.js` — the idea prompt lists those notes as `[uuid] name` (the project's own note
+  first) and asks each idea for a `noteUuid`; a note the prompt did not offer falls back to the project's primary note
+- `lib/dashboard/project-idea-records.js` — idea records store `noteUuid`
+- `lib/dashboard/project-collection-steps.js`, `lib/dashboard/project-task-collection.js`,
+  `lib/dashboard/work-queue/jobs/generate-project-ideas.js`, `lib/dashboard/work-queue/jobs/project-job-inputs.js` —
+  thread the note list into idea generation; queued jobs share one read per domain for two minutes, like task reads
+- `lib/dashboard/quarter-project-task-candidates.js` — an idea candidate's note is the idea's own, else the project's
+- `lib/dashboard/proposed-agenda-suggest-action.js` — `calendarSuggestionFromActivity` sends new tasks as
+  `{ content, noteUUID }` and withholds (and logs) a new task with no note, since Amplenote requires one
+- `test/task-destination-notes.test.js` (created), `test/project-idea-records.test.js`,
+  `test/proposed-agenda-date-range.test.js` — note selection, the prompt's note list and fallback, and the suggestion shape
+- `build/compiled.js` (rebuilt)
+
+**Prompt:** "any task idea that is being proposed needs to be accompanied by a noteUUID ... the prompt for task ideas will
+need a list of note names and uuids for the user's notes that have been updated in the last 90 days and have tasks (or
+insert better refined criteria here, as long as they don't add an extra generative llm call)"
+
+---
+
 ## 2026-10-05 — Log which working-day hours Suggest treats as open
 
 **Model:** Grok 4.7
