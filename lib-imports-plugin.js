@@ -33,7 +33,7 @@ export function createLibImportsPlugin(libDir) {
     name: "absolute-imports",
     setup(build) {
       build.onResolve({ filter: /^[^.\/]/ }, (args) => {
-        if (args.path === "client-bundle" || args.path === "css-content") {
+        if ([ "classic-theme-styles", "client-bundle", "css-content" ].includes(args.path)) {
           return null;
         }
 

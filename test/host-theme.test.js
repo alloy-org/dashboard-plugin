@@ -32,6 +32,27 @@ test("theme retrieval failures use the existing plugin error handlers", async ()
 });
 
 // ------------------------------------------------------------------------------------------
+// @desc Render with the bundled classic palette for the host's mode when app.context has no getStyleProperties.
+// @returns {Promise<void>}
+test("hosts without getStyleProperties render and refresh with the classic palette", async () => {
+  const darkHtml = await plugin.renderEmbed({ context: { lightDarkMode: "dark" } });
+  expect(darkHtml).not.toContain("Dashboard failed to load");
+  expect(darkHtml).toContain('data-theme="dark"');
+  expect(darkHtml).toContain("--color-background-primary:#192025");
+  const lightTheme = await plugin.onEmbedCall({ context: { lightDarkMode: "light" } }, "getDashboardTheme");
+  expect(lightTheme).toEqual({ lightDarkMode: "light", styleProperties: ":root{--color-background-primary:#fff}" });
+});
+
+// ------------------------------------------------------------------------------------------
+// @desc Without a host mode, ship both classic palettes and let the device preference pick dark.
+// @returns {Promise<void>}
+test("hosts without a theme API or mode follow the system preference", async () => {
+  const html = await plugin.renderEmbed({ context: {} });
+  expect(html).not.toContain("data-theme=");
+  expect(html).toContain(":root{--color-background-primary:#fff}@media (prefers-color-scheme: dark){:root{--color-background-primary:#192025}}");
+});
+
+// ------------------------------------------------------------------------------------------
 // @desc Prevent supplied CSS and invalid mode values from injecting HTML into the embed document.
 // @returns {void}
 test("host CSS cannot close its style element", () => {

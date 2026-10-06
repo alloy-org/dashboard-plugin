@@ -1,5 +1,7 @@
 // A small in-memory Amplenote app for the durable work queue tests: notes found by name or UUID, created with their
-// tags and archive flag, and read and replaced whole. A test can make the next writes fail to model a failed save.
+// tags and archive flag, and read and replaced whole or by heading. A test can make the next writes fail to model a failed save.
+
+import { guideSectionRange } from "plan-wizard/vision-guide-markdown";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Create the app.
@@ -25,12 +27,23 @@ export function workQueueNotesApp() {
     getNoteContent: async ({ uuid }) => notes.get(uuid)?.content ?? null,
     noteContent: name => entryNamed(name)?.[1].content ?? null,
     notes,
-    replaceNoteContent: async ({ uuid }, content) => {
+    // ----------------------------------------------------------------------------------------------
+    // @desc Apply a whole-note or section replacement against current content, as independent client patches do.
+    // @param {object} noteHandle - Note UUID.
+    // @param {string} content - Replacement body.
+    // @param {object} options - Optional section descriptor.
+    // @returns {Promise<boolean>} Whether the target exists and was replaced.
+    replaceNoteContent: async ({ uuid }, content, options = {}) => {
       if (failingWrites > 0) {
         failingWrites -= 1;
         throw new Error("Simulated write failure");
       }
-      notes.get(uuid).content = content;
+      const note = notes.get(uuid);
+      if (options.section) {
+        const section = guideSectionRange(note.content, options.section.heading.text);
+        if (!section) return false;
+        note.content = `${ note.content.slice(0, section.bodyStart) }${ content }${ note.content.slice(section.end) }`;
+      } else note.content = content;
       return true;
     },
   };

@@ -1124,6 +1124,56 @@ Acceptance output defaults to `dev/compiled/phase10/`; the acceptance listener b
 `observer=off`, `failure=once`, and `backgroundDelay=30000`. Use the Acceptance measurements control to export each
 visit, navigate away before restoring a baseline, and run `node dev/summarize-acceptance.js` to regenerate the summary.
 
+#### Phase 10 queue bucket serialization — October 6, 2026
+
+Real-account profiling exposed recurring content merge conflicts in the shared Dashboard Work Queue note. The old
+repository replaced the entire note with one compact JSON block on every claim, checkpoint, completion, and request.
+A writer lock serialized one execution context's changes, but separate browsers still patched the same large block.
+
+The queue now writes schema 2: a small `Queue metadata` section followed by sixteen precreated, uniquely named
+`Queue bucket 01` through `Queue bucket 16` sections. Each bucket holds a fenced JSON object with a `jobs` array,
+formatted with two-space indentation so every job field appears on its own line. A fixed FNV-1a hash of the job key
+selects its bucket; changes to status, revision, owner, or neighboring jobs never move the job. Records remain schema 1.
+Ordinary updates call `replaceNoteContent` with the bucket's heading descriptor and replace only changed buckets.
+The API supports identifying the section by its heading, and excludes that heading from the replacement body.
+See the [Amplenote app interface](https://assets.amplenote.com/help/developing_amplenote_plugins/app_interface).
+
+Before writing a bucket, the repository re-reads the note and applies only this transition's changed job keys to the
+current bucket. Unrelated additions and edits visible on that read are preserved, including future-version records.
+A changed same-job input causes the stale transition to reject and retry rather than overwrite another client's
+claim. Retention pruning skips a terminal record another client has refreshed since the original read. Empty buckets
+keep their headings, so pruning never rewrites the shared structure or creates ambiguous positional section targets.
+Partial batch failures leave already committed buckets intact and permit retries of the remaining changes.
+
+There is still no compare-and-swap in the note API: clients can race after the final read, especially within the
+same bucket. This layout narrows conflicting areas; it does not provide a distributed lock. Missing, duplicated,
+misplaced, or malformed bucket sections fail closed instead of causing a whole-note fallback or an empty queue write.
+
+Legacy schema-1 notes remain readable without mutation. Their first changed write performs a one-time full conversion,
+preserving running attempt tokens, claims, cursors, revisions, failures, and unreadable/future records.
+Original preamble text and trailing annotations, including complete multiline Rich Footnotes, are preserved outside
+the owned bucket sections. New notes and
+legacy conversions retain the 100,000-character whole-write guard; subsequent bucket updates can operate on larger
+aggregate notes as long as each affected section fits the API limit. A failed conversion leaves the existing note
+untouched. Initial conversion is a structural write, so mixed old/new sessions should be closed or refreshed when
+rolling out the updated plugin.
+
+Rollback boundary: schema-2 queue notes require this reader to resume their jobs. Previous schema-1 repository versions
+see the metadata version and refuse to rewrite it; they cannot reconstruct the bucketed jobs. No automatic downgrade
+converter is provided. The previously documented rollback targets retain their compatibility with project/output
+formats, but must not be treated as compatible durable-queue runners for schema 2. Preserve the new queue and pause
+queued maintenance when using an older reader; resume with this version or a later compatible reader.
+
+Verification: all 143 offline suites / 1,263 tests pass, with four suites / nine credential-gated tests skipped.
+Production build and all seven host boundary smoke tests pass. Eleven new bucket tests cover independent concurrent
+clients, fresh same-bucket additions, competing same-job claims, remotely refreshed records during pruning, partial
+batch retry, checked section failures, malformed layouts, legacy migration, implicit model defaults, locale-independent record ordering, multiline values containing markdown
+fences, and aggregate notes larger than one API write. An additional migration test preserves an annotated preamble
+and full Rich Footnotes through migration and subsequent final-bucket replacements. The file-backed browser harness also migrated a live legacy
+fixture into all sixteen sections; its 25 records occupied thirteen buckets, with a largest bucket payload of 2,846
+characters. Production installation and a repeat multi-browser merge-conflict check remain pending. No live-account
+note was manually migrated, no plugin was deployed, and no commit was created by this work.
+
 ### Integration map
 
 Concrete integration changes:

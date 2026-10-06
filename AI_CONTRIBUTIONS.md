@@ -5,6 +5,67 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-06 — Describe queue records directly in JSDoc
+
+**Model:** GPT-6 (Codex)
+**Files modified/deleted:**
+- `lib/dashboard/work-queue/dashboard-work-note-types.d.ts` — Remove the unnecessary TypeScript declaration file.
+- `lib/dashboard/work-queue/dashboard-work-note.js` — Remove pseudo-import type aliases; document the 22 serialized queue-record fields locally in `//` JSDoc and describe each helper's record arrays, normalized/raw snapshot roles, options, and return shapes directly.
+- `lib/dashboard/work-queue/dashboard-work-job.js` — Remove the declaration-file reference and describe the serialized return value directly.
+- `build/compiled.js` — Rebuild and verify the host boundary.
+
+**Task:** Document the records managed by the work queue using the project's JSDoc convention, without adding TypeScript.
+**Validation:** All 22 serialized record fields are documented locally. All 30 focused queue tests, the production build, and all eight host smoke tests pass. Queue execution and serialization are unchanged. No commits created.
+
+---
+
+## 2026-10-06 — Specify queue storage argument and return contracts
+
+**Model:** GPT-6 (Codex)
+**Files created/modified:**
+- `lib/dashboard/work-queue/dashboard-work-note-types.d.ts` — Declare all persisted job fields, JSON value/preservation rules, normalized versus stored record collections, decoded legacy/bucketed note states, note handles, bucket payloads, write/render options, heading ranges, and the required Amplenote note API subset.
+- `lib/dashboard/work-queue/dashboard-work-note.js` — Replace generic objects and wildcard record annotations with named contracts for every argument and return value, especially the four different snapshot roles passed to `_mergedBucketRecords`.
+- `lib/dashboard/work-queue/dashboard-work-job.js` — Document `toRecord()` with the same complete persisted record contract.
+- `build/compiled.js` — Rebuild the workspace plugin and verify the host boundary.
+
+**Task:** Make the new queue storage methods' argument shapes explicit for maintenance.
+**Validation:** Declaration syntax parses and its 22 persisted fields match `DashboardWorkJob.toRecord()`. All 30 focused queue tests pass. Production build and host smoke checks pass. This change adds documentation/declarations only; queue runtime behavior is unchanged. No commits created.
+
+---
+
+## 2026-10-06 — Classic palette fallback for hosts without getStyleProperties
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files created/modified:**
+- `lib/plugin.js` — `readHostTheme` feature-detects `app.context.getStyleProperties` and falls back to the bundled classic palette for the host's mode (or both palettes under `prefers-color-scheme` when no mode is given) instead of failing `renderEmbed` and the `getDashboardTheme` bridge.
+- `esbuild.js` — Add a `classic-theme-styles` virtual module compiled at build time from the dev classic theme snapshots.
+- `dev/dev-theme-api.js` — Accept an optional Sass output style so the bundled copy is compressed.
+- `lib-imports-plugin.js`, `jest.config.js`, `test/stubs/classic-theme-styles.js` (created) — Resolve the new virtual module in esbuild and Jest.
+- `test/host-theme.test.js`, `test/production-plugin.test.js` — Cover the fallback for explicit and absent modes, the refresh bridge, and the shipped bundle.
+- `build/compiled.js` — Rebuild.
+
+**Task:** Mobile showed "Dashboard failed to load: e.context.getStyleProperties is not a function". One mobile release dropped the method, and older clients predate it.
+**Validation:** `npm run build` passes the host boundary guard; the full suite passes 147 suites / 1,275 tests, including all 8 production bundle smoke tests. Not yet verified on a device. No commits created.
+
+---
+
+## 2026-10-06 — Bucket durable queue writes to reduce cross-client merge conflicts
+
+**Model:** GPT-6 (Codex)
+**Files created/modified:**
+- `lib/dashboard/work-queue/dashboard-work-note.js` — Add schema-2 queue serialization with sixteen stable hash buckets, multiline JSON, heading-scoped writes, fresh bucket delta merges, same-job conflict detection, conservative pruning, and legacy reads/migration with preserved annotations and Rich Footnotes.
+- `lib/dashboard/work-queue/dashboard-work-repository.js` — Route durable persistence through the bucketed note adapter without changing job schemas or transition APIs.
+- `test/dashboard-work-buckets.test.js` — Exercise independent concurrent clients, fresh same-bucket additions, same-job conflicts, pruning races, partial batch retries, checked write failures, legacy/future-record preservation, minimal records with implicit defaults, deterministic ordering across locales, malformed layouts, and large section-written queues.
+- `test/dashboard-work-note-migration.test.js` — Preserve original prose and multiline Rich Footnotes outside the legacy JSON through migration and later bucket replacements.
+- `test/dashboard-work-repository.test.js`, `test/work-queue-test-notes.js` — Read the unified bucket payload in assertions and apply test replacements by heading against current shared content.
+- `doc/plan-dashboard-work-queue.md` — Document the observed merge issue, bucket layout, migration and rollback boundary, verification, and remaining production check.
+- `build/compiled.js` — Rebuild and verify the production host dependency boundary.
+
+**Task:** Reduce recurring Dashboard Work Queue merge conflicts using 10–20 independently replaceable sections and multiline job definitions.
+**Validation:** Full offline regression passes 143 suites / 1,263 tests (four suites / nine credential-gated tests skipped). Production build and all seven host smoke tests pass. The browser/file-backed harness migrates a legacy queue into sixteen valid sections. Cross-bucket writes preserve concurrent claims; fresh same-bucket additions survive; stale same-job transitions reject; partial batches retry. The production plugin was not installed or deployed, and no commits were created. Same-bucket races after the final read remain best-effort because the note API has no compare-and-swap.
+
+---
+
 ## 2026-10-06 — Phase 10 browser acceptance and realistic notebook simulation
 
 **Model:** GPT-6 (Codex)

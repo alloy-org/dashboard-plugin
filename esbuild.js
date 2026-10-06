@@ -13,6 +13,7 @@ import { assertHostPluginBoundary } from "./host-plugin-boundary.js"
 import { createLibImportsPlugin } from "./lib-imports-plugin.js"
 import { assertInlineScriptSafe } from "./inline-script-safety.js"
 import { gzipToBase64Lines } from "./payload-compression.js"
+import { getClassicThemeStyles } from "./dev/dev-theme-api.js"
 import { createScssPlugin } from "./scss-plugin.js"
 
 dotenv.config();
@@ -106,6 +107,24 @@ const cssContentPlugin = {
   }
 };
 
+// Plugin to provide the classic light and dark palettes as a virtual module. Hosts whose app.context lacks
+// getStyleProperties (older clients, and a mobile release that dropped it) render with these instead of the live theme.
+const classicThemeStyles = { dark: getClassicThemeStyles("dark", { style: "compressed" }),
+  light: getClassicThemeStyles("light", { style: "compressed" }) };
+const classicThemeStylesPlugin = {
+  name: 'classic-theme-styles',
+  setup(build) {
+    build.onResolve({ filter: /^classic-theme-styles$/ }, () => ({
+      path: 'classic-theme-styles',
+      namespace: 'classic-theme-styles',
+    }));
+    build.onLoad({ filter: /.*/, namespace: 'classic-theme-styles' }, () => ({
+      contents: `export const classicThemeStyles = ${JSON.stringify(classicThemeStyles)};`,
+      loader: 'js',
+    }));
+  }
+};
+
 // Name esbuild assigns the bundle to via globalName. Any identifier works; it only has to survive minification,
 // which a globalName does and esbuild's own internal names do not.
 const PLUGIN_GLOBAL_NAME = "dashboardPlugin";
@@ -145,7 +164,7 @@ const result = await esbuild.build({
   jsx: 'automatic',
   jsxImportSource: 'react',
   loader: { '.jsx': 'jsx' },
-  plugins: [clientBundlePlugin, cssContentPlugin, absoluteImportsPlugin],
+  plugins: [classicThemeStylesPlugin, clientBundlePlugin, cssContentPlugin, absoluteImportsPlugin],
   write: false,
 });
 

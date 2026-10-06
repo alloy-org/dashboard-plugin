@@ -1,11 +1,12 @@
 // Exercise DashboardWorkRepository and DashboardWorkJob: versioned persistence in an archived queue note, coalescing
 // requests, stale-attempt rejection, checkpoints that survive an expired claim, retry and configuration states, the
 // records and notes a newer version wrote, and bounded retention of finished jobs.
+import { workQueueNotesApp } from "./work-queue-test-notes";
 import DashboardWorkJob, { WORK_JOB_SCHEMA_VERSION } from "dashboard/work-queue/dashboard-work-job";
+import { WORK_QUEUE_SCHEMA_VERSION, workQueueNotePayload } from "dashboard/work-queue/dashboard-work-note";
 import { CLAIM_LEASE_MILLISECONDS, MAXIMUM_JOB_ATTEMPTS } from "dashboard/work-queue/dashboard-work-policy";
 import DashboardWorkRepository, { TERMINAL_RECORD_LIMIT, TERMINAL_RECORD_RETENTION_MILLISECONDS,
   workQueueNoteName } from "dashboard/work-queue/dashboard-work-repository";
-import { workQueueNotesApp } from "./work-queue-test-notes";
 
 const SCOPE = "domain-1:Q4 2026";
 
@@ -25,7 +26,7 @@ function repositoryHarness() {
 // @returns {object} The payload.
 function queuePayload(app) {
   const content = app.noteContent(workQueueNoteName(SCOPE));
-  return JSON.parse(content.match(/```json\s*([\s\S]*?)```/)[1]);
+  return workQueueNotePayload(content).payload;
 }
 
 describe("DashboardWorkRepository persistence", () => {
@@ -39,7 +40,7 @@ describe("DashboardWorkRepository persistence", () => {
     const note = [...app.notes.values()][0];
     expect(note).toMatchObject({ archived: true, name: workQueueNoteName(SCOPE) });
     const payload = queuePayload(app);
-    expect(payload).toMatchObject({ schemaVersion: 1, scopeKey: SCOPE });
+    expect(payload).toMatchObject({ schemaVersion: WORK_QUEUE_SCHEMA_VERSION, scopeKey: SCOPE });
     expect(payload.jobs).toHaveLength(1);
     expect(payload.jobs[0]).toMatchObject({ desiredRevision: "r2", schemaVersion: WORK_JOB_SCHEMA_VERSION, status: "pending" });
     const pending = await repository.readPending(SCOPE);
@@ -133,14 +134,15 @@ describe("DashboardWorkRepository versions and retention", () => {
     const { app, repository } = repositoryHarness();
     await repository.saveJob(SCOPE, { key: "mine", type: "rank" });
     const payload = queuePayload(app);
+    payload.schemaVersion = 1;
     payload.jobs.push({ futureField: true, key: "future", schemaVersion: WORK_JOB_SCHEMA_VERSION + 1, type: "rank" });
     const [uuid] = app.notes.keys();
     app.notes.get(uuid).content = `# Queue\n\n\`\`\`json\n${ JSON.stringify(payload) }\n\`\`\`\n`;
     await expect(repository.readAll(SCOPE)).resolves.toMatchObject({ unreadableRecords: 1 });
     await repository.saveJob(SCOPE, { key: "another", type: "rank" });
     const written = queuePayload(app);
-    expect(written.jobs.map(job => job.key)).toEqual(["another", "mine", "future"]);
-    expect(written.jobs[2]).toEqual({ futureField: true, key: "future", schemaVersion: WORK_JOB_SCHEMA_VERSION + 1, type: "rank" });
+    expect(written.jobs.map(job => job.key).sort()).toEqual(["another", "future", "mine"]);
+    expect(written.jobs.find(job => job.key === "future")).toEqual({ futureField: true, key: "future", schemaVersion: WORK_JOB_SCHEMA_VERSION + 1, type: "rank" });
   });
 
   // ----------------------------------------------------------------------------------------------

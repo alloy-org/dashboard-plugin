@@ -9,8 +9,9 @@ const THEME_DIRECTORY = fileURLToPath(new URL("./themes/", import.meta.url));
 // ------------------------------------------------------------------------------------------
 // @desc Compile a classic light or dark theme into the CSS returned by the simulated host.
 // @param {string} lightDarkMode - Explicit light or dark mode.
+// @param {object} options - Optional Sass output style; the production build compresses the copy it bundles.
 // @returns {string} Root-scoped custom properties, including resolved RGB values.
-export function getClassicThemeStyles(lightDarkMode) {
+export function getClassicThemeStyles(lightDarkMode, { style = "expanded" } = {}) {
   if (!["dark", "light"].includes(lightDarkMode)) throw new Error("Unsupported development theme mode");
   const palette = fs.readFileSync(path.join(THEME_DIRECTORY, "_classic-palette.scss"), "utf8");
   const theme = fs.readFileSync(path.join(THEME_DIRECTORY, `_theme-classic-${ lightDarkMode }.scss`), "utf8");
@@ -21,7 +22,7 @@ export function getClassicThemeStyles(lightDarkMode) {
     ${ palette }
     ${ theme }
     :root { @include theme-classic-${ lightDarkMode }; }`;
-  return sass.compileString(source, { silenceDeprecations: ["global-builtin"], style: "expanded" }).css;
+  return sass.compileString(source, { silenceDeprecations: ["global-builtin"], style }).css;
 }
 
 // ------------------------------------------------------------------------------------------

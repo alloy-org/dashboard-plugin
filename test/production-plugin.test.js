@@ -97,6 +97,21 @@ test("shipped embed document survives HTML parsing with compressed payloads", as
 });
 
 // ----------------------------------------------------------------------------------------------
+// @desc Confirm the shipped bundle carries the compiled classic palettes for hosts whose context lacks
+//   getStyleProperties, rather than failing the whole embed on the missing method.
+test("shipped plugin falls back to the classic palette without getStyleProperties", async () => {
+  const plugin = runInNewContext(pluginCode, { console: { debug: jest.fn(), error: jest.fn(), log: jest.fn() }, setTimeout });
+  const embedHTML = await plugin.renderEmbed({ context: { lightDarkMode: "dark" }, settings: {} });
+  const parsedDocument = new DOMParser().parseFromString(embedHTML, "text/html");
+  const hostThemeCSS = parsedDocument.getElementById("dashboard-host-theme").textContent;
+  expect(parsedDocument.documentElement.dataset.theme).toBe("dark");
+  expect(hostThemeCSS).toContain("--color-background-primary: #192025;");
+  expect(hostThemeCSS).toContain("--color-background-primary-rgb: 25, 32, 37;");
+  const lightTheme = await plugin.onEmbedCall({ context: { lightDarkMode: "light" }, settings: {} }, "getDashboardTheme");
+  expect(lightTheme.styleProperties).toContain("--color-background-primary: #fff;");
+});
+
+// ----------------------------------------------------------------------------------------------
 // @desc Inflate the shipped payloads the way the embed's loader does — atob over the line-wrapped base64, then gzip —
 //   and confirm they decode to a stylesheet and the client bundle. zlib stands in for DecompressionStream, which
 //   jsdom does not provide; both implement the same gzip format.

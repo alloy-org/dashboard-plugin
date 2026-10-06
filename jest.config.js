@@ -3,6 +3,7 @@ export default {
   modulePaths: ['<rootDir>/lib', '<rootDir>/lib/dashboard'],
   moduleNameMapper: {
     // Stub esbuild virtual modules that have no real files on disk
+    '^classic-theme-styles$': '<rootDir>/test/stubs/classic-theme-styles.js',
     '^client-bundle$': '<rootDir>/test/stubs/client-bundle.js',
     '^css-content$':   '<rootDir>/test/stubs/css-content.js',
     // Stub tippy.js (not available in jsdom)
