@@ -187,7 +187,8 @@ describe("ideas as recommendation candidates", () => {
     expect(questions.task_2.instructions).toContain("a new next action that is not yet a task");
     const ranked = rankedTasksFromAnswers(listed, { task_1: answer(9), task_2: answer(9) });
     expect(ranked.map(task => task.candidateId)).toEqual(["task:task-1", `idea:${ idea.ideaId }`]);
-    expect(ranked[1]).toMatchObject({ ideaId: idea.ideaId, isExisting: false, rating: 8.5, taskUuid: null });
+    expect(ranked[1]).toMatchObject({ ideaId: idea.ideaId, isExisting: false, projectSummary: "Launch dashboard",
+      rating: 8.5, taskUuid: null });
     expect(ranked[1].rationale).toContain("new next action generated for the project");
   });
 

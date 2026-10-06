@@ -97,7 +97,8 @@ describe("project suggestion fallback", () => {
     const result = ensureDueProjectSuggestions([], { nowMinutes: null,
       obligations: [{ durationMinutes: 120, startMinutes: 540 }], projects: [project], targetDate,
       tasks: [{ taskText: "Build the picker", taskUuid: "source-task" }] });
-    expect(result.activities[0]).toMatchObject({ projectUuid: "project-uuid", startTime: "11:00", taskUuid: "source-task" });
+    expect(result.activities[0]).toMatchObject({ needsBenefitRationale: true, projectSummary: "Launch dashboard",
+      projectUuid: "project-uuid", startTime: "11:00", taskUuid: "source-task" });
     expect(result.activities[0].reason).toContain("0 related task(s)");
   });
 

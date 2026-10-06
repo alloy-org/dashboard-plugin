@@ -86,6 +86,16 @@ beforeEach(() => {
     startTime: "09:00", taskUuid: "task-16", title: "Rotate GK azure key" }] });
 });
 
+// ----------------------------------------------------------------------------------------------
+// @desc Answer each day's prompt with a different open fixture task, since a task one day of the range holds is not
+//   offered again on a later day.
+function proposeDistinctTaskPerDay() {
+  const dayTasks = [["task-16", "Rotate GK azure key"], ["task-14", "Document birthday wisdoms"],
+    ["task-15", "Wish mom happy bday"]];
+  dayTasks.forEach(([taskUuid, title]) => llmMock.mockResolvedValueOnce({ activities: [{ durationMinutes: 60,
+    reason: "Highest-leverage item of the day.", startTime: "09:00", taskUuid, title }] }));
+}
+
 describe("ProposedAgendaWidget date range", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc A failed date change preserves the malformed note identity through the widget's error state.
@@ -153,6 +163,7 @@ describe("ProposedAgendaWidget date range", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc Accepting saves each displayed day to its own note and leaves scheduling to Schedule all.
   it("accepts a range into dated notes without scheduling its tasks", async () => {
+    proposeDistinctTaskPerDay();
     const { app, container } = await renderWidget({ dateRange: futureWeekdayWindow(), taskDomainName: "Work", taskDomainUUID: "dom-work" });
     app.createNote.mockClear();
     app.insertTask.mockClear();
@@ -187,6 +198,7 @@ describe("ProposedAgendaWidget date range", () => {
   // Each day's suggestion keeps its own row (rather than collapsing into a single shared key), and the
   // duration the API spec requires is what the row offers to schedule.
   it("renders one duration-bearing row per planned day", async () => {
+    proposeDistinctTaskPerDay();
     const { container } = await renderWidget({ dateRange: futureWeekdayWindow() });
     const rows = container.querySelectorAll(".proposed-agenda-item");
     expect(rows).toHaveLength(3);

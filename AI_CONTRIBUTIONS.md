@@ -5,6 +5,54 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-06 — Tidy the calendar suggestion pass
+
+**Model:** claude-opus-5-5
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda-suggest-action.js` — file header describes the action; `suggestScheduledTasksFromDashboard` is cut to 30 lines by extracting `_calendarSuggestionsForDay`, `_logPassOutcome`, `_recordPlannedDays`, and `_suggestionPassOptions`; `_activitiesAfterRejections` takes its arguments alphabetically.
+- `lib/dashboard/suggestion-staleness.js` — removes try/catch around setSetting, filterNotes, getTask, and getNoteTasks, keeping only the one around parsing the stored setting.
+- `lib/dashboard/proposed-agenda-range.js`, `lib/dashboard/proposed-agenda-service.js` — `_unclaimedRecords` and `_scheduleWithoutExcludedSuggestions` take their arguments alphabetically.
+- `lib/dashboard/suggestion-task-slots.js`, `lib/dashboard/suggestion-task-rank.js`, `lib/dashboard/proposed-agenda-service.js`, `lib/dashboard/proposed-agenda-archive.js` — `emphasizedWeekday` is copied without a `|| null` fallback.
+
+**Task:** Review follow-ups to the previous entry.
+**Prompt summary:** "Does _activityFromRanked really benefit from the added complexity of || null?... describe the purpose of the file... newly added function arguments are alphabetized... suggestScheduledTasksFromDashboard to be 30 lines or less... remove any try...catch statements that do not have a known failure origin"
+
+---
+
+## 2026-10-06 — Calendar suggestions drop acted-on tasks, never repeat across days, and cite daily emphasis
+
+**Model:** claude-opus-5-5
+**Files created/modified:**
+- `lib/dashboard/suggestion-staleness.js` (new) — reviews pending suggestions against the user's tasks: a completed, dismissed, or deleted task is stale, and an idea whose note now holds a task with its wording was accepted from the calendar. Records each calendar pass in a plugin setting so a pass for the same days within three hours checks only suggestions from notes changed since. Defines `suggestionIdentityKey`.
+- `lib/constants/settings.js` — `CALENDAR_SUGGESTIONS_GENERATED` setting key.
+- `lib/dashboard/proposed-agenda-service.js` — cached reconciliation replaces stale suggestions and ones an earlier day claimed, records calendar-accepted ideas as accepted, and confines its checks to changed notes when given them; fresh schedules leave out claimed suggestions.
+- `lib/dashboard/proposed-agenda-range.js` — the range keeps one claimed-suggestion queue so a later day never offers or reserves what an earlier day holds.
+- `lib/dashboard/proposed-agenda-suggest-action.js` — computes changed notes before the pass, claims refilled reserves, and records the pass afterward.
+- `lib/dashboard/ranked-task-suggestions.js` — the agenda drops claimed candidates after ranking, so the stored ranking is still reused.
+- `lib/dashboard/day-project-candidates.js`, `lib/dashboard/suggestion-task-rank.js`, `lib/dashboard/suggestion-task-slots.js`, `lib/dashboard/project-agenda-suggestions.js`, `lib/dashboard/proposed-agenda-archive.js` — carry `emphasizedWeekday` from a project whose chosen weekdays include the day through ranking, slotting, and storage. Record version 4.
+- `lib/dashboard/calendar-suggestion-explanation.js` — the rationale ends by naming the day of emphasis.
+- Tests: `test/suggestion-staleness.test.js` (new), plus additions to the archive, date-range, explanation, day-ranking-store, and ranked-task-suggestions suites; `test/proposed-agenda-widget-range.test.js` now proposes a distinct task per day.
+
+**Task:** Stop re-offering a calendar suggestion the user already ratified and completed, keep a multi-day pass from offering the same idea on several days, and mention a project's daily emphasis in the suggestion's rationale.
+**Prompt summary:** "After leaving calendar and returning, when I click the suggest button, the completed task is again provided as a suggestion... filter notes that have changed since that previous time... For multi-day task suggestions, we need to work from a queue of ideas... When the task is related to a Project that had a daily emphasis chosen, ensure that the daily emphasis is mentioned in the rationale string."
+
+---
+
+## 2026-10-06 — Calendar suggestion tooltips name the project and the benefit
+
+**Model:** grok-4.7
+**Files created/modified:**
+- `lib/dashboard/calendar-suggestion-explanation.js` (new) — asks for a one- or two-sentence answer to "Why am I better off after completing this task?" and formats the calendar tooltip as a project line plus that answer.
+- `lib/dashboard/proposed-agenda-service.js` — the schedule prompt requests that benefit wording, and a fresh agenda attaches the benefit before it is stored.
+- `lib/dashboard/proposed-agenda-suggest-action.js` — the explanation delivered to Amplenote uses the project line and the benefit.
+- `lib/dashboard/proposed-agenda-archive.js` — stored suggestions and reserves keep the project name and benefit. Record version 3 so agendas cached before this regenerate.
+- `lib/dashboard/suggestion-task-rank.js`, `lib/dashboard/suggestion-task-slots.js`, `lib/dashboard/project-agenda-suggestions.js` — the project name travels with a ranked suggestion, and a project the model left out is flagged for a benefit sentence without replacing the agenda's pace reason.
+
+**Task:** Preface each calendar suggestion's rationale with the project it serves, and phrase that rationale as a one- or two-sentence answer to why the user is better off after completing the task.
+**Prompt summary:** "When delivering calendar suggestions to the plugin app, let's preface the rationale with a line indicating which project is serviced by the suggestion, when available. Let's also request that the rationale is phrased as a response to the question 'Why am I better off after completing this task?' In one, or at most two, sentences."
+
+---
+
 ## 2026-10-06 — One-line Proposed Agenda rationale with hover tooltip
 
 **Model:** claude-opus-5-5

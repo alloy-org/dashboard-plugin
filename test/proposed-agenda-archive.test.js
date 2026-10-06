@@ -115,13 +115,18 @@ describe("proposed-agenda-archive", () => {
 
   it("stores a generated set and loads it back as pending activities", async () => {
     const app = buildNoteApp();
-    await storeProposedAgenda(app, { activities: [{ ...ACT_A, projectUuid: "project-uuid" }, ACT_B], date: DATE, priorityKey: PRIORITY,
-      providerEm: PROVIDER, llmAttributionFooter: "by Claude" });
+    const benefit = "Finishing this unblocks the launch.";
+    await storeProposedAgenda(app, { activities: [{ ...ACT_A, benefit, projectSummary: "Launch dashboard",
+      projectUuid: "project-uuid" }, ACT_B], date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER,
+      llmAttributionFooter: "by Claude", reserveTasks: [{ benefit, durationMinutes: 30, projectSummary: "Launch dashboard",
+        projectUuid: "project-uuid", rationale: "Keep warm.", taskText: "Write the notes", taskUuid: "task-9" }] });
 
     const loaded = await loadCachedProposedAgenda(app, { date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER });
     expect(loaded.activities.map(a => a.title)).toEqual(["Deep work block", "Walk break"]);
-    expect(loaded.activities[0]).toMatchObject({ startMinutes: 540, startTime: "09:00", taskUuid: "task-1" });
+    expect(loaded.activities[0]).toMatchObject({ benefit, projectSummary: "Launch dashboard", startMinutes: 540,
+      startTime: "09:00", taskUuid: "task-1" });
     expect(loaded.activities[0].projectUuid).toBe("project-uuid");
+    expect(loaded.reserveTasks[0]).toMatchObject({ benefit, projectSummary: "Launch dashboard", taskText: "Write the notes" });
     expect(loaded.llmAttributionFooter).toBe("by Claude");
     expect(loaded.scheduledKeys).toEqual([]);
     expect(loaded.dismissedKeys).toEqual([]);
@@ -429,6 +434,35 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
     expect(reconciled.fromCache).toBe(true);
     expect(reconciled.activities.map(a => a.taskUuid)).toEqual(["task-1", "task-2"]);
     expect(reconciled.scheduledKeys).toEqual([scheduledKey]);
+  });
+
+  // A calendar pass soon after the previous one names the notes changed since, and only their suggestions are looked up.
+  it("re-checks only the suggestions from notes changed since the previous calendar pass", async () => {
+    const app = buildGenerationApp(TWO_CALL_SCHEDULES);
+    await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    app._completeTask("task-1");
+    app.getTask.mockClear();
+
+    const unchanged = await generateProposedAgenda(app, { changedNoteUuids: new Set(["note-2"]), priorityKey: PRIORITY,
+      targetDate: DATE });
+    expect(app.getTask.mock.calls.map(([uuid]) => uuid)).toEqual(["task-2"]);
+    expect(unchanged.activities.map(a => a.taskUuid)).toEqual(["task-1", "task-2"]);
+
+    const changed = await generateProposedAgenda(app, { changedNoteUuids: new Set(["note-1"]), priorityKey: PRIORITY,
+      targetDate: DATE });
+    expect(changed.activities.map(a => a.taskUuid)).toEqual(["task-3", "task-2"]);
+  });
+
+  // A suggestion an earlier day of the range already holds gives up its slot on a later day's cached agenda.
+  it("replaces a cached suggestion that an earlier day of the range already claimed", async () => {
+    const app = buildGenerationApp(TWO_CALL_SCHEDULES);
+    await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+
+    const reconciled = await generateProposedAgenda(app, { excludedSuggestionKeys: new Set(["task:task-1"]),
+      priorityKey: PRIORITY, targetDate: DATE });
+    expect(app.callPlugin).toHaveBeenCalledTimes(2);
+    expect(reconciled.activities.map(a => a.taskUuid)).toEqual(["task-3", "task-2"]);
+    expect(storedRecords(app, DATE)[0].proposedTasks.map(t => t.taskUuid)).toEqual(["task-3", "task-2"]);
   });
 });
 

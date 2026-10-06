@@ -152,6 +152,22 @@ describe("prepareDayRanking", () => {
     expect(agenda.activities.map(activity => activity.taskUuid)).toEqual(["task-1", "task-2"]);
     expect(replaceNoteContent).not.toHaveBeenCalled();
   });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A candidate an earlier day of the range claimed is left out after ranking, so the stored ranking is still
+  //   reused and the next candidate takes the day.
+  it("leaves out candidates an earlier day already claimed while reusing the ranking", async () => {
+    const app = maintenanceApp({ tasks: TASKS });
+    await storeQualifyingProject(app);
+    const requestAnswers = positionalAnswers();
+    await prepareDayRanking(app, { ...DOMAIN, openTasks: TASKS, requestAnswers, targetDate: NOW });
+    const midnight = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
+    const agenda = await agendaSuggestionsFromProjects(app, { ...DOMAIN, excludedSuggestionKeys: new Set(["task:task-1"]),
+      openTasks: TASKS, projects: [], targetDate: midnight });
+    expect(agenda.activities.map(activity => activity.taskUuid)).toEqual(["task-2"]);
+    expect(agenda.reserveTasks.map(task => task.taskUuid)).not.toContain("task-1");
+    expect(requestAnswers).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe("prepareDayRanking job", () => {

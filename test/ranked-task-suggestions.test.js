@@ -32,6 +32,7 @@ describe("day project candidates", () => {
     expect(group.summary).toBe("Automate GitClear enterprise pipeline");
     expect(group.rationale).toContain("This project is scheduled for Tuesdays and today is Tuesday.");
     expect(group.rationale).toContain("The user picked this as a 'Focus' emphasis for the current quarter.");
+    expect(group.emphasizedWeekday).toBe("Tuesday");
     expect(group.taskCandidates).toEqual([expect.objectContaining({ minutesSinceRecommended: null, score: 8.6,
       text: "Sign up for GrokBot", uuid: "task-1" })]);
   });
@@ -64,6 +65,7 @@ describe("day project candidates", () => {
       priorityEm: "stayWarm", summary: "Bolster iPad Differentiation" });
     const [group] = dayProjectGroups({ now: TUESDAY, projects, storedRecords });
     expect(group.rationale).toContain("User chose to work on this once per week without a day of week specified.");
+    expect(group.emphasizedWeekday).toBeNull();
     expect(group.rationale).toContain("They have finished zero tasks from this project so far this week.");
   });
 
@@ -107,7 +109,8 @@ describe("suggestion ranking", () => {
   it("orders Jev score answers from highest to lowest", () => {
     const { listed } = suggestionQuestions(groups);
     const ranked = rankedTasksFromAnswers(listed, { task_1: { score: 7.6, type: "score" } });
-    expect(ranked[0]).toEqual(expect.objectContaining({ rating: 8.6, taskUuid: "task-1" }));
+    expect(ranked[0]).toEqual(expect.objectContaining({ emphasizedWeekday: "Tuesday", rating: 8.6, taskUuid: "task-1" }));
+    expect(slotRankedTasks(ranked).activities[0].emphasizedWeekday).toBe("Tuesday");
   });
 
   // ----------------------------------------------------------------------------------------------

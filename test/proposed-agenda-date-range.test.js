@@ -181,6 +181,7 @@ describe("suggestScheduledTasksFromDashboard", () => {
 
     expect(promptsSent).toHaveLength(1);
     expect(promptsSent[0]).toContain("barnacle");
+    expect(promptsSent[0]).toContain("Why am I better off after completing this task?");
     expect(promptsSent[0]).not.toContain("quarterly plan and stated goals");
   });
 
@@ -207,6 +208,23 @@ describe("suggestScheduledTasksFromDashboard", () => {
     expect(publishedCounts).toEqual(sortedCounts);
     expect(publishes[publishes.length - 1]).toHaveLength(suggestions.length);
     expect(app.context.setScheduledTasks).toHaveBeenCalled();
+  });
+
+  // A multi-day window draws from one queue: a task offered on the first day is not offered again on a later day,
+  // even though the model proposes it for every day. The pass then records when and for which days it ran.
+  it("offers each task on only one day of the window, and records the pass", async () => {
+    const { app } = buildApp();
+    app.setSetting = jest.fn().mockResolvedValue(undefined);
+    const startAt = midnightSeconds(new Date()) + 8 * 60 * SECONDS_PER_MINUTE;
+    const suggestions = await suggestScheduledTasksFromDashboard(app, { endAt: startAt + 2 * SECONDS_PER_DAY,
+      scheduledTasks: [], startAt });
+
+    const offeredTaskUuids = suggestions.map(suggestion => suggestion.taskUUID);
+    expect(offeredTaskUuids.length).toBeGreaterThan(0);
+    expect(new Set(offeredTaskUuids).size).toBe(offeredTaskUuids.length);
+    const [settingKey, settingValue] = app.setSetting.mock.calls.at(-1);
+    expect(settingKey).toBe(SETTING_KEYS.CALENDAR_SUGGESTIONS_GENERATED);
+    expect(JSON.parse(settingValue).dayKeys.length).toBeGreaterThan(0);
   });
 
   // The calendar's already-scheduled tasks are the immovable obligations the plan is built around, and they
@@ -249,8 +267,22 @@ describe("suggestScheduledTasksFromDashboard", () => {
     const suggestion = calendarSuggestionFromActivity(activity);
     expect(suggestion.task).toEqual({ content: "Email the beta testers", noteUUID: "project-note" });
     expect(suggestion.taskUUID).toBeUndefined();
+    expect(suggestion.explanation).toBe("Moves the launch forward.");
     expect(calendarSuggestionFromActivity({ ...activity, noteUuid: null })).toBeNull();
     expect(calendarSuggestionFromActivity({ ...activity, noteUuid: null, taskUuid: "task-7" }).taskUUID).toBe("task-7");
+  });
+
+  // The calendar tooltip names the project the suggestion serves, then the benefit of finishing the task rather
+  // than the ranker's evidence for why the project was chosen.
+  it("prefaces a suggestion's explanation with its project and the benefit of finishing it", () => {
+    const activity = { benefit: "This task serves the dual purpose of social engagement and physical fitness.",
+      durationMinutes: 45, noteUuid: "project-note", projectSummary: "Make one new friend",
+      reason: "The user picked this as a 'Keep warm' emphasis.", startMinutes: 9 * 60,
+      targetMidnightSeconds: midnightSeconds(new Date()), taskUuid: null,
+      title: "Choose a nearby 45-minute walking route and text one acquaintance" };
+    const suggestion = calendarSuggestionFromActivity(activity);
+    expect(suggestion.explanation).toBe("Project: Make one new friend\n"
+      + "This task serves the dual purpose of social engagement and physical fitness.");
   });
 
   // A host without setScheduledTasks (or one that rejects the call) still gets the full set back from the
