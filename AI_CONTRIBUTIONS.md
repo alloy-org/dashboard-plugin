@@ -5,6 +5,28 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-06 — Remove legacy project maintenance loops
+
+**Model:** GPT-6 (Codex)
+**Files created/modified/deleted:**
+- `lib/hooks/use-project-task-collection.js`, `lib/dashboard/project-task-collection.js`, `lib/dashboard/project-refresh-schedule.js`, `lib/plan-wizard/stack-rank/refresh-stale-project-rankings.js` — Remove the old collector, idle timers, refresh cycle, and independent Builder workers.
+- `lib/dashboard/dashboard.jsx`, `lib/hooks/use-project-task-ranking.js`, `lib/dashboard/work-queue/dashboard-work-features.js` — Remove legacy adapters; disabling durable work now pauses maintenance while mounting remains independent.
+- `lib/dashboard/project-refresh-policy.js`, `lib/dashboard/work-queue/quarter-project-work-planner.js` — Preserve the shared 72-hour staleness policy outside the deleted scheduler.
+- `lib/dashboard/work-queue/jobs/reconcile-projects.js` — Preserve score compaction through serialized repository writes, retaining cited scores, similar tasks, timestamps, and retired status; skip pruning without guide data.
+- `lib/dashboard/project-collection-steps.js`, `lib/dashboard/work-queue/jobs/rank-project-tasks.js` — Remove the collector-only idea wrapper and result envelope; retain shared task associations and completion evidence.
+- `lib/hooks/use-project-maintenance-queue.js`, `lib/dashboard/plan-wizard/plan-wizard.jsx`, `lib/dashboard/project-candidate-tasks.js`, `lib/dashboard/quarter-project.js`, `lib/dashboard/work-queue/jobs/discover-dictionary-terms.js`, `lib/dashboard/work-queue/jobs/generate-project-ideas.js`, `lib/plan-wizard/stack-rank/cited-task-records.js` — Update behavior comments for queue-owned maintenance.
+- `test/project-maintenance-disabled.test.js` — Verify disabled Dashboard and Builder maintenance with scheduled mounting independently enabled and disabled.
+- `test/project-maintenance-state.test.js` — Cover task edits and failed watermarks, completion history and reopening, idea refinement, cited evidence, and compaction through queue handlers.
+- `test/project-maintenance-jobs.test.js`, `test/project-maintenance-test-app.js` — Replace comparisons against the removed collector with stored-output assertions and share the job-driving fixture.
+- `test/project-task-store.test.js`, `test/stack-rank.test.js`, `test/dashboard-work-activation.test.js` — Remove obsolete orchestration tests while retaining policy, serialization, ranker, and cache coverage; update activation comments.
+- `lib/plan-wizard/stack-rank/README.md`, `doc/plan-dashboard-work-queue.md` — Document the current queue pipeline, cleanup, disabled-mode semantics, rollback targets, and pending browser acceptance.
+- `build/compiled.js` — Regenerate the production plugin.
+
+**Task:** Complete the next Phase 10 cleanup after the committed Builder scope migration.
+**Validation:** Full offline regression passed 140 suites / 1,248 tests (4 suites / 9 credential-gated tests skipped). `npm run build` and all 7 production host smoke tests passed. Browser bootstrap failed before connection with `codex/sandbox-state-meta: missing field sandboxPolicy`; browser/mobile acceptance remains pending. No commits created.
+
+---
+
 ## 2026-10-06 — Queue Plan Builder rankings across quarters
 
 **Model:** GPT-6 (Codex)

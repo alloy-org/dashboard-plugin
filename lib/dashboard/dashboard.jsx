@@ -32,7 +32,6 @@ import useDashboardWorkQueue from 'hooks/use-dashboard-work-queue';
 import useDomainTasks from 'hooks/use-domain-tasks';
 import useExternalCalendarEvents from 'hooks/use-external-calendar-events';
 import { useProjectMaintenanceQueue } from 'hooks/use-project-maintenance-queue';
-import { useProjectTaskCollection } from 'hooks/use-project-task-collection';
 import LayoutPickerWidget, { saveLayoutWithProfile } from 'layout-picker';
 import { WIDGET_REGISTRY } from 'layout-profiles';
 import LazyWidgetMount from "lazy-widget-mount";
@@ -448,11 +447,8 @@ export default function DashboardApp({ app, initPromise }) {
   const { activeTaskDomain, buildAgendaTasksByDate, initializeDomainTasks,
     onDomainChange, openTasks, taskDomains } = useDomainTasks();
   const activeTaskDomainName = taskDomains.find(domain => domain.uuid === activeTaskDomain)?.name || "All Notes";
-  // Project maintenance runs through the work queue when it is selected, and through the background collection pass
-  // otherwise; never both for one scope.
+  // Project maintenance runs only through the work queue; disabling durable work pauses it.
   const maintenanceQueued = queuedMaintenanceSelected();
-  const startProjectTaskCollection = useProjectTaskCollection({ app, domainName: activeTaskDomainName,
-    domainUuid: activeTaskDomain, enabled: !maintenanceQueued });
   const { completedTasksByDate, completedTasksLoaded, fetchCompletedTasks } = useCompletedTasks(app);
 
   const { calendarEvents, calendarEventsLoaded } = useExternalCalendarEvents(app, activeTaskDomain);
@@ -646,14 +642,9 @@ export default function DashboardApp({ app, initPromise }) {
   //   regardless of per-widget errors. Chained after the pending write to avoid a last-write-wins
   //   race, and guarded to run at most once.
   //
-  //   Settling is also the dashboard's cue that nothing is left competing for bandwidth, so this is where the
-  //   background project/task association pass is started. It is kicked off ahead of the breadcrumb guard
-  //   because that guard returns early on a second settle, and the collection pass keeps its own once-per-mount
-  //   guard; the pass must not inherit the breadcrumb's stamped-already condition. When maintenance is queued, the
-  //   pass stays off and the same signal submits the quarter's reconciliation instead. The work queue's maintenance
-  //   gate opens on this signal too, after its grace period.
+  //   Settling submits the quarter's queued reconciliation and opens the maintenance gate after its grace period.
+  //   These signals precede the breadcrumb guard so its stamped-already condition cannot suppress queue startup.
   const handleDashboardSettled = useCallback(() => {
-    startProjectTaskCollection();
     startQueuedMaintenance();
     reportLoadSettled();
     if (breadcrumbStampedRef.current || !breadcrumbWriteRef.current) return;
@@ -664,7 +655,7 @@ export default function DashboardApp({ app, initPromise }) {
       stampBreadcrumbSettled(app, { deviceProfile: deviceProfileRef.current, settledAt: Date.now(),
         startedAt: breadcrumbStartedAtRef.current, widgetIds: written.widgetIds });
     });
-  }, [app, reportLoadSettled, startProjectTaskCollection, startQueuedMaintenance]);
+  }, [app, reportLoadSettled, startQueuedMaintenance]);
 
   useDashboardTaskUpdates({ activeTaskDomain, app, onDomainChange, openTasks });
 

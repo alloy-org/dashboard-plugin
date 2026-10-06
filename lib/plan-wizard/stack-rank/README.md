@@ -4,15 +4,16 @@ Jev's URL. The generative provider's fast model rates only when neither of those
 
 # Pipeline
 
-Two passes rank projects. The background collection pass (`lib/dashboard/project-task-collection.js`) ranks each
-project it refreshes. Plan Builder runs `refresh-stale-project-rankings.js` on opening, because the background pass
-stands down while the builder is open. That pass ranks stale projects, guide projects the store has never ranked,
-projects due a second search page, and projects with unscored cited tasks. With Jev it ranks up to six projects at
-once and writes their sections one at a time; with the fast model it ranks one at a time. Both passes prepare one
-ranker and then rank project by project. When the Dashboard's work queue runs project maintenance, neither pass runs
-for the Dashboard's quarter: its `reconcileProjects` job plans one `rankProjectTasks` job per due project, which pools
-the unscored cited tasks from `cited-task-records.js` as Plan Builder's pass does (see
-`lib/dashboard/work-queue/quarter-project-work-planner.js`).
+Dashboard and Plan Builder share one durable work queue. Its `reconcileProjects` job plans one `rankProjectTasks`
+job per due project: stale or never-ranked projects, edited tasks, unscored cited tasks, changed dictionary terms,
+and projects due a second search page. Each ranking yields between batches and saves progress. Nested provider
+requests share the runtime's limits; repository writes serialize each project's section update.
+
+Builder retains its selected quarter on the shared scheduler and requests reconciliation at foreground priority.
+Closing Builder releases that extra scope, leaving unfinished records for reopening. Disabling durable work pauses
+project maintenance; it does not start another ranking loop. Reconciliation also removes low uncited cached scores
+without a provider request, preserving cited scores and similar tasks. See
+`lib/dashboard/work-queue/quarter-project-work-planner.js` and `jobs/rank-project-tasks.js`.
 
 ```javascript
 import { prepareProjectTaskRanker } from "plan-wizard/stack-rank/stack-rank-project-tasks";
@@ -23,8 +24,8 @@ const { acceptedTasks, failureReason, minimumMatchScore } = await ranker.rankPro
 ```
 
 1. `build-project-task-context.js` opens `User terms dictionary {year}`. Any project not yet listed under its
-   `Examined projects` heading goes through term discovery first. Plan Builder skips this step while it is waiting
-   on the generative provider. Its hook waits until the builder is idle before starting.
+   `Examined projects` heading goes through the queue's term-discovery job first. Builder requests reconciliation
+   when its provider is idle; subsequent jobs share the runtime's provider limits.
 2. `dictionary-term-discovery.js` asks the configured generative provider (the wizard's Agent Pro / direct provider
    race) which terms in those projects an outsider would misread. Jev can't take this step because it only rates
    and does not write text. A proposed term is kept only if it occurs in the wording of a project it was proposed
@@ -34,7 +35,7 @@ const { acceptedTasks, failureReason, minimumMatchScore } = await ranker.rankPro
    project, capped at the 500 most recently updated for Jev, or the 150 most recently updated for the fast model.
    A project that already has `lastRankedAt` submits only tasks created after that time. A cited task with no
    similarity score is still submitted, and so is every open task in the project's similarity hash (see below).
-   Task details are cached across the pass's projects.
+   Task details are cached within each ranker; queued jobs share the runtime's task reads.
 4. `prospective-task-details.js` describes each pooled task. The details are its note's name, tags, and last-opened
    date, `isParent`, its parent task, and up to five child tasks. The task API exposes only `isParent`, so the
    outline is read from note markdown by indentation. The API has no view counts; the note's last-opened date is the
@@ -65,10 +66,10 @@ Each project's section in `Project Tasks Q{n} {year} {domain}` holds its similar
 ```
 
 The checksum digests the project's summary together with the task's text (`task-rating-cache.js`). The hash holds
-every task rated 6 or higher, plus the tasks the sources page cites, whatever their score. Each pass re-checks the
+every task rated 6 or higher, plus the tasks the sources page cites, whatever their score. Each ranking re-checks the
 hash's open tasks. A task whose text is unchanged is read from the hash. A task that was edited gets a new key, so
 it is rated again, and it leaves the hash if it now rates below 6. Low scores for tasks the page does not cite are
-dropped the next time Plan Builder opens the store.
+dropped during reconciliation when the Vision Guide is available.
 
 The hash is the only place a score is stored. The payload's `relatedTasks` leaves out the tasks the hash rates
 similar, and `QuarterProject#matchesTask` counts those tasks toward the project's progress. The existing tasks are written
@@ -106,10 +107,10 @@ It sends the prompt through `raceWizardPrompt` with `wizardLlmOptions`, the fast
 converted to Jev's zero-indexed score answers, so the rating cache, thresholds, and stored ratings work as they do
 for Jev. A rating outside 1–10, or one the reply leaves out, leaves that task unrated.
 
-Because a generative prompt costs far more per task, the pool is capped at 150 tasks. In Plan Builder, a fast-model
-pass also stops before its next project once the builder is waiting on the provider again, so rating never delays a
-page the user is on. Ratings from either rater share one cache, so a Jev key added later rates only tasks that are
-new, edited, or newly inside its larger pool.
+Because a generative prompt costs far more per task, the pool is capped at 150 tasks. Ranking yields between batches;
+the queue admits nested provider calls through its shared budget and reserves generative capacity for foreground
+requests. Ratings from either rater share one cache, so a Jev key added later rates only tasks that are new, edited,
+or newly inside its larger pool.
 
 # User terms dictionary
 

@@ -107,6 +107,23 @@ export function jobContext(app) {
 }
 
 // ----------------------------------------------------------------------------------------------
+// @desc Run a handler's job through every yielded turn, as the durable runner does, carrying each checkpoint.
+// @param {object} handler - A work handler.
+// @param {object} options - { context, input, cursor = null }.
+// @returns {Promise<object>} { result, turns }: the last turn's result and how many turns ran.
+export async function runProjectJob(handler, { context, cursor = null, input }) {
+  let jobCursor = cursor;
+  for (let turns = 1; turns < 20; turns += 1) {
+    const job = { attempt: 1, cursor: jobCursor, desiredRevision: null, entityId: input.projectUuid || null, input,
+      key: `${ handler.type }:${ input.projectUuid || "quarter" }`, scopeKey: "work-domain:Q3 2026", type: handler.type };
+    const result = await handler.run({ context, job, signal: null });
+    if (result?.status !== "yielded") return { result, turns };
+    jobCursor = result.checkpoint;
+  }
+  throw new Error("The job never finished");
+}
+
+// ----------------------------------------------------------------------------------------------
 // @desc Store the plan's project under a fixed UUID, as reconciliation does before any job names a project, so the live
 //   plan gives it that UUID rather than a fresh one on each read.
 // @param {object} app - From maintenanceApp.

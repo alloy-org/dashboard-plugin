@@ -7,10 +7,10 @@ before Dashboard settles and whenever the user scrolls; maintenance starts after
 Instantiate `QuarterProject` at every project data boundary and update owned instances through its setters.
 Keep the existing Project Tasks and dictionary notes as durable results, with cached suggestions serving widgets.
 
-This plan is based on the working tree inspected October 3, 2026, including the revised mutable `QuarterProject` class
-and its separate serialization module. It proposes implementation; the scheduler, class extensions, and behavior
-changes described below have not been built. Existing classes/files and proposed additions are identified separately
-in the implementation inventory. The implementation phases below define independent human-reviewed commit boundaries.
+The original proposal is based on the working tree inspected October 3, 2026, including the revised mutable
+`QuarterProject` class and its separate serialization module. The baseline inventory below is historical; phase
+records and the integration map describe the implemented work and remaining acceptance checks. The implementation
+phases define independent human-reviewed commit boundaries.
 
 ## Existing behavior and missing pieces
 
@@ -40,11 +40,11 @@ The key implementation points are:
   settled and reports React mount separately from the `dashboard:widget-loaded` data-readiness event. Its aggregate
   settle callback does not establish that all visible data/provider work has finished; the scheduler must track
   ongoing foreground demand separately.
-- [`use-project-task-collection.js`](../lib/hooks/use-project-task-collection.js) starts once per mounted Dashboard,
+- `use-project-task-collection.js` (removed in Phase 10) starts once per mounted Dashboard,
   four seconds after `handleDashboardSettled`. An overlay can cancel that opportunity without resuming on close.
-  [`project-task-collection.js`](../lib/dashboard/project-task-collection.js) prepares the dictionary/ranker, then
+  `project-task-collection.js` (also removed) prepares the dictionary/ranker, then
   ranks and generates ideas for each project before writing its section.
-- [`project-refresh-schedule.js`](../lib/dashboard/project-refresh-schedule.js) refreshes every project older than
+- `project-refresh-schedule.js` (removed in Phase 10) refreshes every project older than
   72 hours without a time-budget stop. Otherwise it visits at least one project and continues within a 20-second
   admission budget. That does not implement the requested minimum number of projects per visit.
 - [`use-project-task-ranking.js`](../lib/hooks/use-project-task-ranking.js) starts a separate Plan Builder pass
@@ -1016,20 +1016,52 @@ mode. Preserve `PROJECT_STALENESS_HOURS` and `projectNeedsRefresh` in a shared p
 refresh schedule, and preserve the queue's shared ranker and collection helpers. Retain legacy-format readers and
 the inline daily-ranking fallbacks used by widgets and Calendar. No commit was created.
 
+#### Phase 10 legacy maintenance cleanup — October 6, 2026
+
+Dashboard and Builder now have one project-maintenance route. Removed `use-project-task-collection.js`,
+`project-task-collection.js`, `project-refresh-schedule.js`, and `refresh-stale-project-rankings.js`, including the
+disabled-mode adapters, delayed starts, once-per-mount guards, and independent worker loops. Disabling durable work
+now pauses project maintenance while stored results remain readable. Scheduled mounting remains independently
+selectable. The shared ranker, collection transformations, legacy-format readers, and inline daily-ranking fallbacks
+used by widgets and Calendar remain in place.
+
+`project-refresh-policy.js` retains the 72-hour age policy used by the queued planner. Reconciliation also owns the
+old Builder's score compaction: low uncited scores are removed without a provider request, while cited scores,
+similar tasks, ranking timestamps, and retired project status survive. An unavailable Vision Guide skips compaction.
+Ranking no longer carries the removed collector's idea-generation result wrapper; idea jobs own generation state.
+
+Regression coverage now exercises the queued handlers directly: edited old tasks and failed-batch watermarks,
+completion history and reopening, idea refinement, unscored cited evidence, and score compaction. Disabled-mode
+coverage mounts both Dashboard maintenance and Builder hooks, with scheduled mounting independently on/off, and
+verifies no legacy timers, task reads, or note writes appear.
+
+Verification: the full offline regression passes 140 suites / 1,248 tests, with 4 suites / 9 credential-gated tests
+skipped. The production build and host smoke suite pass. Deleted orchestration names have no remaining references
+in code or tests.
+
+Browser/mobile acceptance remains pending. The browser skill was retried and failed before connection with
+`codex/sandbox-state-meta: missing field sandboxPolicy`; no fresh latency or contention measurements were collected.
+This cleanup proceeds under the request to remove the remaining legacy methods; it does not close Phase 10's
+operational acceptance criteria or change the existing enabled feature defaults.
+
+For an immediate rollback restoring disabled-mode legacy writers, rebuild `22d70f1`, the committed Builder scope
+migration before this cleanup. The oldest documented compatible target remains `9fb5d2b`. This cleanup changes no
+note schema, serializer, or output format, and the relevant project, queue, snapshot, daily-ranking, and dictionary
+storage modules are unchanged between those targets. No commit was created.
+
 ### Integration map
 
 Concrete integration changes:
 
 - `lib/dashboard/dashboard.jsx` provides the single runtime before lazy children render, passes current domain/scope,
   and supplies commit/error signals from `createWidgetCell`. It retains the memory harness's `mountImmediately` path.
-- `lib/hooks/use-project-task-collection.js` and `lib/hooks/use-project-task-ranking.js` become thin enqueue adapters
-  during migration, then fold into `useDashboardWorkQueue` and the Builder's foreground requests. Remove their
-  independent timers and once-per-mount guards after both callers are migrated.
-- `lib/dashboard/project-refresh-schedule.js` contributes its useful staleness policy to the work planner; remove the
-  unbounded catch-up loop and replace its once-per-pass budget with scheduler admission and coverage accounting.
-- `lib/dashboard/project-task-collection.js` and
-  `lib/plan-wizard/stack-rank/refresh-stale-project-rankings.js` retain compatibility exports while their orchestration
-  is extracted into handlers. Their domain transformations call `QuarterProject` methods.
+- `lib/hooks/use-project-maintenance-queue.js` enqueues Dashboard maintenance after settling;
+  `lib/hooks/use-project-task-ranking.js` retains Builder's selected quarter and requests foreground reconciliation.
+  The old collector hook and its timer are removed. Disabled durable work pauses both routes.
+- `lib/dashboard/project-refresh-policy.js` supplies the planner's staleness policy; scheduler admission and coverage
+  accounting replace the old catch-up loop and once-per-pass budget.
+- `lib/dashboard/work-queue/jobs/` owns project-maintenance orchestration. The old collector and Builder ranking
+  service are removed; shared transformations in `project-collection-steps.js` call `QuarterProject` methods.
 - `lib/hooks/use-dashboard-task-updates.js` sends observations to `DashboardTaskSnapshot` and invalidates affected
   work, while preserving the immediate existing widget update behavior.
 - `lib/dashboard/day-project-candidates.js` qualifies projects for the day and asks each hydrated project's

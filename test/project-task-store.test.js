@@ -1,11 +1,9 @@
 // Verify the per-project sections of the quarterly task store round-trip, are written one project at a time, and
-// that a background pass associates tasks, folds in provider-found tasks and superseded ideas, and picks its
-// projects by the staleness window first and the cycling time budget after.
+// that stored ideas remain available to agenda prompts and the shared refresh age policy stays stable.
 import { jest } from "@jest/globals";
 import { taskRatingKey } from "plan-wizard/stack-rank/task-rating-cache";
 import { guideHeadingRanges } from "plan-wizard/vision-guide-markdown";
-import { collectProjectTasks } from "project-task-collection";
-import { projectNeedsRefresh, projectsToRefresh, shouldRefreshAnotherProject } from "project-refresh-schedule";
+import { projectNeedsRefresh } from "dashboard/project-refresh-policy";
 import { initialProjectTaskStoreMarkdown, projectSectionHeadingText } from "project-task-store-markdown";
 import { collectedIdeasMarkdown, openProjectTaskStore, projectTaskStoreNoteName, readCollectedProjectTasks, storedProjectRecords,
   writeProjectSection } from "project-task-store";
@@ -13,7 +11,6 @@ import QuarterProject from "quarter-project";
 import { LEGACY_JEV_RATINGS_LABEL, SIMILARITY_SCORES_LABEL } from "quarter-project-serialization";
 
 const scope = { domainName: "Work", domainUuid: "work-domain", quarter: 3, quarterKey: "2026-Q3", year: 2026 };
-const quarterlyContent = "# Projects\n\n## Launch dashboard\n- Weekly rhythm: Two focused blocks per week\n- Outcome: Ship the date picker\n";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Build a project as the store holds it, with overridable fields.
@@ -271,7 +268,7 @@ describe("project task store sections", () => {
 });
 
 
-describe("project refresh scheduling", () => {
+describe("project refresh age policy", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc A project refreshed inside the three-day window is current; one older than it, or never refreshed,
   //   is due.
@@ -282,228 +279,9 @@ describe("project refresh scheduling", () => {
     expect(projectNeedsRefresh({ lastAttemptedAt: "2026-09-15T06:00:00.000Z" }, now)).toBe(true);
   });
 
-  // ----------------------------------------------------------------------------------------------
-  // @desc While anything is stale the pass takes every stale project, oldest first, and leaves current ones
-  //   alone; the cycling regime never selects while catch-up work remains.
-  it("selects every stale project, oldest refresh first", () => {
-    const now = new Date("2026-09-19T12:00:00.000Z");
-    const projects = [{ uuid: "recent" }, { uuid: "ancient" }, { uuid: "current" }];
-    const recordsByUuid = new Map([["recent", { lastAttemptedAt: "2026-09-15T00:00:00.000Z" }],
-      ["ancient", { lastAttemptedAt: "2026-09-01T00:00:00.000Z" }],
-      ["current", { lastAttemptedAt: "2026-09-19T00:00:00.000Z" }]]);
-    const { orderedProjects, regimeEm } = projectsToRefresh({ now, projects, recordsByUuid });
-    expect(regimeEm).toBe("catchUp");
-    expect(orderedProjects.map(project => project.uuid)).toEqual(["ancient", "recent"]);
-  });
-
-  // ----------------------------------------------------------------------------------------------
-  // @desc With nothing stale, the pass cycles: every project is offered in oldest-first order so the budget
-  //   decides how far the load gets, and the oldest is always the one it starts from.
-  it("cycles through every project once none are stale", () => {
-    const now = new Date("2026-09-19T12:00:00.000Z");
-    const projects = [{ uuid: "newer" }, { uuid: "older" }];
-    const recordsByUuid = new Map([["newer", { lastAttemptedAt: "2026-09-19T06:00:00.000Z" }],
-      ["older", { lastAttemptedAt: "2026-09-18T06:00:00.000Z" }]]);
-    const { orderedProjects, regimeEm } = projectsToRefresh({ now, projects, recordsByUuid });
-    expect(regimeEm).toBe("cycle");
-    expect(orderedProjects.map(project => project.uuid)).toEqual(["older", "newer"]);
-  });
-
-  // ----------------------------------------------------------------------------------------------
-  // @desc A cycling pass always refreshes one project, keeps going while its twenty seconds remain, and stops
-  //   once they are spent. A catch-up pass is never stopped by the budget.
-  it("spends its budget before stopping a cycling pass", () => {
-    expect(shouldRefreshAnotherProject({ elapsedMilliseconds: 0, refreshedCount: 0, regimeEm: "cycle" })).toBe(true);
-    expect(shouldRefreshAnotherProject({ elapsedMilliseconds: 8000, refreshedCount: 1, regimeEm: "cycle" })).toBe(true);
-    expect(shouldRefreshAnotherProject({ elapsedMilliseconds: 21000, refreshedCount: 1, regimeEm: "cycle" })).toBe(false);
-    expect(shouldRefreshAnotherProject({ elapsedMilliseconds: 99000, refreshedCount: 4, regimeEm: "catchUp" })).toBe(true);
-  });
 });
 
-describe("background project task collection", () => {
-  // ----------------------------------------------------------------------------------------------
-  // @desc A first pass associates the project's open tasks, moves its completion into its own list, records
-  //   the refresh timestamp, and stores the generated ideas.
-  it("collects tasks, completions, and generated ideas on a first pass", async () => {
-    const app = storeApp({ tasks: [
-      { content: "Launch dashboard date picker", noteUUID: "source-note", uuid: "open-task" },
-      { completedAt: 1789552800, content: "Launch dashboard polish", uuid: "finished-task" }] });
-    const ideaGenerator = jest.fn().mockResolvedValue({ failureReason: null, foundTasks: [],
-      suggestedTasks: [{ beforeTask: null, generatedAt: "2026-09-19T12:00:00.000Z", taskText: "Audit widget memory before ship" }] });
-    const now = new Date("2026-09-19T12:00:00.000Z");
-    const result = await collectProjectTasks(app, { domainName: scope.domainName, domainUuid: scope.domainUuid,
-      ideaGenerator, now, quarterlyContent });
-    expect(result).toMatchObject({ attempted: 1, failures: 0 });
-    const stored = [...storedProjectRecords(app.noteContent).recordsByUuid.values()][0];
-    expect(stored.lastAttemptedAt).toBe(now.toISOString());
-    expect(stored.relatedTaskRecords).toEqual([{ taskText: "Launch dashboard date picker", taskUuid: "open-task" }]);
-    expect(stored.completedTasks[0].taskUuid).toBe("finished-task");
-    expect(stored.suggestedTasks[0].taskText).toBe("Audit widget memory before ship");
-    expect(ideaGenerator).toHaveBeenCalledTimes(1);
-  });
-
-  // ----------------------------------------------------------------------------------------------
-  // @desc A task the local name match never sees is associated when the provider attributes it, and the
-  //   candidate pool it drew from is not persisted into the store note.
-  it("associates tasks the provider attributes to the project", async () => {
-    const app = storeApp({ tasks: [{ content: "Launch dashboard date picker", uuid: "open-task" },
-      { content: "Rework the week grid header", uuid: "unmatched-task" }] });
-    const ideaGenerator = jest.fn(async (_app, { project }) => {
-      expect(project.candidateTaskRecords.map(task => task.taskUuid)).toContain("unmatched-task");
-      return { failureReason: null, foundTasks: [{ taskText: "Rework the week grid header", taskUuid: "unmatched-task" }],
-        suggestedTasks: [] };
-    });
-    await collectProjectTasks(app, { domainName: scope.domainName, domainUuid: scope.domainUuid, ideaGenerator,
-      now: new Date("2026-09-19T12:00:00.000Z"), quarterlyContent });
-    const stored = [...storedProjectRecords(app.noteContent).recordsByUuid.values()][0];
-    expect(stored.relatedTaskRecords.map(task => task.taskUuid).sort()).toEqual(["open-task", "unmatched-task"]);
-    expect(stored.relatedTasks).toContain("unmatched-task");
-    expect(stored.candidateTaskRecords).toEqual([]);
-  });
-
-  // ----------------------------------------------------------------------------------------------
-  // @desc With a Jev ranker, the tasks it accepts join the project before ideas are requested and the provider is
-  //   offered no pool. Accepted tasks are remembered in the similarity hash rather than in relatedTasks.
-  it("associates the tasks Jev accepts and leaves the provider only ideas to suggest", async () => {
-    const app = storeApp({ tasks: [{ content: "Launch dashboard date picker", uuid: "open-task" },
-      { content: "Rework the week grid header", uuid: "ranked-task" }, { content: "Tidy widget CSS", uuid: "lead-task" }] });
-    const rankProject = jest.fn().mockResolvedValue({ acceptedTasks: [
-      { matchScore: 8.2, taskText: "Rework the week grid header", taskUuid: "ranked-task" },
-      { matchScore: 4.1, taskText: "Tidy widget CSS", taskUuid: "lead-task" }], failureReason: null, minimumMatchScore: 3,
-      searchProgress: { similaritySearchPageCount: 1, similaritySearchedTaskCount: 2 },
-      taskSimilarityScores: { "a1b2c3d4:ranked-task": 8.2 } });
-    const rankerFactory = jest.fn().mockResolvedValue({ rankProject });
-    const ideaGenerator = jest.fn(async (_app, { project }) => {
-      expect(project.candidateTaskRecords).toEqual([]);
-      expect(project.relatedTaskRecords.map(task => task.taskUuid)).toEqual(["open-task", "ranked-task", "lead-task"]);
-      return { failureReason: null, foundTasks: [], suggestedTasks: [] };
-    });
-    const now = new Date("2026-09-19T12:00:00.000Z");
-    await collectProjectTasks(app, { domainName: scope.domainName, domainUuid: scope.domainUuid, ideaGenerator, now,
-      quarterlyContent, rankerFactory });
-    expect(rankerFactory.mock.calls[0][1]).toMatchObject({ refineDictionary: true });
-    expect(rankProject.mock.calls[0][1]).toEqual([{ taskText: "Launch dashboard date picker", taskUuid: "open-task" }]);
-    const stored = [...storedProjectRecords(app.noteContent).recordsByUuid.values()][0];
-    expect(stored.relatedTaskRecords.find(task => task.taskUuid === "ranked-task").matchScore).toBe(8.2);
-    expect(stored.relatedTasks).not.toContain("ranked-task");
-    expect(stored.relatedTasks).not.toContain("lead-task");
-    expect(stored.lastRankedAt).toBe(now.toISOString());
-    expect(stored).toMatchObject({ similaritySearchedTaskCount: 2, similaritySearchPageCount: 1,
-      taskSimilarityScores: { "a1b2c3d4:ranked-task": 8.2 } });
-  });
-
-  // ----------------------------------------------------------------------------------------------
-  // @desc An older task edited after a project's ranking is pooled on the next pass, though its creation time predates
-  //   the ranking. The project's watermark advances only with a complete ranking, so a ranking with missed batches
-  //   leaves the edit to be pooled again.
-  it("pools older tasks edited since the project's last complete ranking", async () => {
-    const oldTask = { content: "Tidy the backlog", createdAt: 1, uuid: "old-task" };
-    const app = storeApp({ tasks: [oldTask] });
-    const ranking = { acceptedTasks: [], failureReason: null, minimumMatchScore: null, rankingIncomplete: false,
-      searchProgress: null, taskSimilarityScores: {} };
-    const rankProject = jest.fn().mockResolvedValue(ranking);
-    const rankerFactory = jest.fn().mockResolvedValue({ rankProject, scorerEm: "jev" });
-    const ideaGenerator = jest.fn().mockResolvedValue({ failureReason: null, foundTasks: [], suggestedTasks: [] });
-    const options = { domainName: scope.domainName, domainUuid: scope.domainUuid, ideaGenerator, quarterlyContent,
-      rankerFactory };
-    const storedSimilarity = () => [...storedProjectRecords(app.noteContent).recordsByUuid.values()][0].refreshState.similarity;
-    await collectProjectTasks(app, { ...options, now: new Date("2026-09-19T12:00:00.000Z") });
-    expect(rankProject.mock.calls[0][2].changedTaskRecords).toEqual([]);
-    const baseline = storedSimilarity();
-    expect(baseline).toMatchObject({ succeededAt: "2026-09-19T12:00:00.000Z", watermark: { sequence: 1 } });
-    expect(JSON.parse(app.snapshotContent.match(/```json\n([\s\S]*?)\n```/)[1]).snapshotId).toBe(baseline.watermark.snapshotId);
-
-    const editedTask = { ...oldTask, content: "Rework the week grid header" };
-    app.getTaskDomainTasks.mockResolvedValue([editedTask]);
-    rankProject.mockResolvedValueOnce({ ...ranking, rankingIncomplete: true });
-    await collectProjectTasks(app, { ...options, now: new Date("2026-09-20T12:00:00.000Z") });
-    expect(rankProject.mock.calls[1][2].changedTaskRecords).toEqual([{ taskText: "Rework the week grid header",
-      taskUuid: "old-task" }]);
-    expect(storedSimilarity()).toEqual(baseline);
-
-    await collectProjectTasks(app, { ...options, now: new Date("2026-09-21T12:00:00.000Z") });
-    expect(rankProject.mock.calls[2][2].changedTaskRecords).toHaveLength(1);
-    expect(storedSimilarity().watermark.sequence).toBe(2);
-    await collectProjectTasks(app, { ...options, now: new Date("2026-09-22T12:00:00.000Z") });
-    expect(rankProject.mock.calls[3][2].changedTaskRecords).toEqual([]);
-  });
-
-  // ----------------------------------------------------------------------------------------------
-  // @desc A ranking that fails outright hands attribution back to the provider, as though no Jev key were set.
-  it("offers the provider its pool when Jev ranking fails", async () => {
-    const app = storeApp({ tasks: [{ content: "Rework the week grid header", uuid: "unmatched-task" }] });
-    const rankerFactory = jest.fn().mockResolvedValue({ rankProject: jest.fn().mockRejectedValue(new Error("CORS")) });
-    const ideaGenerator = jest.fn(async (_app, { project }) => {
-      expect(project.candidateTaskRecords.map(task => task.taskUuid)).toEqual(["unmatched-task"]);
-      return { failureReason: null, foundTasks: [], suggestedTasks: [] };
-    });
-    const result = await collectProjectTasks(app, { domainName: scope.domainName, domainUuid: scope.domainUuid,
-      ideaGenerator, now: new Date("2026-09-19T12:00:00.000Z"), quarterlyContent, rankerFactory });
-    expect(result).toMatchObject({ attempted: 1, failures: 0 });
-    expect(ideaGenerator).toHaveBeenCalledTimes(1);
-    expect([...storedProjectRecords(app.noteContent).recordsByUuid.values()][0].lastRankedAt).toBeNull();
-  });
-
-  // ----------------------------------------------------------------------------------------------
-  // @desc An idea naming an earlier one in beforeTask replaces it where it stood, so the user judges one
-  //   refined suggestion rather than two phrasings of it. An idea naming nothing is added alongside.
-  it("replaces a superseded idea in place and appends a new one", async () => {
-    const app = storeApp({ tasks: [] });
-    const firstGenerator = jest.fn().mockResolvedValue({ failureReason: null, foundTasks: [],
-      suggestedTasks: [{ beforeTask: null, generatedAt: "2026-09-19T12:00:00.000Z", taskText: "Audit widget memory" },
-        { beforeTask: null, generatedAt: "2026-09-19T12:00:00.000Z", taskText: "Draft the release notes" }] });
-    const options = { domainName: scope.domainName, domainUuid: scope.domainUuid, quarterlyContent };
-    await collectProjectTasks(app, { ...options, ideaGenerator: firstGenerator, now: new Date("2026-09-19T12:00:00.000Z") });
-    const secondGenerator = jest.fn().mockResolvedValue({ failureReason: null, foundTasks: [],
-      suggestedTasks: [{ beforeTask: "Audit widget memory", generatedAt: "2026-09-23T12:00:00.000Z", taskText: "Audit widget memory and cap the cache" },
-        { beforeTask: null, generatedAt: "2026-09-23T12:00:00.000Z", taskText: "Wire the date picker to the store" }] });
-    await collectProjectTasks(app, { ...options, ideaGenerator: secondGenerator, now: new Date("2026-09-23T12:00:00.000Z") });
-    const stored = [...storedProjectRecords(app.noteContent).recordsByUuid.values()][0];
-    expect(stored.suggestedTasks.map(idea => idea.taskText)).toEqual(["Audit widget memory and cap the cache",
-      "Draft the release notes", "Wire the date picker to the store"]);
-  });
-
-  // ----------------------------------------------------------------------------------------------
-  // @desc A second load inside the three-day window still refreshes one project, because the cycling regime
-  //   keeps the store moving rather than going idle whenever every project is current.
-  it("refreshes the oldest project on a load with nothing stale", async () => {
-    const app = storeApp({ tasks: [] });
-    const ideaGenerator = jest.fn().mockResolvedValue({ failureReason: null, foundTasks: [], suggestedTasks: [] });
-    const options = { domainName: scope.domainName, domainUuid: scope.domainUuid, ideaGenerator, quarterlyContent };
-    await collectProjectTasks(app, { ...options, now: new Date("2026-09-19T12:00:00.000Z") });
-    const second = await collectProjectTasks(app, { ...options, now: new Date("2026-09-19T14:00:00.000Z") });
-    expect(second).toMatchObject({ attempted: 1, regimeEm: "cycle" });
-    expect(ideaGenerator).toHaveBeenCalledTimes(2);
-  });
-
-  // ----------------------------------------------------------------------------------------------
-  // @desc A cycling pass whose budget is already spent still refreshes its first project and then stops,
-  //   which is what keeps one load from walking the whole quarter's projects.
-  it("stops a cycling pass after one project once its budget is spent", async () => {
-    const app = storeApp({ tasks: [] });
-    const ideaGenerator = jest.fn().mockResolvedValue({ failureReason: null, foundTasks: [], suggestedTasks: [] });
-    const twoProjectContent = `${ quarterlyContent }\n## Second project\n- Weekly rhythm: One block per week\n- Outcome: Ship it\n`;
-    const options = { domainName: scope.domainName, domainUuid: scope.domainUuid, ideaGenerator,
-      quarterlyContent: twoProjectContent };
-    await collectProjectTasks(app, { ...options, now: new Date("2026-09-19T12:00:00.000Z") });
-    ideaGenerator.mockClear();
-    const cycling = await collectProjectTasks(app, { ...options, elapsedMilliseconds: () => 25000,
-      now: new Date("2026-09-19T13:00:00.000Z") });
-    expect(cycling).toMatchObject({ attempted: 1, regimeEm: "cycle" });
-    expect(ideaGenerator).toHaveBeenCalledTimes(1);
-  });
-
-  // ----------------------------------------------------------------------------------------------
-  // @desc An unmounting dashboard stops the pass without leaving the store half-written for that project.
-  it("stops between projects when the dashboard goes away", async () => {
-    const app = storeApp({ tasks: [] });
-    const ideaGenerator = jest.fn().mockResolvedValue({ failureReason: null, foundTasks: [], suggestedTasks: [] });
-    const result = await collectProjectTasks(app, { domainName: scope.domainName, domainUuid: scope.domainUuid,
-      ideaGenerator, now: new Date("2026-09-19T12:00:00.000Z"), quarterlyContent, shouldContinue: () => false });
-    expect(result).toMatchObject({ attempted: 0 });
-    expect(ideaGenerator).not.toHaveBeenCalled();
-  });
-
+describe("collected ideas for agenda prompts", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc Stored ideas reach the agenda prompt only for projects that actually hold them.
   it("renders collected ideas for the agenda prompt", () => {

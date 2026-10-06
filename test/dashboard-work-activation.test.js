@@ -61,7 +61,7 @@ describe("Dashboard work activation", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Missing viewport observers cannot select the legacy maintenance pass alongside the durable runtime.
+  // @desc Missing viewport observers do not disable durable maintenance.
   it("keeps maintenance selected without IntersectionObserver", () => {
     expect(queuedMaintenanceSelected()).toBe(true);
   });

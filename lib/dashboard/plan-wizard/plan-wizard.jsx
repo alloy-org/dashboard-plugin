@@ -40,9 +40,8 @@
 // quarter's date. That link opens the note as it stands, without publishing, so arriving to plan a quarter does
 // not rewrite the writing they already did there.
 //
-// Opening the builder also refreshes the Jev rankings that decide which tasks the current quarter's projects hold.
-// The background collection pass stands down while the builder covers the dashboard, so the builder starts its own
-// pass over the projects Jev has not ranked in the last three days.
+// Opening the builder submits its selected quarter's reconciliation as foreground work on the shared queue.
+// Background maintenance waits while the builder covers the dashboard; queued rankings refresh its task scores.
 
 import { quarterLabel as displayQuarterLabel } from "constants/quarters";
 import NoteEditor from "dashboard/note-editor";
@@ -133,7 +132,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const scopeKey = planScopeKey({ domainName, domainUuid, quarter, year });
   const existingPlanNoteUuid = useUserEditedPlanNote({ app, domainName, domainUuid, quarter, year });
   const { hasLlmProviderAccess, isCheckingLlmProviderAccess } = useLlmProviderAccess(app);
-  // Entering the builder refreshes the current quarter's Jev task rankings, once the builder is not mid-request.
+  // Refresh the selected quarter's task rankings through the shared queue once the builder is not mid-request.
   useProjectTaskRanking({ app, domainName, domainUuid,
     isAwaitingProvider: isLoading || isDiscovering || isConsolidating || isRefreshing || isCheckingLlmProviderAccess,
     onRanked: reloadProjectSourceScores, quarter, year });

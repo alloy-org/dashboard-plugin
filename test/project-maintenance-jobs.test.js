@@ -1,11 +1,9 @@
-// Verify the queued project maintenance handlers against the background collection pass: dictionary discovery, task
-// ranking, and idea generation run as separate jobs leave a project's store section as one collection pass does, a
+// Verify queued dictionary discovery, task ranking, and idea generation persist project evidence and ideas. A
 // large ranking pauses between rounds of batches with its similar ratings saved, a ranking resumed by another session
 // restarts from those saved ratings, a changed definition re-rates only the tasks that mention it, and failed provider
 // work fails the attempt for the queue to retry.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
-import { collectProjectTasks } from "dashboard/project-task-collection";
 import { readCollectedProjectTasks } from "dashboard/project-task-store";
 import { refreshRevision } from "dashboard/quarter-project-refresh-state";
 import { dashboardWorkHandlers, workHandlerRegistry } from "dashboard/work-queue/dashboard-work-handlers";
@@ -16,103 +14,62 @@ import { createGenerateProjectIdeasHandler } from "dashboard/work-queue/jobs/gen
 import { createRankProjectTasksHandler, RANK_PROJECT_TASKS_JOB_TYPE } from "dashboard/work-queue/jobs/rank-project-tasks";
 import { prepareProjectTaskRanker } from "plan-wizard/stack-rank/stack-rank-project-tasks";
 import { setPluginData } from "plugin-data";
-import { backlogTasks, DISCOVERED_TERMS, GENERATED_IDEA, jobContext, maintenanceApp, NOW, QUARTERLY_CONTENT, ratingRequest,
+import { backlogTasks, DISCOVERED_TERMS, GENERATED_IDEA, jobContext, maintenanceApp, NOW, ratingRequest, runProjectJob,
   SCOPE_INPUT, storedProjectUuid } from "./project-maintenance-test-app";
-
-// ----------------------------------------------------------------------------------------------
-// @desc Run a handler's job through every yielded turn, as the durable runner does, carrying each checkpoint.
-// @param {object} handler - A work handler.
-// @param {object} options - { context, input, cursor = null }.
-// @returns {Promise<object>} { result, turns }: the last turn's result and how many turns ran.
-async function runToEnd(handler, { context, cursor = null, input }) {
-  let jobCursor = cursor;
-  for (let turns = 1; turns < 20; turns += 1) {
-    const job = { attempt: 1, cursor: jobCursor, desiredRevision: null, entityId: input.projectUuid || null, input,
-      key: `${ handler.type }:${ input.projectUuid || "quarter" }`, scopeKey: "work-domain:Q3 2026", type: handler.type };
-    const result = await handler.run({ context, job, signal: null });
-    if (result?.status !== "yielded") return { result, turns };
-    jobCursor = result.checkpoint;
-  }
-  throw new Error("The job never finished");
-}
-
-// ----------------------------------------------------------------------------------------------
-// @desc The stored project, with the bookkeeping two routes record differently set aside: its output revision, which
-//   counts writes, the ideas refresh and dictionary position only the queue records, and the snapshot identity each
-//   run generates.
-// @param {object} app - From maintenanceApp.
-// @returns {Promise<string>} The project's store section.
-async function comparableSection(app) {
-  const [project] = await readCollectedProjectTasks(app, { ...SCOPE_INPUT, quarterKey: "2026-Q3" });
-  const similarity = project.refreshState.similarity;
-  project.projectRevision = 0;
-  const comparableSimilarity = { ...similarity, watermark: { sequence: similarity?.watermark?.sequence } };
-  delete comparableSimilarity.dictionaryPosition;
-  project.refreshState = similarity ? { similarity: comparableSimilarity } : {};
-  return project.toStoreSection();
-}
 
 describe("project maintenance jobs", () => {
   beforeEach(() => setPluginData({ settings: { [SETTING_KEYS.JEV_ACCESS_TOKEN]: "token" } }));
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Discovery, a ranking spread over two turns, and ideas, each a separate job, leave the store section and the
-  //   dictionary as one collection pass does over the same reads.
-  it("writes the project a collection pass writes, with ranking and ideas as separate jobs", async () => {
-    const legacyApp = maintenanceApp({ tasks: backlogTasks() });
-    await storedProjectUuid(legacyApp);
-    const legacyRequest = ratingRequest();
+  // @desc Discovery, a ranking spread over two turns, and ideas persist local and similar tasks, completion text,
+  //   generated ideas, and operation-specific successful refresh revisions.
+  it("stores project evidence with ranking and ideas as separate jobs", async () => {
     const ideaGenerator = jest.fn().mockResolvedValue({ failureReason: null, foundTasks: [], suggestedTasks: [GENERATED_IDEA] });
     const discoveryRunner = jest.fn().mockResolvedValue(DISCOVERED_TERMS);
-    const legacyRanker = (app, options) => prepareProjectTaskRanker(app, { ...options, promptRunner: discoveryRunner,
-      requestAnswers: legacyRequest });
-    await collectProjectTasks(legacyApp, { ...SCOPE_INPUT, ideaGenerator, now: NOW, quarterlyContent: QUARTERLY_CONTENT,
-      rankerFactory: legacyRanker });
-
-    setPluginData({ settings: { [SETTING_KEYS.JEV_ACCESS_TOKEN]: "token" } });
     const queueApp = maintenanceApp({ tasks: backlogTasks() });
     const queueRequest = ratingRequest();
     const context = jobContext(queueApp);
     const input = { ...SCOPE_INPUT, projectUuid: await storedProjectUuid(queueApp) };
     const queueRanker = (app, options) => prepareProjectTaskRanker(app, { ...options, requestAnswers: queueRequest });
-    await runToEnd(createDiscoverDictionaryTermsHandler({ promptRunner: discoveryRunner }), { context, input: SCOPE_INPUT });
-    const ranking = await runToEnd(createRankProjectTasksHandler({ rankerFactory: queueRanker }), { context, input });
-    const ideas = await runToEnd(createGenerateProjectIdeasHandler({ ideaGenerator }), { context, input });
+    await runProjectJob(createDiscoverDictionaryTermsHandler({ promptRunner: discoveryRunner }), { context, input: SCOPE_INPUT });
+    const ranking = await runProjectJob(createRankProjectTasksHandler({ rankerFactory: queueRanker }), { context, input });
+    const ideas = await runProjectJob(createGenerateProjectIdeasHandler({ ideaGenerator }), { context, input });
 
     expect(ranking.turns).toBe(2);
-    expect(queueRequest.mock.calls.length).toBe(legacyRequest.mock.calls.length);
-    const queueSection = await comparableSection(queueApp);
-    expect(queueSection).toBe(await comparableSection(legacyApp));
-    expect(queueSection).toContain("Tune widget layout 97");
-    expect(queueSection).toContain("Audit widget memory before ship");
+    expect(queueRequest).toHaveBeenCalledTimes(6);
     expect(queueApp.noteContent("User terms dictionary 2026")).toContain("dashboard");
-    expect(queueApp.noteContent("User terms dictionary 2026")).toBe(legacyApp.noteContent("User terms dictionary 2026"));
     const [stored] = await readCollectedProjectTasks(queueApp, { ...SCOPE_INPUT, quarterKey: "2026-Q3" });
+    expect(stored.relatedTaskRecords.map(record => record.taskUuid)).toEqual(["open-task", "errand-7", "errand-37", "errand-67", "errand-97"]);
+    expect(stored.completedTasks).toEqual([expect.objectContaining({ taskText: "Launch dashboard polish", taskUuid: "finished-task" })]);
+    expect(stored.suggestedTasks[0].taskText).toBe(GENERATED_IDEA.taskText);
+    expect(stored.lastAttemptedAt).toBe(NOW.toISOString());
+    expect(stored.lastRankedAt).toBe(NOW.toISOString());
+    expect(stored.lastSuggestedAt).toBe(NOW.toISOString());
     expect(ranking.result.revision).toBe(refreshRevision(stored.refreshState, "similarity"));
     expect(ideas.result.revision).toBe(stored.refreshState.ideas.inputRevision);
-    expect(ideaGenerator.mock.calls[1][1].project.candidateTaskRecords).toEqual([]);
-    expect(typeof ideaGenerator.mock.calls[1][1].promptRunner).toBe("function");
+    expect(ideaGenerator.mock.calls[0][1].project.candidateTaskRecords).toEqual([]);
+    expect(typeof ideaGenerator.mock.calls[0][1].promptRunner).toBe("function");
   });
 
   // ----------------------------------------------------------------------------------------------
   // @desc With nothing to rate, the ranking job refreshes the local associations alone, and the ideas job offers the
-  //   provider its pool of open tasks, so a task the provider attributes is associated as a collection pass does.
-  it("matches a collection pass when nothing can rate, offering the provider its pool", async () => {
+  //   provider its pool of open tasks and saves the tasks it attributes without persisting that transient pool.
+  it("associates provider-found tasks when nothing can rate, offering the provider its pool", async () => {
     setPluginData({ settings: {} });
     const ideaGenerator = jest.fn(async (unusedApp, { project }) => ({ failureReason: null,
       foundTasks: [{ taskText: "Errand 5", taskUuid: "errand-5" }].filter(found => project.candidateTaskRecords
         .some(candidate => candidate.taskUuid === found.taskUuid)), suggestedTasks: [GENERATED_IDEA] }));
-    const legacyApp = maintenanceApp({ tasks: backlogTasks() });
-    await storedProjectUuid(legacyApp);
-    await collectProjectTasks(legacyApp, { ...SCOPE_INPUT, ideaGenerator, now: NOW, quarterlyContent: QUARTERLY_CONTENT });
     const queueApp = maintenanceApp({ tasks: backlogTasks() });
     const context = jobContext(queueApp);
     const input = { ...SCOPE_INPUT, projectUuid: await storedProjectUuid(queueApp) };
-    const ranking = await runToEnd(createRankProjectTasksHandler(), { context, input });
-    await runToEnd(createGenerateProjectIdeasHandler({ ideaGenerator }), { context, input });
+    const ranking = await runProjectJob(createRankProjectTasksHandler(), { context, input });
+    await runProjectJob(createGenerateProjectIdeasHandler({ ideaGenerator }), { context, input });
     expect(ranking).toMatchObject({ result: { revision: undefined }, turns: 1 });
-    expect(await comparableSection(queueApp)).toBe(await comparableSection(legacyApp));
-    expect(await comparableSection(queueApp)).toContain("errand-5");
+    const [stored] = await readCollectedProjectTasks(queueApp, { ...SCOPE_INPUT, quarterKey: "2026-Q3" });
+    expect(stored.relatedTaskRecords.map(record => record.taskUuid)).toEqual(["open-task", "errand-5"]);
+    expect(stored.relatedTasks).toContain("errand-5");
+    expect(stored.candidateTaskRecords).toEqual([]);
+    expect(stored.lastRankedAt).toBeNull();
   });
 
   // ----------------------------------------------------------------------------------------------
@@ -136,7 +93,7 @@ describe("project maintenance jobs", () => {
     const secondRequest = ratingRequest();
     const secondSession = createRankProjectTasksHandler({ rankerFactory: (currentApp, options) => prepareProjectTaskRanker(
       currentApp, { ...options, requestAnswers: secondRequest }) });
-    const { result } = await runToEnd(secondSession, { context, cursor: paused.checkpoint, input });
+    const { result } = await runProjectJob(secondSession, { context, cursor: paused.checkpoint, input });
     const resentTexts = secondRequest.mock.calls.flatMap(([{ state }]) => Object.values(state.prospectiveTasks)
       .map(task => task.text));
     expect(resentTexts).toHaveLength(117);
@@ -157,7 +114,7 @@ describe("project maintenance jobs", () => {
     const requestAnswers = ratingRequest();
     const handler = createRankProjectTasksHandler({ rankerFactory: (currentApp, options) => prepareProjectTaskRanker(currentApp,
       { ...options, requestAnswers }) });
-    await runToEnd(handler, { context, input });
+    await runProjectJob(handler, { context, input });
     const [firstRanked] = await readCollectedProjectTasks(app, { ...SCOPE_INPUT, quarterKey: "2026-Q3" });
     expect(firstRanked.refreshState.similarity.dictionaryPosition).toMatchObject({ sequence: 0 });
 
@@ -166,7 +123,7 @@ describe("project maintenance jobs", () => {
     const addedTerms = "- **widget**: A card on the Dashboard.\n- **chart**: A plotted Dashboard widget.\n\n# Examined projects";
     await app.replaceNoteContent(dictionaryHandle, dictionaryContent.replace("\n# Examined projects", addedTerms));
     requestAnswers.mockClear();
-    await runToEnd(handler, { context, input });
+    await runProjectJob(handler, { context, input });
     const resentTexts = requestAnswers.mock.calls.flatMap(([{ state }]) => Object.values(state.prospectiveTasks)
       .map(task => task.text));
     expect(resentTexts.sort()).toEqual(["Sketch chart idea 3", "Sketch chart idea 43", "Sketch chart idea 83",
@@ -175,7 +132,7 @@ describe("project maintenance jobs", () => {
     expect(secondRanked.refreshState.similarity.dictionaryPosition).toMatchObject({ sequence: 1 });
 
     requestAnswers.mockClear();
-    await runToEnd(handler, { context, input });
+    await runProjectJob(handler, { context, input });
     expect(requestAnswers).not.toHaveBeenCalled();
   });
 
@@ -188,7 +145,7 @@ describe("project maintenance jobs", () => {
     const requestAnswers = ratingRequest({ failingText: "Errand 100" });
     const handler = createRankProjectTasksHandler({ rankerFactory: (currentApp, options) => prepareProjectTaskRanker(currentApp,
       { ...options, requestAnswers }) });
-    await expect(runToEnd(handler, { context: jobContext(app), input })).rejects.toThrow("missed 1 batches");
+    await expect(runProjectJob(handler, { context: jobContext(app), input })).rejects.toThrow("missed 1 batches");
     const [project] = await readCollectedProjectTasks(app, { ...SCOPE_INPUT, quarterKey: "2026-Q3" });
     expect(project.lastRankedAt).toBeNull();
     expect(project.refreshState.similarity).toBeUndefined();
@@ -206,10 +163,10 @@ describe("project maintenance jobs", () => {
     const handler = createGenerateProjectIdeasHandler({ ideaGenerator });
     const input = { ...SCOPE_INPUT, projectUuid: await storedProjectUuid(app) };
     const [before] = await readCollectedProjectTasks(app, { ...SCOPE_INPUT, quarterKey: "2026-Q3" });
-    await expect(runToEnd(handler, { context, input })).rejects.toThrow("Provider timed out");
+    await expect(runProjectJob(handler, { context, input })).rejects.toThrow("Provider timed out");
     const [after] = await readCollectedProjectTasks(app, { ...SCOPE_INPUT, quarterKey: "2026-Q3" });
     expect(after.toStoreSection()).toBe(before.toStoreSection());
-    const retired = await runToEnd(handler, { context, input: { ...input, projectUuid: "gone-project" } });
+    const retired = await runProjectJob(handler, { context, input: { ...input, projectUuid: "gone-project" } });
     expect(retired.result).toEqual({ status: "superseded" });
   });
 

@@ -1,7 +1,7 @@
 // Verify the Jev stack-rank pipeline: task outlines are read from note markdown, the user terms dictionary is
 // parsed and merged without touching user-written bullets, discovered terms must come from a project's wording,
 // batches map Jev's zero-indexed scores onto the 1–10 scale, each project's minimum match score is chosen and kept
-// per quarter, Plan Builder's pass re-ranks only stale projects, and — when JEV_ACCESS_TOKEN is set — a live Jev
+// per quarter, and — when JEV_ACCESS_TOKEN is set — a live Jev
 // call rates a task that serves the project above one that does not.
 import { jest } from "@jest/globals";
 import dotenv from "dotenv";
@@ -14,14 +14,12 @@ import { acceptedRankedTasks, matchScoresWithProjectScore, persistPrunedMatchSco
 import { generativeScorePrompt, generativeScoreRequester } from "plan-wizard/stack-rank/generative-task-scores";
 import { prospectiveTaskDetails, taskOutlineFromNoteContent } from "plan-wizard/stack-rank/prospective-task-details";
 import { jevRequestForBatch, rankProspectiveTasks } from "plan-wizard/stack-rank/rank-prospective-tasks";
-import { projectsDueForRanking, refreshStaleProjectRankings } from "plan-wizard/stack-rank/refresh-stale-project-rankings";
 import { GENERATIVE_CANDIDATE_TASK_LIMIT, JEV_CANDIDATE_TASK_LIMIT, needsSecondSearchPage,
   prepareProjectTaskRanker } from "plan-wizard/stack-rank/stack-rank-project-tasks";
 import { taskMatchScoresByProject, taskRatingKey } from "plan-wizard/stack-rank/task-rating-cache";
 import { dictionaryEntriesFromContent, examinedProjectSummaries, mergedDictionaryContent,
   openUserTermsDictionary } from "plan-wizard/stack-rank/user-terms-dictionary";
 import { pluginSettings, setPluginData } from "plugin-data";
-import { storedProjectRecords } from "project-task-store";
 import { initialProjectTaskStoreMarkdown, projectSectionHeadingText } from "project-task-store-markdown";
 import { AMPLE_AGENT_PRO_UUID } from "providers/ai-provider-settings";
 import QuarterProject from "quarter-project";
@@ -507,129 +505,7 @@ describe("taskMatchScoresByProject", () => {
   });
 });
 
-describe("refreshStaleProjectRankings", () => {
-  it("re-ranks only projects Jev has not ranked within three days, leaving the collection timestamp alone", async () => {
-    const staleProject = { ...DIFF_DIGEST_PROJECT, lastAttemptedAt: "2026-09-30T12:00:00.000Z",
-      lastRankedAt: "2026-09-20T12:00:00.000Z", relatedTasks: ["related-1"], taskSimilarityScores: { "stale123:old-1": 3 } };
-    const freshProject = { lastRankedAt: "2026-09-30T12:00:00.000Z", relatedTaskRecords: [], relatedTasks: [],
-      similaritySearchPageCount: 2, summary: "Recently ranked", uuid: "project-2" };
-    const notes = { "Project Tasks Q4 2026 Work": { content: storeContentFromProjects([staleProject, freshProject]),
-      uuid: "store-note" } };
-    const tasks = [{ content: "Pick the Diff Digest send day", uuid: "related-1" }, { content: "Landing copy", uuid: "open-1" }];
-    const rankProject = jest.fn().mockResolvedValue({ acceptedTasks: [{ matchScore: 7.7, taskText: "Landing copy",
-      taskUuid: "open-1" }], failureReason: null, minimumMatchScore: 6, taskSimilarityScores: { "abc12345:open-1": 7.7 } });
-    const rankerFactory = jest.fn().mockResolvedValue({ dictionaryChanges: {}, rankProject });
-    const now = new Date("2026-10-01T12:00:00.000Z");
-    const result = await refreshStaleProjectRankings(notesApp(notes, tasks), { accessToken: "token", domainName: "Work",
-      domainUuid: "work-domain", now, rankerFactory, refineDictionary: false });
-    expect(result).toEqual({ failures: 0, rankedCount: 1, skippedReason: null });
-    expect(rankerFactory.mock.calls[0][1]).toMatchObject({ refineDictionary: false });
-    expect(rankProject).toHaveBeenCalledTimes(1);
-    expect(rankProject.mock.calls[0][2]).toEqual({ limitToRequiredTasks: false, requiredTaskRecords: [],
-      storedRatings: {} });
-    const stored = storedProjectRecords(notes["Project Tasks Q4 2026 Work"].content).recordsByUuid.get("project-1");
-    expect(stored).toMatchObject({ lastAttemptedAt: "2026-09-30T12:00:00.000Z", lastRankedAt: now.toISOString(),
-      relatedTasks: ["related-1"], taskSimilarityScores: { "abc12345:open-1": 7.7 } });
-    expect(stored.relatedTaskRecords).toEqual([{ taskText: "Pick the Diff Digest send day", taskUuid: "related-1" },
-      { matchScore: 7.7, taskText: "Landing copy", taskUuid: "open-1" }]);
-  });
-
-  it("stops a fast-model pass while the builder waits on the provider", async () => {
-    const staleProject = { ...DIFF_DIGEST_PROJECT, lastRankedAt: "2026-09-20T12:00:00.000Z", relatedTasks: [] };
-    const notes = { "Project Tasks Q4 2026 Work": { content: storeContentFromProjects([staleProject]), uuid: "store-note" } };
-    const rankProject = jest.fn();
-    const rankerFactory = jest.fn().mockResolvedValue({ dictionaryChanges: {}, rankProject, scorerEm: "generative" });
-    const result = await refreshStaleProjectRankings(notesApp(notes, []), { accessToken: "token", domainName: "Work",
-      domainUuid: "work-domain", isProviderBusy: () => true, now: new Date("2026-10-01T12:00:00.000Z"), rankerFactory });
-    expect(result).toEqual({ failures: 0, rankedCount: 0, skippedReason: null });
-    expect(rankProject).not.toHaveBeenCalled();
-  });
-
-  it("skips the pass when neither Jev nor a generative provider can rate", async () => {
-    setPluginData({ settings: {} });
-    const result = await refreshStaleProjectRankings({}, { domainName: "Work", domainUuid: "work-domain" });
-    expect(result).toEqual({ failures: 0, rankedCount: 0, skippedReason: "noScorer" });
-  });
-
-  it("rates a recently ranked project's cited tasks that still have no similarity score", async () => {
-    const freshProject = { ...DIFF_DIGEST_PROJECT, lastRankedAt: "2026-09-30T12:00:00.000Z", relatedTasks: ["open-1"],
-      similaritySearchPageCount: 2 };
-    const notes = { "Project Tasks Q4 2026 Work": { content: storeContentFromProjects([freshProject]), uuid: "store-note" } };
-    const prospect = { approvalStatusEm: "humanAffirmed", evidence: [{ noteUuid: "note-1", taskUuid: "open-1",
-      text: "Landing copy" }], priorityEm: "quarterFocus", quarterKey: "2026-Q4", relatedTasks: ["open-1"],
-      summary: "Diff Digest launch", uuid: "project-1" };
-    const rankProject = jest.fn().mockResolvedValue({ acceptedTasks: [], failureReason: null, minimumMatchScore: null,
-      ratedCount: 1, taskSimilarityScores: { "abcd1234:open-1": 4.2 } });
-    const rankerFactory = jest.fn().mockResolvedValue({ dictionaryChanges: {}, rankProject, scorerEm: "jev" });
-    const now = new Date("2026-10-01T12:00:00.000Z");
-    const result = await refreshStaleProjectRankings(notesApp(notes, [{ content: "Landing copy", uuid: "open-1" }]),
-      { accessToken: "token", domainName: "Work", domainUuid: "work-domain", now, prospects: [prospect], rankerFactory });
-    expect(result).toEqual({ failures: 0, rankedCount: 1, skippedReason: null });
-    expect(rankProject.mock.calls[0][2]).toMatchObject({ limitToRequiredTasks: true,
-      requiredTaskRecords: [{ noteUuid: "note-1", taskText: "Landing copy", taskUuid: "open-1" }] });
-    const stored = storedProjectRecords(notes["Project Tasks Q4 2026 Work"].content).recordsByUuid.get("project-1");
-    expect(stored.taskSimilarityScores).toEqual({ "abcd1234:open-1": 4.2 });
-  });
-
-  it("drops ratings for tasks the sources page does not cite, without ranking again", async () => {
-    const rankedProject = { ...DIFF_DIGEST_PROJECT, lastRankedAt: "2026-09-30T12:00:00.000Z", relatedTasks: [],
-      taskSimilarityScores: { "aaaa1111:cited-1": 6, "bbbb2222:pool-1": 1.2 } };
-    const notes = { "Project Tasks Q4 2026 Work": { content: storeContentFromProjects([rankedProject]), uuid: "store-note" } };
-    const prospect = { evidence: [{ taskUuid: "cited-1", text: "Ship the pager" }], quarterKey: "2026-Q4",
-      summary: "Diff Digest launch", uuid: "project-1" };
-    const rankerFactory = jest.fn();
-    const now = new Date("2026-10-01T12:00:00.000Z");
-    const result = await refreshStaleProjectRankings(notesApp(notes, []), { accessToken: "token", domainName: "Work",
-      domainUuid: "work-domain", now, prospects: [prospect], rankerFactory });
-    expect(result).toEqual({ failures: 0, rankedCount: 0, skippedReason: "current" });
-    expect(rankerFactory).not.toHaveBeenCalled();
-    const stored = storedProjectRecords(notes["Project Tasks Q4 2026 Work"].content).recordsByUuid.get("project-1");
-    expect(stored.taskSimilarityScores).toEqual({ "aaaa1111:cited-1": 6 });
-    expect(stored.lastRankedAt).toBe(rankedProject.lastRankedAt);
-  });
-});
-
-describe("projectsDueForRanking", () => {
-  const now = new Date("2026-10-01T12:00:00.000Z");
-  const prospect = { approvalStatusEm: "awaitingJudgement", evidence: [{ taskUuid: "task-1", text: "Ship the pager" }],
-    priorityEm: "quarterFocus", quarterKey: "2026-Q4", summary: "Quarter pager", uuid: "project-1" };
-
-  it("includes a fresh project only for cited tasks that have no score", () => {
-    const storedProjects = [{ lastRankedAt: "2026-09-30T12:00:00.000Z", summary: "Quarter pager", taskSimilarityScores: {},
-      uuid: "project-1" }];
-    const due = projectsDueForRanking({ now, prospects: [prospect], quarterKey: "2026-Q4", storedProjects, tasks: [] });
-    expect(due).toEqual([{ includeCandidatePool: false, project: storedProjects[0],
-      requiredTaskRecords: [{ noteUuid: null, taskText: "Ship the pager", taskUuid: "task-1" }] }]);
-  });
-
-  it("skips a fresh project once every cited task has a score", () => {
-    const storedProjects = [{ lastRankedAt: "2026-09-30T12:00:00.000Z", summary: "Quarter pager",
-      taskSimilarityScores: { "abcd1234:task-1": 6 }, uuid: "project-1" }];
-    const due = projectsDueForRanking({ now, prospects: [prospect], quarterKey: "2026-Q4", scorerEm: "jev",
-      storedProjects, tasks: [] });
-    expect(due).toEqual([]);
-  });
-
-  it("ranks a guide project the store has never held over its whole pool", () => {
-    const due = projectsDueForRanking({ now, prospects: [{ ...prospect, evidence: [] }], quarterKey: "2026-Q4",
-      scorerEm: "jev", storedProjects: [], tasks: [] });
-    expect(due).toEqual([{ includeCandidatePool: true, project: expect.objectContaining({ lastRankedAt: null,
-      uuid: "project-1" }), requiredTaskRecords: [] }]);
-  });
-
-  it("ranks a fresh project whose first page found nothing similar, until its second page is searched", () => {
-    const searchedProject = { lastRankedAt: "2026-09-30T12:00:00.000Z", similaritySearchPageCount: 1,
-      similaritySearchedTaskCount: 500, summary: "Quarter pager", taskSimilarityScores: { "abcd1234:task-1": 2 },
-      uuid: "project-1" };
-    const dueOptions = { now, prospects: [prospect], quarterKey: "2026-Q4", scorerEm: "jev", tasks: [] };
-    const due = projectsDueForRanking({ ...dueOptions, storedProjects: [searchedProject] });
-    expect(due).toEqual([{ includeCandidatePool: true, project: searchedProject, requiredTaskRecords: [] }]);
-    const deeperProject = { ...searchedProject, similaritySearchPageCount: 2, similaritySearchedTaskCount: 1000 };
-    expect(projectsDueForRanking({ ...dueOptions, storedProjects: [deeperProject] })).toEqual([]);
-    const shallowProject = { ...searchedProject, similaritySearchedTaskCount: 234 };
-    expect(projectsDueForRanking({ ...dueOptions, storedProjects: [shallowProject] })).toEqual([]);
-  });
-
+describe("second search page eligibility", () => {
   it("sends a fast-model project to its second page only while new tasks would not fill a page", () => {
     const searchedProject = { lastRankedAt: "2026-09-30T12:00:00.000Z", similaritySearchPageCount: 1,
       similaritySearchedTaskCount: 150, summary: "Quarter pager", taskSimilarityScores: { "a:one": 7, "b:two": 6.5 },
@@ -637,31 +513,6 @@ describe("projectsDueForRanking", () => {
     expect(needsSecondSearchPage(searchedProject, { recentTaskCount: 20, scorerEm: "generative" })).toBe(true);
     expect(needsSecondSearchPage(searchedProject, { recentTaskCount: 150, scorerEm: "generative" })).toBe(false);
     expect(needsSecondSearchPage(searchedProject, { recentTaskCount: 0, scorerEm: "jev" })).toBe(false);
-  });
-});
-
-describe("refreshStaleProjectRankings in parallel", () => {
-  it("ranks Jev projects concurrently and writes every section", async () => {
-    const projects = ["Alpha", "Bravo", "Charlie"].map((summary, index) => ({ lastRankedAt: null, relatedTaskRecords: [],
-      relatedTasks: [], summary, uuid: `project-${ index }` }));
-    const notes = { "Project Tasks Q4 2026 Work": { content: storeContentFromProjects(projects), uuid: "store-note" } };
-    let inFlight = 0;
-    let maximumInFlight = 0;
-    const rankProject = jest.fn(async () => {
-      inFlight += 1;
-      maximumInFlight = Math.max(maximumInFlight, inFlight);
-      await new Promise(resolve => setTimeout(resolve, 5));
-      inFlight -= 1;
-      return { acceptedTasks: [], failureReason: null, minimumMatchScore: null, taskSimilarityScores: {} };
-    });
-    const rankerFactory = jest.fn().mockResolvedValue({ dictionaryChanges: {}, rankProject, scorerEm: "jev" });
-    const now = new Date("2026-10-01T12:00:00.000Z");
-    const result = await refreshStaleProjectRankings(notesApp(notes, []), { accessToken: "token", domainName: "Work",
-      domainUuid: "work-domain", now, prospects: [], rankerFactory, refineDictionary: false });
-    expect(result).toEqual({ failures: 0, rankedCount: 3, skippedReason: null });
-    expect(maximumInFlight).toBe(3);
-    const { recordsByUuid } = storedProjectRecords(notes["Project Tasks Q4 2026 Work"].content);
-    expect([...recordsByUuid.values()].map(record => record.lastRankedAt)).toEqual(Array(3).fill(now.toISOString()));
   });
 });
 
