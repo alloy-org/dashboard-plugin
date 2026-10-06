@@ -2,7 +2,7 @@
 // better off, in one sentence or two.
 import { jest } from "@jest/globals";
 import { activitiesWithBenefitRationales, agendaWithBenefitRationales, benefitRationalePrompt,
-  calendarSuggestionExplanation } from "calendar-suggestion-explanation";
+  calendarSuggestionExplanation, PENDING_RATIONALE_TEXT } from "calendar-suggestion-explanation";
 
 const WALK = { projectSummary: "Make one new friend",
   title: "Choose a nearby 45-minute walking route and text one acquaintance" };
@@ -16,6 +16,16 @@ describe("calendar suggestion explanations", () => {
       reason: "The user picked this as a 'Keep warm' emphasis." });
     expect(explanation).toBe("Project: Make one new friend\n"
       + "This task serves the dual purpose of social engagement and physical fitness.");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc While the benefit is still being written, the tooltip shows a placeholder instead of the ranker's reason,
+  //   and a benefit that has already arrived wins over the placeholder.
+  it("shows a placeholder while the benefit is pending", () => {
+    const pending = calendarSuggestionExplanation({ ...WALK, reason: "Ranked first for Keep warm." }, { rationalePending: true });
+    expect(pending).toBe(`Project: Make one new friend\n${ PENDING_RATIONALE_TEXT }`);
+    const arrived = calendarSuggestionExplanation({ ...WALK, benefit: "You will meet someone new." }, { rationalePending: true });
+    expect(arrived).toBe("Project: Make one new friend\nYou will meet someone new.");
   });
 
   // ----------------------------------------------------------------------------------------------

@@ -5,6 +5,22 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-06 — Publish calendar suggestions before their benefit rationale is written
+
+**Model:** claude-opus-5-5
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda-service.js` — `generateProposedAgenda` takes `deferBenefitRationales`: a fresh agenda returns once its tasks are placed, carrying a `benefitRationales` promise that asks the provider for benefit sentences and stores the agenda when they arrive (`_explainedAndStoredAgenda`, `_storeFreshAgenda`); `_generateFreshSchedule` can hand back an unexplained schedule with `explainedSchedule`.
+- `lib/dashboard/proposed-agenda-range.js` — passes `deferBenefitRationales` through and logs each day's generation time.
+- `lib/dashboard/proposed-agenda-suggest-action.js` — publishes each day with a "Generating detailed rationale…" placeholder, republishes the day when its benefits arrive (`_completeDayRationale`, `_activitiesWithReceivedBenefits`, `_suggestionsFromDayEntries`), and returns after every rationale settles.
+- `lib/dashboard/calendar-suggestion-explanation.js` — `PENDING_RATIONALE_TEXT` and a `rationalePending` option on `calendarSuggestionExplanation`.
+- `lib/dashboard/proposed-agenda-archive.js` — archive writes queue behind one another (`_serializedArchiveWrite`), since a deferred store can now overlap the next day's generation.
+- `test/calendar-suggestion-explanation.test.js`, `test/proposed-agenda-date-range.test.js` — placeholder test; publish count reflects two publishes per day.
+
+**Task:** Calendar days took ~8s each waiting on the benefit-rationale LLM call after Jev had already placed the tasks.
+**Prompt summary:** "Calendar takes several seconds to load each date, even though it should be using Jev... use app.context.setScheduledTasks in order to preliminarily return the chosen tasks... prior to receiving them the rationale can be 'Generating detailed rationale'"
+
+---
+
 ## 2026-10-06 — Tidy the calendar suggestion pass
 
 **Model:** claude-opus-5-5

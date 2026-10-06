@@ -201,8 +201,9 @@ describe("suggestScheduledTasksFromDashboard", () => {
     const suggestions = await suggestScheduledTasksFromDashboard(app, { endAt: startAt + SECONDS_PER_DAY,
       scheduledTasks: [], startAt });
 
-    // Every publish carries everything drafted so far, so the counts grow and the last one matches the return.
-    expect(publishes.length).toBe(promptsSent.length);
+    // Each day publishes once when its tasks are placed and again once its rationale is written. Every publish
+    // carries everything drafted so far, so the counts grow and the last one matches the return.
+    expect(publishes.length).toBe(2 * promptsSent.length);
     const publishedCounts = publishes.map(published => published.length);
     const sortedCounts = [...publishedCounts].sort((a, b) => a - b);
     expect(publishedCounts).toEqual(sortedCounts);
