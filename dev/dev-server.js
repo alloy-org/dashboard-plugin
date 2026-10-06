@@ -15,6 +15,7 @@ import { createScssPlugin } from "../scss-plugin.js";
 import { buildSentryLoaderScripts } from "../lib/util/sentry-loader.js";
 import { readSettingsFile, writeSettingsFile, DEFAULT_SETTINGS_PATH, createDevApp } from "./dev-app.js";
 import { handleNoteDeleteApi } from "./dev-note-delete-api.js";
+import { handleDevThemeApi } from "./dev-theme-api.js";
 import { handleTaskApi } from "./dev-task-api.js";
 
 dotenv.config();
@@ -452,6 +453,11 @@ async function main() {
     const requestPath = req.url.split("?")[0];
     if (requestPath === "/" || requestPath === "/index.html") {
       if (handleDevShell(res)) return;
+    }
+
+    if (requestPath === "/api/theme-styles") {
+      handleDevThemeApi(req, res);
+      return;
     }
 
     if (req.url === "/api/settings") {

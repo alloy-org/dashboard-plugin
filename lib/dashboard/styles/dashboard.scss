@@ -69,7 +69,7 @@ $error-padding: 40px;
     /* [OpenAI gpt-5.4] Task: backdrop button that exits focused-widget mode on click */
     /* Prompt: "If the user clicks on the background in this state, the other components transition back into view" */
     .dashboard-grid-focus-backdrop {
-      background: rgba($color-bg-page, 0.18);
+      background: color-mix(in srgb, $color-bg-page 18%, transparent);
       border: none;
       cursor: zoom-out;
       inset: 0;
@@ -263,7 +263,7 @@ $error-padding: 40px;
     /* [OpenAI gpt-5.4] Task: style the widget icon as a desktop focus-mode button */
     /* Prompt: "when the user clicks on the icon for a particular component" */
     &-icon-button {
-      background: rgba($color-bg-page, 0.6);
+      background: color-mix(in srgb, $color-bg-page 60%, transparent);
       border: 1px solid transparent;
       border-radius: 999px;
       cursor: pointer;
@@ -272,8 +272,8 @@ $error-padding: 40px;
       transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 
       &:hover {
-        background: rgba($color-blue, 0.12);
-        border-color: rgba($color-blue, 0.28);
+        background: color-mix(in srgb, $color-blue 12%, transparent);
+        border-color: color-mix(in srgb, $color-blue 28%, transparent);
       }
     }
 

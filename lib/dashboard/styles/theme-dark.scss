@@ -7,41 +7,42 @@
 /* [Claude] Task: define dark-theme color tokens as CSS custom properties */
 /* Prompt: "Create separate _theme-light.scss and _theme-dark.scss files for colors" */
 /* Date: 2026-02-21 | Model: claude-sonnet-4-6 */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --dashboard-color-accent: #ffb36b;
+:root {
+  // Keep explicit host mode and standalone system mode on the same fallback palette.
+  @mixin dark-colors {
+    --dashboard-color-accent: var(--color-background-action-high-contrast, #ffb36b);
     --dashboard-color-agenda-priority-critical: #ff7a7a;
     --dashboard-color-agenda-priority-important: #ffb36b;
     --dashboard-color-agenda-priority-normal: #a3b0c4;
     --dashboard-color-agenda-priority-urgent: #8fb2ff;
-    --dashboard-color-bg-card: #1f2937;
-    --dashboard-color-bg-page: #111827;
-    --dashboard-color-bg-page-hover: #1a2436;
-    --dashboard-color-bg-primary: #000000;
-    --dashboard-color-bg-secondary: #1a1a1a;
-    --dashboard-color-bg-warning: #6c3333;
-    --dashboard-color-blue: #8fb2ff;
-    --dashboard-color-blue-light: #253553;
-    --dashboard-color-border: #374151;
-    --dashboard-color-danger: #ff7a7a;
-    --dashboard-color-info: #8fb2ff;
+    --dashboard-color-bg-card: var(--color-background-primary, #1f2937);
+    --dashboard-color-bg-page: var(--color-background-secondary, #111827);
+    --dashboard-color-bg-page-hover: var(--color-background-tertiary, #1a2436);
+    --dashboard-color-bg-primary: var(--color-background-primary, #000000);
+    --dashboard-color-bg-secondary: var(--color-background-tertiary, #1a1a1a);
+    --dashboard-color-bg-warning: var(--color-background-error-medium-contrast, #6c3333);
+    --dashboard-color-blue: var(--color-background-action-high-contrast, #8fb2ff);
+    --dashboard-color-blue-light: var(--color-background-action-medium-contrast, #253553);
+    --dashboard-color-border: var(--color-border-primary, #374151);
+    --dashboard-color-danger: var(--color-text-error-high-contrast, #ff7a7a);
+    --dashboard-color-info: var(--color-text-link, #8fb2ff);
     --dashboard-color-intent-personal: #b4a5e0;
     --dashboard-color-intent-work: #73d4a3;
-    --dashboard-color-link: #60a5fa;
-    --dashboard-color-navy: #c5d8ff;
-    --dashboard-color-overlay-backdrop: rgba(0, 0, 0, 0.5);
+    --dashboard-color-link: var(--color-text-link, #60a5fa);
+    --dashboard-color-navy: var(--color-text-high-contrast, #c5d8ff);
+    --dashboard-color-overlay-backdrop: var(--color-background-scrim, rgba(0, 0, 0, 0.5));
     --dashboard-color-overlay-shadow: rgba(0, 0, 0, 0.4);
-    --dashboard-color-success: #73d4a3;
-    --dashboard-color-text: #e5ecf5;
-    --dashboard-color-text-muted: #95a3b8;
-    --dashboard-color-text-on-accent: #ffffff;
+    --dashboard-color-success: var(--color-text-status, #73d4a3);
+    --dashboard-color-text: var(--color-text-high-contrast, #e5ecf5);
+    --dashboard-color-text-muted: var(--color-text-low-contrast, #95a3b8);
+    --dashboard-color-text-on-accent: var(--color-text-button, #ffffff);
     --dashboard-color-text-on-accent-muted: rgba(255, 255, 255, 0.6);
-    --dashboard-color-text-secondary: #b6c0cf;
-    --dashboard-color-tooltip-accent: #a5b4fc;
-    --dashboard-color-tooltip-bg: #1f2937;
+    --dashboard-color-text-secondary: var(--color-text-medium-contrast, #b6c0cf);
+    --dashboard-color-tooltip-accent: var(--color-text-reversed-link, #a5b4fc);
+    --dashboard-color-tooltip-bg: var(--color-background-popup-small, #1f2937);
     --dashboard-color-tooltip-border: rgba(255, 255, 255, 0.15);
     --dashboard-color-tooltip-shadow: rgba(0, 0, 0, 0.5);
-    --dashboard-color-tooltip-text: #f9fafb;
+    --dashboard-color-tooltip-text: var(--color-text-reversed, #f9fafb);
     --dashboard-color-tooltip-text-muted: rgba(255, 255, 255, 0.5);
     --dashboard-color-warning: #ffb36b;
     --dashboard-color-plan-created-bg: rgba(115, 212, 163, 0.10);
@@ -53,5 +54,9 @@
     --dashboard-color-project-window-purple: #9b7bd3;
     --dashboard-color-project-window-red: #e36b6b;
     --dashboard-color-project-window-teal: #45aaa4;
+  }
+  &[data-theme="dark"] { @include dark-colors; }
+  @media (prefers-color-scheme: dark) {
+    &:not([data-theme]) { @include dark-colors; }
   }
 }

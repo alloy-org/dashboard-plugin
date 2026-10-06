@@ -4,6 +4,7 @@
  * Task: Mood widget — emoji selector, average, and sparkline visualization
  * Prompt summary: "widget displaying mood buttons, 7-day average, and sparkline visualization"
  */
+import { useThemeRevision } from "hooks/use-theme-revision";
 import { useEffect, useRef, useState } from "react";
 import ConfigPopup from "config-popup";
 import { useCanvasTippy } from "dashboard/dashboard-tooltip-tippy";
@@ -202,7 +203,12 @@ function colorWithAlpha(cssColor, hexAlpha) {
 // [Claude] Task: render past-week moods as animated radial ring with hover tooltip
 // [Claude claude-4.7-opus] Task: migrate RadialRing from createElement to JSX
 // Prompt: "translate this project to render components with JSX instead"
+// ------------------------------------------------------------------------------------------
+// @desc Draw the mood visualization and repaint when theme colors change.
+// @param {object} props - Mood data for the visualization.
+// @returns {JSX.Element} Canvas visualization with tooltip.
 function RadialRing({ moodData }) {
+  const themeRevision = useThemeRevision();
   const canvasRef = useRef(null);
   const geometryRef = useRef(null);
   const [progress, setProgress] = useState(0);
@@ -342,7 +348,7 @@ function RadialRing({ moodData }) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'alphabetic';
     ctx.fillText('W E E K   R I N G', centerX, RING_TITLE_Y);
-  }, [moodDataJson, progress]);
+  }, [moodDataJson, progress, themeRevision]);
 
   const handleCanvasMouseMove = (e) => {
     const geo = geometryRef.current;
@@ -387,7 +393,12 @@ function RadialRing({ moodData }) {
 
 // [Claude claude-4.7-opus] Task: migrate WaveGraph from createElement to JSX
 // Prompt: "translate this project to render components with JSX instead"
+// ------------------------------------------------------------------------------------------
+// @desc Draw the mood visualization and repaint when theme colors change.
+// @param {object} props - Mood data for the visualization.
+// @returns {JSX.Element} Canvas visualization with tooltip.
 function WaveGraph({ moodData }) {
+  const themeRevision = useThemeRevision();
   const canvasRef = useRef(null);
   const pointsRef = useRef([]);
   const [progress, setProgress] = useState(0);
@@ -576,7 +587,7 @@ function WaveGraph({ moodData }) {
       ctx.textBaseline = 'middle';
       ctx.fillText(`Avg ${avg}`, CANVAS_SIZE - WAVE_AVG_BADGE_TEXT_X_FROM_RIGHT, WAVE_AVG_BADGE_TEXT_Y);
     }
-  }, [moodDataJson, progress]);
+  }, [moodDataJson, progress, themeRevision]);
 
   const handleCanvasMouseMove = (e) => {
     const canvas = canvasRef.current;

@@ -5,6 +5,47 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-05 — Simplify host theme retrieval
+
+**Model:** GPT-6
+**Files modified:** `lib/plugin.js`, `test/host-theme.test.js`, `test/plugin.test.js`,
+`test/production-plugin.test.js`, `build/compiled.js` (regenerated).
+
+**Task:** Call the guaranteed context theme API directly. Remove method-existence and return-type checks and local
+error swallowing; retain existing render and bridge error handling. Update test host mocks and failure expectations.
+
+---
+
+## 2026-10-05 — Use copied Amplenote classic themes in development
+
+**Model:** GPT-6
+**Files created/modified:** `dev/themes/_theme-classic-dark.scss`, `dev/themes/_theme-classic-light.scss`,
+`dev/themes/_classic-palette.scss`, `dev/dev-theme-api.js`, `dev/dev-server.js`, `lib/util/browser-dev-app.js`,
+`lib/dashboard/host-theme.js`, `lib/dashboard/dashboard-load.jsx`, `test/dev-theme-api.test.js`, `test/host-theme.test.js`,
+`build/compiled.js` (regenerated).
+
+**Task:** Copy classic theme mixins and their named palette dependencies from ample-mobile into this project.
+Compile local snapshots through a development CSS endpoint, expose getStyles and the host-compatible context API,
+and apply the active browser palette on startup and preference changes. Verify resolved colors and RGB variables.
+
+---
+
+## 2026-10-05 — Match Dashboard colors to the Amplenote host theme
+
+**Model:** GPT-6
+**Files created/modified:** `lib/plugin.js`, `lib/embed-html.js`, `lib/dashboard/host-theme.js`,
+`lib/hooks/use-theme-revision.js`, `lib/dashboard/dashboard-load.jsx`, `lib/dashboard/mood.jsx`,
+`lib/dashboard/peak-hours.jsx`, `lib/dashboard/victory-value.jsx`, `lib/dashboard/styles/dashboard.scss`,
+`lib/dashboard/styles/widget.scss`, `lib/dashboard/styles/theme-light.scss`, `lib/dashboard/styles/theme-dark.scss`,
+`lib/dashboard/styles/config-popup.scss`, `lib/dashboard/styles/day-sketch.scss`, `test/host-theme.test.js`,
+`build/compiled.js` (regenerated).
+
+**Task:** Inject host CSS before rendering, alias semantic Dashboard tokens with fallback colors, honor the host mode,
+refresh on focus and visibility restoration, and repaint canvas charts when theme colors change. Preserve distinct
+priority and category palettes and update popup and notebook surfaces. Add theme integration regressions.
+
+---
+
 ## 2026-10-05 — Include current Important tasks in calendar suggestion ranking
 
 **Model:** GPT-6

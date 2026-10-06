@@ -125,10 +125,8 @@ $notebook-font: 'Segoe Script', 'Bradley Hand', 'Comic Sans MS', cursive, $font-
       opacity: 0.5;
     }
   }
-}
-
-@media (prefers-color-scheme: dark) {
-  .widget-day-sketch {
+  // The notebook keeps its paper palette while following the host mode.
+  @mixin dark-notebook {
     .day-sketch-notebook {
       background-color: $notebook-paper-bg-dark;
       background-image:
@@ -152,5 +150,9 @@ $notebook-font: 'Segoe Script', 'Bradley Hand', 'Comic Sans MS', cursive, $font-
         background: rgba(74, 85, 104, 0.15);
       }
     }
+  }
+  :root[data-theme="dark"] & { @include dark-notebook; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) & { @include dark-notebook; }
   }
 }

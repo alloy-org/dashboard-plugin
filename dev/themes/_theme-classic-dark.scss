@@ -1,0 +1,95 @@
+// Classic dark theme snapshot from ample-mobile for the development host API.
+@mixin theme-classic-dark {
+  // Backgrounds
+  --color-background-primary-rgb: #{ derive-rgb-values-from-hex($ample-slate-darkest) }; // #192025
+  --color-background-primary: #{ $ample-slate-darkest }; // #192025
+  --color-background-secondary: #{ $ample-slate-darker }; // #21282E
+  --color-background-tertiary: #{ $ample-slate-dark }; // #272F35
+  --color-background-popup: #{ $ample-slate-dark }; // #272F35
+  --color-background-popup-small: #{ $ample-gray-darkest }; // #2F3740
+  --color-background-scrim: rgba(0, 0, 0, 0.64);
+  --color-background-scrim-high-contrast: rgba(0, 0, 0, 0.8);
+
+  // Borders
+  --color-border-primary: #{ $ample-gray-darkest }; // #2F3740
+  --color-border-secondary: #{ $ample-slate-darkest }; // #192025
+  --color-border-tertiary: #{ $ample-gray-darker }; // #626D7A
+
+  // Components
+  --color-background-element-high-contrast: #{ $ample-gray-darker }; // #626D7A
+  --color-background-element-medium-contrast: #3D4751;
+  --color-background-element-medium-contrast-rgb: #{ derive-rgb-values-from-hex(#3D4751) };
+  --color-background-element-low-contrast: #{ $ample-slate-dark }; // #272F35
+  --color-background-action-high-contrast: #{ $ample-blue }; // #3E92CC
+  --color-background-action-high-contrast-rgb: #{ derive-rgb-values-from-hex($ample-blue) }; // #3E92CC
+  --color-background-action-high-contrast-alt: #{ $ample-blue-light }; // #AFD8F4
+  --color-background-action-medium-contrast: #{ $ample-blue-dark }; // #2F4858
+  --color-background-action-low-contrast: #{ $ample-blue-darker }; // #2C3B47
+  --color-background-error-high-contrast: #{ $ample-orange }; // #F5624C
+  --color-background-error-medium-contrast: #{ $ample-orange-darkest }; // #452D2C
+  --color-background-notice: #8c8c16;
+
+  // Text & icons
+  --color-text-high-contrast: #{ $ample-gray-lightest }; // #F9FBFC
+  --color-text-medium-contrast: #{ $ample-gray }; // #B4BFCC
+  --color-text-low-contrast: #{ $ample-gray-dark }; // #8593A3
+  --color-text-lower-contrast: #{ $ample-gray-darker }; // #626D7A
+  --color-text-high-contrast-inverse: #{ $ample-gray-darkest }; // #2F3740
+  --color-text-link: #{ $ample-blue-light }; // #AFD8F4
+  --color-text-reversed: #fff;
+  --color-text-status: #{ $ample-green }; // #0BBF7D
+  --color-text-error-high-contrast: #{ $ample-orange }; // #F5624C
+  --color-text-error-medium-contrast: #{ $ample-orange }; // #F5624C
+  --color-text-error-low-contrast: #{ $ample-yellow }; // #FFB238
+  --color-text-error-low-contrast-rgb: #{ derive-rgb-values-from-hex($ample-yellow) }; // #FFB238
+  --color-text-button: #fff;
+  --color-text-reversed-link: #{ $ample-blue-light}; // #AFD8F4
+  --color-text-nav-high-contrast: #{ $ample-gray-lighter }; // #EDF1F5
+  --color-text-nav-medium-contrast: #{ $ample-gray }; // #B4BFCC
+  --color-text-nav-low-contrast: #{ $ample-gray }; // #B4BFCC
+  --color-text-nav-lower-contrast: #{ $ample-gray-darker }; // #626D7A
+
+  // One-off colors
+  --color-background-banner: #{ $ample-blue-dark }; // #2F4858
+  --color-background-code: #{ rgba($ample-gray-darker, 0.32) }; // #626D7A
+  --color-background-header: #{ $ample-blue-darker }; // #2C3B47
+  --color-background-highlight: #{ rgba($ample-yellow, 0.32) }; // #FFB238
+  --color-background-note-menu-button: #{ $ample-blue-dark }; // #2F4858
+  --color-background-reversed: #{ $ample-gray-darker }; // #626D7A
+  --color-background-reversed-secondary: #{ $ample-gray-dark }; // #8593A3
+  --color-background-reversed-secondary-rgb: #{ derive-rgb-values-from-hex($ample-gray-dark) }; // #8593A3
+  --color-background-search-bar: #{ $ample-slate-dark }; // #272F35
+  --color-background-task-value: #{ $ample-gray-darker }; // #626D7A
+  --color-background-banner-alt: #601e75;
+  --color-background-dialog: #{ $ample-blue-darker }; // #2C3B47
+  --color-background-nav: #{ $ample-blue-darker }; // #2C3B47
+  --color-background-nav-active: #3c5061;
+  --color-background-nav-avatar: #{ $ample-blue-dark }; // #2F4858
+  --color-background-nav-divider: #{ $ample-blue-dark }; // #2F4858
+  --color-background-nav-menu: #{ $ample-blue-dark }; // #2F4858
+  --color-background-nav-menu-button: #{ $ample-blue-darkest }; // #1C2B37
+  --color-background-nav-menu-divider: #{ $ample-blue-darker }; // #2C3B47
+  --color-background-nav-menu-expanded: #{ $ample-blue-darkest }; // #1C2B37
+  --color-background-logo: #fff;
+
+  // States
+  --color-overlay-low-contrast: #{ $ample-blue }; // #3E92CC
+  --color-overlay-high-contrast: #fff;
+
+  --opacity-overlay-low-contrast-hover: 0.24;
+  --opacity-overlay-low-contrast-focus: 0.32;
+  --opacity-overlay-low-contrast-press: 0.28;
+
+  --opacity-overlay-high-contrast-hover: 0.08;
+  --opacity-overlay-high-contrast-focus: 0.16;
+  --opacity-overlay-high-contrast-press: 0.12;
+
+  // --------------------------------------------------------------------------
+  // Material Design Components theming
+  --mdc-theme-error: #{ $ample-orange }; // #F5624C
+  --mdc-theme-on-primary: #fff;
+  --mdc-theme-on-secondary: #{ $ample-gray-lightest }; // #F9FBFC
+  --mdc-theme-primary: #{ $ample-blue }; // #3E92CC
+  --mdc-theme-secondary: #{ $ample-blue-darker }; // #2C3B47
+  --mdc-theme-surface: #{ $ample-slate-darkest }; // #192025
+}

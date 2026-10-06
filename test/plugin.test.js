@@ -9,6 +9,13 @@ import plugin from 'plugin';
 
 // Mock Amplenote app object
 const mockApp = {
+  context: {
+    // ------------------------------------------------------------------------------------------
+    // @desc Provide the host theme CSS expected by renderEmbed.
+    // @returns {Promise<string>} Mock theme stylesheet.
+    async getStyleProperties() { return ":root { --color-background-primary: #fff; }"; },
+    lightDarkMode: "light",
+  },
   settings: {
     'LLM API Key': 'test-key',
     'LLM Provider': 'openai'

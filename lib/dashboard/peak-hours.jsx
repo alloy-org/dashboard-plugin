@@ -4,6 +4,7 @@
  * Task: Peak Hours widget — hourly distribution chart of task creation and completion
  * Prompt summary: "rewrite peak-hours as a project-native widget consuming completed tasks from dashboard"
  */
+import { useThemeRevision } from "hooks/use-theme-revision";
 import { useEffect, useRef, useMemo, useCallback, useState } from "react";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { dateFromDateInput, dateFromMonthKey, formatHourLabel, monthKeyFromDateInput,
@@ -272,7 +273,12 @@ function MonthNavigator({ label, forwardDisabled, onNavigate }) {
 // Prompt: "components that render times should utilize timeFormat prop"
 // [Claude claude-4.7-opus] Task: migrate PeakHoursWidget from createElement to JSX
 // Prompt: "translate this project to render components with JSX instead"
+// ------------------------------------------------------------------------------------------
+// @desc Display hourly task activity, repainting the chart when host theme colors change.
+// @param {object} props - App bridge, dates, and time formatting preference.
+// @returns {JSX.Element} Hourly activity widget.
 export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFormat }) {
+  const themeRevision = useThemeRevision();
   const canvasRef = useRef(null);
   const [tooltip, setTooltip] = useState(null);
   const [error, setError] = useState(null);
@@ -366,7 +372,7 @@ export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFo
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [completedByHour, createdByHour, hourLabels]);
+  }, [completedByHour, createdByHour, hourLabels, themeRevision]);
 
   const handleMouseMove = useCallback((e) => {
     const idx = getBarIndex(canvasRef.current, e);

@@ -3,6 +3,7 @@ import { parseWidgetConfig, widgetConfigKey } from "../constants/settings";
 import ConfigPopup from "./config-popup";
 import { useCanvasTippy } from "./dashboard-tooltip-tippy.jsx";
 import WidgetWrapper from "./widget-wrapper";
+import { useThemeRevision } from "hooks/use-theme-revision";
 import { pluginSettings } from "plugin-data";
 import { useEffect, useRef, useState } from "react";
 import "styles/victory-value.scss";
@@ -147,29 +148,39 @@ function getHoveredDayMood(index, moodByDay, dailyValues) {
   return MOODS.find((m) => m.value === rating) || null;
 }
 
+// ------------------------------------------------------------------------------------------
+// @desc Draw activity bars and labels using the current dashboard theme colors.
+// @param {CanvasRenderingContext2D} ctx - Drawing context.
+// @param {Array} dailyValues - Daily totals and labels.
+// @param {number} maxValue - Largest daily value.
+// @param {number} barW - Bar slot width.
+// @param {number} chartH - Plot height.
+// @param {number} ht - Canvas height.
+// @returns {void}
 function drawBars(ctx, dailyValues, maxValue, barW, chartH, ht) {
+  const themeStyle = getComputedStyle(document.documentElement);
   dailyValues.forEach((d, i) => {
     const barH = (d.value / maxValue) * chartH * 0.85;
     const x = 40 + i * barW + barW * 0.15;
     const y = chartH - barH + 10;
-    ctx.fillStyle = d.value > 0 ? '#6366f1' : '#e5e7eb';
+    ctx.fillStyle = themeStyle.getPropertyValue(d.value > 0 ? '--dashboard-color-blue' : '--dashboard-color-border').trim();
     ctx.beginPath();
     ctx.roundRect(x, y, barW * 0.7, barH, [4, 4, 0, 0]);
     ctx.fill();
 
-    ctx.fillStyle = '#6b7280';
+    ctx.fillStyle = themeStyle.getPropertyValue('--dashboard-color-text-secondary').trim();
     ctx.font = '11px system-ui';
     ctx.textAlign = 'center';
     ctx.fillText(d.day, x + barW * 0.35, ht - 15);
 
     const dateObj = dateFromDateInput(d.date);
     const monthDay = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    ctx.fillStyle = '#9ca3af';
+    ctx.fillStyle = themeStyle.getPropertyValue('--dashboard-color-text-muted').trim();
     ctx.font = '9px system-ui';
     ctx.fillText(monthDay, x + barW * 0.35, ht - 3);
 
     if (d.value > 0) {
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = themeStyle.getPropertyValue('--dashboard-color-text-on-accent').trim();
       ctx.font = 'bold 10px system-ui';
       ctx.fillText(formatBarPointValue(d.value), x + barW * 0.35, y + 14);
     }
@@ -312,6 +323,7 @@ function TimeRangeOptions({ setTimeRange, timeRange }) {
 // @returns {JSX.Element} Configurable Victory Value chart.
 export default function VictoryValueWidget({ app, completedTasksByDate, dailyValues, moodRatings,
     onReferenceDateChange, referenceDate }) {
+  const themeRevision = useThemeRevision();
   const canvasRef = useRef(null);
   const redrawChartRef = useRef(null);
   const rangeEndDate = referenceDate || dateKeyFromDateInput(new Date());
@@ -343,7 +355,7 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
   useEffect(() => {
     redrawChartRef.current = () => drawChart(canvasRef, chartDailyValues, maxValue, moodByDay, showMood);
     redrawChartRef.current();
-  }, [chartDailyValues, maxValue, moodByDay, showMood]);
+  }, [chartDailyValues, maxValue, moodByDay, showMood, themeRevision]);
 
   // ------------------------------------------------------------------------------------------
   // @desc Redraw whenever the canvas box changes size. drawChart sizes the bitmap from the element's

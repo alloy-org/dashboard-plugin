@@ -81,7 +81,8 @@ test("debugEvaluate embed action evaluates an expression against the host app", 
 test("shipped embed document survives HTML parsing with compressed payloads", async () => {
   const plugin = runInNewContext(pluginCode, { console: { debug: jest.fn(), error: jest.fn(), log: jest.fn() }, setTimeout });
 
-  const embedHTML = await plugin.renderEmbed({ settings: {} });
+  const context = { getStyleProperties: async () => ":root { --color-background-primary: #fff; }", lightDarkMode: "light" };
+  const embedHTML = await plugin.renderEmbed({ context, settings: {} });
 
   const parsedDocument = new DOMParser().parseFromString(embedHTML, "text/html");
   const scriptElements = [ ...parsedDocument.querySelectorAll("script") ];
@@ -101,7 +102,8 @@ test("shipped embed document survives HTML parsing with compressed payloads", as
 //   jsdom does not provide; both implement the same gzip format.
 test("shipped embed payloads inflate to the stylesheet and client bundle", async () => {
   const plugin = runInNewContext(pluginCode, { console: { debug: jest.fn(), error: jest.fn(), log: jest.fn() }, setTimeout });
-  const embedHTML = await plugin.renderEmbed({ settings: {} });
+  const context = { getStyleProperties: async () => ":root { --color-background-primary: #fff; }", lightDarkMode: "light" };
+  const embedHTML = await plugin.renderEmbed({ context, settings: {} });
   const parsedDocument = new DOMParser().parseFromString(embedHTML, "text/html");
   const inflatePayload = elementId => {
     const base64Text = parsedDocument.getElementById(elementId).textContent;

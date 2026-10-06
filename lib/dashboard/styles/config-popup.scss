@@ -40,7 +40,7 @@ $config-popup-z-index: 1000;
    * had when they sat at the top level. A plain nested `.config-popup-overlay` would outweigh all of them. */
   :where(&) {
     .config-popup-container {
-      background: $color-bg-card;
+      background: var(--color-background-popup, #{$color-bg-card});
       border: 1px solid $color-border;
       border-radius: $radius-lg;
       box-shadow: 0 $config-popup-shadow-y $config-popup-shadow-blur $color-overlay-shadow;

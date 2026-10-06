@@ -1,4 +1,8 @@
 .widget {
+  :where(button, a, input, textarea, select):focus-visible {
+    outline: 2px solid var(--color-background-action-high-contrast, var(--dashboard-color-blue));
+    outline-offset: 2px;
+  }
   .widget-body {
     overflow-y: auto;
   }

@@ -7,6 +7,7 @@ import { createBrowserDevApp } from "util/browser-dev-app";
 import { publishDeviceProfileDiagnostic } from "util/device-profile";
 import { installDashboardSentryReporting, observeEmbedCall } from "util/sentry-reporting";
 import DashboardApp from "./dashboard.jsx";
+import { installHostThemeRefresh } from "./host-theme";
 
 // Adopt the queue of any errors the loader snippet in embed-html.js recorded while this bundle was still evaluating,
 // and flush them as soon as the SDK is ready.
@@ -55,6 +56,7 @@ let app, initPromise;
 // and ships browser-dev-app with it. The define turns this expression into a literal the minifier can drop.
 if (process.env.NODE_ENV === "development") {
   app = createBrowserDevApp();
+  installHostThemeRefresh(app, { refreshImmediately: true, watchSystemTheme: true });
   initPromise = app.init();
 } else {
   // Every widget's Amplenote API call routes through here, so this is the one place that can see a bridge call fail.
@@ -68,6 +70,7 @@ if (process.env.NODE_ENV === "development") {
   });
   // init is deliberately not observed here: DashboardApp inspects and reports its payload, so wrapping it would
   // report the same failure twice.
+  installHostThemeRefresh(app);
   initPromise = window.callAmplenotePlugin("init");
 }
 

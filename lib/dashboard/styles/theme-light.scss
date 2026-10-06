@@ -1,37 +1,42 @@
 :root {
-  --dashboard-color-accent: #e8853d;
+  color-scheme: light;
+  &[data-theme="dark"] { color-scheme: dark; }
+  @media (prefers-color-scheme: dark) {
+    &:not([data-theme]) { color-scheme: dark; }
+  }
+  --dashboard-color-accent: var(--color-background-action-high-contrast, #e8853d);
   --dashboard-color-agenda-priority-critical: #e85353;
   --dashboard-color-agenda-priority-important: #e8853d;
   --dashboard-color-agenda-priority-normal: #7a8699;
   --dashboard-color-agenda-priority-urgent: #5b7bbf;
-  --dashboard-color-bg-card: #ffffff;
-  --dashboard-color-bg-page: #eef1f5;
-  --dashboard-color-bg-page-hover: #e6ebf2;
-  --dashboard-color-bg-primary: #ffffff;
-  --dashboard-color-bg-secondary: #eef1f5;
-  --dashboard-color-bg-warning: #ffd7d7;
-  --dashboard-color-blue: #5b7bbf;
-  --dashboard-color-blue-light: #e8edf5;
-  --dashboard-color-border: #d8dde6;
-  --dashboard-color-danger: #e85353;
-  --dashboard-color-info: #5b7bbf;
+  --dashboard-color-bg-card: var(--color-background-primary, #ffffff);
+  --dashboard-color-bg-page: var(--color-background-secondary, #eef1f5);
+  --dashboard-color-bg-page-hover: var(--color-background-tertiary, #e6ebf2);
+  --dashboard-color-bg-primary: var(--color-background-primary, #ffffff);
+  --dashboard-color-bg-secondary: var(--color-background-tertiary, #eef1f5);
+  --dashboard-color-bg-warning: var(--color-background-error-medium-contrast, #ffd7d7);
+  --dashboard-color-blue: var(--color-background-action-high-contrast, #5b7bbf);
+  --dashboard-color-blue-light: var(--color-background-action-medium-contrast, #e8edf5);
+  --dashboard-color-border: var(--color-border-primary, #d8dde6);
+  --dashboard-color-danger: var(--color-text-error-high-contrast, #e85353);
+  --dashboard-color-info: var(--color-text-link, #5b7bbf);
   --dashboard-color-intent-personal: #6b5ea8;
   --dashboard-color-intent-work: #4caf80;
-  --dashboard-color-link: #5b7bbf;
-  --dashboard-color-navy: #2c3e6b;
-  --dashboard-color-overlay-backdrop: rgba(0, 0, 0, 0.4);
+  --dashboard-color-link: var(--color-text-link, #5b7bbf);
+  --dashboard-color-navy: var(--color-text-high-contrast, #2c3e6b);
+  --dashboard-color-overlay-backdrop: var(--color-background-scrim, rgba(0, 0, 0, 0.4));
   --dashboard-color-overlay-shadow: rgba(0, 0, 0, 0.15);
-  --dashboard-color-success: #4caf80;
-  --dashboard-color-text: #1e2a3a;
-  --dashboard-color-text-muted: #90999f;
-  --dashboard-color-text-on-accent: #ffffff;
+  --dashboard-color-success: var(--color-text-status, #4caf80);
+  --dashboard-color-text: var(--color-text-high-contrast, #1e2a3a);
+  --dashboard-color-text-muted: var(--color-text-low-contrast, #90999f);
+  --dashboard-color-text-on-accent: var(--color-text-button, #ffffff);
   --dashboard-color-text-on-accent-muted: rgba(255, 255, 255, 0.6);
-  --dashboard-color-text-secondary: #7a8699;
-  --dashboard-color-tooltip-accent: #5b7bbf;
-  --dashboard-color-tooltip-bg: #1f2937;
+  --dashboard-color-text-secondary: var(--color-text-medium-contrast, #7a8699);
+  --dashboard-color-tooltip-accent: var(--color-text-reversed-link, #5b7bbf);
+  --dashboard-color-tooltip-bg: var(--color-background-popup-small, #1f2937);
   --dashboard-color-tooltip-border: rgba(255, 255, 255, 0.15);
   --dashboard-color-tooltip-shadow: rgba(0, 0, 0, 0.3);
-  --dashboard-color-tooltip-text: #f9fafb;
+  --dashboard-color-tooltip-text: var(--color-text-reversed, #f9fafb);
   --dashboard-color-tooltip-text-muted: rgba(255, 255, 255, 0.5);
   --dashboard-color-warning: #e8853d;
   --dashboard-color-plan-created-bg: rgba(76, 175, 128, 0.08);
