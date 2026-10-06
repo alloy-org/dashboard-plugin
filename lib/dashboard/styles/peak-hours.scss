@@ -90,14 +90,14 @@
     display: inline-block;
     height: 10px;
     width: 10px;
+  }
 
-    &--created {
-      background: $color-blue;
-    }
+  .peak-hours-legend-swatch--created {
+    background: $color-blue;
+  }
 
-    &--completed {
-      background: $color-accent;
-    }
+  .peak-hours-legend-swatch--completed {
+    background: $color-accent;
   }
 
   .peak-hours-chart-container {
@@ -130,15 +130,12 @@
     font-weight: 600;
     margin-bottom: $sp-xs;
   }
+  .peak-hours-tooltip-label--created {
+    color: $color-tooltip-accent;
+  }
 
-  .peak-hours-tooltip-label {
-    &--created {
-      color: $color-tooltip-accent;
-    }
-
-    &--completed {
-      color: $color-accent;
-    }
+  .peak-hours-tooltip-label--completed {
+    color: $color-accent;
   }
 
   .peak-hours-empty {

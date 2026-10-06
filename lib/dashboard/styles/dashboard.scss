@@ -60,10 +60,10 @@ $error-padding: 40px;
     .dashboard-grid-shell {
       isolation: isolate;
       position: relative;
+    }
 
-      &--focused {
-        z-index: 2;
-      }
+    .dashboard-grid-shell--focused {
+      z-index: 2;
     }
 
     /* [OpenAI gpt-5.4] Task: backdrop button that exits focused-widget mode on click */
@@ -119,13 +119,15 @@ $error-padding: 40px;
         }
       }
     }
+  }
 
-    &--widget-focused .dashboard-toolbar {
-      opacity: 0;
-      pointer-events: none;
-      transform: translateY(-$sp-lg);
-    }
+  .dashboard-content--widget-focused .dashboard-toolbar {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-$sp-lg);
+  }
 
+  .dashboard-content {
     .dashboard-grid {
       display: grid;
       gap: $sp-lg;
@@ -167,11 +169,12 @@ $error-padding: 40px;
         width: 100%;
 
         /* Focus move/resize is WAAPI FLIP; a CSS transition here would race that animation. */
-        &--focused {
-          pointer-events: auto;
-          position: fixed;
-          z-index: 5;
-        }
+      }
+
+      .grid-cell-surface--focused {
+        pointer-events: auto;
+        position: fixed;
+        z-index: 5;
       }
 
       /* [Claude] Task: dashboard drag visual states for long-press widget reordering */
@@ -241,7 +244,7 @@ $error-padding: 40px;
     overflow: hidden;
 
     /* The host's action color fills the header bar; every control in it takes the paired header text color. */
-    &-header {
+    .widget-header {
       align-items: center;
       background: $color-header-bg;
       color: $color-header-text;
@@ -250,7 +253,7 @@ $error-padding: 40px;
       padding: $sp-md $sp-lg;
     }
 
-    &-heading-bar {
+    .widget-heading-bar {
       user-select: none;
 
       &.widget-heading-bar--drag-ready {
@@ -258,19 +261,19 @@ $error-padding: 40px;
       }
     }
 
-    &-icon {
+    .widget-icon {
       font-size: $large-font-size;
     }
 
     /* [OpenAI gpt-5.4] Task: style the widget icon as a desktop focus-mode button */
     /* Prompt: "when the user clicks on the icon for a particular component" */
-    &-icon-button {
-      background: color-mix(in srgb, $color-header-text 15%, transparent);
+    .widget-icon-button {
+      background: color-mix(in srgb, $color-header-text 10%, transparent);
       border: 1px solid transparent;
       border-radius: 999px;
       cursor: pointer;
       line-height: 1;
-      padding: $sp-xs;
+      padding: 8px;
       transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 
       &:hover {
@@ -279,7 +282,7 @@ $error-padding: 40px;
       }
     }
 
-    &-title {
+    .widget-title {
       color: $color-header-text;
       display: flex;
       flex: 1;
@@ -294,20 +297,18 @@ $error-padding: 40px;
       /* Prompt: "allow a subtitle as a string with lighter color text that resides to the right of the module title" */
       /* Date: 2026-03-14 | Model: claude-4.6-sonnet-medium-thinking */
       /* Kept at full header-text strength: a dimmer tone would fall below 4.5:1 on Cabernet, Plum and Retro. */
-      &__subtitle {
-        color: $color-header-text;
-        font-size: $smaller-font-size;
-        font-weight: 400;
-        letter-spacing: 0.01em;
-        text-transform: none;
-      }
     }
 
-    /* [Claude] Task: shared header action button style; used by configure and reseed buttons */
-    /* Prompt: "component should have a link in the top bar to reseed" */
-    /* Date: 2026-03-05 | Model: claude-4.6-sonnet-medium-thinking */
-    &-configure,
-    &-header-action {
+    .widget-title__subtitle {
+      color: $color-header-text;
+      font-size: $smaller-font-size;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+      text-transform: none;
+    }
+
+    .widget-configure,
+    .widget-header-action {
       background: none;
       border: none;
       color: $color-header-text;
@@ -320,7 +321,7 @@ $error-padding: 40px;
       }
     }
 
-    &-body {
+    .widget-body {
       flex: 1;
       padding: $sp-lg;
     }
@@ -374,35 +375,35 @@ $error-padding: 40px;
     justify-content: center;
     padding: $sp-xl;
     text-align: center;
+  }
 
-    &-title {
-      color: $color-danger;
-      font-size: $default-font-size;
-      font-weight: 700;
-    }
+  .widget-error-fallback-title {
+    color: $color-danger;
+    font-size: $default-font-size;
+    font-weight: 700;
+  }
 
-    &-message {
-      color: $color-text-muted;
-      font-size: $smaller-font-size;
-      max-width: 280px;
-      word-break: break-word;
-    }
+  .widget-error-fallback-message {
+    color: $color-text-muted;
+    font-size: $smaller-font-size;
+    max-width: 280px;
+    word-break: break-word;
+  }
 
-    &-retry {
-      background: none;
-      border: 1px solid $color-border;
-      border-radius: $radius-sm;
-      color: $color-text-secondary;
-      cursor: pointer;
-      font-size: $smaller-font-size;
-      margin-top: $sp-xs;
-      padding: $sp-xs $sp-md;
-      transition: color 0.15s ease, border-color 0.15s ease;
+  .widget-error-fallback-retry {
+    background: none;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    color: $color-text-secondary;
+    cursor: pointer;
+    font-size: $smaller-font-size;
+    margin-top: $sp-xs;
+    padding: $sp-xs $sp-md;
+    transition: color 0.15s ease, border-color 0.15s ease;
 
-      &:hover {
-        border-color: $color-navy;
-        color: $color-navy;
-      }
+    &:hover {
+      border-color: $color-navy;
+      color: $color-navy;
     }
   }
 

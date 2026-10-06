@@ -138,13 +138,16 @@ $task-domain-transition-duration: 0.15s;
   /* [Claude] Task: empty-state styling with setup prompt for missing task domains */
   /* Prompt: "update the Task Domain area to include a message 'Set up a task domain to use the dashboard'" */
   /* Date: 2026-03-21 | Model: claude-4.6-opus-high-thinking */
-  &--empty {
-    .task-domains-empty {
-      flex: 1 1 100%;
-      font-weight: 500;
-    }
-  }
+}
 
+.task-domains--empty {
+  .task-domains-empty {
+    flex: 1 1 100%;
+    font-weight: 500;
+  }
+}
+
+.task-domains {
   /* [Claude claude-opus-5] Task: mobile domain bar shows only the selected domain, an expand toggle, and a refresh icon */
   /* Prompt: "hide all Task Domains behind an 'Expand' icon, besides the selected Task Domain" */
   /* Date: 2026-08-07 | Model: claude-opus-5 */

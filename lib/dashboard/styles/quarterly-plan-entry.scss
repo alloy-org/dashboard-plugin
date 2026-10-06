@@ -169,11 +169,11 @@ $plan-entry-video-background: #152033;
     font-weight: 600;
     padding: $sp-xs;
     text-align: center;
+  }
 
-    &--current {
-      background: $color-accent;
-      color: $color-text-on-accent;
-    }
+  .plan-entry-month--current {
+    background: $color-accent;
+    color: $color-text-on-accent;
   }
 
   .plan-entry-preview-row {
@@ -189,10 +189,10 @@ $plan-entry-video-background: #152033;
     border-radius: 999px;
     display: block;
     height: 8px;
-
-    &--focus { width: 70%; }
-    &--move { width: 42%; }
   }
+
+  .plan-entry-preview-bar--focus { width: 70%; }
+  .plan-entry-preview-bar--move { width: 42%; }
 
   .plan-entry-choices {
     display: grid;
@@ -207,9 +207,9 @@ $plan-entry-video-background: #152033;
     flex-direction: column;
     gap: $sp-sm;
     padding: $sp-md;
-
-    &--recommended { border-color: $color-accent; }
   }
+
+  .plan-entry-choice--recommended { border-color: $color-accent; }
 
   .plan-entry-choice-badge {
     color: $color-accent;
@@ -304,12 +304,14 @@ $plan-entry-video-background: #152033;
     height: 22px;
     width: 22px;
   }
+}
 
-  &--loading {
-    color: $color-text-muted;
-    font-style: italic;
-  }
+.quarterly-plan-entry--loading {
+  color: $color-text-muted;
+  font-style: italic;
+}
 
+.quarterly-plan-entry {
   .horizontal-2-cell &,
   .horizontal-3-cell &,
   .horizontal-4-cell & {

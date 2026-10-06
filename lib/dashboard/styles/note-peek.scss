@@ -59,7 +59,7 @@ $check-list-indent-step: 20px;
   /* The shared header link is 0.75rem, which leaves the gear glyph too small to read as an icon. The
    * doubled class outweighs dashboard.scss's own .widget-configure rule regardless of bundle order. */
   &.widget .widget-configure {
-    font-size: $default-font-size;
+    font-size: $smaller-font-size;
   }
 
   /* Pre-selection state: the entire body is the note picker. */

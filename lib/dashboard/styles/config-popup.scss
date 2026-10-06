@@ -144,24 +144,24 @@ $config-popup-z-index: 1000;
         font-size: $smaller-font-size;
         font-weight: 600;
         padding: $sp-sm $sp-lg;
+      }
 
-        &--cancel {
-          background: transparent;
-          color: $color-text-secondary;
+      .config-popup-btn--cancel {
+        background: transparent;
+        color: $color-text-secondary;
 
-          &:hover {
-            background: $color-bg-page-hover;
-          }
+        &:hover {
+          background: $color-bg-page-hover;
         }
+      }
 
-        &--submit {
-          background: $color-accent;
-          border-color: $color-accent;
-          color: $color-text-on-accent;
+      .config-popup-btn--submit {
+        background: $color-accent;
+        border-color: $color-accent;
+        color: $color-text-on-accent;
 
-          &:hover {
-            opacity: 0.9;
-          }
+        &:hover {
+          opacity: 0.9;
         }
       }
     }

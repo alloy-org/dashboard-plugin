@@ -1,5 +1,6 @@
 // Agenda card layout, using the dashboard's existing typeface and theme colors.
 @use 'theme-tokens' as *;
+@use 'widget-sizings' as sizings;
 
 .widget-proposed-agenda.widget {
   container-type: inline-size;
@@ -22,6 +23,35 @@
   .proposed-agenda-model { border-radius: 999px; }
   .proposed-agenda-regenerate { background: $color-bg-primary; border-color: $color-blue-light; color: $color-link; }
   .proposed-agenda-model > span:first-child { color: $color-link; }
+  // A one-cell widget stacks the date and priority. Two cells or wider places them on one row, vertically centered.
+  .proposed-agenda-overview {
+    border-bottom: 1px solid $color-border;
+    display: flex;
+    flex-direction: column;
+  }
+  @for $columns from 2 through sizings.$dashboard-grid-column-count {
+    &.horizontal-#{$columns}-cell .proposed-agenda-overview {
+      align-items: center;
+      flex-direction: row;
+      gap: $sp-lg;
+      justify-content: space-between;
+      // The widget body already insets the top by $sp-lg. Matching that below the row puts the
+      // date and priority midway between the header and the divider.
+      padding-bottom: $sp-lg;
+
+      > .proposed-agenda-date-control,
+      > .proposed-agenda-controls { min-width: 0; }
+      > .proposed-agenda-controls { padding: 0; }
+      .proposed-agenda-day-arrow,
+      .proposed-agenda-priority-select {
+        align-items: center;
+        display: inline-flex;
+        height: 32px;
+        justify-content: center;
+        line-height: 1;
+      }
+    }
+  }
   .proposed-agenda-date-control { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
   .proposed-agenda-day-arrow {
     background: $color-bg-card;
@@ -38,9 +68,8 @@
     border: 0;
     color: $color-text;
     display: inline-flex;
-    font-family: $font-serif;
-    font-size: $extra-large-heading-font-size;
-    font-weight: 700;
+    font-size: 22px;
+    font-weight: 500;
     gap: 10px;
     letter-spacing: -0.01em;
     line-height: 1.25;
@@ -53,7 +82,7 @@
   .proposed-agenda-relative-date { background: $color-bg-secondary; border-radius: 6px; color: $color-text-secondary; font-size: $smaller-font-size; font-weight: 500; padding: 2px 8px; }
   .proposed-agenda-today { background: none; border: 0; color: $color-link; font-size: $smaller-font-size; margin-left: auto; padding: 6px 0; }
   .proposed-agenda-day-summary { color: $color-text-muted; margin-top: 2px; }
-  .proposed-agenda-controls { align-items: center; border-bottom: 1px solid $color-border; display: flex; gap: 10px; padding: $sp-sm 0 $sp-md; }
+  .proposed-agenda-controls { align-items: center; display: flex; gap: 10px; padding: $sp-sm 0 $sp-md; }
   .proposed-agenda-priority-label, .proposed-agenda-priority-description { color: $color-text-muted; font-size: $smaller-font-size; }
   .proposed-agenda-priority-select {
     align-items: center;

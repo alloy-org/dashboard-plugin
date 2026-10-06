@@ -54,17 +54,17 @@ $provider-key-gate-message-width: 34rem;
       border-color: $color-blue;
       color: $color-blue;
     }
+  }
 
-    &--primary {
-      background: $color-blue;
-      border-color: $color-blue;
+  .provider-key-gate-button--primary {
+    background: $color-blue;
+    border-color: $color-blue;
+    color: $color-text-on-accent;
+
+    &:hover {
+      background: $color-blue-light;
+      border-color: $color-blue-light;
       color: $color-text-on-accent;
-
-      &:hover {
-        background: $color-blue-light;
-        border-color: $color-blue-light;
-        color: $color-text-on-accent;
-      }
     }
   }
 

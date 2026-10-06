@@ -28,7 +28,6 @@ export default function ProposedAgendaPriorityControl({ dateValue, onPriorityCha
   };
   return (
     <div className="proposed-agenda-controls">
-      <span className="proposed-agenda-priority-label">Priority</span>
       <button aria-expanded={ open } aria-haspopup="dialog" aria-label="Change agenda priority" className="proposed-agenda-priority-select"
         onClick={ () => setOpen(value => !value) } ref={ anchorRef } type="button">
         <span aria-hidden="true">◎</span>{ selected.displayLabel || selected.label }<span aria-hidden="true">⌄</span>

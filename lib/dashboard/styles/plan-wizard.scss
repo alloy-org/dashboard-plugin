@@ -233,12 +233,12 @@ $pace-slice-other-color: #e87ba4;
     height: 7px;
     opacity: 0.7;
     width: 7px;
+  }
 
-    &--current {
-      background: $color-success;
-      opacity: 1;
-      width: 24px;
-    }
+  .plan-wizard-step-dot--current {
+    background: $color-success;
+    opacity: 1;
+    width: 24px;
   }
 
   .plan-wizard-progress {
@@ -471,23 +471,23 @@ $pace-slice-other-color: #e87ba4;
         font-size: $smaller-font-size;
         margin-top: auto;
       }
+    }
 
-      &--work {
-        border-top: 4px solid $color-intent-work;
+    .intent-step-category--work {
+      border-top: 4px solid $color-intent-work;
 
-        .plan-button--dashed {
-          border-color: $color-intent-work;
-          color: $color-intent-work;
-        }
+      .plan-button--dashed {
+        border-color: $color-intent-work;
+        color: $color-intent-work;
       }
+    }
 
-      &--personal {
-        border-top: 4px solid $color-intent-personal;
+    .intent-step-category--personal {
+      border-top: 4px solid $color-intent-personal;
 
-        .plan-button--dashed {
-          border-color: $color-intent-personal;
-          color: $color-intent-personal;
-        }
+      .plan-button--dashed {
+        border-color: $color-intent-personal;
+        color: $color-intent-personal;
       }
     }
 
@@ -1268,12 +1268,12 @@ $pace-slice-other-color: #e87ba4;
       min-height: 52px;
       padding: $sp-sm;
       text-align: center;
+    }
 
-      &--selected {
-        border-color: $color-blue;
-        box-shadow: 0 0 0 1px $color-blue;
-        color: $color-navy;
-      }
+    .project-pace-choice--selected {
+      border-color: $color-blue;
+      box-shadow: 0 0 0 1px $color-blue;
+      color: $color-navy;
     }
 
     .project-pace-deadline {
@@ -1414,14 +1414,14 @@ $pace-slice-other-color: #e87ba4;
       &:hover {
         background: $color-bg-page-hover;
       }
+    }
 
-      &--selected {
+    .done-enough-condition--selected {
+      background: $color-blue-light;
+      border-color: $color-blue;
+
+      &:hover {
         background: $color-blue-light;
-        border-color: $color-blue;
-
-        &:hover {
-          background: $color-blue-light;
-        }
       }
     }
 
@@ -1516,14 +1516,14 @@ $pace-slice-other-color: #e87ba4;
 
     .done-enough-scene-hill {
       fill: $color-success;
+    }
 
-      &--far {
-        opacity: 0.25;
-      }
+    .done-enough-scene-hill--far {
+      opacity: 0.25;
+    }
 
-      &--near {
-        opacity: 0.45;
-      }
+    .done-enough-scene-hill--near {
+      opacity: 0.45;
     }
 
     .done-enough-preview-title {
@@ -1553,10 +1553,10 @@ $pace-slice-other-color: #e87ba4;
       font-size: $smaller-font-size;
       gap: $sp-xs;
       padding: 2px $sp-sm;
+    }
 
-      &--excluded {
-        font-style: italic;
-      }
+    .done-enough-signal--excluded {
+      font-style: italic;
     }
 
     .done-enough-signal-mark {
@@ -1588,13 +1588,13 @@ $pace-slice-other-color: #e87ba4;
       font-weight: 500;
       line-height: 1.45;
       text-align: left;
+    }
 
-      &--selected {
-        background: $color-blue-light;
-        border-color: $color-accent;
-        border-width: 2px;
-        color: $color-navy;
-      }
+    .quarter-name-idea--selected {
+      background: $color-blue-light;
+      border-color: $color-accent;
+      border-width: 2px;
+      color: $color-navy;
     }
 
     .quarter-name-custom {
@@ -1606,12 +1606,15 @@ $pace-slice-other-color: #e87ba4;
       gap: $sp-sm;
       min-height: $plan-wizard-input-min-height;
       padding: 0 $sp-md;
+    }
 
-      &--selected {
-        border-color: $color-accent;
-        border-style: solid;
-        border-width: 2px;
-      }
+    .quarter-name-custom--selected {
+      border-color: $color-accent;
+      border-style: solid;
+      border-width: 2px;
+    }
+
+    .quarter-name-custom {
 
       .quarter-name-custom-input {
         background: transparent;
@@ -1697,10 +1700,10 @@ $pace-slice-other-color: #e87ba4;
       &:active {
         cursor: grabbing;
       }
+    }
 
-      &--empty {
-        cursor: pointer;
-      }
+    .quarter-name-window-track--empty {
+      cursor: pointer;
     }
 
     .quarter-name-bar {
@@ -1713,34 +1716,34 @@ $pace-slice-other-color: #e87ba4;
       pointer-events: none;
       position: absolute;
       top: 4px;
+    }
 
-      &--0 {
-        background: $color-project-window-canary;
+    .quarter-name-bar--0 {
+      background: $color-project-window-canary;
 
-        .quarter-name-bar-handle {
-          color: $color-text;
-        }
+      .quarter-name-bar-handle {
+        color: $color-text;
       }
+    }
 
-      &--1 {
-        background: $color-project-window-orange;
-      }
+    .quarter-name-bar--1 {
+      background: $color-project-window-orange;
+    }
 
-      &--2 {
-        background: $color-project-window-red;
-      }
+    .quarter-name-bar--2 {
+      background: $color-project-window-red;
+    }
 
-      &--3 {
-        background: $color-project-window-purple;
-      }
+    .quarter-name-bar--3 {
+      background: $color-project-window-purple;
+    }
 
-      &--4 {
-        background: $color-project-window-teal;
-      }
+    .quarter-name-bar--4 {
+      background: $color-project-window-teal;
+    }
 
-      &--pulse {
-        animation: quarter-name-bar-pulse 420ms ease-out;
-      }
+    .quarter-name-bar--pulse {
+      animation: quarter-name-bar-pulse 420ms ease-out;
     }
 
     .quarter-name-bar-handle {
@@ -1949,10 +1952,10 @@ $pace-slice-other-color: #e87ba4;
     border-radius: 999px;
     height: 7px;
     width: 24px;
+  }
 
-    &--current {
-      background: $color-navy;
-    }
+  .progress-bar-dot--current {
+    background: $color-navy;
   }
 
   .progress-bar-position {
@@ -2135,13 +2138,13 @@ $pace-slice-other-color: #e87ba4;
     fill: none;
     stroke-width: 9;
     transition: opacity 120ms ease, stroke-width 120ms ease;
-
-    &--smallMoveMostDays { stroke: $pace-slice-small-move-color; }
-    &--twoFocusedBlocks { stroke: $pace-slice-two-blocks-color; }
-    &--oneSubstantialBlock { stroke: $pace-slice-one-block-color; }
-    &--deadlineSprint { stroke: $pace-slice-deadline-color; }
-    &--maintenanceOnly { stroke: $pace-slice-other-color; }
   }
+
+  .pace-breakdown-slice--smallMoveMostDays { stroke: $pace-slice-small-move-color; }
+  .pace-breakdown-slice--twoFocusedBlocks { stroke: $pace-slice-two-blocks-color; }
+  .pace-breakdown-slice--oneSubstantialBlock { stroke: $pace-slice-one-block-color; }
+  .pace-breakdown-slice--deadlineSprint { stroke: $pace-slice-deadline-color; }
+  .pace-breakdown-slice--maintenanceOnly { stroke: $pace-slice-other-color; }
 
   .pace-breakdown-slice--hovered { stroke-width: 11; }
   .pace-breakdown-slice--dimmed { opacity: 0.35; }

@@ -30,17 +30,17 @@
     padding: $sp-xs $sp-md;
     text-transform: uppercase;
     white-space: nowrap;
+  }
 
-    &--brand {
-      background: rgba(74, 158, 255, 0.12);
-      color: $color-blue;
-    }
+  .no-config-upsell-badge--brand {
+    background: rgba(74, 158, 255, 0.12);
+    color: $color-blue;
+  }
 
-    &--price {
-      border: 1px solid $color-border;
-      color: $color-text-secondary;
-      text-transform: none;
-    }
+  .no-config-upsell-badge--price {
+    border: 1px solid $color-border;
+    color: $color-text-secondary;
+    text-transform: none;
   }
 
   .no-config-upsell-headline {
@@ -121,17 +121,17 @@
     padding: $sp-sm $sp-lg;
     text-decoration: none;
     transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  }
 
-    &--primary:hover {
-      background: rgba(74, 158, 255, 0.12);
-      border-color: $color-blue;
-      color: $color-blue;
-    }
+  .no-config-upsell-button--primary:hover {
+    background: rgba(74, 158, 255, 0.12);
+    border-color: $color-blue;
+    color: $color-blue;
+  }
 
-    &--secondary:hover {
-      border-color: $color-blue;
-      color: $color-blue;
-    }
+  .no-config-upsell-button--secondary:hover {
+    border-color: $color-blue;
+    color: $color-blue;
   }
 
   .no-config-upsell-footnote {

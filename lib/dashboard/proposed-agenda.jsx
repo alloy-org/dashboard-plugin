@@ -369,10 +369,8 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
       <WidgetWrapper headerActions={ headerActions } subtitle="" widgetId={ WIDGET_ID }>
         <div className="proposed-agenda-overview">
           { dateControl }
-          <p className="proposed-agenda-day-summary">{ calendarCount } calendar { calendarCount === 1 ? "event" : "events" }
-            { " · " }{ rows.length } { dayGroups.length > 1 ? "items across this range" : "items on the day" }</p>
+          <ProposedAgendaPriorityControl dateValue={ dateValue } onPriorityChange={ onPriorityChange } priorityKey={ priorityKey } />
         </div>
-        <ProposedAgendaPriorityControl dateValue={ dateValue } onPriorityChange={ onPriorityChange } priorityKey={ priorityKey } />
         <div className="proposed-agenda-list" ref={ listRef }>
           { dayGroups.map(dayGroup => (
             <div className="proposed-agenda-day-group" key={ dayGroup.targetMidnightSeconds ?? "undated" }>

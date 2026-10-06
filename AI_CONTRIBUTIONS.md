@@ -5,6 +5,37 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-06 — Spell out parent-suffix class names in stylesheets
+
+**Model:** grok-4.7
+**Files modified:** `lib/dashboard/styles/config-popup.scss`, `lib/dashboard/styles/dashboard-layout-popup.scss`,
+`lib/dashboard/styles/dashboard-settings-popup.scss`, `lib/dashboard/styles/dashboard.scss`,
+`lib/dashboard/styles/day-sketch.scss`, `lib/dashboard/styles/debug-console.scss`,
+`lib/dashboard/styles/dream-task.scss`, `lib/dashboard/styles/graveyard.scss`,
+`lib/dashboard/styles/layout-picker.scss`, `lib/dashboard/styles/mood.scss`,
+`lib/dashboard/styles/no-config-upsell.scss`, `lib/dashboard/styles/note-editor.scss`,
+`lib/dashboard/styles/peak-hours.scss`, `lib/dashboard/styles/plan-wizard.scss`,
+`lib/dashboard/styles/planning.scss`, `lib/dashboard/styles/provider-key-gate.scss`,
+`lib/dashboard/styles/quarterly-plan-entry.scss`, `lib/dashboard/styles/task-domains.scss`.
+
+**Task:** Replace Sass parent-suffix selectors (`&--`, `&-`, and `&__`) with the full class name. A modifier that
+used to be nested only so `&` could borrow the parent name is now a sibling rule whose selector is written out, so
+the compiled selector is unchanged. `&:hover`, `&.another-class`, and a trailing `&` are unchanged.
+**Prompt summary:** "Let's remove all CSS that uses the &-convention in favor of explicitly writing out each class name"
+
+---
+
+## 2026-10-06 — Proposed Agenda overview row at width 2 or greater
+
+**Model:** grok-4.7
+**Files created/modified:**
+- `lib/dashboard/styles/proposed-agenda.scss` (modified) — `.proposed-agenda-overview` stacks the date and priority in one cell and, from two cells wide upward, lays them out in a vertically centered row with `justify-content: space-between`. The space under the header matches the space above the divider, and the day arrows and priority pill share one height. The divider under that band moves from `.proposed-agenda-controls` onto the overview so it spans both groups.
+
+**Task:** Lay out the elements inside the proposed agenda overview in a row with center vertical alignment when the widget width is 2 or greater.
+**Prompt summary:** "Let's revise the \"proposed-agenda-overview\" style definition such that the elements within it are laid out in a row with center vertical alignment when width is 2 or greater"
+
+---
+
 ## 2026-10-05 — Regenerate proposed agendas cached by older generation logic
 
 **Model:** claude-opus-5-5

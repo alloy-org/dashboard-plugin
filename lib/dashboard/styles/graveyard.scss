@@ -151,23 +151,20 @@
     border-top: 1px solid $color-tooltip-border;
     padding-top: $sp-sm;
   }
+  .graveyard-task-score--muted {
+    color: $color-tooltip-text-muted;
+  }
 
-  .graveyard-task-score {
-    &--muted {
-      color: $color-tooltip-text-muted;
-    }
+  .graveyard-task-score--cool {
+    color: $color-blue-light;
+  }
 
-    &--cool {
-      color: $color-blue-light;
-    }
+  .graveyard-task-score--warm {
+    color: $color-warning;
+  }
 
-    &--warm {
-      color: $color-warning;
-    }
-
-    &--hot {
-      color: $color-danger;
-    }
+  .graveyard-task-score--hot {
+    color: $color-danger;
   }
 
   .graveyard-task-score-dot {
@@ -204,18 +201,18 @@
     &:hover {
       text-decoration: underline;
     }
+  }
 
-    &--send:hover {
-      color: $color-danger;
-    }
+  .graveyard-task-action--send:hover {
+    color: $color-danger;
+  }
 
-    &--keep:hover {
-      color: $color-link;
-    }
+  .graveyard-task-action--keep:hover {
+    color: $color-link;
+  }
 
-    &--note:hover {
-      color: $color-blue;
-    }
+  .graveyard-task-action--note:hover {
+    color: $color-blue;
   }
 
   /* [OpenAI gpt-5.4] Task: tighten graveyard tooltip width and date text for compact 1-column cards */

@@ -117,13 +117,13 @@ $notebook-font: 'Segoe Script', 'Bradley Hand', 'Comic Sans MS', cursive, $font-
       background: $color-blue;
       color: $color-text-on-accent;
     }
+  }
 
-    &--disabled {
-      border-color: $color-text-muted;
-      color: $color-text-muted;
-      cursor: default;
-      opacity: 0.5;
-    }
+  .day-sketch-save-btn--disabled {
+    border-color: $color-text-muted;
+    color: $color-text-muted;
+    cursor: default;
+    opacity: 0.5;
   }
   // The notebook keeps its paper palette while following the host mode.
   @mixin dark-notebook {

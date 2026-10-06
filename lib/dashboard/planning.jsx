@@ -318,7 +318,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   const buildPlanAction = canStartWizard && !showPlanEntry && !checkingPlanProgress ? (
     <button className="widget-header-action" onClick={ () => setWizardPlan({ mirrorTarget: null,
       quarter: wizardQuarterPlan.quarter, year: wizardQuarterPlan.year }) } title={ buildPlanTitle } type="button">
-      ✨ Build plan
+      ✍️ Build plan
     </button>
   ) : null;
   const returnToCurrentAction = pageOffset !== 0 && currentPlan?.label ? (

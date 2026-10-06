@@ -87,17 +87,17 @@
     &:hover {
       border-color: $color-accent;
     }
+  }
 
-    &--active {
-      background: rgba(0, 0, 0, 0.03);
-      border-color: $color-accent;
-      border-style: solid;
-    }
+  .dashboard-settings-dropzone--active {
+    background: rgba(0, 0, 0, 0.03);
+    border-color: $color-accent;
+    border-style: solid;
+  }
 
-    &--uploading {
-      cursor: wait;
-      opacity: 0.7;
-    }
+  .dashboard-settings-dropzone--uploading {
+    cursor: wait;
+    opacity: 0.7;
   }
 
   .dashboard-settings-dropzone-input {

@@ -104,34 +104,36 @@ $quarter-toggle-size: 26px;
     &:hover {
       border-color: $color-blue;
     }
+  }
 
-    &--has-plan {
-      background: $color-plan-created-bg;
+  .quarter-card--has-plan {
+    background: $color-plan-created-bg;
+    border-color: $color-plan-created-border;
+    border-style: solid;
+
+    &:hover {
       border-color: $color-plan-created-border;
-      border-style: solid;
-
-      &:hover {
-        border-color: $color-plan-created-border;
-        filter: brightness(0.97);
-      }
+      filter: brightness(0.97);
     }
+  }
 
-    &--past:not(.quarter-card--unrecorded):not(.quarter-card--pending) {
-      background: $color-bg-page;
-      border-style: solid;
-    }
+  .quarter-card--past:not(.quarter-card--unrecorded):not(.quarter-card--pending) {
+    background: $color-bg-page;
+    border-style: solid;
+  }
 
-    &--pending,
-    &--unrecorded {
-      background: transparent;
-      border-style: dashed;
-      cursor: default;
+  .quarter-card--pending,
+  .quarter-card--unrecorded {
+    background: transparent;
+    border-style: dashed;
+    cursor: default;
 
-      &:hover { border-color: $color-border; }
-    }
+    &:hover { border-color: $color-border; }
+  }
 
-    &--unrecorded .quarter-status { color: $color-text-muted; }
+  .quarter-card--unrecorded .quarter-status { color: $color-text-muted; }
 
+  .quarter-card {
     .quarter-label-row {
       align-items: flex-start;
       display: flex;

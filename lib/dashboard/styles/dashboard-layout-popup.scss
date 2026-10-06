@@ -67,11 +67,11 @@
     border-radius: $radius-md;
     padding: $sp-xs;
     transition: border-color 0.15s ease, background 0.15s ease;
+  }
 
-    &--drag-over {
-      background: var(--dashboard-color-blue-light);
-      border-color: $color-accent;
-    }
+  .dashboard-layout-popup-section--drag-over {
+    background: var(--dashboard-color-blue-light);
+    border-color: $color-accent;
   }
 
   .dashboard-layout-popup-section-header {
@@ -121,15 +121,15 @@
     &:active {
       cursor: grabbing;
     }
+  }
 
-    &--dragging {
-      opacity: 0.35;
-    }
+  .dashboard-layout-popup-item--dragging {
+    opacity: 0.35;
+  }
 
-    &--drag-over {
-      background: $color-bg-card;
-      box-shadow: 0 -2px 0 $color-accent;
-    }
+  .dashboard-layout-popup-item--drag-over {
+    background: $color-bg-card;
+    box-shadow: 0 -2px 0 $color-accent;
   }
 
   .dashboard-layout-popup-item-handle {

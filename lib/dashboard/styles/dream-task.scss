@@ -88,35 +88,35 @@
   .dream-task-card-title {
     color: $color-navy;
     font-weight: 500;
+  }
 
-    &--clickable {
-      cursor: pointer;
+  .dream-task-card-title--clickable {
+    cursor: pointer;
 
-      &:hover {
-        color: $color-blue;
-        text-decoration: underline;
-      }
+    &:hover {
+      color: $color-blue;
+      text-decoration: underline;
     }
   }
 
   .dream-task-rating {
     border-radius: $radius-sm;
     flex-shrink: 0;
+  }
 
-    &--high {
-      background: rgba(34, 197, 94, 0.12);
-      color: $color-success;
-    }
+  .dream-task-rating--high {
+    background: rgba(34, 197, 94, 0.12);
+    color: $color-success;
+  }
 
-    &--medium {
-      background: rgba(234, 179, 8, 0.12);
-      color: $color-warning;
-    }
+  .dream-task-rating--medium {
+    background: rgba(234, 179, 8, 0.12);
+    color: $color-warning;
+  }
 
-    &--low {
-      background: rgba(239, 68, 68, 0.12);
-      color: $color-danger;
-    }
+  .dream-task-rating--low {
+    background: rgba(239, 68, 68, 0.12);
+    color: $color-danger;
   }
 
   /* [Claude] Task: visual distinction for invented (non-existing) task cards */

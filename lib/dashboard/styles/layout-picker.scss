@@ -44,14 +44,14 @@ $layout-picker-transition: 0.15s ease;
       cursor: not-allowed;
       opacity: 0.6;
     }
+  }
 
-    &--applying {
-      border-color: $color-accent;
-    }
+  .layout-picker-profile-button--applying {
+    border-color: $color-accent;
+  }
 
-    &--current {
-      border-color: color-mix(in srgb, $color-accent 50%, transparent);
-    }
+  .layout-picker-profile-button--current {
+    border-color: color-mix(in srgb, $color-accent 50%, transparent);
   }
 
   .layout-picker-profile-header {
@@ -79,10 +79,10 @@ $layout-picker-transition: 0.15s ease;
     color: $color-accent;
     font-size: $smaller-font-size;
     font-weight: 600;
+  }
 
-    &--current {
-      color: $color-text-muted;
-    }
+  .layout-picker-profile-action--current {
+    color: $color-text-muted;
   }
 
   .layout-picker-profile-description {
