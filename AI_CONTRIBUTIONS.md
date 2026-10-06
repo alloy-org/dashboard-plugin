@@ -5,6 +5,24 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-05 — Regenerate proposed agendas cached by older generation logic
+
+**Model:** claude-opus-5-5
+**Files modified:** `lib/dashboard/proposed-agenda-archive.js`, `lib/dashboard/proposed-agenda-suggest-action.js`,
+`test/proposed-agenda-archive.test.js`, `build/compiled.js` (regenerated).
+
+**Task:** Calendar "Suggest" still returned nothing after new-task ideas gained a destination noteUuid, because every
+day was a cache hit on a record stored before that fix: all of its entries were noteless ideas, so all were dropped.
+Stored records now carry `recordVersion` (`PROPOSED_AGENDA_RECORD_VERSION`, now 2). A record with a different or missing
+version is a cache miss, and the fresh generation replaces it. A version is used instead of treating noteless entries as
+stale, because invented travel activities can legitimately be stored without a note and would regenerate on every load.
+The "no suggestions produced" log now reports planned-day and dropped-noteless counts instead of the misleading
+"No plannable days in range".
+**Prompt summary:** "Which log line(s) should be expanded to ascertain what changes are needed..." then "Yes, those
+changes sound sensible" (cache invalidation + clearer no-suggestions log).
+
+---
+
 ## 2026-10-05 — Fill widget header bars with the host action color
 
 **Model:** claude-opus-5-5

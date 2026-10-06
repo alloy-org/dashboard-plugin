@@ -5,7 +5,7 @@
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
 import { setPluginData } from "plugin-data";
-import { loadCachedProposedAgenda as loadCachedProposedAgendaRecord, PROPOSED_TASK_STATUS,
+import { loadCachedProposedAgenda as loadCachedProposedAgendaRecord, PROPOSED_AGENDA_RECORD_VERSION, PROPOSED_TASK_STATUS,
   proposedAgendaNoteNameFromDate as proposedAgendaNoteName, proposedTaskKey,
   recentProposedTaskHistory as recentProposedTaskHistoryRecord,
   storeProposedAgenda as storeProposedAgendaRecord,
@@ -135,6 +135,22 @@ describe("proposed-agenda-archive", () => {
       .toBeNull();
     expect(await loadCachedProposedAgenda(app, { date: new Date(2026, 6, 1), priorityKey: PRIORITY,
       providerEm: PROVIDER })).toBeNull();
+  });
+
+  it("misses on a record stored by older generation logic, and replaces it when regenerated", async () => {
+    const app = buildNoteApp();
+    await storeProposedAgenda(app, { activities: [ACT_A], date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER });
+    const note = app._notes.find(n => n.name === proposedAgendaNoteNameFromDate(DATE));
+    const legacyRecords = storedRecords(app, DATE).map(({ recordVersion, ...legacyRecord }) => legacyRecord);
+    note.content = note.content.replace(/```json[\s\S]*?```/, `\`\`\`json\n${ JSON.stringify({ records: legacyRecords }) }\n\`\`\``);
+    expect(storedRecords(app, DATE)[0].recordVersion).toBeUndefined();
+    expect(await loadCachedProposedAgenda(app, { date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER })).toBeNull();
+
+    await storeProposedAgenda(app, { activities: [ACT_B], date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER });
+    expect(storedRecords(app, DATE)).toHaveLength(1);
+    expect(storedRecords(app, DATE)[0].recordVersion).toBe(PROPOSED_AGENDA_RECORD_VERSION);
+    const loaded = await loadCachedProposedAgenda(app, { date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER });
+    expect(loaded.activities.map(a => a.title)).toEqual(["Walk break"]);
   });
 
   it("replaces (does not duplicate) the record when the same date+priority+LLM is re-stored", async () => {
