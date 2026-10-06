@@ -245,6 +245,38 @@ describe("suggestScheduledTasksFromDashboard", () => {
     expect(overlapping).toEqual([]);
   });
 
+  // Amplenote gives a scheduled task its length through startAt→endAt, not a duration field, so a three-hour
+  // block must close every hour it spans rather than only the first one.
+  it("keeps suggestions clear of the whole span of a long scheduled task", async () => {
+    const { app } = buildApp();
+    const tomorrowMidnight = midnightSeconds(new Date()) + SECONDS_PER_DAY;
+    const committedStart = tomorrowMidnight + 9 * 60 * SECONDS_PER_MINUTE;
+    const committedEnd = committedStart + 3 * 60 * SECONDS_PER_MINUTE;
+    const scheduledTasks = [{ content: "Inbox triage", endAt: committedEnd, startAt: committedStart, uuid: "task-long" }];
+    const suggestions = await suggestScheduledTasksFromDashboard(app, { endAt: tomorrowMidnight + 17 * 60 * SECONDS_PER_MINUTE,
+      scheduledTasks, startAt: tomorrowMidnight + 8 * 60 * SECONDS_PER_MINUTE });
+
+    expect(promptsSent[0]).toContain("9:00am-12:00pm");
+    const overlapping = suggestions.filter(suggestion => suggestion.startAt < committedEnd && committedStart < suggestion.endAt);
+    expect(overlapping).toEqual([]);
+  });
+
+  // Meetings on a connected calendar occupy the day the same way scheduled tasks do.
+  it("keeps suggestions clear of external calendar events", async () => {
+    const { app } = buildApp();
+    const tomorrowMidnight = midnightSeconds(new Date()) + SECONDS_PER_DAY;
+    const meetingStart = tomorrowMidnight + 9 * 60 * SECONDS_PER_MINUTE;
+    const meetingEnd = meetingStart + 2 * 60 * SECONDS_PER_MINUTE;
+    app.getExternalCalendarEvents = jest.fn().mockResolvedValue([{ end: new Date(meetingEnd * 1000).toISOString(),
+      start: new Date(meetingStart * 1000).toISOString(), title: "Lean Coffee" }]);
+    const suggestions = await suggestScheduledTasksFromDashboard(app, { endAt: tomorrowMidnight + 17 * 60 * SECONDS_PER_MINUTE,
+      scheduledTasks: [], startAt: tomorrowMidnight + 8 * 60 * SECONDS_PER_MINUTE });
+
+    expect(promptsSent[0]).toContain("Lean Coffee");
+    const overlapping = suggestions.filter(suggestion => suggestion.startAt < meetingEnd && meetingStart < suggestion.endAt);
+    expect(overlapping).toEqual([]);
+  });
+
   // A model that forgets durationMinutes or reason must not produce a zero-length block or an empty
   // explanation, since both are part of what the user is being asked to affirm.
   it("substitutes a duration and an explanation when the model omits them", async () => {

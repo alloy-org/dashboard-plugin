@@ -5,6 +5,16 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-06 — Keep calendar suggestions clear of long tasks and calendar events
+
+**Model:** claude-opus-5-5
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda-obligations.js` — `_taskDurationMinutes` reads a scheduled task's length from its `startAt`→`endAt` span (falling back to a numeric `duration`), so tasks longer than 30 minutes occupy their whole span.
+- `lib/dashboard/proposed-agenda-suggest-action.js` — fetches external calendar events once per pass (`_externalCalendarEventsForDays`) and includes them in each day's obligations.
+- `test/proposed-agenda-date-range.test.js` — tests that suggestions avoid a three-hour scheduled task and an external calendar event.
+
+---
+
 ## 2026-10-06 — Publish calendar suggestions before their benefit rationale is written
 
 **Model:** claude-opus-5-5
