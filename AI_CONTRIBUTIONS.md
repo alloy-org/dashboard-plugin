@@ -5,6 +5,26 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-06 — Queue Plan Builder rankings across quarters
+
+**Model:** GPT-6 (Codex)
+**Files created/modified:**
+- `lib/hooks/use-project-task-ranking.js` — Retain Builder's selected quarter on the shared scheduler, recover and submit durable foreground reconciliation without the legacy delay, and keep scoped score notifications. Isolate the old pass behind durable-disabled mode.
+- `lib/dashboard/work-queue/dashboard-work-scheduler.js` — Admit explicitly retained consumer scopes through the existing budget, release abandoned scopes, and invalidate registrations when the primary scope changes.
+- `lib/dashboard/work-queue/durable-work-runner.js` — Qualify scheduler jobs, claims, and retries by scope; skip duplicate recovery admissions and protect reopened claims from late cancelled attempts.
+- `lib/dashboard/work-queue/prepared-day-ranking.js` — Match the captured scope and qualified scheduler key while awaiting daily preparation.
+- `lib/dashboard/work-queue/dashboard-work-features.js` — Describe queued Builder work for any selected quarter.
+- `test/dashboard-work-scopes.test.js` — New regression coverage for shared provider limits, identical scoped job keys, follow-ups, claims, cancellation/recovery, and independent retries.
+- `test/project-maintenance-queue-hooks.test.js` — Cover other-quarter submissions, provider-idle revisions, quarter/domain changes, scoped reloads, and unmount during recovery.
+- `test/day-preparation.test.js` — Verify another scope's matching daily job cannot resolve the wait.
+- `doc/plan-dashboard-work-queue.md` — Record the migration, verification, and remaining cleanup boundary.
+- `build/compiled.js` — Regenerate the production plugin.
+
+**Task:** Complete the next Phase 10 migration needed to retire legacy project maintenance loops.
+**Validation:** Full offline regression passed 138 suites / 1,262 tests (4 suites / 9 credential-gated tests skipped), followed by focused lifecycle checks and the production host smoke suite. `npm run build` passed. Browser/mobile acceptance remains pending.
+
+---
+
 ## 2026-10-06 — Align proposed agenda rationales with calendar explanations
 
 **Model:** GPT-6 (Codex)

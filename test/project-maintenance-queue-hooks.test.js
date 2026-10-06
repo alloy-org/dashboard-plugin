@@ -1,9 +1,10 @@
 // Verify how the Dashboard and Plan Builder hand project maintenance to the work queue: the Dashboard submits its
 // quarter's reconciliation once its load settles and again after a burst of task changes, and Plan Builder planning the
-// Dashboard's quarter submits the reconciliation as foreground work and re-reads scores as queued rankings complete,
+// selected quarter submits the reconciliation as foreground work and re-reads scores as queued rankings complete,
 // instead of running its own ranking pass. Once a visit's project jobs have finished and gone quiet, the Dashboard
 // prepares the day's shared ranking.
 import { jest } from "@jest/globals";
+import { createDashboardWorkRuntime } from "dashboard/work-queue/dashboard-work-runtime";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -23,29 +24,34 @@ const SCOPE_KEY = "work-domain:Q3 2026";
 // @returns {object} { listeners, work }.
 function fakeWork(scopeKey, { inFlight = 0 } = {}) {
   const listeners = [];
-  const durable = { submit: jest.fn(async request => request), submitAll: jest.fn(async requests => requests),
+  const durable = { recover: jest.fn(async () => 0), submit: jest.fn(async request => request), submitAll: jest.fn(async requests => requests),
     subscribeOutcomes: jest.fn(listener => {
       listeners.push(listener);
       return () => listeners.splice(listeners.indexOf(listener), 1);
     }) };
   const planner = { coverage: jest.fn(() => ({ inFlight })) };
-  return { listeners, work: { planner, runtime: { durable, scheduler: { scopeKey } } } };
+  const runtime = createDashboardWorkRuntime({ requestRun: () => {} });
+  runtime.scheduler.setScope(scopeKey);
+  return { listeners, work: { planner, runtime: { ...runtime, durable } } };
 }
 
 // ----------------------------------------------------------------------------------------------
 // @desc Render a component that calls a hook inside the Dashboard's work provider.
 // @param {function} useHook - The hook, called with no arguments.
 // @param {object} work - The work the provider supplies.
-// @returns {Promise<object>} { result, unmount }: result.current is the hook's latest return value.
+// @returns {Promise<object>} { render, result, unmount }: result.current is the hook's latest return value.
 async function renderHook(useHook, work) {
   const result = { current: null };
-  const Probe = () => {
+  // ----------------------------------------------------------------------------------------------
+  // @desc Read the hook under test on each render.
+  const HookProbe = () => {
     result.current = useHook();
     return null;
   };
   const root = createRoot(document.createElement("div"));
-  await act(async () => root.render(createElement(DashboardWorkProvider, { value: work }, createElement(Probe))));
-  return { result, unmount: () => act(() => root.unmount()) };
+  const render = () => act(async () => root.render(createElement(DashboardWorkProvider, { value: work }, createElement(HookProbe))));
+  await render();
+  return { render, result, unmount: () => act(() => root.unmount()) };
 }
 
 describe("project maintenance hooks", () => {
@@ -128,7 +134,6 @@ describe("project maintenance hooks", () => {
     const onRanked = jest.fn();
     const { unmount } = await renderHook(() => useProjectTaskRanking({ app, domainName: "Work", domainUuid: "work-domain",
       isAwaitingProvider: false, onRanked, quarter: 3, year: 2026 }), work);
-    await act(async () => jest.advanceTimersByTime(3000));
     expect(work.runtime.durable.submit).toHaveBeenCalledTimes(1);
     expect(work.runtime.durable.submit.mock.calls[0][0]).toMatchObject({ category: "foregroundData", scopeKey: SCOPE_KEY,
       type: "reconcileProjects" });
@@ -145,15 +150,84 @@ describe("project maintenance hooks", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Plan Builder planning another quarter leaves the Dashboard's queue alone.
-  it("leaves the queue alone when Plan Builder plans another quarter", async () => {
-    const { work } = fakeWork(SCOPE_KEY);
+  // @desc Another quarter uses the shared queue immediately, and closing Builder releases only its extra scope.
+  it("queues another quarter and reloads only that quarter's completed rankings", async () => {
+    const { listeners, work } = fakeWork(SCOPE_KEY);
+    const builderScope = "work-domain:Q4 2026";
     const app = { getTaskDomainTasks: jest.fn(async () => []) };
+    const onRanked = jest.fn();
     const { unmount } = await renderHook(() => useProjectTaskRanking({ app, domainName: "Work", domainUuid: "work-domain",
-      isAwaitingProvider: false, quarter: 4, year: 2026 }), work);
-    await act(async () => jest.advanceTimersByTime(3000));
-    expect(work.runtime.durable.submit).not.toHaveBeenCalled();
-    expect(work.runtime.durable.subscribeOutcomes).not.toHaveBeenCalled();
+      isAwaitingProvider: false, onRanked, quarter: 4, year: 2026 }), work);
+    expect(work.runtime.durable.submit).toHaveBeenCalledWith(expect.objectContaining({ category: "foregroundData",
+      input: { domainName: "Work", domainUuid: "work-domain", quarter: 4, year: 2026 }, scopeKey: builderScope }));
+    expect(work.runtime.scheduler.scopeKey).toBe(SCOPE_KEY);
+    expect(work.runtime.scheduler.acceptsScope(builderScope)).toBe(true);
+    expect(app.getTaskDomainTasks).not.toHaveBeenCalled();
+    await act(async () => {
+      for (const listener of listeners) listener({ jobType: "rankProjectTasks", scopeKey: SCOPE_KEY, status: "completed" });
+      jest.advanceTimersByTime(1000);
+    });
+    expect(onRanked).not.toHaveBeenCalled();
+    await act(async () => {
+      for (const listener of listeners) listener({ jobType: "rankProjectTasks", scopeKey: builderScope, status: "completed" });
+      jest.advanceTimersByTime(1000);
+    });
+    expect(onRanked).toHaveBeenCalledTimes(1);
     await unmount();
+    expect(work.runtime.scheduler.acceptsScope(builderScope)).toBe(false);
+    expect(work.runtime.scheduler.acceptsScope(SCOPE_KEY)).toBe(true);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Provider activity does not restart a legacy timer; repeated idle signals reuse the durable revision.
+  //   Switching the selected quarter submits fresh work and releases the former scope.
+  it("waits for provider idle and follows quarter changes without a once-per-mount guard", async () => {
+    const { work } = fakeWork(SCOPE_KEY);
+    const app = {};
+    let quarter = 4;
+    let isAwaitingProvider = true;
+    const { render, unmount } = await renderHook(() => useProjectTaskRanking({ app, domainName: "Work", domainUuid: "work-domain",
+      isAwaitingProvider, quarter, year: 2026 }), work);
+    expect(work.runtime.durable.submit).not.toHaveBeenCalled();
+    isAwaitingProvider = false;
+    await render();
+    const first = work.runtime.durable.submit.mock.calls[0][0];
+    isAwaitingProvider = true;
+    await render();
+    jest.advanceTimersByTime(5000);
+    isAwaitingProvider = false;
+    await render();
+    expect(work.runtime.durable.submit.mock.calls[1][0]).toEqual(first);
+    quarter = 2;
+    await render();
+    expect(work.runtime.scheduler.acceptsScope("work-domain:Q4 2026")).toBe(false);
+    expect(work.runtime.durable.submit.mock.calls[2][0].scopeKey).toBe("work-domain:Q2 2026");
+    await unmount();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Changing Dashboard domains cancels a Builder's registration even before its props or unmount catch up.
+  it("does not reclaim the previous domain after Dashboard switches domains", async () => {
+    const { work } = fakeWork(SCOPE_KEY);
+    const { unmount } = await renderHook(() => useProjectTaskRanking({ app: {}, domainName: "Work", domainUuid: "work-domain",
+      isAwaitingProvider: false, quarter: 4, year: 2026 }), work);
+    await act(async () => work.runtime.scheduler.setScope("home-domain:Q3 2026"));
+    expect(work.runtime.scheduler.acceptsScope("work-domain:Q4 2026")).toBe(false);
+    expect(work.runtime.durable.submit).toHaveBeenCalledTimes(1);
+    await unmount();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Closing Builder while its queue note is being read prevents a later reconciliation submission.
+  it("does not submit after unmount during recovery", async () => {
+    const { work } = fakeWork(SCOPE_KEY);
+    let finishRecovery;
+    work.runtime.durable.recover.mockImplementation(() => new Promise(resolve => { finishRecovery = resolve; }));
+    const { unmount } = await renderHook(() => useProjectTaskRanking({ app: {}, domainName: "Work", domainUuid: "work-domain",
+      isAwaitingProvider: false, quarter: 4, year: 2026 }), work);
+    await unmount();
+    await act(async () => finishRecovery(0));
+    expect(work.runtime.durable.submit).not.toHaveBeenCalled();
+    expect(work.runtime.scheduler.acceptsScope("work-domain:Q4 2026")).toBe(false);
   });
 });

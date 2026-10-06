@@ -978,11 +978,43 @@ writer, so that baseline retains the same project refresh state, idea identities
 linked goals, task snapshots, dictionary evidence, and daily rankings. Build the target source when rolling back.
 Being able to parse a note does not qualify an older writer to rewrite it without losing these fields.
 
-Cleanup remains a separate review boundary. `use-project-task-collection.js` and `collectProjectTasks` still serve
+At the October 4 stop point, cleanup remained a separate review boundary. `use-project-task-collection.js` and `collectProjectTasks` still served
 durable-disabled mode; `use-project-task-ranking.js` and `refreshStaleProjectRankings` still serve other Builder
 quarters as well as durable-disabled mode. `project-refresh-schedule.js` also supplies the active queue planner's
 staleness policy. None is unused. Remove their loops only after migrating these callers and completing the browser
 acceptance above; retain legacy-format readers. No cleanup commit or other commit was created by this work.
+
+#### Phase 10 Builder scope migration — October 6, 2026
+
+Plan Builder now uses the shared durable runner for any selected quarter in the Dashboard's current domain. Its
+mounted hook retains that quarter on the existing scheduler, without changing the Dashboard's primary scope or
+creating another provider budget. The queue recovers that quarter's unfinished jobs and submits reconciliation at
+foreground priority once Builder's provider is idle. Repeated idle signals reuse one request revision. The queued
+route has no three-second timer or once-per-mount guard; those remain only in the durable-disabled legacy adapter.
+Completed ranking notifications reload scores only for the Builder's quarter and are still debounced for one second.
+
+Closing Builder releases its extra scope and cancels its in-memory attempts, leaving unfinished durable records for
+reopening. The Dashboard's own scope remains admitted. A Dashboard domain/quarter change revokes all additional scope
+registrations; a Builder whose domain no longer matches cannot register the previous domain again. Deferred recovery
+cannot submit a new reconciliation after its consumer unmounts. Idea follow-ups retain maintenance priority and the
+existing overlay/load gates; an extra quarter's unfinished maintenance resumes when that scope is visited again.
+
+Durable scheduler identities, claims, and retry timers now include the queue scope. This prevents identical stored
+job keys in two quarters from coalescing, releasing each other's claims, or suppressing a retry. Stored job keys,
+queue schemas, project writers, and note formats are unchanged. Daily-preparation waiters also match their captured
+scope, so another quarter's outcome cannot complete their wait. Existing rollback documentation remains applicable.
+
+Verification: the full offline regression passed 138 suites / 1,262 tests, with 4 suites / 9 credential-gated tests
+skipped. Focused coverage verifies cross-quarter provider limits, scoped follow-ups and retries, recovery after closing
+Builder, late cancelled results, quarter/domain changes, and scope-specific score reloads. An additional hook test
+checks unmounting during asynchronous recovery. The production build and host smoke suite pass. Browser/mobile
+acceptance remains pending; this migration adds no browser latency measurements.
+
+The next cleanup boundary can remove the old loops after browser acceptance and changing durable-disabled mode to
+pause maintenance instead of selecting legacy writers. `refreshStaleProjectRankings` now serves only that disabled
+mode. Preserve `PROJECT_STALENESS_HOURS` and `projectNeedsRefresh` in a shared policy module before deleting the old
+refresh schedule, and preserve the queue's shared ranker and collection helpers. Retain legacy-format readers and
+the inline daily-ranking fallbacks used by widgets and Calendar. No commit was created.
 
 ### Integration map
 

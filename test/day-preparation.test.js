@@ -180,7 +180,8 @@ describe("preparedDayRankingAwaiter", () => {
   // @returns {object} { durable, emit }: emit reports an outcome to the subscribed listeners.
   function fakeDurable({ held = true, submit = jest.fn(async request => request) } = {}) {
     const listeners = new Set();
-    const durable = { scheduler: { holds: jest.fn(() => held), subscribe: jest.fn(() => () => {}) }, submit,
+    const durable = { scheduler: { holds: jest.fn(() => held), scopeKey: SCOPE_KEY, subscribe: jest.fn(() => () => {}) },
+      schedulerKey: (key, scopeKey) => JSON.stringify([scopeKey, key]), submit,
       subscribeOutcomes: listener => {
         listeners.add(listener);
         return () => listeners.delete(listener);
@@ -198,7 +199,9 @@ describe("preparedDayRankingAwaiter", () => {
     expect(durable.submit).toHaveBeenCalledWith(expect.objectContaining({ category: "foregroundData", desiredRevision: "7",
       key: "prepareDayRanking:work-domain:2026-09-17" }));
     emit({ jobKey: "prepareDayRanking:work-domain:2026-09-18", status: "completed" });
-    emit({ jobKey: "prepareDayRanking:work-domain:2026-09-17", status: "retryWaiting" });
+    emit({ jobKey: "prepareDayRanking:work-domain:2026-09-17", scopeKey: "another-scope", status: "completed" });
+    expect(listeners.size).toBe(1);
+    emit({ jobKey: "prepareDayRanking:work-domain:2026-09-17", scopeKey: SCOPE_KEY, status: "retryWaiting" });
     await expect(waiting).resolves.toEqual({ status: "retryWaiting" });
     expect(listeners.size).toBe(0);
     expect(preparedDayRankingAwaiter(null)).toBeNull();
