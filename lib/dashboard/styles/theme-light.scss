@@ -19,6 +19,11 @@
   --dashboard-color-blue-light: var(--color-background-action-medium-contrast, #e8edf5);
   --dashboard-color-border: var(--color-border-primary, #d8dde6);
   --dashboard-color-danger: var(--color-text-error-high-contrast, #e85353);
+  --dashboard-color-header-bg: var(--color-background-action-high-contrast, #3e92cc);
+  --dashboard-color-header-text: var(--color-text-button, #ffffff);
+  @supports (color: lab(from red l a b)) {
+    --dashboard-color-header-text: lab(from var(--dashboard-color-header-bg) clamp(0, (65.1 - l) * 1000, 100) 0 0);
+  }
   --dashboard-color-info: var(--color-text-link, #5b7bbf);
   --dashboard-color-intent-personal: #6b5ea8;
   --dashboard-color-intent-work: #4caf80;

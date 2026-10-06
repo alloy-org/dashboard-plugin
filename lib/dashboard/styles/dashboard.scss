@@ -240,9 +240,11 @@ $error-padding: 40px;
     max-width: 100%;
     overflow: hidden;
 
+    /* The host's action color fills the header bar; every control in it takes the paired header text color. */
     &-header {
       align-items: center;
-      border-bottom: 1px solid $color-border;
+      background: $color-header-bg;
+      color: $color-header-text;
       display: flex;
       gap: $sp-sm;
       padding: $sp-md $sp-lg;
@@ -263,7 +265,7 @@ $error-padding: 40px;
     /* [OpenAI gpt-5.4] Task: style the widget icon as a desktop focus-mode button */
     /* Prompt: "when the user clicks on the icon for a particular component" */
     &-icon-button {
-      background: color-mix(in srgb, $color-bg-page 60%, transparent);
+      background: color-mix(in srgb, $color-header-text 15%, transparent);
       border: 1px solid transparent;
       border-radius: 999px;
       cursor: pointer;
@@ -272,13 +274,13 @@ $error-padding: 40px;
       transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 
       &:hover {
-        background: color-mix(in srgb, $color-blue 12%, transparent);
-        border-color: color-mix(in srgb, $color-blue 28%, transparent);
+        background: color-mix(in srgb, $color-header-text 25%, transparent);
+        border-color: color-mix(in srgb, $color-header-text 40%, transparent);
       }
     }
 
     &-title {
-      color: $color-navy;
+      color: $color-header-text;
       display: flex;
       flex: 1;
       font-size: $default-font-size;
@@ -291,8 +293,9 @@ $error-padding: 40px;
       /* [Claude] Task: subtitle string displayed to the right of the widget title with lighter color */
       /* Prompt: "allow a subtitle as a string with lighter color text that resides to the right of the module title" */
       /* Date: 2026-03-14 | Model: claude-4.6-sonnet-medium-thinking */
+      /* Kept at full header-text strength: a dimmer tone would fall below 4.5:1 on Cabernet, Plum and Retro. */
       &__subtitle {
-        color: $color-text-muted;
+        color: $color-header-text;
         font-size: $smaller-font-size;
         font-weight: 400;
         letter-spacing: 0.01em;
@@ -307,13 +310,13 @@ $error-padding: 40px;
     &-header-action {
       background: none;
       border: none;
-      color: $color-text-secondary;
+      color: $color-header-text;
       cursor: pointer;
       font-size: $smaller-font-size;
       padding: $sp-xs $sp-sm;
 
       &:hover {
-        color: $color-navy;
+        text-decoration: underline;
       }
     }
 

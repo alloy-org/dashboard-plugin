@@ -165,17 +165,19 @@ $agenda-transition-duration: 0.12s;
     gap: $sp-xs;
   }
 
+  /* The pagination controls only render in the widget header bar. */
   .agenda-page-arrow {
     background: none;
     border: none;
-    color: $color-text-secondary;
+    border-radius: $radius-sm;
+    color: $color-header-text;
     cursor: pointer;
     font-size: $smaller-font-size;
     line-height: 1;
     padding: $agenda-page-arrow-padding $sp-xs;
 
     &:hover:not(:disabled) {
-      color: $color-navy;
+      background: color-mix(in srgb, $color-header-text 15%, transparent);
     }
 
     &:disabled {
@@ -185,7 +187,7 @@ $agenda-transition-duration: 0.12s;
   }
 
   .agenda-page-indicator {
-    color: $color-text-muted;
+    color: $color-header-text;
     font-size: $smaller-font-size;
     white-space: nowrap;
   }

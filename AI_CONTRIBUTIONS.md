@@ -5,6 +5,25 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-05 — Fill widget header bars with the host action color
+
+**Model:** claude-opus-5-5
+**Files modified:** `lib/dashboard/styles/theme-light.scss`, `lib/dashboard/styles/theme-tokens.scss`,
+`lib/dashboard/styles/dashboard.scss`, `lib/dashboard/styles/widget.scss`, `lib/dashboard/styles/agenda.scss`,
+`lib/dashboard/styles/debug-console.scss`, `lib/dashboard/styles/note-peek.scss`, `build/compiled.js` (regenerated).
+
+**Task:** Use `--color-background-action-high-contrast` as the widget header bar background. A survey of all 24
+ample-web themes found `--color-text-button` (the theme's own pairing) falls below 4.5:1 in Classic, Minimal, Pine,
+Retro and Sunburst Light, so header text is derived with CSS relative color syntax: pure black or white, split at CIELAB
+L* 65.1 where their APCA contrast is equal. The WCAG 2 crossover (L* 49.4) was tried first and rejected because it put
+black text on Classic's mid-tone blue, which APCA (and the user) rate as less legible than white. `--color-text-button` remains the fallback where relative
+color is unsupported. Header controls with transparent backgrounds (title, subtitle, configure and header-action links,
+icon button, agenda pagination, debug console buttons, note-peek title links, focus ring) now use the header text color.
+**Prompt summary:** "use color-background-action-high-contrast as the background color for the components ... find
+what text color can complement that background color with confident legibility" (scoped to the header bar by the user).
+
+---
+
 ## 2026-10-05 — Simplify host theme retrieval
 
 **Model:** GPT-6

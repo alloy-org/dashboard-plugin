@@ -112,14 +112,13 @@ $check-list-indent-step: 20px;
   }
 
   /* Title / note-name links in the header open the chosen note; they inherit the widget-title
-   * typography and only pick up a link color on hover so the bar still reads as a title. */
+   * typography and color, and only underline on hover, since the link color can match the header bar. */
   .note-peek-title-link {
     color: inherit;
     cursor: pointer;
     text-decoration: none;
 
     &:hover {
-      color: $color-link;
       text-decoration: underline;
     }
   }

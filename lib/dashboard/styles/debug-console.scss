@@ -59,25 +59,25 @@
     gap: 4px;
   }
 
+  /* Copy status and the header buttons sit on the widget header bar. */
   .debug-console__copy-status {
-    color: $color-text-muted;
+    color: $color-header-text;
     font-size: $smaller-font-size;
     padding: 4px 8px;
   }
 
   .debug-console__header-button {
     background: none;
-    border: 1px solid $color-border;
+    border: 1px solid color-mix(in srgb, $color-header-text 40%, transparent);
     border-radius: 3px;
-    color: $color-text-muted;
+    color: $color-header-text;
     cursor: pointer;
     font-size: $smaller-font-size;
     line-height: 1;
     padding: 2px 6px;
 
     &:hover {
-      background: $color-bg-page-hover;
-      color: $color-text;
+      background: color-mix(in srgb, $color-header-text 15%, transparent);
     }
 
     &:disabled {
