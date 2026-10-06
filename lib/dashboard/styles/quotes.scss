@@ -8,6 +8,14 @@
 
 $quote-tile-min-height: 150px;
 
+// A solid black ring drawn outside the white glyphs. The fill stays readable on a dark photo,
+// and the ring stays readable when the photo behind the letters is light.
+$quote-text-outline: -2px -2px 0 #000, -1px -2px 0 #000, 0 -2px 0 #000, 1px -2px 0 #000, 2px -2px 0 #000,
+  -2px -1px 0 #000, -1px -1px 0 #000, 0 -1px 0 #000, 1px -1px 0 #000, 2px -1px 0 #000,
+  -2px 0 0 #000, -1px 0 0 #000, 1px 0 0 #000, 2px 0 0 #000,
+  -2px 1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 1px 1px 0 #000, 2px 1px 0 #000,
+  -2px 2px 0 #000, -1px 2px 0 #000, 0 2px 0 #000, 1px 2px 0 #000, 2px 2px 0 #000;
+
 /* [Claude] Task: quote tile grid with background images and overlaid text */
 /* Prompt: "styles for quote tiles with background images and serif text" */
 /* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
@@ -28,7 +36,8 @@ $quote-tile-min-height: 150px;
     background-position: center;
     background-size: cover;
     border-radius: $radius-md;
-    color: $color-text-on-accent;
+    // White copy with the black ring above, so the same treatment reads on light and dark photos.
+    color: #fff;
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
@@ -36,15 +45,20 @@ $quote-tile-min-height: 150px;
     padding: $sp-xl $sp-lg;
 
     .quote-text {
-      font-size: $large-font-size;
+      color: #fff;
+      font-size: $medium-heading-font-size;
       font-style: italic;
-      line-height: 1.5;
+      font-weight: 600;
+      line-height: 1.35;
       margin: 0 0 $sp-sm 0;
+      text-shadow: $quote-text-outline;
     }
 
     .quote-author {
-      font-size: $smaller-font-size;
-      opacity: 0.85;
+      color: #fff;
+      font-size: $large-font-size;
+      font-weight: 600;
+      text-shadow: $quote-text-outline;
     }
   }
 
