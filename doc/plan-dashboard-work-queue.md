@@ -1049,6 +1049,81 @@ migration before this cleanup. The oldest documented compatible target remains `
 note schema, serializer, or output format, and the relevant project, queue, snapshot, daily-ranking, and dictionary
 storage modules are unchanged between those targets. No commit was created.
 
+#### Phase 10 browser acceptance — October 6, 2026
+
+Status: local desktop and responsive Chromium checks are now measured and the exercised queue behaviors pass.
+Full operational sign-off remains pending for native mobile performance, long-task attribution, actual React
+commit-phase duration, and provider token usage. Feature defaults are unchanged. No commits were created.
+
+The run used an isolated server at `http://localhost:3100`, preserving the original `localhost:3000` notebook and
+settings. A copied notebook was augmented with 90 deterministic markdown working notes and 720 persisted tasks
+across Work, Personal, and Side Projects. Including existing notes and fixtures, the app initialized with 225 markdown
+files and 1,682 tasks. Content includes old tasks edited recently, completed/dismissed work, future schedules,
+project evidence, markdown tables, and multiline Rich Footnotes containing prose and fenced JSON. Existing quarterly
+plans supplied five active projects; eight project themes appear in the generated content.
+
+Two development harness gaps were fixed before testing: file-backed notes now participate in domain note searches,
+and task completion/content edits/reopening persist across requests instead of reporting success without saving.
+Persisted fixture edits override their original task identity without duplicating it. Focused regression coverage
+exercises these behaviors through fresh app instances. These changes affect the development simulation only.
+
+Each comparison visit restored the same copied notebook, settings, moods, and cache state before navigation. Chromium
+was tested at its desktop viewport (1,907 × 1,367) and at 390 × 844. All four combinations of scheduled mounting and
+durable maintenance were exercised at both sizes. The enabled/disabled baseline comparisons were repeated twice.
+“First usable” means the domain refresh control and first rendered widget heading are present; it does not mean
+provider-backed suggestions have finished. These are small development-build samples, not production benchmarks.
+
+| Viewport | Both disabled, first usable samples | Both enabled, first usable samples | Disabled median | Enabled median |
+| --- | --- | --- | --- | --- |
+| Desktop | 842, 1,067 ms | 776, 710 ms | 955 ms | 743 ms |
+| Mobile-sized | 771, 736 ms | 638, 757 ms | 753 ms | 698 ms |
+
+Single independent-switch samples were 719 ms desktop / 617 ms mobile-sized with mounting alone, and 659 ms desktop /
+610 ms mobile-sized with maintenance alone. No first-usable regression was observed. This does not establish a
+statistically reliable percentage improvement. The first two seconds' long-task totals were 69 / 0 ms for enabled
+desktop versus 251 / 518 ms disabled, and 122 / 349 ms for enabled mobile-sized versus 118 / 307 ms disabled.
+The 349 ms task began about 1.26 seconds after navigation and was not accompanied by a comparably large React profiler
+render. It still needs a full browser trace to attribute its work; mobile interaction latency is not signed off.
+
+| Acceptance behavior | Browser evidence |
+| --- | --- |
+| Independent feature activation | All eight viewport/switch combinations render; disabled maintenance records no queued provider permits; disabling mounting preserves the maintenance runtime |
+| Load gate | Instrumented provider dispatch records zero maintenance admissions before the load gate across captures with provider measurements; the earliest desktop capture predates this instrumentation, but its scheduler events also begin maintenance after the gate |
+| Reserved foreground capacity | A foreground generative admission probe acquires the live budget in 0–1 ms while an actual maintenance operation holds the other generative permit; maintenance remains capped at one |
+| Cold and cached suggestions | Initial shared preparation and subsequent next-day agenda render complete; the preexisting cached Goal Coach remains readable; automated cold/cache regression suites pass |
+| Scrolling and mount permits | Desktop fast scrolling mounts all 17 widgets, released by commit; responsive fast scrolling skips out-of-range placeholders and admits newly visited widgets on reversal; no mount watchdog release is needed |
+| Overlay and layout | Plan Builder sets `overlayHeld: true`, clears it on cancel, and dashboard rendering resumes; a Shared Notes reorder is saved through the layout popup |
+| Missing observer | With IntersectionObserver deliberately unavailable, all 17 widget headings appear and the durable runtime's load gate still opens |
+| Coverage | Initial inspector shows five of five active projects refreshed and ranked; recovered visit shows five of five refreshed, no running/pending/failed work |
+| Transient error | An injected first maintenance-generation failure produces a failed outcome and later succeeds at attempt two |
+| Interrupted work | A controlled 30-second background delay allows navigation away with five claimed jobs; after their real two-minute leases expire, a restored checkpoint reopens and all five generation jobs complete at attempt two |
+| Export | Inspector Copy snapshot is verified by native paste into a cancelled debug prompt, without executing it; Download snapshot produces a parsed JSON file with the recovered session, 17 mounts, and zero jobs |
+| Production checks | Full offline regression passes 141 suites / 1,251 tests, with four suites / nine credential-gated tests skipped; production build and all seven host smoke tests pass |
+
+The admission probe measures the live browser resource budget, not an end-to-end generative cold-widget request.
+The cold widget paths and generative contention cases retain their automated regression evidence. Responsive Chromium
+still reports a desktop/high-tier device; it is not a native mobile browser or an iOS host WebView. React Profiler's
+`actualDuration` measures rendering, while mount admission-to-commit measures elapsed latency; neither is the actual
+commit-phase execution duration. Long-task entries and fetch timings are browser telemetry, not a full DevTools trace.
+The available browser capabilities expose viewport control but no trace recorder, and native Chrome inspection stalled
+before a trace could be recorded. Provider response bodies and token counts were not collected. These gaps prevent
+marking the complete operational acceptance criterion finished.
+
+Raw evidence is retained in `artifacts/phase-10/`: per-visit performance/queue snapshots, the actual downloaded
+`inspector-export.json`, `recovery-outcomes.json`, and reproducible `summary.json`. Captures retain destinations,
+timings, resource admissions, and sanitized queue fields; they contain no request headers, API keys, prompts, note
+bodies, or provider response bodies. The original live development data remains untouched.
+
+To reproduce, copy `notes/`, `dev/compiled/settings.json`, and `dev/compiled/moods.json` into a temporary baseline,
+run `node dev/seed-acceptance-notebook.js <baseline-notes-directory>`, and copy that baseline into a run directory.
+Start `dev/dev-server.js` with `DASHBOARD_ACCEPTANCE=true`, `DASHBOARD_DEV_PORT=3100`,
+`DASHBOARD_DEV_BUILD_PORT=3101`, `DASHBOARD_DEV_NOTES_DIR`, `DASHBOARD_DEV_SETTINGS_PATH`,
+`DASHBOARD_DEV_MOODS_PATH`, and `DASHBOARD_ACCEPTANCE_ARTIFACTS` pointing to the isolated run and artifact paths.
+Acceptance output defaults to `dev/compiled/phase10/`; the acceptance listener binds only to loopback. Navigate with
+`?mounting=on&maintenance=on&run=<unique-run-name>`, using `off` for either switch as needed. Optional controls are
+`observer=off`, `failure=once`, and `backgroundDelay=30000`. Use the Acceptance measurements control to export each
+visit, navigate away before restoring a baseline, and run `node dev/summarize-acceptance.js` to regenerate the summary.
+
 ### Integration map
 
 Concrete integration changes:

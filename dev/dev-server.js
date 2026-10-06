@@ -4,19 +4,20 @@
  * Task: Local dev server with esbuild watch + serve and SCSS compilation
  * Prompt summary: "dev server that bundles client-entry.js, compiles SCSS on rebuild, and serves on port 3000"
  */
+import { createLibImportsPlugin } from "../lib-imports-plugin.js";
+import { buildSentryLoaderScripts } from "../lib/util/sentry-loader.js";
+import { createScssPlugin } from "../scss-plugin.js";
+import { createAcceptanceBuildPlugin } from "./acceptance-build-plugin.js";
+import { createDevApp, DEFAULT_SETTINGS_PATH, readSettingsFile, writeSettingsFile } from "./dev-app.js";
+import { handleNoteDeleteApi } from "./dev-note-delete-api.js";
+import { handleTaskApi } from "./dev-task-api.js";
+import { handleDevThemeApi } from "./dev-theme-api.js";
 import dotenv from "dotenv";
 import esbuild from "esbuild";
-import path from "path";
 import fs from "fs";
 import http from "http";
+import path from "path";
 import { fileURLToPath } from "url";
-import { createLibImportsPlugin } from "../lib-imports-plugin.js";
-import { createScssPlugin } from "../scss-plugin.js";
-import { buildSentryLoaderScripts } from "../lib/util/sentry-loader.js";
-import { readSettingsFile, writeSettingsFile, DEFAULT_SETTINGS_PATH, createDevApp } from "./dev-app.js";
-import { handleNoteDeleteApi } from "./dev-note-delete-api.js";
-import { handleDevThemeApi } from "./dev-theme-api.js";
-import { handleTaskApi } from "./dev-task-api.js";
 
 dotenv.config();
 
@@ -332,6 +333,11 @@ function handleNoteAppendApi(req, res) {
 // @param {object} req - Node request; tag, query, and group arrive as query parameters.
 // @param {object} res - Node response, answered with an array of note handles.
 // @returns {boolean} Whether this handler took the request.
+// ----------------------------------------------------------------------------------------------
+// @desc Return notebook note handles matching query, domain, groups, and optional sort order.
+// @param {object} req - Note filter request.
+// @param {object} res - JSON response.
+// @returns {boolean} Whether the GET request was accepted.
 function handleNoteFilterApi(req, res) {
   if (req.method !== "GET") return false;
   const parsedUrl = new URL(req.url, "http://localhost");
@@ -343,7 +349,9 @@ function handleNoteFilterApi(req, res) {
   if (group) options.group = group;
   if (query) options.query = query;
   if (tag) options.tag = tag;
-  Promise.resolve(app.filterNotes(options)).then(handles => {
+  const taskDomainUUID = parsedUrl.searchParams.get("taskDomainUUID");
+  if (taskDomainUUID) options.taskDomainUUID = taskDomainUUID;
+  Promise.resolve(app.filterNotes(options, parsedUrl.searchParams.get("sortOrder") || "")).then(handles => {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify([...handles]));
   }).catch(err => {
@@ -376,6 +384,31 @@ function handleNoteFindApi(req, res) {
 }
 
 // ----------------------------------------------------------------------------------------------
+// @desc Save sanitized acceptance telemetry in the explicitly isolated server's artifact directory.
+// @param {object} req - Request containing only measurements emitted by the acceptance build.
+// @param {object} res - HTTP response.
+// @returns {void}
+function handleAcceptanceMetrics(req, res) {
+  let body = "";
+  req.on("data", chunk => { body += chunk; });
+  req.on("end", () => {
+    try {
+      const snapshot = JSON.parse(body);
+      const run = String(snapshot.run || "initial").replace(/[^a-zA-Z0-9-]/g, "-");
+      const directory = process.env.DASHBOARD_ACCEPTANCE_ARTIFACTS;
+      if (!directory) throw new Error("No acceptance artifact directory configured");
+      fs.mkdirSync(directory, { recursive: true });
+      fs.writeFileSync(path.join(directory, `${ run }.json`), JSON.stringify(snapshot, null, 2));
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end('{"ok":true}');
+    } catch (error) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: error.message }));
+    }
+  });
+}
+
+// ----------------------------------------------------------------------------------------------
 // @desc Serve dev/index.html with the shared Sentry loader injected into <head>, so the dev dashboard reports
 //   through the same path as the production embed rather than silently no-opping every capture. The snippet cannot
 //   simply live in index.html: it interpolates the DSN, which comes from .env and does not belong in a committed
@@ -399,17 +432,22 @@ function handleDevShell(res) {
   // Dev events land in the same Sentry project as production; the environment tag is what keeps them filterable.
   const loaderScripts = buildSentryLoaderScripts({ dsn: process.env.SENTRY_DSN || "", environment: "dashboard-dev" });
   const injectedHtml = loaderScripts ? html.replace("</head>", `${ loaderScripts }\n</head>`) : html;
+  const shellHtml = process.env.DASHBOARD_ACCEPTANCE === "true"
+    ? injectedHtml.replaceAll("/compiled/bundle", "/compiled/phase10/bundle").replace("</head>", '<script src="/acceptance-metrics.js"></script></head>') : injectedHtml;
   res.writeHead(200, { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" });
-  res.end(injectedHtml);
+  res.end(shellHtml);
   return true;
 }
 
+// ----------------------------------------------------------------------------------------------
+// @desc Start an optionally isolated development server with acceptance instrumentation only when requested.
+// @returns {Promise<void>} Resolves when the watch server has started.
 async function main() {
   const ctx = await esbuild.context({
     entryPoints: [path.join(rootDir, "lib/dashboard/dashboard-load.jsx")],
     bundle: true,
     format: "iife",
-    outdir: path.join(devDir, "compiled"),
+    outdir: process.env.DASHBOARD_DEV_OUTPUT_DIR || path.join(devDir, "compiled", process.env.DASHBOARD_ACCEPTANCE === "true" ? "phase10" : ""),
     entryNames: "bundle",
     define: {
       // Dev rebuilds happen on watch, but the define is fixed when the context is created, so this reports the date
@@ -425,7 +463,7 @@ async function main() {
     jsx: 'automatic',
     jsxImportSource: 'react',
     loader: { '.jsx': 'jsx' },
-    plugins: [createLibImportsPlugin(path.join(rootDir, "lib")), scssPlugin, liveReloadPlugin],
+    plugins: [...(process.env.DASHBOARD_ACCEPTANCE === "true" ? [createAcceptanceBuildPlugin()] : []), createLibImportsPlugin(path.join(rootDir, "lib")), scssPlugin, liveReloadPlugin],
   });
 
   await ctx.watch();
@@ -433,7 +471,8 @@ async function main() {
 
   const { host, port: esbuildPort } = await ctx.serve({
     servedir: devDir,
-    port: 3001,
+    ...(process.env.DASHBOARD_ACCEPTANCE === "true" ? { host: "127.0.0.1" } : {}),
+    port: Number(process.env.DASHBOARD_DEV_BUILD_PORT || 3001),
   });
 
   const proxyServer = http.createServer((req, res) => {
@@ -451,6 +490,10 @@ async function main() {
     }
 
     const requestPath = req.url.split("?")[0];
+    if (requestPath === "/api/acceptance-metrics" && req.method === "POST" && process.env.DASHBOARD_ACCEPTANCE === "true") {
+      handleAcceptanceMetrics(req, res);
+      return;
+    }
     if (requestPath === "/" || requestPath === "/index.html") {
       if (handleDevShell(res)) return;
     }
@@ -531,8 +574,8 @@ async function main() {
     req.pipe(proxyReq, { end: true });
   });
 
-  proxyServer.listen(3000, () => {
-    console.log("[dev] server running at http://localhost:3000");
+  proxyServer.listen(Number(process.env.DASHBOARD_DEV_PORT || 3000), process.env.DASHBOARD_ACCEPTANCE === "true" ? "127.0.0.1" : undefined, () => {
+    console.log(`[dev] server running at http://localhost:${ process.env.DASHBOARD_DEV_PORT || 3000 }`);
     console.log("[reload] live reload enabled");
     if (process.env.SENTRY_DSN) console.log('[sentry] reporting enabled, environment "dashboard-dev"');
     else console.log("[sentry] no SENTRY_DSN in .env; dashboard exceptions will not be reported");

@@ -14,9 +14,9 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const COMPILED_DIR = path.join(__dirname, "compiled");
-const DEFAULT_SETTINGS_PATH = path.join(COMPILED_DIR, "settings.json");
-const DEFAULT_MOODS_PATH = path.join(COMPILED_DIR, "moods.json");
-const NOTES_DIR = path.join(__dirname, "..", "notes");
+const DEFAULT_SETTINGS_PATH = process.env.DASHBOARD_DEV_SETTINGS_PATH || path.join(COMPILED_DIR, "settings.json");
+const DEFAULT_MOODS_PATH = process.env.DASHBOARD_DEV_MOODS_PATH || path.join(COMPILED_DIR, "moods.json");
+const NOTES_DIR = process.env.DASHBOARD_DEV_NOTES_DIR || path.join(__dirname, "..", "notes");
 
 const SAMPLE_DOMAINS = [
   { id: "domain-work-uuid",     name: "Work",          uuid: "domain-work-uuid",     notes: SAMPLE_NOTE_HANDLES["domain-work-uuid"] },
@@ -447,6 +447,17 @@ function _ensureMoodsFile(moodsPath = DEFAULT_MOODS_PATH) {
   return seed;
 }
 
+// ----------------------------------------------------------------------------------------------
+// @desc Merge persisted edits over fixture identities without emitting duplicate tasks.
+// @param {Array<object>} fixtureTasks - Built-in tasks.
+// @param {Array<object>} storedTasks - Persisted tasks and overrides.
+// @returns {Array<object>} Tasks with stored identities authoritative.
+function _mergedTasks(fixtureTasks, storedTasks) {
+  const tasksByUuid = new Map(fixtureTasks.map(task => [task.uuid, task]));
+  for (const task of storedTasks) tasksByUuid.set(task.uuid, task);
+  return [...tasksByUuid.values()];
+}
+
 // ---------------------------------------------------------------------------
 // Note File I/O
 // ---------------------------------------------------------------------------
@@ -658,6 +669,12 @@ function _noteHandleFromRecord(note) {
 // [Claude] Task: create an app object that mirrors the Amplenote plugin app interface for local dev
 // Prompt: "dev mode should persist settings to a JSON file and return sample tasks"
 // Date: 2026-03-01 | Model: claude-opus-4-6
+// ----------------------------------------------------------------------------------------------
+// @desc Construct a file-backed development app, with optional isolated notebook and settings paths.
+// @param {string} settingsPath - Settings JSON file.
+// @param {string} notesDir - Markdown and task storage directory.
+// @param {string} moodsPath - Mood JSON file.
+// @returns {object} Development app interface.
 export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NOTES_DIR, moodsPath = DEFAULT_MOODS_PATH) {
   const settings = readSettingsFile(settingsPath);
   const sampleTasks = _buildSampleTasks();
@@ -706,7 +723,7 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
     // @returns {Promise<Array<object>>} Tasks visible in that domain.
     async getTaskDomainTasks(domainUuid) {
       const data = readTaskData(notesDir);
-      if (!domainUuid) return [...sampleTasks, ...data.tasks];
+      if (!domainUuid) return _mergedTasks(sampleTasks, data.tasks);
       const tag = DOMAIN_TAG_MAP[domainUuid];
       if (!tag) return [];
       const explicitNoteUuids = data.domainNotes[domainUuid] || [];
@@ -714,7 +731,7 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       const matchingNotes = notes.filter(note => note.meta.tags?.includes(tag) || explicitNoteUuids.includes(note.meta.uuid));
       const matchingUuids = new Set(matchingNotes.map(note => note.meta.uuid));
       const storedTasks = data.tasks.filter(task => matchingUuids.has(task.noteUUID));
-      return [...sampleTasks, ...storedTasks];
+      return _mergedTasks(sampleTasks, storedTasks);
     },
 
     // ----------------------------------------------------------------------------------------------
@@ -724,14 +741,18 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
     // @returns {Promise<Array<object>>} Matching tasks.
     async getNoteTasks(noteHandle, { includeDone = false } = {}) {
       const uuid = typeof noteHandle === "string" ? noteHandle : noteHandle?.uuid;
-      const tasks = [...sampleTasks, ...readTaskData(notesDir).tasks];
+      const tasks = _mergedTasks(sampleTasks, readTaskData(notesDir).tasks);
       return tasks.filter(task => task.noteUUID === uuid && (includeDone || (task.completedAt == null && task.dismissedAt == null)));
     },
 
     // [Claude claude-sonnet-4-6] Task: stub getTask for graveyard/dream-task UUID lookups
     // Prompt: "app2.getTask is not a function in dev environment"
+    // ----------------------------------------------------------------------------------------------
+    // @desc Read a task identity from fixture or persisted notebook tasks.
+    // @param {string} uuid - Task identity.
+    // @returns {Promise<object|null>} Matching task or null.
     async getTask(uuid) {
-      return sampleTasks.find(t => t.uuid === uuid) || null;
+      return _mergedTasks(sampleTasks, readTaskData(notesDir).tasks).find(task => task.uuid === uuid) || null;
     },
 
     // [Claude] Task: serve mood ratings from file-backed store, seeding on first access
@@ -777,13 +798,24 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
     // Date: 2026-05-09 | Model: gpt-5.4
     // [Claude claude-opus-4-7] Task: return a sync array carrying Symbol.asyncIterator so callers can iterate the result directly or await it as an array, matching production filterNoteHandles
     // Prompt: "update our dev-app implementation of filterNotes to return a compatible iterator so that calls of filterNotes can iterate over it if they don't use its return value as an array"
+    // ----------------------------------------------------------------------------------------------
+    // @desc Search fixture and persisted domain notes, preserving group filters and sort order.
+    // @param {object} options - Query, tag, group, or taskDomainUUID filters.
+    // @param {string} sortOrder - Note ordering.
+    // @returns {Array<object>} Handles with an asynchronous iterator.
     filterNotes(options = {}, sortOrder = "") {
       const { group, query, taskDomainUUID } = options;
       let noteHandles;
       if (taskDomainUUID) {
         const domainHandles = (SAMPLE_NOTE_HANDLES[taskDomainUUID] || [])
           .filter(handle => noteHandleMatchesGroups(handle, group));
-        noteHandles = _sortFilteredNotes(domainHandles, query, sortOrder);
+        const membership = readTaskData(notesDir).domainNotes[taskDomainUUID] || [];
+        const files = _readAllNoteFiles(notesDir).filter(note => _noteFileMatchesGroup(note, group)
+          && (_noteFileHasTag(note, DOMAIN_TAG_MAP[taskDomainUUID]) || membership.includes(note.meta.uuid)));
+        const sampleUuids = new Set(domainHandles.map(handle => handle.uuid));
+        const fileHandles = files.map(_noteHandleFromRecord).filter(handle => !sampleUuids.has(handle.uuid)
+          && noteHandleMatchesGroups(handle, group));
+        noteHandles = _sortFilteredNotes([...domainHandles, ...fileHandles], query, sortOrder);
       } else {
         const matchingNotes = _readAllNoteFiles(notesDir)
           .filter(note => !query || note.meta.title === query)
@@ -932,6 +964,23 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       return uuid;
     },
 
+    // ----------------------------------------------------------------------------------------------
+    // @desc Persist task edits across requests; fixture edits become stored overrides of their original identity.
+    // @param {string} taskUuid - Existing task identity.
+    // @param {object} patch - Changed task fields.
+    // @returns {Promise<boolean>} Whether the task exists and was saved.
+    async updateTask(taskUuid, patch) {
+      const data = readTaskData(notesDir);
+      const storedIndex = data.tasks.findIndex(task => task.uuid === taskUuid);
+      const task = storedIndex >= 0 ? data.tasks[storedIndex] : sampleTasks.find(record => record.uuid === taskUuid);
+      if (!task) return false;
+      const updated = { ...task, ...patch, updatedAt: Math.floor(Date.now() / 1000), uuid: taskUuid };
+      if (storedIndex >= 0) data.tasks[storedIndex] = updated;
+      else data.tasks.push(updated);
+      writeTaskData(data, notesDir);
+      return true;
+    },
+
     // [Claude] Task: read note content from a file in the /notes directory
     // Prompt: "when app.findNote is called, loop over each of the files in the notes directory"
     // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
@@ -991,13 +1040,6 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       fs.writeFileSync(filePath, buffer);
       console.log(`[dev-app] attachNoteMedia saved ${filename} (${buffer.length} bytes)`);
       return `/${filename}`;
-    },
-
-    // [Claude claude-sonnet-4-6] Task: stub updateTask for graveyard widget dev mode
-    // Prompt: "add graveyard.js component..."
-    async updateTask(taskUuid, patch) {
-      console.log('[dev-app] updateTask', taskUuid, patch);
-      return true;
     },
 
     async openSidebarEmbed() { return true; },

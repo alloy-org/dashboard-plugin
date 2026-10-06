@@ -1,5 +1,5 @@
 // Bridge the browser development app's note-task operations to its file-backed app implementation.
-const TASK_ACTIONS = new Set(["addTaskDomainNote", "getNoteTasks", "insertTask"]);
+const TASK_ACTIONS = new Set(["addTaskDomainNote", "getNoteTasks", "insertTask", "updateTask"]);
 
 // ----------------------------------------------------------------------------------------------
 // @desc Dispatch supported note-task operations and report failures without pretending a write succeeded.

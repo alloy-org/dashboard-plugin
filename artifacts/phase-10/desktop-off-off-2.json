@@ -1,0 +1,1183 @@
+{
+  "capturedAt": 1791315086322,
+  "measurements": {
+    "commits": [
+      {
+        "actualDuration": 0.6999998092651367,
+        "baseDuration": 0.5999999046325684,
+        "commitTime": 667.2999997138977,
+        "id": "dashboard",
+        "phase": "mount",
+        "startTime": 666.5
+      },
+      {
+        "actualDuration": 0.20000028610229492,
+        "baseDuration": 0.20000028610229492,
+        "commitTime": 669.5,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 669.2999997138977
+      },
+      {
+        "actualDuration": 4.199999809265137,
+        "baseDuration": 3.3999996185302734,
+        "commitTime": 971.2999997138977,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 967
+      },
+      {
+        "actualDuration": 9.800000190734863,
+        "baseDuration": 8.200000762939453,
+        "commitTime": 992.0999999046326,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 982.2999997138977
+      },
+      {
+        "actualDuration": 1,
+        "baseDuration": 0.8000001907348633,
+        "commitTime": 1005.2999997138977,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1004.0999999046326
+      },
+      {
+        "actualDuration": 41.40000009536743,
+        "baseDuration": 34.79999923706055,
+        "commitTime": 1055.1999998092651,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1013.5999999046326
+      },
+      {
+        "actualDuration": 1.5,
+        "baseDuration": 34.79999876022339,
+        "commitTime": 1079.7999997138977,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1078.1999998092651
+      },
+      {
+        "actualDuration": 3.3999996185302734,
+        "baseDuration": 35.099998474121094,
+        "commitTime": 1090.9000000953674,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1087.4000000953674
+      },
+      {
+        "actualDuration": 29.59999990463257,
+        "baseDuration": 28.799999713897705,
+        "commitTime": 1128.5,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1098.5999999046326
+      },
+      {
+        "actualDuration": 25.299999713897705,
+        "baseDuration": 24.59999942779541,
+        "commitTime": 1156.6999998092651,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1131.4000000953674
+      },
+      {
+        "actualDuration": 0,
+        "baseDuration": 24.499999046325684,
+        "commitTime": 1163,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1162.9000000953674
+      },
+      {
+        "actualDuration": 0,
+        "baseDuration": 24.499999046325684,
+        "commitTime": 1168.1999998092651,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1168.0999999046326
+      },
+      {
+        "actualDuration": 1,
+        "baseDuration": 24.899999141693115,
+        "commitTime": 1174.1999998092651,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1173.1999998092651
+      },
+      {
+        "actualDuration": 0.5999999046325684,
+        "baseDuration": 24.69999933242798,
+        "commitTime": 1175.7999997138977,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1175.0999999046326
+      },
+      {
+        "actualDuration": 0.8999996185302734,
+        "baseDuration": 25.599998950958252,
+        "commitTime": 1186.2999997138977,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1185.4000000953674
+      },
+      {
+        "actualDuration": 0.5999999046325684,
+        "baseDuration": 24.999999523162842,
+        "commitTime": 1206.5999999046326,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1205.9000000953674
+      },
+      {
+        "actualDuration": 0.2999997138977051,
+        "baseDuration": 25.09999942779541,
+        "commitTime": 1208.1999998092651,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1207.9000000953674
+      },
+      {
+        "actualDuration": 0.20000028610229492,
+        "baseDuration": 25.19999933242798,
+        "commitTime": 1256.4000000953674,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1256.1999998092651
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 25.19999933242798,
+        "commitTime": 1262.2999997138977,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1262.1999998092651
+      },
+      {
+        "actualDuration": 0,
+        "baseDuration": 25.09999942779541,
+        "commitTime": 1273.5,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1273.2999997138977
+      },
+      {
+        "actualDuration": 0.6999998092651367,
+        "baseDuration": 25.59999942779541,
+        "commitTime": 1277.1999998092651,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1276.4000000953674
+      },
+      {
+        "actualDuration": 1.299999713897705,
+        "baseDuration": 26.59999942779541,
+        "commitTime": 1284.7999997138977,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1283.5
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 26.69999933242798,
+        "commitTime": 1308,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1307.9000000953674
+      },
+      {
+        "actualDuration": 1.9000000953674316,
+        "baseDuration": 28.09999990463257,
+        "commitTime": 1318.5999999046326,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1316.2999997138977
+      },
+      {
+        "actualDuration": 0.19999980926513672,
+        "baseDuration": 26.69999933242798,
+        "commitTime": 1321.1999998092651,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1321
+      },
+      {
+        "actualDuration": 0.3000001907348633,
+        "baseDuration": 26.69999933242798,
+        "commitTime": 1330.5,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1330.0999999046326
+      },
+      {
+        "actualDuration": 0,
+        "baseDuration": 26.69999933242798,
+        "commitTime": 1332,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1331.9000000953674
+      },
+      {
+        "actualDuration": 18.499999523162842,
+        "baseDuration": 40.59999895095825,
+        "commitTime": 1370.2999997138977,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1351.5999999046326
+      },
+      {
+        "actualDuration": 0.3000001907348633,
+        "baseDuration": 40.79999876022339,
+        "commitTime": 1446,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1445.5
+      },
+      {
+        "actualDuration": 16.200000286102295,
+        "baseDuration": 43.90000057220459,
+        "commitTime": 1468.0999999046326,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1451.7999997138977
+      },
+      {
+        "actualDuration": 0.5,
+        "baseDuration": 44.10000038146973,
+        "commitTime": 1490.7999997138977,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1490.2999997138977
+      },
+      {
+        "actualDuration": 0.20000028610229492,
+        "baseDuration": 44.000000953674316,
+        "commitTime": 1498.4000000953674,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1498.1999998092651
+      },
+      {
+        "actualDuration": 0.3000001907348633,
+        "baseDuration": 44.000000953674316,
+        "commitTime": 1518.5999999046326,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1517.1999998092651
+      },
+      {
+        "actualDuration": 0.19999980926513672,
+        "baseDuration": 43.90000057220459,
+        "commitTime": 1562.6999998092651,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1562.5
+      },
+      {
+        "actualDuration": 0.3000001907348633,
+        "baseDuration": 43.90000057220459,
+        "commitTime": 1599.4000000953674,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1598.7999997138977
+      },
+      {
+        "actualDuration": 0.40000009536743164,
+        "baseDuration": 44.10000038146973,
+        "commitTime": 1605.2999997138977,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1604.7999997138977
+      },
+      {
+        "actualDuration": 0.20000028610229492,
+        "baseDuration": 43.90000104904175,
+        "commitTime": 1606.5,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1606.1999998092651
+      },
+      {
+        "actualDuration": 0.19999980926513672,
+        "baseDuration": 43.90000057220459,
+        "commitTime": 1614.2999997138977,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1613.9000000953674
+      },
+      {
+        "actualDuration": 0.5,
+        "baseDuration": 44.000000953674316,
+        "commitTime": 1648.7999997138977,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1648.1999998092651
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 43.90000057220459,
+        "commitTime": 1653.6999998092651,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1653.4000000953674
+      },
+      {
+        "actualDuration": 0.5,
+        "baseDuration": 44.000000953674316,
+        "commitTime": 1670.7999997138977,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1670.0999999046326
+      },
+      {
+        "actualDuration": 0.20000028610229492,
+        "baseDuration": 43.90000104904175,
+        "commitTime": 1682.5999999046326,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1682.0999999046326
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 43.90000057220459,
+        "commitTime": 1931.2999997138977,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1931.1999998092651
+      },
+      {
+        "actualDuration": 0.19999980926513672,
+        "baseDuration": 44.00000047683716,
+        "commitTime": 1933.7999997138977,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1933.5
+      },
+      {
+        "actualDuration": 0.10000038146972656,
+        "baseDuration": 43.90000104904175,
+        "commitTime": 1949.4000000953674,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1949.1999998092651
+      },
+      {
+        "actualDuration": 0.20000028610229492,
+        "baseDuration": 43.90000057220459,
+        "commitTime": 1964.5999999046326,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1964.2999997138977
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 43.90000057220459,
+        "commitTime": 1987.0999999046326,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1986.9000000953674
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 43.90000057220459,
+        "commitTime": 1997.9000000953674,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1997.5999999046326
+      },
+      {
+        "actualDuration": 0.10000038146972656,
+        "baseDuration": 43.80000066757202,
+        "commitTime": 2016.9000000953674,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 2016.6999998092651
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 43.80000066757202,
+        "commitTime": 2032.5999999046326,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 2032.5
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 43.90000057220459,
+        "commitTime": 2051.5999999046326,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 2051.199999809265
+      },
+      {
+        "actualDuration": 0.20000028610229492,
+        "baseDuration": 44.000000953674316,
+        "commitTime": 2066,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 2065.7999997138977
+      },
+      {
+        "actualDuration": 0.19999980926513672,
+        "baseDuration": 43.90000057220459,
+        "commitTime": 2080.7999997138977,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 2080.4000000953674
+      },
+      {
+        "actualDuration": 0.19999980926513672,
+        "baseDuration": 43.90000057220459,
+        "commitTime": 2098.2999997138977,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 2098.0999999046326
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 43.80000066757202,
+        "commitTime": 2115.5,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 2115.199999809265
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 43.80000066757202,
+        "commitTime": 2131.4000000953674,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 2131.199999809265
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 43.90000057220459,
+        "commitTime": 2148.5999999046326,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 2148.4000000953674
+      },
+      {
+        "actualDuration": 0.10000038146972656,
+        "baseDuration": 43.80000066757202,
+        "commitTime": 2164.9000000953674,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 2164.699999809265
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 43.90000057220459,
+        "commitTime": 2181.5999999046326,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 2181.4000000953674
+      },
+      {
+        "actualDuration": 0.20000028610229492,
+        "baseDuration": 43.90000104904175,
+        "commitTime": 2201,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 2200.7999997138977
+      },
+      {
+        "actualDuration": 0.19999980926513672,
+        "baseDuration": 43.90000057220459,
+        "commitTime": 2216.199999809265,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 2215.9000000953674
+      },
+      {
+        "actualDuration": 0.2999997138977051,
+        "baseDuration": 43.90000057220459,
+        "commitTime": 2235.2999997138977,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 2235
+      },
+      {
+        "actualDuration": 0.20000028610229492,
+        "baseDuration": 43.90000104904175,
+        "commitTime": 2248.5,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 2248.199999809265
+      },
+      {
+        "actualDuration": 0.19999980926513672,
+        "baseDuration": 43.90000057220459,
+        "commitTime": 2269.2999997138977,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 2269
+      },
+      {
+        "actualDuration": 52.90000057220459,
+        "baseDuration": 62.50000238418579,
+        "commitTime": 8165.099999904633,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 8094.699999809265
+      }
+    ],
+    "conditions": [],
+    "firstUsableMilliseconds": 1067,
+    "longTasks": [
+      {
+        "duration": 142,
+        "startTime": 679.5999999046326
+      },
+      {
+        "duration": 54,
+        "startTime": 1013.5999999046326
+      },
+      {
+        "duration": 76,
+        "startTime": 1351.5
+      },
+      {
+        "duration": 246,
+        "startTime": 1684
+      },
+      {
+        "duration": 153,
+        "startTime": 8094.599999904633
+      }
+    ],
+    "providerPermits": [],
+    "requests": [
+      {
+        "destination": "/api/theme-styles",
+        "finishedAt": 677.4000000953674,
+        "startedAt": 665.5999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/settings",
+        "finishedAt": 679.4000000953674,
+        "startedAt": 665.7999997138977,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 877.1999998092651,
+        "startedAt": 860.1999998092651,
+        "status": 200
+      },
+      {
+        "destination": "/api/moods",
+        "finishedAt": 914.5,
+        "startedAt": 903.5999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 942.1999998092651,
+        "startedAt": 917.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 952.5,
+        "startedAt": 917.2999997138977,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 978.2999997138977,
+        "startedAt": 966.5999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/moods",
+        "finishedAt": 1002.5999999046326,
+        "startedAt": 980.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1013,
+        "startedAt": 981.1999998092651,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1013.1999998092651,
+        "startedAt": 981.2999997138977,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1073.2999997138977,
+        "startedAt": 981.2999997138977,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1013.1999998092651,
+        "startedAt": 981.5999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1071.9000000953674,
+        "startedAt": 981.5999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1071.7999997138977,
+        "startedAt": 981.6999998092651,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1073.5,
+        "startedAt": 981.7999997138977,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1073.4000000953674,
+        "startedAt": 981.7999997138977,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1073.5,
+        "startedAt": 982,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1087,
+        "startedAt": 982,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1086.5,
+        "startedAt": 982.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1086.6999998092651,
+        "startedAt": 982.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1087.1999998092651,
+        "startedAt": 982.1999998092651,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1087,
+        "startedAt": 982.1999998092651,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1087.0999999046326,
+        "startedAt": 1005.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 1130.1999998092651,
+        "startedAt": 1073.6999998092651,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 1096.7999997138977,
+        "startedAt": 1073.6999998092651,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 1165.7999997138977,
+        "startedAt": 1073.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 1159.5,
+        "startedAt": 1073.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1130.1999998092651,
+        "startedAt": 1074,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1159.2999997138977,
+        "startedAt": 1074.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1130.2999997138977,
+        "startedAt": 1075.4000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1130.2999997138977,
+        "startedAt": 1075.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1159.5,
+        "startedAt": 1075.6999998092651,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1168.9000000953674,
+        "startedAt": 1075.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1159.4000000953674,
+        "startedAt": 1075.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1159.5,
+        "startedAt": 1076.6999998092651,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1177,
+        "startedAt": 1077.1999998092651,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1186.5999999046326,
+        "startedAt": 1165.1999998092651,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1178.5,
+        "startedAt": 1165.4000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1186.6999998092651,
+        "startedAt": 1165.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1205.6999998092651,
+        "startedAt": 1165.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1194.6999998092651,
+        "startedAt": 1168.6999998092651,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1205.6999998092651,
+        "startedAt": 1168.7999997138977,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1205.5999999046326,
+        "startedAt": 1176.7999997138977,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1207.7999997138977,
+        "startedAt": 1180.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1209,
+        "startedAt": 1185.2999997138977,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1214.2999997138977,
+        "startedAt": 1201.6999998092651,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1256.1999998092651,
+        "startedAt": 1201.6999998092651,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1256.6999998092651,
+        "startedAt": 1209.6999998092651,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1256.6999998092651,
+        "startedAt": 1210.1999998092651,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1256.7999997138977,
+        "startedAt": 1210.2999997138977,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1257.4000000953674,
+        "startedAt": 1210.2999997138977,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1256.7999997138977,
+        "startedAt": 1214,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1257.4000000953674,
+        "startedAt": 1216.7999997138977,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1257.4000000953674,
+        "startedAt": 1216.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1257.4000000953674,
+        "startedAt": 1217,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1267.6999998092651,
+        "startedAt": 1217,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1275.9000000953674,
+        "startedAt": 1217,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 1274.5999999046326,
+        "startedAt": 1255.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1280,
+        "startedAt": 1267.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1286.7999997138977,
+        "startedAt": 1268,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1286.7999997138977,
+        "startedAt": 1268,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1312.0999999046326,
+        "startedAt": 1268,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1291.2999997138977,
+        "startedAt": 1268,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 1308.4000000953674,
+        "startedAt": 1272.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/moods",
+        "finishedAt": 1322,
+        "startedAt": 1273.1999998092651,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1312.9000000953674,
+        "startedAt": 1280.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 1321.9000000953674,
+        "startedAt": 1308.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1323.7999997138977,
+        "startedAt": 1312.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1330.5,
+        "startedAt": 1320.5999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1343.5,
+        "startedAt": 1329.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1349.2999997138977,
+        "startedAt": 1331.7999997138977,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1349.4000000953674,
+        "startedAt": 1343.2999997138977,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1554.2999997138977,
+        "startedAt": 1448.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 1612.2999997138977,
+        "startedAt": 1603,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1618.5,
+        "startedAt": 1616.2999997138977,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 1627.5999999046326,
+        "startedAt": 1620.1999998092651,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 1632.9000000953674,
+        "startedAt": 1620.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1666.9000000953674,
+        "startedAt": 1652.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1679.7999997138977,
+        "startedAt": 1675.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1939.4000000953674,
+        "startedAt": 1930.2999997138977,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1943.7999997138977,
+        "startedAt": 1941.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1958,
+        "startedAt": 1948.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1964.0999999046326,
+        "startedAt": 1960.7999997138977,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1989.4000000953674,
+        "startedAt": 1985.5999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 2002.9000000953674,
+        "startedAt": 1995.7999997138977,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 2005,
+        "startedAt": 2003.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 2025.5999999046326,
+        "startedAt": 2015.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 2032.1999998092651,
+        "startedAt": 2029.6999998092651,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 2058.4000000953674,
+        "startedAt": 2050,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 2060.5999999046326,
+        "startedAt": 2058.7999997138977,
+        "status": 200
+      },
+      {
+        "destination": "aged-sunset-proxy.amplenote.workers.dev",
+        "finishedAt": 2284.5,
+        "startedAt": 2062.7999997138977,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 2300.5999999046326,
+        "startedAt": 2286.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 2308.4000000953674,
+        "startedAt": 2301,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 2321.5,
+        "startedAt": 2317.7999997138977,
+        "status": 200
+      },
+      {
+        "destination": "api.openai.com",
+        "finishedAt": 8018.299999713898,
+        "startedAt": 2333.4000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 8036.799999713898,
+        "startedAt": 8023.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 8041.900000095367,
+        "startedAt": 8037.299999713898,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 8062,
+        "startedAt": 8056.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 8076.099999904633,
+        "startedAt": 8062.599999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 8083.099999904633,
+        "startedAt": 8079.199999809265,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 8090.699999809265,
+        "startedAt": 8085.5,
+        "status": 200
+      }
+    ],
+    "startedAt": 1791315060896
+  },
+  "options": {
+    "backgroundDelayMilliseconds": 0,
+    "failOnce": false,
+    "maintenance": false,
+    "mounting": false
+  },
+  "paints": [
+    {
+      "name": "first-paint",
+      "startTime": 888
+    },
+    {
+      "name": "first-contentful-paint",
+      "startTime": 888
+    }
+  ],
+  "queue": null,
+  "run": "desktop-off-off-2",
+  "viewport": {
+    "height": 1367,
+    "width": 1907
+  }
+}

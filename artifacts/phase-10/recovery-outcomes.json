@@ -1,0 +1,159 @@
+{
+  "outcomes": [
+    {
+      "at": 1791315275865,
+      "attempt": 1,
+      "durationMilliseconds": 448,
+      "jobKey": "reconcileProjects:2026-Q4",
+      "jobType": "reconcileProjects",
+      "outputRevision": "1791315275361",
+      "recovered": false,
+      "sessionId": "2p8bkwsp",
+      "status": "completed"
+    },
+    {
+      "at": 1791315280432,
+      "attempt": 1,
+      "durationMilliseconds": 1066,
+      "jobKey": "collectTermEvidence:2026:codebase hygiene",
+      "jobType": "collectTermEvidence",
+      "outputRevision": "1791315275780",
+      "recovered": false,
+      "sessionId": "2p8bkwsp",
+      "status": "completed"
+    },
+    {
+      "at": 1791315280527,
+      "attempt": 1,
+      "durationMilliseconds": 1160,
+      "jobKey": "collectTermEvidence:2026:architecture decisions",
+      "jobType": "collectTermEvidence",
+      "outputRevision": "1791315275780",
+      "recovered": false,
+      "sessionId": "2p8bkwsp",
+      "status": "completed"
+    },
+    {
+      "at": 1791315284691,
+      "attempt": 2,
+      "durationMilliseconds": 5325,
+      "jobKey": "generateProjectIdeas:2026-Q4-work-prospect-d07529ab",
+      "jobType": "generateProjectIdeas",
+      "outputRevision": "7a3b71df",
+      "recovered": false,
+      "sessionId": "2p8bkwsp",
+      "status": "completed"
+    },
+    {
+      "at": 1791315285491,
+      "attempt": 1,
+      "durationMilliseconds": 772,
+      "jobKey": "rateProjectIdeas:2026-Q4-work-prospect-d07529ab",
+      "jobType": "rateProjectIdeas",
+      "outputRevision": "87e6adaa",
+      "recovered": false,
+      "sessionId": "2p8bkwsp",
+      "status": "completed"
+    },
+    {
+      "at": 1791315290721,
+      "attempt": 2,
+      "durationMilliseconds": 11355,
+      "jobKey": "generateProjectIdeas:2026-Q4-work-prospect-39e1b003",
+      "jobType": "generateProjectIdeas",
+      "outputRevision": "e3ad5034",
+      "recovered": false,
+      "sessionId": "2p8bkwsp",
+      "status": "completed"
+    },
+    {
+      "at": 1791315291347,
+      "attempt": 1,
+      "durationMilliseconds": 593,
+      "jobKey": "rateProjectIdeas:2026-Q4-work-prospect-39e1b003",
+      "jobType": "rateProjectIdeas",
+      "outputRevision": "7b6e25aa",
+      "recovered": false,
+      "sessionId": "2p8bkwsp",
+      "status": "completed"
+    },
+    {
+      "at": 1791315296812,
+      "attempt": 2,
+      "durationMilliseconds": 17446,
+      "jobKey": "generateProjectIdeas:2026-Q4-personal-prospect-b9d39408",
+      "jobType": "generateProjectIdeas",
+      "outputRevision": "302afa10",
+      "recovered": false,
+      "sessionId": "2p8bkwsp",
+      "status": "completed"
+    },
+    {
+      "at": 1791315297316,
+      "attempt": 1,
+      "durationMilliseconds": 478,
+      "jobKey": "rateProjectIdeas:2026-Q4-personal-prospect-b9d39408",
+      "jobType": "rateProjectIdeas",
+      "outputRevision": "e520fc58",
+      "recovered": false,
+      "sessionId": "2p8bkwsp",
+      "status": "completed"
+    },
+    {
+      "at": 1791315301310,
+      "attempt": 2,
+      "durationMilliseconds": 21944,
+      "jobKey": "generateProjectIdeas:2026-Q4-work-prospect-26572820",
+      "jobType": "generateProjectIdeas",
+      "outputRevision": "57c90f59",
+      "recovered": false,
+      "sessionId": "2p8bkwsp",
+      "status": "completed"
+    },
+    {
+      "at": 1791315301831,
+      "attempt": 1,
+      "durationMilliseconds": 491,
+      "jobKey": "rateProjectIdeas:2026-Q4-work-prospect-26572820",
+      "jobType": "rateProjectIdeas",
+      "outputRevision": "289f49f3",
+      "recovered": false,
+      "sessionId": "2p8bkwsp",
+      "status": "completed"
+    },
+    {
+      "at": 1791315307505,
+      "attempt": 2,
+      "durationMilliseconds": 28139,
+      "jobKey": "generateProjectIdeas:2026-Q4-work-prospect-9e64b092",
+      "jobType": "generateProjectIdeas",
+      "outputRevision": "4c2bc489",
+      "recovered": false,
+      "sessionId": "2p8bkwsp",
+      "status": "completed"
+    },
+    {
+      "at": 1791315308144,
+      "attempt": 1,
+      "durationMilliseconds": 586,
+      "jobKey": "rateProjectIdeas:2026-Q4-work-prospect-9e64b092",
+      "jobType": "rateProjectIdeas",
+      "outputRevision": "48e8bdd4",
+      "recovered": false,
+      "sessionId": "2p8bkwsp",
+      "status": "completed"
+    },
+    {
+      "at": 1791315339387,
+      "attempt": 1,
+      "durationMilliseconds": 1204,
+      "jobKey": "prepareDayRanking:domain-work-uuid:2026-10-06",
+      "jobType": "prepareDayRanking",
+      "outputRevision": "dreamTask=jev:978f63fe agenda=jev:c09c3cfa",
+      "recovered": false,
+      "sessionId": "2p8bkwsp",
+      "status": "completed"
+    }
+  ],
+  "scopeKey": "domain-work-uuid:Q4 2026"
+}

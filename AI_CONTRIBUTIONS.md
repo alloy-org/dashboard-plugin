@@ -5,6 +5,23 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-06 — Phase 10 browser acceptance and realistic notebook simulation
+
+**Model:** GPT-6 (Codex)
+**Files created/modified:**
+- `dev/dev-app.js`, `dev/dev-task-api.js`, `lib/util/browser-dev-app.js` — Discover file-backed domain notes; persist task edits, completion, and reopening; merge fixture overrides without duplicate identities; retain domain search ordering and group filtering.
+- `dev/dev-server.js` — Support isolated notebook/settings/mood paths and alternate ports/output; enable acceptance instrumentation and local artifact exports only when explicitly requested; bind acceptance listeners to loopback.
+- `dev/acceptance-build-plugin.js`, `dev/acceptance-metrics.js` — Add acceptance-only feature switches, React rendering measurements, browser long tasks and fetch timings, load-gate and provider-permit measurements, sanitized queue snapshots, transient-failure and slow-provider controls, and a foreground admission probe.
+- `dev/seed-acceptance-notebook.js`, `dev/summarize-acceptance.js` — Generate 90 deterministic markdown notes and 720 persisted tasks; summarize restored-baseline comparison visits without confusing rendering duration with commit-phase execution time.
+- `test/dev-notebook-persistence.test.js` — Verify domain discovery, stored task completion/content edits/reopening, and fixture identity overrides across independent app instances.
+- `artifacts/phase-10/`, `doc/plan-dashboard-work-queue.md` — Retain browser evidence, the verified inspector download, recovered durable outcomes, comparison summaries, reproduction instructions, and remaining acceptance gaps.
+- `build/compiled.js` — Regenerate the production plugin and verify the host boundary.
+
+**Task:** Undertake Phase 10 acceptance testing using a realistic, reproducible development notebook.
+**Validation:** Desktop and 390 × 844 Chromium feature-switch checks, scrolling, Builder overlay, layout save, missing-observer fallback, foreground permit admission during maintenance, transient retry, real expired-claim recovery, and copy/download export checks pass. Median first usable load is 743 ms enabled versus 955 ms disabled on desktop, and 698 ms versus 753 ms at mobile size, with two restored-baseline visits per setting. Full offline regression passes 141 suites / 1,251 tests (four suites / nine credential-gated tests skipped); production build and seven host smoke tests pass. Full Phase 10 sign-off remains pending for native mobile performance, attribution of a 349 ms long task, commit-phase execution profiling, and token usage. Existing localhost:3000 data and feature defaults remain unchanged. No commits created.
+
+---
+
 ## 2026-10-06 — Remove legacy project maintenance loops
 
 **Model:** GPT-6 (Codex)

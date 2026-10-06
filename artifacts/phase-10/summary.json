@@ -1,0 +1,486 @@
+{
+  "comparisons": [
+    {
+      "device": "desktop",
+      "disabledMedian": 954.7000000476837,
+      "enabledMedian": 742.9500000476837,
+      "sampleCount": 2,
+      "changePercent": -22.179742326324906
+    },
+    {
+      "device": "mobile",
+      "disabledMedian": 753.3500001430511,
+      "enabledMedian": 697.849999666214,
+      "sampleCount": 2,
+      "changePercent": -7.367093710267265
+    }
+  ],
+  "visits": [
+    {
+      "artifact": "desktop-interruption-after.json",
+      "backgroundBeforeGate": 0,
+      "backgroundProviderRequests": 10,
+      "firstMaintenanceAt": 1791315279366,
+      "firstUsableMilliseconds": 725.4000000953674,
+      "foregroundAdmissionMedianMilliseconds": 0,
+      "initialLongTaskCount": 0,
+      "initialLongTaskMilliseconds": 0,
+      "loadGateOpenedAt": 1791315279362,
+      "maximumReactRenderMilliseconds": 115.5,
+      "mountedWidgets": 17,
+      "mountingAdmissionMedianMilliseconds": 166,
+      "mountingCommitLatencyMedianMilliseconds": 8,
+      "options": {
+        "backgroundDelayMilliseconds": 0,
+        "failOnce": false,
+        "maintenance": true,
+        "mounting": true
+      },
+      "rankedProjects": 0,
+      "run": "desktop-interruption-after",
+      "viewport": {
+        "height": 1367,
+        "width": 1907
+      }
+    },
+    {
+      "artifact": "desktop-interruption-before.json",
+      "backgroundBeforeGate": 0,
+      "backgroundProviderRequests": 5,
+      "firstMaintenanceAt": 1791315035269,
+      "firstUsableMilliseconds": 757.2000002861023,
+      "foregroundAdmissionMedianMilliseconds": 233.5,
+      "initialLongTaskCount": 1,
+      "initialLongTaskMilliseconds": 62,
+      "loadGateOpenedAt": 1791315035252,
+      "maximumReactRenderMilliseconds": 7.599999904632568,
+      "mountedWidgets": 8,
+      "mountingAdmissionMedianMilliseconds": 73.5,
+      "mountingCommitLatencyMedianMilliseconds": 9,
+      "options": {
+        "backgroundDelayMilliseconds": 30000,
+        "failOnce": false,
+        "maintenance": true,
+        "mounting": true
+      },
+      "rankedProjects": 5,
+      "run": "desktop-interruption-before",
+      "viewport": {
+        "height": 1367,
+        "width": 1907
+      }
+    },
+    {
+      "artifact": "desktop-off-off-1.json",
+      "backgroundBeforeGate": 0,
+      "backgroundProviderRequests": 0,
+      "firstMaintenanceAt": null,
+      "firstUsableMilliseconds": 842.4000000953674,
+      "foregroundAdmissionMedianMilliseconds": null,
+      "initialLongTaskCount": 3,
+      "initialLongTaskMilliseconds": 251,
+      "loadGateOpenedAt": null,
+      "maximumReactRenderMilliseconds": 40.69999980926514,
+      "mountedWidgets": 0,
+      "mountingAdmissionMedianMilliseconds": null,
+      "mountingCommitLatencyMedianMilliseconds": null,
+      "options": {
+        "maintenance": false,
+        "mounting": false
+      },
+      "rankedProjects": 0,
+      "run": "desktop-off-off-1",
+      "viewport": {
+        "height": 1367,
+        "width": 1907
+      }
+    },
+    {
+      "artifact": "desktop-off-off-2.json",
+      "backgroundBeforeGate": 0,
+      "backgroundProviderRequests": 0,
+      "firstMaintenanceAt": null,
+      "firstUsableMilliseconds": 1067,
+      "foregroundAdmissionMedianMilliseconds": null,
+      "initialLongTaskCount": 4,
+      "initialLongTaskMilliseconds": 518,
+      "loadGateOpenedAt": null,
+      "maximumReactRenderMilliseconds": 52.90000057220459,
+      "mountedWidgets": 0,
+      "mountingAdmissionMedianMilliseconds": null,
+      "mountingCommitLatencyMedianMilliseconds": null,
+      "options": {
+        "backgroundDelayMilliseconds": 0,
+        "failOnce": false,
+        "maintenance": false,
+        "mounting": false
+      },
+      "rankedProjects": 0,
+      "run": "desktop-off-off-2",
+      "viewport": {
+        "height": 1367,
+        "width": 1907
+      }
+    },
+    {
+      "artifact": "desktop-off-on-1.json",
+      "backgroundBeforeGate": 0,
+      "backgroundProviderRequests": 6,
+      "firstMaintenanceAt": 1791314346067,
+      "firstUsableMilliseconds": 659.3000001907349,
+      "foregroundAdmissionMedianMilliseconds": 122,
+      "initialLongTaskCount": 3,
+      "initialLongTaskMilliseconds": 333,
+      "loadGateOpenedAt": 1791314346055,
+      "maximumReactRenderMilliseconds": 38.5,
+      "mountedWidgets": 0,
+      "mountingAdmissionMedianMilliseconds": null,
+      "mountingCommitLatencyMedianMilliseconds": null,
+      "options": {
+        "maintenance": true,
+        "mounting": false
+      },
+      "rankedProjects": 5,
+      "run": "desktop-off-on-1",
+      "viewport": {
+        "height": 1367,
+        "width": 1907
+      }
+    },
+    {
+      "artifact": "desktop-on-off-1.json",
+      "backgroundBeforeGate": 0,
+      "backgroundProviderRequests": 0,
+      "firstMaintenanceAt": null,
+      "firstUsableMilliseconds": 718.7999997138977,
+      "foregroundAdmissionMedianMilliseconds": null,
+      "initialLongTaskCount": 2,
+      "initialLongTaskMilliseconds": 172,
+      "loadGateOpenedAt": 1791314301609,
+      "maximumReactRenderMilliseconds": 7.499999523162842,
+      "mountedWidgets": 10,
+      "mountingAdmissionMedianMilliseconds": 110,
+      "mountingCommitLatencyMedianMilliseconds": 6.5,
+      "options": {
+        "maintenance": false,
+        "mounting": true
+      },
+      "rankedProjects": 0,
+      "run": "desktop-on-off-1",
+      "viewport": {
+        "height": 1367,
+        "width": 1907
+      }
+    },
+    {
+      "artifact": "desktop-on-on-1.json",
+      "backgroundBeforeGate": null,
+      "backgroundProviderRequests": null,
+      "firstMaintenanceAt": 1791314118190,
+      "firstUsableMilliseconds": 775.9000000953674,
+      "foregroundAdmissionMedianMilliseconds": null,
+      "initialLongTaskCount": 1,
+      "initialLongTaskMilliseconds": 69,
+      "loadGateOpenedAt": 1791314118173,
+      "maximumReactRenderMilliseconds": 73.59999990463257,
+      "mountedWidgets": 17,
+      "mountingAdmissionMedianMilliseconds": 80,
+      "mountingCommitLatencyMedianMilliseconds": 7,
+      "options": {
+        "maintenance": true,
+        "mounting": true
+      },
+      "rankedProjects": 5,
+      "run": "desktop-on-on-1",
+      "viewport": {
+        "height": 1367,
+        "width": 1907
+      }
+    },
+    {
+      "artifact": "desktop-on-on-2.json",
+      "backgroundBeforeGate": 0,
+      "backgroundProviderRequests": 6,
+      "firstMaintenanceAt": 1791315104021,
+      "firstUsableMilliseconds": 710,
+      "foregroundAdmissionMedianMilliseconds": 108,
+      "initialLongTaskCount": 0,
+      "initialLongTaskMilliseconds": 0,
+      "loadGateOpenedAt": 1791315104016,
+      "maximumReactRenderMilliseconds": 5.700000286102295,
+      "mountedWidgets": 8,
+      "mountingAdmissionMedianMilliseconds": 92,
+      "mountingCommitLatencyMedianMilliseconds": 5,
+      "options": {
+        "backgroundDelayMilliseconds": 0,
+        "failOnce": false,
+        "maintenance": true,
+        "mounting": true
+      },
+      "rankedProjects": 5,
+      "run": "desktop-on-on-2",
+      "viewport": {
+        "height": 1367,
+        "width": 1907
+      }
+    },
+    {
+      "artifact": "desktop-recovery-after.json",
+      "backgroundBeforeGate": 0,
+      "backgroundProviderRequests": 2,
+      "firstMaintenanceAt": 1791314921018,
+      "firstUsableMilliseconds": 733.1000003814697,
+      "foregroundAdmissionMedianMilliseconds": 0,
+      "initialLongTaskCount": 2,
+      "initialLongTaskMilliseconds": 282,
+      "loadGateOpenedAt": 1791314921014,
+      "maximumReactRenderMilliseconds": 42.49999952316284,
+      "mountedWidgets": 8,
+      "mountingAdmissionMedianMilliseconds": 103,
+      "mountingCommitLatencyMedianMilliseconds": 7.5,
+      "options": {
+        "failOnce": false,
+        "maintenance": true,
+        "mounting": true
+      },
+      "rankedProjects": 0,
+      "run": "desktop-recovery-after",
+      "viewport": {
+        "height": 1367,
+        "width": 1907
+      }
+    },
+    {
+      "artifact": "desktop-recovery-before.json",
+      "backgroundBeforeGate": 0,
+      "backgroundProviderRequests": 7,
+      "firstMaintenanceAt": 1791314890112,
+      "firstUsableMilliseconds": 926.7000002861023,
+      "foregroundAdmissionMedianMilliseconds": 152,
+      "initialLongTaskCount": 5,
+      "initialLongTaskMilliseconds": 674,
+      "loadGateOpenedAt": 1791314890108,
+      "maximumReactRenderMilliseconds": 9,
+      "mountedWidgets": 8,
+      "mountingAdmissionMedianMilliseconds": 68,
+      "mountingCommitLatencyMedianMilliseconds": 8,
+      "options": {
+        "failOnce": true,
+        "maintenance": true,
+        "mounting": true
+      },
+      "rankedProjects": 5,
+      "run": "desktop-recovery-before",
+      "viewport": {
+        "height": 1367,
+        "width": 1907
+      }
+    },
+    {
+      "artifact": "mobile-no-observer.json",
+      "backgroundBeforeGate": 0,
+      "backgroundProviderRequests": 10,
+      "firstMaintenanceAt": 1791315210998,
+      "firstUsableMilliseconds": 622.8000001907349,
+      "foregroundAdmissionMedianMilliseconds": 151,
+      "initialLongTaskCount": 3,
+      "initialLongTaskMilliseconds": 342,
+      "loadGateOpenedAt": 1791315210990,
+      "maximumReactRenderMilliseconds": 40.799999713897705,
+      "mountedWidgets": 0,
+      "mountingAdmissionMedianMilliseconds": null,
+      "mountingCommitLatencyMedianMilliseconds": null,
+      "options": {
+        "backgroundDelayMilliseconds": 0,
+        "failOnce": false,
+        "maintenance": true,
+        "mounting": true
+      },
+      "rankedProjects": 5,
+      "run": "mobile-no-observer",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    },
+    {
+      "artifact": "mobile-off-off-1.json",
+      "backgroundBeforeGate": 0,
+      "backgroundProviderRequests": 0,
+      "firstMaintenanceAt": null,
+      "firstUsableMilliseconds": 771.2000002861023,
+      "foregroundAdmissionMedianMilliseconds": null,
+      "initialLongTaskCount": 1,
+      "initialLongTaskMilliseconds": 118,
+      "loadGateOpenedAt": null,
+      "maximumReactRenderMilliseconds": 11,
+      "mountedWidgets": 0,
+      "mountingAdmissionMedianMilliseconds": null,
+      "mountingCommitLatencyMedianMilliseconds": null,
+      "options": {
+        "maintenance": false,
+        "mounting": false
+      },
+      "rankedProjects": 0,
+      "run": "mobile-off-off-1",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    },
+    {
+      "artifact": "mobile-off-off-2.json",
+      "backgroundBeforeGate": 0,
+      "backgroundProviderRequests": 0,
+      "firstMaintenanceAt": null,
+      "firstUsableMilliseconds": 735.5,
+      "foregroundAdmissionMedianMilliseconds": null,
+      "initialLongTaskCount": 2,
+      "initialLongTaskMilliseconds": 307,
+      "loadGateOpenedAt": null,
+      "maximumReactRenderMilliseconds": 12.400000095367432,
+      "mountedWidgets": 0,
+      "mountingAdmissionMedianMilliseconds": null,
+      "mountingCommitLatencyMedianMilliseconds": null,
+      "options": {
+        "backgroundDelayMilliseconds": 0,
+        "failOnce": false,
+        "maintenance": false,
+        "mounting": false
+      },
+      "rankedProjects": 0,
+      "run": "mobile-off-off-2",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    },
+    {
+      "artifact": "mobile-off-on-1.json",
+      "backgroundBeforeGate": 0,
+      "backgroundProviderRequests": 9,
+      "firstMaintenanceAt": 1791314437707,
+      "firstUsableMilliseconds": 610.2999997138977,
+      "foregroundAdmissionMedianMilliseconds": 197,
+      "initialLongTaskCount": 0,
+      "initialLongTaskMilliseconds": 0,
+      "loadGateOpenedAt": 1791314437694,
+      "maximumReactRenderMilliseconds": 10.099999904632568,
+      "mountedWidgets": 0,
+      "mountingAdmissionMedianMilliseconds": null,
+      "mountingCommitLatencyMedianMilliseconds": null,
+      "options": {
+        "maintenance": true,
+        "mounting": false
+      },
+      "rankedProjects": 5,
+      "run": "mobile-off-on-1",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    },
+    {
+      "artifact": "mobile-on-off-1.json",
+      "backgroundBeforeGate": 0,
+      "backgroundProviderRequests": 0,
+      "firstMaintenanceAt": null,
+      "firstUsableMilliseconds": 616.6999998092651,
+      "foregroundAdmissionMedianMilliseconds": null,
+      "initialLongTaskCount": 1,
+      "initialLongTaskMilliseconds": 101,
+      "loadGateOpenedAt": 1791314399854,
+      "maximumReactRenderMilliseconds": 4.700000286102295,
+      "mountedWidgets": 5,
+      "mountingAdmissionMedianMilliseconds": 45,
+      "mountingCommitLatencyMedianMilliseconds": 6,
+      "options": {
+        "maintenance": false,
+        "mounting": true
+      },
+      "rankedProjects": 0,
+      "run": "mobile-on-off-1",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    },
+    {
+      "artifact": "mobile-on-on-1.json",
+      "backgroundBeforeGate": 0,
+      "backgroundProviderRequests": 10,
+      "firstMaintenanceAt": 1791314489137,
+      "firstUsableMilliseconds": 638.2999997138977,
+      "foregroundAdmissionMedianMilliseconds": 106.5,
+      "initialLongTaskCount": 1,
+      "initialLongTaskMilliseconds": 122,
+      "loadGateOpenedAt": 1791314489131,
+      "maximumReactRenderMilliseconds": 532.8999996185303,
+      "mountedWidgets": 13,
+      "mountingAdmissionMedianMilliseconds": 35,
+      "mountingCommitLatencyMedianMilliseconds": 7,
+      "options": {
+        "maintenance": true,
+        "mounting": true
+      },
+      "rankedProjects": 5,
+      "run": "mobile-on-on-1",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    },
+    {
+      "artifact": "mobile-on-on-initial.json",
+      "backgroundBeforeGate": 0,
+      "backgroundProviderRequests": 5,
+      "firstMaintenanceAt": 1791314489137,
+      "firstUsableMilliseconds": 638.2999997138977,
+      "foregroundAdmissionMedianMilliseconds": 115,
+      "initialLongTaskCount": 1,
+      "initialLongTaskMilliseconds": 122,
+      "loadGateOpenedAt": 1791314489131,
+      "maximumReactRenderMilliseconds": 6.799999713897705,
+      "mountedWidgets": 4,
+      "mountingAdmissionMedianMilliseconds": 40,
+      "mountingCommitLatencyMedianMilliseconds": 7,
+      "options": {
+        "maintenance": true,
+        "mounting": true
+      },
+      "rankedProjects": 5,
+      "run": "mobile-on-on-1",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    },
+    {
+      "artifact": "mobile-on-on-2.json",
+      "backgroundBeforeGate": 0,
+      "backgroundProviderRequests": 9,
+      "firstMaintenanceAt": 1791315163725,
+      "firstUsableMilliseconds": 757.3999996185303,
+      "foregroundAdmissionMedianMilliseconds": 105,
+      "initialLongTaskCount": 1,
+      "initialLongTaskMilliseconds": 349,
+      "loadGateOpenedAt": 1791315163690,
+      "maximumReactRenderMilliseconds": 5.099999904632568,
+      "mountedWidgets": 5,
+      "mountingAdmissionMedianMilliseconds": 46,
+      "mountingCommitLatencyMedianMilliseconds": 6,
+      "options": {
+        "backgroundDelayMilliseconds": 0,
+        "failOnce": false,
+        "maintenance": true,
+        "mounting": true
+      },
+      "rankedProjects": 5,
+      "run": "mobile-on-on-2",
+      "viewport": {
+        "height": 844,
+        "width": 390
+      }
+    }
+  ]
+}

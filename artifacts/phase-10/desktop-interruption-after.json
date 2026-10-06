@@ -1,0 +1,5311 @@
+{
+  "capturedAt": 1791315349823,
+  "measurements": {
+    "commits": [
+      {
+        "actualDuration": 0.5,
+        "baseDuration": 0.3000001907348633,
+        "commitTime": 594.4000000953674,
+        "id": "dashboard",
+        "phase": "mount",
+        "startTime": 593.9000000953674
+      },
+      {
+        "actualDuration": 0.2999997138977051,
+        "baseDuration": 0.2999997138977051,
+        "commitTime": 595.5999999046326,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 595.3000001907349
+      },
+      {
+        "actualDuration": 0.19999980926513672,
+        "baseDuration": 0.09999990463256836,
+        "commitTime": 596.9000000953674,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 596.7000002861023
+      },
+      {
+        "actualDuration": 6.300000190734863,
+        "baseDuration": 5.300000190734863,
+        "commitTime": 683,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 676.5999999046326
+      },
+      {
+        "actualDuration": 3.40000057220459,
+        "baseDuration": 2.90000057220459,
+        "commitTime": 695.2000002861023,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 691.5
+      },
+      {
+        "actualDuration": 1.0999999046325684,
+        "baseDuration": 0.6999998092651367,
+        "commitTime": 699.0999999046326,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 698
+      },
+      {
+        "actualDuration": 1.4000000953674316,
+        "baseDuration": 1.1999998092651367,
+        "commitTime": 701.9000000953674,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 699.7000002861023
+      },
+      {
+        "actualDuration": 1.5,
+        "baseDuration": 1.5,
+        "commitTime": 713.2000002861023,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 711.5
+      },
+      {
+        "actualDuration": 1,
+        "baseDuration": 2,
+        "commitTime": 723.5999999046326,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 722.2000002861023
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 1.6999998092651367,
+        "commitTime": 725.4000000953674,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 725.2000002861023
+      },
+      {
+        "actualDuration": 2.9000000953674316,
+        "baseDuration": 2.5999999046325684,
+        "commitTime": 729.9000000953674,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 726.7000002861023
+      },
+      {
+        "actualDuration": 1.1000003814697266,
+        "baseDuration": 0.9000000953674316,
+        "commitTime": 732.7000002861023,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 731.5999999046326
+      },
+      {
+        "actualDuration": 1,
+        "baseDuration": 1.700000286102295,
+        "commitTime": 741.9000000953674,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 740.8000001907349
+      },
+      {
+        "actualDuration": 0.6000003814697266,
+        "baseDuration": 1.200000286102295,
+        "commitTime": 747.2000002861023,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 746.5
+      },
+      {
+        "actualDuration": 4.5,
+        "baseDuration": 1.3000001907348633,
+        "commitTime": 764.5,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 760
+      },
+      {
+        "actualDuration": 0.2999997138977051,
+        "baseDuration": 1.4000000953674316,
+        "commitTime": 773,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 772.5999999046326
+      },
+      {
+        "actualDuration": 1,
+        "baseDuration": 2.200000286102295,
+        "commitTime": 778.0999999046326,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 777.0999999046326
+      },
+      {
+        "actualDuration": 0,
+        "baseDuration": 2.200000286102295,
+        "commitTime": 781.9000000953674,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 781
+      },
+      {
+        "actualDuration": 1.5000004768371582,
+        "baseDuration": 2.90000057220459,
+        "commitTime": 831.0999999046326,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 829
+      },
+      {
+        "actualDuration": 4.299999713897705,
+        "baseDuration": 3.700000762939453,
+        "commitTime": 840.5999999046326,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 836.2000002861023
+      },
+      {
+        "actualDuration": 1,
+        "baseDuration": 4.600000858306885,
+        "commitTime": 856.4000000953674,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 855.4000000953674
+      },
+      {
+        "actualDuration": 0.2999997138977051,
+        "baseDuration": 3.90000057220459,
+        "commitTime": 858,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 857.7000002861023
+      },
+      {
+        "actualDuration": 1.3999996185302734,
+        "baseDuration": 4.599999904632568,
+        "commitTime": 865.5999999046326,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 864.2000002861023
+      },
+      {
+        "actualDuration": 0.40000009536743164,
+        "baseDuration": 4.100000381469727,
+        "commitTime": 869.3000001907349,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 868.9000000953674
+      },
+      {
+        "actualDuration": 1.1000003814697266,
+        "baseDuration": 4.000000476837158,
+        "commitTime": 874.8000001907349,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 873.5999999046326
+      },
+      {
+        "actualDuration": 0,
+        "baseDuration": 4.000000476837158,
+        "commitTime": 889.7000002861023,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 889.3000001907349
+      },
+      {
+        "actualDuration": 0.5999999046325684,
+        "baseDuration": 4.40000057220459,
+        "commitTime": 916.5,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 915.7000002861023
+      },
+      {
+        "actualDuration": 2.4000000953674316,
+        "baseDuration": 5.699999809265137,
+        "commitTime": 923.2000002861023,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 920.8000001907349
+      },
+      {
+        "actualDuration": 0.7000002861022949,
+        "baseDuration": 4.40000057220459,
+        "commitTime": 924.7000002861023,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 924
+      },
+      {
+        "actualDuration": 11.900000095367432,
+        "baseDuration": 14.199999809265137,
+        "commitTime": 959.3000001907349,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 947.3000001907349
+      },
+      {
+        "actualDuration": 1.9999995231628418,
+        "baseDuration": 14.700000286102295,
+        "commitTime": 1036.5,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1034.4000000953674
+      },
+      {
+        "actualDuration": 3.4000000953674316,
+        "baseDuration": 16.199999809265137,
+        "commitTime": 1049.0999999046326,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 1045.5999999046326
+      },
+      {
+        "actualDuration": 34.5,
+        "baseDuration": 44.00000047683716,
+        "commitTime": 73499.5,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 73464.7000002861
+      },
+      {
+        "actualDuration": 1.9000000953674316,
+        "baseDuration": 45.50000047683716,
+        "commitTime": 73639,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 73637
+      },
+      {
+        "actualDuration": 0.19999980926513672,
+        "baseDuration": 44.30000066757202,
+        "commitTime": 73644,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 73643.59999990463
+      },
+      {
+        "actualDuration": 2.0999999046325684,
+        "baseDuration": 46.20000076293945,
+        "commitTime": 73660.2000002861,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 73658
+      },
+      {
+        "actualDuration": 0.8000001907348633,
+        "baseDuration": 46.70000076293945,
+        "commitTime": 73707.40000009537,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 73706.59999990463
+      },
+      {
+        "actualDuration": 31.200000286102295,
+        "baseDuration": 75.50000095367432,
+        "commitTime": 73749.30000019073,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 73718.09999990463
+      },
+      {
+        "actualDuration": 1.0999999046325684,
+        "baseDuration": 76.10000085830688,
+        "commitTime": 73904,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 73902.90000009537
+      },
+      {
+        "actualDuration": 37.09999990463257,
+        "baseDuration": 108.20000076293945,
+        "commitTime": 73968.40000009537,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 73917.7000002861
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 108.10000085830688,
+        "commitTime": 74048.59999990463,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74048.30000019073
+      },
+      {
+        "actualDuration": 115.5,
+        "baseDuration": 174.10000085830688,
+        "commitTime": 74173.40000009537,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74057.80000019073
+      },
+      {
+        "actualDuration": 4.100000381469727,
+        "baseDuration": 176.20000076293945,
+        "commitTime": 74301.30000019073,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74297
+      },
+      {
+        "actualDuration": 2.0999999046325684,
+        "baseDuration": 144.7000002861023,
+        "commitTime": 74364.09999990463,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74361.80000019073
+      },
+      {
+        "actualDuration": 14.099999904632568,
+        "baseDuration": 158.59999990463257,
+        "commitTime": 74420.40000009537,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74406
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 144.80000019073486,
+        "commitTime": 74427,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74422.2000002861
+      },
+      {
+        "actualDuration": 0.10000038146972656,
+        "baseDuration": 144.80000066757202,
+        "commitTime": 74474.40000009537,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74471
+      },
+      {
+        "actualDuration": 3.6999998092651367,
+        "baseDuration": 147.40000009536743,
+        "commitTime": 74485.30000019073,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74477.40000009537
+      },
+      {
+        "actualDuration": 5.099999904632568,
+        "baseDuration": 146.4000005722046,
+        "commitTime": 74524.80000019073,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74519.7000002861
+      },
+      {
+        "actualDuration": 0.10000038146972656,
+        "baseDuration": 144.7000002861023,
+        "commitTime": 74539.7000002861,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74538.90000009537
+      },
+      {
+        "actualDuration": 0.2999997138977051,
+        "baseDuration": 144.90000009536743,
+        "commitTime": 74569.30000019073,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74568.7000002861
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 144.7000002861023,
+        "commitTime": 74578.09999990463,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74577.80000019073
+      },
+      {
+        "actualDuration": 0.40000009536743164,
+        "baseDuration": 144.80000019073486,
+        "commitTime": 74584.2000002861,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74583.80000019073
+      },
+      {
+        "actualDuration": 6.599999904632568,
+        "baseDuration": 148.7000002861023,
+        "commitTime": 74624.59999990463,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74617.90000009537
+      },
+      {
+        "actualDuration": 4.799999713897705,
+        "baseDuration": 150.39999914169312,
+        "commitTime": 74663.59999990463,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74658.5
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 150.39999914169312,
+        "commitTime": 74678.30000019073,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74678.09999990463
+      },
+      {
+        "actualDuration": 0.5,
+        "baseDuration": 150.59999895095825,
+        "commitTime": 74689.80000019073,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74689.2000002861
+      },
+      {
+        "actualDuration": 56.29999923706055,
+        "baseDuration": 184.60000228881836,
+        "commitTime": 74777.7000002861,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74720.80000019073
+      },
+      {
+        "actualDuration": 0.3000001907348633,
+        "baseDuration": 184.60000276565552,
+        "commitTime": 74812.30000019073,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74812
+      },
+      {
+        "actualDuration": 0.10000038146972656,
+        "baseDuration": 184.60000276565552,
+        "commitTime": 74846.7000002861,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74846.5
+      },
+      {
+        "actualDuration": 0.19999980926513672,
+        "baseDuration": 184.70000219345093,
+        "commitTime": 74849.7000002861,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74849.40000009537
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 184.60000228881836,
+        "commitTime": 74851.5,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74851.40000009537
+      },
+      {
+        "actualDuration": 0.20000028610229492,
+        "baseDuration": 184.60000276565552,
+        "commitTime": 74859.30000019073,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74858.80000019073
+      },
+      {
+        "actualDuration": 0.10000038146972656,
+        "baseDuration": 184.60000276565552,
+        "commitTime": 74916.7000002861,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74916.5
+      },
+      {
+        "actualDuration": 0.19999980926513672,
+        "baseDuration": 184.70000219345093,
+        "commitTime": 74926.90000009537,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74926.7000002861
+      },
+      {
+        "actualDuration": 1,
+        "baseDuration": 185.40000247955322,
+        "commitTime": 74943.5,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74942.40000009537
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 184.60000228881836,
+        "commitTime": 74957.40000009537,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74957
+      },
+      {
+        "actualDuration": 2.5,
+        "baseDuration": 186.90000247955322,
+        "commitTime": 74976.09999990463,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74973.59999990463
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 184.60000228881836,
+        "commitTime": 74991.7000002861,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 74991.5
+      },
+      {
+        "actualDuration": 0.2999997138977051,
+        "baseDuration": 184.70000219345093,
+        "commitTime": 75009.59999990463,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 75009.2000002861
+      },
+      {
+        "actualDuration": 1,
+        "baseDuration": 185.40000200271606,
+        "commitTime": 75023.7000002861,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 75022.59999990463
+      },
+      {
+        "actualDuration": 1.6999998092651367,
+        "baseDuration": 185.90000247955322,
+        "commitTime": 75042.2000002861,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 75040.30000019073
+      },
+      {
+        "actualDuration": 1.1999998092651367,
+        "baseDuration": 184.60000228881836,
+        "commitTime": 75056.2000002861,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 75054.90000009537
+      },
+      {
+        "actualDuration": 0.09999990463256836,
+        "baseDuration": 184.60000228881836,
+        "commitTime": 75073.90000009537,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 75073.5
+      },
+      {
+        "actualDuration": 0.3000001907348633,
+        "baseDuration": 184.7000026702881,
+        "commitTime": 75092.90000009537,
+        "id": "dashboard",
+        "phase": "update",
+        "startTime": 75092.59999990463
+      }
+    ],
+    "conditions": [
+      {
+        "at": 1791315275257,
+        "hidden": false,
+        "overlayHeld": false
+      },
+      {
+        "at": 1791315279362,
+        "loadSettled": true
+      }
+    ],
+    "firstUsableMilliseconds": 725.4000000953674,
+    "longTasks": [
+      {
+        "duration": 185,
+        "startTime": 10128.599999904633
+      },
+      {
+        "duration": 180,
+        "startTime": 16159.200000286102
+      },
+      {
+        "duration": 117,
+        "startTime": 22238.700000286102
+      },
+      {
+        "duration": 163,
+        "startTime": 26757.200000286102
+      },
+      {
+        "duration": 167,
+        "startTime": 32983.800000190735
+      },
+      {
+        "duration": 172,
+        "startTime": 63564.2000002861
+      },
+      {
+        "duration": 124,
+        "startTime": 64182.5
+      },
+      {
+        "duration": 76,
+        "startTime": 73464.5
+      },
+      {
+        "duration": 53,
+        "startTime": 73756.30000019073
+      },
+      {
+        "duration": 102,
+        "startTime": 73917.7000002861
+      },
+      {
+        "duration": 217,
+        "startTime": 74056.2000002861
+      },
+      {
+        "duration": 79,
+        "startTime": 74712.90000009537
+      }
+    ],
+    "providerPermits": [
+      {
+        "background": true,
+        "requestedAt": 1791315279630,
+        "resource": "generative",
+        "admittedAt": 1791315279630,
+        "finishedAt": 1791315284585
+      },
+      {
+        "background": true,
+        "requestedAt": 1791315279697,
+        "resource": "generative",
+        "admittedAt": 1791315284585,
+        "finishedAt": 1791315290598
+      },
+      {
+        "background": true,
+        "requestedAt": 1791315279852,
+        "resource": "generative",
+        "admittedAt": 1791315290598,
+        "finishedAt": 1791315296718
+      },
+      {
+        "background": true,
+        "requestedAt": 1791315279979,
+        "resource": "generative",
+        "admittedAt": 1791315296718,
+        "finishedAt": 1791315301213
+      },
+      {
+        "background": true,
+        "requestedAt": 1791315280015,
+        "resource": "generative",
+        "admittedAt": 1791315301213,
+        "finishedAt": 1791315307376
+      },
+      {
+        "background": true,
+        "requestedAt": 1791315285012,
+        "resource": "jev",
+        "admittedAt": 1791315285012,
+        "finishedAt": 1791315285374
+      },
+      {
+        "background": true,
+        "requestedAt": 1791315291058,
+        "resource": "jev",
+        "admittedAt": 1791315291058,
+        "finishedAt": 1791315291263
+      },
+      {
+        "background": true,
+        "requestedAt": 1791315297048,
+        "resource": "jev",
+        "admittedAt": 1791315297048,
+        "finishedAt": 1791315297214
+      },
+      {
+        "background": true,
+        "requestedAt": 1791315301621,
+        "resource": "jev",
+        "admittedAt": 1791315301621,
+        "finishedAt": 1791315301735
+      },
+      {
+        "background": true,
+        "requestedAt": 1791315307851,
+        "resource": "jev",
+        "admittedAt": 1791315307851,
+        "finishedAt": 1791315308063
+      },
+      {
+        "background": false,
+        "requestedAt": 1791315338493,
+        "resource": "jev",
+        "admittedAt": 1791315338493,
+        "finishedAt": 1791315338753
+      },
+      {
+        "background": false,
+        "requestedAt": 1791315339139,
+        "resource": "jev",
+        "admittedAt": 1791315339139,
+        "finishedAt": 1791315339325
+      }
+    ],
+    "requests": [
+      {
+        "destination": "/api/theme-styles",
+        "finishedAt": 600.3000001907349,
+        "startedAt": 593.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/settings",
+        "finishedAt": 605.5,
+        "startedAt": 593.2000002861023,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 617.5999999046326,
+        "startedAt": 609.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/moods",
+        "finishedAt": 624.5,
+        "startedAt": 620.4000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 666.5999999046326,
+        "startedAt": 630.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 672.7000002861023,
+        "startedAt": 630.5999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 688,
+        "startedAt": 676.4000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/moods",
+        "finishedAt": 696.7000002861023,
+        "startedAt": 690.2000002861023,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 699.5,
+        "startedAt": 690.4000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 699.7000002861023,
+        "startedAt": 690.7000002861023,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 702.4000000953674,
+        "startedAt": 690.8000001907349,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 706.3000001907349,
+        "startedAt": 690.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 711.3000001907349,
+        "startedAt": 691,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 702.2000002861023,
+        "startedAt": 691,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 705.3000001907349,
+        "startedAt": 691.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 704.7000002861023,
+        "startedAt": 691.2000002861023,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 710,
+        "startedAt": 691.2000002861023,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 707.7000002861023,
+        "startedAt": 691.3000001907349,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 708.8000001907349,
+        "startedAt": 691.4000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 721.8000001907349,
+        "startedAt": 691.4000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 713.3000001907349,
+        "startedAt": 691.4000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 713.8000001907349,
+        "startedAt": 691.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 720.0999999046326,
+        "startedAt": 699.2000002861023,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 725.7000002861023,
+        "startedAt": 699.4000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 725.7000002861023,
+        "startedAt": 720.4000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 732.8000001907349,
+        "startedAt": 724.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 736.2000002861023,
+        "startedAt": 725,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 746.3000001907349,
+        "startedAt": 725.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 749.3000001907349,
+        "startedAt": 725.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 746.3000001907349,
+        "startedAt": 731.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 765.3000001907349,
+        "startedAt": 736.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 765.4000000953674,
+        "startedAt": 745.8000001907349,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 777,
+        "startedAt": 745.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 780,
+        "startedAt": 749.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 782.2000002861023,
+        "startedAt": 754.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 782.5,
+        "startedAt": 775,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 828.2000002861023,
+        "startedAt": 776.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 828.3000001907349,
+        "startedAt": 782.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 828.3000001907349,
+        "startedAt": 782.4000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 836,
+        "startedAt": 826.2000002861023,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 850.3000001907349,
+        "startedAt": 833.3000001907349,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 851,
+        "startedAt": 843.2000002861023,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 851.0999999046326,
+        "startedAt": 843.2000002861023,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 858.5999999046326,
+        "startedAt": 848.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 858.7000002861023,
+        "startedAt": 848.7000002861023,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 862.7000002861023,
+        "startedAt": 850.8000001907349,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 863.2000002861023,
+        "startedAt": 851.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 864,
+        "startedAt": 851.7000002861023,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 878.8000001907349,
+        "startedAt": 852.5999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 870,
+        "startedAt": 853,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 875.7000002861023,
+        "startedAt": 853.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 891.4000000953674,
+        "startedAt": 853.2000002861023,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 896.7000002861023,
+        "startedAt": 853.2000002861023,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 882.3000001907349,
+        "startedAt": 857.3000001907349,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 886.5,
+        "startedAt": 857.5999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 915.0999999046326,
+        "startedAt": 859.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 901.5,
+        "startedAt": 859.8000001907349,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 906.4000000953674,
+        "startedAt": 860,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 906.4000000953674,
+        "startedAt": 863.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 928,
+        "startedAt": 868.8000001907349,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 916.5,
+        "startedAt": 875.4000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 916.5999999046326,
+        "startedAt": 883.5999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 927.5,
+        "startedAt": 898.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 927.5999999046326,
+        "startedAt": 906.5999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 929.8000001907349,
+        "startedAt": 915,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 933.0999999046326,
+        "startedAt": 926,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 946.7000002861023,
+        "startedAt": 926.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 946.7000002861023,
+        "startedAt": 926.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 945.5,
+        "startedAt": 927.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 945.8000001907349,
+        "startedAt": 927.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 945.9000000953674,
+        "startedAt": 928.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/moods",
+        "finishedAt": 934.0999999046326,
+        "startedAt": 931.2000002861023,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1034.4000000953674,
+        "startedAt": 990.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 1042,
+        "startedAt": 1032.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1060.3000001907349,
+        "startedAt": 1057.4000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1070.9000000953674,
+        "startedAt": 1063.4000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1079,
+        "startedAt": 1071.3000001907349,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 1096.8000001907349,
+        "startedAt": 1088,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1106.3000001907349,
+        "startedAt": 1099.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1108.2000002861023,
+        "startedAt": 1106.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1124.8000001907349,
+        "startedAt": 1119,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1126.4000000953674,
+        "startedAt": 1125.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1133.3000001907349,
+        "startedAt": 1126.9000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1135.4000000953674,
+        "startedAt": 1133.5999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1142.9000000953674,
+        "startedAt": 1136.5999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1144.4000000953674,
+        "startedAt": 1143.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1153.2000002861023,
+        "startedAt": 1146.8000001907349,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1154.9000000953674,
+        "startedAt": 1153.4000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1160.3000001907349,
+        "startedAt": 1155.0999999046326,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1161.5999999046326,
+        "startedAt": 1160.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1188.5999999046326,
+        "startedAt": 1182.3000001907349,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1190.3000001907349,
+        "startedAt": 1188.8000001907349,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1193.0999999046326,
+        "startedAt": 1191.2000002861023,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1198.7000002861023,
+        "startedAt": 1193.4000000953674,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1200.3000001907349,
+        "startedAt": 1199,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1203,
+        "startedAt": 1201.2000002861023,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 1208.4000000953674,
+        "startedAt": 1203.2000002861023,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1209.8000001907349,
+        "startedAt": 1208.7000002861023,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 1212.7000002861023,
+        "startedAt": 1211,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 4718.800000190735,
+        "startedAt": 4700.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4722.800000190735,
+        "startedAt": 4719.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4727.900000095367,
+        "startedAt": 4724.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 4739.900000095367,
+        "startedAt": 4728.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 4751.099999904633,
+        "startedAt": 4728.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4752.400000095367,
+        "startedAt": 4740.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4755.700000286102,
+        "startedAt": 4752.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4761.200000286102,
+        "startedAt": 4757.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 4775.300000190735,
+        "startedAt": 4762.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 4785.800000190735,
+        "startedAt": 4762.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4788.300000190735,
+        "startedAt": 4784.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4794.200000286102,
+        "startedAt": 4788.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4796.5,
+        "startedAt": 4792.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 4809.099999904633,
+        "startedAt": 4799.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 4815.099999904633,
+        "startedAt": 4799.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 4821.200000286102,
+        "startedAt": 4799.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 4826.599999904633,
+        "startedAt": 4799.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 4833,
+        "startedAt": 4815.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4833.700000286102,
+        "startedAt": 4821.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4835,
+        "startedAt": 4826.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4836.900000095367,
+        "startedAt": 4833.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4839.599999904633,
+        "startedAt": 4836.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 4877.800000190735,
+        "startedAt": 4839.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 4877.900000095367,
+        "startedAt": 4839.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 4886,
+        "startedAt": 4877.599999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 4892.099999904633,
+        "startedAt": 4878.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 4896.900000095367,
+        "startedAt": 4879.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 4902.099999904633,
+        "startedAt": 4879.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4902.400000095367,
+        "startedAt": 4889.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4897.300000190735,
+        "startedAt": 4892.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4903.200000286102,
+        "startedAt": 4897.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4904,
+        "startedAt": 4898.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4906.200000286102,
+        "startedAt": 4902.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 4944.200000286102,
+        "startedAt": 4902.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 4944.200000286102,
+        "startedAt": 4906.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 4944.200000286102,
+        "startedAt": 4906.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 4944.200000286102,
+        "startedAt": 4906.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 4944.300000190735,
+        "startedAt": 4906.599999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 4949.700000286102,
+        "startedAt": 4944.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4950.5,
+        "startedAt": 4944.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 4955.599999904633,
+        "startedAt": 4945.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4955.599999904633,
+        "startedAt": 4945.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4956.200000286102,
+        "startedAt": 4945.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4955.599999904633,
+        "startedAt": 4950,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 4961.5,
+        "startedAt": 4955.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4962.599999904633,
+        "startedAt": 4956.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 4968.099999904633,
+        "startedAt": 4957.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 5007.5,
+        "startedAt": 4957.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 5007.599999904633,
+        "startedAt": 4959.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 5007.599999904633,
+        "startedAt": 4959.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 5013.800000190735,
+        "startedAt": 5006.599999904633,
+        "status": 200
+      },
+      {
+        "destination": "api.openai.com",
+        "finishedAt": 9921.700000286102,
+        "startedAt": 5007.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 5019.900000095367,
+        "startedAt": 5013.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 5026.800000190735,
+        "startedAt": 5013.599999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5027.900000095367,
+        "startedAt": 5019.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 5033,
+        "startedAt": 5019.800000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5035.800000190735,
+        "startedAt": 5019.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5035.800000190735,
+        "startedAt": 5020,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5035.900000095367,
+        "startedAt": 5027.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5126.700000286102,
+        "startedAt": 5037.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 5134.900000095367,
+        "startedAt": 5104.800000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5172.400000095367,
+        "startedAt": 5122.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 5172.5,
+        "startedAt": 5126.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 5172.5,
+        "startedAt": 5126.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 5180.300000190735,
+        "startedAt": 5172.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5182.099999904633,
+        "startedAt": 5172.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 5190.900000095367,
+        "startedAt": 5181.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 5195.099999904633,
+        "startedAt": 5182,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 5204.099999904633,
+        "startedAt": 5182,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5205.300000190735,
+        "startedAt": 5182.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5207.800000190735,
+        "startedAt": 5195,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5206.800000190735,
+        "startedAt": 5204,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5209.300000190735,
+        "startedAt": 5205.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 5256.5,
+        "startedAt": 5206.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5256.5,
+        "startedAt": 5207.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 5256.599999904633,
+        "startedAt": 5208.599999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 5263.099999904633,
+        "startedAt": 5256.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5306.200000286102,
+        "startedAt": 5289.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 5311.099999904633,
+        "startedAt": 5290.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 5317.300000190735,
+        "startedAt": 5302,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5317.300000190735,
+        "startedAt": 5303.800000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5331.099999904633,
+        "startedAt": 5325.800000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 5335.300000190735,
+        "startedAt": 5326.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 5340.099999904633,
+        "startedAt": 5326.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 5345.300000190735,
+        "startedAt": 5335.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5346,
+        "startedAt": 5337.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5347.300000190735,
+        "startedAt": 5345.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 5353.700000286102,
+        "startedAt": 5346,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5353.900000095367,
+        "startedAt": 5347.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 5478.700000286102,
+        "startedAt": 5404.800000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 5483.800000190735,
+        "startedAt": 5422,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5625.300000190735,
+        "startedAt": 5483.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5626.300000190735,
+        "startedAt": 5504.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5675.300000190735,
+        "startedAt": 5664.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5677.200000286102,
+        "startedAt": 5672.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 5697.099999904633,
+        "startedAt": 5683,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5700.700000286102,
+        "startedAt": 5697.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5710.800000190735,
+        "startedAt": 5703,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 5719.300000190735,
+        "startedAt": 5711,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5739.900000095367,
+        "startedAt": 5724.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5765.200000286102,
+        "startedAt": 5759.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 5787,
+        "startedAt": 5770.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5807,
+        "startedAt": 5787.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 5863.599999904633,
+        "startedAt": 5855.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 9942.400000095367,
+        "startedAt": 9925.5,
+        "status": 200
+      },
+      {
+        "destination": "api.openai.com",
+        "finishedAt": 15935.599999904633,
+        "startedAt": 9926.800000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 9947.400000095367,
+        "startedAt": 9942.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 9978,
+        "startedAt": 9964.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 9991,
+        "startedAt": 9979.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 9993.900000095367,
+        "startedAt": 9991.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 9998.599999904633,
+        "startedAt": 9995.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 10008.900000095367,
+        "startedAt": 9998.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 10015.300000190735,
+        "startedAt": 10009.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 10028.800000190735,
+        "startedAt": 10025.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 10036.700000286102,
+        "startedAt": 10029.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 10039.300000190735,
+        "startedAt": 10037.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 10043.099999904633,
+        "startedAt": 10040.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 10065.800000190735,
+        "startedAt": 10057.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 10078.099999904633,
+        "startedAt": 10066,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 10083,
+        "startedAt": 10079.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 10091.5,
+        "startedAt": 10083.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 10095.099999904633,
+        "startedAt": 10092.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 10109.400000095367,
+        "startedAt": 10100.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 10114.099999904633,
+        "startedAt": 10101.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 10123.800000190735,
+        "startedAt": 10115.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 10127.400000095367,
+        "startedAt": 10124.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 10324.200000286102,
+        "startedAt": 10313.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 10327.599999904633,
+        "startedAt": 10324.800000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 10336.900000095367,
+        "startedAt": 10328.599999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 10341.200000286102,
+        "startedAt": 10337.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "aged-sunset-proxy.amplenote.workers.dev",
+        "finishedAt": 10709.800000190735,
+        "startedAt": 10350.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 10726.200000286102,
+        "startedAt": 10712.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 10730.700000286102,
+        "startedAt": 10726.599999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 10790.200000286102,
+        "startedAt": 10785.800000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 10801.300000190735,
+        "startedAt": 10792.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 10809.099999904633,
+        "startedAt": 10805.599999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 10814.200000286102,
+        "startedAt": 10811.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 10822,
+        "startedAt": 10814.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 10826.400000095367,
+        "startedAt": 10824.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 10829.200000286102,
+        "startedAt": 10827.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 15957.700000286102,
+        "startedAt": 15938.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "api.openai.com",
+        "finishedAt": 22055.300000190735,
+        "startedAt": 15939.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 15963.800000190735,
+        "startedAt": 15959.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 15985.400000095367,
+        "startedAt": 15979.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 15997.400000095367,
+        "startedAt": 15986.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 16001.5,
+        "startedAt": 15998.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 16013.700000286102,
+        "startedAt": 16006.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 16026.900000095367,
+        "startedAt": 16014.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 16031.700000286102,
+        "startedAt": 16028.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 16059.099999904633,
+        "startedAt": 16053.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 16069.599999904633,
+        "startedAt": 16059.800000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 16074.900000095367,
+        "startedAt": 16071.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 16080.700000286102,
+        "startedAt": 16077.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 16102.5,
+        "startedAt": 16092.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 16105.5,
+        "startedAt": 16103,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 16113,
+        "startedAt": 16109,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 16121.5,
+        "startedAt": 16113.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 16125.599999904633,
+        "startedAt": 16122,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 16140.300000190735,
+        "startedAt": 16130.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 16146.099999904633,
+        "startedAt": 16131.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 16153.900000095367,
+        "startedAt": 16146.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 16157.599999904633,
+        "startedAt": 16154.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 16347.599999904633,
+        "startedAt": 16339,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 16350.900000095367,
+        "startedAt": 16348,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 16360.800000190735,
+        "startedAt": 16353.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 16364.800000190735,
+        "startedAt": 16361.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "aged-sunset-proxy.amplenote.workers.dev",
+        "finishedAt": 16600.700000286102,
+        "startedAt": 16397,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 16615.300000190735,
+        "startedAt": 16601.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 16622.800000190735,
+        "startedAt": 16617.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 16644.800000190735,
+        "startedAt": 16639.599999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 16655.700000286102,
+        "startedAt": 16645.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 16659.5,
+        "startedAt": 16656.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 16665.200000286102,
+        "startedAt": 16661.599999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 16674.5,
+        "startedAt": 16665.599999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 16678.599999904633,
+        "startedAt": 16675.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 16685,
+        "startedAt": 16681.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 22075.400000095367,
+        "startedAt": 22057.5,
+        "status": 200
+      },
+      {
+        "destination": "api.openai.com",
+        "finishedAt": 26550,
+        "startedAt": 22058.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 22080.900000095367,
+        "startedAt": 22076.599999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 22098.900000095367,
+        "startedAt": 22094.599999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 22111.900000095367,
+        "startedAt": 22099.599999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 22119.5,
+        "startedAt": 22115.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 22125.5,
+        "startedAt": 22120.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 22138.400000095367,
+        "startedAt": 22127.800000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 22143.400000095367,
+        "startedAt": 22139.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 22149.800000190735,
+        "startedAt": 22145.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 22160.700000286102,
+        "startedAt": 22150.599999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 22163.5,
+        "startedAt": 22161,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 22169.200000286102,
+        "startedAt": 22164.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 22186.800000190735,
+        "startedAt": 22176.599999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 22190.400000095367,
+        "startedAt": 22187.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 22194.400000095367,
+        "startedAt": 22191.800000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 22205.200000286102,
+        "startedAt": 22194.800000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 22208,
+        "startedAt": 22205.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 22221,
+        "startedAt": 22212.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 22225.900000095367,
+        "startedAt": 22212.800000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 22234.200000286102,
+        "startedAt": 22226.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 22237.400000095367,
+        "startedAt": 22234.599999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 22366,
+        "startedAt": 22355.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 22369.599999904633,
+        "startedAt": 22366.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 22377.599999904633,
+        "startedAt": 22370,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 22380.300000190735,
+        "startedAt": 22377.800000190735,
+        "status": 200
+      },
+      {
+        "destination": "aged-sunset-proxy.amplenote.workers.dev",
+        "finishedAt": 22551.800000190735,
+        "startedAt": 22387,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 22564.900000095367,
+        "startedAt": 22552.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 22570,
+        "startedAt": 22565.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 22590.800000190735,
+        "startedAt": 22585.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 22607.400000095367,
+        "startedAt": 22596.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 22620.099999904633,
+        "startedAt": 22608.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 22636.200000286102,
+        "startedAt": 22631.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 22645.900000095367,
+        "startedAt": 22636.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 22648.800000190735,
+        "startedAt": 22646.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 22654,
+        "startedAt": 22650.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 26565.400000095367,
+        "startedAt": 26552.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "api.openai.com",
+        "finishedAt": 32713.099999904633,
+        "startedAt": 26555.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 26570.599999904633,
+        "startedAt": 26566.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 26611.800000190735,
+        "startedAt": 26605.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 26621.200000286102,
+        "startedAt": 26612.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 26624.599999904633,
+        "startedAt": 26621.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 26630.300000190735,
+        "startedAt": 26626.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 26639.900000095367,
+        "startedAt": 26630.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 26643.700000286102,
+        "startedAt": 26640.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 26647.800000190735,
+        "startedAt": 26645,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 26657.099999904633,
+        "startedAt": 26648.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 26660,
+        "startedAt": 26657.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 26665.599999904633,
+        "startedAt": 26662,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 26689.900000095367,
+        "startedAt": 26677.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 26694,
+        "startedAt": 26690.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 26700.099999904633,
+        "startedAt": 26695.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 26711.5,
+        "startedAt": 26700.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 26716.400000095367,
+        "startedAt": 26712.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 26734.599999904633,
+        "startedAt": 26722.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 26741.599999904633,
+        "startedAt": 26722.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 26751.700000286102,
+        "startedAt": 26742.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 26755.599999904633,
+        "startedAt": 26752.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 26931.099999904633,
+        "startedAt": 26920.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 26935.300000190735,
+        "startedAt": 26931.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 26945.300000190735,
+        "startedAt": 26936.599999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 26948.800000190735,
+        "startedAt": 26945.800000190735,
+        "status": 200
+      },
+      {
+        "destination": "aged-sunset-proxy.amplenote.workers.dev",
+        "finishedAt": 27071.5,
+        "startedAt": 26959.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 27086.5,
+        "startedAt": 27074.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 27091.200000286102,
+        "startedAt": 27087.599999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 27127,
+        "startedAt": 27121.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 27138.300000190735,
+        "startedAt": 27128.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 27141.800000190735,
+        "startedAt": 27138.800000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 27147.300000190735,
+        "startedAt": 27143.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 27158.800000190735,
+        "startedAt": 27147.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 27162.800000190735,
+        "startedAt": 27159.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 27168.5,
+        "startedAt": 27164.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 31246.099999904633,
+        "startedAt": 31215.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 31252.300000190735,
+        "startedAt": 31247.400000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 31261.099999904633,
+        "startedAt": 31254.200000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 32732.300000190735,
+        "startedAt": 32716.800000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 32739.200000286102,
+        "startedAt": 32732.700000286102,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 32760.900000095367,
+        "startedAt": 32756.099999904633,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 32771.800000190735,
+        "startedAt": 32761.900000095367,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 32781.5,
+        "startedAt": 32778,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 32791.09999990463,
+        "startedAt": 32783.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 32822.300000190735,
+        "startedAt": 32791.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 32831.800000190735,
+        "startedAt": 32827.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 32842.300000190735,
+        "startedAt": 32838.2000002861,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 32858.90000009537,
+        "startedAt": 32843.59999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 32871.09999990463,
+        "startedAt": 32867,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 32880.7000002861,
+        "startedAt": 32874.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 32913,
+        "startedAt": 32896.09999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 32915.7000002861,
+        "startedAt": 32913.59999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 32918.90000009537,
+        "startedAt": 32916.90000009537,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 32931.40000009537,
+        "startedAt": 32921.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 32938,
+        "startedAt": 32934.59999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 32959.2000002861,
+        "startedAt": 32944.09999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 32964.300000190735,
+        "startedAt": 32944.7000002861,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 32978,
+        "startedAt": 32964.7000002861,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 32982.5,
+        "startedAt": 32978.59999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 33160.90000009537,
+        "startedAt": 33150.59999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 33164.2000002861,
+        "startedAt": 33161.2000002861,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 33175.300000190735,
+        "startedAt": 33164.7000002861,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 33180.7000002861,
+        "startedAt": 33177.5,
+        "status": 200
+      },
+      {
+        "destination": "aged-sunset-proxy.amplenote.workers.dev",
+        "finishedAt": 33396.09999990463,
+        "startedAt": 33189.90000009537,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 33413.300000190735,
+        "startedAt": 33401.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 33422.2000002861,
+        "startedAt": 33415.7000002861,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 33445.300000190735,
+        "startedAt": 33440.09999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 33457.59999990463,
+        "startedAt": 33446,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 33461.300000190735,
+        "startedAt": 33458.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 33466.59999990463,
+        "startedAt": 33463.40000009537,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 33475.09999990463,
+        "startedAt": 33467.09999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 33478.2000002861,
+        "startedAt": 33475.7000002861,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 33482.40000009537,
+        "startedAt": 33479.90000009537,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 62891.09999990463,
+        "startedAt": 62846.09999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 62894.59999990463,
+        "startedAt": 62891.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 62901,
+        "startedAt": 62896.09999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 63494.5,
+        "startedAt": 63485.40000009537,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 63500,
+        "startedAt": 63496.7000002861,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 63507.59999990463,
+        "startedAt": 63504,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 63529,
+        "startedAt": 63520.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 63531.90000009537,
+        "startedAt": 63529.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 63537.90000009537,
+        "startedAt": 63534.09999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 63546.40000009537,
+        "startedAt": 63538.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 63551.800000190735,
+        "startedAt": 63538.7000002861,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 63559.40000009537,
+        "startedAt": 63552.09999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 63562.800000190735,
+        "startedAt": 63559.800000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 63759.40000009537,
+        "startedAt": 63735.800000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 63769.300000190735,
+        "startedAt": 63760.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 63821,
+        "startedAt": 63808,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 63829.7000002861,
+        "startedAt": 63825.59999990463,
+        "status": 200
+      },
+      {
+        "destination": "aged-sunset-proxy.amplenote.workers.dev",
+        "finishedAt": 64082.40000009537,
+        "startedAt": 63831.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 64105.2000002861,
+        "startedAt": 64091.40000009537,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 64111,
+        "startedAt": 64107.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 64121.09999990463,
+        "startedAt": 64113.2000002861,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 64136.09999990463,
+        "startedAt": 64124.09999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 64143.59999990463,
+        "startedAt": 64138.90000009537,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 64158.300000190735,
+        "startedAt": 64145.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-filter",
+        "finishedAt": 64166.7000002861,
+        "startedAt": 64146.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 64176.5,
+        "startedAt": 64167.2000002861,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 64181.09999990463,
+        "startedAt": 64176.90000009537,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 64318,
+        "startedAt": 64306.09999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 64325.59999990463,
+        "startedAt": 64319.2000002861,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 64373.90000009537,
+        "startedAt": 64359.59999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 64390.5,
+        "startedAt": 64386.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 64423.800000190735,
+        "startedAt": 64418.59999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 64435.09999990463,
+        "startedAt": 64425.90000009537,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 64438.2000002861,
+        "startedAt": 64435.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 64451.59999990463,
+        "startedAt": 64444.09999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 64454.59999990463,
+        "startedAt": 64451.90000009537,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 64473.40000009537,
+        "startedAt": 64466,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 64475.800000190735,
+        "startedAt": 64473.7000002861,
+        "status": 200
+      },
+      {
+        "destination": "aged-sunset-proxy.amplenote.workers.dev",
+        "finishedAt": 64662.800000190735,
+        "startedAt": 64476.90000009537,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 64671.7000002861,
+        "startedAt": 64663.40000009537,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 64674.800000190735,
+        "startedAt": 64672.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 64680.90000009537,
+        "startedAt": 64676.300000190735,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 64689.09999990463,
+        "startedAt": 64681.40000009537,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 64703.59999990463,
+        "startedAt": 64689.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 64708.2000002861,
+        "startedAt": 64705.2000002861,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 64716.7000002861,
+        "startedAt": 64708.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 64719.7000002861,
+        "startedAt": 64717.2000002861,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 64724.800000190735,
+        "startedAt": 64722,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 73683.40000009537,
+        "startedAt": 73662.2000002861,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 73709.2000002861,
+        "startedAt": 73700.2000002861,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 73751.5,
+        "startedAt": 73708.80000019073,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 73835.7000002861,
+        "startedAt": 73826.5,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 73896.30000019073,
+        "startedAt": 73889.59999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 73902.80000019073,
+        "startedAt": 73889.80000019073,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 73906.90000009537,
+        "startedAt": 73889.80000019073,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 73910.59999990463,
+        "startedAt": 73890,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 73916.80000019073,
+        "startedAt": 73890,
+        "status": 200
+      },
+      {
+        "destination": "/api/tasks",
+        "finishedAt": 74053.5,
+        "startedAt": 74047.90000009537,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 74677.5,
+        "startedAt": 74630.7000002861,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 74677.90000009537,
+        "startedAt": 74641.59999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 74678.59999990463,
+        "startedAt": 74642.30000019073,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 74682.59999990463,
+        "startedAt": 74679,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 74683.09999990463,
+        "startedAt": 74679.09999990463,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 74683.80000019073,
+        "startedAt": 74679.40000009537,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-find",
+        "finishedAt": 74692,
+        "startedAt": 74683.30000019073,
+        "status": 200
+      },
+      {
+        "destination": "/api/note-content",
+        "finishedAt": 74694.80000019073,
+        "startedAt": 74693,
+        "status": 200
+      }
+    ],
+    "startedAt": 1791315275222
+  },
+  "options": {
+    "backgroundDelayMilliseconds": 0,
+    "failOnce": false,
+    "maintenance": true,
+    "mounting": true
+  },
+  "paints": [
+    {
+      "name": "first-paint",
+      "startTime": 644
+    },
+    {
+      "name": "first-contentful-paint",
+      "startTime": 644
+    }
+  ],
+  "queue": {
+    "diagnostics": {
+      "counters": {
+        "enqueued": 36,
+        "started": 31,
+        "waiting": 29,
+        "completed": 31,
+        "cancelled": 5
+      },
+      "events": [
+        {
+          "at": 1791315275366,
+          "attempt": 0,
+          "category": "visibleRender",
+          "jobKey": "widgetMount:planning",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275367,
+          "attempt": 0,
+          "category": "visibleRender",
+          "jobKey": "widgetMount:proposed-agenda",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275367,
+          "attempt": 0,
+          "category": "visibleRender",
+          "jobKey": "widgetMount:note-peek",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275367,
+          "attempt": 0,
+          "category": "visibleRender",
+          "jobKey": "widgetMount:victory-value",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275367,
+          "attempt": 0,
+          "category": "visibleRender",
+          "jobKey": "widgetMount:shared-notes",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275367,
+          "attempt": 0,
+          "category": "visibleRender",
+          "jobKey": "widgetMount:energy-per-habit",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275367,
+          "attempt": 0,
+          "category": "visibleRender",
+          "jobKey": "widgetMount:dream-task",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275367,
+          "attempt": 0,
+          "category": "visibleRender",
+          "jobKey": "widgetMount:day-sketch",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275367,
+          "attempt": 0,
+          "category": "nearViewportRender",
+          "jobKey": "widgetMount:agenda",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275367,
+          "attempt": 0,
+          "category": "nearViewportRender",
+          "jobKey": "widgetMount:quotes",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275367,
+          "attempt": 0,
+          "category": "nearViewportRender",
+          "jobKey": "widgetMount:recent-notes",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275367,
+          "attempt": 0,
+          "category": "nearViewportRender",
+          "jobKey": "widgetMount:graveyard",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275367,
+          "attempt": 0,
+          "category": "nearViewportRender",
+          "jobKey": "widgetMount:mood",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275383,
+          "attempt": 1,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:planning",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "started",
+          "waitedMilliseconds": 17
+        },
+        {
+          "at": 1791315275383,
+          "attempt": 0,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:proposed-agenda",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "resourceBusy"
+        },
+        {
+          "at": 1791315275383,
+          "attempt": 0,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:note-peek",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "resourceBusy"
+        },
+        {
+          "at": 1791315275383,
+          "attempt": 0,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:victory-value",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "resourceBusy"
+        },
+        {
+          "at": 1791315275383,
+          "attempt": 0,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:shared-notes",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "resourceBusy"
+        },
+        {
+          "at": 1791315275383,
+          "attempt": 0,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:energy-per-habit",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "resourceBusy"
+        },
+        {
+          "at": 1791315275383,
+          "attempt": 0,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:dream-task",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "resourceBusy"
+        },
+        {
+          "at": 1791315275383,
+          "attempt": 0,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:day-sketch",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "resourceBusy"
+        },
+        {
+          "at": 1791315275383,
+          "attempt": 0,
+          "category": "nearViewportRender",
+          "effectiveCategory": "nearViewportRender",
+          "jobKey": "widgetMount:agenda",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "foregroundDemand"
+        },
+        {
+          "at": 1791315275383,
+          "attempt": 0,
+          "category": "nearViewportRender",
+          "effectiveCategory": "nearViewportRender",
+          "jobKey": "widgetMount:quotes",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "foregroundDemand"
+        },
+        {
+          "at": 1791315275383,
+          "attempt": 0,
+          "category": "nearViewportRender",
+          "effectiveCategory": "nearViewportRender",
+          "jobKey": "widgetMount:recent-notes",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "foregroundDemand"
+        },
+        {
+          "at": 1791315275383,
+          "attempt": 0,
+          "category": "nearViewportRender",
+          "effectiveCategory": "nearViewportRender",
+          "jobKey": "widgetMount:graveyard",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "foregroundDemand"
+        },
+        {
+          "at": 1791315275383,
+          "attempt": 0,
+          "category": "nearViewportRender",
+          "effectiveCategory": "nearViewportRender",
+          "jobKey": "widgetMount:mood",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "foregroundDemand"
+        },
+        {
+          "at": 1791315275387,
+          "attempt": 1,
+          "category": "visibleRender",
+          "durationMilliseconds": 4,
+          "jobKey": "widgetMount:planning",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "completed"
+        },
+        {
+          "at": 1791315275400,
+          "attempt": 1,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:proposed-agenda",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "started",
+          "waitedMilliseconds": 33
+        },
+        {
+          "at": 1791315275408,
+          "attempt": 1,
+          "category": "visibleRender",
+          "durationMilliseconds": 8,
+          "jobKey": "widgetMount:proposed-agenda",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "completed"
+        },
+        {
+          "at": 1791315275409,
+          "attempt": 0,
+          "category": "foregroundData",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"reconcileProjects:2026-Q4\"]",
+          "jobType": "reconcileProjects",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275416,
+          "attempt": 1,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:note-peek",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "started",
+          "waitedMilliseconds": 49
+        },
+        {
+          "at": 1791315275416,
+          "attempt": 1,
+          "category": "foregroundData",
+          "effectiveCategory": "foregroundData",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"reconcileProjects:2026-Q4\"]",
+          "jobType": "reconcileProjects",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "started",
+          "waitedMilliseconds": 7
+        },
+        {
+          "at": 1791315275431,
+          "attempt": 1,
+          "category": "visibleRender",
+          "durationMilliseconds": 15,
+          "jobKey": "widgetMount:note-peek",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "completed"
+        },
+        {
+          "at": 1791315275437,
+          "attempt": 1,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:victory-value",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "started",
+          "waitedMilliseconds": 70
+        },
+        {
+          "at": 1791315275441,
+          "attempt": 1,
+          "category": "visibleRender",
+          "durationMilliseconds": 4,
+          "jobKey": "widgetMount:victory-value",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "completed"
+        },
+        {
+          "at": 1791315275441,
+          "attempt": 0,
+          "category": "nearViewportRender",
+          "jobKey": "widgetMount:recent-notes",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "cancelled"
+        },
+        {
+          "at": 1791315275441,
+          "attempt": 0,
+          "category": "nearViewportRender",
+          "jobKey": "widgetMount:graveyard",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "cancelled"
+        },
+        {
+          "at": 1791315275441,
+          "attempt": 0,
+          "category": "nearViewportRender",
+          "jobKey": "widgetMount:mood",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "cancelled"
+        },
+        {
+          "at": 1791315275488,
+          "attempt": 1,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:shared-notes",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "started",
+          "waitedMilliseconds": 121
+        },
+        {
+          "at": 1791315275495,
+          "attempt": 1,
+          "category": "visibleRender",
+          "durationMilliseconds": 7,
+          "jobKey": "widgetMount:shared-notes",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "completed"
+        },
+        {
+          "at": 1791315275496,
+          "attempt": 1,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:energy-per-habit",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "started",
+          "waitedMilliseconds": 129
+        },
+        {
+          "at": 1791315275512,
+          "attempt": 1,
+          "category": "visibleRender",
+          "durationMilliseconds": 16,
+          "jobKey": "widgetMount:energy-per-habit",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "completed"
+        },
+        {
+          "at": 1791315275516,
+          "attempt": 1,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:dream-task",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "started",
+          "waitedMilliseconds": 149
+        },
+        {
+          "at": 1791315275520,
+          "attempt": 1,
+          "category": "visibleRender",
+          "durationMilliseconds": 4,
+          "jobKey": "widgetMount:dream-task",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "completed"
+        },
+        {
+          "at": 1791315275533,
+          "attempt": 1,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:day-sketch",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "started",
+          "waitedMilliseconds": 166
+        },
+        {
+          "at": 1791315275533,
+          "attempt": 0,
+          "category": "nearViewportRender",
+          "effectiveCategory": "nearViewportRender",
+          "jobKey": "widgetMount:agenda",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "resourceBusy"
+        },
+        {
+          "at": 1791315275533,
+          "attempt": 0,
+          "category": "nearViewportRender",
+          "effectiveCategory": "nearViewportRender",
+          "jobKey": "widgetMount:quotes",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "resourceBusy"
+        },
+        {
+          "at": 1791315275537,
+          "attempt": 1,
+          "category": "visibleRender",
+          "durationMilliseconds": 4,
+          "jobKey": "widgetMount:day-sketch",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "completed"
+        },
+        {
+          "at": 1791315275704,
+          "attempt": 0,
+          "category": "nearViewportRender",
+          "jobKey": "widgetMount:agenda",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "cancelled"
+        },
+        {
+          "at": 1791315275705,
+          "attempt": 0,
+          "category": "nearViewportRender",
+          "jobKey": "widgetMount:quotes",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "cancelled"
+        },
+        {
+          "at": 1791315275874,
+          "attempt": 0,
+          "category": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"generateProjectIdeas:2026-Q4-work-prospect-d07529ab\"]",
+          "jobType": "generateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275874,
+          "attempt": 0,
+          "category": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"generateProjectIdeas:2026-Q4-work-prospect-39e1b003\"]",
+          "jobType": "generateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275874,
+          "attempt": 0,
+          "category": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"generateProjectIdeas:2026-Q4-personal-prospect-b9d39408\"]",
+          "jobType": "generateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275874,
+          "attempt": 0,
+          "category": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"generateProjectIdeas:2026-Q4-work-prospect-26572820\"]",
+          "jobType": "generateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275874,
+          "attempt": 0,
+          "category": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"generateProjectIdeas:2026-Q4-work-prospect-9e64b092\"]",
+          "jobType": "generateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275874,
+          "attempt": 0,
+          "category": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"collectTermEvidence:2026:codebase hygiene\"]",
+          "jobType": "collectTermEvidence",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275874,
+          "attempt": 0,
+          "category": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"collectTermEvidence:2026:architecture decisions\"]",
+          "jobType": "collectTermEvidence",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315275875,
+          "attempt": 1,
+          "category": "foregroundData",
+          "durationMilliseconds": 459,
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"reconcileProjects:2026-Q4\"]",
+          "jobType": "reconcileProjects",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "completed"
+        },
+        {
+          "at": 1791315275882,
+          "attempt": 0,
+          "category": "maintenance",
+          "effectiveCategory": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"generateProjectIdeas:2026-Q4-work-prospect-d07529ab\"]",
+          "jobType": "generateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "waiting",
+          "waitingReason": "loadGate"
+        },
+        {
+          "at": 1791315275883,
+          "attempt": 0,
+          "category": "maintenance",
+          "effectiveCategory": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"generateProjectIdeas:2026-Q4-work-prospect-39e1b003\"]",
+          "jobType": "generateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "waiting",
+          "waitingReason": "loadGate"
+        },
+        {
+          "at": 1791315275883,
+          "attempt": 0,
+          "category": "maintenance",
+          "effectiveCategory": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"generateProjectIdeas:2026-Q4-personal-prospect-b9d39408\"]",
+          "jobType": "generateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "waiting",
+          "waitingReason": "loadGate"
+        },
+        {
+          "at": 1791315275883,
+          "attempt": 0,
+          "category": "maintenance",
+          "effectiveCategory": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"generateProjectIdeas:2026-Q4-work-prospect-26572820\"]",
+          "jobType": "generateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "waiting",
+          "waitingReason": "loadGate"
+        },
+        {
+          "at": 1791315275883,
+          "attempt": 0,
+          "category": "maintenance",
+          "effectiveCategory": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"generateProjectIdeas:2026-Q4-work-prospect-9e64b092\"]",
+          "jobType": "generateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "waiting",
+          "waitingReason": "loadGate"
+        },
+        {
+          "at": 1791315275883,
+          "attempt": 0,
+          "category": "maintenance",
+          "effectiveCategory": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"collectTermEvidence:2026:codebase hygiene\"]",
+          "jobType": "collectTermEvidence",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "waiting",
+          "waitingReason": "loadGate"
+        },
+        {
+          "at": 1791315275883,
+          "attempt": 0,
+          "category": "maintenance",
+          "effectiveCategory": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"collectTermEvidence:2026:architecture decisions\"]",
+          "jobType": "collectTermEvidence",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "waiting",
+          "waitingReason": "loadGate"
+        },
+        {
+          "at": 1791315279366,
+          "attempt": 1,
+          "category": "maintenance",
+          "effectiveCategory": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"generateProjectIdeas:2026-Q4-work-prospect-d07529ab\"]",
+          "jobType": "generateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "started",
+          "waitedMilliseconds": 3492
+        },
+        {
+          "at": 1791315279366,
+          "attempt": 1,
+          "category": "maintenance",
+          "effectiveCategory": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"generateProjectIdeas:2026-Q4-work-prospect-39e1b003\"]",
+          "jobType": "generateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "started",
+          "waitedMilliseconds": 3492
+        },
+        {
+          "at": 1791315279366,
+          "attempt": 1,
+          "category": "maintenance",
+          "effectiveCategory": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"generateProjectIdeas:2026-Q4-personal-prospect-b9d39408\"]",
+          "jobType": "generateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "started",
+          "waitedMilliseconds": 3492
+        },
+        {
+          "at": 1791315279366,
+          "attempt": 1,
+          "category": "maintenance",
+          "effectiveCategory": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"generateProjectIdeas:2026-Q4-work-prospect-26572820\"]",
+          "jobType": "generateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "started",
+          "waitedMilliseconds": 3492
+        },
+        {
+          "at": 1791315279366,
+          "attempt": 1,
+          "category": "maintenance",
+          "effectiveCategory": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"generateProjectIdeas:2026-Q4-work-prospect-9e64b092\"]",
+          "jobType": "generateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "started",
+          "waitedMilliseconds": 3492
+        },
+        {
+          "at": 1791315279366,
+          "attempt": 1,
+          "category": "maintenance",
+          "effectiveCategory": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"collectTermEvidence:2026:codebase hygiene\"]",
+          "jobType": "collectTermEvidence",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "started",
+          "waitedMilliseconds": 3492
+        },
+        {
+          "at": 1791315279366,
+          "attempt": 1,
+          "category": "maintenance",
+          "effectiveCategory": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"collectTermEvidence:2026:architecture decisions\"]",
+          "jobType": "collectTermEvidence",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "started",
+          "waitedMilliseconds": 3492
+        },
+        {
+          "at": 1791315280432,
+          "attempt": 1,
+          "category": "maintenance",
+          "durationMilliseconds": 1066,
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"collectTermEvidence:2026:codebase hygiene\"]",
+          "jobType": "collectTermEvidence",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "completed"
+        },
+        {
+          "at": 1791315280527,
+          "attempt": 1,
+          "category": "maintenance",
+          "durationMilliseconds": 1161,
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"collectTermEvidence:2026:architecture decisions\"]",
+          "jobType": "collectTermEvidence",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "completed"
+        },
+        {
+          "at": 1791315284705,
+          "attempt": 0,
+          "category": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"rateProjectIdeas:2026-Q4-work-prospect-d07529ab\"]",
+          "jobType": "rateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315284705,
+          "attempt": 1,
+          "category": "maintenance",
+          "durationMilliseconds": 5339,
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"generateProjectIdeas:2026-Q4-work-prospect-d07529ab\"]",
+          "jobType": "generateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "completed"
+        },
+        {
+          "at": 1791315284719,
+          "attempt": 1,
+          "category": "maintenance",
+          "effectiveCategory": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"rateProjectIdeas:2026-Q4-work-prospect-d07529ab\"]",
+          "jobType": "rateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "started",
+          "waitedMilliseconds": 14
+        },
+        {
+          "at": 1791315285491,
+          "attempt": 1,
+          "category": "maintenance",
+          "durationMilliseconds": 772,
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"rateProjectIdeas:2026-Q4-work-prospect-d07529ab\"]",
+          "jobType": "rateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "completed"
+        },
+        {
+          "at": 1791315290748,
+          "attempt": 0,
+          "category": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"rateProjectIdeas:2026-Q4-work-prospect-39e1b003\"]",
+          "jobType": "rateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315290748,
+          "attempt": 1,
+          "category": "maintenance",
+          "durationMilliseconds": 11382,
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"generateProjectIdeas:2026-Q4-work-prospect-39e1b003\"]",
+          "jobType": "generateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "completed"
+        },
+        {
+          "at": 1791315290754,
+          "attempt": 1,
+          "category": "maintenance",
+          "effectiveCategory": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"rateProjectIdeas:2026-Q4-work-prospect-39e1b003\"]",
+          "jobType": "rateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "started",
+          "waitedMilliseconds": 6
+        },
+        {
+          "at": 1791315291347,
+          "attempt": 1,
+          "category": "maintenance",
+          "durationMilliseconds": 593,
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"rateProjectIdeas:2026-Q4-work-prospect-39e1b003\"]",
+          "jobType": "rateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "completed"
+        },
+        {
+          "at": 1791315296831,
+          "attempt": 0,
+          "category": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"rateProjectIdeas:2026-Q4-personal-prospect-b9d39408\"]",
+          "jobType": "rateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315296831,
+          "attempt": 1,
+          "category": "maintenance",
+          "durationMilliseconds": 17465,
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"generateProjectIdeas:2026-Q4-personal-prospect-b9d39408\"]",
+          "jobType": "generateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "completed"
+        },
+        {
+          "at": 1791315296838,
+          "attempt": 1,
+          "category": "maintenance",
+          "effectiveCategory": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"rateProjectIdeas:2026-Q4-personal-prospect-b9d39408\"]",
+          "jobType": "rateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "started",
+          "waitedMilliseconds": 7
+        },
+        {
+          "at": 1791315297316,
+          "attempt": 1,
+          "category": "maintenance",
+          "durationMilliseconds": 478,
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"rateProjectIdeas:2026-Q4-personal-prospect-b9d39408\"]",
+          "jobType": "rateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "completed"
+        },
+        {
+          "at": 1791315301327,
+          "attempt": 0,
+          "category": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"rateProjectIdeas:2026-Q4-work-prospect-26572820\"]",
+          "jobType": "rateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315301328,
+          "attempt": 1,
+          "category": "maintenance",
+          "durationMilliseconds": 21962,
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"generateProjectIdeas:2026-Q4-work-prospect-26572820\"]",
+          "jobType": "generateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "completed"
+        },
+        {
+          "at": 1791315301339,
+          "attempt": 1,
+          "category": "maintenance",
+          "effectiveCategory": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"rateProjectIdeas:2026-Q4-work-prospect-26572820\"]",
+          "jobType": "rateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "started",
+          "waitedMilliseconds": 12
+        },
+        {
+          "at": 1791315301831,
+          "attempt": 1,
+          "category": "maintenance",
+          "durationMilliseconds": 492,
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"rateProjectIdeas:2026-Q4-work-prospect-26572820\"]",
+          "jobType": "rateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "completed"
+        },
+        {
+          "at": 1791315307547,
+          "attempt": 0,
+          "category": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"rateProjectIdeas:2026-Q4-work-prospect-9e64b092\"]",
+          "jobType": "rateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315307547,
+          "attempt": 1,
+          "category": "maintenance",
+          "durationMilliseconds": 28181,
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"generateProjectIdeas:2026-Q4-work-prospect-9e64b092\"]",
+          "jobType": "generateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "completed"
+        },
+        {
+          "at": 1791315307558,
+          "attempt": 1,
+          "category": "maintenance",
+          "effectiveCategory": "maintenance",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"rateProjectIdeas:2026-Q4-work-prospect-9e64b092\"]",
+          "jobType": "rateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "started",
+          "waitedMilliseconds": 10
+        },
+        {
+          "at": 1791315308145,
+          "attempt": 1,
+          "category": "maintenance",
+          "durationMilliseconds": 588,
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"rateProjectIdeas:2026-Q4-work-prospect-9e64b092\"]",
+          "jobType": "rateProjectIdeas",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "completed"
+        },
+        {
+          "at": 1791315338170,
+          "attempt": 0,
+          "category": "foregroundData",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"prepareDayRanking:domain-work-uuid:2026-10-06\"]",
+          "jobType": "prepareDayRanking",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315338182,
+          "attempt": 1,
+          "category": "foregroundData",
+          "effectiveCategory": "foregroundData",
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"prepareDayRanking:domain-work-uuid:2026-10-06\"]",
+          "jobType": "prepareDayRanking",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "started",
+          "waitedMilliseconds": 12
+        },
+        {
+          "at": 1791315339387,
+          "attempt": 1,
+          "category": "foregroundData",
+          "durationMilliseconds": 1205,
+          "jobKey": "[\"domain-work-uuid:Q4 2026\",\"prepareDayRanking:domain-work-uuid:2026-10-06\"]",
+          "jobType": "prepareDayRanking",
+          "resource": null,
+          "scopeKey": "domain-work-uuid:Q4 2026",
+          "type": "completed"
+        },
+        {
+          "at": 1791315348110,
+          "attempt": 0,
+          "category": "visibleRender",
+          "jobKey": "widgetMount:agenda",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315348110,
+          "attempt": 0,
+          "category": "visibleRender",
+          "jobKey": "widgetMount:quotes",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315348110,
+          "attempt": 0,
+          "category": "visibleRender",
+          "jobKey": "widgetMount:recent-notes",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315348110,
+          "attempt": 0,
+          "category": "visibleRender",
+          "jobKey": "widgetMount:graveyard",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315348110,
+          "attempt": 0,
+          "category": "visibleRender",
+          "jobKey": "widgetMount:mood",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315348110,
+          "attempt": 0,
+          "category": "visibleRender",
+          "jobKey": "widgetMount:calendar",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315348110,
+          "attempt": 0,
+          "category": "visibleRender",
+          "jobKey": "widgetMount:peak-hours",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315348110,
+          "attempt": 0,
+          "category": "visibleRender",
+          "jobKey": "widgetMount:debug-console",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315348110,
+          "attempt": 0,
+          "category": "visibleRender",
+          "jobKey": "widgetMount:quick-actions",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "enqueued"
+        },
+        {
+          "at": 1791315348124,
+          "attempt": 1,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:agenda",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "started",
+          "waitedMilliseconds": 14
+        },
+        {
+          "at": 1791315348124,
+          "attempt": 0,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:quotes",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "resourceBusy"
+        },
+        {
+          "at": 1791315348124,
+          "attempt": 0,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:recent-notes",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "resourceBusy"
+        },
+        {
+          "at": 1791315348124,
+          "attempt": 0,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:graveyard",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "resourceBusy"
+        },
+        {
+          "at": 1791315348124,
+          "attempt": 0,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:mood",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "resourceBusy"
+        },
+        {
+          "at": 1791315348124,
+          "attempt": 0,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:calendar",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "resourceBusy"
+        },
+        {
+          "at": 1791315348124,
+          "attempt": 0,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:peak-hours",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "resourceBusy"
+        },
+        {
+          "at": 1791315348124,
+          "attempt": 0,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:debug-console",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "resourceBusy"
+        },
+        {
+          "at": 1791315348124,
+          "attempt": 0,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:quick-actions",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "waiting",
+          "waitingReason": "resourceBusy"
+        },
+        {
+          "at": 1791315348222,
+          "attempt": 1,
+          "category": "visibleRender",
+          "durationMilliseconds": 98,
+          "jobKey": "widgetMount:agenda",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "completed"
+        },
+        {
+          "at": 1791315348297,
+          "attempt": 1,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:quotes",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "started",
+          "waitedMilliseconds": 187
+        },
+        {
+          "at": 1791315348307,
+          "attempt": 1,
+          "category": "visibleRender",
+          "durationMilliseconds": 10,
+          "jobKey": "widgetMount:quotes",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "completed"
+        },
+        {
+          "at": 1791315348317,
+          "attempt": 1,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:recent-notes",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "started",
+          "waitedMilliseconds": 207
+        },
+        {
+          "at": 1791315348326,
+          "attempt": 1,
+          "category": "visibleRender",
+          "durationMilliseconds": 9,
+          "jobKey": "widgetMount:recent-notes",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "completed"
+        },
+        {
+          "at": 1791315348364,
+          "attempt": 1,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:graveyard",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "started",
+          "waitedMilliseconds": 254
+        },
+        {
+          "at": 1791315348371,
+          "attempt": 1,
+          "category": "visibleRender",
+          "durationMilliseconds": 7,
+          "jobKey": "widgetMount:graveyard",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "completed"
+        },
+        {
+          "at": 1791315348378,
+          "attempt": 1,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:mood",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "started",
+          "waitedMilliseconds": 268
+        },
+        {
+          "at": 1791315348473,
+          "attempt": 1,
+          "category": "visibleRender",
+          "durationMilliseconds": 95,
+          "jobKey": "widgetMount:mood",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "completed"
+        },
+        {
+          "at": 1791315348563,
+          "attempt": 1,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:calendar",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "started",
+          "waitedMilliseconds": 453
+        },
+        {
+          "at": 1791315348567,
+          "attempt": 1,
+          "category": "visibleRender",
+          "durationMilliseconds": 4,
+          "jobKey": "widgetMount:calendar",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "completed"
+        },
+        {
+          "at": 1791315348577,
+          "attempt": 1,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:peak-hours",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "started",
+          "waitedMilliseconds": 467
+        },
+        {
+          "at": 1791315348711,
+          "attempt": 1,
+          "category": "visibleRender",
+          "durationMilliseconds": 134,
+          "jobKey": "widgetMount:peak-hours",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "completed"
+        },
+        {
+          "at": 1791315348944,
+          "attempt": 1,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:debug-console",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "started",
+          "waitedMilliseconds": 834
+        },
+        {
+          "at": 1791315349002,
+          "attempt": 1,
+          "category": "visibleRender",
+          "durationMilliseconds": 58,
+          "jobKey": "widgetMount:debug-console",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "completed"
+        },
+        {
+          "at": 1791315349021,
+          "attempt": 1,
+          "category": "visibleRender",
+          "effectiveCategory": "visibleRender",
+          "jobKey": "widgetMount:quick-actions",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "started",
+          "waitedMilliseconds": 911
+        },
+        {
+          "at": 1791315349030,
+          "attempt": 1,
+          "category": "visibleRender",
+          "durationMilliseconds": 9,
+          "jobKey": "widgetMount:quick-actions",
+          "jobType": "widgetMount",
+          "resource": "mount",
+          "scopeKey": null,
+          "type": "completed"
+        }
+      ],
+      "lastProgressAt": 1791315349030,
+      "timings": {
+        "widgetMount": {
+          "maximumRunMilliseconds": 134,
+          "runs": 17,
+          "totalRunMilliseconds": 486,
+          "totalWaitMilliseconds": 4329,
+          "waits": 17
+        },
+        "reconcileProjects": {
+          "maximumRunMilliseconds": 459,
+          "runs": 1,
+          "totalRunMilliseconds": 459,
+          "totalWaitMilliseconds": 7,
+          "waits": 1
+        },
+        "generateProjectIdeas": {
+          "maximumRunMilliseconds": 28181,
+          "runs": 5,
+          "totalRunMilliseconds": 84329,
+          "totalWaitMilliseconds": 17460,
+          "waits": 5
+        },
+        "collectTermEvidence": {
+          "maximumRunMilliseconds": 1161,
+          "runs": 2,
+          "totalRunMilliseconds": 2227,
+          "totalWaitMilliseconds": 6984,
+          "waits": 2
+        },
+        "rateProjectIdeas": {
+          "maximumRunMilliseconds": 772,
+          "runs": 5,
+          "totalRunMilliseconds": 2923,
+          "totalWaitMilliseconds": 49,
+          "waits": 5
+        },
+        "prepareDayRanking": {
+          "maximumRunMilliseconds": 1205,
+          "runs": 1,
+          "totalRunMilliseconds": 1205,
+          "totalWaitMilliseconds": 12,
+          "waits": 1
+        }
+      }
+    },
+    "exportedAt": "2026-10-06T19:35:49.823Z",
+    "mounts": [
+      {
+        "admittedAt": 1791315275383,
+        "committedAt": 1791315275387,
+        "generation": 1,
+        "nearViewport": true,
+        "queuedCategory": null,
+        "registeredAt": 1791315275359,
+        "releasedBy": "commit",
+        "requestedAt": 1791315275366,
+        "status": "mounted",
+        "visible": true,
+        "watchdogActive": false,
+        "widgetId": "planning"
+      },
+      {
+        "admittedAt": 1791315275400,
+        "committedAt": 1791315275407,
+        "generation": 2,
+        "nearViewport": true,
+        "queuedCategory": null,
+        "registeredAt": 1791315275359,
+        "releasedBy": "commit",
+        "requestedAt": 1791315275367,
+        "status": "mounted",
+        "visible": true,
+        "watchdogActive": false,
+        "widgetId": "proposed-agenda"
+      },
+      {
+        "admittedAt": 1791315275416,
+        "committedAt": 1791315275427,
+        "generation": 3,
+        "nearViewport": true,
+        "queuedCategory": null,
+        "registeredAt": 1791315275359,
+        "releasedBy": "commit",
+        "requestedAt": 1791315275367,
+        "status": "mounted",
+        "visible": true,
+        "watchdogActive": false,
+        "widgetId": "note-peek"
+      },
+      {
+        "admittedAt": 1791315275437,
+        "committedAt": 1791315275441,
+        "generation": 4,
+        "nearViewport": true,
+        "queuedCategory": null,
+        "registeredAt": 1791315275359,
+        "releasedBy": "commit",
+        "requestedAt": 1791315275367,
+        "status": "mounted",
+        "visible": true,
+        "watchdogActive": false,
+        "widgetId": "victory-value"
+      },
+      {
+        "admittedAt": 1791315275488,
+        "committedAt": 1791315275495,
+        "generation": 5,
+        "nearViewport": true,
+        "queuedCategory": null,
+        "registeredAt": 1791315275359,
+        "releasedBy": "commit",
+        "requestedAt": 1791315275367,
+        "status": "mounted",
+        "visible": true,
+        "watchdogActive": false,
+        "widgetId": "shared-notes"
+      },
+      {
+        "admittedAt": 1791315275496,
+        "committedAt": 1791315275512,
+        "generation": 6,
+        "nearViewport": true,
+        "queuedCategory": null,
+        "registeredAt": 1791315275359,
+        "releasedBy": "commit",
+        "requestedAt": 1791315275367,
+        "status": "mounted",
+        "visible": true,
+        "watchdogActive": false,
+        "widgetId": "energy-per-habit"
+      },
+      {
+        "admittedAt": 1791315275516,
+        "committedAt": 1791315275519,
+        "generation": 7,
+        "nearViewport": true,
+        "queuedCategory": null,
+        "registeredAt": 1791315275359,
+        "releasedBy": "commit",
+        "requestedAt": 1791315275367,
+        "status": "mounted",
+        "visible": true,
+        "watchdogActive": false,
+        "widgetId": "dream-task"
+      },
+      {
+        "admittedAt": 1791315275533,
+        "committedAt": 1791315275537,
+        "generation": 8,
+        "nearViewport": true,
+        "queuedCategory": null,
+        "registeredAt": 1791315275359,
+        "releasedBy": "commit",
+        "requestedAt": 1791315275367,
+        "status": "mounted",
+        "visible": true,
+        "watchdogActive": false,
+        "widgetId": "day-sketch"
+      },
+      {
+        "admittedAt": 1791315348124,
+        "committedAt": 1791315348221,
+        "generation": 9,
+        "nearViewport": true,
+        "queuedCategory": null,
+        "registeredAt": 1791315275359,
+        "releasedBy": "commit",
+        "requestedAt": 1791315348110,
+        "status": "mounted",
+        "visible": true,
+        "watchdogActive": false,
+        "widgetId": "agenda"
+      },
+      {
+        "admittedAt": 1791315348298,
+        "committedAt": 1791315348306,
+        "generation": 10,
+        "nearViewport": true,
+        "queuedCategory": null,
+        "registeredAt": 1791315275359,
+        "releasedBy": "commit",
+        "requestedAt": 1791315348110,
+        "status": "mounted",
+        "visible": true,
+        "watchdogActive": false,
+        "widgetId": "quotes"
+      },
+      {
+        "admittedAt": 1791315348317,
+        "committedAt": 1791315348325,
+        "generation": 11,
+        "nearViewport": true,
+        "queuedCategory": null,
+        "registeredAt": 1791315275359,
+        "releasedBy": "commit",
+        "requestedAt": 1791315348110,
+        "status": "mounted",
+        "visible": true,
+        "watchdogActive": false,
+        "widgetId": "recent-notes"
+      },
+      {
+        "admittedAt": 1791315348365,
+        "committedAt": 1791315348371,
+        "generation": 12,
+        "nearViewport": true,
+        "queuedCategory": null,
+        "registeredAt": 1791315275359,
+        "releasedBy": "commit",
+        "requestedAt": 1791315348110,
+        "status": "mounted",
+        "visible": true,
+        "watchdogActive": false,
+        "widgetId": "graveyard"
+      },
+      {
+        "admittedAt": 1791315348378,
+        "committedAt": 1791315348473,
+        "generation": 13,
+        "nearViewport": true,
+        "queuedCategory": null,
+        "registeredAt": 1791315275359,
+        "releasedBy": "commit",
+        "requestedAt": 1791315348110,
+        "status": "mounted",
+        "visible": true,
+        "watchdogActive": false,
+        "widgetId": "mood"
+      },
+      {
+        "admittedAt": 1791315348563,
+        "committedAt": 1791315348567,
+        "generation": 14,
+        "nearViewport": true,
+        "queuedCategory": null,
+        "registeredAt": 1791315275359,
+        "releasedBy": "commit",
+        "requestedAt": 1791315348110,
+        "status": "mounted",
+        "visible": true,
+        "watchdogActive": false,
+        "widgetId": "calendar"
+      },
+      {
+        "admittedAt": 1791315348577,
+        "committedAt": 1791315348710,
+        "generation": 15,
+        "nearViewport": true,
+        "queuedCategory": null,
+        "registeredAt": 1791315275359,
+        "releasedBy": "commit",
+        "requestedAt": 1791315348110,
+        "status": "mounted",
+        "visible": true,
+        "watchdogActive": false,
+        "widgetId": "peak-hours"
+      },
+      {
+        "admittedAt": 1791315348944,
+        "committedAt": 1791315349002,
+        "generation": 16,
+        "nearViewport": true,
+        "queuedCategory": null,
+        "registeredAt": 1791315275359,
+        "releasedBy": "commit",
+        "requestedAt": 1791315348110,
+        "status": "mounted",
+        "visible": true,
+        "watchdogActive": false,
+        "widgetId": "debug-console"
+      },
+      {
+        "admittedAt": 1791315349021,
+        "committedAt": 1791315349030,
+        "generation": 17,
+        "nearViewport": true,
+        "queuedCategory": null,
+        "registeredAt": 1791315275359,
+        "releasedBy": "commit",
+        "requestedAt": 1791315348110,
+        "status": "mounted",
+        "visible": true,
+        "watchdogActive": false,
+        "widgetId": "quick-actions"
+      }
+    ],
+    "scheduler": {
+      "conditions": {
+        "hidden": false,
+        "loadSettled": true,
+        "overlayHeld": false
+      },
+      "counts": {
+        "pending": 0,
+        "running": 0
+      },
+      "foregroundRequesters": 0,
+      "generation": 2,
+      "jobs": [],
+      "resources": {
+        "appRead": {
+          "available": 2,
+          "foreground": 0,
+          "limit": 2,
+          "maintenance": 0,
+          "maintenanceLimit": 2
+        },
+        "generative": {
+          "available": 2,
+          "foreground": 0,
+          "limit": 2,
+          "maintenance": 0,
+          "maintenanceLimit": 1
+        },
+        "jev": {
+          "available": 4,
+          "foreground": 0,
+          "limit": 4,
+          "maintenance": 0,
+          "maintenanceLimit": 4
+        },
+        "mount": {
+          "available": 1,
+          "foreground": 0,
+          "limit": 1,
+          "maintenance": 0,
+          "maintenanceLimit": 1
+        },
+        "write": {
+          "available": 1,
+          "foreground": 0,
+          "limit": 1,
+          "maintenance": 0,
+          "maintenanceLimit": 1
+        }
+      },
+      "scopeKey": "domain-work-uuid:Q4 2026"
+    },
+    "session": {
+      "sessionId": "2p8bkwsp",
+      "startedAt": 1791315275257
+    }
+  },
+  "run": "desktop-interruption-after",
+  "viewport": {
+    "height": 1367,
+    "width": 1907
+  }
+}
