@@ -26,6 +26,20 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-07 — Load the quarterly planning video only on play
+
+**Model:** Claude Opus 5.5
+**Files modified:**
+- `lib/dashboard/quarterly-plan-entry.jsx` — `PlanEntryVideo` shows a thumbnail with a play button and mounts the YouTube iframe (with autoplay) only after it is pressed.
+- `lib/quarterly-plan-service.js` — Entry state carries `videoThumbnailUrl`.
+- `lib/dashboard/styles/quarterly-plan-entry.scss` — Play button and icon styles.
+- `test/quarterly-plan-entry-splash.test.js` — No iframe before play; autoplay embed after.
+
+**Task:** Stop the dashboard from opening YouTube in Safari on a fresh launch of the native app, caused by the ready splash's YouTube iframe loading at render.
+**Prompt summary:** "Opening dashboard on a fresh app launch now jumps me out to youtube in safari... There's a video in the quarterly planning section"
+
+---
+
 ## 2026-10-07 — Pair accent text with the host action background
 
 **Model:** Grok 4.7

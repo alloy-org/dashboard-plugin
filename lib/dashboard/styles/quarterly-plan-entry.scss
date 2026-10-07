@@ -262,6 +262,41 @@ $plan-entry-video-background: #152033;
     width: 100%;
   }
 
+  .plan-entry-video-play {
+    align-items: center;
+    aspect-ratio: 16 / 9;
+    background-color: $plan-entry-video-background;
+    background-position: center;
+    background-size: cover;
+    border: 0;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    padding: 0;
+    width: 100%;
+
+    &:hover .plan-entry-video-play-icon,
+    &:focus-visible .plan-entry-video-play-icon {
+      background: rgba(0, 0, 0, 0.85);
+      transform: scale(1.06);
+    }
+  }
+
+  /* Fixed white on translucent black so the glyph reads over any thumbnail. */
+  .plan-entry-video-play-icon {
+    align-items: center;
+    background: rgba(0, 0, 0, 0.65);
+    border-radius: 50%;
+    color: #ffffff;
+    display: flex;
+    font-size: 24px;
+    height: 64px;
+    justify-content: center;
+    padding-left: 4px;
+    transition: background 120ms ease, transform 120ms ease;
+    width: 64px;
+  }
+
   /* The frame behind this caption is the fixed #152033, not a host color. */
   .plan-entry-video-caption {
     color: #ffffff;

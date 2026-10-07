@@ -36,6 +36,7 @@ const sharedEntry = {
   ],
   taskThreshold: 25,
   videoEmbedUrl: "https://www.youtube.com/embed/zyLI9KCziNU?start=5",
+  videoThumbnailUrl: "https://i.ytimg.com/vi/zyLI9KCziNU/hqdefault.jpg",
   videoUrl: "https://www.youtube.com/watch?v=zyLI9KCziNU&t=5s",
 };
 
@@ -140,12 +141,14 @@ describe("Planning quarterly plan splash", () => {
     await cleanup();
   });
 
-  it("embeds the planning video and opens Plan Builder from the ready splash", async () => {
+  it("loads the planning video only after play is pressed, and opens Plan Builder from the ready splash", async () => {
     const { cleanup, container } = await renderSplash({ ...sharedEntry, applicableTaskCount: 142, kind: "ready" });
 
     expect(container.textContent).toContain("Set your Q4 2026 plan before the quarter begins");
     expect(container.textContent).toContain("Q4 2026 starts Thursday, Oct 1");
-    expect(container.querySelector(".plan-entry-video-frame").getAttribute("src")).toBe(sharedEntry.videoEmbedUrl);
+    expect(container.querySelector("iframe")).toBeNull();
+    await act(async () => { container.querySelector(".plan-entry-video-play").dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    expect(container.querySelector(".plan-entry-video-frame").getAttribute("src")).toBe(`${ sharedEntry.videoEmbedUrl }&autoplay=1`);
 
     await act(async () => { container.querySelector(".plan-entry-build").dispatchEvent(new MouseEvent("click", { bubbles: true })); });
     await settle();

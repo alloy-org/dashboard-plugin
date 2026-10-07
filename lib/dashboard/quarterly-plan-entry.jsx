@@ -210,6 +210,35 @@ function NeedsAiEntry({ entry, onNavigate, onOpenSettings, plan }) {
 }
 
 // ----------------------------------------------------------------------------------------------
+// @desc The planning video as a still thumbnail with a play button. The YouTube iframe is mounted only after
+//   the user presses play: the native Amplenote apps hand an external frame's navigation to the system browser,
+//   so an iframe present at render time opened YouTube in Safari as soon as the dashboard loaded.
+// @param {Object} props - An object with the following properties:
+//   - {string} embedUrl - YouTube embed URL, without autoplay
+//   - {string} thumbnailUrl - Still image shown until play is pressed
+// @returns {JSX.Element} The video card
+function PlanEntryVideo({ embedUrl, thumbnailUrl }) {
+  const [playing, setPlaying] = useState(false);
+  const autoplayUrl = `${ embedUrl }${ embedUrl.includes("?") ? "&" : "?" }autoplay=1`;
+  return (
+    <div className="plan-entry-video">
+      { playing ? (
+        <iframe allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen className="plan-entry-video-frame" src={ autoplayUrl }
+          title="How quarterly planning works in Amplenote" />
+      ) : (
+        <button aria-label="Play: How quarterly planning works in Amplenote" className="plan-entry-video-play"
+          onClick={ () => setPlaying(true) } style={ thumbnailUrl ? { backgroundImage: `url(${ thumbnailUrl })` } : null }
+          type="button">
+          <span aria-hidden="true" className="plan-entry-video-play-icon">▶</span>
+        </button>
+      ) }
+      <p className="plan-entry-video-caption"><span>Watch</span> How quarterly planning works in Amplenote</p>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------------------------
 // @desc Enough tasks and a working model. The headline row carries a Begin button so Plan Builder can be opened
 //   without scrolling past the video; the button below the benefits opens it too.
 // @param {Object} props - { entry, onBuildPlan, plan }
@@ -225,12 +254,7 @@ function ReadyPlanEntry({ entry, onBuildPlan, plan }) {
       </div>
       <p className="plan-entry-copy">You have { entry.applicableTaskCount } tasks to build from. The Plan Builder turns
         them into a handful of quarterly goals, then keeps your daily agenda pointed at them.</p>
-      <div className="plan-entry-video">
-        <iframe allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen className="plan-entry-video-frame" src={ entry.videoEmbedUrl }
-          title="How quarterly planning works in Amplenote" />
-        <p className="plan-entry-video-caption"><span>Watch</span> How quarterly planning works in Amplenote</p>
-      </div>
+      <PlanEntryVideo embedUrl={ entry.videoEmbedUrl } thumbnailUrl={ entry.videoThumbnailUrl } />
       <ul className="plan-entry-benefits">
         { READY_BENEFITS.map(benefit => (
           <li className="plan-entry-benefit" key={ benefit.title }>
