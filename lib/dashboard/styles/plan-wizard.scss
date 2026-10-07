@@ -1217,7 +1217,13 @@ $pace-slice-other-color: #e87ba4;
       &[aria-pressed="true"] {
         background: $color-navy;
         border-color: $color-navy;
-        color: $color-text-on-accent;
+        /* The pressed fill is the host's high-contrast text color. Pick the label from that fill: black or white,
+         * split at the same CIELAB L* as the widget header, so the words stay visible in either theme. */
+        color: #ffffff;
+
+        @supports (color: lab(from red l a b)) {
+          color: lab(from $color-navy clamp(0, (65.1 - l) * 1000, 100) 0 0);
+        }
 
         &:hover:not(:disabled) {
           background: $color-navy;

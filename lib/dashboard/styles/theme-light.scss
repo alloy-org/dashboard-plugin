@@ -34,7 +34,9 @@
   --dashboard-color-success: var(--color-text-status, #4caf80);
   --dashboard-color-text: var(--color-text-high-contrast, #1e2a3a);
   --dashboard-color-text-muted: var(--color-text-low-contrast, #90999f);
-  --dashboard-color-text-on-accent: var(--color-text-button, #ffffff);
+  /* Host themes do not define --color-text-button. Naming it here left filled labels the same color as a
+   * text-colored fill, so the project list's pressed buttons read as blank. */
+  --dashboard-color-text-on-accent: #ffffff;
   --dashboard-color-text-on-accent-muted: rgba(255, 255, 255, 0.6);
   --dashboard-color-text-secondary: var(--color-text-medium-contrast, #7a8699);
   --dashboard-color-tooltip-accent: var(--color-text-reversed-link, #5b7bbf);
