@@ -165,26 +165,70 @@ describe("project task store sections", () => {
       relatedTaskRecords: [{ taskText: "Draft release notes", taskUuid: "open-task" }] }).toStoreSection();
     expect(body).toContain("- Last attempted: 2026-09-18T12:00:00.000Z");
     expect(body).toContain("Draft release notes");
-    expect(body).toContain("- Suggested tasks\n  - (none yet)");
+    expect(body).toContain("- Generated task ideas\n  - (none yet)");
     expect(body).toContain("done-task");
   });
 
   // ----------------------------------------------------------------------------------------------
   // @desc Writing one project leaves every other project's section untouched, which is what makes a
   //   progressive pass safe to interrupt.
-  it("keeps the similarity hash on one line in its own block, sorted by task UUID, out of the JSON payload", () => {
+  it("keeps the similarity hash one entry per line in its own block, sorted by task UUID, out of the JSON payload", () => {
     const taskSimilarityScores = { "e5f6a7b8:task-2": 6.4, "a1b2c3d4:task-1": 7.1 };
-    const markdown = new QuarterProject({ summary: "Launch", uuid: "project-1", relatedTasks: ["task-1", "task-named"],
-      taskSimilarityScores }).toStoreSection();
-    expect(markdown).toContain('\n```\n{"a1b2c3d4:task-1":7.1,"e5f6a7b8:task-2":6.4}\n```\n');
+    const markdown = new QuarterProject({ summary: "Launch", uuid: "project-1", taskSimilarityScores }).toStoreSection();
+    expect(markdown).toContain("\n```\na1b2c3d4:task-1 7.1\ne5f6a7b8:task-2 6.4\n```\n");
     expect(markdown.match(/^```json$/gm)).toHaveLength(1);
     expect(markdown).not.toMatch(/"taskSimilarityScores"/);
     const record = QuarterProject.fromStoreSection(markdown);
     expect(record.taskSimilarityScores).toEqual(taskSimilarityScores);
-    expect(record.relatedTasks).toEqual(["task-named"]);
+    const legacyMarkdown = markdown.replace("a1b2c3d4:task-1 7.1\ne5f6a7b8:task-2 6.4",
+      '{"a1b2c3d4:task-1":7.1,"e5f6a7b8:task-2":6.4}');
+    expect(QuarterProject.fromStoreSection(legacyMarkdown).taskSimilarityScores).toEqual(taskSimilarityScores);
     const withoutScores = new QuarterProject({ summary: "Launch", uuid: "project-1" }).toStoreSection();
     expect(withoutScores).not.toContain(SIMILARITY_SCORES_LABEL);
     expect(QuarterProject.fromStoreSection(withoutScores).taskSimilarityScores).toEqual({});
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Existing tasks are split by whether a day may suggest them, each line carrying its score and link reason,
+  //   and read back from either list with those fields; an assigned task restores the project's assignment.
+  it("lists existing tasks by eligibility with their similarity and link reason", () => {
+    const markdown = storedProject({ relatedTasks: ["cited-task"], relatedTaskRecords: [
+      { linkedBy: "projectName", taskText: "Launch dashboard copy", taskUuid: "named-task" },
+      { matchScore: 4, taskText: "Tidy the inbox", taskUuid: "weak-task" },
+      { taskText: "Cited by the builder", taskUuid: "cited-task" }],
+    taskSimilarityScores: { "abc:named-task": 7.25 } }).toStoreSection();
+    expect(markdown).toContain("- Existing tasks eligible for suggestion\n"
+      + "  - [Launch dashboard copy](https://www.amplenote.com/notes/tasks/named-task) — similarity 7.25; names project\n"
+      + "  - [Cited by the builder](https://www.amplenote.com/notes/tasks/cited-task) — assigned to project\n"
+      + "- Existing tasks not suggested (similarity below 6)\n"
+      + "  - [Tidy the inbox](https://www.amplenote.com/notes/tasks/weak-task) — similarity 4\n");
+    const record = QuarterProject.fromStoreSection(markdown);
+    expect(record.relatedTaskRecords).toEqual([
+      { linkedBy: "projectName", matchScore: 7.25, taskText: "Launch dashboard copy", taskUuid: "named-task" },
+      { linkedBy: "assigned", taskText: "Cited by the builder", taskUuid: "cited-task" },
+      { matchScore: 4, taskText: "Tidy the inbox", taskUuid: "weak-task" }]);
+    expect(record.relatedTasks).toEqual(["cited-task"]);
+    expect(storedProject().toStoreSection()).not.toContain("Existing tasks not suggested");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A section written before the lists were split and the log moved to headings is still read: its single
+  //   Existing tasks list, and the relatedTasks and taskSuggestions its payload carried.
+  it("reads a section written in the earlier format", () => {
+    const legacySection = "- Last attempted: never\n\n- Existing tasks\n"
+      + "  - [Draft release notes](https://www.amplenote.com/notes/tasks/open-task)\n- Suggested tasks\n  - (none yet)\n"
+      + "- Completed tasks\n  - (none yet)\n\n### open-task suggested\n- open-task — 2026-09-01T12:00:00.000Z\n\n"
+      + "```json\n" + JSON.stringify({ relatedTasks: ["kept-task"], summary: "Launch", taskSuggestions: [
+        { suggestedAt: "2026-09-01T12:00:00.000Z", taskUuid: "open-task" },
+        { suggestedAt: "2026-08-01T12:00:00.000Z", taskUuid: "older-task" }], uuid: "project-1" }) + "\n```\n";
+    const record = QuarterProject.fromStoreSection(legacySection);
+    expect(record.relatedTaskRecords).toEqual([{ taskText: "Draft release notes", taskUuid: "open-task" }]);
+    expect(record.relatedTasks).toEqual(["kept-task"]);
+    expect(record.taskSuggestions).toEqual([{ suggestedAt: "2026-09-01T12:00:00.000Z", taskUuid: "open-task" },
+      { suggestedAt: "2026-08-01T12:00:00.000Z", taskUuid: "older-task" }]);
+    const rewritten = record.toStoreSection();
+    expect(rewritten.indexOf("### open-task suggested")).toBeGreaterThan(rewritten.indexOf("```json"));
+    expect(rewritten).not.toContain('"taskSuggestions"');
   });
 
   it("says how many tasks the similarity search has reached", () => {

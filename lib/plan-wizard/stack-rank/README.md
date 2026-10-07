@@ -59,23 +59,54 @@ attributes tasks as it did before Jev.
 # Similarity hash
 
 Each project's section in `Project Tasks Q{n} {year} {domain}` holds its similarity scores in one code block under
-`Task similarity scores, by checksum:task UUID, sorted by task UUID:`:
+`Task similarity scores, by checksum:task UUID, sorted by task UUID:`, one entry per line so that two devices
+changing different tasks' scores edit different lines:
 
 ```
-{"3f9a01c2:0b7e…":7.4,"9c21d0e4:5e1b…":2.1}
+3f9a01c2:0b7e… 7.4
+9c21d0e4:5e1b… 2.1
 ```
 
 The checksum digests the project's summary together with the task's text (`task-rating-cache.js`). The hash holds
 every task rated 6 or higher, plus the tasks the sources page cites, whatever their score. Each ranking re-checks the
 hash's open tasks. A task whose text is unchanged is read from the hash. A task that was edited gets a new key, so
-it is rated again, and it leaves the hash if it now rates below 6. Low scores for tasks the page does not cite are
-dropped during reconciliation when the Vision Guide is available.
+it is rated again, and it leaves the hash if it now rates below 6. A ranking that can read the Vision Guide also drops
+every low score for a task the sources page does not cite, so the hash does not record rejected tasks: the project's
+`Searched N tasks for similarity` count already says how far the search has gone. Without the guide, stored scores
+are kept, so a cited task's low score is never dropped only to be rated again. Reconciliation applies the same
+pruning when no ranking is due. A block written before the one-entry-per-line format (one JSON line) is still read.
 
-The hash is the only place a score is stored. The payload's `relatedTasks` leaves out the tasks the hash rates
-similar, and `QuarterProject#matchesTask` counts those tasks toward the project's progress. The existing tasks are written
-once, as the `Existing tasks` list, and read back from that list's task links. Sections written before the hash
-existed are read as before. Their kept tasks' `matchScore`s and their `Jev ratings…` block fold into the hash on the
-next write.
+# Existing tasks
+
+The section lists the project's open tasks in two lists, so the note shows which ones a calendar suggestion may offer:
+
+```
+- Existing tasks eligible for suggestion
+  - [Draft launch email](https://www.amplenote.com/notes/tasks/…) — similarity 7.4; names project
+  - [Cited task](https://www.amplenote.com/notes/tasks/…) — assigned to project
+- Existing tasks not suggested (similarity below 6)
+  - [Tidy inbox](https://www.amplenote.com/notes/tasks/…) — similarity 4
+```
+
+Each line carries the task's similarity score and how it is linked (`project-task-evidence.js`): it sits in the
+project's primary note, links to the project, names the project, or was assigned to it (cited by Plan Builder or
+attributed by the idea generator). A direct link always qualifies a task; otherwise a task rated below 6 does not,
+an assigned one included, matching the sources page. `quarter-project-task-candidates.js` applies the same rule to a
+day's candidates. The second list is written only when it holds a task.
+
+The lists are the only record of the existing tasks and of the project's assigned task UUIDs: they are read back from
+their task links and annotations, and the payload no longer carries `relatedTasks`. A refresh that cannot rank still
+lists the open tasks the hash holds, so the lists do not empty out until a ranking succeeds. Sections written before
+the hash existed, or before the lists were split, are read as before.
+
+# Suggestion log
+
+The section ends with one `### {task UUID or idea ID} suggested` heading per suggestion shown, each holding a bullet
+per time it was shown. The headings are the log; the payload no longer carries `taskSuggestions`. Because they close
+the section, each heading holds only its own bullets, so `QuarterProjectRepository#recordShownTasks` appends by
+rewriting just the headings it touches with `replaceNoteContent` scoped to that heading. A suggestion shown for the
+first time gets its heading inside the body of the project's last log heading. The whole project section is rewritten
+instead when the project has no log heading yet, or when a heading to rewrite also appears under another project.
 
 The sources page leaves out cited tasks rated below 6, both from the project's task count and from the list it
 opens to. Tasks not yet rated are still shown.

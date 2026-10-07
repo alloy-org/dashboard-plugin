@@ -5,6 +5,31 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-07 — Restructure the project task store's existing tasks, similarity hash, and suggestion log
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files created:**
+- `lib/dashboard/project-task-evidence.js` — `TASK_LINK_REASONS`, their note labels, and `isSuggestableTaskRecord`: a direct link (primary note, project link, project name) always qualifies a task for suggestion; otherwise a similarity below 6 rules it out, assigned tasks included.
+- `test/project-task-evidence.test.js` — Eligibility, link reasons, candidate filtering, association merging, failed-ranking fallback, hash retention, and suggestion-log parsing and append planning.
+
+**Files modified:**
+- `lib/dashboard/quarter-project-serialization.js` — Split Existing tasks into "eligible for suggestion" and "not suggested (similarity below 6)" lists. Each line carries `similarity N; <link reason>` and is read back from either list or the legacy one. The payload drops `relatedTasks` (assigned tasks persist as list lines) and `taskSuggestions` (read from the h3 log). The similarity hash is written one `checksum:uuid score` entry per line, and the legacy JSON line is still read. The suggestion log moves to the end of the section. "Suggested tasks" is renamed "Generated task ideas".
+- `lib/dashboard/project-suggestion-log.js` — `suggestionLogFromSection` and `suggestionLogAppends` (heading-scoped append planning).
+- `lib/dashboard/project-task-store.js`, `lib/dashboard/quarter-project-repository.js` — `appendSuggestionLog`: `recordShownTasks` rewrites only the h3 headings it touches. It falls back to a whole-section write when the project has no log heading or the heading also appears under another project.
+- `lib/dashboard/quarter-project.js` — `taskLinkReason`; `matchesTask` builds on it.
+- `lib/dashboard/project-collection-steps.js`, `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` — Matched records carry `linkedBy`. A refresh that cannot rank keeps the hash's open tasks instead of emptying the Existing list.
+- `lib/dashboard/quarter-project-task-candidates.js` — Day candidates skip tasks the store lists as not suggested.
+- `lib/plan-wizard/stack-rank/task-rating-cache.js`, `project-ranking-progress.js`, `cited-task-records.js`, `lib/dashboard/work-queue/jobs/rank-project-tasks.js` — A ranking gets every cited task UUID (`citedTaskUuidsForProject`) and keeps low scores only for cited tasks. It keeps the old behavior when the Vision Guide is unavailable.
+- `lib/dashboard/work-queue/jobs/generate-project-ideas.js` — Generator-attributed tasks are marked assigned.
+- `lib/plan-wizard/stack-rank/README.md` — Document the hash, existing-task lists, and suggestion log.
+- `test/project-task-store.test.js`, `test/quarter-project-repository.test.js`, `test/quarter-project.test.js` — Updated and new round-trip, legacy-format, and heading-scoped-write coverage.
+- `build/compiled.js` — Rebuilt.
+
+**Task:** Make the Project Tasks note show which existing tasks can be suggested with their similarity, stop persisting rejected similarity scores, make the hash merge-friendly, and use the h3 log in place of the `taskSuggestions` payload array.
+**Validation:** All 1291 Jest tests, the production build, and the eight host smoke tests pass. No commits created.
+
+---
+
 ## 2026-10-07 — Refill open hours on cached proposed agendas
 
 **Model:** Claude Opus 5.5 (1M context)

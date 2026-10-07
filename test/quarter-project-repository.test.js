@@ -196,6 +196,41 @@ describe("QuarterProjectRepository results", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
+  // @desc A shown suggestion is appended by rewriting only the log headings it touches: an existing task's heading
+  //   gains a bullet, and a first-time idea gets its own heading, leaving the project's lists and payload unwritten.
+  it("appends shown suggestions by rewriting only their log headings", async () => {
+    const app = storeApp({ content: storeContent([storedProject()]) });
+    const repository = new QuarterProjectRepository({ app, noteWriter: new DashboardNoteWriter({ app }) });
+    const payloadBefore = app.noteContent.slice(0, app.noteContent.indexOf("### open-task suggested"));
+    await repository.recordShownTasks(scope, { shownAt: "2026-09-20T12:00:00.000Z", suggestions: [
+      { projectUuid: "project-uuid", taskUuid: "open-task" }, { ideaId: "idea-0a1b2c3d", projectUuid: "project-uuid" }] });
+    const writtenSections = app.replaceNoteContent.mock.calls.map(([, , options]) => options?.section?.heading);
+    expect(writtenSections).toEqual([{ level: 3, text: "open-task suggested" }]);
+    expect(app.noteContent.startsWith(payloadBefore)).toBe(true);
+    const stored = await repository.readOne(scope, "project-uuid");
+    expect(stored.taskSuggestions).toEqual([{ suggestedAt: "2026-09-01T12:00:00.000Z", taskUuid: "open-task" },
+      { suggestedAt: "2026-09-20T12:00:00.000Z", taskUuid: "open-task" },
+      { ideaId: "idea-0a1b2c3d", suggestedAt: "2026-09-20T12:00:00.000Z" }]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc When the heading to append to also logs the task under another project, a heading-scoped write could reach
+  //   the wrong project, so the project's whole section is rewritten instead.
+  it("rewrites the whole section when a log heading is shared with another project", async () => {
+    const otherProject = storedProject({ summary: "Second project", uuid: "second-uuid" });
+    const app = storeApp({ content: storeContent([storedProject(), otherProject]) });
+    const repository = new QuarterProjectRepository({ app, noteWriter: new DashboardNoteWriter({ app }) });
+    await repository.recordShownTasks(scope, { shownAt: "2026-09-20T12:00:00.000Z",
+      suggestions: [{ projectUuid: "second-uuid", taskUuid: "open-task" }] });
+    const writtenSections = app.replaceNoteContent.mock.calls.map(([, , options]) => options?.section?.heading);
+    expect(writtenSections).toEqual([{ level: 2, text: "Second project (project:second-uuid)" }]);
+    await expect(repository.readOne(scope, "project-uuid")).resolves.toMatchObject({
+      taskSuggestions: storedProject().taskSuggestions });
+    const second = await repository.readOne(scope, "second-uuid");
+    expect(second.taskSuggestions).toHaveLength(2);
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc A project the store has never held is created, along with the store itself, from its summary and UUID.
   it("creates the store and a new project's section", async () => {
     const app = storeApp();

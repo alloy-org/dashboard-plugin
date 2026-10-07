@@ -35,16 +35,17 @@ describe("QuarterProject", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc The stored payload leaves out day evidence and the tasks the similarity hash already associates, and
-  //   the progress record leaves out the fields the store owns.
-  it("persists neither day evidence nor hash-similar related tasks", () => {
+  // @desc The stored payload leaves out day evidence, the assigned tasks its lists carry, and the suggestion log its
+  //   headings carry, and the progress record leaves out the fields the store owns.
+  it("persists neither day evidence, assigned tasks, nor the suggestion log in the store payload", () => {
     const project = new QuarterProject({ summary: "Launch dashboard", uuid: "project-uuid", blocksPerWeek: 2,
       lastRankedAt: "2026-09-10T12:00:00.000Z", relatedTasks: ["kept-task", "similar-task"],
       taskSimilarityScores: { "digest:similar-task": SIMILAR_TASK_MINIMUM_SCORE } });
     project.setProgressEvidence(new Date(2026, 8, 18));
     expect(project.due).toBe(true);
     const storeRecord = project.toStoreRecord();
-    expect(storeRecord.relatedTasks).toEqual(["kept-task"]);
+    expect(storeRecord).not.toHaveProperty("relatedTasks");
+    expect(storeRecord).not.toHaveProperty("taskSuggestions");
     expect(storeRecord).not.toHaveProperty("due");
     expect(storeRecord).not.toHaveProperty("taskSimilarityScores");
     const progressRecord = project.toProgressRecord();
@@ -57,7 +58,8 @@ describe("QuarterProject", () => {
   // @desc A project survives a round trip through its store section.
   it("reads back the store section it renders", () => {
     const project = new QuarterProject({ summary: "Launch dashboard", uuid: "project-uuid", blocksPerWeek: 2,
-      relatedTaskRecords: [{ taskText: "Build the picker", taskUuid: "open-task" }], relatedTasks: ["open-task"] });
+      relatedTaskRecords: [{ linkedBy: "assigned", taskText: "Build the picker", taskUuid: "open-task" },
+        { matchScore: 6.5, taskText: "Wire the export", taskUuid: "similar-task" }], relatedTasks: ["open-task"] });
     project.recordShownTasks(["open-task"], "2026-09-18T12:00:00.000Z");
     const restored = QuarterProject.fromStoreSection(project.toStoreSection(), { isActive: false });
     expect(restored).toMatchObject({ blocksPerWeek: 2, isActive: false, relatedTasks: ["open-task"], uuid: "project-uuid" });
