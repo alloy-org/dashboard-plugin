@@ -1,5 +1,6 @@
 // Verify how an existing task's link reason and similarity decide whether it can be suggested, that a refresh which
-// could not rank keeps the tasks the similarity hash holds, that a ranking keeps low scores only for cited tasks, and
+// could not rank keeps the tasks the similarity hash holds, that a completed ranking keeps low scores only for cited
+// tasks while an unfinished one keeps every rating, and
 // that the suggestion log is read from and appended to its headings.
 import { associationResult, projectTaskMatches } from "dashboard/project-collection-steps";
 import { suggestionLogAppends, suggestionLogFromSection } from "dashboard/project-suggestion-log";
@@ -101,10 +102,19 @@ describe("similarity hash retention", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Without the cited tasks, a stored score is kept, so a cited task is never dropped and rated again.
-  it("keeps stored scores when the cited tasks are unknown", () => {
+  // @desc Without the cited tasks, scores the ranking did not touch are kept, since any may be cited, while a rated task
+  //   is kept only when similar or required.
+  it("keeps untouched scores when the cited tasks are unknown", () => {
     const scores = similarityScoresAfterRanking({ citedTaskUuids: null, ratedTasks, ratingKeyByUuid,
       requiredTaskUuids: ["cited-task"], storedScores });
+    expect(scores).toEqual({ "c1:cited-task": 3, "o1:old-low-task": 1.5, "o2:old-cited-task": 2.5, "s1:similar-task": 8 });
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A ranking that has not completed keeps every rating and every stored score, so a restart reads them all.
+  it("keeps every rating while a ranking is unfinished", () => {
+    const scores = similarityScoresAfterRanking({ citedTaskUuids: ["cited-task"], isComplete: false, ratedTasks,
+      ratingKeyByUuid, requiredTaskUuids: [], storedScores: { ...storedScores, "l0:low-task": 1 } });
     expect(scores).toEqual({ "c1:cited-task": 3, "l1:low-task": 2, "o1:old-low-task": 1.5, "o2:old-cited-task": 2.5,
       "s1:similar-task": 8 });
   });

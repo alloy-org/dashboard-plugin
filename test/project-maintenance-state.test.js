@@ -136,6 +136,23 @@ describe("queued project evidence", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
+  // @desc A project whose ranking was interrupted keeps its low scores through reconciliation, since they are the
+  //   ratings the restarted ranking reads instead of sending those tasks again.
+  it("leaves the scores of an unfinished ranking for the restart to read", async () => {
+    const app = maintenanceApp({ tasks: [] });
+    const projectUuid = await seedCitedProject(app);
+    const repository = new QuarterProjectRepository({ app });
+    const scores = { "aaaa:cited-task": 2, "bbbb:uncited-task": 1, "cccc:similar-task": 8 };
+    await repository.applyResult(SCOPE, { apply: project => { project.setSimilarityScores(scores);
+      project.recordUnfinishedRanking(NOW.toISOString()); }, projectUuid });
+    await runProjectJob(createReconcileProjectsHandler({ planner: new QuarterProjectWorkPlanner(), taskScorer: async () => null }),
+      { context: jobContext(app), input: SCOPE_INPUT });
+    const stored = await repository.readOne(SCOPE, projectUuid);
+    expect(stored.taskSimilarityScores).toEqual(scores);
+    expect(stored.unfinishedRankingAt).toBe(NOW.toISOString());
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc Even a recent ranking must fill a missing cited score; evidence-only tasks receive scores without a new pool.
   it("plans and rates an unscored cited task on a recently ranked project", async () => {
     setPluginData({ settings: { [SETTING_KEYS.JEV_ACCESS_TOKEN]: "token" } });

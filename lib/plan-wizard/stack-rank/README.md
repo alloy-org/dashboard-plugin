@@ -70,11 +70,17 @@ changing different tasks' scores edit different lines:
 The checksum digests the project's summary together with the task's text (`task-rating-cache.js`). The hash holds
 every task rated 6 or higher, plus the tasks the sources page cites, whatever their score. Each ranking re-checks the
 hash's open tasks. A task whose text is unchanged is read from the hash. A task that was edited gets a new key, so
-it is rated again, and it leaves the hash if it now rates below 6. A ranking that can read the Vision Guide also drops
-every low score for a task the sources page does not cite, so the hash does not record rejected tasks: the project's
-`Searched N tasks for similarity` count already says how far the search has gone. Without the guide, stored scores
-are kept, so a cited task's low score is never dropped only to be rated again. Reconciliation applies the same
-pruning when no ranking is due. A block written before the one-entry-per-line format (one JSON line) is still read.
+it is rated again, and it leaves the hash if it now rates below 6.
+
+Every Jev pass is kept. Until a ranking completes, whether it is paused between turns of the work queue, cancelled
+after its ratings arrived, or missing failed batches, the hash keeps every rating it has gathered, whatever the
+score, and the project's payload records `unfinishedRankingAt`. A ranking restarted after a reload or in another
+session reads those ratings and sends only the tasks it has not rated. A ranking that completes clears
+`unfinishedRankingAt`, records `lastRankedAt` and its search progress, and only then drops each low score for a task
+the sources page does not cite: the project's `Searched N tasks for similarity` count now says how far the search has
+gone, so the hash need not record rejected tasks. Without the guide, the scores the ranking did not touch are kept,
+since any of them may be cited. Reconciliation applies the same pruning when no ranking is due, and skips a project
+whose ranking is unfinished. A block written before the one-entry-per-line format (one JSON line) is still read.
 
 # Existing tasks
 
@@ -127,7 +133,8 @@ project ranked before the count was recorded is assumed to have searched one ful
 Cost: a live 20-task batch used about 320 input tokens per task, so a project's first ranking over a full 500-task
 pool is roughly 160k input tokens, and a second page as much again. Later rankings send only tasks created since
 `lastRankedAt`, plus cited tasks that still have no score and edited tasks from the hash. A batch that fails leaves
-`lastRankedAt` and the search progress unchanged, so the missed tasks are sent again.
+`lastRankedAt` and the search progress unchanged, so its tasks are sent again; the tasks other batches rated are kept
+in the hash and are not.
 
 # Fast-model rating
 

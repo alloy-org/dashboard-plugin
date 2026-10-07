@@ -499,6 +499,52 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
     expect(stored.reserveTasks).toEqual([]);
   });
 
+  // A reload after one suggestion went stale must not wait on a ranking and a provider call when a reserve can stand in.
+  it("replaces a completed suggestion from the stored reserves, in its slot, without generating again", async () => {
+    const app = buildGenerationApp(TWO_CALL_SCHEDULES);
+    await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    rewriteStoredRecords(app, DATE, records => records.map(record => ({ ...record, reserveTasks: [{ durationMinutes: 60,
+      noteUuid: "note-3", rationale: "draft", taskText: "Draft the proposal", taskUuid: "task-3" }] })));
+    app._completeTask("task-1");
+
+    const reconciled = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+
+    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+    expect(reconciled.activities.map(activity => activity.taskUuid)).toEqual(["task-3", "task-2"]);
+    expect(reconciled.activities[0]).toMatchObject({ startMinutes: 540, title: "Draft the proposal" });
+    const stored = storedRecords(app, DATE)[0];
+    expect(stored.proposedTasks.map(task => task.taskUuid)).toEqual(["task-3", "task-2"]);
+    expect(stored.reserveTasks).toEqual([]);
+  });
+
+  // With no reserve to stand in, the cached suggestions still standing are shown while the replacement is generated.
+  it("publishes the standing cached suggestions before waiting on a replacement", async () => {
+    const app = buildGenerationApp(TWO_CALL_SCHEDULES);
+    await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    app._completeTask("task-1");
+    const provisionalTaskUuids = [];
+
+    const reconciled = await generateProposedAgenda(app, { onProvisionalAgenda: payload =>
+      provisionalTaskUuids.push(payload.activities.map(activity => activity.taskUuid)), priorityKey: PRIORITY, targetDate: DATE });
+
+    expect(provisionalTaskUuids).toEqual([["task-2"]]);
+    expect(reconciled.activities.map(activity => activity.taskUuid)).toEqual(["task-3", "task-2"]);
+  });
+
+  // A widget whose effect fires twice in a row asks the same question twice; only one generation should run.
+  it("shares one generation between identical requests made while it runs", async () => {
+    const app = buildGenerationApp();
+    const [first, second] = await Promise.all([generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE }),
+      generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE })]);
+
+    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+    expect(second).toBe(first);
+    const regenerated = await Promise.all([generateProposedAgenda(app, { forceRegenerate: true, priorityKey: PRIORITY,
+      targetDate: DATE }), generateProposedAgenda(app, { forceRegenerate: true, priorityKey: PRIORITY, targetDate: DATE })]);
+    expect(regenerated).toHaveLength(2);
+    expect(app.callPlugin).toHaveBeenCalledTimes(3);
+  });
+
   it("skips a reserve whose task was completed since it was ranked", async () => {
     const app = buildGenerationApp(TWO_CALL_SCHEDULES);
     await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });

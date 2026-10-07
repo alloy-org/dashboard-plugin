@@ -1,5 +1,5 @@
 // Verify queued dictionary discovery, task ranking, and idea generation persist project evidence and ideas. A
-// large ranking pauses between rounds of batches with its similar ratings saved, a ranking resumed by another session
+// large ranking pauses between rounds of batches with every rating saved, a ranking resumed by another session
 // restarts from those saved ratings, a changed definition re-rates only the tasks that mention it, and failed provider
 // work fails the attempt for the queue to retry.
 import { jest } from "@jest/globals";
@@ -73,9 +73,10 @@ describe("project maintenance jobs", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc A paused ranking saves the similar tasks it has rated, and no ranking time. Another session handed the same
-  //   cursor holds no ranking in progress, so it starts over and reads the saved ratings instead of sending them again.
-  it("saves similar ratings at each pause, and restarts in another session from them", async () => {
+  // @desc A paused ranking saves every task it has rated, whatever its score, and no ranking time. Another session handed
+  //   the same cursor holds no ranking in progress, so it starts over and reads the saved ratings instead of sending them
+  //   again. Completing the ranking prunes the low scores of uncited tasks.
+  it("saves every rating at each pause, and restarts in another session from them", async () => {
     const app = maintenanceApp({ tasks: backlogTasks() });
     const context = jobContext(app);
     const input = { ...SCOPE_INPUT, projectUuid: await storedProjectUuid(app) };
@@ -87,8 +88,10 @@ describe("project maintenance jobs", () => {
     expect(paused).toMatchObject({ checkpoint: { ratedCount: 80, totalCount: 120 }, status: "yielded" });
     const [pausedProject] = await readCollectedProjectTasks(app, { ...SCOPE_INPUT, quarterKey: "2026-Q3" });
     const savedUuids = Object.keys(pausedProject.taskSimilarityScores).map(ratingKey => ratingKey.split(":")[1]);
-    expect(savedUuids.sort()).toEqual(["errand-37", "errand-67", "errand-7"]);
+    expect(savedUuids).toHaveLength(80);
+    expect(savedUuids).toEqual(expect.arrayContaining(["errand-37", "errand-67", "errand-7"]));
     expect(pausedProject.lastRankedAt).toBeNull();
+    expect(pausedProject.unfinishedRankingAt).toBe(NOW.toISOString());
 
     const secondRequest = ratingRequest();
     const secondSession = createRankProjectTasksHandler({ rankerFactory: (currentApp, options) => prepareProjectTaskRanker(
@@ -96,11 +99,37 @@ describe("project maintenance jobs", () => {
     const { result } = await runProjectJob(secondSession, { context, cursor: paused.checkpoint, input });
     const resentTexts = secondRequest.mock.calls.flatMap(([{ state }]) => Object.values(state.prospectiveTasks)
       .map(task => task.text));
-    expect(resentTexts).toHaveLength(117);
+    expect(resentTexts).toHaveLength(40);
     expect(resentTexts).not.toContain("Tune widget layout 7");
     const [finished] = await readCollectedProjectTasks(app, { ...SCOPE_INPUT, quarterKey: "2026-Q3" });
     expect(finished.lastRankedAt).toBe(NOW.toISOString());
+    const finishedUuids = Object.keys(finished.taskSimilarityScores).map(ratingKey => ratingKey.split(":")[1]);
+    expect(finishedUuids.sort()).toEqual(["errand-37", "errand-67", "errand-7", "errand-97"]);
+    expect(finished.unfinishedRankingAt).toBeNull();
     expect(result.revision).toBe(refreshRevision(finished.refreshState, "similarity"));
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A turn the scheduler cancels while its ratings are in flight still saves them once they arrive, so the
+  //   restarted ranking does not send the same tasks again.
+  it("saves the ratings of a turn cancelled while they were in flight", async () => {
+    const app = maintenanceApp({ tasks: backlogTasks() });
+    const context = jobContext(app);
+    const input = { ...SCOPE_INPUT, projectUuid: await storedProjectUuid(app) };
+    const controller = new AbortController();
+    const answeringRequest = ratingRequest();
+    const cancellingRequest = jest.fn(async options => {
+      controller.abort();
+      return answeringRequest(options);
+    });
+    const session = createRankProjectTasksHandler({ rankerFactory: (currentApp, options) => prepareProjectTaskRanker(
+      currentApp, { ...options, requestAnswers: cancellingRequest }) });
+    const job = { attempt: 1, cursor: null, desiredRevision: null, input, key: "rank", type: RANK_PROJECT_TASKS_JOB_TYPE };
+    const cancelled = await session.run({ context, job, signal: controller.signal });
+    expect(cancelled).toEqual({ status: "superseded" });
+    const [project] = await readCollectedProjectTasks(app, { ...SCOPE_INPUT, quarterKey: "2026-Q3" });
+    expect(Object.keys(project.taskSimilarityScores)).toHaveLength(80);
+    expect(project.lastRankedAt).toBeNull();
   });
 
   // ----------------------------------------------------------------------------------------------
