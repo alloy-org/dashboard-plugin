@@ -31,11 +31,11 @@
   .agenda-calendar-day { align-items: center; background: none; border: 1px solid transparent; border-radius: 8px; display: flex; flex-direction: column; font-size: $default-font-size; height: 2.9em; justify-content: center; line-height: 1; padding: 0; }
   .agenda-calendar-day:hover { background: $color-bg-secondary; }
   .agenda-calendar-day[aria-current='date'] { border-color: $color-link; font-weight: 600; }
-  .agenda-calendar-day[aria-pressed='true'] { background: $color-link; border-color: $color-link; color: $color-text-on-accent; font-weight: 600; }
+  .agenda-calendar-day[aria-pressed='true'] { background: $color-link; border-color: $color-link; font-weight: 600; @include contrasting-color(color, $color-link); }
   .agenda-calendar-markers { display: flex; gap: 2px; height: 5px; justify-content: center; margin-top: 4px; }
   .agenda-calendar-saved, .agenda-calendar-busy { background: $color-link; border-radius: 50%; display: inline-block; height: 4px; width: 4px; }
   .agenda-calendar-busy { background: $color-warning; }
-  .agenda-calendar-day[aria-pressed='true'] i { background: $color-text-on-accent; }
+  .agenda-calendar-day[aria-pressed='true'] i { @include contrasting-color(background, $color-link); }
   .agenda-calendar-legend { border-top: 1px solid $color-border; color: $color-text-secondary; display: flex; font-size: $smaller-font-size; gap: 14px; padding: 10px $sp-lg; }
   .agenda-calendar-legend span { align-items: center; display: flex; gap: 5px; }
   .agenda-calendar-summary { background: $color-bg-secondary; border-top: 1px solid $color-border; padding: $sp-md $sp-lg 14px; }
@@ -58,6 +58,6 @@
   .agenda-priority-custom label { color: $color-text-secondary; display: block; font-size: $smaller-font-size; font-weight: 500; margin-bottom: $sp-sm; }
   .agenda-priority-custom > div { display: flex; gap: 6px; }
   .agenda-priority-custom input { background: $color-bg-card; border: 1px solid $color-border; border-radius: 8px; color: $color-text; flex: 1; font-size: $smaller-font-size; min-width: 0; padding: $sp-sm 10px; }
-  .agenda-priority-custom button { background: $color-link; border: 0; border-radius: 8px; color: $color-text-on-accent; font-weight: 500; padding: $sp-sm 14px; }
+  .agenda-priority-custom button { background: $color-link; border: 0; border-radius: 8px; font-weight: 500; padding: $sp-sm 14px; @include contrasting-color(color, $color-link); }
   .agenda-priority-custom p { color: $color-text-muted; font-size: $smaller-font-size; line-height: 1.4; margin: 8px 0 0; }
 }

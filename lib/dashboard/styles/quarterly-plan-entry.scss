@@ -124,8 +124,8 @@ $plan-entry-video-background: #152033;
   .plan-entry-build,
   .plan-entry-begin,
   .plan-entry-choice-button--primary {
-    background: $color-accent;
-    border-color: $color-accent;
+    background: $color-background-accent;
+    border-color: $color-background-accent;
     color: $color-text-on-accent;
     padding: $sp-sm $sp-lg;
 
@@ -133,7 +133,7 @@ $plan-entry-video-background: #152033;
   }
 
   .plan-entry-begin {
-    border: 1px solid $color-accent;
+    border: 1px solid $color-background-accent;
     border-radius: $radius-md;
     cursor: pointer;
     flex: 0 0 auto;
@@ -172,7 +172,7 @@ $plan-entry-video-background: #152033;
   }
 
   .plan-entry-month--current {
-    background: $color-accent;
+    background: $color-background-accent;
     color: $color-text-on-accent;
   }
 
@@ -262,14 +262,15 @@ $plan-entry-video-background: #152033;
     width: 100%;
   }
 
+  /* The frame behind this caption is the fixed #152033, not a host color. */
   .plan-entry-video-caption {
-    color: $color-text-on-accent;
+    color: #ffffff;
     font-size: $default-font-size;
     margin: 0;
     padding: $sp-sm $sp-md $sp-md;
 
     span {
-      color: $color-text-on-accent-muted;
+      color: rgba(255, 255, 255, 0.6);
       display: block;
       font-size: $smaller-font-size;
       font-weight: 700;

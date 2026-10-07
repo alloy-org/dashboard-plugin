@@ -5,6 +5,55 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-07 — Pair accent text with the host action background
+
+**Model:** Grok 4.7
+**Files modified:**
+- `lib/dashboard/styles/theme-light.scss`, `lib/dashboard/styles/theme-dark.scss`, `lib/dashboard/styles/theme-tokens.scss` — `--dashboard-color-background-accent` is `--color-background-action-high-contrast`. `--dashboard-color-text-on-accent` is `--color-text-button`, the text those themes put on that fill. The muted tone is a mix of that text.
+- Plan wizard, plan entry, note peek, provider key, calendar, planning, note editor, mood, day sketch, layout popup, and config popup styles — Fills that carry on-accent text use the background-accent token.
+- `lib/dashboard/victory-value.jsx`, `lib/util/browser-dev-app.js` — The same pair for the bar value and the dev prompt's primary button.
+
+**Task:** Choose the host text color that stays legible on `--color-background-action-high-contrast`, and name that fill as the background counterpart of on-accent text.
+**Prompt summary:** "give dashboard-color-text-on-accent a clear background counterpart... confirm, if we use color-background-action-high-contrast, which text color would be consistently legible"
+
+---
+
+## 2026-10-07 — Pair on-accent text with the fill it actually sits on
+
+**Model:** Grok 4.7
+**Files modified:**
+- `lib/dashboard/styles/theme-light.scss`, `lib/dashboard/styles/theme-dark.scss` — `--dashboard-color-text-on-accent` is black or white taken from `--color-background-action-high-contrast`, the same way header text is. It no longer names `--color-text-button`. Dark mode does not override it.
+- `lib/dashboard/styles/theme-tokens.scss` — `contrasting-color` mixin for fills that are not that action color.
+- `lib/dashboard/styles/plan-wizard.scss` — Pressed emphasis labels use `--color-background-primary` on the high-contrast-text fill. Completion, pace, and quarter-window labels contrast with their own fills.
+- `lib/dashboard/styles/task-domains.scss`, `lib/dashboard/styles/calendar.scss` — Labels on a navy fill use the page background.
+- `lib/dashboard/styles/provider-key-gate.scss` — The pale hover fill uses high-contrast text.
+- `lib/dashboard/styles/proposed-agenda.scss`, `lib/dashboard/styles/proposed-agenda-popover.scss`, `lib/dashboard/styles/note-peek.scss` — Link-colored and status-colored fills choose their own ink.
+- `lib/dashboard/styles/quarterly-plan-entry.scss` — The video caption stays white on its fixed dark frame.
+
+**Task:** Decide which host theme colors can label each `text-on-accent` use, from the background behind that use.
+**Prompt summary:** "evaluate existing uses of dashboard-color-text-on-accent ... which of the incoming themes colors can be used"
+
+---
+
+## 2026-10-07 — Serve a reconciled Proposed Agenda without a cold-start pass, and keep every Jev rating
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files modified:**
+- `lib/dashboard/proposed-agenda-service.js` — `_cachedAgendaWithReserveReplacements` fills each stale cached suggestion from the day's stored reserves, in the slot it held. The fresh schedule (relevant tasks, plan context, day ranking, rationale call) runs only when the reserves cannot fill every slot. `onProvisionalAgenda` publishes the standing cached suggestions before the day waits on a fresh schedule. `generateProposedAgenda` shares one in-flight generation among identical requests (`_sharedGenerationKey`). `_placeIntoOpenHours` accepts preferred starts and a placement cap. `_cachedAgendaPayload` factors out the cached payload.
+- `lib/dashboard/proposed-agenda-range.js`, `lib/dashboard/proposed-agenda-llm-generator.js` — `onProvisionalDay` shows those suggestions in the widget in place of the loading state. `_applyMergedGeneration` factors out the state update.
+- `lib/plan-wizard/stack-rank/task-rating-cache.js`, `project-ranking-progress.js` — `similarityScoresAfterRanking({ isComplete })`: a paused, cancelled, or partly failed ranking keeps every rating. A completed one prunes low uncited scores, including when the cited tasks are unknown, while leaving untouched scores alone.
+- `lib/dashboard/work-queue/jobs/rank-project-tasks.js` — Saves a cancelled turn's ratings. Marks paused and partly failed rankings with `unfinishedRankingAt`.
+- `lib/dashboard/quarter-project.js`, `lib/dashboard/quarter-project-serialization.js` — `unfinishedRankingAt` field, `recordUnfinishedRanking`, cleared by `markRanked`.
+- `lib/dashboard/work-queue/jobs/reconcile-projects.js` — Compaction skips a project with an unfinished ranking.
+- `lib/plan-wizard/stack-rank/README.md` — Document rating retention.
+- `test/proposed-agenda-archive.test.js`, `test/project-maintenance-jobs.test.js`, `test/project-maintenance-state.test.js`, `test/project-task-evidence.test.js` — Reserve replacement, provisional publishing, shared generation, every-rating pauses, cancelled turns, compaction skip, and retention rules.
+- `build/compiled.js` — Rebuilt.
+
+**Task:** A reload after one cached agenda suggestion went stale took ~30s to show anything, and interrupted Jev rankings re-rated hundreds of tasks. Make cached agendas reconcile from reserves, show cached suggestions early, avoid duplicate generations, and make every Jev pass persist its ratings.
+**Validation:** All 1297 Jest tests, the production build, and the eight host smoke tests pass. No commits created.
+
+---
+
 ## 2026-10-07 — Restructure the project task store's existing tasks, similarity hash, and suggestion log
 
 **Model:** Claude Opus 5.5 (1M context)

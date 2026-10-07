@@ -163,7 +163,7 @@ function drawBars(ctx, dailyValues, maxValue, barW, chartH, ht) {
     const barH = (d.value / maxValue) * chartH * 0.85;
     const x = 40 + i * barW + barW * 0.15;
     const y = chartH - barH + 10;
-    ctx.fillStyle = themeStyle.getPropertyValue(d.value > 0 ? '--dashboard-color-blue' : '--dashboard-color-border').trim();
+    ctx.fillStyle = themeStyle.getPropertyValue(d.value > 0 ? '--dashboard-color-background-accent' : '--dashboard-color-border').trim();
     ctx.beginPath();
     ctx.roundRect(x, y, barW * 0.7, barH, [4, 4, 0, 0]);
     ctx.fill();

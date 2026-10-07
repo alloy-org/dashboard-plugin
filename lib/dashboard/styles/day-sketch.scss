@@ -114,7 +114,7 @@ $notebook-font: 'Segoe Script', 'Bradley Hand', 'Comic Sans MS', cursive, $font-
     transition: background 0.15s ease, color 0.15s ease;
 
     &:hover:not(:disabled) {
-      background: $color-blue;
+      background: $color-background-accent;
       color: $color-text-on-accent;
     }
   }

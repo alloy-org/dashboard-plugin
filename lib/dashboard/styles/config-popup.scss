@@ -156,8 +156,8 @@ $config-popup-z-index: 1000;
       }
 
       .config-popup-btn--submit {
-        background: $color-accent;
-        border-color: $color-accent;
+        background: $color-background-accent;
+        border-color: $color-background-accent;
         color: $color-text-on-accent;
 
         &:hover {

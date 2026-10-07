@@ -156,7 +156,7 @@
     padding: 8px 14px;
     white-space: nowrap;
   }
-  .proposed-agenda-approve { background: $color-link; border-color: $color-link; color: $color-text-on-accent; }
+  .proposed-agenda-approve { background: $color-link; border-color: $color-link; @include contrasting-color(color, $color-link); }
   .proposed-agenda-schedule-all { background: $color-bg-card; color: $color-text; }
   .proposed-agenda-secondary-footer { align-items: center; background: $color-bg-secondary; color: $color-text-muted; display: flex; gap: 12px; justify-content: space-between; padding-bottom: $sp-sm; }
   .proposed-agenda-attribution { font-size: $smaller-font-size; }

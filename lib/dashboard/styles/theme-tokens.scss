@@ -17,6 +17,7 @@ $color-header-bg: var(--dashboard-color-header-bg);
 $color-header-text: var(--dashboard-color-header-text);
 $color-overlay-backdrop: var(--dashboard-color-overlay-backdrop);
 $color-overlay-shadow: var(--dashboard-color-overlay-shadow);
+$color-background-accent: var(--dashboard-color-background-accent);
 $color-text-on-accent: var(--dashboard-color-text-on-accent);
 $color-text-on-accent-muted: var(--dashboard-color-text-on-accent-muted);
 $color-tooltip-accent: var(--dashboard-color-tooltip-accent);
@@ -97,4 +98,14 @@ $display-heading-font-size: var(--dashboard-display-heading-font-size);
   background: $color-bg-card;
   border: 1px solid $color-border;
   border-radius: $radius-lg;
+}
+
+// Black or white against a fill, split at the header bar's CIELAB L* 65.1. Fills of
+// --color-background-action-high-contrast already have $color-text-on-accent; use this for the others.
+@mixin contrasting-color($property, $background) {
+  #{$property}: #ffffff;
+
+  @supports (color: lab(from red l a b)) {
+    #{$property}: lab(from $background clamp(0, (65.1 - l) * 1000, 100) 0 0);
+  }
 }

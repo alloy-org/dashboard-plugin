@@ -57,14 +57,15 @@ $provider-key-gate-message-width: 34rem;
   }
 
   .provider-key-gate-button--primary {
-    background: $color-blue;
-    border-color: $color-blue;
+    background: $color-background-accent;
+    border-color: $color-background-accent;
     color: $color-text-on-accent;
 
+    /* The hover fill is action-medium-contrast, a surface tint, so it takes high-contrast text. */
     &:hover {
       background: $color-blue-light;
       border-color: $color-blue-light;
-      color: $color-text-on-accent;
+      color: $color-text;
     }
   }
 

@@ -384,12 +384,12 @@ $pace-slice-other-color: #e87ba4;
   /* Nested under `.plan-wizard-page` so these beat that block's `button { border: 1px solid }` default. */
   .plan-wizard-page .plan-button--primary,
   .plan-wizard-page .note-editor-btn--save {
-    background: $color-accent;
-    border-color: $color-accent;
+    background: $color-background-accent;
+    border-color: $color-background-accent;
     color: $color-text-on-accent;
 
     &:hover:not(:disabled) {
-      background: $color-accent;
+      background: $color-background-accent;
       opacity: 0.9;
     }
   }
@@ -1182,7 +1182,7 @@ $pace-slice-other-color: #e87ba4;
     .project-row-status-button--done {
       background: $color-project-complete;
       border: 1px solid $color-project-complete;
-      color: $color-text-on-accent;
+      @include contrasting-color(color, $color-project-complete);
       font-weight: 600;
 
       &:hover:not(:disabled) {
@@ -1214,16 +1214,12 @@ $pace-slice-other-color: #e87ba4;
         color: $color-text-muted;
       }
 
+      /* The fill is --color-text-high-contrast. The page background is the host color already paired with
+       * that text, which is what the task-domain chip uses on the same fill. */
       &[aria-pressed="true"] {
         background: $color-navy;
         border-color: $color-navy;
-        /* The pressed fill is the host's high-contrast text color. Pick the label from that fill: black or white,
-         * split at the same CIELAB L* as the widget header, so the words stay visible in either theme. */
-        color: #ffffff;
-
-        @supports (color: lab(from red l a b)) {
-          color: lab(from $color-navy clamp(0, (65.1 - l) * 1000, 100) 0 0);
-        }
+        color: $color-bg-card;
 
         &:hover:not(:disabled) {
           background: $color-navy;
@@ -1322,7 +1318,7 @@ $pace-slice-other-color: #e87ba4;
       &[aria-pressed="true"] {
         background: $color-success;
         border-color: $color-success;
-        color: $color-text-on-accent;
+        @include contrasting-color(color, $color-success);
 
         &:hover:not(:disabled) {
           background: $color-success;
@@ -1727,25 +1723,31 @@ $pace-slice-other-color: #e87ba4;
     .quarter-name-bar--0 {
       background: $color-project-window-canary;
 
-      .quarter-name-bar-handle {
-        color: $color-text;
-      }
+      .quarter-name-bar-handle { @include contrasting-color(color, $color-project-window-canary); }
     }
 
     .quarter-name-bar--1 {
       background: $color-project-window-orange;
+
+      .quarter-name-bar-handle { @include contrasting-color(color, $color-project-window-orange); }
     }
 
     .quarter-name-bar--2 {
       background: $color-project-window-red;
+
+      .quarter-name-bar-handle { @include contrasting-color(color, $color-project-window-red); }
     }
 
     .quarter-name-bar--3 {
       background: $color-project-window-purple;
+
+      .quarter-name-bar-handle { @include contrasting-color(color, $color-project-window-purple); }
     }
 
     .quarter-name-bar--4 {
       background: $color-project-window-teal;
+
+      .quarter-name-bar-handle { @include contrasting-color(color, $color-project-window-teal); }
     }
 
     .quarter-name-bar--pulse {
@@ -1753,7 +1755,6 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .quarter-name-bar-handle {
-      color: $color-text-on-accent;
       font-size: $default-font-size;
       line-height: 1;
     }

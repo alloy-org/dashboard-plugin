@@ -56,10 +56,10 @@ $task-domain-transition-duration: 0.15s;
       color: $color-bg-card;
 
       .task-domain-settings {
-        color: $color-text-on-accent-muted;
+        color: color-mix(in srgb, $color-bg-card 65%, transparent);
 
         &:hover {
-          color: $color-text-on-accent;
+          color: $color-bg-card;
         }
       }
     }

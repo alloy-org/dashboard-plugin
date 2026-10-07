@@ -34,10 +34,12 @@
   --dashboard-color-success: var(--color-text-status, #4caf80);
   --dashboard-color-text: var(--color-text-high-contrast, #1e2a3a);
   --dashboard-color-text-muted: var(--color-text-low-contrast, #90999f);
-  /* Host themes do not define --color-text-button. Naming it here left filled labels the same color as a
-   * text-colored fill, so the project list's pressed buttons read as blank. */
-  --dashboard-color-text-on-accent: #ffffff;
-  --dashboard-color-text-on-accent-muted: rgba(255, 255, 255, 0.6);
+  /* Paired fill and ink. The fill is the host action color. The ink is --color-text-button, the text those
+   * themes put on that fill: white on the blues, near-black on Honeybee yellow. Reversed white fails on that
+   * yellow, and high-contrast body text fails on the medium-blue light themes. */
+  --dashboard-color-background-accent: var(--color-background-action-high-contrast, #e8853d);
+  --dashboard-color-text-on-accent: var(--color-text-button, #ffffff);
+  --dashboard-color-text-on-accent-muted: color-mix(in srgb, var(--dashboard-color-text-on-accent) 65%, transparent);
   --dashboard-color-text-secondary: var(--color-text-medium-contrast, #7a8699);
   --dashboard-color-tooltip-accent: var(--color-text-reversed-link, #5b7bbf);
   --dashboard-color-tooltip-bg: var(--color-background-popup-small, #1f2937);

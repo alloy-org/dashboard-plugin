@@ -88,8 +88,8 @@ $check-list-indent-step: 20px;
   /* Named for the header link it stands in for, and styled like the popup submit button so it reads as
    * the widget's one call to action while no note is chosen. */
   .note-peek-chooser-button {
-    background: $color-accent;
-    border: 1px solid $color-accent;
+    background: $color-background-accent;
+    border: 1px solid $color-background-accent;
     border-radius: $radius-sm;
     color: $color-text-on-accent;
     cursor: pointer;
@@ -408,8 +408,9 @@ $check-list-indent-step: 20px;
             border-color: $color-success;
 
             &::after {
-              border: solid $color-text-on-accent;
+              border: solid;
               border-width: 0 2px 2px 0;
+              @include contrasting-color(border-color, $color-success);
               content: "";
               height: 7px;
               left: 4px;
@@ -479,8 +480,9 @@ $check-list-indent-step: 20px;
           border-color: $color-success;
 
           &::after {
-            border: solid $color-text-on-accent;
+            border: solid;
             border-width: 0 2px 2px 0;
+            @include contrasting-color(border-color, $color-success);
             content: "";
             height: 7px;
             left: 4px;

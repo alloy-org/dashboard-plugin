@@ -137,7 +137,7 @@ $cal-transition-duration: 0.12s;
     }
 
     &.today {
-      background: $color-blue;
+      background: $color-background-accent;
 
       .cal-day {
         color: $color-text-on-accent;
@@ -146,6 +146,8 @@ $cal-transition-duration: 0.12s;
 
       &:hover {
         background: $color-navy;
+
+        .cal-day { color: $color-bg-card; }
       }
     }
 
