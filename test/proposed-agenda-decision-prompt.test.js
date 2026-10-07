@@ -120,7 +120,6 @@ describe("proposed agenda decision history", () => {
 
     expect(cached.fromCache).toBe(true);
     expect(cached.scheduledKeys).toHaveLength(1);
-    expect(llmMock).toHaveBeenCalledTimes(1);
     expect(decisionNoteContent(app)).toContain("| Approved | Ship the thing | Goal progress |");
   });
 

@@ -464,7 +464,66 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
     expect(reconciled.activities.map(a => a.taskUuid)).toEqual(["task-3", "task-2"]);
     expect(storedRecords(app, DATE)[0].proposedTasks.map(t => t.taskUuid)).toEqual(["task-3", "task-2"]);
   });
+
+  // Accepting a suggestion from the calendar fills its hour, so a day whose only suggestion was accepted offered nothing.
+  it("generates more suggestions once the user accepted every cached one from the calendar", async () => {
+    const app = buildGenerationApp(call => call === 1
+      ? [{ durationMinutes: 60, reason: "ship", startTime: "09:00", taskUuid: "task-1", title: "Morning ship" }]
+      : [{ durationMinutes: 60, reason: "ship", startTime: "09:00", taskUuid: "task-1", title: "Morning ship" },
+         { durationMinutes: 30, reason: "follow", startTime: "11:00", taskUuid: "task-2", title: "Midday follow" }]);
+    await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    const accepted = { durationMinutes: 60, source: "task", startMinutes: 540, taskUuid: "task-1", title: "Ship the thing" };
+
+    const reconciled = await generateProposedAgenda(app, { obligations: [accepted], priorityKey: PRIORITY, targetDate: DATE });
+
+    expect(app.callPlugin).toHaveBeenCalledTimes(2);
+    expect(reconciled.fromCache).toBe(true);
+    const pendingActivities = reconciled.activities.filter(activity => !reconciled.scheduledKeys.includes(proposedTaskKey(activity)));
+    expect(pendingActivities.map(activity => activity.taskUuid)).toEqual(["task-2"]);
+    expect(storedRecords(app, DATE)[0].proposedTasks.map(task => task.taskUuid)).toEqual(["task-1", "task-2"]);
+  });
+
+  it("fills the hour an accepted suggestion leaves from the stored reserves without generating again", async () => {
+    const app = buildGenerationApp(TWO_CALL_SCHEDULES);
+    await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    rewriteStoredRecords(app, DATE, records => records.map(record => ({ ...record, reserveTasks: [{ durationMinutes: 30,
+      noteUuid: "note-3", rationale: "draft", taskText: "Draft the proposal", taskUuid: "task-3" }] })));
+    const accepted = { durationMinutes: 60, source: "task", startMinutes: 540, taskUuid: "task-1", title: "Ship the thing" };
+
+    const reconciled = await generateProposedAgenda(app, { obligations: [accepted], priorityKey: PRIORITY, targetDate: DATE });
+
+    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+    expect(reconciled.activities.map(activity => activity.taskUuid)).toEqual(["task-1", "task-2", "task-3"]);
+    const stored = storedRecords(app, DATE)[0];
+    expect(stored.proposedTasks.map(task => task.taskUuid)).toEqual(["task-1", "task-2", "task-3"]);
+    expect(stored.reserveTasks).toEqual([]);
+  });
+
+  it("skips a reserve whose task was completed since it was ranked", async () => {
+    const app = buildGenerationApp(TWO_CALL_SCHEDULES);
+    await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    rewriteStoredRecords(app, DATE, records => records.map(record => ({ ...record, reserveTasks: [{ durationMinutes: 30,
+      noteUuid: "note-3", rationale: "draft", taskText: "Draft the proposal", taskUuid: "task-3" }] })));
+    app._completeTask("task-3");
+
+    const reconciled = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+
+    expect(reconciled.activities.map(activity => activity.taskUuid)).toEqual(["task-1", "task-2"]);
+    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+  });
 });
+
+// ----------------------------------------------------------------------------------------------
+// @desc Rewrite the month's stored records in place, so a test can give a cached day reserves it was not generated with.
+// @param {object} app - The in-memory app stub.
+// @param {Date} date - Month-bearing date.
+// @param {Function} transform - (records) => records to store instead.
+function rewriteStoredRecords(app, date, transform) {
+  const note = app._notes.find(n => n.name === proposedAgendaNoteNameFromDate(date));
+  const stored = JSON.parse(note.content.match(/```json\s*([\s\S]*?)```/i)[1]);
+  const rewrittenJson = JSON.stringify({ ...stored, records: transform(stored.records) });
+  note.content = note.content.replace(/```json\s*[\s\S]*?```/i, `\`\`\`json\n${ rewrittenJson }\n\`\`\``);
+}
 
 // ----------------------------------------------------------------------------------------------
 // @desc A minimal persisted proposal-activity for a given task, so tests can seed prior-day history records.

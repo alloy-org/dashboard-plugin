@@ -5,6 +5,20 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-07 — Refill open hours on cached proposed agendas
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files modified:**
+- `lib/dashboard/proposed-agenda-service.js` — `_reconcileCachedAgenda` now ends with `_agendaWithOpenHoursFilled`, which places the day's reserves (and unused picks of a schedule generated during the reconcile) into hours left open by calendar-accepted or obligation-dropped suggestions. When no pending suggestion remains and an hour is still open, it generates a fresh schedule and places that schedule's picks. Each placement is first checked against its live task. The replacement branch moved into `_cachedAgendaWithReplacements`, and both branches now share one store and one return.
+- `lib/dashboard/suggestion-task-slots.js` — Add `firstOpenSuggestionStart`.
+- `test/proposed-agenda-archive.test.js` — Cover regeneration once every cached suggestion was accepted, refilling from stored reserves without generating again, and skipping a completed reserve.
+- `test/proposed-agenda-decision-prompt.test.js` — Drop the single-LLM-call assertion from the outside-approval test, since that day now regenerates to fill its open hours.
+
+**Task:** Oct 8 offered no calendar suggestions because its cached agenda held one suggestion, the user accepted it, and nothing refilled the vacated hours.
+**Validation:** All 1278 Jest tests, the production build, and the eight host smoke tests pass. No commits created.
+
+---
+
 ## 2026-10-06 — Describe queue records directly in JSDoc
 
 **Model:** GPT-6 (Codex)
