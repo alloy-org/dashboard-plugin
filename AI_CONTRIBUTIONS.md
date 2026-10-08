@@ -26,6 +26,21 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-08 — Stop showing the Ample Agent Pro upsell to users who have Agent Pro
+
+**Model:** Claude Opus 5.5
+**Files modified:**
+- `lib/providers/ai-provider-settings.js` — `findAmpleAgentProNote` refreshes the notes list and searches again after a miss, remembers a found note per app interface, shares concurrent lookups, and ignores results without a uuid. New `isAmpleAgentProInstalled` and `recordAmpleAgentProResponded` let a successful callPlugin response count as installed.
+- `lib/providers/fetch-ai-provider.js` — `agentProPrompt` records that Agent Pro responded.
+- `lib/dashboard/dream-task.jsx`, `lib/dashboard/proposed-agenda.jsx` — Agent Pro availability starts unknown; the upsell shows only once Agent Pro is confirmed absent, a pending check renders the loading state, and a keyless failure with Agent Pro installed shows an error with a retry.
+- `lib/dream-task-service.js`, `lib/dashboard/proposed-agenda-service.js`, `lib/quarterly-plan-service.js` — Use `isAmpleAgentProInstalled` for the no-provider check.
+- `test/ample-agent-pro-note.test.js`, `test/dream-task-retry.test.js` — Refresh-and-retry, cached and shared lookups, the failure envelope, responded-means-installed, and a Goal Coach widget test where Agent Pro is installed but does not answer.
+
+**Task:** A Founder-tier user saw the Agent Pro upsell in Proposed Agenda and Goal Coach because any keyless LLM failure rendered the upsell, and the Agent Pro lookup could miss before the notes list synced.
+**Prompt summary:** "What changes can we make to prevent the user's issue?" / "Those seem reasonable"
+
+---
+
 ## 2026-10-08 — Reuse unchanged Jev ratings, overlap Goal Coach's setup reads, hold maintenance for a waiting preparation, and escape backticks in JSON notes
 
 **Model:** Claude Opus 5.5

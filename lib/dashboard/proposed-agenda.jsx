@@ -18,7 +18,7 @@ import { DEFAULT_PRIORITY_KEY } from "proposed-agenda-priority";
 import ProposedAgendaPriorityControl from "proposed-agenda-priority-control";
 import { agendaRowsGroupedByDay } from "proposed-agenda-range";
 import { resolveProposedAgendaDate } from "proposed-agenda-service";
-import { findAmpleAgentProNote } from "providers/ai-provider-settings";
+import { isAmpleAgentProInstalled } from "providers/ai-provider-settings";
 import { refillAndRecordSuggestion } from "ranked-task-suggestions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "styles/dashboard-tippy.scss";
@@ -33,9 +33,10 @@ import WidgetWrapper from "widget-wrapper";
 const WIDGET_ID = "proposed-agenda";
 
 // Error codes that mean generation failed for want of a reachable LLM (no API key + no working Ample Agent Pro).
-// When there is also no configured key, we show the Ample Agent Pro upsell instead of a bare error, matching
-// how DreamTask degrades.
+// When there is also no configured key, the Ample Agent Pro upsell shows if Agent Pro is not installed, and
+// AGENT_PRO_FAILED_MESSAGE with a retry shows if it is, matching how DreamTask degrades.
 const NO_CONFIG_ERROR_CODES = new Set(["invalid_api_key", "llm_error", "no_provider_configured", "parse_error"]);
+const AGENT_PRO_FAILED_MESSAGE = "Ample Agent Pro didn't return a schedule. Please try again in a moment.";
 
 const NO_CONFIG_FEATURES = [
   { icon: "🗓️", label: "Auto-draft your day" },
@@ -183,7 +184,8 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   }, [calendarEvents]);
 
   const [approving, setApproving] = useState(false);
-  const [ampleAgentProAvailable, setAmpleAgentProAvailable] = useState(false);
+  // Null until the Agent Pro lookup answers, so the upsell never shows to a subscriber while it is in flight
+  const [ampleAgentProAvailable, setAmpleAgentProAvailable] = useState(null);
   const [attribution, setAttribution] = useState(null);
   const [dateLabel, setDateLabel] = useState(null);
   const [dismissedKeys, setDismissedKeys] = useState(() => new Set());
@@ -330,10 +332,11 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   }, [providerEm, persistedProviderEm]);
 
   // Detect whether the Ample Agent Pro plugin is installed. When it is, the provider chooser may offer providers
-  // the user has no local key for, because the chosen provider is passed to Agent Pro as an argument.
+  // the user has no local key for, because the chosen provider is passed to Agent Pro as an argument. It also decides
+  // whether a keyless failure is a missing provider (the upsell) or an Agent Pro request that failed (a retry).
   useEffect(() => {
     let cancelled = false;
-    findAmpleAgentProNote(app).then(note => { if (!cancelled) setAmpleAgentProAvailable(!!note); });
+    isAmpleAgentProInstalled(app).then(installed => { if (!cancelled) setAmpleAgentProAvailable(installed); });
     return () => { cancelled = true; };
   }, [app]);
 
@@ -349,13 +352,18 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   if (error) {
     const envApiKey = (typeof process !== "undefined" && process.env?.OPEN_AI_ACCESS_TOKEN) || "";
     const hasLlmConfig = !!(envApiKey || providerApiKey);
-    if (!hasLlmConfig && NO_CONFIG_ERROR_CODES.has(error.errorCode)) {
+    const isKeylessFailure = !hasLlmConfig && NO_CONFIG_ERROR_CODES.has(error.errorCode);
+    if (isKeylessFailure && ampleAgentProAvailable === null) return <LoadingState dateControl={ dateControl } />;
+    // Only a confirmed absence of Agent Pro shows the upsell. With it installed, a keyless failure means Agent Pro
+    // did not answer, which a retry may fix.
+    if (isKeylessFailure && ampleAgentProAvailable === false) {
       return (
         <NoConfigUpsell app={ app } features={ NO_CONFIG_FEATURES }
           moreFeaturesLabel="+ 15 more features included" widgetId={ WIDGET_ID } />
       );
     }
-    return <ProposedAgendaMessage app={ app } dateControl={ dateControl } message={ error.error } noteUuid={ error.noteUuid }
+    const message = isKeylessFailure ? AGENT_PRO_FAILED_MESSAGE : error.error;
+    return <ProposedAgendaMessage app={ app } dateControl={ dateControl } message={ message } noteUuid={ error.noteUuid }
       onRetry={ () => runGeneration() } />;
   }
 
@@ -435,7 +443,7 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
         </div>
       </WidgetWrapper>
       { providerPopupOpen
-        ? <LlmProviderSelector allowKeylessProviders={ ampleAgentProAvailable }
+        ? <LlmProviderSelector allowKeylessProviders={ ampleAgentProAvailable === true }
             configuredProviderEms={ configuredProviderEms(pluginSettings()) } currentProviderEm={ modelProviderEm }
             onCancel={ () => setProviderPopupOpen(false) } onSelect={ onSelectProvider } submitLabel="Submit"
             title="Generate the agenda with which AI provider?" />

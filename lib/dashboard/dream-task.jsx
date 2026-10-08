@@ -11,7 +11,7 @@ import LlmProviderSelector from "llm-provider-selector";
 import NoConfigUpsell from "no-config-upsell";
 import { pluginSettings } from "plugin-data";
 import { IDEA_STATUSES } from "project-idea-records";
-import { findAmpleAgentProNote, providerNameFromProviderEm } from "providers/ai-provider-settings";
+import { isAmpleAgentProInstalled, providerNameFromProviderEm } from "providers/ai-provider-settings";
 import { recordShownTaskSuggestions } from "ranked-task-suggestions";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
@@ -488,7 +488,8 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   const [llmAttributionFooter, setLlmAttributionFooter] = useState(null);
   const [providerPopupOpen, setProviderPopupOpen] = useState(false);
   const [reserveTasks, setReserveTasks] = useState([]);
-  const [ampleAgentProAvailable, setAmpleAgentProAvailable] = useState(false);
+  // Null until the Agent Pro lookup answers, so the upsell never shows to a subscriber while it is in flight
+  const [ampleAgentProAvailable, setAmpleAgentProAvailable] = useState(null);
   const [, setSeenUuidsMap] = useState(() => _loadSeenUuidsMap());
   const analysisRunIdRef = useRef(0);
   const listRef = useRef(null);
@@ -584,9 +585,10 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
 
   // [Claude claude-opus-4-8 (1M context)] Task: detect Ample Agent Pro so the reseed chooser may offer keyless providers
   // Prompt: "LLMs with no keys should only be visible if we are prompting prior to calling the external Agent Pro plugin"
+  // The same answer decides whether a keyless failure is a missing provider (the upsell) or Agent Pro not answering.
   useEffect(() => {
     let cancelled = false;
-    findAmpleAgentProNote(app).then(note => { if (!cancelled) setAmpleAgentProAvailable(!!note); });
+    isAmpleAgentProInstalled(app).then(installed => { if (!cancelled) setAmpleAgentProAvailable(installed); });
     return () => { cancelled = true; };
   }, [app]);
 
@@ -634,9 +636,12 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
 
   const isInitialPreFetch = !loading && !tasks && !error;
   const isLlmFallbackFailure = !!error && NO_CONFIG_ERROR_CODES.has(error.errorCode);
-  const shouldRenderNoConfig = !hasLlmConfig && !loading && (!tasks || tasks.length === 0)
+  const isKeylessWithoutTasks = !hasLlmConfig && !loading && (!tasks || tasks.length === 0)
     && (isInitialPreFetch || isLlmFallbackFailure);
-  useWidgetLoadedEvent(WIDGET_ID, !loading && (shouldRenderNoConfig || !!tasks || !!error), !!error);
+  // Only a confirmed absence of Agent Pro shows the upsell; with it installed, a failure shows its error and a retry
+  const shouldRenderNoConfig = isKeylessWithoutTasks && ampleAgentProAvailable === false;
+  const isCheckingAgentPro = isKeylessWithoutTasks && ampleAgentProAvailable === null;
+  useWidgetLoadedEvent(WIDGET_ID, !loading && !isCheckingAgentPro && (shouldRenderNoConfig || !!tasks || !!error), !!error);
 
   if (shouldRenderNoConfig) {
     logIfEnabled('[DreamTask] rendering no-config state', { providerName, hasError: !!error,
@@ -653,7 +658,7 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
         error={error}
         headerActions={headerActions}
         listRef={listRef}
-        loading={loading}
+        loading={loading || isCheckingAgentPro}
         llmAttributionFooter={llmAttributionFooter}
         maxTasks={maxTasks}
         noteLink={noteLink}
@@ -674,7 +679,7 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
       {
         providerPopupOpen
         ? <LlmProviderSelector
-            allowKeylessProviders={ampleAgentProAvailable}
+            allowKeylessProviders={ampleAgentProAvailable === true}
             configuredProviderEms={configuredProviderEms(pluginSettings())}
             currentProviderEm={providerEm}
             onCancel={() => setProviderPopupOpen(false)}
