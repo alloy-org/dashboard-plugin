@@ -26,6 +26,21 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-08 — Serve Goal Coach from the stored day ranking before waiting on the queue
+
+**Model:** Claude Opus 5.5
+**Files modified:**
+- `lib/dashboard/day-ranking-store.js` — `readDay` returns every ranking stored for a day, newest first.
+- `lib/dashboard/ranked-task-suggestions.js` — `prepareDayRanking` takes `storedOnly`: it answers from the current revision, or else from the day's newest ranking of any revision limited to still-listed candidates ("storedEarlier"), and never asks a provider. Rankings carry `current`. `dreamSuggestionsFromProjects` passes `storedOnly` through and declines an earlier ranking that cannot fill every card.
+- `lib/dream-task-service.js` — `_rankedDreamSuggestions` tries the store before awaiting the queue's preparation, and only prepares and ranks when nothing stored fills the cards.
+- `lib/dashboard/dream-task.jsx` — `hasLlmConfig` is a boolean, so the provider API key is no longer written to the debug log.
+- `test/day-ranking-store.test.js` — Store-only answers: nothing stored, current, earlier revision, and Goal Coach's fill requirement.
+
+**Task:** Let Goal Coach show substantiated suggestions within seconds of opening the Dashboard, rather than waiting ~13s for the queue to re-rank after overnight task changes.
+**Prompt summary:** "explain what we can change to ensure that our past work to precalculate what tasks will make good recommendations for each date can be used to expeditiously produce substantiated agenda recommendations within 5 seconds"
+
+---
+
 ## 2026-10-07 — Load the quarterly planning video only on play
 
 **Model:** Claude Opus 5.5

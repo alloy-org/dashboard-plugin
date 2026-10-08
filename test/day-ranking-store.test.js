@@ -7,7 +7,8 @@ import { SETTING_KEYS } from "constants/settings";
 import DayRankingStore, { dayRankingNoteName } from "dashboard/day-ranking-store";
 import QuarterProject from "dashboard/quarter-project";
 import QuarterProjectRepository from "dashboard/quarter-project-repository";
-import { agendaSuggestionsFromProjects, prepareDayRanking, recordShownTaskSuggestions } from "dashboard/ranked-task-suggestions";
+import { agendaSuggestionsFromProjects, dreamSuggestionsFromProjects, prepareDayRanking,
+  recordShownTaskSuggestions } from "dashboard/ranked-task-suggestions";
 import { dayRankingRevision, suggestionQuestions } from "dashboard/suggestion-task-rank";
 import { createPrepareDayRankingHandler } from "dashboard/work-queue/jobs/prepare-day-ranking";
 import { setPluginData } from "plugin-data";
@@ -151,6 +152,46 @@ describe("prepareDayRanking", () => {
     const agenda = await agendaSuggestionsFromProjects(app, { ...DOMAIN, openTasks: TASKS, projects: [], targetDate: midnight });
     expect(agenda.activities.map(activity => activity.taskUuid)).toEqual(["task-1", "task-2"]);
     expect(replaceNoteContent).not.toHaveBeenCalled();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Answering from the store alone never asks the ranker: with nothing stored it finds nothing, it reuses the
+  //   current ranking, and after the candidates change it answers from the day's earlier ranking, leaving out the
+  //   candidate that ranking never rated.
+  it("answers from the day's stored rankings without asking the ranker when storedOnly", async () => {
+    const app = maintenanceApp({ tasks: TASKS });
+    await storeQualifyingProject(app);
+    const requestAnswers = positionalAnswers();
+    const beforeRanking = await prepareDayRanking(app, { ...DOMAIN, openTasks: TASKS, requestAnswers, storedOnly: true, targetDate: NOW });
+    expect(beforeRanking).toEqual({ outcome: "notStored", ranking: null });
+    await prepareDayRanking(app, { ...DOMAIN, openTasks: TASKS, requestAnswers, targetDate: NOW });
+    const current = await prepareDayRanking(app, { ...DOMAIN, openTasks: TASKS, requestAnswers, storedOnly: true, targetDate: NOW });
+    expect(current.outcome).toBe("stored");
+    expect(current.ranking.current).toBe(true);
+    const grownTasks = [...TASKS, { content: "Record the demo", noteUUID: "task-note", uuid: "task-3" }];
+    await storeQualifyingProject(app, grownTasks);
+    const earlier = await prepareDayRanking(app, { ...DOMAIN, openTasks: grownTasks, requestAnswers, storedOnly: true, targetDate: NOW });
+    expect(earlier.outcome).toBe("storedEarlier");
+    expect(earlier.ranking.current).toBe(false);
+    const earlierTaskUuids = earlier.ranking.rankedTasks.map(task => task.taskUuid);
+    expect(earlierTaskUuids).toEqual(["task-1", "task-2"]);
+    expect(requestAnswers).toHaveBeenCalledTimes(1);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Goal Coach shows cards from the day's earlier ranking only when it still fills every card.
+  it("fills Goal Coach from an earlier ranking only when it fills every card", async () => {
+    const app = maintenanceApp({ tasks: TASKS });
+    await storeQualifyingProject(app);
+    await prepareDayRanking(app, { ...DOMAIN, openTasks: TASKS, requestAnswers: positionalAnswers(), targetDate: NOW });
+    const grownTasks = [...TASKS, { content: "Record the demo", noteUUID: "task-note", uuid: "task-3" }];
+    await storeQualifyingProject(app, grownTasks);
+    const filled = await dreamSuggestionsFromProjects(app, { ...DOMAIN, now: NOW, openTasks: grownTasks, storedOnly: true });
+    expect(filled.tasks.map(task => task.uuid)).toEqual(["task-1", "task-2"]);
+    const shrunkTasks = [TASKS[0], grownTasks[2]];
+    await storeQualifyingProject(app, shrunkTasks);
+    const unfilled = await dreamSuggestionsFromProjects(app, { ...DOMAIN, now: NOW, openTasks: shrunkTasks, storedOnly: true });
+    expect(unfilled).toBeNull();
   });
 
   // ----------------------------------------------------------------------------------------------
