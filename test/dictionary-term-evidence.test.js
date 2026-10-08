@@ -2,14 +2,15 @@
 // their heading and the full Rich Footnotes they cite, and an uncited footnote naming the term gives its own passage;
 // collection skips notes the plugin maintains, keeps a copied passage once, spreads passages across notes, bounds the
 // notes it reads, and falls back to an unquoted search; the job saves the record or retires when the term is gone; and
-// the store gives up the oldest records' passages first when they outgrow the note.
+// the store gives up the oldest records' passages first when they outgrow the note, keeps a passage quoting a fenced
+// block readable, and rebuilds a note whose JSON was cut short.
 import { createCollectTermEvidenceHandler } from "dashboard/work-queue/jobs/collect-term-evidence";
 import { termEvidenceRequest } from "dashboard/work-queue/jobs/project-job-requests";
 import DashboardNoteWriter from "dashboard/work-queue/dashboard-note-writer";
 import { collectTermEvidence, EVIDENCE_OUTCOMES, MAXIMUM_EVIDENCE_NOTES_READ, MAXIMUM_PASSAGE_CHARACTERS,
   termPassagesFromContent } from "plan-wizard/stack-rank/dictionary-term-evidence";
-import { MAXIMUM_STORED_PASSAGE_CHARACTERS, savedTermEvidence,
-  storedTermEvidence } from "plan-wizard/stack-rank/dictionary-term-evidence-store";
+import { MAXIMUM_STORED_PASSAGE_CHARACTERS, savedTermEvidence, storedTermEvidence,
+  termEvidenceNoteName } from "plan-wizard/stack-rank/dictionary-term-evidence-store";
 import { jobContext, notebookApp, NOW } from "./project-maintenance-test-app";
 
 const YEAR = 2026;
@@ -142,5 +143,45 @@ describe("dictionary term evidence", () => {
     const stored = await storedTermEvidence(app, { year: YEAR });
     expect(stored.alpha).toMatchObject({ passages: [], passagesDropped: true, sourceDigest: "00000000" });
     expect(stored.beta.passages).toHaveLength(1);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A passage quoting a fenced block is saved with its backticks escaped, so the note's one JSON fence holds it
+  //   whole, and a note written before that escaping is still read up to its last fence.
+  it("keeps a passage quoting a fenced block readable", async () => {
+    const app = notebookApp([]);
+    const noteWriter = new DashboardNoteWriter();
+    const fencedPassage = "# Layout\nThe widget config:\n```\n{ columns: 3 }\n```";
+    const record = { ...evidenceRecord("Widget", "2026-09-01T00:00:00.000Z", 1), passages: [{ noteUuid: "source", text: fencedPassage }] };
+    await savedTermEvidence(app, { evidence: record, noteWriter, year: YEAR });
+    const name = termEvidenceNoteName(YEAR);
+    expect(app.noteContent(name).split("```")).toHaveLength(3);
+    expect((await storedTermEvidence(app, { year: YEAR })).widget.passages[0].text).toBe(fencedPassage);
+    const unescapedContent = ["# Evidence", "", "```json", JSON.stringify({ schemaVersion: 1, terms: { widget: record } }), "```", ""].join("\n");
+    const { uuid } = await app.findNote({ name });
+    await app.replaceNoteContent({ uuid }, unescapedContent);
+    expect((await storedTermEvidence(app, { year: YEAR })).widget.passages[0].text).toBe(fencedPassage);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A note whose JSON was cut short reads as holding no evidence, and the next save replaces it in place; one
+  //   naming a newer schema is refused and left untouched.
+  it("rebuilds an evidence note whose JSON cannot be parsed, unless a newer version wrote it", async () => {
+    const app = notebookApp([]);
+    const noteWriter = new DashboardNoteWriter();
+    await savedTermEvidence(app, { evidence: evidenceRecord("Alpha", "2026-09-01T00:00:00.000Z", 10), noteWriter, year: YEAR });
+    const name = termEvidenceNoteName(YEAR);
+    const { uuid } = await app.findNote({ name });
+    await app.replaceNoteContent({ uuid }, '# Evidence\n\n```json\n{"schemaVersion":1,"terms":{"alpha":{"passages":[{"text":"cut\n```\n');
+    expect(await storedTermEvidence(app, { year: YEAR })).toEqual({});
+    await savedTermEvidence(app, { evidence: evidenceRecord("Beta", "2026-09-02T00:00:00.000Z", 10), noteWriter, year: YEAR });
+    expect(Object.keys(await storedTermEvidence(app, { year: YEAR }))).toEqual(["beta"]);
+    expect((await app.findNote({ name })).uuid).toBe(uuid);
+    const newerContent = '# Evidence\n\n```json\n{"schemaVersion":9,"terms":{"alpha":{"passages":[{"text":"cut\n```\n';
+    await app.replaceNoteContent({ uuid }, newerContent);
+    await expect(storedTermEvidence(app, { year: YEAR })).rejects.toThrow("unreadable JSON");
+    await expect(savedTermEvidence(app, { evidence: evidenceRecord("Gamma", "2026-09-03T00:00:00.000Z", 10), noteWriter,
+      year: YEAR })).rejects.toThrow("unreadable JSON");
+    expect(app.noteContent(name)).toBe(newerContent);
   });
 });

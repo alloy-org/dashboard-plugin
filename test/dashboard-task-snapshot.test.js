@@ -1,5 +1,7 @@
 // Exercise DashboardTaskSnapshot and its store: change detection across reads, partial versus complete observations,
-// watermarks, capacity, and the archived note each domain's index lives in.
+// watermarks, capacity, the archived note each domain's index lives in, and one reconciliation per shared task read.
+import { jest } from "@jest/globals";
+import { reconciledTaskSnapshot } from "dashboard/project-collection-steps";
 import DashboardNoteWriter from "dashboard/work-queue/dashboard-note-writer";
 import DashboardTaskSnapshot, { MAXIMUM_TRACKED_TASKS } from "dashboard/work-queue/dashboard-task-snapshot";
 import DashboardTaskSnapshotStore, { taskSnapshotNoteName } from "dashboard/work-queue/dashboard-task-snapshot-store";
@@ -143,5 +145,21 @@ describe("DashboardTaskSnapshotStore", () => {
     expect(app.notes.get(uuid).content).toBe(newerContent);
     app.failNextWrites(1);
     await expect(store.reconcile("other-domain", [openTask("first")], { complete: true })).rejects.toThrow("write failure");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Project jobs sharing one task read reconcile it once; another read, or another domain, reconciles again.
+  it("reconciles each shared task read once per domain", async () => {
+    const store = snapshotStore(workQueueNotesApp());
+    const reconcile = jest.spyOn(store, "reconcile");
+    const tasks = [openTask("first")];
+    const first = await reconciledTaskSnapshot(store, { domainUuid: "work-domain", tasks });
+    const second = await reconciledTaskSnapshot(store, { domainUuid: "work-domain", tasks });
+    expect(second).toBe(first);
+    expect(reconcile).toHaveBeenCalledTimes(1);
+    await reconciledTaskSnapshot(store, { domainUuid: "other-domain", tasks });
+    const fresh = await reconciledTaskSnapshot(store, { domainUuid: "work-domain", tasks: [openTask("first"), openTask("second")] });
+    expect(reconcile).toHaveBeenCalledTimes(3);
+    expect(fresh.changesSince(first.watermark()).changes.map(change => change.taskUuid)).toEqual(["second"]);
   });
 });

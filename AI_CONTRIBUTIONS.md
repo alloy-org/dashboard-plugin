@@ -26,6 +26,25 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-08 — Reuse unchanged Jev ratings, overlap Goal Coach's setup reads, hold maintenance for a waiting preparation, and escape backticks in JSON notes
+
+**Model:** Claude Opus 5.5
+**Files modified:**
+- `lib/dashboard/suggestion-task-rank.js` — `candidateRatingKey` digests one candidate's question; ranked candidates carry `ratingKey`. `rankDayTasks` takes `knownRatings`, and `_rankWithJev` asks Jev only about candidates without a known rating, keeping listed order between equal ratings. `_questionsFor` builds questions for a subset beside the full state.
+- `lib/dashboard/day-ranking-store.js` — Each stored rating keeps its `ratingKey`.
+- `lib/dashboard/ranked-task-suggestions.js` — `prepareDayRanking` reads the day's rankings once, alongside the candidate groups and the ranker, and passes the day's Jev ratings to `rankDayTasks` through `_knownJevRatings`. `_storedDayRanking` takes the rankings already read.
+- `lib/dream-task-service.js` — `_findDreamTaskNoteHandle` and `_createDreamTaskNote` split note lookup from creation; when the day's note is new or the refresh is forced, every task is read while the note is created, and a new note's content is not read back.
+- `lib/dashboard/work-queue/prepared-day-ranking.js` — The awaiter demands its job as foreground work from before submission until the wait ends, so maintenance is not admitted while the submission's queue-note write waits.
+- `lib/dashboard/project-collection-steps.js` — `reconciledTaskSnapshot` reconciles each shared task read once per app and domain.
+- `lib/dashboard/work-queue/dashboard-json-note.js` — `jsonNoteMarkdown` writes backticks as `\u0060`; `_parsedJsonBlock` reads the block through `jsonFenceContent` (merged with the 2026-10-10 fence fix, replacing a retry up to the last fence), and marks unparseable JSON with `unreadableJson`, `noteHandle`, and `schemaVersion`.
+- `lib/plan-wizard/stack-rank/dictionary-term-evidence-store.js` — `_readEvidenceNote` reads an unparseable evidence note as empty so the next save replaces it, unless it names a newer schema.
+- `test/day-ranking-store.test.js`, `test/day-preparation.test.js`, `test/dashboard-task-snapshot.test.js`, `test/dictionary-term-evidence.test.js` — Partial Jev re-rating, maintenance held during submission, one snapshot reconcile per shared read, and fenced passages in evidence notes.
+
+**Task:** Cut the remaining first-open latency: re-rank only changed candidates, overlap setup reads, keep maintenance from running ahead of a waiting preparation, avoid re-reconciling the task snapshot per project, and fix the evidence note whose JSON was cut short by a quoted code fence.
+**Prompt summary:** "Let's proceed on the 'not done yet' items: less brittle stored-ranking keys, faster project maintenance, running the setup steps in parallel, and the truncated-JSON error"
+
+---
+
 ## 2026-10-08 — Serve Goal Coach from the stored day ranking before waiting on the queue
 
 **Model:** Claude Opus 5.5

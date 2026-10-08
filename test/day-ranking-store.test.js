@@ -142,6 +142,30 @@ describe("prepareDayRanking", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
+  // @desc A new candidate changes the revision, but Jev is asked only about it; the others keep their stored ratings,
+  //   and removing a candidate again reranks from the stored ratings without asking at all.
+  it("asks Jev only about candidates whose questions changed", async () => {
+    const app = maintenanceApp({ tasks: TASKS });
+    await storeQualifyingProject(app);
+    const requestAnswers = positionalAnswers();
+    await prepareDayRanking(app, { ...DOMAIN, openTasks: TASKS, requestAnswers, targetDate: NOW });
+    const grownTasks = [...TASKS, { content: "Record the demo", noteUUID: "task-note", uuid: "task-3" }];
+    await storeQualifyingProject(app, grownTasks);
+    const grown = await prepareDayRanking(app, { ...DOMAIN, openTasks: grownTasks, requestAnswers, targetDate: NOW });
+    expect(grown.outcome).toBe("ranked");
+    expect(Object.keys(requestAnswers.mock.calls[1][0].questions)).toEqual(["task_1"]);
+    expect(requestAnswers.mock.calls[1][0].questions.task_1.instructions).toContain("Record the demo");
+    const grownRatings = grown.ranking.rankedTasks.map(task => [task.taskUuid, task.rankerRating]);
+    expect(grownRatings).toEqual([["task-1", 10], ["task-3", 10], ["task-2", 9]]);
+    const shrunkTasks = [TASKS[1], grownTasks[2]];
+    await storeQualifyingProject(app, shrunkTasks);
+    const shrunk = await prepareDayRanking(app, { ...DOMAIN, openTasks: shrunkTasks, requestAnswers, targetDate: NOW });
+    expect(shrunk.outcome).toBe("ranked");
+    expect(shrunk.ranking.rankedTasks.map(task => task.taskUuid)).toEqual(["task-3", "task-2"]);
+    expect(requestAnswers).toHaveBeenCalledTimes(2);
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc The agenda slots a ranking Dream Task's request prepared, with no provider request and no exposure recorded.
   it("lets the agenda reuse a prepared ranking without recording exposure", async () => {
     const app = maintenanceApp({ tasks: TASKS });

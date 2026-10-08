@@ -180,7 +180,8 @@ describe("preparedDayRankingAwaiter", () => {
   // @returns {object} { durable, emit }: emit reports an outcome to the subscribed listeners.
   function fakeDurable({ held = true, submit = jest.fn(async request => request) } = {}) {
     const listeners = new Set();
-    const durable = { scheduler: { holds: jest.fn(() => held), scopeKey: SCOPE_KEY, subscribe: jest.fn(() => () => {}) },
+    const durable = { scheduler: { holds: jest.fn(() => held), scopeKey: SCOPE_KEY, setForegroundDemand: jest.fn(),
+      subscribe: jest.fn(() => () => {}) },
       schedulerKey: (key, scopeKey) => JSON.stringify([scopeKey, key]), submit,
       subscribeOutcomes: listener => {
         listeners.add(listener);
@@ -204,6 +205,9 @@ describe("preparedDayRankingAwaiter", () => {
     emit({ jobKey: "prepareDayRanking:work-domain:2026-09-17", scopeKey: SCOPE_KEY, status: "retryWaiting" });
     await expect(waiting).resolves.toEqual({ status: "retryWaiting" });
     expect(listeners.size).toBe(0);
+    const demandCalls = durable.scheduler.setForegroundDemand.mock.calls;
+    expect(demandCalls.map(([, keys]) => keys)).toEqual([[durable.schedulerKey("prepareDayRanking:work-domain:2026-09-17", SCOPE_KEY)], []]);
+    expect(demandCalls[0][0]).toBe(demandCalls[1][0]);
     expect(preparedDayRankingAwaiter(null)).toBeNull();
   });
 
@@ -220,6 +224,34 @@ describe("preparedDayRankingAwaiter", () => {
     const waiting = slow({ ...DOMAIN, targetDate: THURSDAY_MORNING });
     timers.fire();
     await expect(waiting).resolves.toEqual({ status: "timedOut" });
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc While the preparation's submission is still writing the queue note, maintenance already pending is not
+  //   admitted, and it starts once the wait ends.
+  it("holds new maintenance from before the submission until the wait ends", async () => {
+    const app = maintenanceApp({ tasks: TASKS });
+    const clock = () => THURSDAY_MORNING.getTime();
+    const runtime = createDashboardWorkRuntime({ app, clearTimer: () => {}, clock, handlers: workHandlerRegistry([]),
+      repository: new DashboardWorkRepository({ app, clock }), setTimer: () => 0 });
+    runtime.scheduler.setScope(SCOPE_KEY);
+    runtime.scheduler.setConditions({ loadSettled: true });
+    const maintenanceRun = jest.fn(async () => ({}));
+    let finishSubmission = null;
+    const durable = { scheduler: runtime.scheduler, schedulerKey: (key, scopeKey) => runtime.durable.schedulerKey(key, scopeKey),
+      submit: () => new Promise(resolve => { finishSubmission = resolve; }), subscribeOutcomes: () => () => {} };
+    const awaitPreparation = preparedDayRankingAwaiter(durable, { setTimer: () => 0 });
+    const waiting = awaitPreparation({ ...DOMAIN, targetDate: THURSDAY_MORNING });
+    const maintenanceJob = runtime.scheduler.enqueue({ key: "maintenance-job", run: maintenanceRun });
+    runtime.scheduler.runReady();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(maintenanceRun).not.toHaveBeenCalled();
+    finishSubmission();
+    await expect(waiting).resolves.toEqual({ status: "notQueued" });
+    runtime.scheduler.runReady();
+    await expect(maintenanceJob).resolves.toMatchObject({ status: "completed" });
+    expect(maintenanceRun).toHaveBeenCalledTimes(1);
+    runtime.dispose();
   });
 
   // ----------------------------------------------------------------------------------------------
