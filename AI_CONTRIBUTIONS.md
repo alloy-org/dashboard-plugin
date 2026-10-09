@@ -26,6 +26,23 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-09 — Draw cited tasks in project reasons instead of raw UUIDs
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/plan-wizard/substantiation-task-references.js` (created) — Splits a reason into text and cited task segments (bracketed, parenthesized, listed, or bare UUIDs), drops citations of tasks that are not kept, strips citations for plain-text uses, and shortens task text to a three-word chip label.
+- `lib/hooks/use-cited-tasks.js` (created) — Reads each cited task once with `app.getTask`, mapping a deleted, dismissed, or unreadable task to null.
+- `lib/dashboard/plan-wizard/project-card.jsx` — `ProjectReason` and `CitedTaskChip` render each citation as a chip (live dot for open, check for finished, placeholder while reading) with the full task text in a tooltip; the memo comparison considers only the card's own cited tasks.
+- `lib/dashboard/plan-wizard/projects-step.jsx`, `lib/dashboard/plan-wizard/plan-wizard.jsx` — Pass `app` down and look up the tasks every project reason cites.
+- `lib/dashboard/plan-wizard/project-focus-window-fields.js` — The focus window tooltip's "Why this project" strips task UUIDs.
+- `lib/dashboard/styles/plan-wizard.scss` — Task chip styles.
+- `test/substantiation-task-references.test.js` (created) — Segmenting, stripping, dropped citations, and chip labels.
+
+**Task:** Project rationales showed raw task UUIDs; show the cited task instead, as a non-clickable chip with its first words and the full text on hover.
+**Prompt summary:** "render each task UUID with a stylized appearance that indicates this is a still-active task... show the first three words or so of the task, and show the full task text on hover"
+
+---
+
 ## 2026-10-08 — Stop showing the Ample Agent Pro upsell to users who have Agent Pro
 
 **Model:** Claude Opus 5.5

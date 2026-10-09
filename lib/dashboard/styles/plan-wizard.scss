@@ -1120,6 +1120,51 @@ $pace-slice-other-color: #e87ba4;
       }
     }
 
+    /* A task a project's reason cites, drawn in place of its UUID so the user sees real work behind the idea. An
+     * open task carries a live dot; a finished one is checked off and quieter. */
+    .project-row-task-chip {
+      align-items: center;
+      background: $color-bg-secondary;
+      border: 1px solid $color-border;
+      border-radius: $radius-sm;
+      color: $color-text;
+      cursor: default;
+      display: inline-flex;
+      font-size: $smaller-font-size;
+      font-style: normal;
+      gap: $sp-xs;
+      line-height: 1.4;
+      padding: 0 $sp-xs;
+      vertical-align: baseline;
+      white-space: nowrap;
+
+      &:focus-visible {
+        outline: 2px solid $color-accent;
+        outline-offset: 1px;
+      }
+    }
+
+    .project-row-task-chip--active .project-row-task-chip-marker {
+      background: $color-success;
+      border-radius: 50%;
+      flex-shrink: 0;
+      height: 6px;
+      width: 6px;
+    }
+
+    .project-row-task-chip--finished {
+      color: $color-text-muted;
+
+      .project-row-task-chip-marker {
+        color: $color-success;
+      }
+    }
+
+    .project-row-task-chip--pending {
+      color: $color-text-muted;
+      opacity: 0.7;
+    }
+
     .project-row-reject {
       color: $color-danger;
       flex-shrink: 0;

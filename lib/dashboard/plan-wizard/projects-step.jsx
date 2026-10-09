@@ -15,6 +15,8 @@ import ProjectCard from "dashboard/plan-wizard/project-card";
 import { completionRecordFromRow, draftRowsFromProspects, emptyProjectRow, priorityRecordFromRow,
   prospectRecordsFromDraftRows, rejectionRecordFromRow } from "dashboard/plan-wizard/projects-step-fields";
 import { useRegisteredNavigate } from "dashboard/plan-wizard/step-navigation";
+import { citedTaskUuidsFromSubstantiations } from "dashboard/plan-wizard/substantiation-task-references";
+import useCitedTasks from "hooks/use-cited-tasks";
 import { clusterProspectsByEvidence } from "plan-wizard/prospect-similarity";
 import { wizardStepFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -57,6 +59,7 @@ function restatedProjectCount(prospects, userCategoryEm) {
 // @desc Offer the sources page: during a discovery pass as an invitation to watch it, with the pass's progress bar
 //   beneath, and otherwise as a plain link to what the projects were drawn from.
 // @param {object} params - An object with the following properties:
+//   - {object} app - Amplenote app interface, used to read the tasks the project reasons cite.
 //   - {number} discoveryProgress - Elapsed fill of the running discovery pass.
 //   - {boolean} isDiscovering - True while a discovery pass is running.
 //   - {Function} onOpenSources - Shows the sources page.
@@ -75,6 +78,7 @@ function ProjectSourcesLink({ discoveryProgress, isDiscovering, onOpenSources })
 // ----------------------------------------------------------------------------------------------
 // @desc Render the projects page and save changed custom projects before Back or Next changes the page.
 // @param {object} params - An object with the following properties:
+//   - {object} app - Amplenote app interface, used to read the tasks the project reasons cite.
 //   - {number} discoveryProgress - Elapsed fill of the running discovery pass, measured by the wizard shell so the
 //     sources page shows the same fill.
 //   - {string|null} discoveryFailureReason - Why the last discovery pass proposed nothing, when it proposed none.
@@ -92,7 +96,7 @@ function ProjectSourcesLink({ discoveryProgress, isDiscovering, onOpenSources })
 //   - {object} planningContext - Stored goals and prospects for the scope.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 // @returns {JSX.Element} The projects page.
-export default function ProjectsStep({ discoveryFailureReason = null, discoveryProgress = 0, isConsolidating = false,
+export default function ProjectsStep({ app, discoveryFailureReason = null, discoveryProgress = 0, isConsolidating = false,
     isDiscovering = false, isSaving, onConsolidate, onDiscover, onNavigate, onOpenSources = null, onRegisterNavigate, onSave,
     onSaveDecision, planningContext, scopeKey }) {
   const [draftRows, setDraftRows] = useState(() => draftRowsFromProspects(planningContext.prospects,
@@ -103,6 +107,9 @@ export default function ProjectsStep({ discoveryFailureReason = null, discoveryP
   // keystroke in a project name, so it is computed when the stored records change rather than per render.
   const combinableCountByCategory = useMemo(() => ({ personal: restatedProjectCount(planningContext.prospects, "personal"),
     work: restatedProjectCount(planningContext.prospects, "work") }), [planningContext.prospects]);
+  const citedTaskUuids = useMemo(() => citedTaskUuidsFromSubstantiations(planningContext.prospects.flatMap(prospect =>
+    prospect.substantiations ?? [prospect.substantiation])), [planningContext.prospects]);
+  const citedTaskByUuid = useCitedTasks(app, citedTaskUuids);
 
   useEffect(() => {
     if (seededScopeRef.current === scopeKey && !capturedAtRef.current) return;
@@ -219,7 +226,7 @@ export default function ProjectsStep({ discoveryFailureReason = null, discoveryP
             ) }
             <div className="projects-step-card-grid">
               { categoryRows.map(row => (
-                <ProjectCard { ...{ row } } isDisabled={ isSaving } key={ row.uuid }
+                <ProjectCard { ...{ citedTaskByUuid, row } } isDisabled={ isSaving } key={ row.uuid }
                   onChangeSummary={ handleChangeRow } onReject={ handleReject } onSetCompletion={ handleSetCompletion }
                   onSetPriority={ handleSetPriority } />
               )) }
