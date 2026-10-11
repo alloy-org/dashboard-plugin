@@ -223,8 +223,7 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   // unchanged) still re-triggers generation, letting the widget recover from the no-provider state.
   // ------------------------------------------------------------------------------------------
   // @desc Generate the selected day and discard stale responses after another date or provider is chosen.
-  // @param {object} options - Whether to bypass the normal agenda cache.
-  const runGeneration = useCallback(({ forceRegenerate = false } = {}) => {
+  const runGeneration = useCallback(() => {
     const generation = ++generationRef.current;
     const setters = { setApproving, setAttribution, setDateLabel, setDismissedKeys, setError, setIsFutureDay,
       setLoading, setObligations, setProjectNotice, setProposed, setRecordDomainName, setRecordDomainUuid,
@@ -232,7 +231,7 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
     const guardedSetters = Object.fromEntries(Object.entries(setters).map(([name, setter]) =>
       [name, value => { if (generation === generationRef.current) setter(value); }]));
     return runProposedAgendaGeneration(app, { calendarEvents, currentDate, dateRange, domainName: taskDomainName,
-      domainUuid: taskDomainUUID, explicitDate: selectedDate, forceRegenerate,
+      domainUuid: taskDomainUUID, explicitDate: selectedDate,
       isCurrentGeneration: () => generation === generationRef.current, priorityKey,
       providerEm: modelProviderEm, rankingPreparer: rankingPreparerRef.current, ...guardedSetters }).catch(error => {
       guardedSetters.setError({ error: error?.message || "Could not prepare the agenda. Please try again.",
@@ -383,8 +382,6 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   const headerActions = <div className="proposed-agenda-header-actions">
     <button className="proposed-agenda-model" onClick={ onChangeModel } title="Change AI provider" type="button">
       <span aria-hidden="true">◎</span>{ _modelName(modelProviderEm) }<span aria-hidden="true">⌄</span></button>
-    <button className="proposed-agenda-regenerate" onClick={ () => runGeneration({ forceRegenerate: true }) } type="button">
-      <span aria-hidden="true">⟳</span> Regenerate</button>
   </div>;
 
   // ------------------------------------------------------------------------------------------

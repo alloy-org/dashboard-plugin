@@ -72,7 +72,8 @@ function AgendaCalendar({ calendarEvents, dateValue, onSelectDate, savedDates })
 // ----------------------------------------------------------------------------------------------
 // @desc Show the selected agenda day, previous/next navigation, relative date, and a calendar popout.
 // @param {object} props - { calendarEvents, dateLabel, dateValue, onSelectDate, savedDates }.
-// @returns {JSX.Element} Date controls available in loaded, loading, and error states.
+// @returns {JSX.Element} Date controls available in loaded, loading, and error states, followed by a "Back to today"
+//   button that the overview places on its own line beneath the date and priority row.
 export default function ProposedAgendaDateControl({ calendarEvents = [], dateLabel, dateValue, onSelectDate, savedDates = [] }) {
   const [editing, setEditing] = useState(false);
   const anchorRef = useRef(null);
@@ -90,16 +91,17 @@ export default function ProposedAgendaDateControl({ calendarEvents = [], dateLab
   // ------------------------------------------------------------------------------------------
   // @desc Move by local calendar days, preserving midnight across daylight-saving transitions.
   const shiftDate = amount => selectDate(dateKeyFromDateInput(new Date(date.getFullYear(), date.getMonth(), date.getDate() + amount)));
-  return <div className="proposed-agenda-date-control">
-    <button aria-label="Previous agenda day" className="proposed-agenda-day-arrow" onClick={ () => shiftDate(-1) } type="button">‹</button>
-    <button aria-expanded={ editing } aria-haspopup="dialog" aria-label="Change agenda date" className="proposed-agenda-date-edit"
-      onClick={ () => setEditing(value => !value) } ref={ anchorRef } type="button">{ label }<span aria-hidden="true">⌄</span></button>
-    <button aria-label="Next agenda day" className="proposed-agenda-day-arrow" onClick={ () => shiftDate(1) } type="button">›</button>
-    <span className="proposed-agenda-relative-date">{ relativeLabel }</span>
-    { offset !== 0 ? <button className="proposed-agenda-today" onClick={ () => selectDate(dateKeyFromDateInput(today)) }
-      type="button">Back to today</button> : null }
-    { editing ? <ProposedAgendaPopover anchorRef={ anchorRef } label="Choose agenda date" onClose={ close }>
-      <AgendaCalendar calendarEvents={ calendarEvents } dateValue={ dateValue } onSelectDate={ selectDate } savedDates={ savedDates } />
-    </ProposedAgendaPopover> : null }
-  </div>;
+  return <>
+    <div className="proposed-agenda-date-control">
+      <button aria-label="Previous agenda day" className="proposed-agenda-day-arrow" onClick={ () => shiftDate(-1) } type="button">‹</button>
+      <button aria-expanded={ editing } aria-haspopup="dialog" aria-label="Change agenda date" className="proposed-agenda-date-edit"
+        onClick={ () => setEditing(value => !value) } ref={ anchorRef } type="button">{ label }
+        <span aria-hidden="true" className="proposed-agenda-date-caret">⌄</span></button>
+      <button aria-label="Next agenda day" className="proposed-agenda-day-arrow" onClick={ () => shiftDate(1) } type="button">›</button>
+      <span className="proposed-agenda-relative-date">{ relativeLabel }</span>
+      { editing ? <ProposedAgendaPopover anchorRef={ anchorRef } label="Choose agenda date" onClose={ close }>
+        <AgendaCalendar calendarEvents={ calendarEvents } dateValue={ dateValue } onSelectDate={ selectDate } savedDates={ savedDates } />
+      </ProposedAgendaPopover> : null }
+    </div>
+  </>;
 }

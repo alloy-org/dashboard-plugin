@@ -21,6 +21,15 @@ const MOODS = [
   { value: 2, emoji: '\u{1F604}', label: 'Great' }
 ];
 
+// Twice tippy's default 350px, so each completed task row has room for its text and its project's name.
+const TOOLTIP_MAX_WIDTH = 700;
+// Space above the plot, just enough for the mood overlay's top dot. The tallest bar reaches this line.
+const CHART_TOP_PADDING = 4;
+// Space below the plot for each day's name and date.
+const CHART_LABEL_HEIGHT = 40;
+// The shortest bar its total label fits inside; a shorter bar is labeled just above it, in the page's text color.
+const BAR_LABEL_MINIMUM_BAR_HEIGHT = 18;
+
 // ------------------------------------------------------------------------------------------
 // @desc Build seven daily totals ending on the reference date, using supplied daily values until tasks are available.
 //   Each day's total is split into a segment per project the completed task ledger names, so its bar can be stacked.
@@ -111,10 +120,10 @@ function getBarTopScreenY(canvasRef, index, dailyValues, maxValue) {
   if (!canvas) return 0;
   const rect = canvas.getBoundingClientRect();
   const ht = canvas.offsetHeight;
-  const chartH = ht - 50;
+  const chartH = ht - CHART_TOP_PADDING - CHART_LABEL_HEIGHT;
   const barValue = dailyValues[index]?.value || 0;
-  const barH = (barValue / maxValue) * chartH * 0.85;
-  return rect.top + chartH - barH + 10;
+  const barH = (barValue / maxValue) * chartH;
+  return rect.top + chartH - barH + CHART_TOP_PADDING;
 }
 
 function getHoveredDayTasks(index, dailyValues, completedTasksByDate) {
@@ -159,7 +168,7 @@ function getHoveredDayMood(index, moodByDay, dailyValues) {
 // ------------------------------------------------------------------------------------------
 // @desc Draw activity bars and labels using the current dashboard theme colors. Each bar stacks its day's segments
 //   from the base up, only the top segment taking the rounded corners, and the day's total is labeled at the top in the
-//   ink that reads on the top segment's color.
+//   ink that reads on the top segment's color, or above the bar when the bar is too short to hold it.
 // @param {CanvasRenderingContext2D} ctx - Drawing context.
 // @param {Array} dailyValues - Daily totals and labels.
 // @param {number} maxValue - Largest daily value.
@@ -170,9 +179,9 @@ function getHoveredDayMood(index, moodByDay, dailyValues) {
 function drawBars(ctx, dailyValues, maxValue, barW, chartH, ht) {
   const themeStyle = getComputedStyle(document.documentElement);
   dailyValues.forEach((d, i) => {
-    const barH = (d.value / maxValue) * chartH * 0.85;
+    const barH = (d.value / maxValue) * chartH;
     const x = 40 + i * barW + barW * 0.15;
-    const y = chartH - barH + 10;
+    const y = chartH - barH + CHART_TOP_PADDING;
     const segments = d.segments?.length ? d.segments : [{ colorToken: '--dashboard-color-background-accent', value: d.value }];
     if (d.value > 0) drawBarSegments(ctx, themeStyle, segments, { barH, total: d.value, width: barW * 0.7, x, y });
     else {
@@ -195,10 +204,12 @@ function drawBars(ctx, dailyValues, maxValue, barW, chartH, ht) {
 
     if (d.value > 0) {
       const topSegment = segments[segments.length - 1];
-      const labelInk = topSegment.colorToken.includes('category') ? '--dashboard-color-text-on-category' : '--dashboard-color-text-on-accent';
+      const labelFitsInBar = barH >= BAR_LABEL_MINIMUM_BAR_HEIGHT;
+      const onBarInk = topSegment.colorToken.includes('category') ? '--dashboard-color-text-on-category' : '--dashboard-color-text-on-accent';
+      const labelInk = labelFitsInBar ? onBarInk : '--dashboard-color-text';
       ctx.fillStyle = themeStyle.getPropertyValue(labelInk).trim();
       ctx.font = 'bold 10px system-ui';
-      ctx.fillText(formatBarPointValue(d.value), x + barW * 0.35, y + 14);
+      ctx.fillText(formatBarPointValue(d.value), x + barW * 0.35, labelFitsInBar ? y + 14 : y - 4);
     }
   });
 }
@@ -236,7 +247,7 @@ function drawMoodOverlay(ctx, moodByDay, chartDailyValues, barW, chartH) {
     if (!m || !chartDailyValues[i]) return;
     const date = dateFromDateInput(chartDailyValues[i].date);
     if (date > today) return;
-    const y = chartH - ((m.rating + 2) / 4) * chartH + 10;
+    const y = chartH - ((m.rating + 2) / 4) * chartH + CHART_TOP_PADDING;
     const x = 40 + i * barW + barW * 0.5;
     points.push({ index: i, x, y });
   });
@@ -278,7 +289,7 @@ function drawChart(canvasRef, dailyValues, maxValue, moodByDay, showMood) {
   const w = W / 2;
   const ht = H / 2;
   const barW = (w - 80) / 7;
-  const chartH = ht - 50;
+  const chartH = ht - CHART_TOP_PADDING - CHART_LABEL_HEIGHT;
   ctx.clearRect(0, 0, w, ht);
 
   drawBars(ctx, dailyValues, maxValue, barW, chartH, ht);
@@ -432,7 +443,7 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
   const onConfigSubmit = handleConfigSubmit.bind(null, app, timeRange, showMood, setConfigOpen);
   const onConfigCancel = handleConfigCancel.bind(null, currentConfig, setTimeRange, setShowMood, setConfigOpen);
   const weekDateRange = formatWeekDateRange(chartDailyValues);
-  const tip = useCanvasTippy({ interactive: true });
+  const tip = useCanvasTippy({ interactive: true, maxWidth: TOOLTIP_MAX_WIDTH });
   const onCanvasMouseMove = (e) => { tip.cancelScheduledHide(); handleCanvasMouseMove(canvasRef, setHoveredBar, e); };
   const onCanvasMouseLeave = () => tip.scheduleHide(300, () => setHoveredBar(null));
 
@@ -509,7 +520,6 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
         <span className="vv-total">{roundedWeeklyTotal}</span>
         <span className="vv-label">{`points ${ weekDateRange }`}</span>
       </div>
-      <ProjectLegend items={legendItems} />
       <div className="vv-chart-container">
         <button
           className="vv-nav-arrow"
@@ -535,6 +545,7 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
           aria-label="Next week"
         >›</button>
       </div>
+      <ProjectLegend items={legendItems} />
     </WidgetWrapper>
   );
 }
