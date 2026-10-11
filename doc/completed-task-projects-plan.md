@@ -76,14 +76,14 @@ writes to both notes.
 
 ### New files
 
-- `lib/dashboard/completed-task-project-ledger.js`: React-free reader/writer.
+- `lib/dashboard/projects/completed-task-project-ledger.js`: React-free reader/writer.
   - `completedTaskLedgerNoteName(scope)`
   - `readCompletedTaskLedger(app, scope)` returns `{ entriesByTaskUuid, noteHandle, content }` and never creates the
     note.
   - `writeLedgerDateSection(app, { content, noteHandle, dateKey, entries })` replaces or inserts one date section in
     date order and returns the updated content, mirroring `writeProjectSection`.
   - `ledgerDateSectionMarkdown(dateKey, entries, projectsByUuid)` renders the bullets and JSON.
-- `lib/dashboard/completed-task-project-classification.js`: pure logic, testable without the queue.
+- `lib/dashboard/projects/completed-task-project-classification.js`: pure logic, testable without the queue.
   - `projectsWithExampleTasks(projects)` gives each active project its 3 highest-similarity open tasks. It ranks by
     `relatedTaskRecords[].matchScore`, falls back to `taskSimilarityScores`, and prefers directly linked tasks on ties.
   - `linkedProjectUuid(task, projects)` is the deterministic pass. If exactly one project claims the task through a
@@ -113,6 +113,18 @@ writes to both notes.
 - `dashboard-work-handlers.js`: register the handler.
 - `use-project-maintenance-queue.js`: submit the request alongside each reconciliation.
 
+### Where the implementation departed from this plan
+
+- Days are kept **oldest first**. A new day is then almost always appended by rewriting only the previous day's
+  section; newest-first would need a whole-note write for every new day.
+- Entries also carry `projectName` (so bullets and the commit 2 legend can name a project that has since left the
+  plan) and `dateKey`. A completion is identified by day and task UUID, so a repeating task that keeps its UUID is
+  recorded once per day.
+- Choices are numbered project summaries (`"1. Launch dashboard"`) plus `"None of these projects"` rather than UUIDs,
+  so the model reads names; questions are named `task_<position>` in the batch.
+- An answer below 0.5 confidence counts as no project; an answer that reports no confidence is accepted as given.
+- A quarter whose projects are not known yet records nothing and waits; it does not supersede the whole job.
+
 ### Tests
 
 - `test/completed-task-project-ledger.test.js`: section round-trip, date ordering, inserting a new date between
@@ -127,7 +139,7 @@ writes to both notes.
 
 ## Commit 2: Victory Value colored by project
 
-- `lib/dashboard/completed-task-project-colors.js` (React-free): `projectColorAssignments(projects)` gives each
+- `lib/dashboard/projects/completed-task-project-colors.js` (React-free): `projectColorAssignments(projects)` gives each
   project a stable color slot by its plan order, so a project keeps its color from week to week. Unassociated tasks
   use the existing `--dashboard-color-background-accent`.
 - Theme tokens: add 6 categorical colors (`--dashboard-color-category-1..6`) with light and dark values in the theme
@@ -155,7 +167,7 @@ writes to both notes.
 
 - Before starting, confirm `updateTask(uuid, { victoryValue })` against a real Amplenote session. Check that it
   returns `true` and that `getCompletedTasks` then reports the new value.
-- `lib/dashboard/completed-task-potential.js` (pure):
+- `lib/dashboard/projects/completed-task-potential.js` (pure):
   - `potentialQuestions(entries)` asks two `scoreQuestion`s per task: `upside:<uuid>` for "Long-term Potential
     Upside" and `impact:<uuid>` for "Short-term predicted impact", each with a 10-step criteria list.
   - `potentialState({ projects, terms, entries })` sends the projects, terms, and each task with the project it was

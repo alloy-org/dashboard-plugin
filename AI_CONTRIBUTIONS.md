@@ -5,6 +5,26 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-11 — Record which project each completed task advanced (Completed Tasks by Project, commit 1)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/projects/completed-task-project-ledger.js` (created) — Reads and writes the archived `Completed Tasks by Project Q<q> <year> <domain>` note: one `## YYYY-MM-DD` section per day, oldest first, with bullets rendered from a compact JSON fence. Days are written one section at a time; a day that cannot be parsed is reported, never overwritten.
+- `lib/dashboard/projects/completed-task-project-classification.js` (created) — Pure classification logic: each project's three most similar open tasks as examples, the link pass (exactly one project claiming the task), one choice question per task among numbered project summaries and "None of these projects", the shared state with goals and narrowed dictionary terms, and reading answers as ledger entries (low confidence or unknown choices become no project).
+- `lib/dashboard/work-queue/jobs/classify-completed-tasks.js` (created) — Maintenance-priority handler: reads the past 7 days of completions for the domain, splits them by quarter, skips ledgered ones, records linked tasks, asks the DecisionsEndpoint (decision models only) in batches of 25, and writes each batch as it is answered.
+- `lib/dashboard/work-queue/jobs/project-job-requests.js` — `CLASSIFY_COMPLETED_TASKS_JOB_TYPE` and `completedTaskClassificationRequest`, keyed per quarter.
+- `lib/dashboard/work-queue/dashboard-work-handlers.js` — Registers the handler.
+- `lib/hooks/use-project-maintenance-queue.js` — Submits the classification with each reconciliation in one `submitAll`.
+- `test/completed-task-project-ledger.test.js`, `test/completed-task-project-classification.test.js`, `test/classify-completed-tasks-job.test.js` (created); `test/project-maintenance-queue-hooks.test.js`, `test/project-maintenance-jobs.test.js` — Updated for the new submission and job type.
+- `doc/completed-task-projects-plan.md` — Paths moved under `lib/dashboard/projects/`; notes where commit 1 departed from the plan.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes except `llm-integration.test.js`, which timed out under full-suite load and passes on its own; production-plugin smoke test passes.
+**Task:** Commit 1 of the completed-tasks-by-project plan.
+**Prompt summary:** "Ok, please commence commit #1" and "they should be part of a subdirectory for files related to planning or projects"
+
+---
+
 ## 2026-10-11 — Move scoreQuestion to the decisions endpoint and test against the live OpenAI Decisions API
 
 **Model:** Claude Opus 5.5

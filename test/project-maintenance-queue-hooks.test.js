@@ -1,6 +1,6 @@
 // Verify how the Dashboard and Plan Builder hand project maintenance to the work queue: the Dashboard submits its
-// quarter's reconciliation once its load settles and again after a burst of task changes, and Plan Builder planning the
-// selected quarter submits the reconciliation as foreground work and re-reads scores as queued rankings complete,
+// quarter's reconciliation and completed task classification once its load settles and again after a burst of task
+// changes, and Plan Builder planning the selected quarter submits the reconciliation as foreground work and re-reads scores as queued rankings complete,
 // instead of running its own ranking pass. Once a visit's project jobs have finished and gone quiet, the Dashboard
 // prepares the day's shared ranking.
 import { jest } from "@jest/globals";
@@ -66,24 +66,27 @@ describe("project maintenance hooks", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Nothing is submitted until the load settles; then the quarter's reconciliation is, and a burst of task
-  //   changes submits one more once it quiets down.
+  // @desc Nothing is submitted until the load settles; then the quarter's reconciliation and completed task
+  //   classification are, in one submission, and a burst of task changes submits them once more once it quiets down.
   it("submits the Dashboard's reconciliation on settle and after task changes", async () => {
     const { work } = fakeWork(SCOPE_KEY);
     const { result, unmount } = await renderHook(() => useProjectMaintenanceQueue({ domainName: "Work", domainUuid: "work-domain",
       enabled: true, quarter: 3, scopeKey: SCOPE_KEY, work, year: 2026 }), work);
-    expect(work.runtime.durable.submit).not.toHaveBeenCalled();
+    expect(work.runtime.durable.submitAll).not.toHaveBeenCalled();
     await act(async () => result.current());
-    expect(work.runtime.durable.submit).toHaveBeenCalledTimes(1);
-    expect(work.runtime.durable.submit.mock.calls[0][0]).toMatchObject({ category: "maintenance",
-      input: { domainName: "Work", domainUuid: "work-domain", quarter: 3, year: 2026 }, key: "reconcileProjects:2026-Q3",
-      scopeKey: SCOPE_KEY, type: "reconcileProjects" });
+    expect(work.runtime.durable.submitAll).toHaveBeenCalledTimes(1);
+    const [requests, options] = work.runtime.durable.submitAll.mock.calls[0];
+    const input = { domainName: "Work", domainUuid: "work-domain", quarter: 3, year: 2026 };
+    expect(options).toEqual({ scopeKey: SCOPE_KEY });
+    expect(requests).toEqual([expect.objectContaining({ category: "maintenance", input, key: "reconcileProjects:2026-Q3",
+      type: "reconcileProjects" }), expect.objectContaining({ category: "maintenance", input,
+      key: "classifyCompletedTasks:2026-Q3", type: "classifyCompletedTasks" })]);
     await act(async () => {
       window.dispatchEvent(new CustomEvent(DASHBOARD_TASKS_UPDATED_EVENT, { detail: {} }));
       window.dispatchEvent(new CustomEvent(DASHBOARD_TASKS_UPDATED_EVENT, { detail: {} }));
       jest.advanceTimersByTime(TASK_CHANGE_DEBOUNCE_MILLISECONDS);
     });
-    expect(work.runtime.durable.submit).toHaveBeenCalledTimes(2);
+    expect(work.runtime.durable.submitAll).toHaveBeenCalledTimes(2);
     await unmount();
   });
 
@@ -100,13 +103,13 @@ describe("project maintenance hooks", () => {
       for (const listener of listeners) listener({ jobType: "rankProjectTasks", scopeKey: "other-domain:Q3 2026", status: "completed" });
       jest.advanceTimersByTime(DAY_PREPARATION_QUIET_MILLISECONDS);
     });
-    expect(work.runtime.durable.submitAll).not.toHaveBeenCalled();
+    expect(work.runtime.durable.submitAll).toHaveBeenCalledTimes(1);
     await act(async () => {
       for (const listener of listeners) listener({ jobType: "reconcileProjects", scopeKey: SCOPE_KEY, status: "completed" });
       jest.advanceTimersByTime(DAY_PREPARATION_QUIET_MILLISECONDS);
     });
-    expect(work.runtime.durable.submitAll).toHaveBeenCalledTimes(1);
-    const [requests, options] = work.runtime.durable.submitAll.mock.calls[0];
+    expect(work.runtime.durable.submitAll).toHaveBeenCalledTimes(2);
+    const [requests, options] = work.runtime.durable.submitAll.mock.calls[1];
     expect(options).toEqual({ scopeKey: SCOPE_KEY });
     expect(requests).toEqual([expect.objectContaining({ category: "maintenance", input: { dateKey: "2026-09-17", domainName: "Work",
       domainUuid: "work-domain" }, key: "prepareDayRanking:work-domain:2026-09-17", type: "prepareDayRanking" })]);
@@ -122,6 +125,7 @@ describe("project maintenance hooks", () => {
       enabled: false, quarter: 3, scopeKey: SCOPE_KEY, work, year: 2026 }), work);
     await act(async () => result.current());
     expect(work.runtime.durable.submit).not.toHaveBeenCalled();
+    expect(work.runtime.durable.submitAll).not.toHaveBeenCalled();
     await unmount();
   });
 
