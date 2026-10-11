@@ -1,6 +1,7 @@
 // Render seven days of completed-task victory values with weekly navigation and a mood overlay.
 import { parseWidgetConfig, widgetConfigKey } from "../constants/settings";
 import ConfigPopup from "./config-popup";
+import { completedTasksWithAppliedValues } from "dashboard/projects/completed-task-potential";
 import { completedTaskProjectColor, dailyProjectSegments, projectLegendItems } from "dashboard/projects/completed-task-project-colors";
 import { useCanvasTippy } from "./dashboard-tooltip-tippy.jsx";
 import WidgetWrapper from "./widget-wrapper";
@@ -402,7 +403,8 @@ function ProjectLegend({ items }) {
 
 // ------------------------------------------------------------------------------------------
 // @desc Render the seven days ending on the selected date, with arrows that move the range by one week. Bars are
-//   stacked by the project each completed task advanced, as the active domain's completed task ledger records it.
+//   stacked by the project each completed task advanced, as the active domain's completed task ledger records it, and a
+//   task the potential rating raised is shown at its raised victory value.
 // @param {Object} props - Completed tasks, mood ratings, fallback totals, date navigation callback, and the active task
 //   domain's name, whose ledger colors the bars.
 // @returns {JSX.Element} Configurable Victory Value chart.
@@ -413,7 +415,8 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
   const redrawChartRef = useRef(null);
   const rangeEndDate = referenceDate || dateKeyFromDateInput(new Date());
   const completedTaskProjects = useCompletedTaskProjects(app, { domainName: taskDomainName, referenceDate: rangeEndDate });
-  const chartDailyValues = buildDailyValuesForWeek(completedTasksByDate, dailyValues, rangeEndDate, completedTaskProjects);
+  const displayedTasksByDate = completedTasksWithAppliedValues(completedTasksByDate, completedTaskProjects);
+  const chartDailyValues = buildDailyValuesForWeek(displayedTasksByDate, dailyValues, rangeEndDate, completedTaskProjects);
   const legendItems = projectLegendItems(chartDailyValues);
   const maxValue = Math.max(...chartDailyValues.map((entry) => entry.value), 1);
   const chartWeeklyTotal = chartDailyValues.reduce((sum, entry) => sum + (entry.value || 0), 0);
@@ -468,7 +471,7 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
     const barTopScreenY = getBarTopScreenY(canvasRef, hoveredBar, chartDailyValues, maxValue);
     const spaceAbove = barTopScreenY;
     const spaceBelow = window.innerHeight - rect.bottom;
-    const html = buildTooltipHTML(hoveredBar, chartDailyValues, completedTasksByDate, moodByDay, completedTaskProjects);
+    const html = buildTooltipHTML(hoveredBar, chartDailyValues, displayedTasksByDate, moodByDay, completedTaskProjects);
 
     if (spaceBelow > spaceAbove) {
       tip.show(html, screenX, rect.bottom, { placement: 'bottom', belowChart: true });

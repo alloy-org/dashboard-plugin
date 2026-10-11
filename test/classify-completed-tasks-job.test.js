@@ -1,12 +1,13 @@
 // Verify the queued job that records which project each task completed in the past week advanced: linked tasks are
 // recorded without a model and the rest asked in batches, tasks the ledger holds are never asked again, a week spanning
 // two quarters writes both ledgers, a user with no decision model still gets linked tasks recorded, and a failed batch
-// keeps what earlier batches recorded for the retry to build on.
+// keeps what earlier batches recorded for the retry to build on. A quarter holding project tasks not yet rated for
+// potential is handed to the potential scoring job.
 import { jest } from "@jest/globals";
 import { readCompletedTaskLedger } from "dashboard/projects/completed-task-project-ledger";
 import { NO_PROJECT_CHOICE } from "dashboard/projects/completed-task-project-classification";
 import { createClassifyCompletedTasksHandler } from "dashboard/work-queue/jobs/classify-completed-tasks";
-import { completedTaskClassificationRequest } from "dashboard/work-queue/jobs/project-job-requests";
+import { completedTaskClassificationRequest, completedTaskPotentialRequest } from "dashboard/work-queue/jobs/project-job-requests";
 import { DecisionsEndpoint } from "providers/decisions-endpoint";
 import { jobContext, maintenanceApp, QUARTERLY_CONTENT, SCOPE_INPUT } from "./project-maintenance-test-app";
 
@@ -71,6 +72,14 @@ function runClassification(handler, app, now = SEPTEMBER_NOW) {
 }
 
 // ----------------------------------------------------------------------------------------------
+// @desc A result's counts, without the follow-up requests it carries.
+// @param {object} result - The handler's result.
+// @returns {object} { classifiedCount, linkedCount, waitingCount }.
+function resultCounts({ classifiedCount, linkedCount, waitingCount }) {
+  return { classifiedCount, linkedCount, waitingCount };
+}
+
+// ----------------------------------------------------------------------------------------------
 // @desc Each recorded task's project name, by day.
 // @param {object} app - The app.
 // @param {number} quarter - The ledger's quarter.
@@ -86,7 +95,8 @@ describe("classify completed tasks job", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc A task naming the project is recorded by its link; the others are asked in one batch with the project's
   //   description and the dictionary's terms; a second run finds nothing new to ask. Tasks older than the window are
-  //   never read, and the domain is passed to the lookup.
+  //   never read, and the domain is passed to the lookup. Both runs request a potential rating of the quarter, since
+  //   its project tasks are still unrated.
   it("records linked tasks directly, asks about the rest, and never asks twice", async () => {
     const app = completionApp([completedTask("linked", "Launch dashboard polish", new Date(2026, 8, 17, 9, 0)),
       completedTask("widget", "Tune widget spacing", new Date(2026, 8, 18, 15, 0)),
@@ -94,7 +104,9 @@ describe("classify completed tasks job", () => {
       completedTask("old", "Tune widget size", new Date(2026, 8, 12, 10, 0))]);
     const requestAnswers = choiceRequest();
     const handler = classificationHandler(requestAnswers);
-    expect(await runClassification(handler, app)).toEqual({ classifiedCount: 2, linkedCount: 1, waitingCount: 0 });
+    const potentialRequest = completedTaskPotentialRequest(SCOPE_INPUT, { requestedAt: SEPTEMBER_NOW.getTime() });
+    expect(await runClassification(handler, app)).toEqual({ classifiedCount: 2, followUps: [potentialRequest], linkedCount: 1,
+      waitingCount: 0 });
     expect(app.getCompletedTasks.mock.calls[0][2]).toEqual({ taskDomainUUID: "work-domain" });
     expect(requestAnswers).toHaveBeenCalledTimes(1);
     const [{ questions, state }] = requestAnswers.mock.calls[0];
@@ -104,12 +116,14 @@ describe("classify completed tasks job", () => {
     expect(await ledgerSummary(app, 3)).toEqual({ "2026-09-17": [["linked", "Launch dashboard", "link"]],
       "2026-09-18": [["errand", null, "decisions"], ["widget", "Launch dashboard", "decisions"]] });
     expect(app.noteContent("Completed Tasks by Project Q3 2026 Work")).toContain("- Tune widget spacing → **Launch dashboard**");
-    expect(await runClassification(handler, app)).toEqual({ classifiedCount: 0, linkedCount: 0, waitingCount: 0 });
+    expect(await runClassification(handler, app)).toEqual({ classifiedCount: 0, followUps: [potentialRequest], linkedCount: 0,
+      waitingCount: 0 });
     expect(requestAnswers).toHaveBeenCalledTimes(1);
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc More unlinked tasks than one batch holds are asked in batches of 25.
+  // @desc More unlinked tasks than one batch holds are asked in batches of 25. Errands advance no project, so no
+  //   potential rating is requested.
   it("asks in batches", async () => {
     const tasks = Array.from({ length: 30 }, (unused, index) => completedTask(`errand-${ index }`, `Errand ${ index }`,
       new Date(2026, 8, 18, 8, index)));
@@ -125,7 +139,9 @@ describe("classify completed tasks job", () => {
     const app = completionApp([completedTask("september", "Tune widget spacing", new Date(2026, 8, 29, 10, 0)),
       completedTask("october", "Launch dashboard polish", new Date(2026, 9, 1, 10, 0))]);
     const result = await runClassification(classificationHandler(choiceRequest()), app, new Date(2026, 9, 2, 12, 0));
-    expect(result).toEqual({ classifiedCount: 1, linkedCount: 1, waitingCount: 0 });
+    expect(resultCounts(result)).toEqual({ classifiedCount: 1, linkedCount: 1, waitingCount: 0 });
+    expect(result.followUps.map(followUp => followUp.key)).toEqual(["scoreCompletedTaskPotential:2026-Q3",
+      "scoreCompletedTaskPotential:2026-Q4"]);
     expect(await ledgerSummary(app, 3)).toEqual({ "2026-09-29": [["september", "Launch dashboard", "decisions"]] });
     expect(await ledgerSummary(app, 4)).toEqual({ "2026-10-01": [["october", "Launch dashboard", "link"]] });
   });
@@ -135,7 +151,8 @@ describe("classify completed tasks job", () => {
   it("records linked tasks and leaves the rest waiting without a decision model", async () => {
     const app = completionApp([completedTask("linked", "Launch dashboard polish", new Date(2026, 8, 18, 9, 0)),
       completedTask("errand", "Buy groceries", new Date(2026, 8, 18, 10, 0))]);
-    expect(await runClassification(classificationHandler(null), app)).toEqual({ classifiedCount: 0, linkedCount: 1, waitingCount: 1 });
+    expect(resultCounts(await runClassification(classificationHandler(null), app))).toEqual({ classifiedCount: 0, linkedCount: 1,
+      waitingCount: 1 });
     expect(await ledgerSummary(app, 3)).toEqual({ "2026-09-18": [["linked", "Launch dashboard", "link"]] });
   });
 

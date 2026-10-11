@@ -5,6 +5,30 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-11 — Rate completed project tasks and raise their victory value (Completed Tasks by Project, commit 3)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/projects/completed-task-potential.js` (created) — React-free: finds the ledger's unrated project entries, asks two ten-step score questions per task ("Long-term Potential Upside" and "Short-term predicted impact") against a state of each task's project, its plan goals, and narrowed dictionary terms, reads the ratings, raises a value to the sum of the two only when that exceeds the current value, records the ratings and values on the entry, and gives the chart the higher of a task's own and applied victory value.
+- `lib/dashboard/work-queue/jobs/score-completed-task-potential.js` (created) — Maintenance-priority handler: reads the quarter's unrated project entries, reads their tasks' current victory value from `getCompletedTasks`, asks the DecisionsEndpoint (decision models only) in batches of ten, raises through `app.updateTask(uuid, { victoryValue })` in the task note's write chain, reads Amplenote again to confirm the raise, and records each batch in the ledger so a retry never asks or raises twice. A refused update is recorded as unconfirmed; a completion that no longer exists is marked so it is not looked for again.
+- `lib/dashboard/work-queue/jobs/completed-task-job-steps.js` (created) — The steps both completed task jobs share, moved out of the classification job: reading the quarter's active projects and the dictionary, the job's endpoint, dispatched reads and writes, and recording ledger entries.
+- `lib/dashboard/work-queue/jobs/classify-completed-tasks.js` — Uses the shared steps, and returns a potential rating request as a follow-up for each quarter whose ledger holds unrated project tasks.
+- `lib/dashboard/work-queue/jobs/project-job-requests.js` — `SCORE_COMPLETED_TASK_POTENTIAL_JOB_TYPE` and `completedTaskPotentialRequest`, keyed per quarter.
+- `lib/dashboard/work-queue/dashboard-work-handlers.js` — Registers the handler.
+- `lib/dashboard/projects/completed-task-project-ledger.js` — A raised entry's bullet shows the victory value before and after.
+- `lib/hooks/use-completed-task-projects.js` — Also indexes applied victory values, and re-reads the ledger when a potential rating job completes.
+- `lib/dashboard/victory-value.jsx` — Draws and lists tasks at their applied victory value when it exceeds their own.
+- `test/score-completed-task-potential-job.test.js` (created) — Question and state construction, the never-lower rule, raise and confirmation, no repeat on a second run, a refused update recorded and shown on the chart, and vanished completions.
+- `test/classify-completed-tasks-job.test.js`, `test/project-maintenance-jobs.test.js` — The follow-up request and the new handler type.
+- `doc/completed-task-projects-plan.md` — Notes where commit 3 departed from the plan.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes (158 suites, 1376 tests); production-plugin smoke test passes. `updateTask` accepting `victoryValue` is not yet confirmed against a real Amplenote session; the ledger's `raiseConfirmed` field records the answer on the first raise.
+**Task:** Commit 3 of the completed-tasks-by-project plan.
+**Prompt summary:** "Ok, proceed to the next phase of the plan"
+
+---
+
 ## 2026-10-11 — Color the Victory Value chart by project (Completed Tasks by Project, commit 2)
 
 **Model:** Claude Opus 5.5

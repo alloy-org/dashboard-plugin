@@ -204,7 +204,8 @@ describe("project maintenance jobs", () => {
   it("registers the maintenance handlers and validates their input", () => {
     const registry = workHandlerRegistry(dashboardWorkHandlers());
     expect([...registry.keys()].sort()).toEqual(["classifyCompletedTasks", "collectTermEvidence", "discoverDictionaryTerms",
-      "generateProjectIdeas", "prepareDayRanking", "rankProjectTasks", "rateProjectIdeas", "reconcileProjects", "refineDictionaryTerm"]);
+      "generateProjectIdeas", "prepareDayRanking", "rankProjectTasks", "rateProjectIdeas", "reconcileProjects", "refineDictionaryTerm",
+      "scoreCompletedTaskPotential"]);
     expect(() => registry.get("collectTermEvidence").validateInput({ term: " ", year: 2026 })).toThrow("term");
     expect(() => registry.get("reconcileProjects").validateInput(SCOPE_INPUT)).not.toThrow();
     expect(() => registry.get("rankProjectTasks").validateInput(SCOPE_INPUT)).toThrow("projectUuid");

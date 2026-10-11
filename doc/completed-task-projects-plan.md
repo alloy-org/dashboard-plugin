@@ -208,6 +208,29 @@ writes to both notes.
 - Tests: question construction, the never-lower rule, idempotence on retry (`appliedRevision` from the ledger), and
   `updateTask` returning `false` (record and move on).
 
+### Where the implementation departed from this plan
+
+- **Not checked against a real Amplenote session first.** The dev server runs a local notebook, so the job confirms
+  each raise itself: after `updateTask` reports success it reads `getCompletedTasks` again, and records
+  `raiseConfirmed` on the entry (`true` when Amplenote reports the raised value, `false` when the update was refused or
+  did not take, `null` when nothing was raised). The first raise in a real notebook answers risk 1 in the ledger.
+- **Both fallbacks of risk 1 are built in.** `appliedVictoryValue` is recorded whether or not Amplenote kept it, and the
+  chart shows the higher of a task's own value and the applied one. When `updateTask` works the two are equal; when it
+  does not, the chart still shows the raise. Because of this the hook does not re-fetch the week's completed tasks: it
+  re-reads the ledger when a rating job completes, and the bars change from the applied values.
+- Questions are named `upside_<position>` and `impact_<position>` within a batch of ten tasks, matching commit 1's
+  position naming. A task missing either rating is left unrated for a later run.
+- Idempotence comes from `potentialScoredAt` on each entry, not an `appliedRevision`: an entry is written with its
+  rating after its raise, batch by batch, so a retry skips it. A failure between a raise and its batch's ledger write
+  would rate those tasks again on retry, but the second raise only applies if it exceeds the value the first set.
+- The classification job requests a rating whenever the quarter's ledger holds unrated project entries, not only when
+  it just recorded one, so entries recorded before this commit (or while no decision model was configured) are rated.
+- A recorded task that `getCompletedTasks` no longer returns (uncompleted or deleted) is marked with
+  `potentialSkippedReason: "completion not found"` so it is not looked for again.
+- Like classification, rating uses `includeFastScore: false`: only Jev, OpenAI, or Agent Pro decisions change a task's
+  victory value.
+- A raised entry's bullet reads `→ **Project** (victory value 6 → 17)`.
+
 ---
 
 ## Risks and open questions
