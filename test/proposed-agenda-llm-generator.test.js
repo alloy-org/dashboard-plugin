@@ -60,3 +60,30 @@ describe("runProposedAgendaGeneration exception behavior", () => {
     expect(setters.setLoading).toHaveBeenLastCalledWith(false);
   });
 });
+
+describe("runProposedAgendaGeneration deferred benefits", () => {
+  it("shows the placed tasks before their benefit sentences, then fills the benefits in", async () => {
+    const setters = generationSetters();
+    let proposed = [];
+    setters.setProposed = jest.fn(next => { proposed = typeof next === "function" ? next(proposed) : next; });
+    requestTodayObligationsMock.mockResolvedValue([]);
+    const activity = { durationMinutes: 60, reason: "Ranked first.", startMinutes: 540, taskUuid: "task-1",
+      title: "Draft the launch post" };
+    let resolveBenefits;
+    const benefitRationales = new Promise(resolve => { resolveBenefits = resolve; });
+    generateProposedAgendaMock.mockResolvedValue({ activities: [activity], benefitRationales, dateLabel: "Wednesday",
+      fromRanking: true });
+
+    const generation = runProposedAgendaGeneration({}, { currentDate: "2026-06-24", domainUuid: "dom-work",
+      priorityKey: "goal-progress", providerEm: "openai", ...setters });
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(generateProposedAgendaMock).toHaveBeenCalledWith({}, expect.objectContaining({ deferBenefitRationales: true }));
+    expect(proposed).toEqual([activity]);
+    expect(setters.setLoading).toHaveBeenLastCalledWith(false);
+
+    resolveBenefits({ activities: [{ ...activity, benefit: "The launch reaches readers sooner." }] });
+    await generation;
+    expect(proposed[0].benefit).toBe("The launch reaches readers sooner.");
+  });
+});

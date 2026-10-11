@@ -91,6 +91,19 @@ describe("ProposedAgendaWidget calendar refresh", () => {
     expect(llmMock.mock.calls).toHaveLength(callsAfterFirstRender);
   });
 
+  it("waits for calendar events still loading, then generates once", async () => {
+    const { rerender } = await renderWidget();
+    await rerender({ calendarEvents: null });
+    expect(llmMock).not.toHaveBeenCalled();
+
+    await rerender({ calendarEvents: calendarEventsFixture() });
+    const callsAfterLoad = llmMock.mock.calls.length;
+    await rerender({ calendarEvents: calendarEventsFixture() });
+
+    expect(callsAfterLoad).toBeGreaterThan(0);
+    expect(llmMock.mock.calls).toHaveLength(callsAfterLoad);
+  });
+
   it("regenerates when the calendar events actually change", async () => {
     const { rerender } = await renderWidget();
     await rerender({ calendarEvents: calendarEventsFixture() });

@@ -5,6 +5,27 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-10 — Speed up Proposed Agenda on a cold cache, and stop fenced JSON from truncating data notes
+
+**Model:** claude-opus-5-5
+**Files created/modified:**
+- `lib/util/json-utility.js` — Add `jsonFenceContent`, which anchors a ```json block's closing fence to the start of a line, so a stored string containing ``` no longer ends the block early ("Unterminated string in JSON").
+- `lib/dashboard/work-queue/dashboard-json-note.js`, `lib/dashboard/proposed-agenda-archive.js`, `lib/dashboard/shared-notes-archive.js`, `lib/recent-notes-service.js` — Read their JSON blocks through `jsonFenceContent`. The agenda archive previously treated an unparseable note as empty, which made every lookup a miss and dropped the month's records on the next store.
+- `lib/dashboard/proposed-agenda-archive.js` — Log each cache miss with its reason (no record, changed day context, empty record). Add `storeProposedAgendaWhenReady`, which takes a place in the archive write queue immediately and stores once the parameters resolve.
+- `lib/dashboard/proposed-agenda-service.js` — A deferred agenda reserves its archive write before it is shown, so a dismiss or schedule made before the benefit sentences arrive lands on the stored record.
+- `lib/dashboard/proposed-agenda-llm-generator.js` — The widget now generates with `deferBenefitRationales`, shows placed tasks at once, and copies benefit sentences onto the rows when they arrive (about 9 s sooner on a cold cache).
+- `lib/dashboard/proposed-agenda-range.js`, `lib/dashboard/proposed-agenda-suggest-action.js` — Move `activitiesWithReceivedBenefits` into the range module so the widget and calendar pass share it.
+- `lib/dashboard/proposed-agenda.jsx` — Wait for the Dashboard's calendar events (null while loading) before the first generation, so a load no longer plans the same day twice.
+- `lib/dashboard/work-queue/jobs/prepare-day-ranking.js` — Log the duration of each preparation phase (task read, project read, ranking).
+- `lib/dashboard/dream-task.jsx` — `hasLlmConfig` is now a boolean; it previously held the API key itself and was written to the Debug Console.
+- Tests: `test/json-utility.test.js` (new), `test/proposed-agenda-archive.test.js`, `test/proposed-agenda-llm-generator.test.js`, `test/proposed-agenda-calendar-refresh.test.js`.
+- `build/compiled.js` — Rebuilt.
+
+**Task:** Remedies for a ~49 s Proposed Agenda load traced from Debug Console logs.
+**Validation:** Full Jest suite, production build with host-boundary check, and production plugin smoke test pass. No commits created.
+
+---
+
 ## 2026-10-07 — Pair accent text with the host action background
 
 **Model:** Grok 4.7

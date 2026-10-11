@@ -310,7 +310,15 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
       setApproving, setScheduledKeys });
   }, [app, defaultNoteUuid, dismissedKeys, llmDateRecord, proposed, scheduledKeys]);
 
-  useEffect(() => { runGeneration(); return () => { generationRef.current += 1; }; }, [runGeneration]);
+  // The Dashboard passes null while it is still fetching calendar events, and their arrival changes runGeneration.
+  // Generating before then would plan the day twice, so the first run waits for the events. Undefined means no
+  // calendar source was given at all, and generation proceeds.
+  const awaitingCalendarEvents = calendarEvents === null;
+  useEffect(() => {
+    if (awaitingCalendarEvents) return undefined;
+    runGeneration();
+    return () => { generationRef.current += 1; };
+  }, [awaitingCalendarEvents, runGeneration]);
   useEffect(() => { attachFootnotePopups(listRef.current); }, [obligations, proposed]);
 
   // Adopt the dashboard-configured provider when it changes and the user has not picked one inside the widget,

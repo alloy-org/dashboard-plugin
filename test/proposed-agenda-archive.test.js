@@ -8,9 +8,10 @@ import { setPluginData } from "plugin-data";
 import { loadCachedProposedAgenda as loadCachedProposedAgendaRecord, PROPOSED_AGENDA_RECORD_VERSION, PROPOSED_TASK_STATUS,
   proposedAgendaNoteNameFromDate as proposedAgendaNoteName, proposedTaskKey,
   recentProposedTaskHistory as recentProposedTaskHistoryRecord,
-  storeProposedAgenda as storeProposedAgendaRecord,
+  storeProposedAgenda as storeProposedAgendaRecord, storeProposedAgendaWhenReady,
   updateProposedTaskStatuses as updateProposedTaskStatusesRecord } from "proposed-agenda-archive";
 import { generateProposedAgenda } from "proposed-agenda-service";
+import { jsonFenceContent } from "util/json-utility";
 import { setLoggingEnabled } from "util/log";
 
 const PRIORITY = "goal-progress";
@@ -103,8 +104,7 @@ function buildNoteApp(extra = {}) {
 function storedRecords(app, date) {
   const note = app._notes.find(n => n.name === proposedAgendaNoteNameFromDate(date));
   if (!note) return [];
-  const match = note.content.match(/```json\s*([\s\S]*?)```/i);
-  return JSON.parse(match[1]).records;
+  return JSON.parse(jsonFenceContent(note.content)).records;
 }
 
 // [Claude claude-opus-4-8 (1M context)] Generated tests for: monthly proposed-agenda record store/cache
@@ -226,6 +226,30 @@ describe("proposed-agenda-archive", () => {
     const loaded = await loadCachedProposedAgenda(app, { date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER });
     expect(loaded.scheduledKeys).toEqual([proposedTaskKey(ACT_A)]);
     expect(loaded.dismissedKeys).toEqual([proposedTaskKey(ACT_B)]);
+  });
+
+  it("serves a record whose task title contains a code fence", async () => {
+    const app = buildNoteApp();
+    const fencedActivity = { ...ACT_A, reason: "Ends with ``` and more", title: "Fix the ```js snippet``` in the guide" };
+    await storeProposedAgenda(app, { activities: [fencedActivity], date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER });
+
+    const loaded = await loadCachedProposedAgenda(app, { date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER });
+    expect(loaded.activities.map(activity => activity.title)).toEqual([fencedActivity.title]);
+  });
+
+  it("writes a status recorded before a deferred agenda is stored onto that stored record", async () => {
+    const app = buildNoteApp();
+    let resolveParams;
+    const pendingParams = new Promise(resolve => { resolveParams = resolve; });
+    const stored = storeProposedAgendaWhenReady(app, pendingParams);
+    const statusUpdate = updateProposedTaskStatuses(app, { activityKeys: [proposedTaskKey(ACT_A)], date: DATE,
+      priorityKey: PRIORITY, providerEm: PROVIDER, scheduledEm: PROPOSED_TASK_STATUS.DISMISSED });
+    resolveParams({ activities: [ACT_A, ACT_B], date: DATE, domainName: DOMAIN_NAME, domainUuid: DOMAIN_UUID,
+      priorityKey: PRIORITY, providerEm: PROVIDER });
+    await Promise.all([stored, statusUpdate]);
+
+    const loaded = await loadCachedProposedAgenda(app, { date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER });
+    expect(loaded.dismissedKeys).toEqual([proposedTaskKey(ACT_A)]);
   });
 });
 

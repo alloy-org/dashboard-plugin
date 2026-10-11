@@ -504,7 +504,8 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   // [Claude claude-opus-4-8 (1M context)] Task: treat any dev provider token (not just OpenAI) as a configured LLM
   // Prompt: "dev environment isn't showing suggestions in spite of having GROK_AI_ACCESS_TOKEN present"
   const hasDevToken = devTokenPresent();
-  const hasLlmConfig = hasDevToken || providerApiKey;
+  // A boolean, never the key itself: it is written to the Debug Console by the analysis and config-snapshot logs.
+  const hasLlmConfig = Boolean(hasDevToken || providerApiKey);
   const providerName = providerEm ? providerNameFromProviderEm(providerEm) : null;
 
   const maxTasks = _maxTasksFromGrid(gridWidthSize, gridHeightSize);
