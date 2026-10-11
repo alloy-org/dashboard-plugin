@@ -34,7 +34,7 @@ check can happen at any time and does not hold up commits 1 or 2.
 - **DecisionsEndpoint**: `decisionsEndpointForApp(app, { includeFastScore })` returns an endpoint, and
   `.withProviderDispatch({ providerDispatch, signal })` adds the permit. `rankedResponses({ questions, state })`
   returns a `DecisionsResponse`. Questions are name-keyed: `scoreQuestion(instructions, criteria)` for 1–10 ratings,
-  and `{ type: "choice", instructions, choices }` for choices. Read answers with `ratingFor`, `answerFor`, and
+  and `choiceQuestion(instructions, criteria)` for choices. Read answers with `ratingFor`, `answerFor`, and
   `confidenceFor`.
 - **Section-scoped writes**: `guideSectionRange` + `replaceGuideSection` (as used by `project-task-store.js`) keep
   each write under `MAXIMUM_GUIDE_SECTION_CHARACTERS` even when the whole note is larger.
@@ -122,7 +122,14 @@ writes to both notes.
   recorded once per day.
 - Choices are numbered project summaries (`"1. Launch dashboard"`) plus `"None of these projects"` rather than UUIDs,
   so the model reads names; questions are named `task_<position>` in the batch.
-- An answer below 0.5 confidence counts as no project; an answer that reports no confidence is accepted as given.
+- Jev refuses a choice question offering a `choices` list (422, `criteria` missing) and refuses criteria given as a
+  list or text. It requires `criteria` as an object keyed by choice, each value describing when that choice applies, and
+  answers `{ type: "choice", choice, confidence, probabilities }`, with a probability for every choice.
+  `choiceQuestion(instructions, criteria)` in `decisions-endpoint.js` builds that shape, and the OpenAI translation
+  sends the same criteria as `{ value, description }` choices. `test/jev-decisions-live.test.js` keeps the requests
+  that established this. Each project's criterion is its summary plus its example tasks.
+- An answer below 0.5 confidence counts as no project. Jev reports a confidence with every choice; an answer without
+  one (only from an injected requester) is accepted as given.
 - A quarter whose projects are not known yet records nothing and waits; it does not supersede the whole job.
 
 ### Tests
@@ -130,7 +137,9 @@ writes to both notes.
 - `test/completed-task-project-ledger.test.js`: section round-trip, date ordering, inserting a new date between
   existing ones, and an unreadable JSON fence reported rather than overwritten.
 - `test/completed-task-project-classification.test.js`: example-task selection, the link pass skipping the model,
-  and low-confidence or unknown choices becoming `null`.
+  and low-confidence or unknown choices becoming `null`, plus a live Jev batch when `JEV_ACCESS_TOKEN` is set.
+- `test/jev-decisions-live.test.js`: the raw Jev requests showing which choice question shapes are refused and that
+  the accepted shape returns a confidence and per-choice probabilities.
 - `test/classify-completed-tasks-job.test.js`: an injected `DecisionsEndpoint.fromRequester` checks batching,
   already-ledgered tasks not being re-sent, the quarter-boundary split, and the missing-configuration path.
 - `npm run build` plus the production smoke test, since the handler joins the host graph.

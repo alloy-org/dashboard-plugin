@@ -67,14 +67,19 @@ describe("completed task classification", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Each task is one choice among the projects and "none"; the state describes the projects and carries only the
+  // @desc Each task is one choice among the projects and "none", each project's choice described by its summary and
+  //   example tasks; the state describes the projects and carries only the
   //   dictionary terms the batch's text uses.
   it("asks one choice question per task against a shared description of the projects", () => {
     const choices = projectChoices(quarterProjects());
     const tasks = [completedTask("one", "Tune widget spacing"), completedTask("two", "Buy groceries")];
     const questions = classificationQuestions(tasks, choices);
     expect(Object.keys(questions)).toEqual(["task_1", "task_2"]);
-    expect(questions.task_1).toMatchObject({ choices: ["1. Launch dashboard", "2. Hire a designer", NO_PROJECT_CHOICE], type: "choice" });
+    expect(questions.task_1.type).toBe("choice");
+    expect(Object.keys(questions.task_1.criteria)).toEqual(["1. Launch dashboard", "2. Hire a designer", NO_PROJECT_CHOICE]);
+    expect(questions.task_1.criteria["1. Launch dashboard"]).toBe("The task advanced the project \"Launch dashboard\". Its work "
+      + "includes tasks like: Fix date picker; Tune widget layout; Write release notes.");
+    expect(questions.task_1.criteria["2. Hire a designer"]).toBe("The task advanced the project \"Hire a designer\".");
     expect(questions.task_1.instructions).toContain("\"Tune widget spacing\"");
     const state = classificationState({ choices, dictionary: { widget: "A Dashboard tile.", zeppelin: "Unused." },
       intentTextsByProjectUuid: new Map([["launch", ["Grow paid users"]]]), tasks });
@@ -131,7 +136,6 @@ describe("completed task classification", () => {
     const decisionsEndpoint = new DecisionsEndpoint({ routes: [jevKeyRoute(JEV_ACCESS_TOKEN, { fetchImplementation: fetch,
       useProxy: false })] });
     const response = await decisionsEndpoint.rankedResponses({ questions, state });
-    console.log(JSON.stringify(response.answers, null, 2));
     const offeredChoices = [...choices.keys(), NO_PROJECT_CHOICE];
     expect(response.answerFor("task_1")).toMatchObject({ choice: "1. Launch dashboard", type: "choice" });
     expect(response.answerFor("task_2")).toMatchObject({ choice: NO_PROJECT_CHOICE, type: "choice" });

@@ -4,9 +4,9 @@
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
 import { setPluginData } from "plugin-data";
-import { DECISIONS_PROVIDER_JEV, DECISIONS_PROVIDER_OPENAI, DecisionsEndpoint, decisionsRoute, forgetJevFailure,
+import { choiceQuestion, DECISIONS_PROVIDER_JEV, DECISIONS_PROVIDER_OPENAI, DecisionsEndpoint, decisionsRoute, forgetJevFailure,
   JEV_FAILURE_COOLDOWN_MILLISECONDS, jevFailedRecently, jevKeyRoute, OPENAI_DECISIONS_ENDPOINT, OPENAI_DECISIONS_MODEL,
-  openAiKeyRoute, recordJevFailure, scoreQuestion } from "providers/decisions-endpoint";
+  openAiDecisionsBody, openAiKeyRoute, recordJevFailure, scoreQuestion } from "providers/decisions-endpoint";
 import { decisionsEndpointForApp } from "providers/decisions-endpoint-for-app";
 import DecisionsResponse from "providers/decisions-response";
 
@@ -90,6 +90,21 @@ describe("DecisionsEndpoint routes", () => {
     expect(response.answerFor("damaged")).toEqual({ probability: 0.2, type: "predicate" });
     expect(response.answerFor("department")).toEqual({ choice: "billing", confidence: 0.9, type: "choice" });
     expect(response.usage.inputTokens).toBe(80);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc choiceQuestion builds the criteria object Jev requires (see jev-decisions-live.test.js), refusing fewer than
+  //   two choices or a choice without a description, and OpenAI is sent the same choices as described values.
+  it("builds a choice question from described criteria and translates it for OpenAI", () => {
+    const criteria = { billing: "Payments and refunds", shipping: "Delivery and tracking" };
+    const question = choiceQuestion("Which department?", criteria);
+    expect(question).toEqual({ criteria, instructions: "Which department?", type: "choice" });
+    expect(() => choiceQuestion("Which?", { billing: "Payments" })).toThrow("at least two choices");
+    expect(() => choiceQuestion("Which?", ["billing", "shipping"])).toThrow("at least two choices");
+    expect(() => choiceQuestion("Which?", { billing: "Payments", shipping: null })).toThrow("Every choice needs a description");
+    expect(openAiDecisionsBody({ department: question }, "Where is my parcel?").questions).toEqual([{ choices: [
+      { description: "Payments and refunds", value: "billing" }, { description: "Delivery and tracking", value: "shipping" }],
+    instructions: "Which department?", name: "department", type: "choice" }]);
   });
 
   it("names the status when OpenAI rejects a request, and rejects a body with no answers", async () => {

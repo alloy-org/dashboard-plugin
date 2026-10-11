@@ -12,16 +12,19 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 - `lib/dashboard/projects/completed-task-project-ledger.js` (created) — Reads and writes the archived `Completed Tasks by Project Q<q> <year> <domain>` note: one `## YYYY-MM-DD` section per day, oldest first, with bullets rendered from a compact JSON fence. Days are written one section at a time; a day that cannot be parsed is reported, never overwritten.
 - `lib/dashboard/projects/completed-task-project-classification.js` (created) — Pure classification logic: each project's three most similar open tasks as examples, the link pass (exactly one project claiming the task), one choice question per task among numbered project summaries and "None of these projects", the shared state with goals and narrowed dictionary terms, and reading answers as ledger entries (low confidence or unknown choices become no project).
 - `lib/dashboard/work-queue/jobs/classify-completed-tasks.js` (created) — Maintenance-priority handler: reads the past 7 days of completions for the domain, splits them by quarter, skips ledgered ones, records linked tasks, asks the DecisionsEndpoint (decision models only) in batches of 25, and writes each batch as it is answered.
+- `lib/providers/decisions-endpoint.js` — `choiceQuestion(instructions, criteria)` builds the choice question Jev accepts (criteria as an object keyed by choice, each described); the OpenAI translation sends those criteria as `{ value, description }` choices. Previously no caller asked a choice question, and the `choices`-list form Jev refuses with a 422 had gone unnoticed.
 - `lib/dashboard/work-queue/jobs/project-job-requests.js` — `CLASSIFY_COMPLETED_TASKS_JOB_TYPE` and `completedTaskClassificationRequest`, keyed per quarter.
 - `lib/dashboard/work-queue/dashboard-work-handlers.js` — Registers the handler.
 - `lib/hooks/use-project-maintenance-queue.js` — Submits the classification with each reconciliation in one `submitAll`.
-- `test/completed-task-project-ledger.test.js`, `test/completed-task-project-classification.test.js`, `test/classify-completed-tasks-job.test.js` (created); `test/project-maintenance-queue-hooks.test.js`, `test/project-maintenance-jobs.test.js` — Updated for the new submission and job type.
+- `test/jev-decisions-live.test.js` (created) — Live Jev requests, gated on `JEV_ACCESS_TOKEN`, keeping the probes that established the choice question shape: a missing model, a `choices` list, and list or text criteria are refused; criteria keyed by choice return a choice, a confidence, and per-choice probabilities, which survive `DecisionsResponse`.
+- `test/decisions-endpoint.test.js` — `choiceQuestion` validation and its OpenAI translation.
+- `test/completed-task-project-ledger.test.js`, `test/completed-task-project-classification.test.js` (with a live Jev batch), `test/classify-completed-tasks-job.test.js` (created); `test/project-maintenance-queue-hooks.test.js`, `test/project-maintenance-jobs.test.js` — Updated for the new submission and job type.
 - `doc/completed-task-projects-plan.md` — Paths moved under `lib/dashboard/projects/`; notes where commit 1 departed from the plan.
 - `build/compiled.js` — Rebuilt.
 
-**Validation:** Full Jest suite passes except `llm-integration.test.js`, which timed out under full-suite load and passes on its own; production-plugin smoke test passes.
+**Validation:** Full Jest suite passes (156 suites, 1367 tests, live Jev tests included); production-plugin smoke test passes.
 **Task:** Commit 1 of the completed-tasks-by-project plan.
-**Prompt summary:** "Ok, please commence commit #1" and "they should be part of a subdirectory for files related to planning or projects"
+**Prompt summary:** "Ok, please commence commit #1", "they should be part of a subdirectory for files related to planning or projects", "We should be able to ascertain whether Jev returns a confidence with each match based on our tests", and "memorialize in test the requests that were made to ascertain these details"
 
 ---
 
