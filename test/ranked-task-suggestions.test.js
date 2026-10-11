@@ -2,7 +2,8 @@
 import { dayProjectGroups, deadlineWithinComingWeek } from "day-project-candidates";
 import { suggestionSectionsMarkdown } from "project-suggestion-log";
 import QuarterProject from "quarter-project";
-import { generativeRankPrompt, rankedTasksFromAnswers, rankedTasksFromCandidateIds, suggestionQuestions } from "suggestion-task-rank";
+import DecisionsResponse from "providers/decisions-response";
+import { generativeRankPrompt, rankedTasksFromCandidateIds, rankedTasksFromResponse, suggestionQuestions } from "suggestion-task-rank";
 import { activitiesClearOfObligations, refillRejectedSuggestion, slotRankedTasks, suggestionHourAvailability,
   tasksNotRecentlySuggested } from "suggestion-task-slots";
 
@@ -54,7 +55,8 @@ describe("day project candidates", () => {
     expect(state.projects[group.summary].taskCandidates[0].userPriority).toBe('[User deemed "Important"]');
     expect(JSON.stringify(questions.task_1)).toContain("explicit user priority");
     expect(generativeRankPrompt(state)).toContain("strong relevance evidence");
-    const ranked = rankedTasksFromAnswers(listed, { task_1: { score: 9, type: "score" }, task_2: { score: 7, type: "score" } });
+    const ranked = rankedTasksFromResponse(listed, new DecisionsResponse({ answers: { task_1: { score: 9, type: "score" },
+      task_2: { score: 7, type: "score" } }, providerEm: "jev" }));
     expect(slotRankedTasks(ranked, {}).activities[0]).toMatchObject({ isExisting: true, taskUuid: "important" });
   });
 
@@ -108,7 +110,8 @@ describe("suggestion ranking", () => {
   // @desc Jev's zero-indexed score becomes a 1–10 rating.
   it("orders Jev score answers from highest to lowest", () => {
     const { listed } = suggestionQuestions(groups);
-    const ranked = rankedTasksFromAnswers(listed, { task_1: { score: 7.6, type: "score" } });
+    const ranked = rankedTasksFromResponse(listed, new DecisionsResponse({ answers: { task_1: { score: 7.6, type: "score" } },
+      providerEm: "jev" }));
     expect(ranked[0]).toEqual(expect.objectContaining({ emphasizedWeekday: "Tuesday", rating: 8.6, taskUuid: "task-1" }));
     expect(slotRankedTasks(ranked).activities[0].emphasizedWeekday).toBe("Tuesday");
   });

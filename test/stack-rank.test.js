@@ -22,8 +22,9 @@ import { dictionaryEntriesFromContent, examinedProjectSummaries, mergedDictionar
 import { pluginSettings, setPluginData } from "plugin-data";
 import { initialProjectTaskStoreMarkdown, projectSectionHeadingText } from "project-task-store-markdown";
 import { AMPLE_AGENT_PRO_UUID } from "providers/ai-provider-settings";
+import { DecisionsEndpoint, forgetJevFailure, jevKeyRoute } from "providers/decisions-endpoint";
 import QuarterProject from "quarter-project";
-import { jevRouteFromAccessToken, requestJevAnswers } from "providers/jev-client";
+import { jevRouteFromAccessToken } from "providers/jev-client";
 import { setLoggingEnabled } from "util/log";
 
 dotenv.config();
@@ -202,8 +203,8 @@ describe("rankProspectiveTasks", () => {
       taskDetail({ taskText: "Diff Digest landing copy", taskUuid: "b" }), taskDetail({ taskUuid: "c" })];
     setLoggingEnabled(true);
     const log = jest.spyOn(console, "log").mockImplementation(() => {});
-    const result = await rankProspectiveTasks({ accessToken: "token", batchSize: 2, dictionary: {},
-      project: DIFF_DIGEST_PROJECT, requestAnswers, taskDetails });
+    const result = await rankProspectiveTasks({ batchSize: 2, decisionsEndpoint: DecisionsEndpoint.fromRequester(requestAnswers),
+      dictionary: {}, project: DIFF_DIGEST_PROJECT, taskDetails });
     const projectLog = log.mock.calls.find(call => call[0] === "[rank-prospective-tasks] ranked project");
     log.mockRestore();
     setLoggingEnabled(false);
@@ -263,14 +264,17 @@ describe("project match scores setting", () => {
 });
 
 describe("prepareProjectTaskRanker", () => {
-  beforeEach(() => setPluginData({ settings: {} }));
+  beforeEach(() => {
+    forgetJevFailure();
+    setPluginData({ settings: {} });
+  });
 
   it("returns no ranker when neither Jev nor a generative provider can rate", async () => {
     expect(await prepareProjectTaskRanker({}, { domainName: "Work", domainUuid: "work-domain", tasks: [] })).toBeNull();
   });
 
-  it("rates the 150 most recent tasks with the fast model, 25 to a prompt, when no Jev key is set", async () => {
-    setPluginData({ settings: { [SETTING_KEYS.LLM_API_KEY_OPENAI]: "an-openai-key" } });
+  it("rates the 150 most recent tasks with the fast model, 25 to a prompt, when no decision model can be asked", async () => {
+    setPluginData({ settings: { [SETTING_KEYS.LLM_API_KEY_GEMINI]: "a-gemini-key" } });
     const tasks = Array.from({ length: 200 }, (_value, index) => ({ content: `Task number ${ index }`, noteUUID: "note-1",
       updatedAt: index, uuid: `open-${ index }` }));
     const promptRunner = jest.fn(async (_app, prompt) => {
@@ -526,14 +530,14 @@ describe("Jev client", () => {
   });
 
   itIfJevToken("rates a task serving the project above an unrelated one (live Jev call)", async () => {
-    const requestAnswers = options => requestJevAnswers({ ...options, fetchImplementation: fetch, useProxy: false });
     const dictionary = relevantDictionaryTerms({ "Diff Digest": "GitClear's weekly email that summarizes the code "
       + "changes a team made" }, [DIFF_DIGEST_PROJECT.summary]);
     const taskDetails = [taskDetail({ noteName: "Errands", taskText: "Buy dog food", taskUuid: "unrelated" }),
       taskDetail({ noteName: "GitClear marketing", noteTags: ["work/gitclear"],
         taskText: "Write landing page copy for the weekly code-change email", taskUuid: "related" })];
-    const result = await rankProspectiveTasks({ accessToken: JEV_ACCESS_TOKEN, dictionary, project: DIFF_DIGEST_PROJECT,
-      requestAnswers, taskDetails });
+    const decisionsEndpoint = new DecisionsEndpoint({ routes: [jevKeyRoute(JEV_ACCESS_TOKEN, { fetchImplementation: fetch,
+      useProxy: false })] });
+    const result = await rankProspectiveTasks({ decisionsEndpoint, dictionary, project: DIFF_DIGEST_PROJECT, taskDetails });
     expect(result.failures).toEqual([]);
     expect(result.rankedTasks.map(task => task.taskUuid)).toEqual(["related", "unrelated"]);
     expect(result.rankedTasks[0].rating).toBeGreaterThan(6);

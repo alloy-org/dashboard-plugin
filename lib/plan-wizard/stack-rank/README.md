@@ -19,7 +19,7 @@ without a provider request, preserving cited scores and similar tasks. See
 import { prepareProjectTaskRanker } from "plan-wizard/stack-rank/stack-rank-project-tasks";
 
 const ranker = await prepareProjectTaskRanker(app, { domainName, domainUuid, projects, refineDictionary, tasks });
-// null when no Jev key, Ample Agent Pro note, or generative provider is available
+// null when no Jev key, OpenAI key, Ample Agent Pro note, or generative provider is available
 const { acceptedTasks, failureReason, minimumMatchScore } = await ranker.rankProject(project, matchedTaskRecords);
 ```
 
@@ -136,9 +136,22 @@ pool is roughly 160k input tokens, and a second page as much again. Later rankin
 `lastRankedAt` and the search progress unchanged, so its tasks are sent again; the tasks other batches rated are kept
 in the hash and are not.
 
+# Choosing the rater
+
+`decisionsEndpointForApp` (`providers/decisions-endpoint-for-app.js`) chooses what rates and returns a
+`DecisionsEndpoint`; rankers call its `rankedResponses({ questions, state })` and read the `DecisionsResponse` it
+returns with `ratingFor(questionName)`, never learning which model answered. Jev is asked first, with a Jev key or
+through Ample Agent Pro. OpenAI's Decisions API, with an OpenAI key or through Agent Pro, is the fallback when a Jev
+request fails, and is asked first for an hour after one does. Both decision models report `scorerEm` "jev": they rate
+the same large pool, on the same permit.
+
+OpenAI takes questions as an array, score levels as `{ label, description }`, and choices as `{ value, description? }`;
+`decisions-endpoint.js` translates the name-keyed questions into that shape. `test/openai-decisions-live.test.js`
+sends them to the real API when `OPEN_AI_ACCESS_TOKEN` is set in `.env`, and is skipped otherwise.
+
 # Fast-model rating
 
-Without a Jev key and without Ample Agent Pro, `prepareProjectTaskRanker` rates with the generative provider's fast
+With no decision model to ask, `decisionsEndpointForApp` returns an endpoint over the generative provider's fast
 model instead, provided a provider key is set. `generative-task-scores.js` renders the same state and score
 questions a Jev batch carries as one prompt, using the same rubric, and asks for `{ "ratings": { "task_1": 7, … } }`.
 It sends the prompt through `raceWizardPrompt` with `wizardLlmOptions`, the fast model Plan Builder uses. The reply is
@@ -159,8 +172,9 @@ before they are sent anywhere.
 
 # Jev
 
-`lib/providers/jev-client.js` posts to System One. Jev numbers a rubric from zero, so a rating is `score + 1`. It
-can fall between whole numbers. The live API rejects `null` rubric entries even though the SDK's types allow them.
+`lib/providers/jev-client.js` posts to System One. Questions are built with `scoreQuestion` in
+`lib/providers/decisions-endpoint.js`, since every route asks the same ones. Jev numbers a rubric from zero, so a
+rating is `score + 1`, which `DecisionsResponse.ratingFor` applies. It can fall between whole numbers. The live API rejects `null` rubric entries even though the SDK's types allow them.
 
 TypeSafe's endpoint refuses browser origins: its CORS preflight returns 400 for amplenote.com, `null`, and
 localhost. **Jev Access Token**, entered by choosing Jev in Dashboard Settings' LLM Provider dropdown, accepts either key:

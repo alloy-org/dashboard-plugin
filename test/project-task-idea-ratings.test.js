@@ -13,11 +13,13 @@ import { scheduleProposedActivity } from "dashboard/proposed-agenda-service";
 import QuarterProject from "dashboard/quarter-project";
 import QuarterProjectRepository from "dashboard/quarter-project-repository";
 import { existingTaskForAcceptedIdea, recordSuggestedIdeaDecisions } from "dashboard/ranked-task-suggestions";
-import { rankedTasksFromAnswers, suggestionQuestions } from "dashboard/suggestion-task-rank";
+import { rankedTasksFromResponse, suggestionQuestions } from "dashboard/suggestion-task-rank";
 import { slotRankedTasks } from "dashboard/suggestion-task-slots";
 import { createRateProjectIdeasHandler } from "dashboard/work-queue/jobs/rate-project-ideas";
 import { generativeScoreRequester } from "plan-wizard/stack-rank/generative-task-scores";
 import { setPluginData } from "plugin-data";
+import { DECISIONS_PROVIDER_GENERATIVE, DecisionsEndpoint, decisionsRoute } from "providers/decisions-endpoint";
+import DecisionsResponse from "providers/decisions-response";
 import { jobContext, maintenanceApp, NOW, PROJECT_UUID, SCOPE_INPUT, storedProjectUuid } from "./project-maintenance-test-app";
 
 const HOUR = 60 * 60 * 1000;
@@ -72,13 +74,15 @@ describe("idea ratings", () => {
       { projectUuid: PROJECT_UUID });
     const requestAnswers = jest.fn().mockResolvedValue({ answers: { idea_1_actionability: answer(8),
       idea_1_relevance: { score: 2.4, type: "score" }, idea_2_actionability: answer(3) } });
-    const { ratingsById } = await rateProjectIdeas({ ideas, intentTexts: ["Grow paying users"], project, requestAnswers });
+    const { ratingsById } = await rateProjectIdeas({ decisionsEndpoint: DecisionsEndpoint.fromRequester(requestAnswers), ideas,
+      intentTexts: ["Grow paying users"], project });
     const { questions, state } = requestAnswers.mock.calls[0][0];
     expect(Object.keys(questions)).toEqual(["idea_1_actionability", "idea_1_relevance", "idea_2_actionability", "idea_2_relevance"]);
     expect(state.project).toMatchObject({ intents: ["Grow paying users"], summary: "Launch dashboard" });
     expect(ratingsById.get(ideas[0].ideaId)).toEqual({ actionability: 8, relevance: 3.4 });
     expect(ratingsById.get(ideas[1].ideaId)).toEqual({ actionability: 3, relevance: null });
-    const failed = await rateProjectIdeas({ ideas, project, requestAnswers: jest.fn().mockRejectedValue(new Error("Jev down")) });
+    const failingEndpoint = DecisionsEndpoint.fromRequester(jest.fn().mockRejectedValue(new Error("Jev down")));
+    const failed = await rateProjectIdeas({ decisionsEndpoint: failingEndpoint, ideas, project });
     expect(failed).toEqual({ failureReason: "Jev down", ratingsById: null });
   });
 
@@ -87,10 +91,12 @@ describe("idea ratings", () => {
   //   unchanged.
   it("rates through the generative fast model with the idea rubric", async () => {
     const promptRunner = jest.fn().mockResolvedValue({ ratings: { idea_1_actionability: 9, idea_1_relevance: 7 } });
-    const requestAnswers = generativeScoreRequester({}, { promptBuilder: ideaRatingPrompt, promptRunner });
+    const fastScoreRequest = generativeScoreRequester({}, { promptBuilder: ideaRatingPrompt, promptRunner });
+    const decisionsEndpoint = new DecisionsEndpoint({ routes: [decisionsRoute(DECISIONS_PROVIDER_GENERATIVE, fastScoreRequest)],
+      scorerEm: "generative" });
     const project = new QuarterProject({ summary: "Launch dashboard", uuid: PROJECT_UUID });
     const ideas = normalizedIdeaRecords([{ taskText: "Benchmark the picker" }], { projectUuid: PROJECT_UUID });
-    const { ratingsById } = await rateProjectIdeas({ ideas, project, requestAnswers });
+    const { ratingsById } = await rateProjectIdeas({ decisionsEndpoint, ideas, project });
     expect(promptRunner.mock.calls[0][1]).toContain("Actionability rubric");
     expect(ratingsById.get(ideas[0].ideaId)).toEqual({ actionability: 9, relevance: 7 });
   });
@@ -185,7 +191,8 @@ describe("ideas as recommendation candidates", () => {
     const { listed, questions, state } = suggestionQuestions(groups);
     expect(state.projects["Launch dashboard"].taskCandidates[1]).toMatchObject({ actionability: 8, kind: "new idea" });
     expect(questions.task_2.instructions).toContain("a new next action that is not yet a task");
-    const ranked = rankedTasksFromAnswers(listed, { task_1: answer(9), task_2: answer(9) });
+    const ranked = rankedTasksFromResponse(listed, new DecisionsResponse({ answers: { task_1: answer(9), task_2: answer(9) },
+      providerEm: "jev" }));
     expect(ranked.map(task => task.candidateId)).toEqual(["task:task-1", `idea:${ idea.ideaId }`]);
     expect(ranked[1]).toMatchObject({ ideaId: idea.ideaId, isExisting: false, projectSummary: "Launch dashboard",
       rating: 8.5, taskUuid: null });

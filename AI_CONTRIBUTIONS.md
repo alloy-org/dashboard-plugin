@@ -5,6 +5,60 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-11 — Move scoreQuestion to the decisions endpoint and test against the live OpenAI Decisions API
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/providers/decisions-endpoint.js` — Now owns `scoreQuestion`, which every route asks, and sends choice questions' choices as `{ value }` objects, the shape the live API requires.
+- `lib/providers/jev-client.js` — Removed `scoreQuestion`.
+- `lib/plan-wizard/stack-rank/rank-prospective-tasks.js`, `lib/dashboard/suggestion-task-rank.js`, `lib/dashboard/project-task-idea-ratings.js`, `test/decisions-endpoint.test.js` — Import `scoreQuestion` from the decisions endpoint.
+- `test/openai-decisions-live.test.js` (created) — With `OPEN_AI_ACCESS_TOKEN` in `.env`, ranks project tasks through OpenAI, reads score, choice, and predicate answers from one `DecisionsResponse`, and falls back from a failing Jev route to OpenAI.
+- `lib/plan-wizard/stack-rank/README.md` — Points at `scoreQuestion`'s new home and the live OpenAI tests.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite (1345 tests, including the live Jev and OpenAI calls) and the production-plugin smoke test pass.
+**Task:** Keep provider-neutral question building out of the Jev client, and verify the OpenAI translation against the real API.
+**Prompt summary:** "scoreQuestion doesn't seem especially pertinent to jev-client?" and "let's use the OpenAI key in .env to write tests that score against the real OpenAI Decisions API"
+
+---
+
+## 2026-10-11 — Choose decision routes per user, fall back when Jev fails, and return one DecisionsResponse
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/providers/decisions-response.js` (created) — `DecisionsResponse` holds name-keyed answers from Jev, OpenAI Decisions, or the fast model, with `answerFor`, `confidenceFor`, `ratingFor` (zero-based score read on the 1-based rubric), and usage as `{ inputTokens, outputTokens }`.
+- `lib/providers/decisions-endpoint.js` — Replaced the module-level configured provider with ordered routes (`jevKeyRoute`, `openAiKeyRoute`, `decisionsRoute`). `rankedResponses` falls back route by route, records a Jev failure for `JEV_FAILURE_COOLDOWN_MILLISECONDS`, skips Jev while it stands, and holds one dispatcher permit per request (`withProviderDispatch`). `fromRequester` wraps an injected request for tests.
+- `lib/providers/decisions-endpoint-for-app.js` (created) — `decisionsEndpointForApp` selects Jev (key or Agent Pro) ahead of OpenAI (key, or Agent Pro), flips the order after a Jev failure, and returns a fast-model endpoint only when no decision model can be asked. Jev and OpenAI key resolution moved here.
+- `lib/plan-wizard/stack-rank/agent-pro-jev-requester.js` — Added `agentProOpenAiRequester`; Agent Pro replies carrying an OpenAI answers array are keyed by name.
+- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js`, `rank-prospective-tasks.js`, `lib/dashboard/suggestion-task-rank.js`, `lib/dashboard/project-task-idea-ratings.js`, `lib/dashboard/work-queue/jobs/rate-project-ideas.js` — Rate through a `DecisionsEndpoint` and read `DecisionsResponse`; removed `jevAnswerRequester`, `_decisionsChoice`, `ratingFromScoreAnswer`, and the per-call `providerEm` options. `rankedTasksFromAnswers` became `rankedTasksFromResponse`.
+- `lib/plugin.js`, `lib/hooks/use-dashboard-work-queue.js` — Removed the startup `configureDecisionsProvider` calls.
+- `lib/plan-wizard/stack-rank/README.md` — Describes how the rater is chosen.
+- `test/decisions-endpoint.test.js` (rewritten), `test/stack-rank.test.js`, `test/ranked-task-suggestions.test.js`, `test/project-task-idea-ratings.test.js` — Cover the response shape, fallback and cooldown, permit handling, and selection; the fast-model ranker test uses a Gemini key, since an OpenAI key now selects OpenAI Decisions.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite (1342 tests, including the live Jev call) and the production-plugin smoke test pass; the production build passes the host-boundary check.
+**Task:** Move provider choice out of the rankers into one selector, build the Jev-failure fallback, and return a consistent response class from every route, including the generative fast score.
+**Prompt summary:** "The DecisionsEndpoint instance should probably return results in a consistent class shape, so callers don't need to know whether the response came from OpenAI or Jev" and "We will need to build the fallback, recording if Jev fails, adding the generative 'fast score' as another method of receiving back a DecisionResponse"
+
+---
+
+## 2026-10-11 — Rate task questions through Jev or OpenAI Decisions
+
+**Model:** Grok 4.7
+**Files created/modified:**
+- `lib/providers/decisions-endpoint.js` (created) — `DecisionsEndpoint` sends the existing name-keyed score questions to Jev or to OpenAI's Decisions API (`gpt-6-luna` at `/v1/decisions`), and returns answers keyed by question name with the score left on its zero-based index. `configureDecisionsProvider` is the choice a call uses when it does not name a provider.
+- `lib/plugin.js`, `lib/hooks/use-dashboard-work-queue.js` — Each bundle passes that provider at startup. Both currently pass Jev; pass `"openai"` in both places to rate with OpenAI instead.
+- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js`, `lib/plan-wizard/stack-rank/rank-prospective-tasks.js` — Ranking asks `DecisionsEndpoint`. OpenAI uses the OpenAI API key and the same large pool as Jev.
+- `lib/constants/settings.js` — `devOpenAiAccessToken` reads `OPEN_AI_ACCESS_TOKEN` in development.
+- `test/decisions-endpoint.test.js` (created) — Translation of score, choice, and predicate questions, answer normalization, and the Jev route.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Decisions, stack-rank, project-maintenance, and production-plugin tests pass, and the production build passes the host-boundary check.
+**Task:** Call either Jev or OpenAI's Decisions API from one wrapper, selected by the plugin.
+**Prompt summary:** "Incorporate a lib/providers/jev-client.js alternative using the new Decisions API from OpenAI. Let's create a common utility wrapper that is called for either Jev or OpenAI, depending on the parameter passed to it by the main plugin. Perhaps the exported class that interchangeably interacts with either is named class DecisionsEndpoint"
+
+---
+
 ## 2026-10-11 — Read completed cited tasks by UUID so ranking can score them
 
 **Model:** Claude Opus 5.5
