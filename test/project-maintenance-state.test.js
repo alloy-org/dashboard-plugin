@@ -30,13 +30,16 @@ async function readProject(app) {
 // ----------------------------------------------------------------------------------------------
 // @desc Save a live guide project citing a task absent from the task API, so reconciliation and ranking use evidence.
 // @param {object} app - In-memory maintenance app.
+// @param {object} [options] - { citationText = "Cited old task" }: the text the citation carries, or null for a
+//   citation that names only its task and note, as discovery stores one.
 // @returns {Promise<string>} Project UUID.
-async function seedCitedProject(app) {
+async function seedCitedProject(app, { citationText = "Cited old task" } = {}) {
   const projectUuid = await storedProjectUuid(app);
   const guide = await initializeVisionGuide(app, null, SCOPE);
   const range = guideSectionRange(guide.content, prospectIndexHeadingText("Professional", SCOPE));
-  const payload = { prospectTasks: [], prospects: [{ approvalStatusEm: "humanAffirmed", evidence: [{ noteUuid: "source",
-    taskUuid: "cited-task", text: "Cited old task" }], linkedGoalUuids: [], priorityEm: "quarterFocus", quarterKey: SCOPE.quarterKey,
+  const citation = citationText ? { noteUuid: "source", taskUuid: "cited-task", text: citationText }
+    : { noteUuid: "source", taskUuid: "cited-task" };
+  const payload = { prospectTasks: [], prospects: [{ approvalStatusEm: "humanAffirmed", evidence: [citation], linkedGoalUuids: [], priorityEm: "quarterFocus", quarterKey: SCOPE.quarterKey,
     capturedAt: NOW.toISOString(), relatedNotes: [], relatedTasks: ["cited-task"], substantiations: ["Ship the dashboard"], summary: "Launch dashboard", userCategoryEm: "work",
     uuid: projectUuid }] };
   await app.replaceNoteContent(guide.noteHandle, jsonPayloadMarkdown(payload),
@@ -171,5 +174,28 @@ describe("queued project evidence", () => {
     const ratingKey = taskRatingKey("Launch dashboard", { taskText: "Cited old task", taskUuid: "cited-task" });
     expect((await readProject(app)).taskSimilarityScores[ratingKey]).toBe(1);
     expect(requestAnswers).toHaveBeenCalledTimes(1);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A citation stores no task text, and the domain read omits completed tasks, so a completed cited task is
+  //   read by UUID for both the reconciliation that plans its ranking and the ranking that rates it.
+  it("reads a completed cited task by UUID to plan and rate it", async () => {
+    setPluginData({ settings: { [SETTING_KEYS.JEV_ACCESS_TOKEN]: "token" } });
+    const completedTask = { completedAt: 1789552800, content: "Finished cited task", noteUUID: "source", uuid: "cited-task" };
+    const app = maintenanceApp({ readableTasks: [completedTask], tasks: [] });
+    const projectUuid = await seedCitedProject(app, { citationText: null });
+    const repository = new QuarterProjectRepository({ app });
+    await repository.applyResult(SCOPE, { apply: project => project.markRanked(NOW.toISOString(), { similaritySearchedTaskCount: 0, similaritySearchPageCount: 2 }), projectUuid });
+    const handler = createReconcileProjectsHandler({ planner: new QuarterProjectWorkPlanner(), taskScorer: async () => "jev",
+      termEvidenceScheduler: null, unexaminedProjectReader: async () => [] });
+    const { result } = await runProjectJob(handler, { context: jobContext(app), input: SCOPE_INPUT });
+    expect(result.followUps).toEqual(expect.arrayContaining([expect.objectContaining({ entityId: projectUuid, type: "rankProjectTasks" })]));
+    const requestAnswers = ratingRequest();
+    const ranker = createRankProjectTasksHandler({ rankerFactory: (currentApp, options) => prepareProjectTaskRanker(currentApp,
+      { ...options, requestAnswers }) });
+    await runProjectJob(ranker, { context: jobContext(app), input: { ...SCOPE_INPUT, projectUuid } });
+    const ratingKey = taskRatingKey("Launch dashboard", { taskText: "Finished cited task", taskUuid: "cited-task" });
+    expect((await readProject(app)).taskSimilarityScores[ratingKey]).toBe(1);
+    expect(app.getTask).toHaveBeenCalledWith("cited-task");
   });
 });

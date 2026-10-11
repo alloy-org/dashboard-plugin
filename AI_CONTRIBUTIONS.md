@@ -5,6 +5,53 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-11 — Read completed cited tasks by UUID so ranking can score them
+
+**Model:** Claude Opus 5.5
+**Files modified:**
+- `lib/plan-wizard/stack-rank/cited-task-records.js` — `readUnscoredCitedTaskRecords` calls `app.getTask` for each unscored cited task missing from the open-task read, then builds the required records. Citations store no text, so completed cited tasks were skipped and never scored. `_readTasks` logs requested and found counts and `readMs`.
+- `lib/dashboard/work-queue/jobs/rank-project-tasks.js` — The ranking uses the read tasks for its required records and ranker task list.
+- `lib/dashboard/work-queue/jobs/reconcile-projects.js` — `_unscoredCitedCounts` is async and reads by UUID, so an unscored completed cited task triggers a ranking.
+- `test/project-maintenance-test-app.js` — `maintenanceApp` takes `readableTasks` and provides `getTask`.
+- `test/project-maintenance-state.test.js` — A text-free citation of a completed task is planned, read by UUID, and rated.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite, production build, and production plugin smoke test pass.
+**Task:** Fix cited Plan Builder tasks (completed ones) that never got similarity scores on the Project evidence sources page.
+**Prompt summary:** "How can tasks that were associated with my Project via Plan Builder fail to carry similarity scores?" followed by choosing to look up task text at ranking time, with the lookup time logged.
+
+---
+
+## 2026-10-11 — Ask project discovery to cite supporting tasks inside each Rationale
+
+**Model:** Claude Opus 5.5
+**Files modified:**
+- `lib/plan-wizard/prospect-discovery.js` — The discovery prompt asks each professional project's substantiation to cite the `CITED_TASKS_PER_SUBSTANTIATION` (2) tasks that most directly support it, bracketed after the words they support; a personal project cites a task only where one concerns it. `shortenedSubstantiation` leaves citations out of `MAXIMUM_SUBSTANTIATION_LENGTH` and never cuts inside one (`_clipIndexOutsideReferences`).
+- `lib/plan-wizard/task-reference-pattern.js` (created) — The task-citation pattern and `taskReferenceRanges`, moved out of `substantiation-task-references.js` (whose `util/utility` import pulls `marked`) so host-side discovery can use them.
+- `lib/dashboard/plan-wizard/substantiation-task-references.js` — Imports the citation pattern from the new module.
+- `lib/plan-wizard/prospect-consolidation.js` — A merged project's reason keeps its members' task citations.
+- `test/plan-wizard-prospects.test.js` — Citation-aware length limit and the prompt's citation instruction.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite (including host-boundary and production plugin smoke tests) and production build pass.
+**Task:** Have the Projects list Rationale name the tasks behind a project, which the page draws as task chips.
+**Prompt summary:** "encourage the generative LLM that provides "Rationale" to provide a task UUID or two that supports the Project, since any Project should have at least two tasks that support it (for Professional tasks, Personal may not)"
+
+---
+
+## 2026-10-11 — Give Projects list task chips a 25-character label
+
+**Model:** Claude Opus 5.5
+**Files modified:**
+- `lib/dashboard/plan-wizard/substantiation-task-references.js` — `taskChipLabel` keeps the whole words that fit `TASK_CHIP_CHARACTER_COUNT` (25) characters instead of the first three words, cutting mid-word only when the first word alone is longer.
+- `test/substantiation-task-references.test.js` — Character-budget cases.
+- `build/compiled.js` — Rebuilt.
+
+**Task:** Show more of each cited task in "Which project best implements your intent?" before truncating.
+**Prompt summary:** "update the task citations in Projects List ... give it about 25 characters before truncating it"
+
+---
+
 ## 2026-10-10 — Speed up Proposed Agenda on a cold cache, and stop fenced JSON from truncating data notes
 
 **Model:** claude-opus-5-5

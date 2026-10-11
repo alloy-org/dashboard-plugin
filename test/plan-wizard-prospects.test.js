@@ -308,6 +308,34 @@ test("holds a substantiation to the two lines the page gives it, ending at a sen
 });
 
 // ----------------------------------------------------------------------------------------------
+// @desc Confirm task citations are left out of the length a substantiation is held to, and that a cut never lands
+//   inside one, so asking discovery to cite the supporting tasks does not cost the reason its words.
+test("leaves task citations out of a substantiation's length and never cuts through one", () => {
+  const firstUuid = "e010af78-1111-4222-8333-944455556666";
+  const secondUuid = "a7c2b310-1111-4222-8333-944455556666";
+  const citedReason = `Automating triage resolves the weekly support tasks [${ firstUuid }] and the backlog review `
+    + `[${ secondUuid }] together.`;
+  expect(shortenedSubstantiation(citedReason)).toBe(citedReason);
+
+  const longWords = "and routing every request by category would remove the manual sorting entirely ".repeat(3);
+  const cutReason = `Automating triage resolves the support tasks ${ longWords }[${ firstUuid }, ${ secondUuid }] ${ longWords }`;
+  const shortened = shortenedSubstantiation(cutReason);
+  const readableLength = shortened.replace(/\[[^\]]*\]/g, "").length;
+  expect(readableLength).toBeLessThanOrEqual(MAXIMUM_SUBSTANTIATION_LENGTH + 1);
+  expect(shortened).not.toMatch(/\[[^\]]*$/);
+
+  // The last space before the limit sits inside a two-task citation; the cut moves to the citation's start.
+  const leadingText = "x".repeat(200);
+  const spaceInsideCitation = `${ leadingText } [${ firstUuid }, ${ secondUuid }]${ "y".repeat(40) }`;
+  expect(shortenedSubstantiation(spaceInsideCitation)).toBe(`${ leadingText }…`);
+});
+
+test("asks discovery to cite two supporting tasks inside a professional reason", () => {
+  const prompt = prospectPromptFromEvidence(evidenceBundle(), scope);
+  expect(prompt).toMatch(/cite the 2 tasks above that most directly support a professional project/);
+});
+
+// ----------------------------------------------------------------------------------------------
 // @desc Confirm discovery declines to guess when nothing has been chosen for a project to carry, and that a
 //   provider failure is reported rather than thrown. The page must stay usable either way.
 test("declines without chosen intents and degrades when the provider fails", async () => {

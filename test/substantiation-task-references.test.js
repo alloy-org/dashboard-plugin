@@ -59,8 +59,10 @@ describe("substantiationSegments", () => {
 });
 
 describe("task chip text", () => {
-  it("keeps the first three words and marks that more follows", () => {
-    expect(taskChipLabel("Write the Acme memo, then send it")).toBe("Write the Acme…");
+  it("keeps the whole words that fit 25 characters and marks that more follows", () => {
+    expect(taskChipLabel("Write the Acme memo, then send it")).toBe("Write the Acme memo, then…");
+    expect(taskChipLabel("Install the AI productivity plugins")).toBe("Install the AI…");
+    expect(taskChipLabel("Supercalifragilisticexpialidocious plan")).toBe("Supercalifragilisticexpia…");
     expect(taskChipLabel("Request data")).toBe("Request data");
   });
 

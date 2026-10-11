@@ -35,9 +35,10 @@ export function backlogTasks() {
 // ----------------------------------------------------------------------------------------------
 // @desc An in-memory Amplenote app holding the quarterly plan note, with notes found by name, tag, or UUID, and whole
 //   or section-scoped writes located the way the store's own heading parser locates them.
-// @param {object} options - { tasks }.
+// @param {object} options - { readableTasks = [], tasks }: tasks are returned by the domain read; readableTasks, such
+//   as completed tasks, are found only by getTask, which also finds tasks.
 // @returns {object} App mock carrying `noteContent(name)` for assertions.
-export function maintenanceApp({ tasks }) {
+export function maintenanceApp({ readableTasks = [], tasks }) {
   const notes = new Map();
   let sequence = 0;
   const createNote = (name, tags = []) => {
@@ -61,6 +62,10 @@ export function maintenanceApp({ tasks }) {
       return entry ? { name, uuid: entry[0] } : null;
     },
     getNoteContent: async ({ uuid }) => notes.get(uuid)?.content ?? "",
+    getTask: jest.fn(async taskUuid => {
+      const task = [...tasks, ...readableTasks].find(candidate => candidate.uuid === taskUuid);
+      return task ? { ...task } : null;
+    }),
     getTaskDomainTasks: jest.fn(async () => tasks.map(task => ({ ...task }))),
     noteContent: name => entryNamed(name)?.[1].content ?? null,
     replaceNoteContent: async ({ uuid }, body, options) => {
