@@ -170,6 +170,20 @@ writes to both notes.
 - Tests: segment building from `completedTasksByDate` + `projectByTaskUuid`, the stable color assignment, and the
   tooltip HTML including the project name.
 
+### Where the implementation departed from this plan
+
+- Color slots follow the order the **ledger** first records each project, not plan order, so the chart needs no read
+  of the plan or project store. The ledger is append-only by day, so a project keeps its slot for the rest of the
+  quarter. When a quarter names more than six projects, every project past the fifth shares the sixth slot as
+  "Other projects".
+- The widget reads the ledger itself through `useCompletedTaskProjects`, given the active domain's name;
+  `dashboard.jsx` passes only `taskDomainName`. The ledgers are read again when a classification job completes
+  (`subscribeOutcomes`), not on `DASHBOARD_TASKS_UPDATED_EVENT`, since that job is the only writer.
+- The total label is drawn in `--dashboard-color-text-on-category` when the top segment is a project color, and in
+  `--dashboard-color-text-on-accent` otherwise. No category color is orange, the default accent.
+- The legend appears only when a displayed bar has a project segment, and lists "No project" last.
+- Victory Value still shows every domain's completions (risk 4), so tasks from other domains draw as "No project".
+
 ---
 
 ## Commit 3: Potential scoring and victory value raise

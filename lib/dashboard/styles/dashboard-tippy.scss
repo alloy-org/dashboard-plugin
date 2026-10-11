@@ -170,6 +170,28 @@ $tooltip-row-padding-y: 2px;
     font-weight: 600;
   }
 
+  // The project a Victory Value task advanced, between its text and its points.
+  .dashboard-tooltip-row-project {
+    align-items: center;
+    color: $color-tooltip-text-muted;
+    display: inline-flex;
+    flex-shrink: 1;
+    font-size: $smaller-font-size;
+    gap: 4px;
+    max-width: 40%;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dashboard-tooltip-row-swatch {
+    border-radius: 2px;
+    flex-shrink: 0;
+    height: 8px;
+    width: 8px;
+  }
+
   .dashboard-tooltip-empty {
     color: $color-tooltip-text-muted;
     font-style: italic;

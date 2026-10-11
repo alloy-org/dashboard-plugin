@@ -1,8 +1,10 @@
 // Render seven days of completed-task victory values with weekly navigation and a mood overlay.
 import { parseWidgetConfig, widgetConfigKey } from "../constants/settings";
 import ConfigPopup from "./config-popup";
+import { completedTaskProjectColor, dailyProjectSegments, projectLegendItems } from "dashboard/projects/completed-task-project-colors";
 import { useCanvasTippy } from "./dashboard-tooltip-tippy.jsx";
 import WidgetWrapper from "./widget-wrapper";
+import { useCompletedTaskProjects } from "hooks/use-completed-task-projects";
 import { useThemeRevision } from "hooks/use-theme-revision";
 import { pluginSettings } from "plugin-data";
 import { useEffect, useRef, useState } from "react";
@@ -20,11 +22,14 @@ const MOODS = [
 
 // ------------------------------------------------------------------------------------------
 // @desc Build seven daily totals ending on the reference date, using supplied daily values until tasks are available.
+//   Each day's total is split into a segment per project the completed task ledger names, so its bar can be stacked.
 // @param {Object} completedTasksByDate - Completed tasks grouped by local date key.
 // @param {Array} dailyValues - Fallback daily totals.
 // @param {Date|string} referenceDate - Last day of the displayed range.
-// @returns {Array} Seven chronological daily totals and task counts.
-function buildDailyValuesForWeek(completedTasksByDate, dailyValues, referenceDate) {
+// @param {Object|null} [completedTaskProjects] - Ledger lookups from useCompletedTaskProjects, or null without ledger data.
+// @returns {Array} Seven chronological days of { date, day, segments, taskCount, value }. A day known only from the
+//   fallback totals has a single "No project" segment.
+export function buildDailyValuesForWeek(completedTasksByDate, dailyValues, referenceDate, completedTaskProjects = null) {
   const startDate = dateFromDateInput(referenceDate);
   startDate.setDate(startDate.getDate() - 6);
   const weekSlots = weekDateSlotsFromDateInput(startDate, startDate.getDay());
@@ -35,7 +40,9 @@ function buildDailyValuesForWeek(completedTasksByDate, dailyValues, referenceDat
     const value = Array.isArray(tasksForDay)
       ? tasksForDay.reduce((sum, task) => sum + (task.victoryValue || 0), 0) : fallback?.value || 0;
     const taskCount = Array.isArray(tasksForDay) ? tasksForDay.length : fallback?.taskCount || 0;
-    return { date: slot.date, day: slot.day, taskCount, value };
+    const fallbackTasks = value > 0 ? [{ victoryValue: value }] : [];
+    const segments = dailyProjectSegments(Array.isArray(tasksForDay) ? tasksForDay : fallbackTasks, slot.dateKey, completedTaskProjects);
+    return { date: slot.date, day: slot.day, segments, taskCount, value };
   });
 }
 
@@ -149,7 +156,9 @@ function getHoveredDayMood(index, moodByDay, dailyValues) {
 }
 
 // ------------------------------------------------------------------------------------------
-// @desc Draw activity bars and labels using the current dashboard theme colors.
+// @desc Draw activity bars and labels using the current dashboard theme colors. Each bar stacks its day's segments
+//   from the base up, only the top segment taking the rounded corners, and the day's total is labeled at the top in the
+//   ink that reads on the top segment's color.
 // @param {CanvasRenderingContext2D} ctx - Drawing context.
 // @param {Array} dailyValues - Daily totals and labels.
 // @param {number} maxValue - Largest daily value.
@@ -163,10 +172,14 @@ function drawBars(ctx, dailyValues, maxValue, barW, chartH, ht) {
     const barH = (d.value / maxValue) * chartH * 0.85;
     const x = 40 + i * barW + barW * 0.15;
     const y = chartH - barH + 10;
-    ctx.fillStyle = themeStyle.getPropertyValue(d.value > 0 ? '--dashboard-color-background-accent' : '--dashboard-color-border').trim();
-    ctx.beginPath();
-    ctx.roundRect(x, y, barW * 0.7, barH, [4, 4, 0, 0]);
-    ctx.fill();
+    const segments = d.segments?.length ? d.segments : [{ colorToken: '--dashboard-color-background-accent', value: d.value }];
+    if (d.value > 0) drawBarSegments(ctx, themeStyle, segments, { barH, total: d.value, width: barW * 0.7, x, y });
+    else {
+      ctx.fillStyle = themeStyle.getPropertyValue('--dashboard-color-border').trim();
+      ctx.beginPath();
+      ctx.roundRect(x, y, barW * 0.7, barH, [4, 4, 0, 0]);
+      ctx.fill();
+    }
 
     ctx.fillStyle = themeStyle.getPropertyValue('--dashboard-color-text-secondary').trim();
     ctx.font = '11px system-ui';
@@ -180,10 +193,32 @@ function drawBars(ctx, dailyValues, maxValue, barW, chartH, ht) {
     ctx.fillText(monthDay, x + barW * 0.35, ht - 3);
 
     if (d.value > 0) {
-      ctx.fillStyle = themeStyle.getPropertyValue('--dashboard-color-text-on-accent').trim();
+      const topSegment = segments[segments.length - 1];
+      const labelInk = topSegment.colorToken.includes('category') ? '--dashboard-color-text-on-category' : '--dashboard-color-text-on-accent';
+      ctx.fillStyle = themeStyle.getPropertyValue(labelInk).trim();
       ctx.font = 'bold 10px system-ui';
       ctx.fillText(formatBarPointValue(d.value), x + barW * 0.35, y + 14);
     }
+  });
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc Draw one bar as stacked segments, the first at the base, each as tall as its share of the day's total.
+// @param {CanvasRenderingContext2D} ctx - Drawing context.
+// @param {CSSStyleDeclaration} themeStyle - Computed style of the document, holding the theme's color tokens.
+// @param {Array} segments - { colorToken, value }, base first.
+// @param {Object} bar - { barH, total, width, x, y }: the whole bar's height, value, width, and top-left corner.
+// @returns {void}
+function drawBarSegments(ctx, themeStyle, segments, { barH, total, width, x, y }) {
+  let segmentBottom = y + barH;
+  segments.forEach((segment, index) => {
+    const segmentHeight = (segment.value / total) * barH;
+    const topSegment = index === segments.length - 1;
+    ctx.fillStyle = themeStyle.getPropertyValue(segment.colorToken).trim();
+    ctx.beginPath();
+    ctx.roundRect(x, segmentBottom - segmentHeight, width, segmentHeight, topSegment ? [4, 4, 0, 0] : 0);
+    ctx.fill();
+    segmentBottom -= segmentHeight;
   });
 }
 
@@ -252,8 +287,35 @@ function drawChart(canvasRef, dailyValues, maxValue, moodByDay, showMood) {
   }
 }
 
-// [Claude] Task: build tooltip HTML string for a hovered victory-value bar
-function buildTooltipHTML(hoveredBar, dailyValues, completedTasksByDate, moodByDay) {
+// ------------------------------------------------------------------------------------------
+// @desc Escape text for placing inside tooltip HTML.
+// @param {string} text - Plain text.
+// @returns {string} The text with HTML's special characters escaped.
+function escapedHtml(text) {
+  const replacements = { '"': '&quot;', '&': '&amp;', "'": '&#39;', '<': '&lt;', '>': '&gt;' };
+  return String(text).replace(/[&<>"']/g, character => replacements[character]);
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc The swatch and name of the project a tooltip row's task advanced.
+// @param {Object|null} projectColor - From completedTaskProjectColor, or null when no project claims the task.
+// @returns {string} HTML, empty when no project claims the task.
+function tooltipProjectHtml(projectColor) {
+  if (!projectColor) return '';
+  return `<span class="dashboard-tooltip-row-project"><span class="dashboard-tooltip-row-swatch" `
+    + `style="background: var(${ projectColor.colorToken })"></span>${ escapedHtml(projectColor.label) }</span>`;
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc Build the tooltip for a hovered bar: its date, the day's mood, and each completed task with its victory value
+//   and, when the completed task ledger names one, the project it advanced.
+// @param {number} hoveredBar - Index of the hovered day.
+// @param {Array} dailyValues - The displayed days.
+// @param {Object} completedTasksByDate - Completed tasks grouped by local date key.
+// @param {Array} moodByDay - The mood recorded on each displayed day, or null.
+// @param {Object|null} [completedTaskProjects] - Ledger lookups from useCompletedTaskProjects.
+// @returns {string} Tooltip HTML.
+export function buildTooltipHTML(hoveredBar, dailyValues, completedTasksByDate, moodByDay, completedTaskProjects = null) {
   const tasks = getHoveredDayTasks(hoveredBar, dailyValues, completedTasksByDate);
   const mood = getHoveredDayMood(hoveredBar, moodByDay, dailyValues);
   const dateLabel = dailyValues[hoveredBar]
@@ -267,10 +329,13 @@ function buildTooltipHTML(hoveredBar, dailyValues, completedTasksByDate, moodByD
   }
 
   if (tasks.length > 0) {
+    const dateKey = dateKeyFromDateInput(dailyValues[hoveredBar].date);
     for (const task of tasks) {
+      const projectColor = completedTaskProjectColor(task, dateKey, completedTaskProjects);
       parts.push(
         `<div class="dashboard-tooltip-row">` +
         `<span class="dashboard-tooltip-row-label">${renderMarkdown(task.content)}</span>` +
+        tooltipProjectHtml(projectColor) +
         `<span class="dashboard-tooltip-row-value">${task.victoryValue || 0} pts</span>` +
         `</div>`
       );
@@ -318,16 +383,38 @@ function TimeRangeOptions({ setTimeRange, timeRange }) {
 }
 
 // ------------------------------------------------------------------------------------------
-// @desc Render the seven days ending on the selected date, with arrows that move the range by one week.
-// @param {Object} props - Completed tasks, mood ratings, fallback totals, and date navigation callback.
+// @desc Render a swatch and name for each project the displayed days' bars are colored by.
+// @param {Object} props - { items }: legend items from projectLegendItems.
+// @returns {JSX.Element|null} The legend, or nothing when no bar is colored by project.
+function ProjectLegend({ items }) {
+  if (!items.length) return null;
+  return (
+    <div className="vv-project-legend">
+      {items.map(item => (
+        <span className="vv-project-legend-item" key={item.key}>
+          <span className="vv-project-legend-swatch" style={{ background: `var(${ item.colorToken })` }} />
+          {item.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc Render the seven days ending on the selected date, with arrows that move the range by one week. Bars are
+//   stacked by the project each completed task advanced, as the active domain's completed task ledger records it.
+// @param {Object} props - Completed tasks, mood ratings, fallback totals, date navigation callback, and the active task
+//   domain's name, whose ledger colors the bars.
 // @returns {JSX.Element} Configurable Victory Value chart.
 export default function VictoryValueWidget({ app, completedTasksByDate, dailyValues, moodRatings,
-    onReferenceDateChange, referenceDate }) {
+    onReferenceDateChange, referenceDate, taskDomainName }) {
   const themeRevision = useThemeRevision();
   const canvasRef = useRef(null);
   const redrawChartRef = useRef(null);
   const rangeEndDate = referenceDate || dateKeyFromDateInput(new Date());
-  const chartDailyValues = buildDailyValuesForWeek(completedTasksByDate, dailyValues, rangeEndDate);
+  const completedTaskProjects = useCompletedTaskProjects(app, { domainName: taskDomainName, referenceDate: rangeEndDate });
+  const chartDailyValues = buildDailyValuesForWeek(completedTasksByDate, dailyValues, rangeEndDate, completedTaskProjects);
+  const legendItems = projectLegendItems(chartDailyValues);
   const maxValue = Math.max(...chartDailyValues.map((entry) => entry.value), 1);
   const chartWeeklyTotal = chartDailyValues.reduce((sum, entry) => sum + (entry.value || 0), 0);
   const roundedWeeklyTotal = Math.round(chartWeeklyTotal);
@@ -381,7 +468,7 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
     const barTopScreenY = getBarTopScreenY(canvasRef, hoveredBar, chartDailyValues, maxValue);
     const spaceAbove = barTopScreenY;
     const spaceBelow = window.innerHeight - rect.bottom;
-    const html = buildTooltipHTML(hoveredBar, chartDailyValues, completedTasksByDate, moodByDay);
+    const html = buildTooltipHTML(hoveredBar, chartDailyValues, completedTasksByDate, moodByDay, completedTaskProjects);
 
     if (spaceBelow > spaceAbove) {
       tip.show(html, screenX, rect.bottom, { placement: 'bottom', belowChart: true });
@@ -419,6 +506,7 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
         <span className="vv-total">{roundedWeeklyTotal}</span>
         <span className="vv-label">{`points ${ weekDateRange }`}</span>
       </div>
+      <ProjectLegend items={legendItems} />
       <div className="vv-chart-container">
         <button
           className="vv-nav-arrow"

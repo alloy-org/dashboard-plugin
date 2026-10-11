@@ -5,6 +5,26 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-11 — Color the Victory Value chart by project (Completed Tasks by Project, commit 2)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/projects/completed-task-project-colors.js` (created) — React-free: gives each project in the completed task ledger a color slot in the order the ledger first records it (six slots; past six projects the sixth is shared as "Other projects"), indexes ledger entries by day and task, splits a day's victory value into project segments with "No project" at the base, and builds the legend for the displayed days.
+- `lib/hooks/use-completed-task-projects.js` (created) — Reads the ledger of every quarter the chart's seven days fall in for the active domain, and reads again whenever a completed task classification job completes.
+- `lib/dashboard/victory-value.jsx` — Bars stack by project with only the top segment rounded, the total label inked for its top segment, a project legend under the header, and each tooltip row showing its task's project beside a swatch. Without ledger data the chart draws as before.
+- `lib/dashboard/dashboard.jsx` — Passes the active domain's name to the Victory Value cell.
+- `lib/dashboard/styles/theme-light.scss`, `lib/dashboard/styles/theme-dark.scss` — Six `--dashboard-color-category-*` colors and `--dashboard-color-text-on-category`.
+- `lib/dashboard/styles/victory-value.scss`, `lib/dashboard/styles/dashboard-tippy.scss` — Legend and tooltip project styles.
+- `test/completed-task-project-colors.test.js` (created) — Slot assignment and sharing, segments, legend, reading both quarters' ledgers, and the tooltip's escaped project name.
+- `doc/completed-task-projects-plan.md` — Notes where commit 2 departed from the plan.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes (157 suites, 1372 tests); production-plugin smoke test passes.
+**Task:** Commit 2 of the completed-tasks-by-project plan.
+**Prompt summary:** "Ok, let's proceed to commit #2"
+
+---
+
 ## 2026-10-11 — Record which project each completed task advanced (Completed Tasks by Project, commit 1)
 
 **Model:** Claude Opus 5.5

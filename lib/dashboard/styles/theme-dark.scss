@@ -55,6 +55,13 @@
     --dashboard-color-project-window-purple: #9b7bd3;
     --dashboard-color-project-window-red: #e36b6b;
     --dashboard-color-project-window-teal: #45aaa4;
+    --dashboard-color-category-1: #5b8fd6;
+    --dashboard-color-category-2: #3f9e68;
+    --dashboard-color-category-3: #9d72cc;
+    --dashboard-color-category-4: #d3517b;
+    --dashboard-color-category-5: #1f97a8;
+    --dashboard-color-category-6: #94796b;
+    --dashboard-color-text-on-category: #ffffff;
   }
   &[data-theme="dark"] { @include dark-colors; }
   @media (prefers-color-scheme: dark) {

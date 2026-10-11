@@ -246,7 +246,7 @@ const GraveyardCell = createWidgetCell('graveyard', GraveyardWidget, ({ app, con
 }));
 const VictoryValueCell = createWidgetCell('victory-value', VictoryValueWidget,
   pickProps('app', 'completedTasksByDate', 'dailyValues', 'moodRatings', 'onReferenceDateChange', 'referenceDate',
-    'weekFormat', 'weeklyTotal'));
+    'taskDomainName', 'weekFormat', 'weeklyTotal'));
 const LayoutPickerCell = createWidgetCell('layout-picker', LayoutPickerWidget,
   pickProps('app', 'currentLayout', 'onLayoutApply', 'onSelectedProfileChange'));
 

@@ -57,4 +57,13 @@
   --dashboard-color-project-window-purple: #7658ad;
   --dashboard-color-project-window-red: #d65353;
   --dashboard-color-project-window-teal: #268f89;
+  // Victory Value bars colored by project, in color slot order; the sixth slot also holds "Other projects". Each is dark
+  // enough to carry --dashboard-color-text-on-category, and none is orange, the default accent "No project" is drawn in.
+  --dashboard-color-category-1: #3b6fb6;
+  --dashboard-color-category-2: #2e7d4f;
+  --dashboard-color-category-3: #8152ad;
+  --dashboard-color-category-4: #c0335f;
+  --dashboard-color-category-5: #00788a;
+  --dashboard-color-category-6: #7a6155;
+  --dashboard-color-text-on-category: #ffffff;
 }

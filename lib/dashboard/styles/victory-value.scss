@@ -31,6 +31,29 @@
     }
   }
 
+  .vv-project-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-xs $sp-sm;
+    margin-bottom: $sp-sm;
+  }
+
+  .vv-project-legend-item {
+    align-items: center;
+    color: $color-text-secondary;
+    display: inline-flex;
+    font-size: $smaller-font-size;
+    gap: $sp-xs;
+    min-width: 0;
+  }
+
+  .vv-project-legend-swatch {
+    border-radius: 2px;
+    flex-shrink: 0;
+    height: 8px;
+    width: 8px;
+  }
+
   .vv-date-range {
     color: $color-text-secondary;
     font-size: $smaller-font-size;
