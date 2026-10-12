@@ -199,4 +199,23 @@ describe("WidgetMountCoordinator", () => {
     expect(notifications).toBe(notificationsBefore);
     expect(coordinator.snapshot().widgets.map(widget => widget.widgetId)).toEqual(["agenda"]);
   });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A widget's content report is timed from its mount request, counts only once, and is ignored before the
+  //   widget has begun mounting.
+  it("times a widget from its mount request to its rendered content", async () => {
+    const { coordinator, pass, register, report, setNow } = harness();
+    const generation = register("agenda");
+    expect(coordinator.reportContentReady("agenda")).toBeNull();
+    setNow(100);
+    report(1, { agenda: true });
+    setNow(150);
+    await pass();
+    coordinator.reportCommitted("agenda", generation);
+    setNow(2600);
+    expect(coordinator.reportContentReady("agenda")).toBe(2500);
+    setNow(9000);
+    expect(coordinator.reportContentReady("agenda", "error")).toBeNull();
+    expect(coordinator.snapshot().widgets[0]).toMatchObject({ contentOutcome: "loaded", contentReadyAt: 2600, requestedAt: 100 });
+  });
 });

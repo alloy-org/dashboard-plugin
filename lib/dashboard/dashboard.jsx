@@ -50,7 +50,6 @@ import { dateKeyFromDateInput, localMidnightFromDateInput, weekStartFromDateInpu
 import { logIfEnabled, setLoggingEnabled } from "util/log";
 import { snapDashboardAction } from "util/plausible";
 import { captureDashboardException, captureDashboardMessage, capturePluginFailure, logSentryStatus } from "util/sentry-reporting";
-import { useWidgetLoadTiming } from "util/widget-timing";
 import { WidgetSizeContext } from "widget-wrapper";
 import WidgetMemoryMeasurementPopup from "widget-memory-measurement-popup";
 import VictoryValueWidget from 'victory-value';
@@ -160,7 +159,6 @@ function WidgetLoadedEventReporter({ hasError = false, isReady, widgetId }) {
 // @param {function(Object): Object} buildWidgetProps - Selects widget-specific props from cell props.
 function createWidgetCell(widgetId, WidgetComponent, buildWidgetProps) {
   return memo(function DashboardWidgetCell(cellProps) {
-    useWidgetLoadTiming(widgetId);
     const { config, draggingWidgetId, focusedWidgetId, focusedWidgetSurfaceStyle, layoutConfig, loadedEventError,
       loadedEventReady, mountImmediately, widgetFocusTransform } = cellProps;
     const widgetSizeValue = {

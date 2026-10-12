@@ -5,6 +5,23 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-11 — Time each widget from mount request to rendered content
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/widget-mount-coordinator.js` — New `reportContentReady(widgetId, outcome)` records the first content-ready time and outcome per registration and returns the milliseconds since the mount request; the snapshot carries `contentReadyAt` and `contentOutcome`.
+- `lib/dashboard/dashboard-load-tracking.js` — `useWidgetLoadedEvent` also reports to the Dashboard's mount coordinator and, with Console Logging on, logs the request-to-content duration.
+- `lib/dashboard/work-queue/dashboard-queue-inspector-sections.jsx` — Urgent renders gains a "To content" column.
+- `lib/dashboard/dashboard.jsx`, `lib/util/widget-timing.js` (deleted) — Removed `useWidgetLoadTiming`, which only timed a cell's first React commit.
+- `test/widget-mount-coordinator.test.js`, `test/dashboard-load-tracking.test.js` — Cover the timing and the hook's report.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes (154 suites run, 1365 tests).
+**Task:** Replace the meaningless widget load timing with the time until a widget renders its main content, such as the Proposed Agenda's schedule suggestions.
+**Prompt summary:** "measure how much time is consumed not just by the initial widgetMount, but how much time elapses until it renders the intended content of the widget"
+
+---
+
 ## 2026-10-11 — Debug Console Recent outcomes: what each job did, and for which project or note
 
 **Model:** Claude Opus 5.5
