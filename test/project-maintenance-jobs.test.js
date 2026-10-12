@@ -47,6 +47,9 @@ describe("project maintenance jobs", () => {
     expect(stored.lastSuggestedAt).toBe(NOW.toISOString());
     expect(ranking.result.revision).toBe(refreshRevision(stored.refreshState, "similarity"));
     expect(ideas.result.revision).toBe(stored.refreshState.ideas.inputRevision);
+    expect(ideas.result).toMatchObject({ outcomeDetail: "Generated 1 idea, kept 1", outcomeSubject: stored.summary });
+    expect(ranking.result.outcomeSubject).toBe(stored.summary);
+    expect(ranking.result.outcomeDetail).toMatch(/^Ranked \d+ tasks \(\d+ newly rated\), accepted \d+$/);
     expect(ideaGenerator.mock.calls[0][1].project.candidateTaskRecords).toEqual([]);
     expect(typeof ideaGenerator.mock.calls[0][1].promptRunner).toBe("function");
   });
@@ -64,7 +67,8 @@ describe("project maintenance jobs", () => {
     const input = { ...SCOPE_INPUT, projectUuid: await storedProjectUuid(queueApp) };
     const ranking = await runProjectJob(createRankProjectTasksHandler(), { context, input });
     await runProjectJob(createGenerateProjectIdeasHandler({ ideaGenerator }), { context, input });
-    expect(ranking).toMatchObject({ result: { revision: undefined }, turns: 1 });
+    expect(ranking).toMatchObject({ result: { outcomeDetail: "Matched 1 task locally; nothing could rank", revision: undefined },
+      turns: 1 });
     const [stored] = await readCollectedProjectTasks(queueApp, { ...SCOPE_INPUT, quarterKey: "2026-Q3" });
     expect(stored.relatedTaskRecords.map(record => record.taskUuid)).toEqual(["open-task", "errand-5"]);
     expect(stored.relatedTasks).toContain("errand-5");

@@ -140,6 +140,7 @@ describe("rateProjectIdeas job", () => {
     expect(project.lastSuggestedAt).toBe("2026-09-18T12:00:00.000Z");
     expect(project.suggestedTasks[1].rating).toMatchObject({ actionability: 9, raterEm: "jev", relevance: 7 });
     expect(project.refreshState.ideaRatings.inputRevision).toBe(result.revision);
+    expect(result).toMatchObject({ outcomeDetail: "Rated 1 idea", outcomeSubject: project.summary });
     expect(await handler.appliedRevision({ context: jobContext(app), job })).toBe(result.revision);
     expect(await handler.run({ context: jobContext(app), job, signal: null })).toEqual({ status: "superseded" });
   });

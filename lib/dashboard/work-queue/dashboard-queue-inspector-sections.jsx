@@ -71,7 +71,9 @@ export function QueueJobSection({ allJobs, filters, jobs, now, onFiltersChange }
 }
 
 // ------------------------------------------------------------------------------------------
-// @desc Recently finished jobs, newest first, with failure messages already sanitized by diagnostics.
+// @desc Recently finished jobs, newest first, with failure messages already sanitized by diagnostics. Under each job
+//   type is the project or note it worked on when the job reported one, otherwise its key; the detail is the failure,
+//   or what a completed job reported doing, such as how many ideas it kept.
 // @param {object} props - { now, outcomes }.
 export function QueueOutcomeSection({ now, outcomes }) {
   return (
@@ -85,9 +87,11 @@ export function QueueOutcomeSection({ now, outcomes }) {
               <tr key={`${ event.at }:${ event.jobKey }:${ index }`} className={`queue-inspector-outcome--${ event.type }`}>
                 <td>{formattedAge(event.at, now)}</td>
                 <td>{event.type}</td>
-                <td title={event.jobKey}>{event.jobType}<div className="queue-inspector-detail">{event.jobKey}</div></td>
+                <td title={event.jobKey}>
+                  {event.jobType}<div className="queue-inspector-detail">{event.outcomeSubject || event.jobKey}</div>
+                </td>
                 <td>{formattedDuration(event.durationMilliseconds)}</td>
-                <td>{event.error || "—"}</td>
+                <td>{event.error || event.outcomeDetail || "—"}</td>
               </tr>
             ))}
           </tbody>

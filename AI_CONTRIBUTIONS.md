@@ -5,6 +5,26 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-11 — Debug Console Recent outcomes: what each job did, and for which project or note
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/dashboard-work-scheduler.js` — A completed run's `outcomeDetail` and `outcomeSubject` are recorded on its completion event.
+- `lib/dashboard/work-queue/dashboard-work-diagnostics.js` — Events may carry `outcomeDetail` and `outcomeSubject`; the subject (user-written project or note text) is held in memory for the inspector and left out of exported snapshots.
+- `lib/dashboard/work-queue/durable-work-runner.js` — Passes a handler's `outcomeDetail` and `outcomeSubject` to the scheduler; a recovered completion reports "Output already written".
+- `lib/dashboard/work-queue/dashboard-queue-inspector-sections.jsx` — Recent outcomes shows the subject under the job type in place of its key, and the reported detail when there is no error.
+- `lib/dashboard/project-collection-steps.js` — `generatedIdeas` also returns `addedCount` and `generatedCount`.
+- `lib/dashboard/work-queue/jobs/generate-project-ideas.js`, `rate-project-ideas.js`, `rank-project-tasks.js` — Report ideas generated and kept (and tasks attributed), ideas rated, and tasks ranked, newly rated, and accepted, each with the project's summary as subject.
+- `lib/dashboard/work-queue/jobs/classify-completed-tasks.js`, `score-completed-task-potential.js` — Report tasks classified (by model and by link) and tasks scored for victory value and raised, with the ledger note(s) as subject.
+- `test/dashboard-work-scheduler.test.js`, `test/dashboard-queue-inspector.test.js`, `test/project-maintenance-jobs.test.js`, `test/project-task-idea-ratings.test.js`, `test/classify-completed-tasks-job.test.js`, `test/score-completed-task-potential-job.test.js` — Cover the new fields, their exclusion from exports, and their rendering.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes (154 suites run, 1363 tests); production-plugin smoke test passes.
+**Task:** Make the Debug Console's Recent outcomes Detail and Job columns say what each job did and what it worked on.
+**Prompt summary:** "For Debug Console, let's update the 'Details' column ... For the Job column, let's update the second line so it shows the text of which Project and/or note was involved"
+
+---
+
 ## 2026-10-11 — Rate completed project tasks and raise their victory value (Completed Tasks by Project, commit 3)
 
 **Model:** Claude Opus 5.5

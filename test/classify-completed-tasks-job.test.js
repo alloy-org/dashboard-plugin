@@ -106,7 +106,7 @@ describe("classify completed tasks job", () => {
     const handler = classificationHandler(requestAnswers);
     const potentialRequest = completedTaskPotentialRequest(SCOPE_INPUT, { requestedAt: SEPTEMBER_NOW.getTime() });
     expect(await runClassification(handler, app)).toEqual({ classifiedCount: 2, followUps: [potentialRequest], linkedCount: 1,
-      waitingCount: 0 });
+      outcomeDetail: "Classified 3 of 3 completed tasks (2 by model, 1 by link)", outcomeSubject: "Completed Tasks by Project Q3 2026 Work", waitingCount: 0 });
     expect(app.getCompletedTasks.mock.calls[0][2]).toEqual({ taskDomainUUID: "work-domain" });
     expect(requestAnswers).toHaveBeenCalledTimes(1);
     const [{ questions, state }] = requestAnswers.mock.calls[0];
@@ -117,7 +117,7 @@ describe("classify completed tasks job", () => {
       "2026-09-18": [["errand", null, "decisions"], ["widget", "Launch dashboard", "decisions"]] });
     expect(app.noteContent("Completed Tasks by Project Q3 2026 Work")).toContain("- Tune widget spacing → **Launch dashboard**");
     expect(await runClassification(handler, app)).toEqual({ classifiedCount: 0, followUps: [potentialRequest], linkedCount: 0,
-      waitingCount: 0 });
+      outcomeDetail: "Classified 0 of 3 completed tasks (0 by model, 0 by link)", outcomeSubject: "Completed Tasks by Project Q3 2026 Work", waitingCount: 0 });
     expect(requestAnswers).toHaveBeenCalledTimes(1);
   });
 
@@ -129,7 +129,8 @@ describe("classify completed tasks job", () => {
       new Date(2026, 8, 18, 8, index)));
     const requestAnswers = choiceRequest();
     expect(await runClassification(classificationHandler(requestAnswers), completionApp(tasks)))
-      .toEqual({ classifiedCount: 30, linkedCount: 0, waitingCount: 0 });
+      .toEqual({ classifiedCount: 30, linkedCount: 0, outcomeDetail: "Classified 30 of 30 completed tasks (30 by model, 0 by link)",
+        outcomeSubject: "Completed Tasks by Project Q3 2026 Work", waitingCount: 0 });
     expect(requestAnswers.mock.calls.map(([{ questions }]) => Object.keys(questions).length)).toEqual([25, 5]);
   });
 
@@ -167,7 +168,7 @@ describe("classify completed tasks job", () => {
     expect((await ledgerSummary(app, 3))["2026-09-18"]).toHaveLength(25);
     const retryRequest = choiceRequest();
     expect(await runClassification(classificationHandler(retryRequest), app)).toEqual({ classifiedCount: 5, linkedCount: 0,
-      waitingCount: 0 });
+      outcomeDetail: "Classified 5 of 30 completed tasks (5 by model, 0 by link)", outcomeSubject: "Completed Tasks by Project Q3 2026 Work", waitingCount: 0 });
     expect(Object.keys(retryRequest.mock.calls[0][0].questions)).toHaveLength(5);
     expect((await ledgerSummary(app, 3))["2026-09-18"]).toHaveLength(30);
   });

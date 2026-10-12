@@ -196,6 +196,26 @@ describe("DashboardQueueInspector", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
+  // @desc Recent outcomes name the project a completed job worked on in place of its key, and show what it reported
+  //   doing as its detail; a job that reports neither keeps its key and a dash.
+  it("shows a completed job's subject and detail in recent outcomes", async () => {
+    const runtime = createDashboardWorkRuntime({ clock: () => 1000 });
+    runtime.scheduler.setConditions({ loadSettled: true });
+    await runtime.scheduler.enqueue({ key: "ideas:project-9", run: () => ({ outcomeDetail: "Generated 5 ideas, kept 3",
+      outcomeSubject: "Launch dashboard" }), type: "generateProjectIdeas" });
+    await runtime.scheduler.enqueue({ key: "read:note", run: () => "done", type: "noteRead" });
+    const { container, root } = render(createElement(DashboardQueueInspector, { work: { mountCoordinator: null, runtime } }));
+    const outcomeSection = [...container.querySelectorAll("section")].find(section => section.textContent.startsWith("Recent outcomes"));
+    const rowTexts = [...outcomeSection.querySelectorAll("tbody tr")].map(row => row.textContent);
+    expect(rowTexts[0]).toMatch(/noteReadread:note.*—$/);
+    expect(rowTexts[1]).toContain("generateProjectIdeasLaunch dashboard");
+    expect(rowTexts[1]).toContain("Generated 5 ideas, kept 3");
+    expect(rowTexts[1]).not.toContain("ideas:project-9");
+    act(() => root.unmount());
+    runtime.dispose();
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc Without a running work queue the inspector explains why instead of showing an empty queue.
   it("explains when no work queue is running", () => {
     const { container, root } = render(createElement(DashboardQueueInspector, { work: null }));
