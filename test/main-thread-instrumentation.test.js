@@ -3,10 +3,11 @@
 // the diagnostics export that carries them.
 import { workQueueNotesApp } from "./work-queue-test-notes";
 import DashboardWorkDiagnostics, { FIRST_EVENT_LIMIT } from "dashboard/work-queue/dashboard-work-diagnostics";
+import { admissionWaitingReason, CLAIM_LEASE_MILLISECONDS } from "dashboard/work-queue/dashboard-work-policy";
 import DashboardWorkRepository from "dashboard/work-queue/dashboard-work-repository";
 import { createInteractionTracker } from "dashboard/work-queue/interaction-tracker";
 import MainThreadLagMonitor, { LAG_SAMPLE_INTERVAL_MILLISECONDS, NO_JOB_LABEL } from "dashboard/work-queue/main-thread-lag-monitor";
-import { CallTimingMeter, SLOW_CALL_MILLISECONDS } from "util/call-timing-meter";
+import { CallTimingMeter, SLOW_CALL_MILLISECONDS, TIMELINE_CALL_MILLISECONDS } from "util/call-timing-meter";
 
 // ----------------------------------------------------------------------------------------------
 // @desc A document stand-in that keeps its listeners and dispatches events by type.
@@ -53,6 +54,28 @@ describe("CallTimingMeter", () => {
     expect(labels.find(timing => timing.label === "replaceNoteContent")).toMatchObject({ calls: 1, failures: 1 });
     expect(labels.find(timing => timing.label === "queueNote.claim.unchanged")).toMatchObject({ calls: 1, totalMilliseconds: 0 });
   });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Slow calls go on the timeline with epoch times; overlapping calls of one label merge into one burst entry.
+  it("puts slow calls on a timeline, merging an overlapping fan-out into one burst", async () => {
+    let now = 1_000;
+    const meter = new CallTimingMeter({ clock: () => now });
+    const settlers = [];
+    const pendingCall = () => new Promise(resolve => settlers.push(resolve));
+    const lookups = [meter.measure("findNote", pendingCall), meter.measure("findNote", pendingCall), meter.measure("findNote", pendingCall)];
+    now += TIMELINE_CALL_MILLISECONDS;
+    settlers.forEach(settle => settle());
+    await Promise.all(lookups);
+    await meter.measure("getTask", () => null);
+    now += 1_000;
+    const later = meter.measure("findNote", pendingCall);
+    now += TIMELINE_CALL_MILLISECONDS * 2;
+    settlers[3]();
+    await later;
+    expect(meter.snapshot().timeline).toEqual([
+      { calls: 3, endedAt: 1_250, label: "findNote", maximumInFlight: 3, maximumMilliseconds: 250, startedAt: 1_000 },
+      { calls: 1, endedAt: 2_750, label: "findNote", maximumInFlight: 1, maximumMilliseconds: 500, startedAt: 2_250 }]);
+  });
 });
 
 describe("createInteractionTracker", () => {
@@ -75,6 +98,44 @@ describe("createInteractionTracker", () => {
     expect(tracker.snapshot()).toEqual({ interacting: false, interactionMilliseconds: 2600, interactions: 2 });
     tracker.dispose();
     expect(documentObject.listenerCount()).toBe(0);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc The listener hears one start for a stream of input and one end after a quiet second, with one timer re-armed
+  //   only when it fires.
+  it("tells its listener when an interaction starts and when it goes quiet", () => {
+    let now = 0;
+    let pendingTimer = null;
+    const changes = [];
+    const documentObject = fakeDocument();
+    const tracker = createInteractionTracker({ clock: () => now, documentObject, onInteractingChange: interacting => changes.push(interacting),
+      setTimer: (callback, milliseconds) => { pendingTimer = { callback, milliseconds }; return 1; } });
+    documentObject.dispatch("touchstart");
+    now = 400;
+    documentObject.dispatch("scroll");
+    expect(changes).toEqual([true]);
+    now = 1000;
+    pendingTimer.callback();
+    expect(changes).toEqual([true]);
+    expect(pendingTimer.milliseconds).toBe(400);
+    now = 1400;
+    pendingTimer.callback();
+    expect(changes).toEqual([true, false]);
+    tracker.dispose();
+  });
+});
+
+describe("maintenance pause while the user interacts", () => {
+  // ----------------------------------------------------------------------------------------------
+  // @desc Only maintenance waits for the user to stop interacting; renders and foreground data go ahead.
+  it("holds maintenance, and nothing else, while the user interacts", () => {
+    const conditions = { hidden: false, interacting: true, loadSettled: true, overlayHeld: false };
+    const state = { conditions, foregroundPressure: false, visibleRenderWaiting: false };
+    expect(admissionWaitingReason("maintenance", state)).toBe("interaction");
+    for (const category of ["foregroundData", "nearViewportRender", "visibleRefresh", "visibleRender"]) {
+      expect(admissionWaitingReason(category, state)).toBeNull();
+    }
+    expect(admissionWaitingReason("maintenance", { ...state, conditions: { ...conditions, interacting: false } })).toBeNull();
   });
 });
 
@@ -148,6 +209,25 @@ describe("main-thread instrumentation in the work queue", () => {
     const labels = meter.snapshot().labels.map(timing => timing.label).sort();
     expect(labels).toEqual(["queueNote.claim.read", "queueNote.claim.unchanged", "queueNote.claim.write", "queueNote.save.read",
       "queueNote.save.write"]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A young claim is confirmed by reading the queue note; one past half its lease is extended by a write, and a
+  //   replaced attempt is still refused.
+  it("confirms a young claim without writing and extends an aging one", async () => {
+    let now = 1_000_000;
+    const meter = new CallTimingMeter();
+    const repository = new DashboardWorkRepository({ app: workQueueNotesApp(), callTimingMeter: meter, clock: () => now });
+    await repository.saveJob("scope", { desiredRevision: "r1", input: null, key: "rank:a", type: "rank" });
+    await repository.claim("scope", "rank:a", { ownerId: "session", token: "session:1" });
+    now += 1_000;
+    expect(await repository.renew("scope", "rank:a", "session:1")).toMatchObject({ claimExpiresAt: 1_000_000 + CLAIM_LEASE_MILLISECONDS });
+    expect(await repository.renew("scope", "rank:a", "session:2")).toBeNull();
+    now = 1_000_000 + CLAIM_LEASE_MILLISECONDS * 0.75;
+    expect(await repository.renew("scope", "rank:a", "session:1")).toMatchObject({ claimExpiresAt: now + CLAIM_LEASE_MILLISECONDS });
+    const timings = meter.snapshot().labels;
+    expect(timings.find(timing => timing.label === "queueNote.renew.unchanged")).toMatchObject({ calls: 2 });
+    expect(timings.find(timing => timing.label === "queueNote.renew.write")).toMatchObject({ calls: 1 });
   });
 
   // ----------------------------------------------------------------------------------------------

@@ -113,6 +113,7 @@ export function QueueOverviewSection({ now, overview }) {
     ["Scope", overview.scopeKey || "—"],
     ["Features", `Scheduled widget mounting ${ overview.mountingEnabled ? "on" : "off" }; project maintenance ${ overview.durableEnabled ? "on the queue" : "on its legacy path" }`],
     ["Page", conditions.hidden ? "Hidden: near renders and maintenance paused" : "Visible"],
+    ["Interaction", conditions.interacting ? "In use: new maintenance waits for a quiet second" : "Quiet"],
     ["Overlay", conditions.overlayHeld ? "Holding renders and maintenance" : "None"],
     ["Load gate", conditions.loadSettled ? "Open" : "Closed: maintenance waits for the initial load and its grace period"],
     ["Foreground demand", overview.foregroundDemand ? "Yes" : "None"],

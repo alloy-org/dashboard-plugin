@@ -5,6 +5,29 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-14 — Hold maintenance while the user interacts, confirm young claims by reading, and time slow app calls
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/interaction-tracker.js` — Optional `onInteractingChange` listener, told when an interaction starts and when it has been quiet for 1s, using one timer re-armed only when it fires.
+- `lib/dashboard/work-queue/dashboard-work-policy.js` — `interacting` condition holds new maintenance (waiting reason `interaction`). Running maintenance, renders and foreground data are unaffected. New `CLAIM_RENEWAL_REMAINING_MILLISECONDS` (half the lease).
+- `lib/dashboard/work-queue/dashboard-work-scheduler.js` — Accepts the `interacting` condition.
+- `lib/hooks/use-dashboard-work-queue.js` — Feeds the interaction tracker's changes to the scheduler.
+- `lib/dashboard/work-queue/dashboard-queue-inspector-sections.jsx` — Overview shows the Interaction condition.
+- `lib/dashboard/work-queue/dashboard-work-job.js` — `renewClaim(token, now)` confirms the attempt and extends the claim only once less than half the lease remains.
+- `lib/dashboard/work-queue/dashboard-work-repository.js` — `renew` uses `renewClaim`, so a young claim is confirmed by a fresh read without writing the queue note.
+- `lib/util/call-timing-meter.js` — Slow-call timeline (calls of 250ms or more, epoch times, up to 200 entries), merging overlapping calls of one label into one burst entry.
+- `lib/dashboard/work-queue/dashboard-work-diagnostics.js` — Sanitizes timeline labels in the export.
+- `lib/dashboard/work-queue/main-thread-lag-monitor.js` — Snapshot includes `startedAt`, the epoch stall offsets count from.
+- `test/main-thread-instrumentation.test.js` — Covers the timeline merge, the tracker's change events, the maintenance pause, and young-claim renewal.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes (159 suites, 1391 tests); production bundle smoke test passes. Not yet run on a device.
+**Task:** Act on the October phone, desktop and Brave profiles: stop background jobs starting mid-scroll, cut queue note writes without losing data, and make the next profile able to line slow calls up with stalls.
+**Prompt summary:** "Pausing background jobs that don't pertain to widget load during scroll seems like a good win … Cutting the job queue's note saves seems like a worthwhile win … Improving the profiling prob a good idea" → "Yes"
+
+---
+
 ## 2026-10-14 — Measure main-thread lag and app call costs in the Queue inspector export
 
 **Model:** Claude Opus 5.5
