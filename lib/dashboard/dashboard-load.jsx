@@ -4,6 +4,7 @@
 // Prompt: "translate this project to render components with JSX instead"
 import { createRoot } from "react-dom/client";
 import { createBrowserDevApp } from "util/browser-dev-app";
+import { bridgeCallMeter } from "util/call-timing-meter";
 import { publishDeviceProfileDiagnostic } from "util/device-profile";
 import { installDashboardSentryReporting, observeEmbedCall } from "util/sentry-reporting";
 import DashboardApp from "./dashboard.jsx";
@@ -61,11 +62,12 @@ if (process.env.NODE_ENV === "development") {
 } else {
   // Every widget's Amplenote API call routes through here, so this is the one place that can see a bridge call fail.
   // observeEmbedCall watches the result and hands it straight back untouched — most callers never inspect the
-  // `{ embedCallFailed }` envelope onEmbedCall returns, and would otherwise fail silently.
+  // `{ embedCallFailed }` envelope onEmbedCall returns, and would otherwise fail silently. bridgeCallMeter times each
+  // call by method name for the Queue inspector's export.
   app = new Proxy({}, {
     get(_target, prop) {
       if (typeof prop === 'symbol') return undefined;
-      return (...args) => observeEmbedCall(prop, window.callAmplenotePlugin(prop, ...args));
+      return (...args) => observeEmbedCall(prop, bridgeCallMeter.measure(prop, () => window.callAmplenotePlugin(prop, ...args)));
     },
   });
   // init is deliberately not observed here: DashboardApp inspects and reports its payload, so wrapping it would

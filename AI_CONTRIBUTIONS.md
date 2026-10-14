@@ -5,6 +5,29 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-14 — Measure main-thread lag and app call costs in the Queue inspector export
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/main-thread-lag-monitor.js` (created) — `MainThreadLagMonitor` records long animation frames (or long tasks) with their longest script, plus a 250ms timer-lateness sampler that works in WebKit. Each stall of 50ms or more is credited to the job types that could have caused it and marked when it happened during an interaction. Also exports the device profile.
+- `lib/dashboard/work-queue/interaction-tracker.js` (created) — Passive capture listeners for scroll, touch, wheel, pointer and key input; the user counts as interacting until 1s of quiet.
+- `lib/util/call-timing-meter.js` (created) — `CallTimingMeter` totals call count, time, failures, slow calls and peak concurrency per label; `bridgeCallMeter` times every app bridge call by method.
+- `lib/dashboard/dashboard-load.jsx` — The production app bridge records each call into `bridgeCallMeter`.
+- `lib/dashboard/work-queue/dashboard-work-repository.js` — Optional `callTimingMeter`; queue note reads and writes are labelled by transition (`queueNote.claim.write`, `queueNote.renew.unchanged`, …).
+- `lib/dashboard/work-queue/dashboard-work-diagnostics-store.js` — Optional `callTimingMeter` for history note reads and writes.
+- `lib/dashboard/work-queue/dashboard-work-diagnostics.js` — Ring raised to 500 events, the session's first 150 events kept separately, `jobTypesActiveSince`, and `appCalls`/`mainThread` sections in the export.
+- `lib/dashboard/work-queue/dashboard-work-scheduler.js` — `runningJobTypes()`.
+- `lib/dashboard/work-queue/dashboard-work-runtime.js` — `activeJobTypesSince`, plus app call timings and the main-thread snapshot in `exportSnapshot`.
+- `lib/hooks/use-dashboard-work-queue.js`, `lib/dashboard/work-queue/dashboard-queue-inspector.jsx` — Start the monitor and tracker with the runtime, and include them in Copy/Download snapshot.
+- `test/main-thread-instrumentation.test.js` (created) — Covers the meter, tracker, monitor, repository labels, and export.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes (159 suites, 1387 tests); production bundle smoke test passes. Not yet run on a device.
+**Task:** Gather enough signal from production Dashboards to tell which queued work causes device lag, especially on mobile.
+**Prompt summary:** "does the existing logging contain enough signal that we can just run it on production and copy all the logs, or do we need to amend logging to print extra detail?" → "Yes, proceed"
+
+---
+
 ## 2026-10-14 — Keep the Proposed Agenda date on one line beside its arrows
 
 **Model:** Claude Opus 5.5
