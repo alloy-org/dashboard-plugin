@@ -4,11 +4,18 @@
  * Task: Dashboard layout popup with tabbed Components/Sizing interface
  * Prompt summary: "rename dashboard-config-popup to dashboard-layout-popup; add sizing tab for width and vertical tile count per component"
  */
-import { LAYOUT_PROFILES, getProfileById, sizingFromProfile } from "layout-profiles";
-import { useState, useRef } from "react";
+import { ConfigPopupHeader } from "config-popup";
 import { WIDGET_REGISTRY } from "dashboard/layout-profiles";
+import { LAYOUT_PROFILES, getProfileById, sizingFromProfile } from "layout-profiles";
+import MaterialIcon from "material-icon";
+import { useState, useRef } from "react";
 import { snapDashboardAction } from "util/plausible";
 import "styles/dashboard-layout-popup.scss"
+
+const ARROW_ICON_SIZE = 18;
+const DRAG_HANDLE_ICON_SIZE = 20;
+const SECTION_ICON_SIZE = 18;
+const WIDGET_ICON_SIZE = 20;
 
 // ── Pure data helpers ─────────────────────────────────────────────────────────────────
 
@@ -115,8 +122,12 @@ function LayoutItem({ widgetId, ctx }) {
       onDragOver={(e) => ctx.onDragOverItem(e, widgetId)}
       onDrop={(e) => ctx.onDropOnItem(e, widgetId)}
     >
-      <span className="dashboard-layout-popup-item-handle" aria-hidden="true">⠿</span>
-      <span className="dashboard-layout-popup-item-icon" aria-hidden="true">{widget.icon}</span>
+      <span className="dashboard-layout-popup-item-handle" aria-hidden="true">
+        <MaterialIcon name="drag_indicator" size={ DRAG_HANDLE_ICON_SIZE } />
+      </span>
+      <span className="dashboard-layout-popup-item-icon" aria-hidden="true">
+        <MaterialIcon name={ widget.iconName } size={ WIDGET_ICON_SIZE } />
+      </span>
       <div className="dashboard-layout-popup-item-info">
         <span className="dashboard-layout-popup-item-name">{widget.name}</span>
         {widget.description && <span className="dashboard-layout-popup-item-description">{widget.description}</span>}
@@ -129,7 +140,9 @@ function LayoutItem({ widgetId, ctx }) {
           title="Move up"
           aria-label={`Move ${widget.name} up`}
           onClick={(e) => { e.stopPropagation(); ctx.onMove(widgetId, 'up'); }}
-        >↑</button>
+        >
+          <MaterialIcon name="arrow_upward" size={ ARROW_ICON_SIZE } />
+        </button>
         <button
           className="dashboard-layout-popup-arrow-button"
           type="button"
@@ -137,13 +150,15 @@ function LayoutItem({ widgetId, ctx }) {
           title="Move down"
           aria-label={`Move ${widget.name} down`}
           onClick={(e) => { e.stopPropagation(); ctx.onMove(widgetId, 'down'); }}
-        >↓</button>
+        >
+          <MaterialIcon name="arrow_downward" size={ ARROW_ICON_SIZE } />
+        </button>
       </div>
     </div>
   );
 }
 
-function LayoutSection({ sectionId, label, icon, items, ctx }) {
+function LayoutSection({ sectionId, label, iconName, items, ctx }) {
   const className = [
     'dashboard-layout-popup-section',
     ctx.dragOverSection === sectionId ? 'dashboard-layout-popup-section--drag-over' : '',
@@ -156,7 +171,9 @@ function LayoutSection({ sectionId, label, icon, items, ctx }) {
       onDrop={(e) => ctx.onDropOnSection(e, sectionId)}
     >
       <div className="dashboard-layout-popup-section-header">
-        <span className="dashboard-layout-popup-section-icon" aria-hidden="true">{icon}</span>
+        <span className="dashboard-layout-popup-section-icon" aria-hidden="true">
+          <MaterialIcon name={ iconName } size={ SECTION_ICON_SIZE } />
+        </span>
         <h4 className="dashboard-layout-popup-section-title">{label}</h4>
       </div>
       {items.length === 0 ? (
@@ -190,7 +207,9 @@ function SizingItem({ widgetId, sizing, onSizingChange }) {
   return (
     <div className="dashboard-layout-popup-sizing-item">
       <div className="dashboard-layout-popup-sizing-item-header">
-        <span className="dashboard-layout-popup-item-icon" aria-hidden="true">{widget.icon}</span>
+        <span className="dashboard-layout-popup-item-icon" aria-hidden="true">
+          <MaterialIcon name={ widget.iconName } size={ WIDGET_ICON_SIZE } />
+        </span>
         <span className="dashboard-layout-popup-item-name">{widget.name}</span>
       </div>
       <div className="dashboard-layout-popup-sizing-item-controls">
@@ -350,8 +369,8 @@ export default function DashboardLayoutPopup({ currentLayout, excludeWidgetIds, 
 
   const bodyContent = activeTab === 'components' ? (
     <>
-      <LayoutSection sectionId="rendered" label="Rendered Dashboard Elements" icon="👁" items={renderedIds} ctx={ctx} />
-      <LayoutSection sectionId="hidden" label="Hidden Dashboard Elements" icon="🚫" items={hiddenIds} ctx={ctx} />
+      <LayoutSection sectionId="rendered" label="Rendered Dashboard Elements" iconName="visibility" items={renderedIds} ctx={ctx} />
+      <LayoutSection sectionId="hidden" label="Hidden Dashboard Elements" iconName="visibility_off" items={hiddenIds} ctx={ctx} />
     </>
   ) : (
     renderedIds.length === 0 ? (
@@ -370,10 +389,10 @@ export default function DashboardLayoutPopup({ currentLayout, excludeWidgetIds, 
   return (
     <div className="config-popup-overlay" onClick={(e) => e.target === e.currentTarget && onCancel()}>
       <div className="config-popup-container dashboard-layout-popup">
-        <div className="config-popup-header">
-          <h3 className="config-popup-title">⚙️ Dashboard Layout</h3>
+        <ConfigPopupHeader onClose={ onCancel } title="Dashboard Layout" />
+        <div className="dashboard-layout-popup-intro">
           <div className="explanation-paragraph">{`Customize the order of your widgets by dragging or sizing them in this menu. You can also reorder widgets outside this menu by clicking on their header for 2 seconds to engage drag reordering.`}</div>
-          <div className="explanation-paragraph">
+          <div className="explanation-paragraph dashboard-layout-popup-profile-row">
             <label className="dashboard-layout-popup-profile-label">Default layout</label>
             <select
               className="dashboard-layout-popup-profile-select"

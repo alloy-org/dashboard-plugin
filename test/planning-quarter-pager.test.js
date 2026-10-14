@@ -103,11 +103,11 @@ describe("PlanningWidget quarter pager", () => {
     expect(cardTitles(container)).toEqual(["Q3 2026 · Work", "Q4 2026 · Work"]);
     const [pastCard, currentCard] = container.querySelectorAll(".quarter-card");
     expect(pastCard.querySelector(".quarter-past-badge").textContent).toBe("Past");
-    expect(pastCard.querySelector(".quarter-status").textContent).toBe("📝 Open Plan");
+    expect(pastCard.querySelector(".quarter-status").textContent).toBe("Open Plan");
     expect(pastCard.querySelector("input")).toBeNull();
     expect(currentCard.querySelector(".quarter-past-badge")).toBeNull();
     expect(currentCard.querySelector("input")).not.toBeNull();
-    expect(container.querySelector(".planning-return-quarter").textContent).toBe("↩ Back to Q4 2026");
+    expect(container.querySelector(".planning-return-quarter").textContent).toBe("Back to Q4 2026");
     await cleanup();
   });
 

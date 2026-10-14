@@ -1,24 +1,26 @@
 // Render seven days of completed-task victory values with weekly navigation and a mood overlay.
 import { parseWidgetConfig, widgetConfigKey } from "../constants/settings";
 import ConfigPopup from "./config-popup";
+import { escapedHtml, statsChartTooltipHtml } from "dashboard/charts/stats-chart-tooltip";
+import VictoryValueChart, { moodColorFromRating } from "dashboard/charts/victory-value-chart";
 import { completedTasksWithAppliedValues } from "dashboard/projects/completed-task-potential";
 import { completedTaskProjectColor, dailyProjectSegments, projectLegendItems } from "dashboard/projects/completed-task-project-colors";
-import { useCanvasTippy } from "./dashboard-tooltip-tippy.jsx";
 import WidgetWrapper from "./widget-wrapper";
 import { useCompletedTaskProjects } from "hooks/use-completed-task-projects";
-import { useThemeRevision } from "hooks/use-theme-revision";
+import MaterialIcon from "material-icon";
 import { pluginSettings } from "plugin-data";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import "styles/victory-value.scss";
 import { dateFromDateInput, dateKeyFromDateInput, tooltipLabelFromDateInput, weekDateSlotsFromDateInput } from "util/date-utility";
 import { renderMarkdown } from "util/utility";
 
+// Mood ratings and their labels, as the Mood widget names them
 const MOODS = [
-  { value: -2, emoji: '\u{1F622}', label: 'Awful' },
-  { value: -1, emoji: '\u{1F61F}', label: 'Bad' },
-  { value: 0, emoji: '\u{1F610}', label: 'Okay' },
-  { value: 1, emoji: '\u{1F642}', label: 'Good' },
-  { value: 2, emoji: '\u{1F604}', label: 'Great' }
+  { label: 'Awful', value: -2 },
+  { label: 'Bad', value: -1 },
+  { label: 'Okay', value: 0 },
+  { label: 'Good', value: 1 },
+  { label: 'Great', value: 2 },
 ];
 
 // ------------------------------------------------------------------------------------------
@@ -78,45 +80,6 @@ function handleConfigCancel(currentConfig, setTimeRange, setShowMood, setConfigO
   setConfigOpen(false);
 }
 
-function handleCanvasMouseMove(canvasRef, setHoveredBar, e) {
-  const canvas = canvasRef.current;
-  if (!canvas) return;
-  const rect = canvas.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left;
-  const w = rect.width;
-  const barW = (w - 80) / 7;
-
-  for (let i = 0; i < 7; i++) {
-    const zoneStart = 40 + i * barW;
-    const zoneEnd = zoneStart + barW;
-    if (mouseX >= zoneStart && mouseX < zoneEnd) {
-      setHoveredBar(i);
-      return;
-    }
-  }
-
-  setHoveredBar(null);
-}
-
-function getTooltipLeft(canvasRef, index) {
-  const canvas = canvasRef.current;
-  if (!canvas) return 0;
-  const w = canvas.offsetWidth;
-  const barW = (w - 80) / 7;
-  return 40 + index * barW + barW * 0.5;
-}
-
-function getBarTopScreenY(canvasRef, index, dailyValues, maxValue) {
-  const canvas = canvasRef.current;
-  if (!canvas) return 0;
-  const rect = canvas.getBoundingClientRect();
-  const ht = canvas.offsetHeight;
-  const chartH = ht - 50;
-  const barValue = dailyValues[index]?.value || 0;
-  const barH = (barValue / maxValue) * chartH * 0.85;
-  return rect.top + chartH - barH + 10;
-}
-
 function getHoveredDayTasks(index, dailyValues, completedTasksByDate) {
   if (!completedTasksByDate || !dailyValues[index]) return [];
   const dateKey = dateKeyFromDateInput(dailyValues[index].date);
@@ -157,147 +120,6 @@ function getHoveredDayMood(index, moodByDay, dailyValues) {
 }
 
 // ------------------------------------------------------------------------------------------
-// @desc Draw activity bars and labels using the current dashboard theme colors. Each bar stacks its day's segments
-//   from the base up, only the top segment taking the rounded corners, and the day's total is labeled at the top in the
-//   ink that reads on the top segment's color.
-// @param {CanvasRenderingContext2D} ctx - Drawing context.
-// @param {Array} dailyValues - Daily totals and labels.
-// @param {number} maxValue - Largest daily value.
-// @param {number} barW - Bar slot width.
-// @param {number} chartH - Plot height.
-// @param {number} ht - Canvas height.
-// @returns {void}
-function drawBars(ctx, dailyValues, maxValue, barW, chartH, ht) {
-  const themeStyle = getComputedStyle(document.documentElement);
-  dailyValues.forEach((d, i) => {
-    const barH = (d.value / maxValue) * chartH * 0.85;
-    const x = 40 + i * barW + barW * 0.15;
-    const y = chartH - barH + 10;
-    const segments = d.segments?.length ? d.segments : [{ colorToken: '--dashboard-color-background-accent', value: d.value }];
-    if (d.value > 0) drawBarSegments(ctx, themeStyle, segments, { barH, total: d.value, width: barW * 0.7, x, y });
-    else {
-      ctx.fillStyle = themeStyle.getPropertyValue('--dashboard-color-border').trim();
-      ctx.beginPath();
-      ctx.roundRect(x, y, barW * 0.7, barH, [4, 4, 0, 0]);
-      ctx.fill();
-    }
-
-    ctx.fillStyle = themeStyle.getPropertyValue('--dashboard-color-text-secondary').trim();
-    ctx.font = '11px system-ui';
-    ctx.textAlign = 'center';
-    ctx.fillText(d.day, x + barW * 0.35, ht - 15);
-
-    const dateObj = dateFromDateInput(d.date);
-    const monthDay = dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    ctx.fillStyle = themeStyle.getPropertyValue('--dashboard-color-text-muted').trim();
-    ctx.font = '9px system-ui';
-    ctx.fillText(monthDay, x + barW * 0.35, ht - 3);
-
-    if (d.value > 0) {
-      const topSegment = segments[segments.length - 1];
-      const labelInk = topSegment.colorToken.includes('category') ? '--dashboard-color-text-on-category' : '--dashboard-color-text-on-accent';
-      ctx.fillStyle = themeStyle.getPropertyValue(labelInk).trim();
-      ctx.font = 'bold 10px system-ui';
-      ctx.fillText(formatBarPointValue(d.value), x + barW * 0.35, y + 14);
-    }
-  });
-}
-
-// ------------------------------------------------------------------------------------------
-// @desc Draw one bar as stacked segments, the first at the base, each as tall as its share of the day's total.
-// @param {CanvasRenderingContext2D} ctx - Drawing context.
-// @param {CSSStyleDeclaration} themeStyle - Computed style of the document, holding the theme's color tokens.
-// @param {Array} segments - { colorToken, value }, base first.
-// @param {Object} bar - { barH, total, width, x, y }: the whole bar's height, value, width, and top-left corner.
-// @returns {void}
-function drawBarSegments(ctx, themeStyle, segments, { barH, total, width, x, y }) {
-  let segmentBottom = y + barH;
-  segments.forEach((segment, index) => {
-    const segmentHeight = (segment.value / total) * barH;
-    const topSegment = index === segments.length - 1;
-    ctx.fillStyle = themeStyle.getPropertyValue(segment.colorToken).trim();
-    ctx.beginPath();
-    ctx.roundRect(x, segmentBottom - segmentHeight, width, segmentHeight, topSegment ? [4, 4, 0, 0] : 0);
-    ctx.fill();
-    segmentBottom -= segmentHeight;
-  });
-}
-
-function formatBarPointValue(value) {
-  return (Math.round((value || 0) * 10) / 10).toFixed(1);
-}
-
-function drawMoodOverlay(ctx, moodByDay, chartDailyValues, barW, chartH) {
-  const today = new Date();
-  today.setHours(23, 59, 59, 999);
-
-  const points = [];
-  moodByDay.forEach((m, i) => {
-    if (!m || !chartDailyValues[i]) return;
-    const date = dateFromDateInput(chartDailyValues[i].date);
-    if (date > today) return;
-    const y = chartH - ((m.rating + 2) / 4) * chartH + 10;
-    const x = 40 + i * barW + barW * 0.5;
-    points.push({ index: i, x, y });
-  });
-
-  if (points.length === 0) return;
-
-  ctx.strokeStyle = '#f59e0b';
-  ctx.lineWidth = 2;
-
-  for (let p = 1; p < points.length; p++) {
-    const prev = points[p - 1];
-    const curr = points[p];
-    ctx.setLineDash(curr.index === prev.index + 1 ? [] : [3, 4]);
-    ctx.beginPath();
-    ctx.moveTo(prev.x, prev.y);
-    ctx.lineTo(curr.x, curr.y);
-    ctx.stroke();
-  }
-
-  ctx.setLineDash([]);
-
-  points.forEach(({ x, y }) => {
-    ctx.fillStyle = '#f59e0b';
-    ctx.beginPath();
-    ctx.arc(x, y, 3, 0, Math.PI * 2);
-    ctx.fill();
-  });
-}
-
-function drawChart(canvasRef, dailyValues, maxValue, moodByDay, showMood) {
-  const canvas = canvasRef.current;
-  if (!canvas) return;
-
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width = canvas.offsetWidth * 2;
-  const H = canvas.height = canvas.offsetHeight * 2;
-  ctx.scale(2, 2);
-
-  const w = W / 2;
-  const ht = H / 2;
-  const barW = (w - 80) / 7;
-  const chartH = ht - 50;
-  ctx.clearRect(0, 0, w, ht);
-
-  drawBars(ctx, dailyValues, maxValue, barW, chartH, ht);
-
-  if (showMood && moodByDay && moodByDay.some(m => m !== null)) {
-    drawMoodOverlay(ctx, moodByDay, dailyValues, barW, chartH);
-  }
-}
-
-// ------------------------------------------------------------------------------------------
-// @desc Escape text for placing inside tooltip HTML.
-// @param {string} text - Plain text.
-// @returns {string} The text with HTML's special characters escaped.
-function escapedHtml(text) {
-  const replacements = { '"': '&quot;', '&': '&amp;', "'": '&#39;', '<': '&lt;', '>': '&gt;' };
-  return String(text).replace(/[&<>"']/g, character => replacements[character]);
-}
-
-// ------------------------------------------------------------------------------------------
 // @desc The swatch and name of the project a tooltip row's task advanced.
 // @param {Object|null} projectColor - From completedTaskProjectColor, or null when no project claims the task.
 // @returns {string} HTML, empty when no project claims the task.
@@ -308,8 +130,9 @@ function tooltipProjectHtml(projectColor) {
 }
 
 // ------------------------------------------------------------------------------------------
-// @desc Build the tooltip for a hovered bar: its date, the day's mood, and each completed task with its victory value
-//   and, when the completed task ledger names one, the project it advanced.
+// @desc Build the tooltip for a hovered bar in the layout of the host's Task Stats tooltip: the date, the day's victory
+//   value and task count, its mood, then each completed task with its victory value and, when the completed task ledger
+//   names one, the project it advanced.
 // @param {number} hoveredBar - Index of the hovered day.
 // @param {Array} dailyValues - The displayed days.
 // @param {Object} completedTasksByDate - Completed tasks grouped by local date key.
@@ -317,35 +140,26 @@ function tooltipProjectHtml(projectColor) {
 // @param {Object|null} [completedTaskProjects] - Ledger lookups from useCompletedTaskProjects.
 // @returns {string} Tooltip HTML.
 export function buildTooltipHTML(hoveredBar, dailyValues, completedTasksByDate, moodByDay, completedTaskProjects = null) {
+  const day = dailyValues[hoveredBar];
   const tasks = getHoveredDayTasks(hoveredBar, dailyValues, completedTasksByDate);
   const mood = getHoveredDayMood(hoveredBar, moodByDay, dailyValues);
-  const dateLabel = dailyValues[hoveredBar]
-    ? tooltipLabelFromDateInput(dailyValues[hoveredBar].date)
-    : '';
-
-  const parts = [`<div class="dashboard-tooltip-header">${dateLabel}</div>`];
-
-  if (mood) {
-    parts.push(`<div class="dashboard-tooltip-section">${mood.emoji} ${mood.label}</div>`);
+  const victoryValue = Math.round((day?.value || 0) * 10) / 10;
+  const noDataClassName = tasks.length ? '' : ' stats-chart-tooltip-stat--no-data';
+  const rows = [
+    { className: `stats-chart-tooltip-stat--victory-value${ noDataClassName }`, iconName: 'equalizer',
+      text: `${ victoryValue } Victory Value` },
+    { className: noDataClassName, iconName: 'checklist',
+      text: `${ tasks.length } completed task${ tasks.length === 1 ? '' : 's' }` },
+  ];
+  if (mood) rows.push({ iconName: 'emoji_emotions', iconStyle: `color: ${ moodColorFromRating(mood.value) }`, text: mood.label });
+  const dateKey = day ? dateKeyFromDateInput(day.date) : null;
+  for (const task of tasks) {
+    const projectColor = completedTaskProjectColor(task, dateKey, completedTaskProjects);
+    rows.push({ className: 'stats-chart-tooltip-stat--task', html: renderMarkdown(task.content) + tooltipProjectHtml(projectColor),
+      iconName: 'check_circle', trailing: `${ task.victoryValue || 0 } pts` });
   }
-
-  if (tasks.length > 0) {
-    const dateKey = dateKeyFromDateInput(dailyValues[hoveredBar].date);
-    for (const task of tasks) {
-      const projectColor = completedTaskProjectColor(task, dateKey, completedTaskProjects);
-      parts.push(
-        `<div class="dashboard-tooltip-row">` +
-        `<span class="dashboard-tooltip-row-label">${renderMarkdown(task.content)}</span>` +
-        tooltipProjectHtml(projectColor) +
-        `<span class="dashboard-tooltip-row-value">${task.victoryValue || 0} pts</span>` +
-        `</div>`
-      );
-    }
-  } else {
-    parts.push(`<div class="dashboard-tooltip-empty">No completed tasks</div>`);
-  }
-
-  return parts.join('');
+  const title = day ? tooltipLabelFromDateInput(day.date) : '';
+  return statsChartTooltipHtml({ rows, title, titleIconName: 'event' });
 }
 
 // ------------------------------------------------------------------------------------------
@@ -410,21 +224,16 @@ function ProjectLegend({ items }) {
 // @returns {JSX.Element} Configurable Victory Value chart.
 export default function VictoryValueWidget({ app, completedTasksByDate, dailyValues, moodRatings,
     onReferenceDateChange, referenceDate, taskDomainName }) {
-  const themeRevision = useThemeRevision();
-  const canvasRef = useRef(null);
-  const redrawChartRef = useRef(null);
   const rangeEndDate = referenceDate || dateKeyFromDateInput(new Date());
   const completedTaskProjects = useCompletedTaskProjects(app, { domainName: taskDomainName, referenceDate: rangeEndDate });
   const displayedTasksByDate = completedTasksWithAppliedValues(completedTasksByDate, completedTaskProjects);
   const chartDailyValues = buildDailyValuesForWeek(displayedTasksByDate, dailyValues, rangeEndDate, completedTaskProjects);
   const legendItems = projectLegendItems(chartDailyValues);
-  const maxValue = Math.max(...chartDailyValues.map((entry) => entry.value), 1);
   const chartWeeklyTotal = chartDailyValues.reduce((sum, entry) => sum + (entry.value || 0), 0);
   const roundedWeeklyTotal = Math.round(chartWeeklyTotal);
   const moodByDay = buildMoodByDay(moodRatings, chartDailyValues);
 
   const [configOpen, setConfigOpen] = useState(false);
-  const [hoveredBar, setHoveredBar] = useState(null);
   const currentConfig = parseWidgetConfig(pluginSettings(), 'victory-value');
   const [timeRange, setTimeRange] = useState(currentConfig[0] || 'week');
   const [showMood, setShowMood] = useState(parseShowMoodSetting(currentConfig[1]));
@@ -432,53 +241,8 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
   const onConfigSubmit = handleConfigSubmit.bind(null, app, timeRange, showMood, setConfigOpen);
   const onConfigCancel = handleConfigCancel.bind(null, currentConfig, setTimeRange, setShowMood, setConfigOpen);
   const weekDateRange = formatWeekDateRange(chartDailyValues);
-  const tip = useCanvasTippy({ interactive: true });
-  const onCanvasMouseMove = (e) => { tip.cancelScheduledHide(); handleCanvasMouseMove(canvasRef, setHoveredBar, e); };
-  const onCanvasMouseLeave = () => tip.scheduleHide(300, () => setHoveredBar(null));
-
-  // ------------------------------------------------------------------------------------------
-  // @desc Draw the selected dates and clear any tooltip left over from the previous range.
-  useEffect(() => {
-    setHoveredBar(null);
-  }, [rangeEndDate]);
-
-  useEffect(() => {
-    redrawChartRef.current = () => drawChart(canvasRef, chartDailyValues, maxValue, moodByDay, showMood);
-    redrawChartRef.current();
-  }, [chartDailyValues, maxValue, moodByDay, showMood, themeRevision]);
-
-  // ------------------------------------------------------------------------------------------
-  // @desc Redraw whenever the canvas box changes size. drawChart sizes the bitmap from the element's
-  //   own pixel dimensions, so a resize with no accompanying data change (the layout popup, or the
-  //   widget-focus animation that grows the widget to four cells wide) would otherwise leave the
-  //   previous bitmap stretched across the new box until something unrelated triggered a redraw.
-  // [OpenAI GPT-5.6 Sol] Task: keep the chart bitmap in step with the canvas size
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || typeof ResizeObserver === 'undefined') return undefined;
-    const sizeObserver = new ResizeObserver(() => redrawChartRef.current?.());
-    sizeObserver.observe(canvas);
-    return () => sizeObserver.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (hoveredBar === null) { tip.hide(); return; }
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const left = getTooltipLeft(canvasRef, hoveredBar);
-    const screenX = rect.left + left;
-    const barTopScreenY = getBarTopScreenY(canvasRef, hoveredBar, chartDailyValues, maxValue);
-    const spaceAbove = barTopScreenY;
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const html = buildTooltipHTML(hoveredBar, chartDailyValues, displayedTasksByDate, moodByDay, completedTaskProjects);
-
-    if (spaceBelow > spaceAbove) {
-      tip.show(html, screenX, rect.bottom, { placement: 'bottom', belowChart: true });
-    } else {
-      tip.show(html, screenX, barTopScreenY, { placement: 'top' });
-    }
-  }, [hoveredBar]);
+  const tooltipHtmlFromIndex = index => buildTooltipHTML(index, chartDailyValues, displayedTasksByDate, moodByDay,
+    completedTaskProjects);
 
   return (
     <WidgetWrapper configurable={true} onConfigure={onConfigure} widgetId="victory-value">
@@ -517,14 +281,10 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
           onClick={() => onReferenceDateChange && onReferenceDateChange(shiftWeekDate(-1, rangeEndDate))}
           title="Previous week"
           aria-label="Previous week"
-        >‹</button>
+        ><MaterialIcon name="chevron_left" size={ 20 } /></button>
         <div className="vv-chart-wrap">
-          <canvas
-            ref={canvasRef}
-            className="vv-chart"
-            onMouseMove={onCanvasMouseMove}
-            onMouseLeave={onCanvasMouseLeave}
-          />
+          <VictoryValueChart dailyValues={chartDailyValues} hasProjectLegend={legendItems.length > 0} moodByDay={moodByDay}
+            showMood={showMood} tooltipHtmlFromIndex={tooltipHtmlFromIndex} />
         </div>
         <button
           className="vv-nav-arrow"
@@ -533,7 +293,7 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
           onClick={() => onReferenceDateChange && onReferenceDateChange(shiftWeekDate(1, rangeEndDate))}
           title="Next week"
           aria-label="Next week"
-        >›</button>
+        ><MaterialIcon name="chevron_right" size={ 20 } /></button>
       </div>
     </WidgetWrapper>
   );

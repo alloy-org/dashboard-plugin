@@ -4,6 +4,7 @@
 // asks for. The panel names what is missing and hands the user straight to Dashboard Settings, where the key is
 // entered; the caller reopens Plan Builder afterwards, and the reopened builder reads the key that was saved.
 
+import MaterialIcon from "dashboard/material-icon";
 import "dashboard/styles/provider-key-gate.scss";
 
 // ----------------------------------------------------------------------------------------------
@@ -25,7 +26,7 @@ export default function ProviderKeyGate({ onCancel, onOpenSettings = null }) {
       <div className="provider-key-gate-actions">
         { onOpenSettings ? (
           <button className="provider-key-gate-button provider-key-gate-button--primary" onClick={ onOpenSettings }
-            type="button">⚙️ Open Dashboard Settings</button>
+            type="button"><MaterialIcon name="settings" />Open Dashboard Settings</button>
         ) : null }
         <button className="provider-key-gate-button" onClick={ onCancel } type="button">Cancel</button>
       </div>

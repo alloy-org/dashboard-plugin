@@ -11,42 +11,29 @@
 // forward past an unanswered step would land them on a page whose inputs depend on answers that do not exist
 // yet, so the rail only offers the moves that lead somewhere usable.
 
+import MaterialIcon from "dashboard/material-icon";
 import PaceBreakdownPie from "dashboard/plan-wizard/pace-breakdown-pie";
 import { memo } from "react";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Draw the filled check that marks a step the user has stored an answer for.
-// @returns {JSX.Element} An inline check icon.
+// @returns {JSX.Element} The check_circle Material icon.
 function StepCheckIcon() {
-  return (
-    <svg aria-hidden="true" className="progress-step-icon" viewBox="0 0 24 24">
-      <circle className="progress-step-icon-disc" cx="12" cy="12" r="11" />
-      <path className="progress-step-icon-check" d="M7 12.5l3.2 3.2L17 9" />
-    </svg>
-  );
+  return <MaterialIcon className="progress-step-icon" name="check_circle" />;
 }
 
 // ----------------------------------------------------------------------------------------------
 // @desc Draw the hollow ring that marks a step with nothing stored against it yet.
-// @returns {JSX.Element} An inline ring icon.
+// @returns {JSX.Element} The radio_button_unchecked Material icon.
 function StepPendingIcon() {
-  return (
-    <svg aria-hidden="true" className="progress-step-icon progress-step-icon--pending" viewBox="0 0 24 24">
-      <circle className="progress-step-icon-ring" cx="12" cy="12" r="11" />
-    </svg>
-  );
+  return <MaterialIcon className="progress-step-icon progress-step-icon--pending" name="radio_button_unchecked" />;
 }
 
 // ----------------------------------------------------------------------------------------------
 // @desc Draw the page glyph beside the link out to the quarter's plan note.
-// @returns {JSX.Element} An inline document icon.
+// @returns {JSX.Element} The description Material icon.
 function PlanNoteIcon() {
-  return (
-    <svg aria-hidden="true" className="plan-note-icon" viewBox="0 0 24 24">
-      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
-      <path d="M14 3v5h5" />
-    </svg>
-  );
+  return <MaterialIcon className="plan-note-icon" name="description" />;
 }
 
 // ----------------------------------------------------------------------------------------------

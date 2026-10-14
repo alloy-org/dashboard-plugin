@@ -2,23 +2,21 @@
  * It sits in the wizard's body column, where the step pages otherwise render, so it is sized as a page of the
  * dialog rather than as a widget card. */
 
+@use 'controls' as *;
 @use 'theme-tokens' as *;
 
 $provider-key-gate-message-width: 34rem;
 
 .provider-key-gate {
-  align-items: center;
-  display: flex;
-  flex-direction: column;
+  @include empty-state;
   gap: $sp-md;
   padding: $sp-xl $sp-md;
-  text-align: center;
 
   .provider-key-gate-title {
-    color: $color-navy;
+    color: $color-text;
     font-size: $medium-heading-font-size;
-    font-weight: 700;
-    line-height: 1.25;
+    font-weight: 500;
+    line-height: 1.3;
     margin: 0;
   }
 
@@ -33,45 +31,22 @@ $provider-key-gate-message-width: 34rem;
   .provider-key-gate-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: $sp-md;
+    gap: $sp-sm;
     justify-content: center;
     margin-top: $sp-xs;
   }
 
   .provider-key-gate-button {
-    background: none;
-    border: 1px solid $color-border;
-    border-radius: $radius-md;
-    color: $color-navy;
-    cursor: pointer;
-    font-size: $default-font-size;
-    font-weight: 600;
-    line-height: 1.2;
-    padding: $sp-sm $sp-lg;
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-
-    &:hover {
-      border-color: $color-blue;
-      color: $color-blue;
-    }
+    @include text-button($button-height);
   }
 
   .provider-key-gate-button--primary {
-    background: $color-background-accent;
-    border-color: $color-background-accent;
-    color: $color-text-on-accent;
-
-    /* The hover fill is action-medium-contrast, a surface tint, so it takes high-contrast text. */
-    &:hover {
-      background: $color-blue-light;
-      border-color: $color-blue-light;
-      color: $color-text;
-    }
+    @include raised-button;
   }
 
   .provider-key-gate-footnote {
     color: $color-text-muted;
-    font-size: $default-font-size;
+    font-size: $smaller-font-size;
     margin: 0;
   }
 }

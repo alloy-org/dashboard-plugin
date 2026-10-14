@@ -6,6 +6,7 @@ import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { useDashboardWork } from "dashboard/work-queue/dashboard-work-context";
 import { preparedDayRankingAwaiter } from "dashboard/work-queue/prepared-day-ranking";
 import LlmProviderSelector from "llm-provider-selector";
+import MaterialIcon from "material-icon";
 import NoConfigUpsell from "no-config-upsell";
 import { pluginSettings, updatePluginSetting } from "plugin-data";
 import { PROPOSED_TASK_STATUS, saveAgendaReplacement } from "proposed-agenda-archive";
@@ -39,12 +40,12 @@ const NO_CONFIG_ERROR_CODES = new Set(["invalid_api_key", "llm_error", "no_provi
 const AGENT_PRO_FAILED_MESSAGE = "Ample Agent Pro didn't return a schedule. Please try again in a moment.";
 
 const NO_CONFIG_FEATURES = [
-  { icon: "🗓️", label: "Auto-draft your day" },
-  { icon: "⚖️", label: "Balance work by priority" },
-  { icon: "🎯", label: "Align the day to goals" },
-  { icon: "⏰", label: "Schedule around obligations" },
-  { icon: "🔄", label: "Reseed with any model" },
-  { icon: "🧠", label: "Frontier models, no key" },
+  { iconName: "event_note", label: "Auto-draft your day" },
+  { iconName: "balance", label: "Balance work by priority" },
+  { iconName: "track_changes", label: "Align the day to goals" },
+  { iconName: "alarm", label: "Schedule around obligations" },
+  { iconName: "refresh", label: "Reseed with any model" },
+  { iconName: "psychology", label: "Frontier models, no key" },
 ];
 
 // ----------------------------------------------------------------------------------------------
@@ -110,13 +111,13 @@ function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, ti
                   aria-label={ `${ reasonExpanded ? "Hide" : "Show" } why this task was proposed` }
                   className="proposed-agenda-reason-toggle" onClick={ () => setReasonExpanded(expanded => !expanded) }
                   title={ `${ reasonExpanded ? "Hide" : "Show" } why this task was proposed` }
-                  type="button">ⓘ</button>
+                  type="button"><MaterialIcon name="info" size={ 16 } /></button>
               : null }
           </span>
           { hasReason
             ? <span className="proposed-agenda-reason proposed-agenda-reason--desktop" ref={ reasonRef }>{ reason }</span>
             : null }
-          { row.projectUuid ? <span className="proposed-agenda-goal-badge">☆ Quarterly goal</span> : null }
+          { row.projectUuid ? <span className="proposed-agenda-goal-badge"><MaterialIcon name="star_border" size={ 14 } />Quarterly goal</span> : null }
         </div>
         { isScheduled
           ? <span className="proposed-agenda-scheduled-meta">
@@ -126,12 +127,13 @@ function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, ti
               <span className="proposed-agenda-actions">
                 <button className="proposed-agenda-add" title={ `Schedule for ${ row.startTime } on the agenda date` }
                   onClick={ (event) => onSchedule(event, row) }>
-                  <span><span aria-hidden="true" className="proposed-agenda-schedule-icon">▦</span> Add to schedule</span>
+                  <span className="proposed-agenda-add-label"><MaterialIcon className="proposed-agenda-schedule-icon"
+                    name="calendar_today" size={ 16 } />Add to schedule</span>
                   { row.durationMinutes
                     ? <span className="proposed-agenda-add-duration">{ `${ row.durationMinutes }m` } duration</span> : null }
                 </button>
                 <button aria-label="Dismiss this suggestion" className="proposed-agenda-dismiss" title="Dismiss this suggestion"
-                  onClick={ (event) => onDismiss(event, row) }>×</button>
+                  onClick={ (event) => onDismiss(event, row) }><MaterialIcon name="close" /></button>
               </span>
             </>
         }
@@ -382,9 +384,9 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   const calendarCount = obligations.filter(row => row.source === "event").length;
   const headerActions = <div className="proposed-agenda-header-actions">
     <button className="proposed-agenda-model" onClick={ onChangeModel } title="Change AI provider" type="button">
-      <span aria-hidden="true">◎</span>{ _modelName(modelProviderEm) }<span aria-hidden="true">⌄</span></button>
+      <MaterialIcon name="psychology" />{ _modelName(modelProviderEm) }<MaterialIcon name="expand_more" /></button>
     <button className="proposed-agenda-regenerate" onClick={ () => runGeneration({ forceRegenerate: true }) } type="button">
-      <span aria-hidden="true">⟳</span> Regenerate</button>
+      <MaterialIcon name="refresh" />Regenerate</button>
   </div>;
 
   // ------------------------------------------------------------------------------------------

@@ -27,8 +27,11 @@ $note-editor-transition-duration: 0.15s;
   }
 
   .note-editor-btn {
+    align-items: center;
     background: none;
     border: 1px solid $color-border;
+    display: inline-flex;
+    gap: $sp-xs;
     border-radius: $radius-sm;
     cursor: pointer;
     font-size: $smaller-font-size;

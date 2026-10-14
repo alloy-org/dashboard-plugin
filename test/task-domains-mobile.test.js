@@ -90,9 +90,11 @@ describe("TaskDomains mobile collapsing", () => {
     expect(container.querySelector(".task-domains-expand")).toBeNull();
   });
 
-  it("renders both the worded refresh label and the mobile-only refresh glyph", () => {
+  it("renders refresh as an icon button labeled for tooltips and assistive technology", () => {
     renderDomainBar("dom-work");
-    expect(container.querySelector(".task-domains-refresh-label").textContent).toContain("Refresh Task Domains");
-    expect(container.querySelector(".task-domains-refresh-icon").textContent).toBe("↻");
+    const refreshButton = container.querySelector(".task-domains-refresh");
+    expect(refreshButton.getAttribute("aria-label")).toBe("Refresh task domains");
+    expect(refreshButton.getAttribute("title")).toBe("Refresh task domains");
+    expect(refreshButton.querySelector("svg.task-domains-refresh-icon")).not.toBeNull();
   });
 });

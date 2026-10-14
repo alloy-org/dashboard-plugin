@@ -5,6 +5,51 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-14 — Task Stats style charts, settings dialogs, and Plan Builder restyle
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/charts/stats-chart.jsx` (created) — Shared SVG chart pieces following the host's Task Stats graph: grid lines and labels, x-axis labels, hovered-column highlight line, value pill, hit areas, nice maximum, and an element size hook.
+- `lib/dashboard/charts/stats-chart-tooltip.js` (created) — Task Stats style tooltip HTML (title row, stat rows with Material icons) and shared tooltip options.
+- `lib/dashboard/charts/victory-value-chart.jsx` (created) — Victory Value bars as SVG, filled with the host's victory value scale (project segments keep legend colors), with a faint mood line and hover details; replaces the canvas drawing in `victory-value.jsx`.
+- `lib/dashboard/charts/peak-hours-chart.jsx` (created) — Peak Hours created/completed hourly bars as SVG; replaces the canvas drawing and inline tooltip in `peak-hours.jsx`.
+- `lib/dashboard/victory-value.jsx`, `peak-hours.jsx`, `energy-per-habit.jsx` — Use the new charts and Task Stats style tooltips; Energy Delta rows highlight on hover and show their mood averages in a chart tooltip; bar and streak colors come from the host's victory value scale and error color.
+- `lib/dashboard/styles/stats-chart.scss` (created), `dashboard-tippy.scss`, `victory-value.scss`, `peak-hours.scss`, `energy-per-habit.scss`, `theme-light.scss`, `theme-dark.scss`, `theme-tokens.scss` — Chart and `dashboard-chart` tooltip styles (popup surface, elevation 3, no glow); tokens for the host's popup background, medium-contrast element fill, and `--victory-value-color-*` scale.
+- `lib/dashboard/layout-profiles.js`, `dashboard.jsx`, `lib/constants/material-icon-paths.js` — The Layout icon is now `application-edit-outline` from the community Material Design Icons (`mdi_` prefix, Apache 2.0); icon set regenerated, unused icons dropped.
+- `lib/dashboard/config-popup.jsx` and the settings, layout, memory measurement, and LLM provider popups with their stylesheets; `styles/controls.scss` — Host MDC dialog style: dark title bar with a close button, card surface, field, select, and underline-tab mixins, Material icons in place of emoji.
+- `lib/dashboard/plan-wizard/*.jsx`, `styles/plan-wizard.scss`, `styles/provider-key-gate.scss` — Plan Builder in the host dialog style: title bar, step progress bar, flat bordered cards, pill chips, shared buttons, Material icons in place of glyphs.
+- `test/victory-value-chart.test.js` (created), `test/app.test.js` — Chart rendering and hover coverage.
+- `doc/plan-app-design-restyle.md` — Shared building blocks, dialog rules, and the charts / settings / Plan Builder passes.
+- `build/compiled.js` — Rebuilt (807,096 bytes).
+
+**Validation:** Jest: 1363 passed, 1 failed (`test/dream-task-actions.test.js`, failing before these changes). Charts, Settings, and Layout checked in the dev server; the Plan Builder was not opened in a browser (it needs an AI key).
+**Task:** Restyle charts after the host's Task Stats page, the Layout icon, settings menus, and the Plan Builder.
+**Prompt summary:** "For the victory value widget we will reuse as much styling as possible from the task stats page ... restyle all settings menus too. restyle plan builder too."
+
+---
+
+## 2026-10-14 — Restyle the dashboard's default view to match the Amplenote app
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `doc/plan-app-design-restyle.md` (created) — The restyle plan: style only, host theme colors, Material icons instead of emoji, background image removed.
+- `lib/constants/material-icon-paths.js` (created) — SVG path data for the Material Icons the dashboard draws (Google Material Icons, Apache 2.0), since the embed cannot load the icon web font.
+- `lib/dashboard/material-icon.jsx` (created) — `MaterialIcon` component drawing one of those icons in the current text color.
+- `lib/dashboard/styles/controls.scss` (created) — Mixins for the host's MDC-style icon buttons, text / outlined / raised buttons, overline labels, and empty states.
+- `lib/dashboard/styles/theme-tokens.scss`, `theme-light.scss`, `theme-dark.scss` — 4px / 8px radii; widget headers on the card surface in medium-contrast text; new tokens for the host's lowest-contrast text, low-contrast element fill, and low-contrast action fill.
+- `lib/dashboard/styles/dashboard.scss`, `widget.scss`, `draggable-heading.jsx`, `widget-wrapper.jsx`, `layout-profiles.js`, `constants/settings.js` — Cards with a 1px border and no translucency; headers with a Material icon (new registry `iconName`), small uppercase title, and icon-button actions; the toolbar becomes a header bar with underline task-domain tabs and icon buttons.
+- `lib/dashboard/host-theme.js`, `test/host-theme.test.js` — Also re-reads the host theme, throttled, when the pointer re-enters the dashboard, so theme changes made elsewhere in the app apply on return.
+- `lib/dashboard/dashboard.jsx`, `dashboard-settings-popup.jsx`, `quick-actions.jsx`, `dashboard-init-service.js`, `constants/settings.js`, `styles/dashboard-settings-popup.scss`; deleted `lib/hooks/use-background-swap.js` and `lib/hooks/use-background-upload-fields.js` — Removed the background image, its two settings, the settings popup section, and the Swap Background quick action. Quote tiles keep their photos.
+- Widget components and stylesheets in the default layout (layout picker, planning and quarterly plan entry, victory value, goal coach and the no-config upsell, day sketcher, agenda, proposed agenda and its controls, quotes, task retirement center, revisit candidate, shared notes, note peek, mood, calendar, quick actions, peak hours, energy per habit, task domains, update indicator, copy link, note editor) — Emoji and symbol glyphs replaced by Material icons with unchanged wording; buttons, labels, tabs, and empty states moved onto the shared controls. The mood faces and emoji in users' own habit names are kept.
+- `test/app.test.js`, `test/graveyard-widget.test.js`, `test/planning-plan-begun.test.js`, `test/planning-quarter-pager.test.js`, `test/task-domains-mobile.test.js`, `test/widget-wrapper-defaults.test.js` — Updated for icon-only controls and labels without emoji; added coverage that every registered widget names an icon with path data and that no background swap is offered.
+- `build/compiled.js` — Rebuilt (792,014 → 802,979 bytes).
+
+**Validation:** Jest: 1360 passed, 1 failed (`test/dream-task-actions.test.js`, failing before this change). Checked in the dev server at desktop and phone widths, light and dark Classic, and with Plum dark host colors injected.
+**Task:** Restyle the default dashboard view in the host app's design language.
+**Prompt summary:** "Let's implement this redesign now in dashboard-plugin."
+
+---
+
 ## 2026-10-11 — Rate completed project tasks and raise their victory value (Completed Tasks by Project, commit 3)
 
 **Model:** Claude Opus 5.5

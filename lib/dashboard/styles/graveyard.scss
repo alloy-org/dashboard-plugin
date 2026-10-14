@@ -5,6 +5,7 @@
  */
 
 @use 'theme-tokens' as *;
+@use 'controls' as *;
 
 /* [Claude claude-sonnet-4-6] Task: Graveyard widget — scrollable task list with action links */
 /* Prompt: "add a new graveyard.js component..." */
@@ -184,7 +185,8 @@
 
   .graveyard-task-actions {
     display: flex;
-    gap: $sp-md;
+    gap: 0 $sp-xs;
+    margin-left: -$sp-sm;
 
     > a {
       overflow: hidden;
@@ -193,26 +195,21 @@
     }
   }
 
+  /* Compact host text buttons; retiring a task reads in the danger color on hover. */
   .graveyard-task-action {
+    @include text-button(28px);
+    font-size: 12px;
+    gap: $sp-xs;
     color: $color-text-secondary;
-    font-size: $smaller-font-size;
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
   }
 
   .graveyard-task-action--send:hover {
     color: $color-danger;
   }
 
-  .graveyard-task-action--keep:hover {
-    color: $color-link;
-  }
-
-  .graveyard-task-action--note:hover {
-    color: $color-blue;
+  .graveyard-refresh--refreshing {
+    opacity: 0.5;
+    pointer-events: none;
   }
 
   /* [OpenAI gpt-5.4] Task: tighten graveyard tooltip width and date text for compact 1-column cards */

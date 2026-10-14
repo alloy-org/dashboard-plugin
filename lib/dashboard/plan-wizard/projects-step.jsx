@@ -10,6 +10,7 @@
 // A link under the page's summary opens the sources page, which shows the intents, notes, and tasks discovery reads.
 // While a pass runs the link invites the user to watch it, since the wait is long enough to want something to look at.
 
+import MaterialIcon from "dashboard/material-icon";
 import { IntentReadingProgressBar } from "dashboard/plan-wizard/intent-reading-page";
 import ProjectCard from "dashboard/plan-wizard/project-card";
 import { completionRecordFromRow, draftRowsFromProspects, emptyProjectRow, priorityRecordFromRow,
@@ -68,7 +69,8 @@ function ProjectSourcesLink({ discoveryProgress, isDiscovering, onOpenSources })
   return (
     <div className={ `projects-step-sources${ isDiscovering ? " projects-step-sources--running" : "" }` }>
       <button className="projects-step-sources-link" onClick={ onOpenSources } type="button">
-        { isDiscovering ? "Watch Plan Builder find your projects →" : "View sources →" }
+        { isDiscovering ? "Watch Plan Builder find your projects" : "View sources" }
+        <MaterialIcon name="arrow_forward" size={ 16 } />
       </button>
       { isDiscovering ? <IntentReadingProgressBar fraction={ discoveryProgress } /> : null }
     </div>

@@ -5,27 +5,31 @@
  */
 
 @use 'theme-tokens' as *;
+@use 'controls' as *;
 
 $task-domain-transition-duration: 0.15s;
+$task-domain-tab-height: 48px;
 
 /* [Claude] Task: task domain selector bar with pills, settings icon, and refresh link */
 /* Prompt: "style the task domain selector bar above the dashboard grid" */
 /* Date: 2026-02-21 | Model: claude-opus-4-6 */
+/* Domains read as the host app's underline tabs (the Task Stats header): low-contrast labels, the active one in
+ * high-contrast text over a 2px rule along the bottom of the dashboard header. */
 .task-domains {
   align-items: center;
-  background: $color-bg-card;
-  border: 1px solid $color-border;
-  border-radius: $radius-sm;
+  align-self: stretch;
   display: flex;
-  gap: $sp-md;
-  padding: $sp-sm $sp-md;
+  flex: 1;
+  gap: $sp-sm;
+  min-width: 0;
 
   .task-domains-list {
-    align-items: center;
+    align-items: stretch;
+    align-self: stretch;
     display: flex;
-    flex: 1;
     flex-wrap: wrap;
-    gap: $sp-sm;
+    gap: 0 $sp-xl;
+    min-width: 0;
   }
 
   .task-domain-entry {
@@ -34,34 +38,23 @@ $task-domain-transition-duration: 0.15s;
 
   .task-domain-item {
     align-items: center;
-    border: 1px solid transparent;
-    border-radius: $radius-sm;
-    color: $color-text-secondary;
+    border-bottom: 2px solid transparent;
+    color: $color-text-muted;
     cursor: pointer;
     display: inline-flex;
-    font-size: $smaller-font-size;
-    font-weight: 500;
-    gap: $sp-xs;
-    padding: $sp-xs $sp-md;
-    transition: all $task-domain-transition-duration ease;
+    font-size: $default-font-size;
+    letter-spacing: 0.02em;
+    min-height: $task-domain-tab-height;
+    padding-top: 2px;
+    transition: color $task-domain-transition-duration ease, border-color $task-domain-transition-duration ease;
 
     &:hover {
-      background: $color-blue-light;
-      color: $color-navy;
+      color: $color-text;
     }
 
     &.active {
-      background: $color-navy;
-      border-color: $color-navy;
-      color: $color-bg-card;
-
-      .task-domain-settings {
-        color: color-mix(in srgb, $color-bg-card 65%, transparent);
-
-        &:hover {
-          color: $color-bg-card;
-        }
-      }
+      border-bottom-color: $color-text;
+      color: $color-text;
     }
   }
 
@@ -69,65 +62,24 @@ $task-domain-transition-duration: 0.15s;
     user-select: none;
   }
 
-  .task-domain-settings {
-    background: none;
-    border: none;
-    color: $color-text-muted;
-    cursor: pointer;
-    font-size: $smaller-font-size;
-    line-height: 1;
-    padding: 0;
-
-    &:hover {
-      color: $color-navy;
-    }
-  }
-
   .task-domains-refresh {
-    background: none;
-    border: none;
-    color: $color-text-secondary;
-    cursor: pointer;
-    font-size: $smaller-font-size;
-    padding: $sp-xs $sp-sm;
-    white-space: nowrap;
+    @include icon-button(32px);
+  }
 
-    &:hover {
-      color: $color-navy;
-    }
+  .task-domains-refresh--refreshing .task-domains-refresh-icon {
+    animation: task-domains-refresh-spin 0.9s linear infinite;
+  }
 
-    &:disabled {
-      cursor: default;
-      opacity: 0.5;
+  @media (prefers-reduced-motion: reduce) {
+    .task-domains-refresh--refreshing .task-domains-refresh-icon {
+      animation: none;
     }
   }
 
-  /* The icon spelling of refresh only exists for the mobile bar; wide viewports keep the worded label. */
-  .task-domains-refresh-icon {
-    display: none;
-  }
-
-  /* Reads as a button rather than a bare glyph, since on mobile it is the only way to reach the domains
-   * that collapsed out of the bar. Font size, padding, and border mirror `.task-domain-item` so the
-   * toggle stands exactly as tall as the selected domain pill beside it; the extra min-width is what
-   * makes it comfortable to tap without making it taller. */
+  /* Only shown on mobile, where it is the way to reach the domains that collapse out of the bar. */
   .task-domains-expand {
-    align-items: center;
-    background: $color-blue-light;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    color: $color-navy;
-    cursor: pointer;
+    @include icon-button(32px);
     display: none;
-    font-size: $smaller-font-size;
-    justify-content: center;
-    min-width: 34px;
-    padding: $sp-xs $sp-sm;
-
-    &:hover {
-      background: $color-navy;
-      color: $color-bg-card;
-    }
   }
 
   .task-domains-empty {
@@ -140,26 +92,15 @@ $task-domain-transition-duration: 0.15s;
   /* Date: 2026-03-21 | Model: claude-4.6-opus-high-thinking */
 }
 
-.task-domains--empty {
-  .task-domains-empty {
-    flex: 1 1 100%;
-    font-weight: 500;
-  }
-}
-
 .task-domains {
   /* [Claude claude-opus-5] Task: mobile domain bar shows only the selected domain, an expand toggle, and a refresh icon */
   /* Prompt: "hide all Task Domains behind an 'Expand' icon, besides the selected Task Domain" */
   /* Date: 2026-08-07 | Model: claude-opus-5 */
-  /* The pills all stay in the DOM so expanding is a class flip rather than a re-render, and so the */
+  /* The tabs all stay in the DOM so expanding is a class flip rather than a re-render, and so the */
   /* wide-viewport bar is untouched by these rules. */
   @include breakpoint($breakpoint-tablet) {
     & {
       gap: $sp-xs;
-    }
-
-    .task-domains-list {
-      flex-wrap: wrap;
     }
 
     &:not(.task-domains--expanded) .task-domain-item:not(.task-domain-item--mobile-visible) {
@@ -170,19 +111,12 @@ $task-domain-transition-duration: 0.15s;
       display: inline-flex;
     }
 
-    /* Refresh is the least-reached-for control here, so it stays a muted glyph beside the bolder toggle. */
-    .task-domains-refresh {
-      font-size: $default-font-size;
-      opacity: 0.55;
-      padding: $sp-xs;
-    }
-
-    .task-domains-refresh-label {
+    .task-domains-empty {
       display: none;
     }
-
-    .task-domains-refresh-icon {
-      display: inline;
-    }
   }
+}
+
+@keyframes task-domains-refresh-spin {
+  to { transform: rotate(360deg); }
 }

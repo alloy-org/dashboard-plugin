@@ -5,6 +5,7 @@
  */
 
 @use 'theme-tokens' as *;
+@use 'controls' as *;
 
 .widget-victory-value {
   .widget-body {
@@ -20,9 +21,11 @@
     margin-bottom: $sp-sm;
 
     .vv-total {
-      color: $color-navy;
+      color: $color-text;
       font-size: $display-heading-font-size;
-      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+      line-height: 1.2;
     }
 
     .vv-label {
@@ -73,32 +76,28 @@
   }
 
   .vv-chart {
-    border-radius: $radius-sm;
     display: block;
     width: 100%;
   }
 
+  /* The mood line is drawn faintly, as the Task Stats graph draws its mood line, so the bars stay the subject. */
+  .victory-value-chart-mood-line {
+    opacity: 0.6;
+    stroke-linecap: round;
+    stroke-width: 3px;
+  }
+
+  .victory-value-chart-mood-line--gap {
+    stroke-dasharray: 3 5;
+  }
+
+  .victory-value-chart-mood-indicator {
+    stroke: $color-bg-card;
+    stroke-width: 2px;
+  }
+
   .vv-nav-arrow {
-    background: none;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    color: $color-text-secondary;
-    cursor: pointer;
-    flex-shrink: 0;
-    font-size: $medium-heading-font-size;
-    line-height: 1;
-    padding: $sp-xs $sp-sm;
-    transition: background 0.15s, color 0.15s;
-
-    &:hover:not(:disabled) {
-      background: $color-bg-page-hover;
-      color: $color-navy;
-    }
-
-    &:disabled {
-      cursor: not-allowed;
-      opacity: 0.3;
-    }
+    @include icon-button(32px);
   }
 
   .vertical-1-cell & .vv-chart {

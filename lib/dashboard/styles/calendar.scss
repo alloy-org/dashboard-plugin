@@ -5,6 +5,7 @@
  */
 
 @use 'theme-tokens' as *;
+@use 'controls' as *;
 
 $cal-cell-gap: 2px;
 $cal-date-dot-gap: 6px;
@@ -80,22 +81,13 @@ $cal-transition-duration: 0.12s;
   }
 
   .cal-arrow {
-    background: none;
-    border: none;
-    color: $color-text-secondary;
-    cursor: pointer;
-    font-size: $smaller-font-size;
-    padding: $sp-xs;
-
-    &:hover {
-      color: $color-navy;
-    }
+    @include icon-button(32px);
   }
 
   .cal-month {
-    color: $color-navy;
+    color: $color-text;
     font-size: $default-font-size;
-    font-weight: 700;
+    font-weight: 500;
   }
 
   .cal-grid {
@@ -107,8 +99,8 @@ $cal-transition-duration: 0.12s;
 
   .cal-header {
     color: $color-text-muted;
-    font-size: $smaller-font-size;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 500;
     padding: $sp-xs 0;
   }
 
@@ -128,7 +120,7 @@ $cal-transition-duration: 0.12s;
     transition: background-color $cal-transition-duration ease;
 
     &:not(.empty):hover {
-      background: $color-blue-light;
+      background: $color-bg-element;
     }
 
     &.empty {
@@ -141,13 +133,11 @@ $cal-transition-duration: 0.12s;
 
       .cal-day {
         color: $color-text-on-accent;
-        font-weight: 700;
+        font-weight: 500;
       }
 
       &:hover {
-        background: $color-navy;
-
-        .cal-day { color: $color-bg-card; }
+        background: color-mix(in srgb, $color-background-accent 88%, #000000);
       }
     }
 
@@ -163,6 +153,7 @@ $cal-transition-duration: 0.12s;
     .cal-day {
       color: $color-text;
       font-size: $smaller-font-size;
+      font-variant-numeric: tabular-nums;
       position: relative;
       top: $cal-day-offset;
     }

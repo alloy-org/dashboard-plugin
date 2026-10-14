@@ -1,5 +1,6 @@
 // Shared portal shell and calendar/priority contents, scoped independently of the widget card.
 @use 'theme-tokens' as *;
+@use 'controls' as *;
 
 .proposed-agenda-popover {
   background: $color-bg-card;
@@ -23,8 +24,7 @@
   .agenda-calendar-shortcuts button:hover { border-color: $color-link; }
   .agenda-calendar-heading { align-items: center; display: flex; gap: $sp-xs; padding: $sp-lg $sp-lg $sp-sm; }
   .agenda-calendar-heading strong { flex: 1; font-family: $font-serif; font-size: $medium-heading-font-size; font-weight: 700; }
-  .agenda-calendar-month-arrow { background: none; border: 0; border-radius: 6px; color: $color-text-secondary; font-size: $medium-heading-font-size; line-height: 1; padding: $sp-xs $sp-sm; }
-  .agenda-calendar-month-arrow:hover { background: $color-bg-secondary; color: $color-text; }
+  .agenda-calendar-month-arrow { @include icon-button; }
   // Fixed square-ish cells keep the grid the same size whichever days carry markers.
   .agenda-calendar-grid { display: grid; gap: 1px $sp-xs; grid-template-columns: repeat(7, 2.6em); justify-content: center; padding: 0 $sp-md $sp-md; }
   .agenda-calendar-weekday { color: $color-text-muted; font-size: $smaller-font-size; font-weight: 500; padding: $sp-xs 0 6px; text-align: center; }
@@ -50,7 +50,7 @@
   .agenda-priority-options { display: grid; max-width: 22rem; }
   .agenda-priority-option { background: none; border: 0; display: flex; gap: 10px; padding: 9px 14px; text-align: left; }
   .agenda-priority-option[aria-pressed='true'], .agenda-priority-option:hover { background: $color-bg-secondary; }
-  .agenda-priority-check { color: $color-link; font-weight: 600; visibility: hidden; }
+  .agenda-priority-check { color: $color-link; display: inline-flex; visibility: hidden; }
   .agenda-priority-option[aria-pressed='true'] .agenda-priority-check { visibility: visible; }
   .agenda-priority-option strong { display: block; font-size: $default-font-size; font-weight: 600; }
   .agenda-priority-option small { color: $color-text-secondary; display: block; font-size: $smaller-font-size; line-height: 1.4; margin-top: 2px; }

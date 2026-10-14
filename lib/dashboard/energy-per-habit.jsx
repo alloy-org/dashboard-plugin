@@ -10,7 +10,10 @@ import { noteUrlFromUUID } from "app-util";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { logIfEnabled } from "util/log";
 import { formatDelta, HABIT_ANALYSIS_WINDOW_DAYS, leadingEmoji, stripLeadingEmoji } from "energy-per-habit-analysis";
+import { STATS_CHART_TOOLTIP_OPTIONS, statsChartTooltipHtml } from "dashboard/charts/stats-chart-tooltip";
+import { useCanvasTippy } from "dashboard/dashboard-tooltip-tippy";
 import { loadEnergyPerHabit } from "energy-per-habit-service";
+import MaterialIcon from "material-icon";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import "styles/energy-per-habit.scss";
 
@@ -20,59 +23,59 @@ const WIDGET_ID = 'energy-per-habit';
 const MAX_HABIT_ROWS = 8;
 const ROUND_UP_TO_YEAR_ABOVE = 330;
 
-// Fallback icon plus keyword→emoji hints so common habits get a recognizable glyph like the mockup.
-const HABIT_ICON_FALLBACK = '🔁';
+// Fallback icon plus keyword hints so common habits get a recognizable Material icon.
+const HABIT_ICON_FALLBACK = 'repeat';
 const HABIT_ICON_HINTS = [
-  { pattern: /exercise|workout|gym/, icon: '💪' },
-  { pattern: /bike|cycling|cycle/, icon: '🚴' },
-  { pattern: /lift/, icon: '🏋️‍♀️' },
-  { pattern: /jog|run/, icon: '🏃' },
-  { pattern: /hike|trail/, icon: '🥾' },
-  { pattern: /walk|outside|outdoor|steps/, icon: '☀️' },
-  { pattern: /inbox|email/, icon: '📥' },
-  { pattern: /read|book|study|homework/, icon: '📖' },
-  { pattern: /deep work|focus|review|reflect/, icon: '🧐' },
-  { pattern: /screen|phone|social|digital/, icon: '🌙' },
-  { pattern: /late.?night|night|midnight/, icon: '🌜' },
-  { pattern: /meditat|breath|mindful|yoga/, icon: '🧘' },
-  { pattern: /sleep|bed|rest/, icon: '😴' },
-  { pattern: /water|hydrat|drink/, icon: '💧' },
-  { pattern: /plan|review|journal/, icon: '📝' },
-  { pattern: /contact|email|journal|message|text|write|writing/, icon: '✍️' },
-  { pattern: /outreach|broadcast|advertise|distribution/, icon: '📢' },
-  { pattern: /gratitude|thank/, icon: '🙏' },
-  { pattern: /clean|tidy|organize/, icon: '🧹' },
-  { pattern: /cook|meal|recipe/, icon: '🍳' },
-  { pattern: /music|song|sing/, icon: '🎵' },
-  { pattern: /art|draw|paint/, icon: '🎨' },
-  { pattern: /game|play|fun/, icon: '🎮' },
-  { pattern: /family|friend|social/, icon: '👯‍♀️' },
-  { pattern: /volunteer|help|charity/, icon: '❤️' },
-  { pattern: /finance|budget|money/, icon: '💰' },
-  { pattern: /language|learn|study/, icon: '🈶' },
-  { pattern: /travel|trip|vacation/, icon: '✈️' },
-  { pattern: /garden|plant|nature/, icon: '🌱' },
-  { pattern: /movie|film|cinema/, icon: '🎬' },
-  { pattern: /cleaning|laundry|housework/, icon: '🧺' },
-  { pattern: /swim|pool|water/, icon: '🏊' },
-  { pattern: /networking|bizdev/, icon: '🤝' },
+  { pattern: /exercise|workout|gym/, iconName: 'fitness_center' },
+  { pattern: /bike|cycling|cycle/, iconName: 'directions_bike' },
+  { pattern: /lift/, iconName: 'fitness_center' },
+  { pattern: /jog|run/, iconName: 'directions_run' },
+  { pattern: /hike|trail/, iconName: 'hiking' },
+  { pattern: /walk|outside|outdoor|steps/, iconName: 'directions_walk' },
+  { pattern: /inbox|email/, iconName: 'inbox' },
+  { pattern: /read|book|study|homework/, iconName: 'menu_book' },
+  { pattern: /deep work|focus|review|reflect/, iconName: 'psychology' },
+  { pattern: /screen|phone|social|digital/, iconName: 'phonelink_off' },
+  { pattern: /late.?night|night|midnight/, iconName: 'bedtime' },
+  { pattern: /meditat|breath|mindful|yoga/, iconName: 'self_improvement' },
+  { pattern: /sleep|bed|rest/, iconName: 'bedtime' },
+  { pattern: /water|hydrat|drink/, iconName: 'water_drop' },
+  { pattern: /plan|review|journal/, iconName: 'edit_note' },
+  { pattern: /contact|email|journal|message|text|write|writing/, iconName: 'edit' },
+  { pattern: /outreach|broadcast|advertise|distribution/, iconName: 'campaign' },
+  { pattern: /gratitude|thank/, iconName: 'volunteer_activism' },
+  { pattern: /clean|tidy|organize/, iconName: 'cleaning_services' },
+  { pattern: /cook|meal|recipe/, iconName: 'restaurant' },
+  { pattern: /music|song|sing/, iconName: 'music_note' },
+  { pattern: /art|draw|paint/, iconName: 'palette' },
+  { pattern: /game|play|fun/, iconName: 'sports_esports' },
+  { pattern: /family|friend|social/, iconName: 'people' },
+  { pattern: /volunteer|help|charity/, iconName: 'favorite' },
+  { pattern: /finance|budget|money/, iconName: 'savings' },
+  { pattern: /language|learn|study/, iconName: 'translate' },
+  { pattern: /travel|trip|vacation/, iconName: 'flight' },
+  { pattern: /garden|plant|nature/, iconName: 'spa' },
+  { pattern: /movie|film|cinema/, iconName: 'movie' },
+  { pattern: /cleaning|laundry|housework/, iconName: 'local_laundry_service' },
+  { pattern: /swim|pool|water/, iconName: 'waves' },
+  { pattern: /networking|bizdev/, iconName: 'handshake' },
 ];
 
 // ------------------------------------------------------------------------------------------
 // @desc Pick a habit's icon. When the habit's own text begins with an emoji, that emoji IS the canonical
 //   icon (checked on the label, then the full task text as a fallback for habits last completed in a cached
-//   month whose stored label predates emoji retention). Only when the habit carries no leading emoji do we
-//   fall back to a keyword-hint glyph, then a generic default.
+//   month whose stored label predates emoji retention): it is the user's content, so it is kept. Only when the
+//   habit carries no leading emoji do we fall back to a keyword-hint Material icon, then a generic default.
 // @param {Object} habit - Habit with { label, fullText }.
-// @returns {string} Emoji icon.
+// @returns {Object} Either { emoji } from the habit's own text, or { iconName } naming a Material icon.
 function habitIcon(habit) {
   const ownEmoji = leadingEmoji(habit.label) || leadingEmoji(habit.fullText);
-  if (ownEmoji) return ownEmoji;
+  if (ownEmoji) return { emoji: ownEmoji };
   const lower = stripLeadingEmoji(habit.label).toLowerCase();
-  for (const { pattern, icon } of HABIT_ICON_HINTS) {
-    if (pattern.test(lower)) return icon;
+  for (const { iconName, pattern } of HABIT_ICON_HINTS) {
+    if (pattern.test(lower)) return { iconName };
   }
-  return HABIT_ICON_FALLBACK;
+  return { iconName: HABIT_ICON_FALLBACK };
 }
 
 // ------------------------------------------------------------------------------------------
@@ -94,24 +97,20 @@ function weekStreakLabel(weeks) {
 }
 
 // ------------------------------------------------------------------------------------------
-// @desc Format one side of the bar's hover tooltip: the average mood and how many rated days it averages over.
-// @param {string} sideLabel - "completed" or "not completed".
-// @param {number} avg - Average mood rating on that side.
-// @param {number} count - Number of rated days on that side.
-// @returns {string}
-function barTooltipSide(sideLabel, avg, count) {
-  const days = count === 1 ? 'day' : 'days';
-  return `${sideLabel}: ${formatDelta(avg)} avg over ${count} rated ${days}`;
-}
-
-// ------------------------------------------------------------------------------------------
-// @desc Build the hover tooltip for a habit's mood-delta bar: the average and rating count on days the habit
-//   was completed vs. days it was not.
-// @param {Object} habit - Habit with avgMoodOnDone, avgMoodOnOff, doneWithMood, offWithMood.
-// @returns {string}
-function barTooltip(habit) {
-  return `${barTooltipSide('When completed', habit.avgMoodOnDone, habit.doneWithMood)}\n`
-    + `${barTooltipSide('When not completed', habit.avgMoodOnOff, habit.offWithMood)}`;
+// @desc Build the hover tooltip for a habit's row in the host's Task Stats tooltip layout: the habit, its mood delta,
+//   and the average and rating count on days the habit was completed vs. days it was not.
+// @param {Object} habit - Habit with label, delta, avgMoodOnDone, avgMoodOnOff, doneWithMood, offWithMood.
+// @returns {string} Tooltip HTML.
+function habitTooltipHtml(habit) {
+  const days = count => `${ count } rated ${ count === 1 ? 'day' : 'days' }`;
+  const rows = [
+    { className: habit.delta >= 0 ? 'habit-tooltip-stat--positive' : 'habit-tooltip-stat--negative',
+      iconName: habit.delta >= 0 ? 'trending_up' : 'trending_down', text: `${ formatDelta(habit.delta) } energy delta` },
+    { iconName: 'check_circle', text: `When completed: ${ formatDelta(habit.avgMoodOnDone) } avg over ${ days(habit.doneWithMood) }` },
+    { iconName: 'remove_circle_outline',
+      text: `When not completed: ${ formatDelta(habit.avgMoodOnOff) } avg over ${ days(habit.offWithMood) }` },
+  ];
+  return statsChartTooltipHtml({ rows, title: stripLeadingEmoji(habit.label), titleIconName: 'repeat' });
 }
 
 // ------------------------------------------------------------------------------------------
@@ -122,21 +121,23 @@ function barTooltip(habit) {
 //   (bold/italic/highlight/rich-footnote links) — matching how the Agenda widget renders task content — so
 //   habit text formatting survives. When the habit carries a note reference the label is a
 //   click-through that opens the task's note (clicks on an inner link are left to the link), and its title
-//   shows the full task text on hover. Hovering the bar shows the avg + count of mood ratings on completed
-//   vs. off days.
-// @param {Object} props - { habit, windowDays, maxAbsDelta, onOpen }
+//   shows the full task text on hover. Hovering the row shows the avg + count of mood ratings on completed
+//   vs. off days in a chart tooltip.
+// @param {Object} props - { habit, maxAbsDelta, onHover, onHoverEnd, onOpen, windowDays }
 // @returns {JSX.Element}
-function HabitRow({ habit, windowDays, maxAbsDelta, onOpen }) {
+function HabitRow({ habit, maxAbsDelta, onHover, onHoverEnd, onOpen, windowDays }) {
   const positive = habit.delta >= 0;
   const widthPct = maxAbsDelta > 0 ? Math.min(100, (Math.abs(habit.delta) / maxAbsDelta) * 100) : 0;
   const clickable = Boolean(habit.noteUUID);
   const fullText = habit.fullText || habit.label;
   const labelClass = `habit-row-label${clickable ? ' habit-row-label--link' : ''}`;
-  const barTitle = barTooltip(habit);
+  const rowIcon = habitIcon(habit);
   return (
-    <div className="habit-row">
+    <div className="habit-row" onMouseEnter={(event) => onHover(habit, event.currentTarget)} onMouseLeave={onHoverEnd}>
       <div className="habit-row-lead">
-        <span className="habit-row-icon" aria-hidden="true">{habitIcon(habit)}</span>
+        <span className="habit-row-icon" aria-hidden="true">
+          {rowIcon.emoji ? rowIcon.emoji : <MaterialIcon name={ rowIcon.iconName } />}
+        </span>
         <div className="habit-row-text">
           <div
             className={labelClass}
@@ -153,7 +154,7 @@ function HabitRow({ habit, windowDays, maxAbsDelta, onOpen }) {
       </div>
       <div className="habit-row-track">
         <div className="habit-row-axis" />
-        <div className="habit-row-bar-half habit-row-bar-half--negative" title={barTitle}>
+        <div className="habit-row-bar-half habit-row-bar-half--negative">
           {!positive && (
             <div
               className="habit-row-bar habit-row-bar--negative"
@@ -161,7 +162,7 @@ function HabitRow({ habit, windowDays, maxAbsDelta, onOpen }) {
             />
           )}
         </div>
-        <div className="habit-row-bar-half habit-row-bar-half--positive" title={barTitle}>
+        <div className="habit-row-bar-half habit-row-bar-half--positive">
           {positive && (
             <div
               className="habit-row-bar habit-row-bar--positive"
@@ -189,6 +190,7 @@ export default function EnergyPerHabitWidget({ app }) {
   const [loadError, setLoadError] = useState(false);
   const [loading, setLoading] = useState(true);
   const rowsRef = useRef(null);
+  const tooltip = useCanvasTippy(STATS_CHART_TOOLTIP_OPTIONS);
 
   useEffect(() => {
     if (!app) return;
@@ -228,6 +230,14 @@ export default function EnergyPerHabitWidget({ app }) {
     app.navigate(noteUrlFromUUID(habit.noteUUID));
   }, [app]);
 
+  // Show the hovered habit's details beside its row, as the host's Task Stats charts do for a hovered day. The bars and
+  // values fill the row's right side, so the tooltip opens to the row's left, or below it where there is no room.
+  const onHabitHover = useCallback((habit, rowElement) => {
+    const rowBox = rowElement.getBoundingClientRect();
+    tooltip.show(habitTooltipHtml(habit), rowBox.left, rowBox.top, { placement: 'left-start' });
+  }, []);
+  const onHabitHoverEnd = useCallback(() => tooltip.scheduleHide(150), []);
+
   let windowDays = analysis?.windowDays || HABIT_ANALYSIS_WINDOW_DAYS;
   windowDays = windowDays >= ROUND_UP_TO_YEAR_ABOVE ? 365 : windowDays;
 
@@ -260,7 +270,8 @@ export default function EnergyPerHabitWidget({ app }) {
         <div className="habit-rows" ref={rowsRef}>
           {
             rows.map(habit => (
-              <HabitRow key={habit.key} habit={habit} windowDays={windowDays} maxAbsDelta={maxAbsDelta} onOpen={onOpenHabit} />
+              <HabitRow habit={habit} key={habit.key} maxAbsDelta={maxAbsDelta} onHover={onHabitHover}
+                onHoverEnd={onHabitHoverEnd} onOpen={onOpenHabit} windowDays={windowDays} />
             ))
           }
         </div>

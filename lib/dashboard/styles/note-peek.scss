@@ -11,6 +11,7 @@
  */
 
 @use 'theme-tokens' as *;
+@use 'controls' as *;
 @use 'widget-sizings' as sizings;
 
 /* Spacing and indent steps mirror ample-editor-app's nodes/_bullet-list-item.scss (and the number-
@@ -66,8 +67,8 @@ $check-list-indent-step: 20px;
   .note-peek-chooser {
     align-items: center;
     background: none;
-    border: 1px dashed $color-border;
-    border-radius: $radius-md;
+    border: none;
+    border-radius: $radius-sm;
     color: $color-text-secondary;
     cursor: pointer;
     display: flex;
@@ -88,22 +89,12 @@ $check-list-indent-step: 20px;
   /* Named for the header link it stands in for, and styled like the popup submit button so it reads as
    * the widget's one call to action while no note is chosen. */
   .note-peek-chooser-button {
-    background: $color-background-accent;
-    border: 1px solid $color-background-accent;
-    border-radius: $radius-sm;
-    color: $color-text-on-accent;
-    cursor: pointer;
-    font-size: $default-font-size;
-    font-weight: 600;
-    padding: $sp-xs $sp-md;
-
-    &:hover {
-      opacity: 0.9;
-    }
+    @include outlined-button;
+    margin-top: $sp-xs;
   }
 
   .note-peek-chooser-icon {
-    font-size: $large-heading-font-size;
+    color: $color-text-lower;
   }
 
   .note-peek-chooser-label {

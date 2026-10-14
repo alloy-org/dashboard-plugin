@@ -4,7 +4,7 @@
  * Task: Reusable widget wrapper with header, icon, and optional configure button
  * Prompt summary: "shared widget chrome component used by all dashboard widgets"
  */
-import { widgetIconFromId, widgetSubtitleFromId, widgetTitleFromId } from "constants/settings";
+import { widgetIconFromId, widgetIconNameFromId, widgetSubtitleFromId, widgetTitleFromId } from "constants/settings";
 import { createContext, useContext } from "react"
 import DraggableHeading from "draggable-heading";
 
@@ -40,9 +40,11 @@ export const WidgetSizeContext = createContext(null);
 // Prompt: "sets default title, icon and subtitle props based on the widgetId that is passed to the
 //   component ... so they don't need to include icon/title/subtitle"
 export default function WidgetWrapper({ app, children, configurable, gridHeightSize, gridWidthSize, headerActions,
-    icon, onConfigure, subtitle, title, widgetId }) {
+    icon, iconName, onConfigure, subtitle, title, widgetId }) {
   const cellSizing = useContext(WidgetSizeContext);
   const resolvedIcon = icon ?? widgetIconFromId(widgetId);
+  // A widget passing its own emoji icon keeps it; otherwise the registry's Material icon is drawn
+  const resolvedIconName = iconName ?? (icon ? null : widgetIconNameFromId(widgetId));
   const resolvedSubtitle = subtitle ?? widgetSubtitleFromId(widgetId);
   const resolvedTitle = title ?? widgetTitleFromId(widgetId);
   const handleConfigure = async () => {
@@ -64,6 +66,7 @@ export default function WidgetWrapper({ app, children, configurable, gridHeightS
         configurable={configurable}
         headerActions={headerActions}
         icon={resolvedIcon}
+        iconName={resolvedIconName}
         subtitle={resolvedSubtitle}
         title={resolvedTitle}
         widgetId={widgetId}

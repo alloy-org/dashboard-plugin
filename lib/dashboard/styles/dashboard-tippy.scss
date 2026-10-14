@@ -237,3 +237,165 @@ $tooltip-row-padding-y: 2px;
     word-break: break-word;
   }
 }
+
+// ── Chart tooltips (theme 'dashboard-chart'), styled like the host's Task Stats tooltip ──
+// Popup surface rather than the dark hint tooltip, 4px corners, MDC elevation 3, no arrow.
+
+.tippy-box[data-theme~='dashboard-chart'] {
+  background: $color-bg-popup;
+  border-radius: $radius-sm;
+  box-shadow: 0 3px 3px -2px rgba(0, 0, 0, 0.2), 0 3px 4px 0 rgba(0, 0, 0, 0.14), 0 1px 8px 0 rgba(0, 0, 0, 0.12);
+  color: $color-text-secondary;
+  max-width: 320px;
+  min-width: 200px;
+
+  .tippy-content {
+    padding: 12px 16px 8px;
+  }
+
+  .stats-chart-tooltip-content {
+    max-height: 280px;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .stats-chart-tooltip-title {
+    align-items: center;
+    color: $color-text;
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+
+    .stats-chart-tooltip-icon {
+      color: $color-text-muted;
+      height: 18px;
+      width: 18px;
+    }
+  }
+
+  .stats-chart-tooltip-title-text {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 20px;
+  }
+
+  .stats-chart-tooltip-stat {
+    align-items: flex-start;
+    color: $color-text-secondary;
+    display: flex;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .stats-chart-tooltip-icon {
+    color: $color-text-muted;
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+
+  .stats-chart-tooltip-icon-wrap {
+    display: inline-flex;
+    flex-shrink: 0;
+
+    .stats-chart-tooltip-icon {
+      color: inherit;
+    }
+  }
+
+  .stats-chart-tooltip-text {
+    flex: 1;
+    font-size: 13px;
+    line-height: 20px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+
+    p {
+      display: inline;
+      margin: 0;
+    }
+  }
+
+  .stats-chart-tooltip-trailing {
+    color: $color-text-secondary;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    line-height: 20px;
+    margin-left: auto;
+  }
+
+  .peak-hours-tooltip-stat--created .stats-chart-tooltip-icon {
+    color: $color-victory-value-1-text;
+  }
+
+  .peak-hours-tooltip-stat--completed .stats-chart-tooltip-icon {
+    color: $color-victory-value-4;
+  }
+
+  .habit-tooltip-stat--positive .stats-chart-tooltip-icon {
+    color: $color-victory-value-4;
+  }
+
+  .habit-tooltip-stat--negative .stats-chart-tooltip-icon {
+    color: $color-danger;
+  }
+
+  .stats-chart-tooltip-stat--victory-value .stats-chart-tooltip-icon {
+    color: $color-victory-value-2-text;
+  }
+
+  .stats-chart-tooltip-stat--no-data {
+    .stats-chart-tooltip-icon {
+      color: $color-text-lower;
+    }
+
+    .stats-chart-tooltip-text {
+      color: $color-text-muted;
+      font-style: italic;
+    }
+  }
+
+  .stats-chart-tooltip-stat--task {
+    border-top: 1px solid $color-border;
+    margin: 0 -16px;
+    padding: 4px 16px 0;
+
+    & + .stats-chart-tooltip-stat--task {
+      border-top: none;
+      padding-top: 0;
+    }
+  }
+
+  .stats-chart-tooltip-swatch {
+    border-radius: 2px;
+    display: inline-block;
+    height: 8px;
+    margin-right: 4px;
+    width: 8px;
+  }
+
+  .dashboard-tooltip-row-project {
+    align-items: center;
+    color: $color-text-muted;
+    display: flex;
+    font-size: 12px;
+    gap: 4px;
+    line-height: 16px;
+  }
+
+  .dashboard-tooltip-row-swatch {
+    border-radius: 2px;
+    display: inline-block;
+    flex-shrink: 0;
+    height: 8px;
+    width: 8px;
+  }
+
+  .stats-chart-tooltip-project {
+    color: $color-text-muted;
+    display: block;
+    font-size: 12px;
+    line-height: 16px;
+  }
+}

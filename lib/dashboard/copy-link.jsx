@@ -1,6 +1,7 @@
 // [claude-sonnet-4-6-authored file]
 // Prompt summary: "extract CopyPluginLink into a standalone reusable component for copying URLs in sandboxed iframes"
 
+import MaterialIcon from "material-icon";
 import { useState } from "react";
 
 // ----------------------------------------------------------------------------------------------
@@ -37,7 +38,7 @@ export default function CopyLink({ url, children, className, confirmationMs = 25
       onClick={handleClick}
       title={copied ? 'Copied to clipboard!' : `Click to copy: ${ url }`}
     >
-      {copied ? '\u2713 Link copied!' : children}
+      {copied ? <><MaterialIcon name="check" size={ 14 } />Link copied!</> : children}
     </a>
   );
 }

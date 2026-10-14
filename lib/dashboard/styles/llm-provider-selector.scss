@@ -8,7 +8,7 @@
 .llm-provider-options {
   display: flex;
   flex-direction: column;
-  gap: $sp-xs;
+  gap: 2px;
 
   /* The option is matched as `label.llm-provider-option` rather than by class alone so it carries the same
    * weight as the popup body's generic `label` rule in config-popup.scss, whose centered alignment and row
@@ -17,8 +17,14 @@
    * the popup's rules are always emitted into the bundle first. */
   label.llm-provider-option {
     align-items: flex-start;
-    gap: $sp-sm;
-    padding: $sp-sm $sp-xs;
+    border-radius: $radius-sm;
+    gap: $sp-md;
+    padding: $sp-sm;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+      background: $color-bg-element;
+    }
 
     input[type="radio"] {
       margin-top: 3px;
@@ -33,12 +39,12 @@
 
   .llm-provider-option-name {
     color: $color-text;
-    font-weight: 700;
+    font-weight: 500;
   }
 
   .llm-provider-option-desc {
-    color: $color-text-secondary;
-    font-size: $smaller-font-size;
-    line-height: 1.35;
+    color: $color-text-muted;
+    font-size: 12px;
+    line-height: 1.4;
   }
 }

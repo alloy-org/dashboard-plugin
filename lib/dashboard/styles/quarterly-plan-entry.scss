@@ -1,5 +1,6 @@
 // Splash states for Quarterly Planning before a plan note exists.
 @use 'theme-tokens' as *;
+@use 'controls' as *;
 
 $plan-entry-video-background: #152033;
 
@@ -10,9 +11,9 @@ $plan-entry-video-background: #152033;
   gap: $sp-md;
 
   .plan-entry-title {
-    color: $color-navy;
-    font-size: $small-heading-font-size;
-    font-weight: 700;
+    color: $color-text;
+    font-size: $large-font-size;
+    font-weight: 500;
     line-height: 1.25;
     margin: 0;
   }
@@ -29,7 +30,7 @@ $plan-entry-video-background: #152033;
   .plan-entry-copy,
   .plan-entry-footnote {
     color: $color-text-secondary;
-    font-size: $default-font-size;
+    font-size: $smaller-font-size;
     line-height: 1.45;
     margin: 0;
   }
@@ -40,12 +41,8 @@ $plan-entry-video-background: #152033;
   }
 
   .plan-entry-kicker {
-    color: $color-text-muted;
-    font-size: $smaller-font-size;
-    font-weight: 700;
-    letter-spacing: 0.04em;
+    @include overline-label;
     margin: 0;
-    text-transform: uppercase;
   }
 
   .plan-entry-progress-labels {
@@ -56,16 +53,16 @@ $plan-entry-video-background: #152033;
     margin-bottom: $sp-xs;
   }
 
+  /* The host's linear progress bar: a 4px track in the medium action color under an action-color fill. */
   .plan-entry-progress-track {
-    background: $color-bg-page;
-    border-radius: 999px;
-    height: 8px;
+    background: $color-blue-light;
+    border-radius: 2px;
+    height: 4px;
     overflow: hidden;
   }
 
   .plan-entry-progress-fill {
     background: $color-accent;
-    border-radius: 999px;
     height: 100%;
   }
 
@@ -75,40 +72,24 @@ $plan-entry-video-background: #152033;
     gap: $sp-sm;
   }
 
-  .plan-entry-source,
-  .plan-entry-scratch,
-  .plan-entry-choice-button,
-  .plan-entry-build {
-    background: $color-bg-card;
-    border: 1px solid $color-border;
-    border-radius: $radius-md;
-    color: $color-navy;
-    cursor: pointer;
-    font-size: $default-font-size;
-    font-weight: 600;
+  .plan-entry-choice-button {
+    @include outlined-button;
   }
 
   .plan-entry-source {
-    align-items: center;
-    display: flex;
-    flex: 1 1 72px;
-    flex-direction: column;
-    gap: $sp-xs;
-    min-width: 72px;
-    padding: $sp-sm;
-
-    &:hover { border-color: $color-accent; }
+    @include outlined-button;
+    flex: 1 1 auto;
   }
 
   .plan-entry-source-icon {
-    height: 22px;
-    width: 22px;
+    height: 18px;
+    width: 18px;
   }
 
   .plan-entry-import-copied {
-    color: $color-navy;
+    color: $color-text;
     font-size: $smaller-font-size;
-    font-weight: 600;
+    font-weight: 500;
     margin: 0;
     text-align: center;
   }
@@ -122,32 +103,20 @@ $plan-entry-video-background: #152033;
 
   .plan-entry-scratch,
   .plan-entry-build,
-  .plan-entry-begin,
   .plan-entry-choice-button--primary {
-    background: $color-background-accent;
-    border-color: $color-background-accent;
-    color: $color-text-on-accent;
-    padding: $sp-sm $sp-lg;
-
-    &:hover { filter: brightness(0.96); }
+    @include raised-button;
   }
 
   .plan-entry-begin {
-    border: 1px solid $color-background-accent;
-    border-radius: $radius-md;
-    cursor: pointer;
+    @include raised-button(32px);
     flex: 0 0 auto;
-    font-size: $smaller-font-size;
-    font-weight: 600;
-    padding: $sp-xs $sp-md;
-    white-space: nowrap;
   }
 
   .plan-entry-scratch,
   .plan-entry-build { width: 100%; }
 
   .plan-entry-preview {
-    background: $color-bg-page;
+    background: $color-bg-secondary;
     border-radius: $radius-md;
     display: flex;
     flex-direction: column;
@@ -166,7 +135,7 @@ $plan-entry-video-background: #152033;
     color: $color-text-secondary;
     flex: 1;
     font-size: $smaller-font-size;
-    font-weight: 600;
+    font-weight: 500;
     padding: $sp-xs;
     text-align: center;
   }
@@ -212,17 +181,15 @@ $plan-entry-video-background: #152033;
   .plan-entry-choice--recommended { border-color: $color-accent; }
 
   .plan-entry-choice-badge {
-    color: $color-accent;
-    font-size: $smaller-font-size;
-    font-weight: 700;
-    letter-spacing: 0.04em;
+    @include overline-label;
+    color: $color-link;
     margin: 0;
-    text-transform: uppercase;
   }
 
   .plan-entry-choice-title {
-    color: $color-navy;
+    color: $color-text;
     font-size: $default-font-size;
+    font-weight: 500;
     margin: 0;
   }
 
@@ -234,17 +201,17 @@ $plan-entry-video-background: #152033;
     margin: 0;
   }
 
-  .plan-entry-choice-price { font-weight: 700; }
+  .plan-entry-choice-price { font-weight: 500; }
 
   .plan-entry-choice-button { padding: $sp-sm $sp-md; }
 
   .plan-entry-starts {
     align-self: flex-end;
-    background: rgba(232, 133, 61, 0.18);
-    border-radius: 999px;
-    color: $color-navy;
-    font-size: $smaller-font-size;
-    font-weight: 600;
+    background: $color-action-low;
+    border-radius: 10px;
+    color: $color-text;
+    font-size: 12px;
+    font-weight: 500;
     margin: 0;
     padding: $sp-xs $sp-md;
   }
@@ -289,10 +256,8 @@ $plan-entry-video-background: #152033;
     border-radius: 50%;
     color: #ffffff;
     display: flex;
-    font-size: 24px;
     height: 64px;
     justify-content: center;
-    padding-left: 4px;
     transition: background 120ms ease, transform 120ms ease;
     width: 64px;
   }
@@ -329,8 +294,9 @@ $plan-entry-video-background: #152033;
     gap: $sp-sm;
 
     strong {
-      color: $color-navy;
+      color: $color-text;
       display: block;
+      font-weight: 500;
     }
   }
 
@@ -352,5 +318,17 @@ $plan-entry-video-background: #152033;
   .horizontal-3-cell &,
   .horizontal-4-cell & {
     .plan-entry-choices { grid-template-columns: 1fr 1fr; }
+  }
+}
+
+/* The dashboard is one column below tablet width, but cells keep their horizontal size classes, so the choices
+ * stack here rather than squeezing two cards side by side. */
+.quarterly-plan-entry {
+  @include breakpoint($breakpoint-tablet) {
+    .horizontal-2-cell &,
+    .horizontal-3-cell &,
+    .horizontal-4-cell & {
+      .plan-entry-choices { grid-template-columns: 1fr; }
+    }
   }
 }

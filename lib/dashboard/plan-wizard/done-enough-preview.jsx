@@ -5,6 +5,7 @@
 // It says plainly that it is a preview: nothing evaluates a day against the stored condition yet, and the page
 // must not imply that something does.
 
+import MaterialIcon from "dashboard/material-icon";
 import { doneEnoughPreviewFromDraft } from "dashboard/plan-wizard/done-enough-fields";
 
 // ----------------------------------------------------------------------------------------------
@@ -32,7 +33,7 @@ export default function DoneEnoughPreview({ draft }) {
           { signals.map(signal => (
             <li className={ `done-enough-signal done-enough-signal--${ signal.isCredited ? "credited" : "excluded" }` }
               key={ signal.text }>
-              { signal.isCredited ? <span aria-hidden="true" className="done-enough-signal-mark">✓</span> : null }
+              { signal.isCredited ? <MaterialIcon className="done-enough-signal-mark" name="check" size={ 14 } /> : null }
               { signal.text }
             </li>
           )) }

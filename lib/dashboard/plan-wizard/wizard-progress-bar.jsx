@@ -10,18 +10,15 @@
 // The panel closes when a step is chosen. Jumping is the only reason it opens, so leaving it open over the page
 // the user just asked for would cover the answer they came to give.
 
+import MaterialIcon from "dashboard/material-icon";
 import WizardProgressSidebar from "dashboard/plan-wizard/wizard-progress-sidebar";
 import { useEffect, useRef, useState } from "react";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Draw the chevron that turns to point up while the step panel is open.
-// @returns {JSX.Element} An inline chevron icon.
+// @returns {JSX.Element} The expand_more Material icon.
 function DisclosureChevronIcon() {
-  return (
-    <svg aria-hidden="true" className="progress-bar-chevron" viewBox="0 0 24 24">
-      <path d="M6 9.5l6 6 6-6" />
-    </svg>
-  );
+  return <MaterialIcon className="progress-bar-chevron" name="expand_more" />;
 }
 
 // ----------------------------------------------------------------------------------------------

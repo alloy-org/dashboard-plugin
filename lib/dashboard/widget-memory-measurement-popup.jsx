@@ -7,9 +7,11 @@ import { flushSync } from "react-dom";
 import { DASHBOARD_WIDGET_LOADED_EVENT, DashboardLoadContext, useDashboardLoadTracker } from "dashboard-load-tracking";
 import ConfigPopup from "config-popup";
 import { WIDGET_REGISTRY } from "layout-profiles";
+import MaterialIcon from "material-icon";
 import { collectGarbageIfAvailable, lowestMemorySample } from "util/memory-instrumentation";
 import "styles/widget-memory-measurement-popup.scss";
 
+const MEASURED_WIDGET_ICON_SIZE = 18;
 const SAMPLE_DURATION_MILLISECONDS = 3000;
 
 // ------------------------------------------------------------------------------------------
@@ -124,7 +126,7 @@ export default function WidgetMemoryMeasurementPopup({ onClose, renderWidget }) 
   const selectedWidget = supportedWidgets.find(widget => widget.widgetId === selectedWidgetId);
   const deltaLabel = measurement ? `${ measurement.deltaMb >= 0 ? "+" : "" }${ measurement.deltaMb.toFixed(1) } MB` : "—";
   return (
-    <ConfigPopup title="🧠 Widget Memory Measurement" onCancel={onClose} onSubmit={onClose} submitLabel="Close">
+    <ConfigPopup title="Widget Memory Measurement" onCancel={onClose} onSubmit={onClose} submitLabel="Close">
       <div className="widget-memory-measurement">
         <p className="widget-memory-measurement-description">
           Measures the selected widget on top of the dashboard's already-loaded shared data.
@@ -138,7 +140,7 @@ export default function WidgetMemoryMeasurementPopup({ onClose, renderWidget }) 
           disabled={!!mountedWidgetId}
         >
           {supportedWidgets.map(widget => (
-            <option key={widget.widgetId} value={widget.widgetId}>{widget.icon} {widget.visibleTitle || widget.name}</option>
+            <option key={widget.widgetId} value={widget.widgetId}>{widget.visibleTitle || widget.name}</option>
           ))}
         </select>
         <div className="widget-memory-measurement-actions">
@@ -170,7 +172,10 @@ export default function WidgetMemoryMeasurementPopup({ onClose, renderWidget }) 
         </p>
         {mountedWidgetId ? (
           <div className="widget-memory-measurement-widget">
-            <h4>{selectedWidget?.icon} {selectedWidget?.visibleTitle || selectedWidget?.name}</h4>
+            <h4>
+              <MaterialIcon name={ selectedWidget?.iconName } size={ MEASURED_WIDGET_ICON_SIZE } />
+              {selectedWidget?.visibleTitle || selectedWidget?.name}
+            </h4>
             <DashboardLoadContext.Provider value={loadTracker}>
               {renderWidget(mountedWidgetId)}
             </DashboardLoadContext.Provider>

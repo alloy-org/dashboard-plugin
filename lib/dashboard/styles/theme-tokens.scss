@@ -11,6 +11,10 @@ $color-bg-page-hover: var(--dashboard-color-bg-page-hover);
 $color-bg-card: var(--dashboard-color-bg-card);
 $color-bg-primary: var(--dashboard-color-bg-primary);
 $color-bg-secondary: var(--dashboard-color-bg-secondary);
+$color-bg-element: var(--dashboard-color-bg-element);
+$color-bg-element-medium: var(--dashboard-color-bg-element-medium);
+$color-bg-popup: var(--dashboard-color-bg-popup);
+$color-bg-hover: var(--dashboard-color-bg-hover);
 $color-bg-warning: var(--dashboard-color-bg-warning);
 $color-border: var(--dashboard-color-border);
 $color-header-bg: var(--dashboard-color-header-bg);
@@ -31,11 +35,13 @@ $color-navy: var(--dashboard-color-navy);
 $color-accent: var(--dashboard-color-accent);
 $color-blue: var(--dashboard-color-blue);
 $color-blue-light: var(--dashboard-color-blue-light);
+$color-action-low: var(--dashboard-color-action-low);
 $color-link: var(--dashboard-color-link);
 
 $color-text: var(--dashboard-color-text);
 $color-text-secondary: var(--dashboard-color-text-secondary);
 $color-text-muted: var(--dashboard-color-text-muted);
+$color-text-lower: var(--dashboard-color-text-lower);
 
 $color-danger: var(--dashboard-color-danger);
 $color-warning: var(--dashboard-color-warning);
@@ -53,6 +59,17 @@ $color-project-window-purple: var(--dashboard-color-project-window-purple);
 $color-project-window-red: var(--dashboard-color-project-window-red);
 $color-project-window-teal: var(--dashboard-color-project-window-teal);
 
+$color-victory-value-0: var(--dashboard-victory-value-color-0);
+$color-victory-value-0-text: var(--dashboard-victory-value-color-0-text);
+$color-victory-value-1: var(--dashboard-victory-value-color-1);
+$color-victory-value-1-text: var(--dashboard-victory-value-color-1-text);
+$color-victory-value-2: var(--dashboard-victory-value-color-2);
+$color-victory-value-2-text: var(--dashboard-victory-value-color-2-text);
+$color-victory-value-3: var(--dashboard-victory-value-color-3);
+$color-victory-value-3-text: var(--dashboard-victory-value-color-3-text);
+$color-victory-value-4: var(--dashboard-victory-value-color-4);
+$color-victory-value-4-text: var(--dashboard-victory-value-color-4-text);
+
 $color-agenda-priority-critical: var(--dashboard-color-agenda-priority-critical);
 $color-agenda-priority-important: var(--dashboard-color-agenda-priority-important);
 $color-agenda-priority-urgent: var(--dashboard-color-agenda-priority-urgent);
@@ -65,10 +82,10 @@ $sp-md: 12px;
 $sp-lg: 16px;
 $sp-xl: 24px;
 
-// Radii
-$radius-sm: 6px;
-$radius-md: 10px;
-$radius-lg: 14px;
+// Radii, matching the host app: 4px for buttons, inputs, and tiles inside a card; 8px for cards themselves
+$radius-sm: 4px;
+$radius-md: 4px;
+$radius-lg: 8px;
 
 // Fonts
 // Roboto is loaded on the dashboard page (see lib/embed-html.js); the system stack remains as a fallback

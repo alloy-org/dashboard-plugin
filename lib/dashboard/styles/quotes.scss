@@ -7,14 +7,7 @@
 @use 'theme-tokens' as *;
 
 $quote-tile-min-height: 150px;
-
-// A solid black ring drawn outside the white glyphs. The fill stays readable on a dark photo,
-// and the ring stays readable when the photo behind the letters is light.
-$quote-text-outline: -2px -2px 0 #000, -1px -2px 0 #000, 0 -2px 0 #000, 1px -2px 0 #000, 2px -2px 0 #000,
-  -2px -1px 0 #000, -1px -1px 0 #000, 0 -1px 0 #000, 1px -1px 0 #000, 2px -1px 0 #000,
-  -2px 0 0 #000, -1px 0 0 #000, 1px 0 0 #000, 2px 0 0 #000,
-  -2px 1px 0 #000, -1px 1px 0 #000, 0 1px 0 #000, 1px 1px 0 #000, 2px 1px 0 #000,
-  -2px 2px 0 #000, -1px 2px 0 #000, 0 2px 0 #000, 1px 2px 0 #000, 2px 2px 0 #000;
+$quote-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 
 /* [Claude] Task: quote tile grid with background images and overlaid text */
 /* Prompt: "styles for quote tiles with background images and serif text" */
@@ -35,8 +28,8 @@ $quote-text-outline: -2px -2px 0 #000, -1px -2px 0 #000, 0 -2px 0 #000, 1px -2px
   .quote-tile {
     background-position: center;
     background-size: cover;
-    border-radius: $radius-md;
-    // White copy with the black ring above, so the same treatment reads on light and dark photos.
+    border-radius: $radius-sm;
+    // White copy over the photo's dark gradient, lifted by a soft shadow where the photo is light.
     color: #fff;
     display: flex;
     flex-direction: column;
@@ -46,19 +39,18 @@ $quote-text-outline: -2px -2px 0 #000, -1px -2px 0 #000, 0 -2px 0 #000, 1px -2px
 
     .quote-text {
       color: #fff;
-      font-size: $medium-heading-font-size;
-      font-style: italic;
-      font-weight: 600;
-      line-height: 1.35;
+      font-size: $large-font-size;
+      font-weight: 500;
+      line-height: 1.4;
       margin: 0 0 $sp-sm 0;
-      text-shadow: $quote-text-outline;
+      text-shadow: $quote-text-shadow;
     }
 
     .quote-author {
-      color: #fff;
-      font-size: $large-font-size;
-      font-weight: 600;
-      text-shadow: $quote-text-outline;
+      color: rgba(255, 255, 255, 0.85);
+      font-size: $smaller-font-size;
+      font-weight: 400;
+      text-shadow: $quote-text-shadow;
     }
   }
 

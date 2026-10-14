@@ -7,15 +7,19 @@
 $layout-picker-transition: 0.15s ease;
 
 .widget-layout-picker {
+  /* A quiet inline notice rather than a colored box: warning icon, secondary text. */
   .layout-picker-warning {
-    background: color-mix(in srgb, $color-warning 15%, transparent);
-    border: 1px solid color-mix(in srgb, $color-warning 40%, transparent);
-    border-radius: $radius-sm;
-    color: $color-text;
+    align-items: center;
+    color: $color-text-secondary;
+    display: flex;
     font-size: $smaller-font-size;
-    font-weight: 600;
+    gap: $sp-sm;
     margin-bottom: $sp-md;
-    padding: $sp-sm $sp-md;
+  }
+
+  .layout-picker-warning-icon {
+    color: $color-warning;
+    flex-shrink: 0;
   }
 
   .layout-picker-profiles {
@@ -24,10 +28,11 @@ $layout-picker-transition: 0.15s ease;
     gap: $sp-sm;
   }
 
+  /* Each profile is an outlined option row, highlighted in the host's low-contrast action fill on hover. */
   .layout-picker-profile-button {
-    background: $color-bg-page;
+    background: transparent;
     border: 1px solid $color-border;
-    border-radius: $radius-md;
+    border-radius: $radius-sm;
     color: $color-text;
     cursor: pointer;
     padding: $sp-md;
@@ -36,7 +41,7 @@ $layout-picker-transition: 0.15s ease;
     width: 100%;
 
     &:hover:not(:disabled) {
-      background: $color-bg-page-hover;
+      background: $color-action-low;
       border-color: $color-accent;
     }
 
@@ -55,40 +60,47 @@ $layout-picker-transition: 0.15s ease;
   }
 
   .layout-picker-profile-header {
-    align-items: baseline;
+    align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: $sp-xs $sp-sm;
-    margin-bottom: $sp-sm;
+    gap: $sp-xs $sp-md;
+    margin-bottom: $sp-xs;
   }
 
   .layout-picker-profile-icon {
+    color: $color-accent;
     flex-shrink: 0;
-    font-size: $small-heading-font-size;
-    line-height: 1;
   }
 
+  /* The name keeps a readable minimum width; when the card is narrow, the action wraps below it. */
   .layout-picker-profile-name {
-    flex: 1;
-    font-size: $large-font-size;
-    font-weight: 700;
+    flex: 1 1 160px;
+    font-size: $default-font-size;
+    font-weight: 500;
     min-width: 0;
   }
 
   .layout-picker-profile-action {
-    color: $color-accent;
-    font-size: $smaller-font-size;
-    font-weight: 600;
+    align-items: center;
+    color: $color-link;
+    display: inline-flex;
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 500;
+    gap: 2px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
   .layout-picker-profile-action--current {
     color: $color-text-muted;
   }
 
+  /* Indented to line up with the profile name past its icon. */
   .layout-picker-profile-description {
     color: $color-text-secondary;
     font-size: $smaller-font-size;
     line-height: 1.45;
-    margin: 0;
+    margin: 0 0 0 32px;
   }
 }

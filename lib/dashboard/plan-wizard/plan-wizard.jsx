@@ -419,11 +419,6 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
       <div aria-label="Plan your quarter" aria-modal="true" className="plan-wizard-page" role="dialog">
         <header className="plan-wizard-header">
           <div className="plan-wizard-title-group" title={ `${ quarterLabel } · ${ domainLabel }` }>
-            <svg aria-hidden="true" className="plan-wizard-title-icon" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="8" />
-              <circle cx="12" cy="12" r="4" />
-              <circle className="plan-wizard-title-icon-center" cx="12" cy="12" r="1.5" />
-            </svg>
             <h1 className="plan-wizard-title">Plan Builder - Beta</h1>
             <span className="plan-wizard-title-quarter">{ headerQuarterLabel }</span>
             { existingPlanNoteUuid ? (
@@ -433,6 +428,11 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
               </button>
             ) : null }
           </div>
+        </header>
+        <div className="plan-wizard-step-strip">
+          <span className="plan-wizard-step-position">
+            Step <span className="plan-wizard-progress">{ `${ stepIndex + 1 } of ${ WIZARD_STEPS.length }` }</span>
+          </span>
           <div aria-label={ `Step ${ stepIndex + 1 } of ${ WIZARD_STEPS.length }` } className="plan-wizard-step-track">
             { WIZARD_STEPS.map((wizardStep, wizardStepIndex) => (
               <span aria-hidden="true"
@@ -440,8 +440,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
                 key={ wizardStep.key } />
             )) }
           </div>
-          <span className="plan-wizard-progress">{ `${ stepIndex + 1 } of ${ WIZARD_STEPS.length }` }</span>
-        </header>
+        </div>
         { rendersProgressSidebar ? (
           <WizardProgressBar { ...{ isOpeningPlanNote, progressRows, quarterLabel } }
             onOpenPlanNote={ handleViewQuarterlyPlan } onSelectStep={ handleSelectStep }

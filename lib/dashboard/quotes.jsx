@@ -4,6 +4,7 @@
  * Task: Quotes widget — LLM-generated inspirational quotes with background images
  * Prompt summary: "widget that fetches quotes via callPlugin and displays on image tiles"
  */
+import MaterialIcon from "material-icon";
 import { useEffect, useState } from "react";
 import { getRandomQuotes } from "quotes-data";
 import { backgroundSplashUrl } from "util/background-splash-images";
@@ -34,8 +35,9 @@ export default function QuotesWidget({ gridHeightSize, planContent, quotes }) {
   };
 
   const reseedButton = (
-    <button className="widget-header-action" onClick={handleReseed} title="Reseed quotes">
-      ↻ Reseed
+    <button aria-label="Reseed quotes" className="widget-header-action widget-header-action--icon-only"
+      onClick={handleReseed} title="Reseed quotes" type="button">
+      <MaterialIcon name="refresh" />
     </button>
   );
 

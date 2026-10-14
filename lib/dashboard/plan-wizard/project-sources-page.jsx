@@ -8,6 +8,7 @@
 // It borrows the intent reading page's layout classes, since the two pages are the same kind of explanation for
 // different steps and should read alike.
 
+import MaterialIcon from "dashboard/material-icon";
 import { IntentReadingProgressBar, ReadItemIcon, useStaggeredReveal } from "dashboard/plan-wizard/intent-reading-page";
 import { hasThinSources, projectTaskItems, sourceProjectRows } from "dashboard/plan-wizard/project-sources-page-fields";
 import { useEffect, useState } from "react";
@@ -123,16 +124,12 @@ function ProjectSourcesProject({ projectRow, projectSources }) {
   const hasTasks = projectRow.servedTaskCount > 0;
   const rowContent = (
     <>
-      <svg aria-hidden="true" className="intent-reading-direction-icon" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="8" />
-        <circle cx="12" cy="12" r="4" />
-        <circle className="intent-reading-direction-icon-center" cx="12" cy="12" r="1.5" />
-      </svg>
+      <MaterialIcon className="intent-reading-direction-icon" name="track_changes" />
       <span className="project-sources-project-name">{ projectRow.summary }</span>
       { projectRow.userCategoryEm === "personal" ? <span className="project-sources-project-category">Personal</span> : null }
       { isRatified ? (
         <span className="project-sources-ratified-badge" title="You chose this project's cadence">
-          <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7" /></svg>
+          <MaterialIcon name="check" size={ 14 } />
           { projectRow.paceLabel }
         </span>
       ) : null }
@@ -140,7 +137,7 @@ function ProjectSourcesProject({ projectRow, projectSources }) {
         { projectTaskCountLabel(projectRow) }
       </span>
       { hasTasks ? (
-        <svg aria-hidden="true" className="project-sources-project-chevron" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" /></svg>
+        <MaterialIcon className="project-sources-project-chevron" name="chevron_right" />
       ) : null }
     </>
   );

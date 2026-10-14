@@ -5,6 +5,7 @@
  * Prompt summary: "widget displaying mood buttons, 7-day average, and sparkline visualization"
  */
 import { useThemeRevision } from "hooks/use-theme-revision";
+import MaterialIcon from "material-icon";
 import { useEffect, useRef, useState } from "react";
 import ConfigPopup from "config-popup";
 import { useCanvasTippy } from "dashboard/dashboard-tooltip-tippy";
@@ -701,7 +702,9 @@ function Sparkline({ moodRatings, averageMood, visualizationMode, visualizationK
   return (
     <div className="mood-viz-section">
       <div className="mood-viz-canvas-wrap">{visualization}</div>
-      <button className="mood-viz-configure-link" onClick={onConfigure}>⚙ Configure</button>
+      <button className="mood-viz-configure-link" onClick={onConfigure} type="button">
+        <MaterialIcon name="settings" />Configure
+      </button>
     </div>
   );
 }

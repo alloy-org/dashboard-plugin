@@ -5,6 +5,7 @@
  */
 
 @use 'theme-tokens' as *;
+@use 'controls' as *;
 
 /* [Claude] Task: DreamTask widget layout, cards, rating badges, and state styles */
 /* Prompt: "Create a DreamTask widget that uses an agentic loop to suggest goal-aligned tasks" */
@@ -59,13 +60,13 @@
 
   .dream-task-card {
     border: 1px solid $color-border;
-    border-radius: $radius-md;
+    border-radius: $radius-sm;
     opacity: 1;
     padding: $sp-md $sp-lg;
     transition: border-color 0.15s ease, opacity 0.28s ease, transform 0.28s ease;
 
     &:hover {
-      border-color: $color-blue-light;
+      border-color: $color-text-lower;
     }
   }
 
@@ -86,7 +87,8 @@
   }
 
   .dream-task-card-title {
-    color: $color-navy;
+    color: $color-text;
+    font-size: $default-font-size;
     font-weight: 500;
   }
 
@@ -205,24 +207,20 @@
 
   /* [Claude gpt-5.3-codex] Task: action row links below task explanation */
   /* Prompt: "After each dream-task-card-explanation, add links for preserve through tomorrow, mark complete, and remove" */
+  /* Card actions are compact host text buttons, pulled left so the first label lines up with the card text. */
   .dream-task-card-actions {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: $sp-sm;
-    margin-top: $sp-sm;
+    gap: 0 $sp-xs;
+    margin: $sp-xs 0 0 (-$sp-sm);
   }
 
   .dream-task-card-action {
-    color: $color-link;
-    cursor: pointer;
-    font-size: $smaller-font-size;
-    font-weight: 600;
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
+    @include text-button(28px);
+    font-size: 12px;
+    gap: $sp-xs;
+    color: $color-text-secondary;
   }
 
   /* The no-config Ample Agent Pro promo card now lives in the shared styles/no-config-upsell.scss, rendered by

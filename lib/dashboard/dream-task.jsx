@@ -8,6 +8,7 @@ import { buildAvailableTimeSlots, fetchSchedulingOccupancy, resolveDreamTaskSche
   scheduledDreamTaskResultFromStartAt } from "dream-task-schedule";
 import { promoteDreamTaskReserve } from "dream-task-service";
 import LlmProviderSelector from "llm-provider-selector";
+import MaterialIcon from "material-icon";
 import NoConfigUpsell from "no-config-upsell";
 import { pluginSettings } from "plugin-data";
 import { IDEA_STATUSES } from "project-idea-records";
@@ -105,10 +106,11 @@ function NoteLink({ noteUUID, onOpenNote }) {
   return (
     <a
       href="#"
-      className="widget-header-action"
+      aria-label="Open today's proposed tasks note"
+      className="widget-header-action widget-header-action--icon-only"
       onClick={onOpenNote}
       title="Open today's proposed tasks note"
-    >🗒️ Note</a>
+    ><MaterialIcon name="description" /></a>
   );
 }
 
@@ -116,10 +118,11 @@ function ReseedLink({ onReseed }) {
   return (
     <a
       href="#"
-      className="widget-header-action"
+      aria-label="Reseed"
+      className="widget-header-action widget-header-action--icon-only"
       onClick={onReseed}
-      title="Get new task suggestions (excludes tasks shown today)"
-    >🔄 Reseed</a>
+      title="Reseed: get new task suggestions (excludes tasks shown today)"
+    ><MaterialIcon name="refresh" /></a>
   );
 }
 
@@ -137,12 +140,12 @@ function LoadingState() {
 // [Claude claude-opus-4-8] Task: list of highlighted Ample Agent Pro features rendered as pills
 // [Claude claude-opus-4-8 (1M context)] Task: features now feed the shared NoConfigUpsell card
 const NO_CONFIG_FEATURES = [
-  { icon: '🎯', label: 'Highlight goal-matched tasks' },
-  { icon: '⚖️', label: 'Sort tasks (fun, fast, etc)' },
-  { icon: '🕵', label: 'Deep note search' },
-  { icon: '💪', label: 'Task completion agent' },
-  { icon: '🔬', label: 'Multi-agent deep research' },
-  { icon: '✏️', label: 'Finish a note in progress' },
+  { iconName: 'track_changes', label: 'Highlight goal-matched tasks' },
+  { iconName: 'balance', label: 'Sort tasks (fun, fast, etc)' },
+  { iconName: 'manage_search', label: 'Deep note search' },
+  { iconName: 'fitness_center', label: 'Task completion agent' },
+  { iconName: 'science', label: 'Multi-agent deep research' },
+  { iconName: 'edit_note', label: 'Finish a note in progress' },
 ];
 
 // [Claude claude-opus-4-6] Task: render specific error messages based on errorCode from the service
@@ -265,27 +268,32 @@ function TaskList({ dreamTasks, maxTasks, headerActions, onTaskClick, listRef, l
                   title={dreamTask.preserveThroughTomorrow
                     ? 'Clicking this will remove preserve status so the task can reseed normally'
                     : 'Clicking this will ensure that the task remains present in your Dream Task list through tomorrow (normally tasks reseed daily)'}
-                >{dreamTask.preserveThroughTomorrow ? '🚫 Remove preserve' : '📎 Preserve'}</a>
+                >{dreamTask.preserveThroughTomorrow
+                  ? <><MaterialIcon name="remove_circle_outline" size={ 16 } />Remove preserve</>
+                  : <><MaterialIcon name="push_pin" size={ 16 } />Preserve</>}</a>
                 <a
                   href="#"
                   className="dream-task-card-action"
                   onClick={(event) => onComplete(event, dreamTask)}
                   title="Mark this task complete and replace it with another suggestion when available"
-                >✅ Completed</a>
+                >
+                  <MaterialIcon name="check_circle" size={ 16 } />Completed</a>
                 {isScheduled ? null : (
                   <a
                     href="#"
                     className="dream-task-card-action"
                     onClick={(event) => onSchedule(event, dreamTask)}
                     title="Schedule this task for a specific date and time"
-                  >📅 Schedule</a>
+                  >
+                    <MaterialIcon name="event" size={ 16 } />Schedule</a>
                 )}
                 <a
                   href="#"
                   className="dream-task-card-action"
                   onClick={(event) => onRemove(event, dreamTask)}
                   title="Remove this task and replace it with another suggestion when available"
-                >❌ Remove</a>
+                >
+                  <MaterialIcon name="close" size={ 16 } />Remove</a>
               </div>
             </div>
           );

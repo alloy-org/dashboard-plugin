@@ -7,6 +7,7 @@
 
 import { SETTING_KEYS } from "constants/settings";
 import { LAYOUT_PROFILES, layoutMatchesProfile, sizingFromProfile } from "layout-profiles";
+import MaterialIcon from "material-icon";
 import { useState } from "react";
 import "styles/layout-picker.scss";
 import WidgetWrapper from "widget-wrapper";
@@ -33,7 +34,7 @@ export async function saveLayoutWithProfile({ app, isReset, onLayoutPersist, onS
 function ProfileCard({ profile, onApply, applyingId, isMatch }) {
   const isApplying = applyingId === profile.id;
   const isDisabled = !!applyingId;
-  const actionLabel = isApplying ? 'Applying…' : isMatch ? 'Apply' : 'Apply — replaces all widgets →';
+  const actionLabel = isApplying ? 'Applying…' : isMatch ? 'Apply' : 'Apply — replaces all widgets';
   const className = `layout-picker-profile-button${ isApplying ? ' layout-picker-profile-button--applying' : '' }${ isMatch ? ' layout-picker-profile-button--current' : '' }`;
   const actionClassName = `layout-picker-profile-action${ isMatch ? ' layout-picker-profile-action--current' : '' }`;
   return (
@@ -45,9 +46,12 @@ function ProfileCard({ profile, onApply, applyingId, isMatch }) {
         type="button"
       >
         <div className="layout-picker-profile-header">
-          <span className="layout-picker-profile-icon" aria-hidden="true">{profile.icon}</span>
+          <MaterialIcon className="layout-picker-profile-icon" name={ profile.iconName } size={ 20 } />
           <span className="layout-picker-profile-name">{profile.name}</span>
-          <span className={actionClassName}>{actionLabel}</span>
+          <span className={actionClassName}>
+            {actionLabel}
+            {isApplying ? null : <MaterialIcon name="chevron_right" />}
+          </span>
         </div>
         <p className="layout-picker-profile-description">{profile.description}</p>
       </button>
@@ -86,13 +90,19 @@ export default function LayoutPickerWidget({ app, currentLayout, onLayoutApply, 
   };
 
   const headerActions = (
-    <span className="widget-header-action" onClick={handleDismiss}>✕ Dismiss</span>
+    <button aria-label="Dismiss" className="widget-header-action widget-header-action--icon-only"
+      onClick={handleDismiss} title="Dismiss" type="button">
+      <MaterialIcon name="close" />
+    </button>
   );
 
   return (
     <WidgetWrapper headerActions={headerActions} widgetId={WIDGET_ID}>
       {anyMatch ? null : (
-        <p className="layout-picker-warning">⚠️ Clicking a profile reorders all dashboard widgets.</p>
+        <p className="layout-picker-warning">
+          <MaterialIcon className="layout-picker-warning-icon" name="warning_amber" />
+          Clicking a profile reorders all dashboard widgets.
+        </p>
       )}
       <div className="layout-picker-profiles">
         {LAYOUT_PROFILES.map((profile, index) => (

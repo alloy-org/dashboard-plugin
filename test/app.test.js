@@ -12,7 +12,6 @@ import { createRoot } from "react-dom/client";
 // The Amplenote app object is mocked; widgets receive it directly via the app prop.
 import DashboardApp from 'dashboard/dashboard';
 import { FOCUS_EXPANSION_DELAY_MS, FOCUS_RESIZE_TRANSITION_MS } from 'focus-widget';
-import { BACKGROUND_FADE_ANIMATION_NAME, BACKGROUND_FADE_DURATION_MS } from 'hooks/use-background-swap';
 import { mockPlugin } from "./test-helpers.js";
 import { dateKeyFromDateInput, weekStartFromDateInput } from "util/date-utility";
 import {
@@ -81,35 +80,20 @@ function buildMockApp(plugin) {
 const flushAsync = () =>
   act(async () => { await new Promise(r => setTimeout(r, 0)); });
 
-// Advance real time inside act() so timer- and rAF-driven effects (the background cross-fade) can run.
+// Advance real time inside act() so timer- and rAF-driven effects (the focus-mode transitions) can run.
 const settleFor = (milliseconds) =>
   act(async () => { await new Promise(r => setTimeout(r, milliseconds)); });
 
 // ------------------------------------------------------------------------------------------
 // @desc Find a Quick Actions button by its visible label.
 // @param {HTMLElement} container - Mounted dashboard container to search.
-// @param {string} label - Button label text, e.g. "Swap Background".
+// @param {string} label - Button label text, e.g. "Leave Feedback".
 // @returns {HTMLElement|undefined} The matching button element, or undefined when absent.
 // [Cursor opus-5] Task: locate quick-action buttons by label for the new action tests
 // Prompt: "Add two new items ... one for 'Swap background' ... the other should be 'Leave feedback'"
 function quickActionButton(container, label) {
   return Array.from(container.querySelectorAll('.widget-quick-actions .qa-button'))
     .find(button => button.textContent.includes(label));
-}
-
-// ------------------------------------------------------------------------------------------
-// @desc Replace window.Image with a stub that reports a successful load on the next tick. jsdom never
-//   fetches images, so without this the background swap's preload would sit until its 4s timeout.
-// @returns {function(): void} Restores the original Image constructor.
-// [Cursor opus-5] Task: let the background-swap preload resolve under jsdom
-// Prompt: "which animates a transition to a new background from our array"
-function stubImmediateImageLoading() {
-  const OriginalImage = global.Image;
-  global.Image = class StubbedImage {
-    set src(value) { this._src = value; setTimeout(() => { if (this.onload) this.onload(); }, 0); }
-    get src() { return this._src; }
-  };
-  return () => { global.Image = OriginalImage; };
 }
 
 function mondayWeekStartKey(date) {
@@ -146,7 +130,7 @@ describe('DashboardApp', () => {
   let mockApp;
 
   beforeAll(() => {
-    // VictoryValueWidget draws on <canvas>; stub the 2d context so jsdom doesn't throw.
+    // The Mood widget draws on <canvas>; stub the 2d context so jsdom doesn't throw.
     const mockGradient = { addColorStop: jest.fn() };
     const mockCtx = {
       scale: jest.fn(), clearRect: jest.fn(), fillRect: jest.fn(),
@@ -298,9 +282,10 @@ describe('DashboardApp', () => {
       expect(widget.querySelectorAll('.mood-btn').length).toBe(5);
     });
 
-    it('renders the Victory Value widget with a canvas chart', () => {
+    it('renders the Victory Value widget with its SVG chart container', () => {
       expect(container.querySelector('.widget-victory-value')).not.toBeNull();
-      expect(container.querySelector('canvas')).not.toBeNull();
+      expect(container.querySelector('.widget-victory-value .victory-value-chart')).not.toBeNull();
+      expect(container.querySelector('.widget-victory-value canvas')).toBeNull();
     });
 
     it('renders the Calendar widget with day cells for the current month', () => {
@@ -317,8 +302,12 @@ describe('DashboardApp', () => {
       expect(widget).not.toBeNull();
       expect(widget.textContent).toContain('Daily Jot');
       expect(widget.textContent).toContain('Journal');
-      expect(widget.textContent).toContain('Swap Background');
       expect(widget.textContent).toContain('Leave Feedback');
+    });
+
+    it('offers no background swap now that the dashboard has no background image', () => {
+      expect(quickActionButton(container, 'Swap Background')).toBeUndefined();
+      expect(container.querySelector('.dashboard-outer-container').style.backgroundImage).toBe('');
     });
 
     it('navigates to the plugin homepage from the Leave Feedback quick action', async () => {
@@ -329,35 +318,6 @@ describe('DashboardApp', () => {
       await flushAsync();
 
       expect(mockApp.navigate).toHaveBeenCalledWith('https://www.amplenote.com/plugins/HXRa7ADW88bnyfA7hDwbXSLY');
-    });
-
-    it('cross-fades to a new background image from the Swap Background quick action', async () => {
-      const restoreImageLoading = stubImmediateImageLoading();
-      try {
-        const outerContainer = container.querySelector('.dashboard-outer-container');
-        const swapButton = quickActionButton(container, 'Swap Background');
-        expect(swapButton).not.toBeUndefined();
-        expect(container.querySelector('.dashboard-background-fade')).toBeNull();
-
-        await act(async () => { swapButton.click(); });
-        await settleFor(60);
-
-        // Mid-swap: the incoming image is painted into an overlay running the cross-fade animation.
-        const fadeLayer = container.querySelector('.dashboard-background-fade');
-        expect(fadeLayer).not.toBeNull();
-        expect(fadeLayer.style.animation).toContain(BACKGROUND_FADE_ANIMATION_NAME);
-        expect(fadeLayer.style.animation).toContain(`${ BACKGROUND_FADE_DURATION_MS }ms`);
-        expect(fadeLayer.style.backgroundImage).toContain('images.unsplash.com');
-        const incomingBackgroundImage = fadeLayer.style.backgroundImage;
-
-        await settleFor(BACKGROUND_FADE_DURATION_MS + 100);
-
-        // After the fade the overlay is gone and its image has become the dashboard's base background.
-        expect(container.querySelector('.dashboard-background-fade')).toBeNull();
-        expect(outerContainer.style.backgroundImage).toBe(incomingBackgroundImage);
-      } finally {
-        restoreImageLoading();
-      }
     });
 
     it('renders the TaskDomains selector showing both configured domains', () => {
@@ -496,7 +456,7 @@ describe('DashboardApp', () => {
       await flushAsync();
 
       const layoutBtn = Array.from(container.querySelectorAll('.dashboard-configure-button'))
-        .find(btn => btn.textContent.includes('Layout'));
+        .find(btn => btn.getAttribute('aria-label') === 'Layout');
       expect(layoutBtn).toBeDefined();
 
       await act(async () => { layoutBtn.click(); });
@@ -527,7 +487,7 @@ describe('DashboardApp', () => {
       await flushAsync();
 
       const layoutBtn = Array.from(container.querySelectorAll('.dashboard-configure-button'))
-        .find(btn => btn.textContent.includes('Layout'));
+        .find(btn => btn.getAttribute('aria-label') === 'Layout');
       expect(layoutBtn).toBeDefined();
 
       await act(async () => { layoutBtn.click(); });
@@ -560,7 +520,7 @@ describe('DashboardApp', () => {
 
       // Open the Layout popup
       const layoutBtn = Array.from(container.querySelectorAll('.dashboard-configure-button'))
-        .find(btn => btn.textContent.includes('Layout'));
+        .find(btn => btn.getAttribute('aria-label') === 'Layout');
       await act(async () => { layoutBtn.click(); });
       await flushAsync();
 
@@ -591,7 +551,7 @@ describe('DashboardApp', () => {
       expect(initialPlanningWidget.className).toContain('horizontal-2-cell');
 
       const layoutBtn = Array.from(container.querySelectorAll('.dashboard-configure-button'))
-        .find(btn => btn.textContent.includes('Layout'));
+        .find(btn => btn.getAttribute('aria-label') === 'Layout');
       await act(async () => { layoutBtn.click(); });
       await flushAsync();
 

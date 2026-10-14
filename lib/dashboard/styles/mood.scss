@@ -5,6 +5,7 @@
  */
 
 @use 'theme-tokens' as *;
+@use 'controls' as *;
 
 $mood-btn-size: 44px;
 $mood-dot-gap: 3px;
@@ -24,28 +25,38 @@ $mood-transition-duration: 0.15s;
     margin-bottom: $sp-lg;
   }
 
+  /* Round faces on the host's low-contrast element fill, like the app's own mood meter. */
   .mood-btn {
     align-items: center;
-    background: none;
+    background: $color-bg-element;
     border: 2px solid transparent;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
     height: $mood-btn-size;
     justify-content: center;
-    transition: border-color $mood-transition-duration, transform $mood-transition-duration;
+    transition: background-color $mood-transition-duration, border-color $mood-transition-duration,
+      transform $mood-transition-duration;
     width: $mood-btn-size;
 
     &:hover {
-      border-color: $color-blue;
-      transform: scale(1.15);
+      background: $color-action-low;
+      transform: scale(1.08);
     }
   }
 
   .mood-btn--selected {
-    border-color: $color-blue;
-    background: $color-blue-light;
-    transform: scale(1.15);
+    background: $color-action-low;
+    border-color: $color-accent;
+    transform: scale(1.08);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mood-btn,
+    .mood-btn:hover,
+    .mood-btn--selected {
+      transform: none;
+    }
   }
 
   .mood-btn {
@@ -67,7 +78,7 @@ $mood-transition-duration: 0.15s;
   }
 
   .mood-details-textarea {
-    background: $color-bg-page;
+    background: $color-bg-card;
     border: 1px solid $color-border;
     border-radius: $radius-sm;
     color: $color-text;
@@ -77,7 +88,7 @@ $mood-transition-duration: 0.15s;
     width: 100%;
 
     &:focus {
-      border-color: $color-blue;
+      border-color: $color-accent;
       outline: none;
     }
 
@@ -92,46 +103,16 @@ $mood-transition-duration: 0.15s;
   .mood-submit-row {
     display: flex;
     gap: $sp-sm;
+    justify-content: flex-end;
     margin-bottom: $sp-lg;
   }
 
   .mood-submit-btn {
-    background: $color-background-accent;
-    border: none;
-    border-radius: $radius-sm;
-    color: $color-text-on-accent;
-    cursor: pointer;
-    flex: 1;
-    font-size: $default-font-size;
-    font-weight: 600;
-    padding: $sp-sm $sp-lg;
-    transition: opacity $mood-transition-duration;
-
-    &:hover:not(:disabled) {
-      opacity: 0.9;
-    }
-
-    &:disabled {
-      cursor: not-allowed;
-      opacity: 0.6;
-    }
+    @include raised-button;
   }
 
   .mood-cancel-btn {
-    background: none;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    color: $color-text-secondary;
-    cursor: pointer;
-    font-size: $default-font-size;
-    font-weight: 600;
-    padding: $sp-sm $sp-lg;
-    transition: border-color $mood-transition-duration, color $mood-transition-duration;
-
-    &:hover:not(:disabled) {
-      border-color: $color-text-secondary;
-      color: $color-text;
-    }
+    @include text-button($button-height);
 
     &:disabled {
       cursor: not-allowed;
@@ -208,17 +189,10 @@ $mood-transition-duration: 0.15s;
   }
 
   .mood-viz-configure-link {
-    background: none;
-    border: none;
+    @include text-button(28px);
     color: $color-text-muted;
-    cursor: pointer;
-    font-size: $smaller-font-size;
-    padding: $sp-xs $sp-sm;
-    transition: color $mood-transition-duration;
-
-    &:hover {
-      color: $color-text-secondary;
-    }
+    font-size: 12px;
+    gap: $sp-xs;
   }
 
   .mood-viz-config-option {
@@ -230,7 +204,7 @@ $mood-transition-duration: 0.15s;
     padding: $sp-xs 0;
 
     input[type='radio'] {
-      accent-color: $color-blue;
+      accent-color: $color-accent;
       cursor: pointer;
     }
   }

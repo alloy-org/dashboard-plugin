@@ -2,6 +2,7 @@
 // Prompt summary: "new dashboard widget showing which notes have been recently updated by
 // collaborators, with a checkbox to limit results to notes that have tasks"
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
+import MaterialIcon from "material-icon";
 import { useCallback, useEffect, useState } from "react";
 import { loadPinnedNoteUuids, storePinnedNoteUuids } from "shared-notes-archive";
 import { avatarTextFromName, collaboratorNoteCounts, findCollaboratorUpdatedNotes,
@@ -172,18 +173,22 @@ function SharedNotesPagination({ currentPage, onPageChange, totalPages }) {
   return (
     <div className="shared-notes-pagination">
       <button
+        aria-label="Previous page"
         className="shared-notes-page-arrow"
         type="button"
         onClick={() => onPageChange(p => Math.max(0, p - 1))}
         disabled={currentPage === 0}
-      >{'◀'}</button>
+        title="Previous page"
+      ><MaterialIcon name="chevron_left" /></button>
       <span className="shared-notes-page-indicator">{`${ currentPage + 1 } / ${ totalPages }`}</span>
       <button
+        aria-label="Next page"
         className="shared-notes-page-arrow"
         type="button"
         onClick={() => onPageChange(p => Math.min(totalPages - 1, p + 1))}
         disabled={currentPage >= totalPages - 1}
-      >{'▶'}</button>
+        title="Next page"
+      ><MaterialIcon name="chevron_right" /></button>
     </div>
   );
 }
@@ -208,7 +213,7 @@ function SharedNoteRow({ isPinned, note, nowMs, onNavigate, onTogglePin }) {
         onClick={() => onTogglePin(uuid)}
         title={isPinned ? "Unpin this note" : "Pin this note to the top"}
         aria-pressed={isPinned}
-      >📌</button>
+      ><MaterialIcon name="push_pin" /></button>
       <button
         className="shared-note-link"
         type="button"

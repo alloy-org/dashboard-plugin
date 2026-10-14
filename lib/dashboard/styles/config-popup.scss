@@ -4,13 +4,21 @@
  * Prompt summary: "popup component styles for widget configuration"
  */
 
+@use 'controls' as *;
 @use 'theme-tokens' as *;
 
+$config-popup-action-height: 36px;
+$config-popup-close-button-size: 40px;
+// MDC elevation 24, the shadow the host app puts under its dialogs
+$config-popup-elevation-shadow: 0 11px 15px -7px rgba(0, 0, 0, 0.2), 0 24px 38px 3px rgba(0, 0, 0, 0.14),
+  0 9px 46px 8px rgba(0, 0, 0, 0.12);
 $config-popup-max-width: 90%;
 $config-popup-min-width: 320px;
-$config-popup-shadow-blur: 32px;
-$config-popup-shadow-y: 8px;
 $config-popup-z-index: 1000;
+// Used only when the host has not published its dialog title variables
+$dialog-close-icon-fallback: #B4BFCC;
+$dialog-title-background-fallback: #2C3B47;
+$dialog-title-text-fallback: #EDF1F5;
 
 /* [Claude] Task: modal overlay and popup card styles with submit/cancel actions */
 /* Prompt: "popup component that pops up setting options upon clicking Configure" */
@@ -40,40 +48,61 @@ $config-popup-z-index: 1000;
    * had when they sat at the top level. A plain nested `.config-popup-overlay` would outweigh all of them. */
   :where(&) {
     .config-popup-container {
-      background: var(--color-background-popup, #{$color-bg-card});
-      border: 1px solid $color-border;
-      border-radius: $radius-lg;
-      box-shadow: 0 $config-popup-shadow-y $config-popup-shadow-blur $color-overlay-shadow;
+      background: $color-bg-card;
+      border-radius: $radius-sm;
+      box-shadow: $config-popup-elevation-shadow;
+      color: $color-text;
+      font-size: 14px;
       max-width: $config-popup-max-width;
       min-width: $config-popup-min-width;
+      overflow: hidden;
       width: 650px;
 
       .explanation-paragraph {
-        font-size: $default-font-size;
-        margin: 12px 0 20px;
+        color: $color-text-secondary;
+        font-size: 14px;
+        margin: 0 0 $sp-lg;
       }
 
+      // The host's MDC dialog title bar: dark in every theme, with high-contrast title text and a low-contrast close icon.
       .config-popup-header {
-        border-bottom: 1px solid $color-border;
-        padding: $sp-lg;
+        align-items: center;
+        background: var(--color-background-dialog, #{$dialog-title-background-fallback});
+        display: flex;
+        gap: $sp-sm;
+        padding: $sp-md $sp-md $sp-md $sp-xl;
       }
 
       .config-popup-title {
-        color: $color-navy;
-        font-size: $small-heading-font-size;
-        font-weight: 700;
+        color: var(--color-text-nav-high-contrast, #{$dialog-title-text-fallback});
+        flex: 1;
+        font-size: 20px;
+        font-weight: 500;
+        letter-spacing: 0.0125em;
+        line-height: 1.4;
         margin: 0;
+        min-width: 0;
+      }
+
+      .config-popup-close-button {
+        @include icon-button($config-popup-close-button-size);
+        color: var(--color-text-nav-low-contrast, #{$dialog-close-icon-fallback});
+
+        &:hover:not(:disabled) {
+          background: rgba(255, 255, 255, 0.08);
+          color: var(--color-text-nav-high-contrast, #{$dialog-title-text-fallback});
+        }
       }
 
       .config-popup-body {
-        padding: $sp-lg;
+        padding: $sp-xl;
 
         label {
           align-items: center;
           color: $color-text;
           cursor: pointer;
           display: flex;
-          font-size: $default-font-size;
+          font-size: 14px;
           gap: $sp-sm;
           padding: $sp-xs 0;
         }
@@ -81,14 +110,16 @@ $config-popup-z-index: 1000;
         input[type="radio"],
         input[type="checkbox"] {
           accent-color: $color-accent;
+          cursor: pointer;
+          margin: 0;
         }
 
         .config-field {
           margin-bottom: $sp-md;
 
           .config-line {
-            margin-bottom: 10px;
-            margin-top: 10px;
+            margin-bottom: $sp-md;
+            margin-top: $sp-md;
           }
 
           &:last-child {
@@ -97,26 +128,18 @@ $config-popup-z-index: 1000;
         }
 
         .config-field-label {
-          color: $color-text-secondary;
-          font-size: $smaller-font-size;
-          font-weight: 600;
-          letter-spacing: 0.03em;
+          color: $color-text-muted;
+          font-size: 12px;
+          font-weight: 500;
           margin-bottom: $sp-xs;
-          text-transform: uppercase;
         }
       }
 
       .config-popup-actions {
         align-items: center;
-        border-top: 1px solid $color-border;
         display: flex;
         gap: $sp-sm;
-        padding: $sp-md $sp-lg;
-
-        > button {
-          padding-left: 8px;
-          padding-right: 8px;
-        }
+        padding: $sp-sm $sp-sm $sp-sm $sp-xl;
 
         // The buttons stay against the right edge whether or not a caller supplied footerLeft, so the gap is taken
         // by the first button rather than by justify-content, which would have to change with the slot's presence.
@@ -128,8 +151,8 @@ $config-popup-z-index: 1000;
       // The slot's own content is styled here rather than by the caller: it renders inside the actions row, which
       // this file owns, so a caller's stylesheet has no wrapper it could legally reach it through.
       .config-popup-footer-left {
-        color: $color-text-secondary;
-        font-size: $smaller-font-size;
+        color: $color-text-muted;
+        font-size: 12px;
         min-width: 0;
 
         .config-popup-footer-monospace {
@@ -137,32 +160,12 @@ $config-popup-z-index: 1000;
         }
       }
 
-      .config-popup-btn {
-        border: 1px solid $color-border;
-        border-radius: $radius-sm;
-        cursor: pointer;
-        font-size: $smaller-font-size;
-        font-weight: 600;
-        padding: $sp-sm $sp-lg;
-      }
-
       .config-popup-btn--cancel {
-        background: transparent;
-        color: $color-text-secondary;
-
-        &:hover {
-          background: $color-bg-page-hover;
-        }
+        @include text-button($config-popup-action-height);
       }
 
       .config-popup-btn--submit {
-        background: $color-background-accent;
-        border-color: $color-background-accent;
-        color: $color-text-on-accent;
-
-        &:hover {
-          opacity: 0.9;
-        }
+        @include raised-button($config-popup-action-height);
       }
     }
   }

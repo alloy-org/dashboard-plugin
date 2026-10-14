@@ -5,12 +5,12 @@
  */
 
 @use 'theme-tokens' as *;
+@use 'controls' as *;
 
 $agenda-indicator-height: 36px;
 $agenda-indicator-width: 4px;
 $agenda-indicator-radius: 2px;
 $agenda-list-max-height: 280px;
-$agenda-page-arrow-padding: 2px;
 $agenda-transition-duration: 0.12s;
 
 /* [Claude] Task: agenda task list layout with priority indicators and duration labels */
@@ -57,11 +57,7 @@ $agenda-transition-duration: 0.12s;
   }
 
   .agenda-date-label {
-    color: $color-text-secondary;
-    font-size: $smaller-font-size;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
+    @include overline-label;
   }
 
   .agenda-empty-day {
@@ -107,14 +103,15 @@ $agenda-transition-duration: 0.12s;
       gap: $sp-xs;
 
       .agenda-time {
-        color: $color-text-secondary;
-        font-size: $smaller-font-size;
-        font-weight: 600;
+        color: $color-text-muted;
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+        font-weight: 500;
       }
 
       .agenda-text {
         color: $color-text;
-        font-size: $smaller-font-size;
+        font-size: $default-font-size;
         overflow: hidden;
         white-space: nowrap;
       }
@@ -128,7 +125,11 @@ $agenda-transition-duration: 0.12s;
         margin: 0;
         padding: 0;
         text-align: left;
-        text-decoration: underline;
+        text-decoration: none;
+
+        &:hover {
+          text-decoration: underline;
+        }
       }
     }
 
@@ -145,7 +146,7 @@ $agenda-transition-duration: 0.12s;
     transition: background-color $agenda-transition-duration ease;
 
     &:hover {
-      background: $color-bg-page;
+      background: $color-bg-element;
     }
   }
 
@@ -167,28 +168,13 @@ $agenda-transition-duration: 0.12s;
 
   /* The pagination controls only render in the widget header bar. */
   .agenda-page-arrow {
-    background: none;
-    border: none;
-    border-radius: $radius-sm;
-    color: $color-header-text;
-    cursor: pointer;
-    font-size: $smaller-font-size;
-    line-height: 1;
-    padding: $agenda-page-arrow-padding $sp-xs;
-
-    &:hover:not(:disabled) {
-      background: color-mix(in srgb, $color-header-text 15%, transparent);
-    }
-
-    &:disabled {
-      cursor: default;
-      opacity: 0.3;
-    }
+    @include icon-button;
   }
 
   .agenda-page-indicator {
-    color: $color-header-text;
-    font-size: $smaller-font-size;
+    color: $color-text-muted;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
 }

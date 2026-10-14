@@ -4,9 +4,14 @@
  * Task: Reusable settings popup with Submit/Cancel actions
  * Prompt summary: "popup component for widget configuration with onSubmit, onCancel, and content props"
  */
+import MaterialIcon from "material-icon";
 import { useEffect, useRef } from "react";
 import "styles/config-popup.scss"
 
+const CLOSE_ICON_SIZE = 20;
+
+// ----------------------------------------------------------------------------------------------
+// @desc Modal dialog with a title bar, body content, and a Cancel / submit footer.
 // [Claude] Task: render a modal popup overlay with settings content and Submit/Cancel buttons
 // Prompt: "popup component that pops up setting options upon clicking Configure"
 // Date: 2026-02-22 | Model: claude-opus-4-6
@@ -45,11 +50,7 @@ export default function ConfigPopup({ title, onSubmit, onCancel, submitLabel = '
         ref={containerRef}
         style={scrollTop !== undefined ? { pointerEvents: 'auto' } : undefined}
       >
-        {title ? (
-          <div className="config-popup-header">
-            <h3 className="config-popup-title">{title}</h3>
-          </div>
-        ) : null}
+        {title ? <ConfigPopupHeader onClose={ onCancel } title={ title } /> : null}
         <div className="config-popup-body">{children}</div>
         <div className="config-popup-actions">
           {footerLeft ? <div className="config-popup-footer-left">{footerLeft}</div> : null}
@@ -57,6 +58,22 @@ export default function ConfigPopup({ title, onSubmit, onCancel, submitLabel = '
           <button className="config-popup-btn config-popup-btn--submit" onClick={onSubmit}>{submitLabel}</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc The dialog's title bar, in the host's dark dialog-title color with a round close button on the right. Exported
+//   so a popup that builds its own container (the Layout popup) draws the same title bar as ConfigPopup.
+// @param {Function} onClose - Called when the close button is clicked; callers pass their cancel handler.
+// @param {React.ReactNode} title - The dialog title.
+export function ConfigPopupHeader({ onClose, title }) {
+  return (
+    <div className="config-popup-header">
+      <h3 className="config-popup-title">{ title }</h3>
+      <button aria-label="Close" className="config-popup-close-button" onClick={ onClose } title="Close" type="button">
+        <MaterialIcon name="close" size={ CLOSE_ICON_SIZE } />
+      </button>
     </div>
   );
 }

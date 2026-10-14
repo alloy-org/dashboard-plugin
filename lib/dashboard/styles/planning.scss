@@ -5,6 +5,7 @@
  */
 
 @use 'theme-tokens' as *;
+@use 'controls' as *;
 
 $planning-border-width: 2px;
 $planning-transition-duration: 0.15s;
@@ -22,20 +23,8 @@ $quarter-toggle-size: 26px;
   }
 
   .planning-return-quarter {
-    background: $color-bg-card;
-    border: 1px solid $color-border;
-    border-radius: 999px;
-    color: $color-text-secondary;
-    cursor: pointer;
-    font-size: $smaller-font-size;
-    font-weight: 600;
-    padding: 2px $sp-sm;
-    white-space: nowrap;
-
-    &:hover {
-      border-color: $color-blue;
-      color: $color-navy;
-    }
+    @include text-button(28px);
+    font-size: 12px;
   }
 
   .planning-quarter-row {
@@ -90,8 +79,8 @@ $quarter-toggle-size: 26px;
   /* Prompt: "solid border and light-green background when a quarterly plan has been created" */
   /* Date: 2026-03-09 | Model: claude-4.6-sonnet-medium-thinking */
   .quarter-card {
-    border: $planning-border-width dashed $color-border;
-    border-radius: $radius-md;
+    border: 1px dashed $color-border;
+    border-radius: $radius-sm;
     cursor: pointer;
     display: flex;
     flex: 1 1 140px;
@@ -102,7 +91,7 @@ $quarter-toggle-size: 26px;
     transition: background $planning-transition-duration, border-color $planning-transition-duration;
 
     &:hover {
-      border-color: $color-blue;
+      border-color: $color-accent;
     }
   }
 
@@ -142,18 +131,18 @@ $quarter-toggle-size: 26px;
     }
 
     .quarter-label {
-      color: $color-navy;
-      font-size: $large-font-size;
-      font-weight: 700;
+      color: $color-text;
+      font-size: $default-font-size;
+      font-weight: 500;
     }
 
     .quarter-past-badge {
-      background: $color-bg-secondary;
-      border-radius: 999px;
+      background: $color-bg-element;
+      border-radius: 10px;
       color: $color-text-muted;
       flex-shrink: 0;
-      font-size: $smaller-font-size;
-      font-weight: 700;
+      font-size: 11px;
+      font-weight: 500;
       letter-spacing: 0.04em;
       padding: 1px $sp-sm;
       text-transform: uppercase;
@@ -201,37 +190,43 @@ $quarter-toggle-size: 26px;
     }
 
     .quarter-status {
-      color: $color-text-secondary;
-      font-size: $smaller-font-size;
+      align-items: center;
+      color: $color-link;
+      display: inline-flex;
+      font-size: 12px;
+      font-weight: 500;
+      gap: $sp-xs;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
     }
   }
 
+  /* Months read as host underline tabs, matching the dashboard's task-domain tabs. */
   .month-tabs {
+    border-bottom: 1px solid $color-border;
     display: flex;
     flex-wrap: wrap;
-    gap: $sp-xs;
+    gap: 0 $sp-xl;
   }
 
   .month-tab {
     background: none;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    color: $color-text-secondary;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: $color-text-muted;
     cursor: pointer;
-    flex: 1;
-    font-size: $smaller-font-size;
-    padding: $sp-sm $sp-md;
-    transition: background $planning-transition-duration, color $planning-transition-duration;
+    font-size: $default-font-size;
+    margin-bottom: -1px;
+    padding: $sp-sm 0;
+    transition: border-color $planning-transition-duration, color $planning-transition-duration;
 
     &:hover {
-      background: $color-blue-light;
+      color: $color-text;
     }
 
     &.active {
-      background: $color-background-accent;
-      border-color: $color-background-accent;
-      color: $color-text-on-accent;
-      font-weight: 600;
+      border-bottom-color: $color-text;
+      color: $color-text;
     }
   }
 
@@ -253,9 +248,9 @@ $quarter-toggle-size: 26px;
   }
 
   .month-content-header {
-    color: $color-navy;
+    color: $color-text;
     font-size: $default-font-size;
-    font-weight: 700;
+    font-weight: 500;
     margin-bottom: $sp-sm;
   }
 

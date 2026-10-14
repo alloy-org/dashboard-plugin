@@ -2,6 +2,7 @@
 // Prompt summary: "When a widget has no available LLM key, print a NoConfig upsell equivalent to the one Goal
 //   Coach (DreamTask) shows, but highlighting different features. Extract the upsell into a standalone component
 //   called by both DreamTask and Proposed Agenda, parameterized by the features it highlights."
+import MaterialIcon from "material-icon";
 import { AMPLE_AGENT_PRO_URL } from "providers/ai-provider-settings";
 import WidgetWrapper from "widget-wrapper";
 
@@ -15,7 +16,7 @@ const DEFAULT_SUBHEAD = "Amplenote provides free access to frontier models for w
 //   widgetId and the feature list it wants to highlight, so the same card sells different features.
 // @param {object} props - { app, features, headline, moreFeaturesLabel, subhead, widgetId }.
 //   - {object} app - Amplenote app bridge (used to navigate to the Ample Agent Pro listing).
-//   - {Array<{icon: string, label: string}>} features - Feature pills to highlight for this widget.
+//   - {Array<{iconName: string, label: string}>} features - Features to highlight, each with a Material icon name.
 //   - {string} [headline] - Override the default headline.
 //   - {string|null} [moreFeaturesLabel] - Optional "+ N more features" line beneath the pills.
 //   - {string} [subhead] - Override the default subhead copy.
@@ -37,7 +38,7 @@ export default function NoConfigUpsell({ app, features = [], headline = DEFAULT_
         <div className="no-config-upsell-features">
           { features.map(feature => (
             <span key={ feature.label } className="no-config-upsell-feature">
-              <span className="no-config-upsell-feature-icon" aria-hidden="true">{ feature.icon }</span>
+              <MaterialIcon className="no-config-upsell-feature-icon" name={ feature.iconName } />
               { feature.label }
             </span>
           )) }
@@ -45,11 +46,15 @@ export default function NoConfigUpsell({ app, features = [], headline = DEFAULT_
         { moreFeaturesLabel ? <p className="no-config-upsell-more">{ moreFeaturesLabel }</p> : null }
         <div className="no-config-upsell-actions">
           <a href="#0" onClick={ () => app.navigate(AMPLE_AGENT_PRO_URL) }
-            className="no-config-upsell-button no-config-upsell-button--primary">⚡ Start for $8/month</a>
+            className="no-config-upsell-button no-config-upsell-button--primary">
+            <MaterialIcon name="bolt" />Start for $8/month
+          </a>
           <a href="#0" onClick={ () => app.navigate(AMPLE_AGENT_PRO_URL) }
-            className="no-config-upsell-button no-config-upsell-button--secondary">See all features →</a>
+            className="no-config-upsell-button no-config-upsell-button--secondary">See all features</a>
         </div>
-        <p className="no-config-upsell-footnote">✓ No API key required for core features</p>
+        <p className="no-config-upsell-footnote">
+          <MaterialIcon name="check" size={ 16 } />No API key required for core features
+        </p>
       </div>
     </WidgetWrapper>
   );

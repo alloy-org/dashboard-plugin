@@ -4,32 +4,31 @@
  * Task: Task Domains component — domain selector with refresh and settings links
  * Prompt summary: "allow user to choose which Task Domain their dashboard focuses on"
  */
+import MaterialIcon from "material-icon";
 import { useState } from "react";
 import { refreshTaskDomains, switchTaskDomain } from "task-domain-service";
 import { logIfEnabled } from "util/log";
 import "styles/task-domains.scss"
 
 // ----------------------------------------------------------------------------------------------
-// @desc Refresh control shared by the populated and empty domain bars. Renders a worded label on
-//   wide viewports and a bare glyph on mobile, where the bar only has room for the selected domain
-//   plus two icons. Both spans always render; `task-domains.scss` picks one per breakpoint.
-// @param {string} label - Wide-viewport text, e.g. "Refresh Task Domains"
+// @desc Refresh control shared by the populated and empty domain bars: an icon button whose label lives in its
+//   tooltip and aria-label, spinning while a refresh is in flight.
 // @param {boolean} refreshing - True while a refresh request is in flight
 // [Claude claude-opus-5] Task: extract the refresh button so mobile can show it as an icon
 // Prompt: "an icon to refresh task domains (the least promiment/used of the three)"
 // Date: 2026-08-07 | Model: claude-opus-5
-function RefreshDomainsButton({ label, onRefresh, refreshing }) {
+function RefreshDomainsButton({ onRefresh, refreshing }) {
+  const label = refreshing ? 'Refreshing task domains...' : 'Refresh task domains';
   return (
     <button
-      aria-label="Refresh task domains"
-      className="task-domains-refresh"
+      aria-label={label}
+      className={ `task-domains-refresh${ refreshing ? ' task-domains-refresh--refreshing' : '' }` }
       disabled={refreshing}
       onClick={onRefresh}
-      title="Refresh task domains"
+      title={label}
       type="button"
     >
-      <span className="task-domains-refresh-label">{refreshing ? 'Refreshing...' : label}</span>
-      <span className="task-domains-refresh-icon" aria-hidden="true">{'↻'}</span>
+      <MaterialIcon className="task-domains-refresh-icon" name="refresh" size={ 20 } />
     </button>
   );
 }
@@ -81,7 +80,7 @@ export default function TaskDomains({ activeTaskDomain, app, domains, onDomainCh
           </div>
         </div>
         <div className="task-domains-empty task-domain-entry">{`Task Domains in "Settings"`}</div>
-        <RefreshDomainsButton label={'\u21BB Refresh'} onRefresh={handleRefresh} refreshing={refreshing} />
+        <RefreshDomainsButton onRefresh={handleRefresh} refreshing={refreshing} />
       </div>
     );
   }
@@ -114,10 +113,10 @@ export default function TaskDomains({ activeTaskDomain, app, domains, onDomainCh
           title={expanded ? 'Hide other task domains' : 'Show other task domains'}
           type="button"
         >
-          <span aria-hidden="true">{expanded ? '\u25B2' : '\u25BC'}</span>
+          <MaterialIcon name={ expanded ? 'expand_less' : 'expand_more' } size={ 20 } />
         </button>
       ) : null}
-      <RefreshDomainsButton label={'\u21BB Refresh Task Domains'} onRefresh={handleRefresh} refreshing={refreshing} />
+      <RefreshDomainsButton onRefresh={handleRefresh} refreshing={refreshing} />
     </div>
   );
 }

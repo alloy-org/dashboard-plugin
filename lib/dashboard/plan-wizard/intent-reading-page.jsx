@@ -4,6 +4,7 @@
 // Pinning or dismissing a theme is stored in the Vision Guide and steers the next reading, which is how the user
 // shapes what Plan Builder sends to the model without editing that data note by hand.
 
+import MaterialIcon from "dashboard/material-icon";
 import { themeKey } from "plan-wizard/intent-reading";
 import { useEffect, useRef, useState } from "react";
 
@@ -66,22 +67,9 @@ export function IntentReadingProgressBar({ fraction }) {
 // @desc Draw the icon beside a read item: a page for a note, a ticked box for a task.
 // @param {object} params - An object with the following properties:
 //   - {string} kind - note or task.
-// @returns {JSX.Element} Inline SVG.
+// @returns {JSX.Element} The Material icon.
 export function ReadItemIcon({ kind }) {
-  if (kind === "task") {
-    return (
-      <svg aria-hidden="true" className="intent-reading-item-icon" viewBox="0 0 16 16">
-        <rect height="11" rx="2" width="11" x="2.5" y="2.5" />
-        <path d="M5.5 8.2l1.8 1.8 3.4-3.6" />
-      </svg>
-    );
-  }
-  return (
-    <svg aria-hidden="true" className="intent-reading-item-icon" viewBox="0 0 16 16">
-      <path d="M4 1.5h5.5l3 3v10H4z" />
-      <path d="M6 7.5h4.5M6 10h4.5" />
-    </svg>
-  );
+  return <MaterialIcon className="intent-reading-item-icon" name={ kind === "task" ? "check_box" : "description" } size={ 16 } />;
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -104,15 +92,12 @@ function IntentReadingTheme({ isSaving, judgement, onJudge, theme }) {
       <button aria-label={ `${ isPinned ? "Unpin" : "Pin" } ${ theme.label }` } aria-pressed={ isPinned }
         className="intent-reading-theme-button" disabled={ isSaving } onClick={ () => onJudge(isPinned ? null : "pinned") }
         title={ isPinned ? "Pinned: favored in the next reading" : "Pin: this matters" } type="button">
-        <svg aria-hidden="true" viewBox="0 0 16 16">
-          <path d="M6 2h4l-.6 4 2.6 2.5v1H4v-1L6.6 6z" />
-          <path d="M8 9.5V14" />
-        </svg>
+        <MaterialIcon name="push_pin" size={ 16 } />
       </button>
       <button aria-label={ `${ isDismissed ? "Restore" : "Dismiss" } ${ theme.label }` } aria-pressed={ isDismissed }
         className="intent-reading-theme-button" disabled={ isSaving } onClick={ () => onJudge(isDismissed ? null : "dismissed") }
         title={ isDismissed ? "Dismissed: left out of the next reading" : "Dismiss: this doesn't matter" } type="button">
-        ×
+        <MaterialIcon name="close" size={ 16 } />
       </button>
     </li>
   );
@@ -242,11 +227,7 @@ export default function IntentReadingPage({ directions, intentReading, isRefresh
               <li key={ direction.uuid }>
                 <button className="intent-reading-direction" onClick={ () => onApplyDirection(direction) }
                   title={ direction.substantiation } type="button">
-                  <svg aria-hidden="true" className="intent-reading-direction-icon" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="8" />
-                    <circle cx="12" cy="12" r="4" />
-                    <circle className="intent-reading-direction-icon-center" cx="12" cy="12" r="1.5" />
-                  </svg>
+                  <MaterialIcon className="intent-reading-direction-icon" name="track_changes" />
                   <span>{ direction.intent }</span>
                 </button>
               </li>

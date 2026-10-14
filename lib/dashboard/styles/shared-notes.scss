@@ -4,6 +4,7 @@
  */
 
 @use 'theme-tokens' as *;
+@use 'controls' as *;
 
 /* [Claude claude-opus-4-8] Task: lay out a scrollable list of collaborator-updated shared notes */
 /* Prompt: "show which notes have been recently updated by collaborators" */
@@ -71,17 +72,7 @@
   }
 
   .shared-notes-page-arrow {
-    background: none;
-    border: none;
-    color: $color-text-secondary;
-    cursor: pointer;
-    font-size: $smaller-font-size;
-    padding: 0 $sp-xs;
-
-    &:disabled {
-      cursor: default;
-      opacity: 0.35;
-    }
+    @include icon-button;
   }
 
   .shared-notes-page-indicator {
@@ -100,24 +91,15 @@
 
   /* [Claude claude-opus-4-8 (1M context)] Pin toggle at the left of each row; muted until pinned. */
   /* Prompt: "Add a pin icon to the left side of each note row... click the pin to persist that note" */
+  /* Unpinned pins sit in the lowest-contrast ink until hovered; a pinned note's pin takes the action color. */
   .shared-note-pin {
-    background: none;
-    border: none;
-    cursor: pointer;
-    filter: grayscale(1);
-    flex-shrink: 0;
-    font-size: $default-font-size;
-    line-height: 1;
-    opacity: 0.4;
-    padding: $sp-sm 0 $sp-sm $sp-md;
-
-    &:hover {
-      opacity: 0.75;
-    }
+    @include icon-button;
+    align-self: center;
+    color: $color-text-lower;
+    margin-left: $sp-xs;
 
     &.shared-note-pin-active {
-      filter: none;
-      opacity: 1;
+      color: $color-accent;
     }
   }
 

@@ -9,6 +9,7 @@ import PlanWizard from "dashboard/plan-wizard/plan-wizard";
 import { quarterPageWindow, quarterPlanForPage, quartersMatch } from "dashboard/quarter-page";
 import QuarterPageButton from "dashboard/quarter-page-button";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
+import MaterialIcon from "material-icon";
 import useQuarterPlanProgress, { quarterProgressKey } from "hooks/use-quarter-plan-progress";
 import NoteEditor from "note-editor";
 import { mirrorQuarterPlanNote } from "plan-wizard/mirror-quarter-plan";
@@ -122,11 +123,12 @@ function QuarterCard({ isPast, onCardClick, onSuggestionToggle, plan, planBegun 
   if (isPending) cardClassNames.push("quarter-card--pending");
   if (isUnrecorded) cardClassNames.push("quarter-card--unrecorded");
   const quarterTitle = plan.domainName ? `${ plan.label } · ${ plan.domainName }` : plan.label;
-  let statusText = "+ Create Plan";
-  if (isPending) statusText = "Loading…";
-  else if (isUnrecorded) statusText = "No plan recorded";
-  else if (hasNote) statusText = "📝 Open Plan";
-  else if (isInProgress) statusText = "✏️ Continue Plan";
+  let statusText = "Create Plan";
+  let statusIconName = "add";
+  if (isPending) [ statusText, statusIconName ] = [ "Loading…", null ];
+  else if (isUnrecorded) [ statusText, statusIconName ] = [ "No plan recorded", null ];
+  else if (hasNote) [ statusText, statusIconName ] = [ "Open Plan", "description" ];
+  else if (isInProgress) [ statusText, statusIconName ] = [ "Continue Plan", "edit" ];
   const showSuggestionToggle = hasNote && !isPast && !isPending;
 
   const suggestionTip = usedForSuggestions
@@ -142,7 +144,9 @@ function QuarterCard({ isPast, onCardClick, onSuggestionToggle, plan, planBegun 
         { isPast ? <span className="quarter-past-badge">Past</span> : null }
       </div>
       <div className="quarter-status-row">
-        <span className="quarter-status">{ statusText }</span>
+        <span className="quarter-status">
+          { statusIconName ? <MaterialIcon name={ statusIconName } size={ 16 } /> : null }{ statusText }
+        </span>
         { showSuggestionToggle ? (
           <DashboardTippy content={`${ suggestionTip } ${ monthsTip }`} placement="bottom">
             <label className="quarter-suggestion-toggle" onClick={(event) => event.stopPropagation()}>
@@ -318,12 +322,12 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   const buildPlanAction = canStartWizard && !showPlanEntry && !checkingPlanProgress ? (
     <button className="widget-header-action" onClick={ () => setWizardPlan({ mirrorTarget: null,
       quarter: wizardQuarterPlan.quarter, year: wizardQuarterPlan.year }) } title={ buildPlanTitle } type="button">
-      ✍️ Build plan
+      <MaterialIcon name="edit_note" />Build plan
     </button>
   ) : null;
   const returnToCurrentAction = pageOffset !== 0 && currentPlan?.label ? (
     <button className="planning-return-quarter" onClick={ () => setPageOffset(0) } type="button">
-      { `↩ Back to ${ currentPlan.label }` }
+      <MaterialIcon name="undo" />{ `Back to ${ currentPlan.label }` }
     </button>
   ) : null;
   const headerActions = buildPlanAction || returnToCurrentAction ? (

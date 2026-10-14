@@ -2,6 +2,7 @@
 // Created: 2026-07-19 | Model: GPT-5.6 Terra
 // Task: Styles for the admin-only widget memory measurement popup.
 // Prompt summary: "let an admin choose one component to load and display the memory consumed by it"
+@use 'controls' as *;
 @use 'theme-tokens' as *;
 
 .widget-memory-measurement {
@@ -12,26 +13,25 @@
   .widget-memory-measurement-description,
   .widget-memory-measurement-note {
     color: $color-text-secondary;
-    font-size: $smaller-font-size;
+    font-size: 14px;
     line-height: 1.45;
     margin: 0;
   }
 
+  .widget-memory-measurement-note {
+    color: $color-text-muted;
+    font-size: 12px;
+  }
+
   .widget-memory-measurement-label {
-    color: $color-text-secondary;
-    font-size: $smaller-font-size;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
+    color: $color-text-muted;
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: $sp-sm;
   }
 
   .widget-memory-measurement-select {
-    background: $color-bg-page;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    color: $color-text;
-    font-size: $default-font-size;
-    padding: $sp-sm;
+    @include select-field;
   }
 
   .widget-memory-measurement-actions {
@@ -40,33 +40,26 @@
   }
 
   .widget-memory-measurement-button {
-    background: $color-bg-page;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    color: $color-text;
-    cursor: pointer;
-    font-size: $smaller-font-size;
-    padding: $sp-sm $sp-md;
-
-    &:disabled {
-      cursor: default;
-      opacity: 0.5;
-    }
+    @include outlined-button;
   }
 
   .widget-memory-measurement-results {
-    background: $color-bg-page;
-    border: 1px solid $color-border;
+    background: $color-bg-element;
     border-radius: $radius-sm;
     display: flex;
     flex-direction: column;
-    font-size: $smaller-font-size;
+    font-size: 14px;
     gap: $sp-xs;
-    padding: $sp-md;
+    padding: $sp-md $sp-lg;
+
+    strong {
+      font-weight: 500;
+    }
   }
 
   .widget-memory-measurement-status {
-    color: $color-text-secondary;
+    color: $color-text-muted;
+    font-size: 12px;
   }
 
   .widget-memory-measurement-widget {
@@ -77,8 +70,10 @@
     padding-top: $sp-md;
 
     h4 {
-      color: $color-navy;
-      font-size: $default-font-size;
+      @include overline-label;
+      align-items: center;
+      display: flex;
+      gap: $sp-sm;
       margin: 0 0 $sp-sm;
     }
   }

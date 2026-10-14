@@ -4,6 +4,7 @@
  * Task: Calendar widget — month grid with task-density dots
  * Prompt summary: "monthly calendar grid with navigation and colored dots indicating task density"
  */
+import MaterialIcon from "material-icon";
 import { useState } from "react";
 import { monthGridCellsFromDateInput } from "util/date-utility";
 import WidgetWrapper from "widget-wrapper";
@@ -85,9 +86,11 @@ export default function CalendarWidget({ app, completedTasksByDate, currentDate,
     <WidgetWrapper configurable={true} gridHeightSize={gridHeightSize} gridWidthSize={gridWidthSize}
         onConfigure={onOpenSettings} widgetId="calendar">
       <div className="cal-nav">
-        <button onClick={prevMonth} className="cal-arrow">◀</button>
+        <button aria-label="Previous month" className="cal-arrow" onClick={prevMonth} title="Previous month"
+          type="button"><MaterialIcon name="chevron_left" size={ 20 } /></button>
         <span className="cal-month">{monthName}</span>
-        <button onClick={nextMonth} className="cal-arrow">▶</button>
+        <button aria-label="Next month" className="cal-arrow" onClick={nextMonth} title="Next month"
+          type="button"><MaterialIcon name="chevron_right" size={ 20 } /></button>
       </div>
       <div className="cal-grid">
         {DAY_LABELS.map(d => <div key={d} className="cal-header">{d}</div>)}

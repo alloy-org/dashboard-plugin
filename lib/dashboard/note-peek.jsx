@@ -3,6 +3,7 @@ import { widgetTitleFromId } from "constants/settings";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { fetchNotePeekHtml, NOTE_PEEK_WIDGET_ID, notePeekSelectionFromSettings, promptForNotePeekNote,
   storeNotePeekSelection } from "note-peek-service";
+import MaterialIcon from "material-icon";
 import { pluginSettings } from "plugin-data";
 import { useCallback, useEffect, useRef, useState } from "react";
 import "styles/note-peek.scss";
@@ -12,7 +13,7 @@ import WidgetWrapper from "widget-wrapper";
 
 // Matches the "⚙ Configure" link DraggableHeading renders for every configurable widget, so the body
 // button before a note is chosen names the same action as the header link beside it.
-const CONFIGURE_LABEL = "⚙ Configure";
+const CONFIGURE_LABEL = "Configure";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Header link that opens the chosen note via app.navigate. Used for both the widget title
@@ -70,9 +71,9 @@ function useRenderedNoteHtml({ app, noteUUID }) {
 function NotePeekChooser({ onChoose }) {
   return (
     <div className="note-peek-chooser" onClick={onChoose} role="presentation" title="Choose a note">
-      <span className="note-peek-chooser-icon">📄</span>
+      <MaterialIcon className="note-peek-chooser-icon" name="description" size={ 32 } />
       <span className="note-peek-chooser-label">Choose a note to display here</span>
-      <button className="note-peek-chooser-button" type="button">{CONFIGURE_LABEL}</button>
+      <button className="note-peek-chooser-button" type="button"><MaterialIcon name="settings" />{CONFIGURE_LABEL}</button>
     </div>
   );
 }

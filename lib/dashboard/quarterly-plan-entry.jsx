@@ -2,6 +2,7 @@
 // saved in Plan Builder. The splash is import when there are fewer than 25 tasks, connect AI when there
 // are enough tasks but no working model, and a video invitation once both are in place.
 import { daysUntilQuarterStart, quarterMonthNames, quarterStartDate } from "constants/quarters";
+import MaterialIcon from "material-icon";
 import { resolveQuarterlyPlanEntry } from "quarterly-plan-service";
 import { useEffect, useState } from "react";
 
@@ -159,7 +160,7 @@ function ImportTasksEntry({ entry, onBuildPlan, onNavigate, planTitle }) {
       { importLinkCopied ? <p className="plan-entry-import-copied">{ IMPORT_LINK_COPIED_MESSAGE }</p> : null }
       <p className="plan-entry-divider">or</p>
       <button className="plan-entry-scratch" onClick={ onBuildPlan } title={ planTitle } type="button">
-        ✦ Build my plan from scratch
+        <MaterialIcon name="auto_awesome" />Build my plan from scratch
       </button>
       <p className="plan-entry-footnote">Answer a few guided questions instead. You can import tasks later.</p>
     </div>
@@ -230,7 +231,7 @@ function PlanEntryVideo({ embedUrl, thumbnailUrl }) {
         <button aria-label="Play: How quarterly planning works in Amplenote" className="plan-entry-video-play"
           onClick={ () => setPlaying(true) } style={ thumbnailUrl ? { backgroundImage: `url(${ thumbnailUrl })` } : null }
           type="button">
-          <span aria-hidden="true" className="plan-entry-video-play-icon">▶</span>
+          <span aria-hidden="true" className="plan-entry-video-play-icon"><MaterialIcon name="play_arrow" size={ 32 } /></span>
         </button>
       ) }
       <p className="plan-entry-video-caption"><span>Watch</span> How quarterly planning works in Amplenote</p>
@@ -266,7 +267,7 @@ function ReadyPlanEntry({ entry, onBuildPlan, plan }) {
           </li>
         )) }
       </ul>
-      <button className="plan-entry-build" onClick={ onBuildPlan } type="button">✦ Build my { plan.label } plan</button>
+      <button className="plan-entry-build" onClick={ onBuildPlan } type="button"><MaterialIcon name="auto_awesome" />Build my { plan.label } plan</button>
       <p className="plan-entry-footnote">Uses your connected AI model</p>
     </div>
   );

@@ -4,11 +4,15 @@
  * Prompt summary: "create a dashboard settings popup with LLM provider dropdown and API key input"
  */
 
+@use 'controls' as *;
 @use 'theme-tokens' as *;
+
+// Matches the 36px field the toggle sits beside
+$api-key-toggle-size: 36px;
 
 .dashboard-settings-container {
 
-  // ── AI Settings section ──────────────────────────────────────────────────────────────
+  // ── Sections ─────────────────────────────────────────────────────────────────────────
 
   .dashboard-settings-section {
     display: flex;
@@ -19,8 +23,8 @@
   /* Prompt: "section class — obvious line between sections" | Date: 2026-04-09 */
   .dashboard-settings-section.section:not(:first-child) {
     border-top: 1px solid $color-border;
-    margin-top: $sp-lg;
-    padding-top: $sp-lg;
+    margin-top: $sp-xl;
+    padding-top: $sp-xl;
   }
 
   .dashboard-settings-section-header {
@@ -30,16 +34,13 @@
   }
 
   .dashboard-settings-section-title {
-    color: $color-navy;
-    font-size: $default-font-size;
-    font-weight: 700;
-    letter-spacing: 0.02em;
+    @include overline-label;
     margin: 0;
   }
 
   .dashboard-settings-section-desc {
     color: $color-text-secondary;
-    font-size: $smaller-font-size;
+    font-size: 14px;
     line-height: 1.5;
     margin: 0;
   }
@@ -47,109 +48,26 @@
   // ── Provider dropdown ────────────────────────────────────────────────────────────────
 
   .dashboard-settings-select {
-    appearance: none;
-    background: $color-bg-page;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-    background-position: right #{$sp-sm} center;
-    background-repeat: no-repeat;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    color: $color-text;
-    cursor: pointer;
-    font-size: $default-font-size;
-    padding: $sp-sm $sp-xl $sp-sm $sp-sm;
-    transition: border-color 0.15s ease;
+    @include select-field;
     width: 100%;
-
-    &:focus {
-      border-color: $color-accent;
-      outline: none;
-    }
-  }
-
-  // ── Background image upload ──────────────────────────────────────────────────────────
-
-  .dashboard-settings-dropzone {
-    align-items: center;
-    background: $color-bg-page;
-    border: 2px dashed $color-border;
-    border-radius: $radius-sm;
-    cursor: pointer;
-    display: flex;
-    flex-direction: column;
-    gap: $sp-sm;
-    justify-content: center;
-    min-height: 120px;
-    padding: $sp-lg;
-    text-align: center;
-    transition: border-color 0.15s ease, background 0.15s ease;
-
-    &:hover {
-      border-color: $color-accent;
-    }
-  }
-
-  .dashboard-settings-dropzone--active {
-    background: rgba(0, 0, 0, 0.03);
-    border-color: $color-accent;
-    border-style: solid;
-  }
-
-  .dashboard-settings-dropzone--uploading {
-    cursor: wait;
-    opacity: 0.7;
-  }
-
-  .dashboard-settings-dropzone-input {
-    display: none;
-  }
-
-  .dashboard-settings-dropzone-text {
-    color: $color-text-muted;
-    font-size: $smaller-font-size;
-  }
-
-  .dashboard-settings-dropzone-preview {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    gap: $sp-sm;
-  }
-
-  .dashboard-settings-dropzone-preview-img {
-    border-radius: $radius-sm;
-    max-height: 80px;
-    max-width: 100%;
-    object-fit: contain;
-  }
-
-  .dashboard-settings-remove-image {
-    color: $color-danger;
-    cursor: pointer;
-    display: inline-block;
-    font-size: $smaller-font-size;
-    margin-top: $sp-xs;
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
   }
 
   // ── API key field ────────────────────────────────────────────────────────────────────
 
   .dashboard-settings-api-key-hint {
-    color: $color-text-secondary;
-    font-size: $smaller-font-size;
+    color: $color-text-muted;
+    font-size: 12px;
     line-height: 1.45;
-    margin: 0 0 $sp-xs;
+    margin: $sp-xs 0;
   }
 
   .dashboard-settings-api-key-link {
+    align-items: center;
     color: $color-link;
-    display: inline-block;
-    font-size: $smaller-font-size;
-    margin-bottom: $sp-xs;
+    display: inline-flex;
+    font-size: 14px;
+    gap: $sp-xs;
+    margin-bottom: $sp-sm;
     text-decoration: none;
 
     &:hover {
@@ -164,58 +82,19 @@
   }
 
   .dashboard-settings-api-key-input {
-    background: $color-bg-page;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    color: $color-text;
+    @include text-field;
     flex: 1;
     font-family: monospace;
-    font-size: $smaller-font-size;
     min-width: 0;
-    padding: $sp-sm;
-    transition: border-color 0.15s ease;
-
-    &::placeholder {
-      color: $color-text-muted;
-    }
-
-    &:focus {
-      border-color: $color-accent;
-      outline: none;
-    }
   }
 
   .dashboard-settings-api-key-toggle {
-    background: $color-bg-page;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    color: $color-text-secondary;
-    cursor: pointer;
-    flex-shrink: 0;
-    font-size: $default-font-size;
-    line-height: 1;
-    padding: $sp-sm;
-    transition: background 0.1s ease, color 0.1s ease;
-
-    &:hover {
-      background: $color-bg-card;
-      color: $color-text;
-    }
+    @include icon-button($api-key-toggle-size);
   }
 
   .dashboard-settings-debug-button {
+    @include outlined-button;
     align-self: flex-start;
-    background: $color-bg-page;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    color: $color-text;
-    cursor: pointer;
-    font-size: $smaller-font-size;
     margin-top: $sp-md;
-    padding: $sp-sm $sp-md;
-
-    &:hover {
-      background: $color-bg-page-hover;
-    }
   }
 }

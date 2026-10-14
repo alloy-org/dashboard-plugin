@@ -14,16 +14,30 @@
   --dashboard-color-bg-page-hover: var(--color-background-tertiary, #e6ebf2);
   --dashboard-color-bg-primary: var(--color-background-primary, #ffffff);
   --dashboard-color-bg-secondary: var(--color-background-tertiary, #eef1f5);
+  --dashboard-color-bg-element: var(--color-background-element-low-contrast, #edf1f5);
+  --dashboard-color-bg-popup: var(--color-background-popup, #ffffff);
+  --dashboard-color-bg-element-medium: var(--color-background-element-medium-contrast, #e1e6eb);
+  /* The host's victory value scale, as the app's Task Stats graph and task scores use it, low to high */
+  --dashboard-victory-value-color-0: var(--victory-value-color-0, #E1E6EB);
+  --dashboard-victory-value-color-0-text: var(--victory-value-color-0-text, #B4BFCC);
+  --dashboard-victory-value-color-1: var(--victory-value-color-1, #C6E6F6);
+  --dashboard-victory-value-color-1-text: var(--victory-value-color-1-text, #7EC4E7);
+  --dashboard-victory-value-color-2: var(--victory-value-color-2, #96E1E8);
+  --dashboard-victory-value-color-2-text: var(--victory-value-color-2-text, #5DCBD5);
+  --dashboard-victory-value-color-3: var(--victory-value-color-3, #55D3BE);
+  --dashboard-victory-value-color-3-text: var(--victory-value-color-3-text, #38CCB3);
+  --dashboard-victory-value-color-4: var(--victory-value-color-4, #0BBF7D);
+  --dashboard-victory-value-color-4-text: var(--victory-value-color-4-text, #0BBF7D);
+  --dashboard-color-bg-hover: color-mix(in srgb, var(--dashboard-color-text) 6%, transparent);
+  --dashboard-color-action-low: var(--color-background-action-low-contrast, #e6f4fe);
   --dashboard-color-bg-warning: var(--color-background-error-medium-contrast, #ffd7d7);
   --dashboard-color-blue: var(--color-background-action-high-contrast, #5b7bbf);
   --dashboard-color-blue-light: var(--color-background-action-medium-contrast, #e8edf5);
   --dashboard-color-border: var(--color-border-primary, #d8dde6);
   --dashboard-color-danger: var(--color-text-error-high-contrast, #e85353);
-  --dashboard-color-header-bg: var(--color-background-action-high-contrast, #3e92cc);
-  --dashboard-color-header-text: var(--color-text-button, #ffffff);
-  @supports (color: lab(from red l a b)) {
-    --dashboard-color-header-text: lab(from var(--dashboard-color-header-bg) clamp(0, (65.1 - l) * 1000, 100) 0 0);
-  }
+  /* The widget header sits on the card surface, like section headings in the host app */
+  --dashboard-color-header-bg: var(--color-background-primary, #ffffff);
+  --dashboard-color-header-text: var(--color-text-medium-contrast, #626d7a);
   --dashboard-color-info: var(--color-text-link, #5b7bbf);
   --dashboard-color-intent-personal: #6b5ea8;
   --dashboard-color-intent-work: #4caf80;
@@ -34,6 +48,7 @@
   --dashboard-color-success: var(--color-text-status, #4caf80);
   --dashboard-color-text: var(--color-text-high-contrast, #1e2a3a);
   --dashboard-color-text-muted: var(--color-text-low-contrast, #90999f);
+  --dashboard-color-text-lower: var(--color-text-lower-contrast, #b4bfcc);
   /* Paired fill and ink. The fill is the host action color. The ink is --color-text-button, the text those
    * themes put on that fill: white on the blues, near-black on Honeybee yellow. Reversed white fails on that
    * yellow, and high-contrast body text fails on the medium-blue light themes. */

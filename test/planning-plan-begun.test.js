@@ -124,8 +124,8 @@ describe("Planning begun-plan detection", () => {
     const { cleanup, container } = await renderPlanning();
     try {
       expect(container.querySelector(".plan-entry-title")).toBeNull();
-      expect(cardStatus(container, "Q4 2026")).toBe("✏️ Continue Plan");
-      expect(cardStatus(container, "Q1 2027")).toBe("+ Create Plan");
+      expect(cardStatus(container, "Q4 2026")).toBe("Continue Plan");
+      expect(cardStatus(container, "Q1 2027")).toBe("Create Plan");
       expect(container.textContent).not.toContain("Set your Q4 2026 plan");
     } finally {
       await cleanup();
@@ -137,7 +137,7 @@ describe("Planning begun-plan detection", () => {
     const { cleanup, container } = await renderPlanning();
     try {
       expect(container.querySelector(".plan-entry-title")).toBeNull();
-      expect(cardStatus(container, "Q4 2026")).toBe("📝 Open Plan");
+      expect(cardStatus(container, "Q4 2026")).toBe("Open Plan");
     } finally {
       await cleanup();
     }
@@ -155,7 +155,7 @@ describe("Planning begun-plan detection", () => {
       expect(backdrop).not.toBeNull();
       await clickAndSettle(backdrop);
       expect(container.querySelector(".plan-entry-title")).toBeNull();
-      expect(cardStatus(container, "Q4 2026")).toBe("✏️ Continue Plan");
+      expect(cardStatus(container, "Q4 2026")).toBe("Continue Plan");
       const lookedUpQuarters = resolveBegunQuarterPlan.mock.calls.map(([, scope]) => `Q${ scope.quarter } ${ scope.year }`);
       expect(lookedUpQuarters).toEqual(["Q4 2026", "Q1 2027", "Q4 2026", "Q1 2027"]);
     } finally {
