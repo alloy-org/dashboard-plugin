@@ -87,7 +87,7 @@ import { Badge, Button, EmptyState, ErrorState, IconButton, LoadingState, PlainB
 | A status pill | `<Badge tone="neutral" \| "action" \| "status" \| "warning" \| "danger" title="…">Past</Badge>` | Uppercase by default; `uppercase={ false }` for names and prices. |
 | Dialogs and settings | `ConfigPopup` (`lib/dashboard/config-popup.jsx`) | Title bar, close button, footer with Cancel + primary. Renders at the page level, so a widget's popup is never covered by other cards. Fill it with the settings controls above, never with your own option rows. |
 | Tooltips | `DashboardTippy` (hint, or `rich`), `useStatsChartTooltip` for charts | See [Tooltips](#tooltips) for which look to use. |
-| Charts | `charts/stats-chart.jsx` pieces (`ChartGridLines`, `ChartHighlightLine`, `ChartValuePill`, `ChartHitArea`, `ChartXAxisLabels`, `useElementSize`) | See `charts/peak-hours-chart.jsx` for a compact example. |
+| Charts | `ColumnChart` (`charts/column-chart.jsx`): `columns`, `series`, `renderTooltip` | A new column chart is configuration, not a copy: see `charts/peak-hours-chart.jsx` (two series side by side, thinned hour labels) and `charts/victory-value-chart.jsx` (stacked project segments, a gradient, a value pill, and the mood line as `renderOverlay`). The lower-level pieces in `charts/stats-chart.jsx` are for a chart that is not columns. |
 
 Every control forwards `ref` (for popout anchors and focus) and passes other attributes (`data-*`, `aria-*`, `role`,
 `title`) through. The control classes (`dashboard-button`, `dashboard-icon-button`, …) are defined once in

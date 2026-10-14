@@ -5,6 +5,23 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-14 — Generic column chart
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/charts/column-chart.jsx` (created) — `ColumnChart`: measured plot box, grid, column centers, side-by-side series or stacked segments with top-rounded bars, thinned axis labels, hover highlight and hit areas, value pill, and Task Stats tooltip anchoring; widgets supply `columns`, `series`, `renderTooltip`, and optional definitions, overlay, and value pill.
+- `lib/dashboard/charts/peak-hours-chart.jsx` — Now a ColumnChart configuration (two series, hour label steps).
+- `lib/dashboard/charts/victory-value-chart.jsx` — Now a ColumnChart configuration (stacked project segments, victory value gradient, value pill, mood line overlay); its own layout, hover, and bar drawing removed.
+- `test/column-chart.test.js` (created) — Side-by-side series, stacked fills, thinned labels, hover pill and tooltip.
+- `doc/design-system.md` — Charts row points at ColumnChart.
+- `build/compiled.js` — Rebuilt (804,776 bytes).
+
+**Validation:** Jest: 1387 passed, 1 failed (`test/dream-task-actions.test.js`, failing before these changes); the existing Victory Value chart tests pass unchanged. Both charts and their hover tooltips checked in the dev server.
+**Task:** Generalize the Victory Value and Peak Hours charts into one configurable column chart.
+**Prompt summary:** "A generic <ColumnChart columns series renderTooltip> would turn the next chart into configuration rather than a copy."
+
+---
+
 ## 2026-10-14 — Shared settings controls
 
 **Model:** Claude Opus 5.5

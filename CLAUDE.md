@@ -34,6 +34,8 @@ Builder UI, read [`doc/design-system.md`](doc/design-system.md) and build only f
 - **Tooltips** come in two looks: a hint (`DashboardTippy`, one or two plain sentences) or the rich Task Stats look
   for anything with a title, rows, or rendered task text (`DashboardTippy rich` + `richTooltipHtml`, or
   `useStatsChartTooltip`). When unsure, it is rich. See "Tooltips" in the design system.
+- **Charts**: a column chart is a `ColumnChart` (`charts/column-chart.jsx`) configured with `columns`, `series`, and
+  `renderTooltip`; never copy a chart's layout or hover code.
 - **Widget frame** from `WidgetWrapper`; a new widget gets its registry entry in `layout-profiles.js` and its icon in
   `widget-icons.jsx`.
 - **Widget stylesheets hold layout only**; never restyle `dashboard-*` control classes. If a control lacks something
