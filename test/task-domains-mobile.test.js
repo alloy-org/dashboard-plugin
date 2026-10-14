@@ -95,6 +95,7 @@ describe("TaskDomains mobile collapsing", () => {
     const refreshButton = container.querySelector(".task-domains-refresh");
     expect(refreshButton.getAttribute("aria-label")).toBe("Refresh task domains");
     expect(refreshButton.getAttribute("title")).toBe("Refresh task domains");
-    expect(refreshButton.querySelector("svg.task-domains-refresh-icon")).not.toBeNull();
+    expect(refreshButton.className).toContain("dashboard-icon-button");
+    expect(refreshButton.querySelector("svg")).not.toBeNull();
   });
 });

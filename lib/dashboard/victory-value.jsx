@@ -2,6 +2,7 @@
 import { parseWidgetConfig, widgetConfigKey } from "../constants/settings";
 import ConfigPopup from "./config-popup";
 import { StatsChartTooltipContent, StatsChartTooltipRow } from "dashboard/charts/stats-chart-tooltip";
+import { IconButton } from "dashboard/controls";
 import VictoryValueChart, { moodColorFromRating } from "dashboard/charts/victory-value-chart";
 import { completedTasksWithAppliedValues } from "dashboard/projects/completed-task-potential";
 import { completedTaskProjectColor, dailyProjectSegments, projectLegendItems } from "dashboard/projects/completed-task-project-colors";
@@ -282,25 +283,15 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
       </div>
       <ProjectLegend items={legendItems} />
       <div className="vv-chart-container">
-        <button
-          className="vv-nav-arrow"
-          type="button"
-          onClick={() => onReferenceDateChange && onReferenceDateChange(shiftWeekDate(-1, rangeEndDate))}
-          title="Previous week"
-          aria-label="Previous week"
-        ><MdChevronLeft size={ 20 } /></button>
+        <IconButton className="vv-nav-arrow" Icon={ MdChevronLeft } label="Previous week"
+          onClick={ () => onReferenceDateChange && onReferenceDateChange(shiftWeekDate(-1, rangeEndDate)) } />
         <div className="vv-chart-wrap">
           <VictoryValueChart dailyValues={chartDailyValues} hasProjectLegend={legendItems.length > 0} moodByDay={moodByDay}
             showMood={showMood} tooltipContentFromIndex={tooltipContentFromIndex} />
         </div>
-        <button
-          className="vv-nav-arrow"
-          type="button"
-          disabled={dateKeyFromDateInput(rangeEndDate) >= dateKeyFromDateInput(new Date())}
-          onClick={() => onReferenceDateChange && onReferenceDateChange(shiftWeekDate(1, rangeEndDate))}
-          title="Next week"
-          aria-label="Next week"
-        ><MdChevronRight size={ 20 } /></button>
+        <IconButton className="vv-nav-arrow" disabled={ dateKeyFromDateInput(rangeEndDate) >= dateKeyFromDateInput(new Date()) }
+          Icon={ MdChevronRight } label="Next week"
+          onClick={ () => onReferenceDateChange && onReferenceDateChange(shiftWeekDate(1, rangeEndDate)) } />
       </div>
     </WidgetWrapper>
   );

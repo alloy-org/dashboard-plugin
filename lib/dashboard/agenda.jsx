@@ -5,6 +5,7 @@
  * Prompt summary: "widget listing today's scheduled tasks with time, priority indicator, and duration"
  */
 import { DASHBOARD_NOTE_TAG } from "constants/settings"
+import { EmptyState, IconButton, PlainButton } from "dashboard/controls"
 import { obligationsFromTasksAndEvents, TODAY_OBLIGATIONS_EVENT, TODAY_OBLIGATIONS_REQUEST_EVENT } from "proposed-agenda-obligations"
 import { useState, useEffect, useRef } from "react"
 import { MdChevronLeft, MdChevronRight } from "react-icons/md"
@@ -197,21 +198,12 @@ export default function AgendaWidget({ app, calendarEvents, currentDate, selecte
 
   const paginationControls = totalPages > 1 ? (
     <div className="agenda-pagination">
-      <button
-        aria-label="Previous page"
-        className="agenda-page-arrow"
-        onClick={() => setPage(p => Math.max(0, p - 1))}
-        disabled={currentPage === 0}
-        title="Previous page"
-      ><MdChevronLeft /></button>
+      <IconButton className="agenda-page-arrow" disabled={ currentPage === 0 } Icon={ MdChevronLeft }
+        label="Previous page" onClick={ () => setPage(p => Math.max(0, p - 1)) } size="small" />
       <span className="agenda-page-indicator">{`${currentPage + 1} / ${totalPages}`}</span>
-      <button
-        aria-label="Next page"
-        className="agenda-page-arrow"
-        onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
-        disabled={currentPage >= totalPages - 1}
-        title="Next page"
-      ><MdChevronRight /></button>
+      <IconButton className="agenda-page-arrow" disabled={ currentPage >= totalPages - 1 }
+        Icon={ MdChevronRight } label="Next page"
+        onClick={ () => setPage(p => Math.min(totalPages - 1, p + 1)) } size="small" />
     </div>
   ) : null;
 
@@ -235,7 +227,12 @@ export default function AgendaWidget({ app, calendarEvents, currentDate, selecte
             dangerouslySetInnerHTML={{ __html: amplenoteMarkdownRender(item.task.content) || 'Untitled task' }}
           />
           {getTaskNoteUuid(item.task)
-            ? <button type="button" className="agenda-note-link" onClick={(event) => navigateToTaskNote(item.task, event)}>{getTaskNoteLabel(item.task)}</button>
+            ? (
+              <PlainButton className="agenda-note-link"
+                onClick={ event => navigateToTaskNote(item.task, event) }>
+                { getTaskNoteLabel(item.task) }
+              </PlainButton>
+            )
             : null}
         </div>
         {hasDuration
@@ -282,7 +279,10 @@ export default function AgendaWidget({ app, calendarEvents, currentDate, selecte
             <section key={dateKey} className="agenda-day">
               <h4 className="agenda-date-label">{renderDateLabel(dateKey)}</h4>
               {visibleTasks.length === 0 && eventsForDate.length === 0
-                ? <p className="agenda-empty-day">{dateKey === todayDateKey ? 'No tasks scheduled for today' : 'No tasks scheduled'}</p>
+                ? <EmptyState className="agenda-empty-day" compact
+                    title={ dateKey === todayDateKey
+                      ? 'No tasks scheduled for today'
+                      : 'No tasks scheduled' } />
                 : agendaItems.map(item => item.type === 'task' ? renderTaskItem(item) : renderEventItem(item))}
             </section>
           );

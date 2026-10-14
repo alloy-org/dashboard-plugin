@@ -60,13 +60,6 @@ $agenda-transition-duration: 0.12s;
     @include overline-label;
   }
 
-  .agenda-empty-day {
-    color: $color-text-low-contrast;
-    font-size: $smaller-font-size;
-    font-style: italic;
-    padding: $sp-xs 0;
-  }
-
   .agenda-item {
     align-items: center;
     display: flex;
@@ -117,13 +110,8 @@ $agenda-transition-duration: 0.12s;
       }
 
       .agenda-note-link {
-        background: transparent;
-        border: 0;
         color: $color-text-link;
-        cursor: pointer;
         font-size: $smaller-font-size;
-        margin: 0;
-        padding: 0;
         text-align: left;
         text-decoration: none;
 
@@ -164,11 +152,6 @@ $agenda-transition-duration: 0.12s;
     align-items: center;
     display: flex;
     gap: $sp-xs;
-  }
-
-  /* The pagination controls only render in the widget header bar. */
-  .agenda-page-arrow {
-    @include icon-button;
   }
 
   .agenda-page-indicator {

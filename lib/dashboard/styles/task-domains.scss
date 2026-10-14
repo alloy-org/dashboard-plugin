@@ -7,7 +7,6 @@
 @use 'theme-tokens' as *;
 @use 'controls' as *;
 
-$task-domain-transition-duration: 0.15s;
 $task-domain-tab-height: 48px;
 
 /* [Claude] Task: task domain selector bar with pills, settings icon, and refresh link */
@@ -36,49 +35,36 @@ $task-domain-tab-height: 48px;
     white-space: nowrap;
   }
 
+  /* The tabs themselves are the shared UnderlineTabs; this keeps them as tall as the dashboard header. */
   .task-domain-item {
     align-items: center;
-    border-bottom: 2px solid transparent;
-    color: $color-text-low-contrast;
-    cursor: pointer;
     display: inline-flex;
-    font-size: $default-font-size;
-    letter-spacing: 0.02em;
     min-height: $task-domain-tab-height;
-    padding-top: 2px;
-    transition: color $task-domain-transition-duration ease, border-color $task-domain-transition-duration ease;
+  }
 
-    &:hover {
-      color: $color-text-high-contrast;
-    }
-
-    &.active {
-      border-bottom-color: $color-text-high-contrast;
-      color: $color-text-high-contrast;
-    }
+  /* The "All Notes" entry shown when no domain exists is not a tab, so it carries the selected tab's look itself. */
+  &.task-domains--empty .task-domain-item {
+    border-bottom: 2px solid $color-text-high-contrast;
+    color: $color-text-high-contrast;
+    font-size: $default-font-size;
   }
 
   .task-domain-name {
     user-select: none;
   }
 
-  .task-domains-refresh {
-    @include icon-button(32px);
-  }
-
-  .task-domains-refresh--refreshing .task-domains-refresh-icon {
+  .task-domains-refresh--refreshing svg {
     animation: task-domains-refresh-spin 0.9s linear infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .task-domains-refresh--refreshing .task-domains-refresh-icon {
+    .task-domains-refresh--refreshing svg {
       animation: none;
     }
   }
 
   /* Only shown on mobile, where it is the way to reach the domains that collapse out of the bar. */
   .task-domains-expand {
-    @include icon-button(32px);
     display: none;
   }
 

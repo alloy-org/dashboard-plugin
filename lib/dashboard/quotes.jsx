@@ -5,6 +5,7 @@
  * Prompt summary: "widget that fetches quotes via callPlugin and displays on image tiles"
  */
 import { useEffect, useState } from "react";
+import { IconButton, LoadingState } from "dashboard/controls";
 import { getRandomQuotes } from "quotes-data";
 import { MdRefresh } from "react-icons/md";
 import { backgroundSplashUrl } from "util/background-splash-images";
@@ -35,16 +36,13 @@ export default function QuotesWidget({ gridHeightSize, planContent, quotes }) {
   };
 
   const reseedButton = (
-    <button aria-label="Reseed quotes" className="widget-header-action widget-header-action--icon-only"
-      onClick={handleReseed} title="Reseed quotes" type="button">
-      <MdRefresh />
-    </button>
+    <IconButton Icon={ MdRefresh } label="Reseed quotes" onClick={ handleReseed } size="small" />
   );
 
   if (loading) {
     return (
       <WidgetWrapper widgetId="quotes">
-        <div className="quotes-loading">Generating quotes...</div>
+        <LoadingState>Generating quotes...</LoadingState>
       </WidgetWrapper>
     );
   }

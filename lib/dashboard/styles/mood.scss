@@ -31,7 +31,6 @@ $mood-transition-duration: 0.15s;
     background: $color-background-element-low-contrast;
     border: 2px solid transparent;
     border-radius: 50%;
-    cursor: pointer;
     display: flex;
     height: $mood-btn-size;
     justify-content: center;
@@ -70,33 +69,6 @@ $mood-transition-duration: 0.15s;
     margin-bottom: $sp-md;
   }
 
-  .mood-details-label {
-    color: $color-text-medium-contrast;
-    display: block;
-    font-size: $smaller-font-size;
-    margin-bottom: $sp-xs;
-  }
-
-  .mood-details-textarea {
-    background: $color-background-primary;
-    border: 1px solid $color-border-primary;
-    border-radius: $radius-sm;
-    color: $color-text-high-contrast;
-    font-size: $default-font-size;
-    padding: $sp-sm;
-    resize: vertical;
-    width: 100%;
-
-    &:focus {
-      border-color: $color-background-action-high-contrast;
-      outline: none;
-    }
-
-    &::placeholder {
-      color: $color-text-low-contrast;
-    }
-  }
-
   /* [Claude] Task: submit/cancel row for mood rating with Cancel alongside Submit */
   /* Prompt: "add Cancel button alongside Submit; hide viz while details are open" */
   /* Date: 2026-03-07 | Model: claude-4.6-sonnet-medium-thinking */
@@ -105,19 +77,6 @@ $mood-transition-duration: 0.15s;
     gap: $sp-sm;
     justify-content: flex-end;
     margin-bottom: $sp-lg;
-  }
-
-  .mood-submit-btn {
-    @include raised-button;
-  }
-
-  .mood-cancel-btn {
-    @include text-button($button-height);
-
-    &:disabled {
-      cursor: not-allowed;
-      opacity: 0.6;
-    }
   }
 
   .mood-confirmation {
@@ -186,13 +145,6 @@ $mood-transition-duration: 0.15s;
     display: block;
     height: 220px;
     width: 220px;
-  }
-
-  .mood-viz-configure-link {
-    @include text-button(28px);
-    color: $color-text-low-contrast;
-    font-size: 12px;
-    gap: $sp-xs;
   }
 
   .mood-viz-config-option {

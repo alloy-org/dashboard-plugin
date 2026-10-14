@@ -1,5 +1,7 @@
 # Plan: restyle the dashboard to match the Amplenote app
 
+> This is the history of the restyle. For how to build UI today, see [`design-system.md`](design-system.md).
+
 The dashboard should look like part of the app it lives in: the same colors, type, icons, buttons, and card shapes the
 app uses on its own pages (the Task Stats page is the closest reference). This pass changes style only.
 

@@ -30,11 +30,9 @@ $layout-picker-transition: 0.15s ease;
 
   /* Each profile is an outlined option row, highlighted in the host's low-contrast action fill on hover. */
   .layout-picker-profile-button {
-    background: transparent;
     border: 1px solid $color-border-primary;
     border-radius: $radius-sm;
     color: $color-text-high-contrast;
-    cursor: pointer;
     padding: $sp-md;
     text-align: left;
     transition: background $layout-picker-transition, border-color $layout-picker-transition;

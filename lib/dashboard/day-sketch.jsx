@@ -7,6 +7,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import { DASHBOARD_NOTE_TAG } from "constants/settings";
+import { Button, LoadingState } from "dashboard/controls";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { dateFromDateInput, dateKeyFromDateInput, formatHourLabel, millisFromDateInput } from "util/date-utility";
 import WidgetWrapper from "widget-wrapper";
@@ -360,12 +361,10 @@ function HourLine({ entries, handleBlur, handleInputChange, handleInputKeyDown, 
 
 function SaveButton({ isDirty, onSaveClick }) {
   return (
-    <button
-      className={`day-sketch-save-btn${isDirty ? "" : " day-sketch-save-btn--disabled"}`}
-      disabled={!isDirty}
-      onClick={onSaveClick}
-      title={isDirty ? "Save changes" : "No unsaved changes"}
-    >{isDirty ? "Save" : "Saved"}</button>
+    <Button className={ `day-sketch-save-btn${ isDirty ? "" : " day-sketch-save-btn--disabled" }` } dense
+      disabled={ !isDirty } onClick={ onSaveClick } title={ isDirty ? "Save changes" : "No unsaved changes" }>
+      {isDirty ? "Save" : "Saved"}
+    </Button>
   );
 }
 
@@ -399,7 +398,7 @@ export default function DaySketchWidget({ agendaTasks, app, calendarEvents, curr
         subtitle={formatDateForNoteName(today)} widgetId={WIDGET_ID}>
       <div className="day-sketch-notebook" ref={notebookRef}>
         {loading ? (
-          <div className="day-sketch-loading">Loading…</div>
+          <LoadingState className="day-sketch-loading">Loading…</LoadingState>
         ) : (
           HOURS.map(hour => (
             <HourLine

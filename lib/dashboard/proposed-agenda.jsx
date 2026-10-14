@@ -2,6 +2,7 @@
 import { calendarSuggestionExplanation } from "calendar-suggestion-explanation";
 import { PROVIDER_DEFAULT_MODEL } from "constants/llm-providers";
 import { configuredProviderEms, SETTING_KEYS } from "constants/settings";
+import { Badge, Button, IconButton, LoadingState, PlainButton } from "dashboard/controls";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { useDashboardWork } from "dashboard/work-queue/dashboard-work-context";
 import { preparedDayRankingAwaiter } from "dashboard/work-queue/prepared-day-ranking";
@@ -99,8 +100,8 @@ function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, ti
             { formatClockLabel(row.startMinutes, timeFormat) }</span>
           {
             hasNote
-            ? <a href="#" className="proposed-agenda-note-link" title="Open the note for this task"
-                onClick={ (event) => onOpenNote(event, row) }>Note</a>
+            ? <PlainButton className="proposed-agenda-note-link" onClick={ (event) => onOpenNote(event, row) }
+                title="Open the note for this task">Note</PlainButton>
             : <span className="proposed-agenda-note-link">{ row.source === "event" ? "Event" : "Task" }</span>
           }
         </span>
@@ -108,32 +109,30 @@ function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, ti
           <span className="proposed-agenda-title-line">
             <span className="proposed-agenda-text" dangerouslySetInnerHTML={ { __html: titleHtml } } />
             { hasReason
-              ? <button aria-expanded={ reasonExpanded }
-                  aria-label={ `${ reasonExpanded ? "Hide" : "Show" } why this task was proposed` }
-                  className="proposed-agenda-reason-toggle" onClick={ () => setReasonExpanded(expanded => !expanded) }
-                  title={ `${ reasonExpanded ? "Hide" : "Show" } why this task was proposed` }
-                  type="button"><MdInfo size={ 16 } /></button>
+              ? <IconButton aria-expanded={ reasonExpanded } className="proposed-agenda-reason-toggle" Icon={ MdInfo }
+                  label={ `${ reasonExpanded ? "Hide" : "Show" } why this task was proposed` }
+                  onClick={ () => setReasonExpanded(expanded => !expanded) } size="small" />
               : null }
           </span>
           { hasReason
             ? <span className="proposed-agenda-reason proposed-agenda-reason--desktop" ref={ reasonRef }>{ reason }</span>
             : null }
-          { row.projectUuid ? <span className="proposed-agenda-goal-badge"><MdStarBorder size={ 14 } />Quarterly goal</span> : null }
+          { row.projectUuid ? <Badge className="proposed-agenda-goal-badge" uppercase={ false }><MdStarBorder size={ 14 } />Quarterly goal</Badge> : null }
         </div>
         { isScheduled
           ? <span className="proposed-agenda-scheduled-meta">
-              <span className="proposed-agenda-scheduled-badge" title="Already scheduled on this date">Scheduled</span>
+              <Badge className="proposed-agenda-scheduled-badge" uppercase={ false } title="Already scheduled on this date">Scheduled</Badge>
             </span>
           : <>
               <span className="proposed-agenda-actions">
-                <button className="proposed-agenda-add" title={ `Schedule for ${ row.startTime } on the agenda date` }
-                  onClick={ (event) => onSchedule(event, row) }>
+                <PlainButton className="proposed-agenda-add" onClick={ (event) => onSchedule(event, row) }
+                  title={ `Schedule for ${ row.startTime } on the agenda date` }>
                   <span className="proposed-agenda-add-label"><MdCalendarToday className="proposed-agenda-schedule-icon" size={ 16 } />Add to schedule</span>
                   { row.durationMinutes
                     ? <span className="proposed-agenda-add-duration">{ `${ row.durationMinutes }m` } duration</span> : null }
-                </button>
-                <button aria-label="Dismiss this suggestion" className="proposed-agenda-dismiss" title="Dismiss this suggestion"
-                  onClick={ (event) => onDismiss(event, row) }><MdClose /></button>
+                </PlainButton>
+                <IconButton className="proposed-agenda-dismiss" Icon={ MdClose } label="Dismiss this suggestion"
+                  onClick={ (event) => onDismiss(event, row) } size="small" />
               </span>
             </>
         }
@@ -146,14 +145,11 @@ function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, ti
 
 // ----------------------------------------------------------------------------------------------
 // @desc Show a naturally sized activity indicator while obligations and the proposed schedule load.
-function LoadingState({ dateControl }) {
+function ProposedAgendaLoading({ dateControl }) {
   return (
     <WidgetWrapper widgetId={ WIDGET_ID }>
       { dateControl }
-      <div className="proposed-agenda-loading">
-        <div className="proposed-agenda-spinner" />
-        <p>Drafting your hour-by-hour schedule …</p>
-      </div>
+      <LoadingState className="proposed-agenda-loading">Drafting your hour-by-hour schedule …</LoadingState>
     </WidgetWrapper>
   );
 }
@@ -303,7 +299,6 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   // Proposed existing-task rows carry noteUuid directly; obligations carry only taskUuid, so resolve the
   // owning note via getTask before navigating. Invented/calendar rows with neither are not linkable.
   const onOpenNote = useCallback(async (event, row) => {
-    event.preventDefault();
     const noteUuid = row.noteUuid || (await app.getTask(row.taskUuid)).noteUUID;
     await app.navigate(`https://www.amplenote.com/notes/${ noteUuid }`);
   }, [app]);
@@ -350,12 +345,12 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   const savedDates = [...new Set(datedRows.map(row => dateKeyFromDateInput(row.targetMidnightSeconds)))];
   const dateControl = <ProposedAgendaDateControl calendarEvents={ calendarEvents } dateLabel={ dateLabel }
     dateValue={ dateValue } onSelectDate={ setSelectedDate } savedDates={ savedDates } />;
-  if (loading) return <LoadingState dateControl={ dateControl } />;
+  if (loading) return <ProposedAgendaLoading dateControl={ dateControl } />;
   if (error) {
     const envApiKey = (typeof process !== "undefined" && process.env?.OPEN_AI_ACCESS_TOKEN) || "";
     const hasLlmConfig = !!(envApiKey || providerApiKey);
     const isKeylessFailure = !hasLlmConfig && NO_CONFIG_ERROR_CODES.has(error.errorCode);
-    if (isKeylessFailure && ampleAgentProAvailable === null) return <LoadingState dateControl={ dateControl } />;
+    if (isKeylessFailure && ampleAgentProAvailable === null) return <ProposedAgendaLoading dateControl={ dateControl } />;
     // Only a confirmed absence of Agent Pro shows the upsell. With it installed, a keyless failure means Agent Pro
     // did not answer, which a retry may fix.
     if (isKeylessFailure && ampleAgentProAvailable === false) {
@@ -383,10 +378,10 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   const pending = pendingCount(proposed, scheduledKeys, dismissedKeys);
   const calendarCount = obligations.filter(row => row.source === "event").length;
   const headerActions = <div className="proposed-agenda-header-actions">
-    <button className="proposed-agenda-model" onClick={ onChangeModel } title="Change AI provider" type="button">
-      <MdPsychology />{ _modelName(modelProviderEm) }<MdExpandMore /></button>
-    <button className="proposed-agenda-regenerate" onClick={ () => runGeneration({ forceRegenerate: true }) } type="button">
-      <MdRefresh />Regenerate</button>
+    <Button className="proposed-agenda-model" dense Icon={ MdPsychology } onClick={ onChangeModel } title="Change AI provider"
+      TrailingIcon={ MdExpandMore }><span className="proposed-agenda-model-name">{ _modelName(modelProviderEm) }</span></Button>
+    <Button className="proposed-agenda-regenerate" dense Icon={ MdRefresh } onClick={ () => runGeneration({ forceRegenerate: true }) }>
+      Regenerate</Button>
   </div>;
 
   // ------------------------------------------------------------------------------------------
@@ -432,16 +427,15 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
         <div className="proposed-agenda-footer">
           <span className="proposed-agenda-pending">{ pending } { pending === 1 ? "suggestion" : "suggestions" } unscheduled
             { " · " }{ rows.length } on the { dayGroups.length > 1 ? "agenda" : "day" }</span>
-          <button className="proposed-agenda-schedule-all" disabled={ approving || pending === 0 } onClick={ onApprove } type="button">
-            Schedule all</button>
-          <button className="proposed-agenda-approve" disabled={ approving }
-            onClick={ onAccept } title="Save this agenda to its dated note" type="button">
-            { approving ? "Saving …" : "Accept agenda" }</button>
+          <Button className="proposed-agenda-schedule-all" disabled={ approving || pending === 0 } onClick={ onApprove }
+            variant="outlined">Schedule all</Button>
+          <Button className="proposed-agenda-approve" disabled={ approving } onClick={ onAccept }
+            title="Save this agenda to its dated note" variant="raised">{ approving ? "Saving …" : "Accept agenda" }</Button>
         </div>
         <div className="proposed-agenda-secondary-footer">
           { attribution ? <span className="proposed-agenda-attribution">{ attribution }</span> : null }
-          <button className="proposed-agenda-dismiss-all" disabled={ approving || pending === 0 } onClick={ onDismissAll } type="button">
-            Dismiss all suggestions</button>
+          <Button className="proposed-agenda-dismiss-all" dense disabled={ approving || pending === 0 } onClick={ onDismissAll }>
+            Dismiss all suggestions</Button>
         </div>
       </WidgetWrapper>
       { providerPopupOpen

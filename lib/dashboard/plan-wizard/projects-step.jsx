@@ -10,6 +10,7 @@
 // A link under the page's summary opens the sources page, which shows the intents, notes, and tasks discovery reads.
 // While a pass runs the link invites the user to watch it, since the wait is long enough to want something to look at.
 
+import { Button } from "dashboard/controls";
 import { IntentReadingProgressBar } from "dashboard/plan-wizard/intent-reading-page";
 import ProjectCard from "dashboard/plan-wizard/project-card";
 import { completionRecordFromRow, draftRowsFromProspects, emptyProjectRow, priorityRecordFromRow,
@@ -68,10 +69,10 @@ function restatedProjectCount(prospects, userCategoryEm) {
 function ProjectSourcesLink({ discoveryProgress, isDiscovering, onOpenSources }) {
   return (
     <div className={ `projects-step-sources${ isDiscovering ? " projects-step-sources--running" : "" }` }>
-      <button className="projects-step-sources-link" onClick={ onOpenSources } type="button">
+      <Button className="projects-step-sources-link" onClick={ onOpenSources }>
         { isDiscovering ? "Watch Plan Builder find your projects" : "View sources" }
         <MdArrowForward size={ 16 } />
-      </button>
+      </Button>
       { isDiscovering ? <IntentReadingProgressBar fraction={ discoveryProgress } /> : null }
     </div>
   );
@@ -234,27 +235,27 @@ export default function ProjectsStep({ app, discoveryFailureReason = null, disco
               )) }
             </div>
             <div className="plan-actions">
-              <button className="plan-button plan-button--dashed projects-step-add" disabled={ isSaving }
+              <Button className="plan-button plan-button--dashed projects-step-add" disabled={ isSaving }
                 onClick={ () => setDraftRows(previous => previous.concat(emptyProjectRow(userCategoryEm,
-                  categoryGoalUuids, true))) } type="button">
+                  categoryGoalUuids, true))) } variant="outlined">
                 Add another project
-              </button>
-              <button className="plan-button plan-button--dashed projects-step-discover"
+              </Button>
+              <Button className="plan-button plan-button--dashed projects-step-discover"
                 disabled={ isDiscovering || isSaving || !hasChosenIntent }
                 onClick={ onDiscover }
                 title={ hasChosenIntent ? "Read your recent tasks for projects that would carry these intents"
                   : "Save an intent in this category first, so there is something for a project to advance" }
-                type="button">
+                variant="outlined">
                 { isDiscovering ? "Reading your tasks…" : "Suggest projects from my tasks" }
-              </button>
+              </Button>
               { combinableCount ? (
-                <button className="plan-button plan-button--dashed projects-step-combine"
+                <Button className="plan-button plan-button--dashed projects-step-combine"
                   disabled={ isConsolidating || isDiscovering || isSaving }
                   onClick={ () => onConsolidate() }
                   title="Several suggestions here describe the same undertaking; combine them into one project"
-                  type="button">
+                  variant="outlined">
                   { isConsolidating ? "Combining…" : `Combine ${ combinableCount } overlapping suggestions` }
-                </button>
+                </Button>
               ) : null }
               <p className="projects-step-discovery-notice" role="status">
                 { discoveryNoticeText({ discoveryFailureReason, hasChosenIntent, isDiscovering, proposedCount }) }

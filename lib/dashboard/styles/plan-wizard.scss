@@ -11,7 +11,7 @@ $plan-wizard-edge-inset-horizontal: 10%;
 $plan-wizard-edge-inset-horizontal-phone: 10px;
 $plan-wizard-edge-inset-vertical: $sp-xl;
 $plan-wizard-input-min-height: 36px;
-$plan-wizard-pending-spinner-size: 14px;
+$plan-wizard-pending-row-height: 16px;
 $plan-wizard-sidebar-width: 220px;
 $plan-wizard-step-bar-height: 4px;
 $plan-wizard-z-index: 1100;
@@ -99,9 +99,10 @@ $pace-slice-other-color: #e87ba4;
       color: $color-text-high-contrast;
     }
 
-    /* Every page's inputs share one look, so a question added later needs no new field styling. */
-    input[type="text"],
-    input[type="date"],
+    /* The fields TextField cannot express (the write-in inputs inside option cards and the auto-growing
+     * textareas) share the outlined field look; every other field is a TextField. */
+    input.done-enough-custom-input,
+    input.quarter-name-custom-input,
     textarea.intent-step-input,
     textarea.project-row-name {
       background: $color-background-primary;
@@ -136,10 +137,13 @@ $pace-slice-other-color: #e87ba4;
     }
   }
 
-  /* Buttons default to a quiet bordered control, the shape the wizard's chips and choice tiles build on. The
-   * selector is wrapped in :where() so it weighs only as much as the wrapper: every named button rule below is a
-   * class under the same wrapper and outranks it without having to be nested under `.plan-wizard-page`. */
-  :where(.plan-wizard-page button) {
+  /* The wizard's chips, choice tiles, and rail rows (PlainButtons) share a quiet bordered shape. The list is one
+   * class deep under the wrapper, so it outranks PlainButton's reset while every named rule below, which comes
+   * later at the same or greater weight, still overrides it. Labeled actions are Button and IconButton. */
+  .plan-wizard-page :is(.done-enough-release-choice, .intent-reading-direction, .intent-step-suggestion,
+      .progress-bar-summary, .progress-plan-note-link, .progress-step-button,
+      .project-pace-choice, .project-pace-day, .project-row-priority-button, .project-row-status-button,
+      .project-sources-project-row, .quarter-name-idea) {
     align-items: center;
     background: transparent;
     border: 1px solid $color-border-primary;
@@ -158,13 +162,7 @@ $pace-slice-other-color: #e87ba4;
     }
 
     &:disabled {
-      cursor: default;
       opacity: 0.5;
-    }
-
-    &:focus-visible {
-      outline: 2px solid $color-background-action-high-contrast;
-      outline-offset: 1px;
     }
   }
 
@@ -217,17 +215,13 @@ $pace-slice-other-color: #e87ba4;
   /* A quarter the user already wrote in, outside Plan Builder, links to that note from the title bar rather than
    * waiting until the last page. */
   .plan-wizard-existing-note-link {
-    background: none;
-    border: none;
     color: $plan-wizard-title-bar-text-low;
     flex: 0 0 auto;
     font-size: $smaller-font-size;
-    padding: 0;
     text-decoration: underline;
     white-space: nowrap;
 
     &:hover:not(:disabled) {
-      background: none;
       color: $plan-wizard-title-bar-text;
     }
   }
@@ -273,42 +267,12 @@ $pace-slice-other-color: #e87ba4;
     background: $color-background-action-high-contrast;
   }
 
-  .plan-wizard-status {
-    color: $color-text-medium-contrast;
-    font-size: $default-font-size;
-    padding: $sp-xl 0;
-    text-align: center;
-  }
-
-  .plan-wizard-error {
-    background: $color-background-error-medium-contrast;
-    border: 1px solid $color-border-primary;
-    border-radius: $radius-sm;
-    margin-top: $sp-lg;
-    padding: $sp-md;
-  }
-
   .plan-wizard-error-message {
-    color: $color-text-error-high-contrast;
-    font-size: $default-font-size;
-    margin: 0 0 $sp-sm;
-  }
-
-  .plan-wizard-error-title {
-    color: $color-text-error-high-contrast;
-    font-size: $default-font-size;
-    font-weight: 500;
     margin: 0 0 $sp-xs;
   }
 
   .plan-wizard-error-guidance {
-    color: $color-text-medium-contrast;
-    font-size: $smaller-font-size;
-    margin: 0 0 $sp-sm;
-  }
-
-  .plan-wizard-retry {
-    @include outlined-button;
+    margin: 0;
   }
 
   /* The dialog's action footer: Back or Cancel on the left as a text button, the advancing actions on the right
@@ -330,16 +294,6 @@ $pace-slice-other-color: #e87ba4;
     display: flex;
     gap: $sp-sm;
     margin-left: auto;
-  }
-
-  .plan-wizard-back,
-  .plan-wizard-cancel,
-  .plan-wizard-view-plan {
-    @include text-button($button-height);
-  }
-
-  .plan-wizard-next {
-    @include raised-button;
   }
 
   .plan-wizard-plan-note-error {
@@ -386,13 +340,8 @@ $pace-slice-other-color: #e87ba4;
     gap: $sp-md;
   }
 
-  .plan-button--primary {
-    @include raised-button;
-  }
-
-  /* Secondary actions on a page (add a field, suggest, combine, read again) are the host's outlined button. */
+  /* Secondary actions on a page (add a field, suggest, combine, read again) are outlined Buttons. */
   .plan-button--dashed {
-    @include outlined-button;
     flex-shrink: 0;
   }
 
@@ -478,29 +427,7 @@ $pace-slice-other-color: #e87ba4;
       font-size: $smaller-font-size;
       font-style: italic;
       gap: $sp-sm;
-      min-height: $plan-wizard-pending-spinner-size;
-    }
-
-    .intent-step-pending-spinner {
-      animation: intent-step-pending-spin 0.8s linear infinite;
-      border: 2px solid $color-border-primary;
-      border-radius: 50%;
-      border-top-color: $color-text-link;
-      box-sizing: border-box;
-      flex-shrink: 0;
-      height: $plan-wizard-pending-spinner-size;
-      width: $plan-wizard-pending-spinner-size;
-    }
-
-    /* Without the animation a static ring reads as a broken control, so the wait is carried by the label alone. */
-    @media (prefers-reduced-motion: reduce) {
-      .intent-step-pending-spinner {
-        display: none;
-      }
-    }
-
-    @keyframes intent-step-pending-spin {
-      to { transform: rotate(360deg); }
+      min-height: $plan-wizard-pending-row-height;
     }
 
     .intent-step-suggestion-list {
@@ -560,18 +487,6 @@ $pace-slice-other-color: #e87ba4;
 
     .intent-step-reading-link {
       align-self: flex-start;
-      background: none;
-      border: 0;
-      color: $color-text-link;
-      display: inline-flex;
-      font-size: $smaller-font-size;
-      font-weight: 500;
-      padding: 0;
-
-      &:hover:not(:disabled) {
-        background: transparent;
-        text-decoration: underline;
-      }
     }
   }
 
@@ -592,7 +507,6 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .intent-reading-return {
-      @include text-button;
       flex-shrink: 0;
     }
 
@@ -703,20 +617,8 @@ $pace-slice-other-color: #e87ba4;
       font-variant-numeric: tabular-nums;
     }
 
-    .intent-reading-theme-button {
-      @include icon-button;
-
-      &:first-of-type { margin-left: auto; }
-
-      &[aria-pressed="true"] {
-        background: $color-background-element-low-contrast;
-        color: $color-text-high-contrast;
-      }
-    }
-
-    .intent-reading-theme--pinned .intent-reading-theme-button[aria-pressed="true"] {
-      background: transparent;
-      color: $color-background-action-high-contrast;
+    .intent-reading-theme-button:first-of-type {
+      margin-left: auto;
     }
 
     .intent-reading-reread {
@@ -910,18 +812,6 @@ $pace-slice-other-color: #e87ba4;
       font-variant-numeric: tabular-nums;
     }
 
-    .project-sources-ratified-badge {
-      align-items: center;
-      background: $color-background-action-low-contrast;
-      border-radius: 10px;
-      color: $color-text-high-contrast;
-      display: inline-flex;
-      font-size: 12px;
-      font-weight: 500;
-      gap: 2px;
-      padding: 2px $sp-sm 2px 6px;
-    }
-
     @media (prefers-reduced-motion: reduce) {
       .project-sources-project { animation: none; }
       .project-sources-project-chevron { transition: none; }
@@ -946,18 +836,6 @@ $pace-slice-other-color: #e87ba4;
 
       .projects-step-sources-link {
         align-self: flex-start;
-        background: none;
-        border: 0;
-        color: $color-text-link;
-        display: inline-flex;
-        font-size: $smaller-font-size;
-        font-weight: 500;
-        padding: 0;
-
-        &:hover:not(:disabled) {
-          background: transparent;
-          text-decoration: underline;
-        }
       }
     }
 
@@ -1083,13 +961,6 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-row-reject {
-      @include text-button;
-      color: $color-text-error-high-contrast;
-
-      &:hover:not(:disabled) {
-        background: color-mix(in srgb, $color-text-error-high-contrast 8%, transparent);
-      }
-
       @include breakpoint($breakpoint-tablet) {
         display: none;
       }
@@ -1242,17 +1113,6 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-pace-deadline {
-      align-items: center;
-      color: $color-text-low-contrast;
-      display: flex;
-      flex-wrap: wrap;
-      font-size: 12px;
-      font-weight: 500;
-      gap: $sp-sm;
-    }
-
-    .project-pace-deadline-input {
-      flex: 1;
       min-width: 10rem;
     }
 
@@ -1305,19 +1165,6 @@ $pace-slice-other-color: #e87ba4;
       align-items: baseline;
       display: flex;
       gap: $sp-sm;
-    }
-
-    /* Optional is a promise rather than a warning — the page is skippable — so it is set in the personal-intent
-     * violet rather than in the danger or warning colors. */
-    .done-enough-optional-badge {
-      background: $color-background-element-low-contrast;
-      border-radius: 10px;
-      color: $color-text-medium-contrast;
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.04em;
-      padding: 2px $sp-sm;
-      text-transform: uppercase;
     }
 
     /* This question is two clauses long, so it is given more room to breathe than the one-line headings the
@@ -1770,13 +1617,7 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .quarter-name-window-remove {
-      @include icon-button;
       align-self: center;
-
-      &:hover:not(:disabled),
-      &:focus-visible {
-        color: $color-text-error-high-contrast;
-      }
     }
 
     .quarter-name-deadline-note {

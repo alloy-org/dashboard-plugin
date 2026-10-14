@@ -1,5 +1,6 @@
 // Show agenda failures with a retry action and access to the source note when its content cannot be read.
 import { noteUrlFromUUID } from "app-util";
+import { Button, ErrorState } from "dashboard/controls";
 import NoteEditor from "note-editor";
 import { useState } from "react";
 import { navigateToNote } from "util/goal-notes";
@@ -21,15 +22,20 @@ export default function ProposedAgendaMessage({ app, dateControl, message, noteU
     if (result?.devEdit) setInspectingNote(true);
   };
 
+  // The retry keeps its own class (tests and callers find it by `.proposed-agenda-retry`), so it is passed as an action
+  // rather than through ErrorState's onRetry.
+  const sourceAndRetryActions = (
+    <>
+      { noteUuid ? <Button href={ noteUrlFromUUID(noteUuid) } onClick={ openSourceNote }>View source note</Button> : null }
+      <Button className="proposed-agenda-retry" onClick={ onRetry } variant="outlined">Try again</Button>
+    </>
+  );
+
   return (
     <WidgetWrapper widgetId="proposed-agenda">
       { dateControl }
       { inspectingNote ? <NoteEditor app={ app } noteUUID={ noteUuid } onBack={ () => setInspectingNote(false) } />
-        : <div className="proposed-agenda-message" role="alert">
-            <p>{ message }</p>
-            { noteUuid ? <a href={ noteUrlFromUUID(noteUuid) } onClick={ openSourceNote }>View source note</a> : null }
-            <button className="proposed-agenda-retry" onClick={ onRetry }>Try again</button>
-          </div> }
+        : <ErrorState action={ sourceAndRetryActions } className="proposed-agenda-message" title={ null }>{ message }</ErrorState> }
     </WidgetWrapper>
   );
 }

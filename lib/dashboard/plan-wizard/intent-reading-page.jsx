@@ -4,6 +4,7 @@
 // Pinning or dismissing a theme is stored in the Vision Guide and steers the next reading, which is how the user
 // shapes what Plan Builder sends to the model without editing that data note by hand.
 
+import { Button, IconButton, PlainButton } from "dashboard/controls";
 import { themeKey } from "plan-wizard/intent-reading";
 import { useEffect, useRef, useState } from "react";
 import { MdCheckBox, MdClose, MdDescription, MdPushPin, MdTrackChanges } from "react-icons/md";
@@ -90,16 +91,16 @@ function IntentReadingTheme({ isSaving, judgement, onJudge, theme }) {
     <li className={ themeClass }>
       <span className="intent-reading-theme-label">{ theme.label }</span>
       { theme.taskCount ? <span className="intent-reading-theme-count">{ theme.taskCount }</span> : null }
-      <button aria-label={ `${ isPinned ? "Unpin" : "Pin" } ${ theme.label }` } aria-pressed={ isPinned }
-        className="intent-reading-theme-button" disabled={ isSaving } onClick={ () => onJudge(isPinned ? null : "pinned") }
-        title={ isPinned ? "Pinned: favored in the next reading" : "Pin: this matters" } type="button">
-        <MdPushPin size={ 16 } />
-      </button>
-      <button aria-label={ `${ isDismissed ? "Restore" : "Dismiss" } ${ theme.label }` } aria-pressed={ isDismissed }
-        className="intent-reading-theme-button" disabled={ isSaving } onClick={ () => onJudge(isDismissed ? null : "dismissed") }
-        title={ isDismissed ? "Dismissed: left out of the next reading" : "Dismiss: this doesn't matter" } type="button">
-        <MdClose size={ 16 } />
-      </button>
+      <IconButton className="intent-reading-theme-button" disabled={ isSaving } Icon={ MdPushPin }
+        label={ `${ isPinned ? "Unpin" : "Pin" } ${ theme.label }` }
+        onClick={ () => onJudge(isPinned ? null : "pinned") } pressed={ isPinned } size="small"
+        tooltip={ isPinned ? "Pinned: favored in the next reading" : "Pin: this matters" } />
+      <IconButton className="intent-reading-theme-button" disabled={ isSaving } Icon={ MdClose }
+        label={ `${ isDismissed ? "Restore" : "Dismiss" } ${ theme.label }` }
+        onClick={ () => onJudge(isDismissed ? null : "dismissed") } pressed={ isDismissed } size="small"
+        tooltip={ isDismissed
+          ? "Dismissed: left out of the next reading"
+          : "Dismiss: this doesn't matter" } />
     </li>
   );
 }
@@ -164,16 +165,17 @@ export default function IntentReadingPage({ directions, intentReading, isRefresh
     <section aria-label="How your notes were read" className="plan-step-container intent-reading-page">
       <header className="intent-reading-header">
         <h2 className="plan-heading intent-reading-title">Reading your last quarter</h2>
-        <button className="intent-reading-return" onClick={ onReturn } type="button">Return to Plan Builder</button>
+        <Button className="intent-reading-return" onClick={ onReturn }>Return to Plan Builder</Button>
       </header>
       <IntentReadingProgressBar fraction={ isReady ? 1 : progressFraction } />
       <p className="intent-reading-status" role="status">
         { !isRefreshing && !hasStoredReading ? "No sources are stored for these suggestions yet." : statusText }
       </p>
       { !isRefreshing && !hasStoredReading ? (
-        <button className="plan-button plan-button--dashed intent-reading-reread" onClick={ onReread } type="button">
+        <Button className="plan-button plan-button--dashed intent-reading-reread" onClick={ onReread }
+          variant="outlined">
           Read my notes now
-        </button>
+        </Button>
       ) : null }
       <div className="intent-reading-columns">
         <section className="intent-reading-column">
@@ -212,9 +214,10 @@ export default function IntentReadingPage({ directions, intentReading, isRefresh
             </p>
           ) : null }
           { isReady && hasChangedJudgements ? (
-            <button className="plan-button plan-button--dashed intent-reading-reread" onClick={ onReread } type="button">
+            <Button className="plan-button plan-button--dashed intent-reading-reread" onClick={ onReread }
+              variant="outlined">
               Read again with these themes
-            </button>
+            </Button>
           ) : null }
         </section>
       </div>
@@ -226,11 +229,11 @@ export default function IntentReadingPage({ directions, intentReading, isRefresh
           <ul className="intent-reading-direction-list">
             { visibleDirections.map(direction => (
               <li key={ direction.uuid }>
-                <button className="intent-reading-direction" onClick={ () => onApplyDirection(direction) }
-                  title={ direction.substantiation } type="button">
+                <PlainButton className="intent-reading-direction"
+                  onClick={ () => onApplyDirection(direction) } title={ direction.substantiation }>
                   <MdTrackChanges className="intent-reading-direction-icon" />
                   <span>{ direction.intent }</span>
-                </button>
+                </PlainButton>
               </li>
             )) }
           </ul>

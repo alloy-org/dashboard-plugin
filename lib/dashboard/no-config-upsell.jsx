@@ -2,6 +2,7 @@
 // Prompt summary: "When a widget has no available LLM key, print a NoConfig upsell equivalent to the one Goal
 //   Coach (DreamTask) shows, but highlighting different features. Extract the upsell into a standalone component
 //   called by both DreamTask and Proposed Agenda, parameterized by the features it highlights."
+import { Badge, Button } from "dashboard/controls";
 import { AMPLE_AGENT_PRO_URL } from "providers/ai-provider-settings";
 import { MdBolt, MdCheck } from "react-icons/md";
 import WidgetWrapper from "widget-wrapper";
@@ -30,8 +31,10 @@ export default function NoConfigUpsell({ app, features = [], headline = DEFAULT_
     <WidgetWrapper widgetId={ widgetId }>
       <div className="no-config-upsell">
         <div className="no-config-upsell-badges">
-          <span className="no-config-upsell-badge no-config-upsell-badge--brand">Ample Agent Pro</span>
-          <span className="no-config-upsell-badge no-config-upsell-badge--price">Early Adopters $8/mo Special</span>
+          <Badge className="no-config-upsell-badge--brand" tone="action">Ample Agent Pro</Badge>
+          <Badge className="no-config-upsell-badge--price" uppercase={ false }>
+            Early Adopters $8/mo Special
+          </Badge>
         </div>
         <h3 className="no-config-upsell-headline">{ headline }</h3>
         <p className="no-config-upsell-subhead">{ subhead }</p>
@@ -45,12 +48,10 @@ export default function NoConfigUpsell({ app, features = [], headline = DEFAULT_
         </div>
         { moreFeaturesLabel ? <p className="no-config-upsell-more">{ moreFeaturesLabel }</p> : null }
         <div className="no-config-upsell-actions">
-          <a href="#0" onClick={ () => app.navigate(AMPLE_AGENT_PRO_URL) }
-            className="no-config-upsell-button no-config-upsell-button--primary">
-            <MdBolt />Start for $8/month
-          </a>
-          <a href="#0" onClick={ () => app.navigate(AMPLE_AGENT_PRO_URL) }
-            className="no-config-upsell-button no-config-upsell-button--secondary">See all features</a>
+          <Button className="no-config-upsell-button no-config-upsell-button--primary" Icon={ MdBolt }
+            onClick={ () => app.navigate(AMPLE_AGENT_PRO_URL) } variant="raised">Start for $8/month</Button>
+          <Button className="no-config-upsell-button no-config-upsell-button--secondary"
+            onClick={ () => app.navigate(AMPLE_AGENT_PRO_URL) }>See all features</Button>
         </div>
         <p className="no-config-upsell-footnote">
           <MdCheck size={ 16 } />No API key required for core features

@@ -177,7 +177,7 @@ describe('DashboardApp', () => {
       await act(async () => { root.render(createElement(DashboardApp, { app: hangingApp, initPromise })); });
 
       expect(container.querySelector('.dashboard-loading')).not.toBeNull();
-      expect(container.querySelector('.spinner')).not.toBeNull();
+      expect(container.querySelector('.dashboard-spinner')).not.toBeNull();
       expect(container.textContent).toContain('Loading dashboard');
     });
   });

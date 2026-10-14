@@ -37,11 +37,7 @@
 
   .note-link {
     align-items: center;
-    background: none;
-    border: none;
     border-radius: $radius-sm;
-    color: inherit;
-    cursor: pointer;
     display: flex;
     gap: $sp-sm;
     justify-content: space-between;
@@ -66,18 +62,5 @@
     flex-shrink: 0;
     font-size: $smaller-font-size;
     white-space: nowrap;
-  }
-
-  .note-loading,
-  .note-empty,
-  .note-error {
-    color: $color-text-medium-contrast;
-    font-size: $default-font-size;
-    padding: $sp-md 0;
-    text-align: center;
-  }
-
-  .note-error {
-    color: $color-text-error-high-contrast;
   }
 }

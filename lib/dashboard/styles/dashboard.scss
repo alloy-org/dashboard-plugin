@@ -16,9 +16,6 @@
 
 // Layout & component constants
 $dashboard-maximum-width: 1200px;
-$spinner-size: 32px;
-$spinner-border-width: 3px;
-$spinner-duration: 0.8s;
 $error-padding: 40px;
 
 /* [Claude] Task: split dashboard into full-width background wrapper and max-width content area */
@@ -56,7 +53,6 @@ $error-padding: 40px;
     /* Prompt: "If the user clicks on the background in this state, the other components transition back into view" */
     .dashboard-grid-focus-backdrop {
       background: color-mix(in srgb, $color-background-secondary 18%, transparent);
-      border: none;
       cursor: zoom-out;
       inset: 0;
       position: fixed;
@@ -87,10 +83,6 @@ $error-padding: 40px;
         display: flex;
         flex-shrink: 0;
         gap: $sp-xs;
-      }
-
-      .dashboard-configure-button {
-        @include icon-button(36px);
       }
     }
   }
@@ -249,7 +241,6 @@ $error-padding: 40px;
     /* [OpenAI gpt-5.4] Task: style the widget icon as a desktop focus-mode button */
     /* Prompt: "when the user clicks on the icon for a particular component" */
     .widget-icon-button {
-      @include icon-button;
       margin-left: -5px;
     }
 
@@ -288,57 +279,22 @@ $error-padding: 40px;
       }
     }
 
-    .widget-configure {
-      @include icon-button;
-    }
-
-    /* Header actions with a visible label read as host text buttons; icon-only ones add --icon-only. */
-    .widget-header-action {
-      @include text-button(28px);
-      font-size: 12px;
-
-      &.widget-header-action--icon-only {
-        @include icon-button;
-      }
-    }
-
     .widget-body {
       flex: 1;
       padding: $sp-xs $sp-lg $sp-lg;
     }
   }
 
-  // Loading state
+  // Loading state: the shared LoadingState, centered in the viewport
   .dashboard-loading {
-    align-items: center;
-    color: $color-text-medium-contrast;
-    display: flex;
-    flex-direction: column;
-    gap: $sp-lg;
+    box-sizing: border-box;
     height: 100vh;
-    justify-content: center;
     width: 100%;
-
-    .spinner {
-      animation: spin $spinner-duration linear infinite;
-      border: $spinner-border-width solid $color-border-primary;
-      border-radius: 50%;
-      border-top-color: $color-background-action-high-contrast;
-      height: $spinner-size;
-      width: $spinner-size;
-    }
   }
 
-  // Error state
+  // Error state: the shared ErrorState, with room around it
   .dashboard-error {
-    color: $color-text-error-high-contrast;
     padding: $error-padding;
-    text-align: center;
-
-    p {
-      color: $color-text-medium-contrast;
-      margin-top: $sp-sm;
-    }
   }
 
   /* [Claude] Task: error fallback UI for individual widget crashes */
@@ -351,32 +307,10 @@ $error-padding: 40px;
     border-radius: $radius-lg;
     display: flex;
     flex-direction: column;
-    gap: $sp-sm;
     height: 100%;
     justify-content: center;
     padding: $sp-xl;
-    text-align: center;
-  }
-
-  .widget-error-fallback-title {
-    align-items: center;
-    color: $color-text-error-high-contrast;
-    display: inline-flex;
-    font-size: $default-font-size;
-    font-weight: 500;
-    gap: $sp-xs;
-  }
-
-  .widget-error-fallback-message {
-    color: $color-text-low-contrast;
-    font-size: $smaller-font-size;
-    max-width: 280px;
     word-break: break-word;
-  }
-
-  .widget-error-fallback-retry {
-    @include outlined-button;
-    margin-top: $sp-xs;
   }
 
   /* The min-height matters most on mobile: grid cells drop their min-height there (see the */
@@ -392,24 +326,10 @@ $error-padding: 40px;
     justify-content: center;
     min-height: 240px;
     width: 100%;
-
-    .lazy-widget-placeholder-spinner {
-      animation: spin $spinner-duration linear infinite;
-      border: $spinner-border-width solid $color-border-primary;
-      border-radius: 50%;
-      border-top-color: $color-background-action-high-contrast;
-      height: $spinner-size;
-      opacity: 0.6;
-      width: $spinner-size;
-    }
   }
 
-  /* Animation names are document-global whatever they are nested in; these live inside the wrapper only
-   * so this file reads as one scoped block. Sass lifts them back to the top level of the output. */
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
+  /* Animation names are document-global whatever they are nested in; this lives inside the wrapper only
+   * so this file reads as one scoped block. Sass lifts it back to the top level of the output. */
   @keyframes widget-wobble {
     from { transform: rotate(-1.5deg); }
     to { transform: rotate(1.5deg); }

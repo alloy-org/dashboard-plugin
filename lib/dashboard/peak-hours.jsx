@@ -5,6 +5,7 @@
  * Prompt summary: "rewrite peak-hours as a project-native widget consuming completed tasks from dashboard"
  */
 import PeakHoursChart from "dashboard/charts/peak-hours-chart";
+import { EmptyState, IconButton, LoadingState } from "dashboard/controls";
 import { useEffect, useRef, useMemo, useCallback, useState } from "react";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { dateFromDateInput, dateFromMonthKey, formatHourLabel, monthKeyFromDateInput,
@@ -121,24 +122,11 @@ function LegendItem({ modifierClass, label }) {
 function MonthNavigator({ label, forwardDisabled, onNavigate }) {
   return (
     <span className="peak-hours-month-nav">
-      <button
-        type="button"
-        className="peak-hours-month-nav-arrow"
-        aria-label="Previous month"
-        onClick={() => onNavigate(-1)}
-      >
-        <MdChevronLeft />
-      </button>
+      <IconButton className="peak-hours-month-nav-arrow" Icon={ MdChevronLeft } label="Previous month"
+        onClick={ () => onNavigate(-1) } size="small" />
       <span className="peak-hours-month-nav-label">{label}</span>
-      <button
-        type="button"
-        className="peak-hours-month-nav-arrow"
-        aria-label="Next month"
-        disabled={forwardDisabled}
-        onClick={() => onNavigate(1)}
-      >
-        <MdChevronRight />
-      </button>
+      <IconButton className="peak-hours-month-nav-arrow" disabled={ forwardDisabled } Icon={ MdChevronRight }
+        label="Next month" onClick={ () => onNavigate(1) } size="small" />
     </span>
   );
 }
@@ -251,9 +239,7 @@ export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFo
   if (loading) {
     return (
       <WidgetWrapper subtitle={monthNavigator} widgetId={WIDGET_ID}>
-        <div className="peak-hours-empty">
-          <p>Loading monthly task history…</p>
-        </div>
+        <LoadingState className="peak-hours-loading">Loading monthly task history…</LoadingState>
       </WidgetWrapper>
     );
   }
@@ -261,9 +247,7 @@ export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFo
   if (totalTasks === 0) {
     return (
       <WidgetWrapper subtitle={monthNavigator} widgetId={WIDGET_ID}>
-        <div className="peak-hours-empty">
-          <p>No completed task data available yet.</p>
-        </div>
+        <EmptyState className="peak-hours-empty" title="No completed task data available yet." />
       </WidgetWrapper>
     );
   }

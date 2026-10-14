@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { IconButton } from "dashboard/controls";
 import { MdSettings } from "react-icons/md";
 
 export const DASHBOARD_WIDGET_FOCUS_EVENT = "dashboard:widget-focus-request";
@@ -262,13 +263,12 @@ export default function DraggableHeading({
       className={`widget-header widget-heading-bar${desktopFocusAvailable ? ' widget-heading-bar--focusable' : ''}`}
     >
       {desktopFocusAvailable ? (
-        <button
-          className="widget-icon widget-icon-button"
-          type="button"
-          title={`Focus ${title}`}
-          aria-label={`Focus ${title}`}
-          onClick={() => window.dispatchEvent(new CustomEvent(DASHBOARD_WIDGET_FOCUS_EVENT, { detail: dragEventDetail }))}
-        >{icon}</button>
+        <IconButton className="widget-icon widget-icon-button" Icon={ <>{ icon }</> }
+          label={ `Focus ${ title }` }
+          onClick={ () => window.dispatchEvent(
+            new CustomEvent(DASHBOARD_WIDGET_FOCUS_EVENT, { detail: dragEventDetail })
+          ) }
+          size="small" />
       ) : (
         <span className="widget-icon">{icon}</span>
       )}
@@ -278,9 +278,8 @@ export default function DraggableHeading({
       </h3>
       {headerActions || null}
       {configurable ? (
-        <button aria-label={ `Configure ${ title }` } className="widget-configure" onClick={onConfigure} title="Configure">
-          <MdSettings />
-        </button>
+        <IconButton className="widget-configure" Icon={ MdSettings } label={ `Configure ${ title }` }
+          onClick={ onConfigure } size="small" />
       ) : null}
     </div>
   );

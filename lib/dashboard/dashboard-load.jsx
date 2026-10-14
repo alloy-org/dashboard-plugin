@@ -9,6 +9,8 @@ import { publishDeviceProfileDiagnostic } from "util/device-profile";
 import { installDashboardSentryReporting, observeEmbedCall } from "util/sentry-reporting";
 import DashboardApp from "./dashboard.jsx";
 import { ICON_DEFAULTS } from "./icon-defaults";
+// The shared control styles, loaded up front so native inputs and controls outside widgets are themed too
+import "./styles/dashboard-controls.scss";
 import { installHostThemeRefresh } from "./host-theme";
 
 // Adopt the queue of any errors the loader snippet in embed-html.js recorded while this bundle was still evaluating,

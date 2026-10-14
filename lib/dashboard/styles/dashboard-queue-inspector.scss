@@ -13,21 +13,6 @@
     flex-wrap: wrap;
     gap: $sp-xs;
     margin-bottom: $sp-sm;
-
-    button {
-      background: none;
-      border: 1px solid $color-border-primary;
-      border-radius: 3px;
-      color: $color-text-low-contrast;
-      cursor: pointer;
-      font-size: $smaller-font-size;
-      padding: 2px 6px;
-
-      &:hover {
-        background: $color-background-tertiary;
-        color: $color-text-high-contrast;
-      }
-    }
   }
 
   .queue-inspector-status {
@@ -68,18 +53,14 @@
     margin-bottom: $sp-xs;
   }
 
+  // The Select / TextField wrapper: label beside its field, the field capped so the filters share a row.
   .queue-inspector-filter {
     align-items: center;
-    display: flex;
+    flex-direction: row;
     gap: $sp-xs;
-
-    span {
-      color: $color-text-medium-contrast;
-    }
 
     select,
     input {
-      font-size: $smaller-font-size;
       max-width: 160px;
     }
   }
@@ -112,10 +93,5 @@
 
   .queue-inspector-outcome--failed td {
     color: $color-text-error-high-contrast;
-  }
-
-  .queue-inspector-empty {
-    color: $color-text-low-contrast;
-    margin: 0;
   }
 }

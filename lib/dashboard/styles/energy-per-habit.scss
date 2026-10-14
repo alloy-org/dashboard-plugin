@@ -227,16 +227,4 @@ $habit-row-gap: 6px;
 
     strong { color: $color-text-high-contrast; }
   }
-
-  .habit-empty {
-    color: $color-text-medium-contrast;
-    padding: $sp-xl $sp-md;
-    text-align: center;
-  }
-
-  .habit-empty-hint {
-    color: $color-text-low-contrast;
-    font-size: $smaller-font-size;
-    margin-top: $sp-sm;
-  }
 }

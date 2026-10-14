@@ -2,6 +2,7 @@
 // cards.
 
 import confetti from "canvas-confetti";
+import { Button, PlainButton } from "dashboard/controls";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
 import ExpandingTextarea from "dashboard/plan-wizard/expanding-textarea";
 import { PROJECT_PRIORITY_OPTIONS } from "dashboard/plan-wizard/projects-step-fields";
@@ -133,10 +134,10 @@ function ProjectCard({ citedTaskByUuid = {}, isDisabled, onChangeSummary, onReje
           placeholder="Name a project that moves an intent forward" shouldAutoFocus={ row.shouldAutoFocus }
           value={ row.summary } />
         { row.isStored ? (
-          <button className="project-row-reject" disabled={ isDisabled || isDecisionSaving }
-            onClick={ () => onReject(row) } title="Remove this project from the plan" type="button">
+          <Button className="project-row-reject" dense disabled={ isDisabled || isDecisionSaving }
+            onClick={ () => onReject(row) } title="Remove this project from the plan" tone="danger">
             Remove
-          </button>
+          </Button>
         ) : null }
       </div>
       { wasSuggested ? (
@@ -151,26 +152,27 @@ function ProjectCard({ citedTaskByUuid = {}, isDisabled, onChangeSummary, onReje
             { PROJECT_PRIORITY_OPTIONS.map(option => {
               const isSelected = !isCompleted && selectedPriorityEm === option.value;
               return (
-                <button aria-pressed={ isSelected }
+                <PlainButton aria-pressed={ isSelected }
                   className={ `project-row-priority-button${ isSelected ? " project-row-priority-button--selected" : "" }` }
                   disabled={ isDisabled || isDecisionSaving || isCompleted || !hasSummary } key={ option.value }
-                  onClick={ () => handleSetPriority(option.value) } type="button">
+                  onClick={ () => handleSetPriority(option.value) }>
                   { option.label }
-                </button>
+                </PlainButton>
               );
             }) }
           </div>
         </div>
         <div className="project-row-status">
           <p className="project-row-emphasis-label">Status</p>
-          <button aria-pressed={ isCompleted }
+          <PlainButton aria-pressed={ isCompleted }
             className={ `project-row-status-button${ isCompleted ? " project-row-status-button--done" : "" }` }
             disabled={ isDisabled || isDecisionSaving || !row.isStored || !hasSummary }
             onClick={ handleToggleCompletion }
-            title={ isCompleted ? "Reopen this project so it is suggested again" : "Mark this project finished" }
-            type="button">
+            title={ isCompleted
+              ? "Reopen this project so it is suggested again"
+              : "Mark this project finished" }>
             <MdCheck size={ 16 } />{ isCompleted ? "Done" : "Complete" }
-          </button>
+          </PlainButton>
         </div>
       </div>
     </div>

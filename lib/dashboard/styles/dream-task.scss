@@ -101,25 +101,6 @@
     }
   }
 
-  .dream-task-rating {
-    border-radius: $radius-sm;
-    flex-shrink: 0;
-  }
-
-  .dream-task-rating--high {
-    background: color-mix(in srgb, $color-text-status 12%, transparent);
-    color: $color-text-status;
-  }
-
-  .dream-task-rating--medium {
-    background: color-mix(in srgb, $color-text-error-low-contrast 12%, transparent);
-    color: $color-text-error-low-contrast;
-  }
-
-  .dream-task-rating--low {
-    background: color-mix(in srgb, $color-text-error-high-contrast 12%, transparent);
-    color: $color-text-error-high-contrast;
-  }
 
   /* [Claude] Task: visual distinction for invented (non-existing) task cards */
   /* Prompt: "at least 50% of suggested tasks should be existing tasks; clicking invented tasks creates them" */
@@ -128,37 +109,18 @@
     border-left: 2px solid $color-background-action-medium-contrast;
   }
 
-  .dream-task-new-badge {
-    background: $color-background-action-low-contrast;
-    border-radius: $radius-sm;
-    color: $color-text-link;
+  .dream-task-new-badge,
+  .dream-task-rating,
+  .dream-task-source-note-badge {
     flex-shrink: 0;
   }
 
-  /* [Claude claude-opus-4-6] Task: compact label showing source note title for existing suggestions */
-  /* Prompt: "first 15 characters of the note; similar to +new, different background" */
+  /* Long source-note names truncate with an ellipsis; block layout lets text-overflow apply to the label text. */
   .dream-task-source-note-badge {
-    background: $color-background-element-low-contrast;
-    border-radius: $radius-sm;
-    color: $color-text-high-contrast;
-    flex-shrink: 0;
-    font-size: $smaller-font-size;
-    font-weight: 600;
+    display: inline-block;
     max-width: 11rem;
     overflow: hidden;
-    padding: 2px $sp-xs;
     text-overflow: ellipsis;
-    text-transform: none;
-    white-space: nowrap;
-  }
-
-  .dream-task-new-badge,
-  .dream-task-rating {
-    font-size: $smaller-font-size;
-    font-weight: 700;
-    padding: 2px $sp-xs;
-    text-transform: uppercase;
-    white-space: nowrap;
   }
 
   /* [GPT-5.5] Task: stack task text above source note on compact DreamTask cards */
@@ -216,84 +178,11 @@
     margin: $sp-xs 0 0 (-$sp-sm);
   }
 
-  .dream-task-card-action {
-    @include text-button(28px);
-    font-size: 12px;
-    gap: $sp-xs;
-    color: $color-text-medium-contrast;
-  }
-
   /* The no-config Ample Agent Pro promo card now lives in the shared styles/no-config-upsell.scss, rendered by
      the standalone NoConfigUpsell component (used by both DreamTask and Proposed Agenda). */
 
-  .dream-task-settings-link {
-    color: $color-text-link;
-    font-weight: 600;
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-
-  .dream-task-loading {
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    gap: $sp-md;
-    padding: $sp-xl;
-    text-align: center;
-
-    p {
-      color: $color-text-medium-contrast;
-      font-size: $default-font-size;
-      margin: 0;
-    }
-  }
-
-  .dream-task-spinner {
-    animation: spin 0.8s linear infinite;
-    border: 3px solid $color-border-primary;
-    border-radius: 50%;
-    border-top-color: $color-background-action-high-contrast;
-    height: 24px;
-    width: 24px;
-  }
-
-  .dream-task-error {
-    padding: $sp-lg;
-    text-align: center;
-
-    p {
-      color: $color-text-error-high-contrast;
-      font-size: $default-font-size;
-      margin: 0 0 $sp-md;
-    }
-  }
-
-  .dream-task-empty {
-    padding: $sp-lg;
-    text-align: center;
-
-    p {
-      color: $color-text-medium-contrast;
-      font-size: $default-font-size;
-      margin: 0 0 $sp-md;
-    }
-  }
-
-  .dream-task-retry {
-    background: none;
-    border: 1px solid $color-border-primary;
-    border-radius: $radius-sm;
-    color: $color-text-medium-contrast;
-    cursor: pointer;
-    font-size: $smaller-font-size;
-    padding: $sp-xs $sp-md;
-
-    &:hover {
-      border-color: $color-background-action-high-contrast;
-      color: $color-background-action-high-contrast;
-    }
+  /* Error details are several short paragraphs inside the shared ErrorState message. */
+  .dream-task-error p {
+    margin: 0 0 $sp-xs;
   }
 }

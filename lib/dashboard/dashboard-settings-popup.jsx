@@ -7,13 +7,13 @@
 import ConfigPopup from 'config-popup';
 import { PROVIDER_API_KEY_RETRIEVE_URL } from 'constants/llm-providers';
 import { apiKeySettingFromKeyProvider, BUILD_DATE, JEV_KEY_PROVIDER, SETTING_KEYS } from 'constants/settings';
+import { Button, IconButton, Select, TextField } from "dashboard/controls";
 import { useState } from 'react';
 import { MdOpenInNew, MdVisibility, MdVisibilityOff } from "react-icons/md";
 import { logIfEnabled } from "util/log";
 import "styles/dashboard-settings-popup.scss"
 
 const API_KEY_LINK_ICON_SIZE = 14;
-const API_KEY_VISIBILITY_ICON_SIZE = 20;
 
 // An option marked keyOnly edits a key without becoming the LLM Provider setting: Jev rates tasks against projects
 // but cannot write text, so choosing it leaves the generative provider chosen before it in place. keyLinkName names
@@ -95,17 +95,8 @@ function AiProviderSection({ apiKey, apiKeyVisible, keyOnlyHint, linkParenthetic
       </div>
       <div className="config-field">
         <div className="config-line">
-          <div className="config-field-label">LLM Provider</div>
-          <select
-            className="dashboard-settings-select"
-            id="llm-provider-select"
-            value={selectedProvider}
-            onChange={e => onProviderChange(e.target.value)}
-          >
-            {LLM_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
+          <Select className="dashboard-settings-select" label="LLM Provider" onChange={ onProviderChange }
+            options={ LLM_OPTIONS } value={ selectedProvider } />
           {keyOnlyHint ? <p className="dashboard-settings-api-key-hint">{keyOnlyHint}</p> : null}
         </div>
         <div className="config-line">
@@ -121,24 +112,14 @@ function AiProviderSection({ apiKey, apiKeyVisible, keyOnlyHint, linkParenthetic
             <MdOpenInNew size={ API_KEY_LINK_ICON_SIZE } />
           </a>
           <div className="dashboard-settings-api-key-input-row">
-            <input
-              className="dashboard-settings-api-key-input"
-              type={apiKeyVisible ? 'text' : 'password'}
-              value={apiKey}
-              onChange={e => onApiKeyChange(e.target.value)}
-              placeholder="Paste your API key here"
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <button
-              className="dashboard-settings-api-key-toggle"
-              type="button"
-              onClick={onToggleKeyVisibility}
-              title={apiKeyVisible ? 'Hide API key' : 'Show API key'}
-              aria-label={apiKeyVisible ? 'Hide API key' : 'Show API key'}
-            >
-              { apiKeyVisible ? <MdVisibilityOff size={ API_KEY_VISIBILITY_ICON_SIZE } /> : <MdVisibility size={ API_KEY_VISIBILITY_ICON_SIZE } /> }
-            </button>
+            <TextField autoComplete="off" className="dashboard-settings-api-key-input" hideLabel
+              label="API Key" onChange={ onApiKeyChange } placeholder="Paste your API key here"
+              spellCheck={ false }
+              type={ apiKeyVisible ? 'text' : 'password' } value={ apiKey } />
+            <IconButton className="dashboard-settings-api-key-toggle"
+              Icon={ apiKeyVisible ? MdVisibilityOff : MdVisibility }
+              label={ apiKeyVisible ? 'Hide API key' : 'Show API key' } onClick={ onToggleKeyVisibility }
+              size="large" />
           </div>
         </div>
       </div>
@@ -157,9 +138,10 @@ function DebugToolsSection({ onOpenMemoryMeasurement }) {
         <h4 className="dashboard-settings-section-title">Debug Tools</h4>
         <p className="dashboard-settings-section-desc">Measure a widget's approximate incremental JavaScript heap footprint.</p>
       </div>
-      <button className="dashboard-settings-debug-button" type="button" onClick={onOpenMemoryMeasurement}>
+      <Button className="dashboard-settings-debug-button" dense onClick={ onOpenMemoryMeasurement }
+        variant="outlined">
         Open widget memory measurement
-      </button>
+      </Button>
     </div>
   );
 }

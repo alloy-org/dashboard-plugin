@@ -6,6 +6,7 @@
  */
 
 import { SETTING_KEYS } from "constants/settings";
+import { IconButton, PlainButton } from "dashboard/controls";
 import { LAYOUT_PROFILES, layoutMatchesProfile, sizingFromProfile } from "layout-profiles";
 import { useState } from "react";
 import { MdChevronRight, MdClose, MdWarningAmber } from "react-icons/md";
@@ -41,12 +42,7 @@ function ProfileCard({ profile, onApply, applyingId, isMatch }) {
   const actionClassName = `layout-picker-profile-action${ isMatch ? ' layout-picker-profile-action--current' : '' }`;
   return (
     <div className="layout-picker-profile">
-      <button
-        className={className}
-        disabled={isDisabled}
-        onClick={() => onApply(profile)}
-        type="button"
-      >
+      <PlainButton className={ className } disabled={ isDisabled } onClick={ () => onApply(profile) }>
         <div className="layout-picker-profile-header">
           <ProfileIcon className="layout-picker-profile-icon" size={ 20 } />
           <span className="layout-picker-profile-name">{profile.name}</span>
@@ -56,7 +52,7 @@ function ProfileCard({ profile, onApply, applyingId, isMatch }) {
           </span>
         </div>
         <p className="layout-picker-profile-description">{profile.description}</p>
-      </button>
+      </PlainButton>
     </div>
   );
 }
@@ -92,10 +88,7 @@ export default function LayoutPickerWidget({ app, currentLayout, onLayoutApply, 
   };
 
   const headerActions = (
-    <button aria-label="Dismiss" className="widget-header-action widget-header-action--icon-only"
-      onClick={handleDismiss} title="Dismiss" type="button">
-      <MdClose />
-    </button>
+    <IconButton Icon={ MdClose } label="Dismiss" onClick={ handleDismiss } size="small" />
   );
 
   return (

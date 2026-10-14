@@ -4,6 +4,7 @@
  * Task: Quick actions widget — list of shortcut buttons
  * Prompt summary: "widget with a 2x2 grid of quick-action buttons (Daily Jot, Journal, etc.)"
  */
+import { PlainButton } from "dashboard/controls";
 import { MdDateRange, MdEdit, MdFeedback, MdMenuBook, MdShuffle } from "react-icons/md";
 import WidgetWrapper from "widget-wrapper";
 import "styles/quick-actions.scss"
@@ -73,15 +74,10 @@ export default function QuickActionsWidget({ app }) {
     <WidgetWrapper widgetId="quick-actions">
       <div className="qa-grid">
         {QUICK_ACTIONS.map(quickAction => (
-          <button
-            key={quickAction.action}
-            className="qa-button"
-            onClick={() => handleAction(quickAction.action)}
-            type="button"
-          >
+          <PlainButton className="qa-button" key={ quickAction.action } onClick={ () => handleAction(quickAction.action) }>
             <quickAction.Icon className="qa-icon" />
             <span className="qa-label">{quickAction.label}</span>
-          </button>
+          </PlainButton>
         ))}
       </div>
     </WidgetWrapper>

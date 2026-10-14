@@ -72,12 +72,7 @@ $plan-entry-video-background: #152033;
     gap: $sp-sm;
   }
 
-  .plan-entry-choice-button {
-    @include outlined-button;
-  }
-
   .plan-entry-source {
-    @include outlined-button;
     flex: 1 1 auto;
   }
 
@@ -101,14 +96,7 @@ $plan-entry-video-background: #152033;
     text-align: center;
   }
 
-  .plan-entry-scratch,
-  .plan-entry-build,
-  .plan-entry-choice-button--primary {
-    @include raised-button;
-  }
-
   .plan-entry-begin {
-    @include raised-button(32px);
     flex: 0 0 auto;
   }
 
@@ -181,9 +169,7 @@ $plan-entry-video-background: #152033;
   .plan-entry-choice--recommended { border-color: $color-background-action-high-contrast; }
 
   .plan-entry-choice-badge {
-    @include overline-label;
-    color: $color-text-link;
-    margin: 0;
+    align-self: flex-start;
   }
 
   .plan-entry-choice-title {
@@ -202,8 +188,6 @@ $plan-entry-video-background: #152033;
   }
 
   .plan-entry-choice-price { font-weight: 500; }
-
-  .plan-entry-choice-button { padding: $sp-sm $sp-md; }
 
   .plan-entry-starts {
     align-self: flex-end;
@@ -235,11 +219,8 @@ $plan-entry-video-background: #152033;
     background-color: $plan-entry-video-background;
     background-position: center;
     background-size: cover;
-    border: 0;
-    cursor: pointer;
     display: flex;
     justify-content: center;
-    padding: 0;
     width: 100%;
 
     &:hover .plan-entry-video-play-icon,
@@ -306,11 +287,6 @@ $plan-entry-video-background: #152033;
     height: 22px;
     width: 22px;
   }
-}
-
-.quarterly-plan-entry--loading {
-  color: $color-text-low-contrast;
-  font-style: italic;
 }
 
 .quarterly-plan-entry {

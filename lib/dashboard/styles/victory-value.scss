@@ -96,10 +96,6 @@
     stroke-width: 2px;
   }
 
-  .vv-nav-arrow {
-    @include icon-button(32px);
-  }
-
   .vertical-1-cell & .vv-chart {
     height: 180px;
   }

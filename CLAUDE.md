@@ -16,6 +16,29 @@ function comments, file headers, tests, or other documentation. Comments should 
 This document is primarily concerned with documentation standards. For equally important guidelines on code 
 conventions and best practices, **You MUST also follow the standards outlined in `doc/code_conventions.md`**.
 
+## UI work: read `doc/design-system.md` first
+
+The dashboard must look like the Amplenote app it lives in. Before writing or changing any widget, popup, or Plan
+Builder UI, read [`doc/design-system.md`](doc/design-system.md) and build only from its shared layers:
+
+- **Controls** from `"dashboard/controls"`: `Button`, `IconButton`, `PlainButton`, `Select`, `TextField`,
+  `UnderlineTabs`, `Badge`, `Spinner`, `EmptyState`, `LoadingState`, `ErrorState`. Never write a raw `<button>`,
+  `<select>`, text `<input>`/`<textarea>`, `<a href="#">` button, spinner, or hand-made empty/loading/error markup.
+- **Colors** only from the tokens in `lib/dashboard/styles/theme-tokens.scss`, named after the host's colors
+  (`$color-text-medium-contrast`, `$color-background-primary`, …). No hex, `rgb()`, or `var(--color-*)` in component
+  stylesheets.
+- **Icons** only from `react-icons/md`. No emoji or Unicode glyphs as UI.
+- **Widget frame** from `WidgetWrapper`; a new widget gets its registry entry in `layout-profiles.js` and its icon in
+  `widget-icons.jsx`.
+- **Widget stylesheets hold layout only**; never restyle `dashboard-*` control classes. If a control lacks something
+  you need, add it to the control in `lib/dashboard/controls/` (and `styles/dashboard-controls.scss`), not to a widget.
+
+`test/design-tokens.test.js` and `test/controls-usage.test.js` fail when these rules are broken. Before reaching for
+a raw element, check the control's JSDoc: they forward refs, pass attributes through, and cover submit buttons, inline
+links, danger actions, separate tooltips, dense fields, and compact empty states. A raw element that truly cannot be a
+control goes in `ALLOWED_RAW_CONTROLS` in `test/controls-usage.test.js` with its reason; a new control capability goes
+in the component, `dashboard-controls.scss`, `test/controls.test.js`, and the table in `doc/design-system.md`.
+
 ## Persistent project context: Rich Footnotes
 
 Bill often stores essential specifications in Amplenote Rich Footnotes. Resolve their full markdown definitions,
@@ -106,36 +129,49 @@ constants) stay as `.js`.
 
 Example of a JSX widget component matching the project's conventions. Its title comes from its `WIDGET_REGISTRY`
 entry in `lib/dashboard/layout-profiles.js` and its header icon from `WIDGET_ICON_BY_ID` in
-`lib/dashboard/widget-icons.jsx` (e.g. `"counter": MdAddCircle`), so the widget only passes its `widgetId`. Icons are
-Google Material icons from `react-icons/md`, never emoji; styles use the tokens in `styles/theme-tokens.scss` and the
-mixins in `styles/controls.scss` (see `doc/plan-app-design-restyle.md`).
+`lib/dashboard/widget-icons.jsx` (e.g. `"counter": MdAddCircle`), so the widget only passes its `widgetId`. Controls
+come from `"dashboard/controls"`, icons from `react-icons/md`, and the stylesheet holds layout only with colors from
+the tokens (see `doc/design-system.md`).
 
 ```jsx
+// Counts clicks, as an example of a widget built from the shared controls.
+import { Button, EmptyState, IconButton } from "dashboard/controls";
 import { useState } from "react";
-import { MdAdd } from "react-icons/md";
+import { MdAdd, MdRestartAlt } from "react-icons/md";
 import "styles/counter.scss";
 import WidgetWrapper from "widget-wrapper";
 
+// ----------------------------------------------------------------------------------------------
+// @desc Counter widget: a reset action in the header, an add button, and an empty state before the first click.
+// @returns {JSX.Element} The widget.
 export default function CounterWidget() {
   const [count, setCount] = useState(0);
+  const headerActions = <IconButton Icon={ MdRestartAlt } label="Reset" onClick={ () => setCount(0) } size="small" />;
   return (
-    <WidgetWrapper widgetId="counter">
-      <button className="counter-add-button" onClick={() => setCount(c => c + 1)} type="button">
-        <MdAdd />Clicked {count} times
-      </button>
+    <WidgetWrapper headerActions={ headerActions } widgetId="counter">
+      { count === 0 ? <EmptyState title="No clicks yet">Click Add to start counting.</EmptyState>
+        : <p className="counter-total">{ count } clicks</p> }
+      <Button className="counter-add-button" Icon={ MdAdd } onClick={ () => setCount(c => c + 1) } variant="outlined">
+        Add
+      </Button>
     </WidgetWrapper>
   );
 }
 ```
 
 ```scss
-// styles/counter.scss
+// styles/counter.scss: layout only; the controls bring their own look
 @use 'theme-tokens' as *;
-@use 'controls' as *;
 
 .widget-counter {
+  .counter-total {
+    color: $color-text-high-contrast;
+    font-size: $large-font-size;
+  }
+
   .counter-add-button {
-    @include outlined-button;
+    align-self: flex-start;
+    margin-top: $sp-md;
   }
 }
 ```
@@ -246,6 +282,7 @@ inputs removed by tree shaking. See `doc/code_conventions.md` for an import exam
 | Write a new function or method | Behavioral JSDoc + `AI_CONTRIBUTIONS.md` entry |
 | Create a new file | Purpose comment + `AI_CONTRIBUTIONS.md` entry |
 | Substantially modify an existing function | Add function documentation as specified in item #1 |
+| Build or change UI (widget, popup, Plan Builder) | Follow `doc/design-system.md`: controls from `dashboard/controls`, host-named color tokens, `react-icons/md` icons |
 
 When in doubt, over-document. These records are used for ongoing research into AI's
 impact on code quality and long-term maintainability.

@@ -7,6 +7,7 @@
 
 import confetti from "canvas-confetti";
 import { appendTaskToRetiredNote, loadGraveyardCandidates } from "graveyard-service";
+import { Button, EmptyState, ErrorState, IconButton, LoadingState } from "dashboard/controls";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -31,33 +32,33 @@ const WIDGET_ID = 'graveyard';
 // @desc Empty state shown when no old task candidates are found.
 // [Claude claude-4.7-opus] Task: convert empty state render fn to JSX component
 // Prompt: "translate this project to render components with JSX instead"
-function EmptyState({ headerActions }) {
+function GraveyardEmpty({ headerActions }) {
   return (
     <WidgetWrapper headerActions={headerActions} widgetId={WIDGET_ID}>
-      <p className="graveyard-empty">No neglected tasks found — everything looks current!</p>
+      <EmptyState className="graveyard-empty"
+        title="No neglected tasks found — everything looks current!" />
     </WidgetWrapper>
   );
 }
 
 // ----------------------------------------------------------------------------------------------
 // @desc Error state with retry action.
-function ErrorState({ errorMessage, headerActions, onRetry }) {
+function GraveyardError({ errorMessage, headerActions, onRetry }) {
   return (
     <WidgetWrapper headerActions={headerActions} widgetId={WIDGET_ID}>
-      <div className="graveyard-error">
-        <p>{errorMessage || 'Failed to load tasks.'}</p>
-        <button className="graveyard-retry" onClick={onRetry} type="button">Retry</button>
-      </div>
+      <ErrorState className="graveyard-error" onRetry={ onRetry } title={ null }>
+        { errorMessage || 'Failed to load tasks.' }
+      </ErrorState>
     </WidgetWrapper>
   );
 }
 
 // ----------------------------------------------------------------------------------------------
 // @desc Loading placeholder while candidates are being fetched.
-function LoadingState({ headerActions }) {
+function GraveyardLoading({ headerActions }) {
   return (
     <WidgetWrapper headerActions={headerActions} widgetId={WIDGET_ID}>
-      <p className="graveyard-loading">Searching for forgotten tasks…</p>
+      <LoadingState className="graveyard-loading">Searching for forgotten tasks…</LoadingState>
     </WidgetWrapper>
   );
 }
@@ -66,16 +67,12 @@ function LoadingState({ headerActions }) {
 // @desc Header link that forces a fresh graveyard candidate discovery and repopulates visible slots.
 // [OpenAI gpt-5.4] Task: add graveyard header refresh control that repopulates task slots
 function RefreshLink({ isRefreshing, onRefresh }) {
+  const label = isRefreshing
+    ? 'Refreshing graveyard candidates'
+    : 'Refresh: find a new set of graveyard candidates';
   return (
-    <a
-      aria-disabled={isRefreshing ? 'true' : 'false'}
-      aria-label={isRefreshing ? 'Refreshing graveyard candidates' : 'Refresh: find a new set of graveyard candidates'}
-      className={`widget-header-action widget-header-action--icon-only${ isRefreshing ? ' graveyard-refresh--refreshing' : '' }`}
-      href="#"
-      onClick={onRefresh}
-      tabIndex={isRefreshing ? -1 : 0}
-      title={isRefreshing ? 'Refreshing graveyard candidates' : 'Refresh: find a new set of graveyard candidates'}
-    ><MdRefresh /></a>
+    <IconButton className="graveyard-refresh" disabled={ isRefreshing } Icon={ MdRefresh } label={ label }
+      onClick={ onRefresh } size="small" />
   );
 }
 
@@ -201,27 +198,16 @@ function TaskCard({ isDismissing, isSingleColumn, taskIndex, onOpenNote, onGrave
         {createdDate ? <span className="graveyard-task-age">{createdDate}</span> : null}
       </div>
       <div className="graveyard-task-actions">
-        <a
-          className="graveyard-task-action graveyard-task-action--send"
-          href="#"
-          onClick={(e) => { e.preventDefault(); onGraveyard(e, task); }}
+        <Button className="graveyard-task-action graveyard-task-action--send" dense Icon={ MdArchive }
+          iconSize={ 16 } onClick={ event => onGraveyard(event, task) }
           title="Dismiss this task — removes it from your task domain and places it in an archived note you can revisit later if desired"
-        >
-          <MdArchive size={ 16 } />{ dismissPrompt }</a>
-        <a
-          className="graveyard-task-action graveyard-task-action--keep"
-          href="#"
-          onClick={(e) => { e.preventDefault(); onKeep(task); }}
-          title="Preserve this task — remove it from this list without dismissing it"
-        >
-          <MdPushPin size={ 16 } />Keep</a>
-        <a
-          className="graveyard-task-action graveyard-task-action--note"
-          href="#"
-          onClick={(e) => { e.preventDefault(); onOpenNote(task); }}
-          title="Open the note where this task lives"
-        >
-          <MdDescription size={ 16 } />Note</a>
+        >{ dismissPrompt }</Button>
+        <Button className="graveyard-task-action graveyard-task-action--keep" dense Icon={ MdPushPin }
+          iconSize={ 16 } onClick={ () => onKeep(task) }
+          title="Preserve this task — remove it from this list without dismissing it">Keep</Button>
+        <Button className="graveyard-task-action graveyard-task-action--note" dense Icon={ MdDescription }
+          iconSize={ 16 } onClick={ () => onOpenNote(task) }
+          title="Open the note where this task lives">Note</Button>
       </div>
     </li>
   );
@@ -296,8 +282,7 @@ export default function GraveyardWidget({ app, gridHeightSize = 1, gridWidthSize
 
   useEffect(() => { loadCandidates(); }, [loadCandidates]);
 
-  const onRefresh = useCallback((event) => {
-    event.preventDefault();
+  const onRefresh = useCallback(() => {
     if (loading) return;
     loadCandidates({ forceRefresh: true });
   }, [loadCandidates, loading]);
@@ -326,9 +311,13 @@ export default function GraveyardWidget({ app, gridHeightSize = 1, gridWidthSize
   const headerActions = <RefreshLink isRefreshing={loading} onRefresh={onRefresh} />;
   useWidgetLoadedEvent(WIDGET_ID, !loading && !error, !!error);
 
-  if (loading) return <LoadingState headerActions={headerActions} />;
-  if (error) return <ErrorState errorMessage={error} headerActions={headerActions} onRetry={loadCandidates} />;
-  if (tasks === null || (tasks.length === 0 && dismissingUuids.size === 0)) return <EmptyState headerActions={headerActions} />;
+  if (loading) return <GraveyardLoading headerActions={headerActions} />;
+  if (error) {
+    return <GraveyardError errorMessage={error} headerActions={headerActions} onRetry={loadCandidates} />;
+  }
+  if (tasks === null || (tasks.length === 0 && dismissingUuids.size === 0)) {
+    return <GraveyardEmpty headerActions={headerActions} />;
+  }
   return (
     <TaskList
       dismissingUuids={dismissingUuids}

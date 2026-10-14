@@ -285,7 +285,7 @@ describe("GraveyardWidget", () => {
       ],
     });
 
-    const refreshLink = Array.from(container.querySelectorAll(".widget-header-action"))
+    const refreshLink = Array.from(container.querySelectorAll(".graveyard-refresh"))
       .find((element) => element.getAttribute("aria-label")?.includes("Refresh"));
     expect(refreshLink).not.toBeNull();
     expect(container.textContent).toContain("Initial graveyard task");

@@ -11,6 +11,7 @@
 // forward past an unanswered step would land them on a page whose inputs depend on answers that do not exist
 // yet, so the rail only offers the moves that lead somewhere usable.
 
+import { PlainButton } from "dashboard/controls";
 import PaceBreakdownPie from "dashboard/plan-wizard/pace-breakdown-pie";
 import { memo } from "react";
 import { MdCheckCircle, MdDescription, MdRadioButtonUnchecked } from "react-icons/md";
@@ -71,9 +72,9 @@ function WizardProgressSidebar({ headingText = "Quarterly plan", isOpeningPlanNo
           return (
             <li className={ rowClassNames.join(" ") } key={ row.key }>
               { row.isComplete && !row.isCurrent ? (
-                <button className="progress-step-button" onClick={ () => onSelectStep(row.key) } type="button">
+                <PlainButton className="progress-step-button" onClick={ () => onSelectStep(row.key) }>
                   { rowContent }
-                </button>
+                </PlainButton>
               ) : (
                 <span aria-current={ row.isCurrent ? "step" : undefined } className="progress-step-static">
                   { rowContent }
@@ -83,14 +84,14 @@ function WizardProgressSidebar({ headingText = "Quarterly plan", isOpeningPlanNo
           );
         }) }
       </ol>
-      <button className="progress-plan-note-link" disabled={ isOpeningPlanNote } onClick={ onOpenPlanNote }
-        type="button">
+      <PlainButton className="progress-plan-note-link" disabled={ isOpeningPlanNote }
+        onClick={ onOpenPlanNote }>
         <PlanNoteIcon />
         <span className="plan-note-text">
           <span className="plan-note-label">{ `Open ${ quarterLabel.replace("-", " ") } Planning Note` }</span>
           { isOpeningPlanNote ? <span className="plan-note-hint">Opening…</span> : null }
         </span>
-      </button>
+      </PlainButton>
     </aside>
   );
 }

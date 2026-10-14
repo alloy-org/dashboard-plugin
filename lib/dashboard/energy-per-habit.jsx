@@ -13,6 +13,7 @@ import { MdBedtime, MdCampaign, MdCheckCircle, MdCleaningServices, MdDirectionsB
   MdWaves } from "react-icons/md";
 import WidgetWrapper from "widget-wrapper";
 import { noteUrlFromUUID } from "app-util";
+import { EmptyState, LoadingState } from "dashboard/controls";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { logIfEnabled } from "util/log";
 import { formatDelta, HABIT_ANALYSIS_WINDOW_DAYS, leadingEmoji, stripLeadingEmoji } from "energy-per-habit-analysis";
@@ -251,7 +252,7 @@ export default function EnergyPerHabitWidget({ app }) {
   if (loading) {
     return (
       <WidgetWrapper widgetId={WIDGET_ID}>
-        <div className="habit-empty">Analyzing your habits…</div>
+        <LoadingState className="habit-loading">Analyzing your habits…</LoadingState>
       </WidgetWrapper>
     );
   }
@@ -259,10 +260,10 @@ export default function EnergyPerHabitWidget({ app }) {
   if (!rows.length) {
     return (
       <WidgetWrapper widgetId={WIDGET_ID}>
-        <div className="habit-empty">
-          <p>No recurring-task habits with enough mood history to correlate yet.</p>
-          <p className="habit-empty-hint">Set tasks to repeat and log your mood over time to see which habits lift your days.</p>
-        </div>
+        <EmptyState className="habit-empty"
+          title="No recurring-task habits with enough mood history to correlate yet.">
+          Set tasks to repeat and log your mood over time to see which habits lift your days.
+        </EmptyState>
       </WidgetWrapper>
     );
   }

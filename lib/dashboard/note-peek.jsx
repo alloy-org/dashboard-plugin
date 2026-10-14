@@ -1,5 +1,6 @@
 import { noteUrlFromUUID } from "app-util";
 import { widgetTitleFromId } from "constants/settings";
+import { Button, EmptyState, ErrorState, LoadingState } from "dashboard/controls";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { fetchNotePeekHtml, NOTE_PEEK_WIDGET_ID, notePeekSelectionFromSettings, promptForNotePeekNote,
   storeNotePeekSelection } from "note-peek-service";
@@ -73,7 +74,9 @@ function NotePeekChooser({ onChoose }) {
     <div className="note-peek-chooser" onClick={onChoose} role="presentation" title="Choose a note">
       <MdDescription className="note-peek-chooser-icon" size={ 32 } />
       <span className="note-peek-chooser-label">Choose a note to display here</span>
-      <button className="note-peek-chooser-button" type="button"><MdSettings />{CONFIGURE_LABEL}</button>
+      <Button className="note-peek-chooser-button" Icon={ MdSettings } variant="outlined">
+        { CONFIGURE_LABEL }
+      </Button>
     </div>
   );
 }
@@ -93,9 +96,9 @@ function NotePeekBody({ error, html, onChoose, selection }) {
   useEffect(() => { if (html) attachFootnotePopups(contentRef.current); }, [html]);
 
   if (!selection) return (<NotePeekChooser onChoose={onChoose} />);
-  if (error) return (<p className="note-error">{`Error: ${ error }`}</p>);
-  if (html === null) return (<p className="note-loading">Loading…</p>);
-  if (html === "") return (<p className="note-empty">This note has no content yet.</p>);
+  if (error) return (<ErrorState className="note-error" title={ null }>{ `Error: ${ error }` }</ErrorState>);
+  if (html === null) return (<LoadingState className="note-loading">Loading…</LoadingState>);
+  if (html === "") return (<EmptyState className="note-empty" title="This note has no content yet." />);
   return (<div className="note-peek-content" ref={contentRef} dangerouslySetInnerHTML={{ __html: html }} />);
 }
 

@@ -20,10 +20,6 @@ $cal-transition-duration: 0.12s;
 /* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .widget-calendar {
   &.vertical-2-cell {
-    .cal-arrow {
-      font-size: $default-font-size;
-    }
-
     .cal-month {
       font-size: $small-heading-font-size;
     }
@@ -78,10 +74,6 @@ $cal-transition-duration: 0.12s;
     display: flex;
     justify-content: space-between;
     margin-bottom: $sp-md;
-  }
-
-  .cal-arrow {
-    @include icon-button(32px);
   }
 
   .cal-month {

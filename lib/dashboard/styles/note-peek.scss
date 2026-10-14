@@ -89,7 +89,6 @@ $check-list-indent-step: 20px;
   /* Named for the header link it stands in for, and styled like the popup submit button so it reads as
    * the widget's one call to action while no note is chosen. */
   .note-peek-chooser-button {
-    @include outlined-button;
     margin-top: $sp-xs;
   }
 

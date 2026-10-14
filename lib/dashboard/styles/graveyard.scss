@@ -188,28 +188,16 @@
     gap: 0 $sp-xs;
     margin-left: -$sp-sm;
 
-    > a {
+    > .graveyard-task-action {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
   }
 
-  /* Compact host text buttons; retiring a task reads in the danger color on hover. */
-  .graveyard-task-action {
-    @include text-button(28px);
-    font-size: 12px;
-    gap: $sp-xs;
-    color: $color-text-medium-contrast;
-  }
-
+  /* Retiring a task reads in the danger color on hover. */
   .graveyard-task-action--send:hover {
     color: $color-text-error-high-contrast;
-  }
-
-  .graveyard-refresh--refreshing {
-    opacity: 0.5;
-    pointer-events: none;
   }
 
   /* [OpenAI gpt-5.4] Task: tighten graveyard tooltip width and date text for compact 1-column cards */
@@ -227,43 +215,6 @@
 
     .graveyard-task-age {
       font-size: $smaller-font-size;
-    }
-  }
-
-  .graveyard-loading,
-  .graveyard-empty {
-    color: $color-text-medium-contrast;
-    font-size: $default-font-size;
-    padding: $sp-md 0;
-    text-align: center;
-  }
-
-  .graveyard-error {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: $sp-sm;
-    padding: $sp-md 0;
-
-    p {
-      color: $color-text-error-high-contrast;
-      font-size: $default-font-size;
-      text-align: center;
-    }
-  }
-
-  .graveyard-retry {
-    background: none;
-    border: 1px solid $color-border-primary;
-    border-radius: $radius-sm;
-    color: $color-text-medium-contrast;
-    cursor: pointer;
-    font-size: $smaller-font-size;
-    padding: $sp-xs $sp-sm;
-
-    &:hover {
-      border-color: $color-border-primary;
-      color: $color-text-high-contrast;
     }
   }
 }

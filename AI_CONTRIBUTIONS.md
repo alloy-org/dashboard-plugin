@@ -5,6 +5,27 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-14 — Shared controls and full migration onto them
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/controls/` (created) — `Button` (text/outlined/raised/link, dense, href, submit, danger tone, leading and trailing icons), `IconButton` (required label, separate tooltip, pressed, sizes small to dialog, danger tone), `PlainButton`, `Spinner`, `EmptyState` (with compact variant) / `LoadingState` / `ErrorState` (alert role, extra actions), `Select` and `TextField` (labeled, dense, value-based onChange), `UnderlineTabs` (keyboard, deselectable), `Badge` (tones, keep-case), and `class-names.js`. All forward refs and pass attributes through.
+- `lib/dashboard/controls.js` (created) — Single import point, `"dashboard/controls"`.
+- `lib/dashboard/styles/dashboard-controls.scss` (created) — The only place control classes are styled, built from the `controls.scss` mixins; native checkbox/radio tint.
+- Every widget, the dashboard frame, all popups and dev tools, and the Plan Builder — Hand-made buttons, `href="#"` links, selects, text fields, spinners, empty/loading/error markup, tabs, and pills replaced with the shared controls; their look rules deleted from the widget stylesheets, layout rules kept; `.widget-header-action` and the hand-made spin keyframes removed. Wording and behavior unchanged.
+- `test/controls.test.js` (created) — Control behavior: button types, labels and tooltips, refs, variants, states, fields, tabs, badges.
+- `test/controls-usage.test.js` (created) — Fails on raw buttons, selects, text inputs, and textareas outside the controls (with a short, self-shrinking allowlist), `href="#"` links, spinner classes or spin keyframes, and widget stylesheets that style control classes.
+- `test/app.test.js`, `test/task-domains-mobile.test.js`, `test/plan-wizard-provider-gate.test.js`, `test/plan-wizard-ui.test.js`, `test/graveyard-widget.test.js` — Selectors follow the new markup.
+- `doc/design-system.md` (created) — Rules, tokens, icons, the controls table, and how to make a widget.
+- `CLAUDE.md`, `README.md` — Point all UI work at the design system and the guard tests.
+- `build/compiled.js` — Rebuilt (804,427 bytes).
+
+**Validation:** Jest: 1381 passed, 1 failed (`test/dream-task-actions.test.js`, failing before these changes); the usage guard was checked to fail on a planted raw button, text input, `href="#"`, spinner class, and control restyle. Light and dark mode, the Settings dialog, and narrow width checked in the dev server; the Plan Builder was not opened in a browser (it needs an AI key).
+**Task:** Build shared controls, migrate every widget, popup, and the Plan Builder onto them, and document the way so future widgets reuse them.
+**Prompt summary:** "OK, let's implement the plan and make sure future robots will know how to use this new way to create widgets with the right style and always reuse our components/css"
+
+---
+
 ## 2026-10-14 — Host-named color tokens
 
 **Model:** Claude Opus 5.5

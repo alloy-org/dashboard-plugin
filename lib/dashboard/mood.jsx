@@ -7,6 +7,7 @@
 import { useThemeRevision } from "hooks/use-theme-revision";
 import { useEffect, useRef, useState } from "react";
 import ConfigPopup from "config-popup";
+import { Button, PlainButton, TextField } from "dashboard/controls";
 import { useCanvasTippy } from "dashboard/dashboard-tooltip-tippy";
 import { MdSettings } from "react-icons/md";
 import WidgetWrapper from "widget-wrapper";
@@ -702,9 +703,9 @@ function Sparkline({ moodRatings, averageMood, visualizationMode, visualizationK
   return (
     <div className="mood-viz-section">
       <div className="mood-viz-canvas-wrap">{visualization}</div>
-      <button className="mood-viz-configure-link" onClick={onConfigure} type="button">
-        <MdSettings />Configure
-      </button>
+      <Button className="mood-viz-configure-link" dense Icon={ MdSettings } onClick={ onConfigure }>
+        Configure
+      </Button>
     </div>
   );
 }
@@ -811,41 +812,29 @@ export default function MoodWidget({ app, moodRatings, onMoodRecorded }) {
       {configurationPopup}
       <div className="mood-selector">
         {MOODS.map(mood => (
-          <button
-            key={mood.value}
-            className={'mood-btn' + (selectedMood?.value === mood.value ? ' mood-btn--selected' : '')}
-            title={mood.label}
-            onClick={() => handleMoodClick(mood, submitting, submitted, setSelectedMood)}
-          >
+          <PlainButton
+            className={ 'mood-btn' + (selectedMood?.value === mood.value ? ' mood-btn--selected' : '') }
+            key={ mood.value } onClick={ () => handleMoodClick(mood, submitting, submitted, setSelectedMood) }
+            title={ mood.label }>
             <span className="mood-emoji">{mood.emoji}</span>
-          </button>
+          </PlainButton>
         ))}
       </div>
       {selectedMood !== null && (
-        <div className="mood-details">
-          <label className="mood-details-label">More details (optional)</label>
-          <textarea
-            className="mood-details-textarea"
-            value={notes}
-            onChange={event => setNotes(event.target.value)}
-            onKeyDown={event => handleTextareaKeyDown(app, event, selectedMood, notes, setSubmitting, setSubmitted, onMoodRecorded)}
-            placeholder="What's on your mind?"
-            rows={MOOD_TEXTAREA_ROWS}
-          />
-        </div>
+        <TextField className="mood-details" label="More details (optional)" multiline onChange={ setNotes }
+          onKeyDown={ event => handleTextareaKeyDown(app, event, selectedMood, notes, setSubmitting,
+            setSubmitted, onMoodRecorded) }
+          placeholder="What's on your mind?" rows={ MOOD_TEXTAREA_ROWS } value={ notes } />
       )}
       {selectedMood !== null && (
         <div className="mood-submit-row">
-          <button
-            className="mood-cancel-btn"
-            onClick={handleCancelMood}
-            disabled={submitting}
-          >Cancel</button>
-          <button
-            className="mood-submit-btn"
-            onClick={() => handleSubmit(app, selectedMood, notes, setSubmitting, setSubmitted, onMoodRecorded)}
-            disabled={submitting}
-          >{submitting ? 'Recording...' : 'Submit'}</button>
+          <Button className="mood-cancel-btn" disabled={ submitting } onClick={ handleCancelMood }>
+            Cancel
+          </Button>
+          <Button className="mood-submit-btn" disabled={ submitting }
+            onClick={ () => handleSubmit(app, selectedMood, notes, setSubmitting, setSubmitted,
+              onMoodRecorded) }
+            variant="raised">{submitting ? 'Recording...' : 'Submit'}</Button>
         </div>
       )}
       {selectedMood === null && sparkline}

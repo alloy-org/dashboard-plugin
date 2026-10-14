@@ -21,10 +21,7 @@ $qa-transition-duration: 0.15s;
 
   .qa-button {
     align-items: center;
-    background: none;
-    border: none;
     color: $color-text-high-contrast;
-    cursor: pointer;
     display: flex;
     gap: $sp-lg;
     min-height: 40px;

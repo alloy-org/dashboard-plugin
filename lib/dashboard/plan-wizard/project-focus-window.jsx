@@ -1,6 +1,7 @@
 // One project's optional focus window on the Name the quarter timeline: click an empty month to place it, drag
 // near either edge to resize it, or drag its middle to move the whole range.
 
+import { IconButton } from "dashboard/controls";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
 import { FOCUS_WINDOW_EDGE_HIT_PIXELS, dayOffsetFromPointer, monthIndexFromPointer, movedWindowDraft,
   pointerOperationFromPosition, projectTooltipHtmlFromDraft, removedWindowDraft,
@@ -130,9 +131,9 @@ function ProjectFocusWindow({ draft, isDisabled, onChangeWindow, quarterEndOn, q
         ) : null }
       </div>
       { hasWindow ? (
-        <button aria-label={ `Remove focus window for ${ draft.summary }` } className="quarter-name-window-remove"
-          disabled={ isDisabled } onClick={ () => onChangeWindow(removedWindowDraft(draft)) }
-          title="Remove this date range" type="button"><MdClose /></button>
+        <IconButton className="quarter-name-window-remove" disabled={ isDisabled } Icon={ MdClose }
+          label={ `Remove focus window for ${ draft.summary }` }
+          onClick={ () => onChangeWindow(removedWindowDraft(draft)) } size="small" />
       ) : <span aria-hidden="true" className="quarter-name-window-remove-spacer" /> }
       { deadlineNote ? <p className="quarter-name-deadline-note">{ deadlineNote }</p> : null }
     </div>

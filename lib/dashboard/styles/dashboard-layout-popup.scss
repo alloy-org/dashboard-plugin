@@ -6,8 +6,6 @@
 @use 'controls' as *;
 @use 'theme-tokens' as *;
 
-$action-button-height: 36px;
-$arrow-button-size: 32px;
 $list-row-min-height: 48px;
 
 // Override base config-popup-container sizing for the larger dashboard layout popup.
@@ -36,33 +34,18 @@ $list-row-min-height: 48px;
     }
   }
 
+  // The Select wrapper: label beside the dropdown rather than above it.
   .dashboard-layout-popup-profile-row {
     align-items: center;
-    display: flex;
+    flex-direction: row;
     gap: $sp-sm;
-  }
-
-  .dashboard-layout-popup-profile-label {
-    color: $color-text-low-contrast;
-    font-size: 12px;
-    font-weight: 500;
-  }
-
-  .dashboard-layout-popup-profile-select {
-    @include select-field;
-    min-width: 0;
   }
 
   // ── Tab bar ─────────────────────────────────────────────────────────────────────────────
 
+  // The UnderlineTabs list: its active rule overlaps the intro's bottom border.
   .dashboard-layout-popup-tabs {
-    display: flex;
-    gap: $sp-xs;
     margin-bottom: -1px;
-  }
-
-  .dashboard-layout-popup-tab {
-    @include underline-tab;
   }
 
   // Scrollable body area that fills remaining height inside the popup
@@ -202,24 +185,12 @@ $list-row-min-height: 48px;
     gap: 2px;
   }
 
-  .dashboard-layout-popup-arrow-button {
-    @include icon-button($arrow-button-size);
-
-    &:disabled {
-      cursor: not-allowed;
-      opacity: 0.3;
-    }
-  }
-
   // ── Empty state ───────────────────────────────────────────────────────────────────────
 
+  // The EmptyState inside a drop zone: a dashed outline marks where a dragged component can land.
   .dashboard-layout-popup-empty {
     border: 1px dashed $color-border-primary;
     border-radius: $radius-sm;
-    color: $color-text-low-contrast;
-    font-size: 14px;
-    padding: $sp-lg $sp-sm;
-    text-align: center;
   }
 
   // ── Sizing tab ────────────────────────────────────────────────────────────────────────
@@ -259,21 +230,12 @@ $list-row-min-height: 48px;
     gap: $sp-lg;
   }
 
+  // The Select wrapper: label beside the dropdown on one line.
   .dashboard-layout-popup-sizing-field {
     align-items: center;
-    display: flex;
+    flex-direction: row;
     gap: $sp-sm;
-  }
-
-  .dashboard-layout-popup-sizing-label {
-    color: $color-text-low-contrast;
-    font-size: 12px;
-    font-weight: 500;
     white-space: nowrap;
-  }
-
-  .dashboard-layout-popup-sizing-select {
-    @include select-field;
   }
 
   // ── Actions footer: "reset" pinned to the left edge; "cancel" and "save" on the right ──
@@ -284,7 +246,6 @@ $list-row-min-height: 48px;
     padding-left: $sp-md;
 
     .config-popup-link {
-      @include text-button($action-button-height);
       margin-right: auto;
     }
   }

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { DASHBOARD_WIDGET_LOADED_EVENT, DashboardLoadContext, useDashboardLoadTracker } from "dashboard-load-tracking";
 import ConfigPopup from "config-popup";
+import { Button, Select } from "dashboard/controls";
 import { WIDGET_REGISTRY } from "layout-profiles";
 import { collectGarbageIfAvailable, lowestMemorySample } from "util/memory-instrumentation";
 import { WidgetIcon } from "widget-icons";
@@ -131,24 +132,18 @@ export default function WidgetMemoryMeasurementPopup({ onClose, renderWidget }) 
         <p className="widget-memory-measurement-description">
           Measures the selected widget on top of the dashboard's already-loaded shared data.
         </p>
-        <label className="widget-memory-measurement-label" htmlFor="widget-memory-selector">Widget</label>
-        <select
-          className="widget-memory-measurement-select"
-          id="widget-memory-selector"
-          value={selectedWidgetId}
-          onChange={event => setSelectedWidgetId(event.target.value)}
-          disabled={!!mountedWidgetId}
-        >
+        <Select className="widget-memory-measurement-select" disabled={ !!mountedWidgetId } label="Widget"
+          onChange={ setSelectedWidgetId } value={ selectedWidgetId }>
           {supportedWidgets.map(widget => (
             <option key={widget.widgetId} value={widget.widgetId}>{widget.visibleTitle || widget.name}</option>
           ))}
-        </select>
+        </Select>
         <div className="widget-memory-measurement-actions">
-          <button className="widget-memory-measurement-button" type="button" onClick={beginMeasurement}>
+          <Button className="widget-memory-measurement-button" dense onClick={ beginMeasurement } variant="outlined">
             {mountedWidgetId ? "Remount and measure" : "Mount and measure"}
-          </button>
-          <button className="widget-memory-measurement-button" type="button" onClick={unmountWidget}
-            disabled={!mountedWidgetId}>Unmount</button>
+          </Button>
+          <Button className="widget-memory-measurement-button" dense disabled={ !mountedWidgetId }
+            onClick={ unmountWidget } variant="outlined">Unmount</Button>
         </div>
         <div className="widget-memory-measurement-results" aria-live="polite">
           <span>Baseline: {baselineSample ? `${ baselineSample.usedMb } MB` : "—"}</span>

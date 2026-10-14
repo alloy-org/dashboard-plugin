@@ -4,11 +4,8 @@
  * Prompt summary: "popup component styles for widget configuration"
  */
 
-@use 'controls' as *;
 @use 'theme-tokens' as *;
 
-$config-popup-action-height: 36px;
-$config-popup-close-button-size: 40px;
 $config-popup-max-width: 90%;
 $config-popup-min-width: 320px;
 $config-popup-z-index: 1000;
@@ -77,8 +74,8 @@ $config-popup-z-index: 1000;
         min-width: 0;
       }
 
+      // The IconButton sits on the dark title bar, so it takes the bar's nav ink instead of the default icon ink.
       .config-popup-close-button {
-        @include icon-button($config-popup-close-button-size);
         color: $color-text-nav-low-contrast;
 
         &:hover:not(:disabled) {
@@ -90,7 +87,9 @@ $config-popup-z-index: 1000;
       .config-popup-body {
         padding: $sp-xl;
 
-        label {
+        // Option labels around radios and checkboxes. Select / TextField labels keep their own look; the exclusion
+        // sits inside :where() so this rule keeps the weight the popup's extenders balance against.
+        label:not(:where(.dashboard-field-label)) {
           align-items: center;
           color: $color-text-high-contrast;
           cursor: pointer;
@@ -100,9 +99,9 @@ $config-popup-z-index: 1000;
           padding: $sp-xs 0;
         }
 
+        // Native inputs take their tint from the global rule in dashboard-controls.scss; this is spacing only.
         input[type="radio"],
         input[type="checkbox"] {
-          accent-color: $color-background-action-high-contrast;
           cursor: pointer;
           margin: 0;
         }
@@ -151,14 +150,6 @@ $config-popup-z-index: 1000;
         .config-popup-footer-monospace {
           font-family: monospace;
         }
-      }
-
-      .config-popup-btn--cancel {
-        @include text-button($config-popup-action-height);
-      }
-
-      .config-popup-btn--submit {
-        @include raised-button($config-popup-action-height);
       }
     }
   }

@@ -1,4 +1,5 @@
 import { useReportWidgetDeferred } from "dashboard-load-tracking";
+import { Spinner } from "dashboard/controls";
 import { useWidgetMountingSuspended } from "hooks/use-widget-mount-suspension";
 import { useEffect, useRef, useState } from "react";
 import { useDashboardWork } from "dashboard/work-queue/dashboard-work-context";
@@ -116,7 +117,7 @@ function WidgetMountPlaceholder({ placeholderRef, widgetId }) {
   useReportWidgetDeferred(widgetId);
   return (
     <div ref={placeholderRef} className="lazy-widget-placeholder" data-widget-id={widgetId} aria-hidden="true">
-      <div className="lazy-widget-placeholder-spinner" />
+      <Spinner size="large" />
     </div>
   );
 }

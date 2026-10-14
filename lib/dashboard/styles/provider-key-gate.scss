@@ -36,14 +36,6 @@ $provider-key-gate-message-width: 34rem;
     margin-top: $sp-xs;
   }
 
-  .provider-key-gate-button {
-    @include text-button($button-height);
-  }
-
-  .provider-key-gate-button--primary {
-    @include raised-button;
-  }
-
   .provider-key-gate-footnote {
     color: $color-text-low-contrast;
     font-size: $smaller-font-size;

@@ -17,6 +17,7 @@ import DashboardLayoutPopup from 'dashboard-layout-popup';
 import DashboardSettingNote from "dashboard-setting-note";
 import DashboardSettingsPopup from 'dashboard-settings-popup';
 import DashboardUpdateIndicator from 'dashboard-update-indicator';
+import { ErrorState, IconButton, LoadingState, PlainButton } from "dashboard/controls";
 import DaySketchWidget from 'day-sketch';
 import DebugConsoleWidget from 'debug-console';
 import { useDashboardDrag } from 'draggable-heading';
@@ -41,7 +42,7 @@ import ProposedAgendaWidget from 'proposed-agenda';
 import { setPluginData, updatePluginSetting } from "plugin-data";
 import QuotesWidget from 'quotes';
 import QuickActionsWidget from 'quick-actions';
-import { MdErrorOutline, MdSettings, MdWebAsset } from "react-icons/md";
+import { MdSettings, MdWebAsset } from "react-icons/md";
 import RecentNotesWidget from 'recent-notes';
 import SharedNotesWidget from 'shared-notes';
 import TaskDomains from 'task-domains';
@@ -110,14 +111,10 @@ class WidgetErrorBoundary extends Component {
     if (this.state.hasError) {
       return (
         <div className="widget-error-fallback">
-          <p className="widget-error-fallback-title"><MdErrorOutline />{ this.props.widgetId }</p>
-          <p className="widget-error-fallback-message">
-            {this.state.error?.message || 'An unexpected error occurred'}
-          </p>
-          <button
-            className="widget-error-fallback-retry"
-            onClick={() => this.setState({ hasError: false, error: null })}
-          >Retry</button>
+          <ErrorState onRetry={ () => this.setState({ hasError: false, error: null }) }
+            title={ this.props.widgetId }>
+            { this.state.error?.message || 'An unexpected error occurred' }
+          </ErrorState>
         </div>
       );
     }
@@ -718,20 +715,14 @@ export default function DashboardApp({ app, initPromise }) {
 
   if (error) {
     return (
-      <div className="dashboard-error">
-        <h2>Dashboard Error</h2>
-        <p>{error}</p>
-      </div>
+      <ErrorState className="dashboard-error" title="Dashboard Error">{ error }</ErrorState>
     );
   }
 
   if (!configParams) {
     return (
       <div className="dashboard-outer-container">
-        <div className="dashboard-loading">
-          <div className="spinner" />
-          <p>Loading dashboard...</p>
-        </div>
+        <LoadingState className="dashboard-loading">Loading dashboard...</LoadingState>
       </div>
     );
   }
@@ -791,31 +782,19 @@ export default function DashboardApp({ app, initPromise }) {
           />
           <div className="dashboard-toolbar-actions">
             <DashboardUpdateIndicator app={app} />
-            <button
-              aria-label="Layout"
-              className="dashboard-configure-button"
-              onClick={() => setFocusState(DASHBOARD_FOCUS.LAYOUT_CONFIG)}
-              title="Layout: configure which widgets are shown and in what order"
-              type="button"
-            ><MdWebAsset size={ 20 } /></button>
-            <button
-              aria-label="Settings"
-              className="dashboard-configure-button"
-              onClick={() => { logIfEnabled('[dashboard] opening Settings popup'); handleOpenSettings(); }}
-              title="Settings: configure LLM provider and API key for AI-powered features"
-              type="button"
-            ><MdSettings size={ 20 } /></button>
+            <IconButton className="dashboard-configure-button" Icon={ MdWebAsset } label="Layout"
+              onClick={ () => setFocusState(DASHBOARD_FOCUS.LAYOUT_CONFIG) } size="large"
+              tooltip="Layout: configure which widgets are shown and in what order" />
+            <IconButton className="dashboard-configure-button" Icon={ MdSettings } label="Settings"
+              onClick={ () => { logIfEnabled('[dashboard] opening Settings popup'); handleOpenSettings(); } }
+              size="large" tooltip="Settings: configure LLM provider and API key for AI-powered features" />
           </div>
         </div>
         <div className={`dashboard-grid-shell${isWidgetFocusMode ? ' dashboard-grid-shell--focused' : ''}`}>
           {isWidgetFocusMode ? (
-            <button
-              className="dashboard-grid-focus-backdrop"
-              type="button"
-              title="Return all widgets to the dashboard grid"
-              aria-label="Return all widgets to the dashboard grid"
-              onClick={clearFocusedWidget}
-            />
+            <PlainButton aria-label="Return all widgets to the dashboard grid"
+              className="dashboard-grid-focus-backdrop" onClick={ clearFocusedWidget }
+              title="Return all widgets to the dashboard grid" />
           ) : null}
           <DashboardLoadContext.Provider value={loadTracker}>
           <DashboardWorkProvider value={work}>

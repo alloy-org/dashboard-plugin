@@ -4,6 +4,7 @@
 // asks for. The panel names what is missing and hands the user straight to Dashboard Settings, where the key is
 // entered; the caller reopens Plan Builder afterwards, and the reopened builder reads the key that was saved.
 
+import { Button } from "dashboard/controls";
 import "dashboard/styles/provider-key-gate.scss";
 import { MdSettings } from "react-icons/md";
 
@@ -25,10 +26,10 @@ export default function ProviderKeyGate({ onCancel, onOpenSettings = null }) {
         Settings, or install Ample Agent Pro to use AI features without a key of your own.</p>
       <div className="provider-key-gate-actions">
         { onOpenSettings ? (
-          <button className="provider-key-gate-button provider-key-gate-button--primary" onClick={ onOpenSettings }
-            type="button"><MdSettings />Open Dashboard Settings</button>
+          <Button className="provider-key-gate-button provider-key-gate-button--primary" Icon={ MdSettings }
+            onClick={ onOpenSettings } variant="raised">Open Dashboard Settings</Button>
         ) : null }
-        <button className="provider-key-gate-button" onClick={ onCancel } type="button">Cancel</button>
+        <Button className="provider-key-gate-button" onClick={ onCancel }>Cancel</Button>
       </div>
       <p className="provider-key-gate-footnote">Plan Builder picks up the key as soon as you come back.</p>
     </div>

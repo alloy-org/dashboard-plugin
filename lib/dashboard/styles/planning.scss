@@ -22,11 +22,6 @@ $quarter-toggle-size: 26px;
     gap: $sp-sm;
   }
 
-  .planning-return-quarter {
-    @include text-button(28px);
-    font-size: 12px;
-  }
-
   .planning-quarter-row {
     align-items: stretch;
     display: flex;
@@ -45,10 +40,7 @@ $quarter-toggle-size: 26px;
   .quarter-page-button {
     align-items: center;
     align-self: center;
-    background: transparent;
-    border: 0;
     color: $color-text-low-contrast;
-    cursor: pointer;
     display: flex;
     flex: 0 0 auto;
     gap: 1px;
@@ -56,11 +48,6 @@ $quarter-toggle-size: 26px;
     padding: $sp-xs 2px;
 
     &:hover { color: $color-text-high-contrast; }
-
-    &:focus-visible {
-      outline: $planning-border-width solid $color-background-action-high-contrast;
-      outline-offset: 2px;
-    }
   }
 
   .quarter-page-chevron {
@@ -137,15 +124,7 @@ $quarter-toggle-size: 26px;
     }
 
     .quarter-past-badge {
-      background: $color-background-element-low-contrast;
-      border-radius: 10px;
-      color: $color-text-low-contrast;
       flex-shrink: 0;
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.04em;
-      padding: 1px $sp-sm;
-      text-transform: uppercase;
     }
 
     .quarter-suggestion-toggle {
@@ -204,30 +183,11 @@ $quarter-toggle-size: 26px;
   /* Months read as host underline tabs, matching the dashboard's task-domain tabs. */
   .month-tabs {
     border-bottom: 1px solid $color-border-primary;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0 $sp-xl;
   }
 
+  /* The selected tab's rule sits on the list's bottom border. */
   .month-tab {
-    background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
-    color: $color-text-low-contrast;
-    cursor: pointer;
-    font-size: $default-font-size;
     margin-bottom: -1px;
-    padding: $sp-sm 0;
-    transition: border-color $planning-transition-duration, color $planning-transition-duration;
-
-    &:hover {
-      color: $color-text-high-contrast;
-    }
-
-    &.active {
-      border-bottom-color: $color-text-high-contrast;
-      color: $color-text-high-contrast;
-    }
   }
 
   /* [Claude] Task: expandable month content area below month tabs */
@@ -239,12 +199,6 @@ $quarter-toggle-size: 26px;
     margin-top: $sp-md;
     overflow: hidden;
     padding: $sp-md $sp-lg;
-  }
-
-  .month-content-loading {
-    color: $color-text-low-contrast;
-    font-size: $smaller-font-size;
-    font-style: italic;
   }
 
   .month-content-header {
@@ -439,24 +393,9 @@ $quarter-toggle-size: 26px;
     min-width: 0;
   }
 
-  .month-project-badge {
-    border: 1px solid $color-border-primary;
-    border-radius: 999px;
-    color: $color-text-medium-contrast;
-    font-size: $smaller-font-size;
-    padding: 0 $sp-sm;
-  }
-
+  /* The star's state color: the focus project reads in the warning tone, like the chosen callout above. */
   .month-project-star {
-    background: none;
-    border: 0;
-    border-radius: $radius-sm;
-    color: $color-text-low-contrast;
-    cursor: pointer;
-    display: flex;
-    padding: $sp-xs;
-
-    &:hover { color: $color-text-error-low-contrast; }
+    &:hover:not(:disabled) { color: $color-text-error-low-contrast; }
     &[aria-pressed="true"] { color: $color-text-error-low-contrast; }
   }
 
@@ -464,30 +403,6 @@ $quarter-toggle-size: 26px;
     flex: 0 0 auto;
     height: 18px;
     width: 18px;
-  }
-
-  .create-month-plan-link {
-    background: none;
-    border: $planning-border-width dashed $color-border-primary;
-    border-radius: $radius-sm;
-    color: $color-text-link;
-    cursor: pointer;
-    font-size: $smaller-font-size;
-    padding: $sp-sm $sp-lg;
-    transition: border-color $planning-transition-duration, color $planning-transition-duration;
-
-    &:hover {
-      border-color: $color-background-action-high-contrast;
-      color: $color-text-high-contrast;
-    }
-  }
-
-  .planning-empty {
-    color: $color-text-low-contrast;
-    font-size: $default-font-size;
-    font-style: italic;
-    padding: $sp-lg 0;
-    text-align: center;
   }
 
   .weekly-plan-section {
@@ -503,26 +418,7 @@ $quarter-toggle-size: 26px;
     margin-bottom: $sp-sm;
   }
 
-  .weekly-plan-loading {
-    color: $color-text-low-contrast;
-    font-size: $smaller-font-size;
-    font-style: italic;
-  }
-
   .create-week-plan-link {
-    background: none;
-    border: $planning-border-width dashed $color-border-primary;
-    border-radius: $radius-sm;
-    color: $color-text-link;
-    cursor: pointer;
-    font-size: $smaller-font-size;
-    padding: $sp-sm $sp-lg;
-    transition: border-color $planning-transition-duration, color $planning-transition-duration;
     width: 100%;
-
-    &:hover {
-      border-color: $color-background-action-high-contrast;
-      color: $color-text-high-contrast;
-    }
   }
 }

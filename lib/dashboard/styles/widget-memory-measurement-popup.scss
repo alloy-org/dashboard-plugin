@@ -23,24 +23,14 @@
     font-size: 12px;
   }
 
-  .widget-memory-measurement-label {
-    color: $color-text-low-contrast;
-    font-size: 12px;
-    font-weight: 500;
-    margin-top: $sp-sm;
-  }
-
+  // The Select wrapper: a little extra room above its label.
   .widget-memory-measurement-select {
-    @include select-field;
+    margin-top: $sp-sm;
   }
 
   .widget-memory-measurement-actions {
     display: flex;
     gap: $sp-sm;
-  }
-
-  .widget-memory-measurement-button {
-    @include outlined-button;
   }
 
   .widget-memory-measurement-results {

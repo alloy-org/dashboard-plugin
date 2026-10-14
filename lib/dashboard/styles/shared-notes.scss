@@ -15,13 +15,19 @@
     overflow: hidden;
   }
 
-  /* Checkbox toggle in the header reuses widget-header-action spacing but lays out inline. */
+  /* Checkbox toggle, laid out inline either in the header or on the filter row. */
   .shared-notes-toggle {
     align-items: center;
     cursor: pointer;
     display: inline-flex;
     font-size: $smaller-font-size;
     gap: $sp-xs;
+  }
+
+  .shared-notes-toggle--header {
+    color: $color-text-medium-contrast;
+    font-size: 12px;
+    white-space: nowrap;
   }
 
   /* [Claude claude-opus-4-8] First-line person filter: select on the left, has-tasks toggle right. */
@@ -41,13 +47,7 @@
   }
 
   .shared-notes-sharer-select {
-    background-color: $color-background-secondary;
-    border: 1px solid $color-border-primary;
-    border-radius: $radius-sm;
-    color: $color-text-high-contrast;
-    font-size: $smaller-font-size;
     min-width: 0;
-    padding: 2px $sp-xs;
   }
 
   .shared-note-list {
@@ -71,10 +71,6 @@
     padding: $sp-xs 0 0;
   }
 
-  .shared-notes-page-arrow {
-    @include icon-button;
-  }
-
   .shared-notes-page-indicator {
     color: $color-text-medium-contrast;
     font-size: $smaller-font-size;
@@ -93,7 +89,6 @@
   /* Prompt: "Add a pin icon to the left side of each note row... click the pin to persist that note" */
   /* Unpinned pins sit in the lowest-contrast ink until hovered; a pinned note's pin takes the action color. */
   .shared-note-pin {
-    @include icon-button;
     align-self: center;
     color: $color-text-lower-contrast;
     margin-left: $sp-xs;
@@ -104,11 +99,7 @@
   }
 
   .shared-note-link {
-    background: none;
-    border: none;
     border-radius: $radius-sm;
-    color: inherit;
-    cursor: pointer;
     display: flex;
     flex: 1;
     flex-direction: column;
@@ -195,18 +186,5 @@
   .shared-note-updated::before {
     color: $color-text-low-contrast;
     content: "·";
-  }
-
-  .note-loading,
-  .note-empty,
-  .note-error {
-    color: $color-text-medium-contrast;
-    font-size: $default-font-size;
-    padding: $sp-md 0;
-    text-align: center;
-  }
-
-  .note-error {
-    color: $color-text-error-high-contrast;
   }
 }

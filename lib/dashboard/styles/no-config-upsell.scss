@@ -23,27 +23,6 @@
     justify-content: center;
   }
 
-  .no-config-upsell-badge {
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 500;
-    letter-spacing: 0.04em;
-    padding: 2px $sp-sm;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-
-  .no-config-upsell-badge--brand {
-    background: $color-background-action-low-contrast;
-    color: $color-text-link;
-  }
-
-  .no-config-upsell-badge--price {
-    background: $color-background-element-low-contrast;
-    color: $color-text-medium-contrast;
-    text-transform: none;
-  }
-
   .no-config-upsell-headline {
     color: $color-text-high-contrast;
     font-size: $large-font-size;
@@ -102,14 +81,6 @@
     justify-content: center;
     margin-top: $sp-sm;
     width: 100%;
-  }
-
-  .no-config-upsell-button--primary {
-    @include raised-button;
-  }
-
-  .no-config-upsell-button--secondary {
-    @include text-button($button-height);
   }
 
   .no-config-upsell-footnote {

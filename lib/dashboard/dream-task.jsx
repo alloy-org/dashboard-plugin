@@ -15,6 +15,7 @@ import { isAmpleAgentProInstalled, providerNameFromProviderEm } from "providers/
 import { recordShownTaskSuggestions } from "ranked-task-suggestions";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
+import { Badge, Button, EmptyState, ErrorState, IconButton, LoadingState } from "dashboard/controls";
 import { useDashboardWork } from "dashboard/work-queue/dashboard-work-context";
 import { preparedDayRankingAwaiter } from "dashboard/work-queue/prepared-day-ranking";
 import { DASHBOARD_TASKS_UPDATED_EVENT } from "hooks/use-dashboard-task-updates";
@@ -29,6 +30,8 @@ import WidgetWrapper from "widget-wrapper";
 
 import "styles/dream-task.scss";
 
+// Relevance badges read green for strong matches, amber for middling ones, and red for weak ones.
+const BADGE_TONE_BY_RATING_TIER = { high: 'status', low: 'danger', medium: 'warning' };
 const MIN_TEXT_OVERFLOW_SIZE = 230;
 const WIDGET_ID = 'dream-task';
 const CARD_REMOVE_FADE_MS = 280;
@@ -91,14 +94,15 @@ function _taskKey(task) {
 function DreamTaskKindBadge({ isClickable, task }) {
   if (task.isExisting && task.sourceNoteName) {
     return (
-      <span
-        className="dream-task-source-note-badge"
-        title={task.sourceNoteName ? `Task in note: ${ task.sourceNoteName }` : 'Open this task'}
-      >{task.sourceNoteName}</span>
+      <Badge className="dream-task-source-note-badge"
+        title={ task.sourceNoteName ? `Task in note: ${ task.sourceNoteName }` : 'Open this task' }
+        uppercase={ false }>{task.sourceNoteName}</Badge>
     );
   }
   if (!task.isExisting && isClickable) {
-    return <span className="dream-task-new-badge" title="New task — click to create">+new</span>;
+    return (
+      <Badge className="dream-task-new-badge" title="New task — click to create" tone="action">+new</Badge>
+    );
   }
   return null;
 }
@@ -106,35 +110,27 @@ function DreamTaskKindBadge({ isClickable, task }) {
 function NoteLink({ noteUUID, onOpenNote }) {
   if (!noteUUID) return null;
   return (
-    <a
-      href="#"
-      aria-label="Open today's proposed tasks note"
-      className="widget-header-action widget-header-action--icon-only"
-      onClick={onOpenNote}
-      title="Open today's proposed tasks note"
-    ><MdDescription /></a>
+    <IconButton Icon={ MdDescription } label="Open today's proposed tasks note" onClick={ onOpenNote }
+      size="small" />
   );
 }
 
+// ----------------------------------------------------------------------------------------------
+// @desc Header action that opens the provider chooser before reseeding; its tooltip explains what reseeding
+//   excludes.
 function ReseedLink({ onReseed }) {
   return (
-    <a
-      href="#"
-      aria-label="Reseed"
-      className="widget-header-action widget-header-action--icon-only"
-      onClick={onReseed}
-      title="Reseed: get new task suggestions (excludes tasks shown today)"
-    ><MdRefresh /></a>
+    <IconButton Icon={ MdRefresh } label="Reseed" onClick={ onReseed } size="small"
+      tooltip="Reseed: get new task suggestions (excludes tasks shown today)" />
   );
 }
 
-function LoadingState() {
+// ----------------------------------------------------------------------------------------------
+// @desc The widget while suggestions are being generated.
+function DreamTaskLoading() {
   return (
     <WidgetWrapper widgetId={WIDGET_ID}>
-      <div className="dream-task-loading">
-        <div className="dream-task-spinner" />
-        <p>Analyzing the finest tasks …</p>
-      </div>
+      <LoadingState className="dream-task-loading">Analyzing the finest tasks …</LoadingState>
     </WidgetWrapper>
   );
 }
@@ -151,7 +147,7 @@ const NO_CONFIG_FEATURES = [
 ];
 
 // [Claude claude-opus-4-6] Task: render specific error messages based on errorCode from the service
-function ErrorState({ errorInfo, noteLink, onRetry, onSettingsClick }) {
+function DreamTaskError({ errorInfo, noteLink, onRetry, onSettingsClick }) {
   const { error, errorCode, errorDetail, providerName } = errorInfo;
   let content;
   switch (errorCode) {
@@ -161,7 +157,7 @@ function ErrorState({ errorInfo, noteLink, onRetry, onSettingsClick }) {
           <p>{`The API key for ${ providerName || 'your AI provider' } appears to be invalid or unauthorized.`}</p>
           <p>
             {'Please check your API key in '}
-            <a href="#" className="dream-task-settings-link" onClick={onSettingsClick}>AI settings</a>
+            <Button onClick={ onSettingsClick } variant="link">AI settings</Button>
             .
           </p>
         </>
@@ -191,21 +187,18 @@ function ErrorState({ errorInfo, noteLink, onRetry, onSettingsClick }) {
   }
   return (
     <WidgetWrapper widgetId={WIDGET_ID} headerActions={noteLink}>
-      <div className="dream-task-error">
-        {content}
-        <button className="dream-task-retry" onClick={onRetry}>Retry</button>
-      </div>
+      <ErrorState className="dream-task-error" onRetry={ onRetry } title={ null }>{ content }</ErrorState>
     </WidgetWrapper>
   );
 }
 
-function EmptyState({ noteLink, onRetry }) {
+// ----------------------------------------------------------------------------------------------
+// @desc The widget when the analysis returned no suggestions, with a Refresh action.
+function DreamTaskEmpty({ noteLink, onRetry }) {
   return (
     <WidgetWrapper widgetId={WIDGET_ID} headerActions={noteLink}>
-      <div className="dream-task-empty">
-        <p>No task suggestions available.</p>
-        <button className="dream-task-retry" onClick={onRetry}>Refresh</button>
-      </div>
+      <EmptyState action={ <Button onClick={ onRetry } variant="outlined">Refresh</Button> }
+        className="dream-task-empty" title="No task suggestions available." />
     </WidgetWrapper>
   );
 }
@@ -251,10 +244,10 @@ function TaskList({ dreamTasks, maxTasks, headerActions, onTaskClick, listRef, l
                   dangerouslySetInnerHTML={{ __html: titleHtml }}
                 />
                 <DreamTaskKindBadge isClickable={isClickable} task={dreamTask} />
-                <span
-                  className={`dream-task-rating dream-task-rating--${ _ratingTier(dreamTask.rating) }`}
+                <Badge className={`dream-task-rating dream-task-rating--${ _ratingTier(dreamTask.rating) }`}
                   title={`Relevance: ${ dreamTask.rating }/10`}
-                >{`${ dreamTask.rating }/10`}</span>
+                  tone={ BADGE_TONE_BY_RATING_TIER[_ratingTier(dreamTask.rating)] }
+                >{`${ dreamTask.rating }/10`}</Badge>
               </div>
               <p
                 className={explanationClassName}
@@ -263,39 +256,26 @@ function TaskList({ dreamTasks, maxTasks, headerActions, onTaskClick, listRef, l
                 dangerouslySetInnerHTML={{ __html: explanationHtml }}
               />
               <div className="dream-task-card-actions">
-                <a
-                  href="#"
-                  className="dream-task-card-action"
-                  onClick={(event) => onPreserve(event, dreamTask)}
+                <Button className="dream-task-card-action" dense iconSize={ 16 }
+                  Icon={ dreamTask.preserveThroughTomorrow ? MdRemoveCircleOutline : MdPushPin }
+                  onClick={ event => onPreserve(event, dreamTask) }
                   title={dreamTask.preserveThroughTomorrow
                     ? 'Clicking this will remove preserve status so the task can reseed normally'
                     : 'Clicking this will ensure that the task remains present in your Dream Task list through tomorrow (normally tasks reseed daily)'}
-                >{dreamTask.preserveThroughTomorrow
-                  ? <><MdRemoveCircleOutline size={ 16 } />Remove preserve</>
-                  : <><MdPushPin size={ 16 } />Preserve</>}</a>
-                <a
-                  href="#"
-                  className="dream-task-card-action"
-                  onClick={(event) => onComplete(event, dreamTask)}
+                >{ dreamTask.preserveThroughTomorrow ? 'Remove preserve' : 'Preserve' }</Button>
+                <Button className="dream-task-card-action" dense iconSize={ 16 } Icon={ MdCheckCircle }
+                  onClick={ event => onComplete(event, dreamTask) }
                   title="Mark this task complete and replace it with another suggestion when available"
-                >
-                  <MdCheckCircle size={ 16 } />Completed</a>
+                >Completed</Button>
                 {isScheduled ? null : (
-                  <a
-                    href="#"
-                    className="dream-task-card-action"
-                    onClick={(event) => onSchedule(event, dreamTask)}
-                    title="Schedule this task for a specific date and time"
-                  >
-                    <MdEvent size={ 16 } />Schedule</a>
+                  <Button className="dream-task-card-action" dense iconSize={ 16 } Icon={ MdEvent }
+                    onClick={ event => onSchedule(event, dreamTask) }
+                    title="Schedule this task for a specific date and time">Schedule</Button>
                 )}
-                <a
-                  href="#"
-                  className="dream-task-card-action"
-                  onClick={(event) => onRemove(event, dreamTask)}
+                <Button className="dream-task-card-action" dense iconSize={ 16 } Icon={ MdClose }
+                  onClick={ event => onRemove(event, dreamTask) }
                   title="Remove this task and replace it with another suggestion when available"
-                >
-                  <MdClose size={ 16 } />Remove</a>
+                >Remove</Button>
               </div>
             </div>
           );
@@ -310,12 +290,15 @@ function TaskList({ dreamTasks, maxTasks, headerActions, onTaskClick, listRef, l
 
 function ConfiguredBody({ loading, error, tasks, maxTasks, noteLink, headerActions,
     onSettingsClick, runAnalysis, onTaskClick, listRef, llmAttributionFooter, actionHandlers }) {
-  if (loading) return <LoadingState />;
+  if (loading) return <DreamTaskLoading />;
   if (error) {
-    return <ErrorState errorInfo={error} noteLink={noteLink} onRetry={() => runAnalysis(null)} onSettingsClick={onSettingsClick} />;
+    return (
+      <DreamTaskError errorInfo={error} noteLink={noteLink} onRetry={() => runAnalysis(null)}
+        onSettingsClick={onSettingsClick} />
+    );
   }
   if (!tasks || tasks.length === 0) {
-    return <EmptyState noteLink={noteLink} onRetry={() => runAnalysis(null)} />;
+    return <DreamTaskEmpty noteLink={noteLink} onRetry={() => runAnalysis(null)} />;
   }
   return (
     <TaskList
@@ -382,7 +365,6 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks, { reserve
   }, []);
 
   const onCompleteTask = useCallback(async (event, dreamTask) => {
-    event.preventDefault();
     snapDashboardAction("approveDreamTask", { via: "complete" });
     fireConfettiForTask(event);
     const completedNoteUUID = dreamTask.uuid ? null : await dailyJotNoteUuidFromToday(app);
@@ -396,7 +378,6 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks, { reserve
   }, [app, fireConfettiForTask, patchTaskMetadata, removeTaskAfterFade, taskDomainName, taskDomainUUID]);
 
   const onPreserveTask = useCallback(async (event, dreamTask) => {
-    event.preventDefault();
     const key = _taskKey(dreamTask);
     const nextPreserveState = !dreamTask.preserveThroughTomorrow;
     setTasks(previous => (previous || []).map(candidate => (
@@ -406,7 +387,6 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks, { reserve
   }, [patchTaskMetadata, setTasks]);
 
   const onRemoveTask = useCallback(async (event, dreamTask) => {
-    event.preventDefault();
     const removedAt = new Date().toISOString();
     await patchTaskMetadata(dreamTask, { completedAt: null, removedAt });
     await recordDreamIdeaDecision(app, dreamTask, { domainName: taskDomainName, domainUuid: taskDomainUUID,
@@ -424,7 +404,6 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks, { reserve
   }, [app, noteUUID, patchTaskMetadata, removeTaskAfterFade, reserveTasks, taskDomainName, taskDomainUUID]);
 
   const onScheduleTask = useCallback(async (event, dreamTask) => {
-    event.preventDefault();
     const { events, tasks: scheduledTasks } = await fetchSchedulingOccupancy(app);
     const now = new Date();
     const todaySlots = buildAvailableTimeSlots(now, events, scheduledTasks);
@@ -616,20 +595,17 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
     logIfEnabled(`[DreamTask] attachFootnotePopups: ${(performance.now() - start).toFixed(1)}ms`);
   }, [tasks, error, loading]);
 
-  const onOpenNote = async (e) => {
-    e.preventDefault();
+  const onOpenNote = async () => {
     if (noteUUID) await app.navigate(`https://www.amplenote.com/notes/${ noteUUID }`);
   };
 
-  const onSettingsClick = (e) => {
-    e.preventDefault();
+  const onSettingsClick = () => {
     handleOpenSettings(onOpenSettings);
   };
 
   // [Claude claude-opus-4-8 (1M context)] Task: open the shared AI-provider chooser before reseeding
   // Prompt: "use this selector in [DreamTask] as well"
-  const onReseed = (e) => {
-    e.preventDefault();
+  const onReseed = () => {
     setProviderPopupOpen(true);
   };
 

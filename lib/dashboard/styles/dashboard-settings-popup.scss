@@ -7,9 +7,6 @@
 @use 'controls' as *;
 @use 'theme-tokens' as *;
 
-// Matches the 36px field the toggle sits beside
-$api-key-toggle-size: 36px;
-
 .dashboard-settings-container {
 
   // ── Sections ─────────────────────────────────────────────────────────────────────────
@@ -45,13 +42,6 @@ $api-key-toggle-size: 36px;
     margin: 0;
   }
 
-  // ── Provider dropdown ────────────────────────────────────────────────────────────────
-
-  .dashboard-settings-select {
-    @include select-field;
-    width: 100%;
-  }
-
   // ── API key field ────────────────────────────────────────────────────────────────────
 
   .dashboard-settings-api-key-hint {
@@ -81,19 +71,14 @@ $api-key-toggle-size: 36px;
     gap: $sp-xs;
   }
 
+  // The TextField wrapper; its input inherits the monospace face through the field's `font-family: inherit`.
   .dashboard-settings-api-key-input {
-    @include text-field;
     flex: 1;
     font-family: monospace;
     min-width: 0;
   }
 
-  .dashboard-settings-api-key-toggle {
-    @include icon-button($api-key-toggle-size);
-  }
-
   .dashboard-settings-debug-button {
-    @include outlined-button;
     align-self: flex-start;
     margin-top: $sp-md;
   }

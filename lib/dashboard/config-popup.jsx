@@ -4,11 +4,10 @@
  * Task: Reusable settings popup with Submit/Cancel actions
  * Prompt summary: "popup component for widget configuration with onSubmit, onCancel, and content props"
  */
+import { Button, IconButton } from "dashboard/controls";
 import { useEffect, useRef } from "react";
 import { MdClose } from "react-icons/md";
 import "styles/config-popup.scss"
-
-const CLOSE_ICON_SIZE = 20;
 
 // ----------------------------------------------------------------------------------------------
 // @desc Modal dialog with a title bar, body content, and a Cancel / submit footer.
@@ -54,8 +53,10 @@ export default function ConfigPopup({ title, onSubmit, onCancel, submitLabel = '
         <div className="config-popup-body">{children}</div>
         <div className="config-popup-actions">
           {footerLeft ? <div className="config-popup-footer-left">{footerLeft}</div> : null}
-          <button className="config-popup-btn config-popup-btn--cancel" onClick={onCancel}>Cancel</button>
-          <button className="config-popup-btn config-popup-btn--submit" onClick={onSubmit}>{submitLabel}</button>
+          <Button className="config-popup-btn config-popup-btn--cancel" onClick={ onCancel }>Cancel</Button>
+          <Button className="config-popup-btn config-popup-btn--submit" onClick={ onSubmit } variant="raised">
+            { submitLabel }
+          </Button>
         </div>
       </div>
     </div>
@@ -71,9 +72,8 @@ export function ConfigPopupHeader({ onClose, title }) {
   return (
     <div className="config-popup-header">
       <h3 className="config-popup-title">{ title }</h3>
-      <button aria-label="Close" className="config-popup-close-button" onClick={ onClose } title="Close" type="button">
-        <MdClose size={ CLOSE_ICON_SIZE } />
-      </button>
+      <IconButton className="config-popup-close-button" Icon={ MdClose } label="Close" onClick={ onClose }
+        size="dialog" />
     </div>
   );
 }
