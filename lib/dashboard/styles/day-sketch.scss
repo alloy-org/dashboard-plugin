@@ -24,7 +24,7 @@ $day-sketch-hour-column-width: 64px;
   }
 
   .day-sketch-notebook {
-    background-color: $color-bg-card;
+    background-color: $color-background-primary;
     flex: 1;
     min-height: 0;
     overflow-y: auto;
@@ -33,14 +33,14 @@ $day-sketch-hour-column-width: 64px;
 
   .day-sketch-line {
     align-items: center;
-    border-bottom: 1px solid $color-border;
+    border-bottom: 1px solid $color-border-primary;
     display: flex;
     height: $day-sketch-line-height;
     position: relative;
   }
 
   .day-sketch-hour-label {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     flex-shrink: 0;
     font-size: 12px;
     font-variant-numeric: tabular-nums;
@@ -55,7 +55,7 @@ $day-sketch-hour-column-width: 64px;
     background: transparent;
     border: none;
     border-radius: $radius-sm;
-    color: $color-text;
+    color: $color-text-high-contrast;
     flex: 1;
     font-size: $default-font-size;
     height: 100%;
@@ -69,13 +69,13 @@ $day-sketch-hour-column-width: 64px;
     }
 
     &:focus {
-      background: $color-action-low;
+      background: $color-background-action-low-contrast;
     }
   }
 
   .day-sketch-loading {
     align-items: center;
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     display: flex;
     font-size: $default-font-size;
     height: 100%;
@@ -89,7 +89,7 @@ $day-sketch-hour-column-width: 64px;
   }
 
   .day-sketch-save-btn--disabled {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     cursor: default;
 
     &:hover {

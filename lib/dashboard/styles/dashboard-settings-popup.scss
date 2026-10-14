@@ -22,7 +22,7 @@ $api-key-toggle-size: 36px;
   /* [Composer] Task: visual separation between stacked settings blocks (matches header/footer hairlines) */
   /* Prompt: "section class — obvious line between sections" | Date: 2026-04-09 */
   .dashboard-settings-section.section:not(:first-child) {
-    border-top: 1px solid $color-border;
+    border-top: 1px solid $color-border-primary;
     margin-top: $sp-xl;
     padding-top: $sp-xl;
   }
@@ -39,7 +39,7 @@ $api-key-toggle-size: 36px;
   }
 
   .dashboard-settings-section-desc {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: 14px;
     line-height: 1.5;
     margin: 0;
@@ -55,7 +55,7 @@ $api-key-toggle-size: 36px;
   // ── API key field ────────────────────────────────────────────────────────────────────
 
   .dashboard-settings-api-key-hint {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: 12px;
     line-height: 1.45;
     margin: $sp-xs 0;
@@ -63,7 +63,7 @@ $api-key-toggle-size: 36px;
 
   .dashboard-settings-api-key-link {
     align-items: center;
-    color: $color-link;
+    color: $color-text-link;
     display: inline-flex;
     font-size: 14px;
     gap: $sp-xs;

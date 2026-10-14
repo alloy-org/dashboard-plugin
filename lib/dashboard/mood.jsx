@@ -188,11 +188,11 @@ function readThemeColors() {
   const style = getComputedStyle(document.documentElement);
   const get = (v) => style.getPropertyValue(v).trim();
   return {
-    bgCard:        get('--dashboard-color-bg-card'),
-    bgPage:        get('--dashboard-color-bg-page'),
-    border:        get('--dashboard-color-border'),
-    textSecondary: get('--dashboard-color-text-secondary'),
-    textMuted:     get('--dashboard-color-text-muted'),
+    bgCard:        get('--dashboard-color-background-primary'),
+    bgPage:        get('--dashboard-color-background-secondary'),
+    border:        get('--dashboard-color-border-primary'),
+    textSecondary: get('--dashboard-color-text-medium-contrast'),
+    textMuted:     get('--dashboard-color-text-low-contrast'),
   };
 }
 

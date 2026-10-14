@@ -10,7 +10,7 @@ $layout-picker-transition: 0.15s ease;
   /* A quiet inline notice rather than a colored box: warning icon, secondary text. */
   .layout-picker-warning {
     align-items: center;
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     display: flex;
     font-size: $smaller-font-size;
     gap: $sp-sm;
@@ -18,7 +18,7 @@ $layout-picker-transition: 0.15s ease;
   }
 
   .layout-picker-warning-icon {
-    color: $color-warning;
+    color: $color-text-error-low-contrast;
     flex-shrink: 0;
   }
 
@@ -31,9 +31,9 @@ $layout-picker-transition: 0.15s ease;
   /* Each profile is an outlined option row, highlighted in the host's low-contrast action fill on hover. */
   .layout-picker-profile-button {
     background: transparent;
-    border: 1px solid $color-border;
+    border: 1px solid $color-border-primary;
     border-radius: $radius-sm;
-    color: $color-text;
+    color: $color-text-high-contrast;
     cursor: pointer;
     padding: $sp-md;
     text-align: left;
@@ -41,8 +41,8 @@ $layout-picker-transition: 0.15s ease;
     width: 100%;
 
     &:hover:not(:disabled) {
-      background: $color-action-low;
-      border-color: $color-accent;
+      background: $color-background-action-low-contrast;
+      border-color: $color-background-action-high-contrast;
     }
 
     &:disabled {
@@ -52,11 +52,11 @@ $layout-picker-transition: 0.15s ease;
   }
 
   .layout-picker-profile-button--applying {
-    border-color: $color-accent;
+    border-color: $color-background-action-high-contrast;
   }
 
   .layout-picker-profile-button--current {
-    border-color: color-mix(in srgb, $color-accent 50%, transparent);
+    border-color: color-mix(in srgb, $color-background-action-high-contrast 50%, transparent);
   }
 
   .layout-picker-profile-header {
@@ -68,7 +68,7 @@ $layout-picker-transition: 0.15s ease;
   }
 
   .layout-picker-profile-icon {
-    color: $color-accent;
+    color: $color-background-action-high-contrast;
     flex-shrink: 0;
   }
 
@@ -82,7 +82,7 @@ $layout-picker-transition: 0.15s ease;
 
   .layout-picker-profile-action {
     align-items: center;
-    color: $color-link;
+    color: $color-text-link;
     display: inline-flex;
     margin-left: auto;
     font-size: 12px;
@@ -93,12 +93,12 @@ $layout-picker-transition: 0.15s ease;
   }
 
   .layout-picker-profile-action--current {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
   }
 
   /* Indented to line up with the profile name past its icon. */
   .layout-picker-profile-description {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: $smaller-font-size;
     line-height: 1.45;
     margin: 0 0 0 32px;

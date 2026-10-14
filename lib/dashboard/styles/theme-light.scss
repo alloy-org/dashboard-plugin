@@ -1,68 +1,59 @@
+/* Light color tokens: every host color the dashboard uses, under the host's own name, with the host's Classic light value as
+ * the fallback for a host that supplies no theme; then the dashboard's fixed data colors. theme-tokens.scss maps each
+ * to an SCSS variable of the same name. */
 :root {
   color-scheme: light;
   &[data-theme="dark"] { color-scheme: dark; }
   @media (prefers-color-scheme: dark) {
     &:not([data-theme]) { color-scheme: dark; }
   }
-  --dashboard-color-accent: var(--color-background-action-high-contrast, #e8853d);
+
+  // Host colors (--color-*), mirrored as --dashboard-color-*
+  --dashboard-color-background-primary: var(--color-background-primary, #ffffff);
+  --dashboard-color-background-secondary: var(--color-background-secondary, #f9fbfc);
+  --dashboard-color-background-tertiary: var(--color-background-tertiary, #edf1f5);
+  --dashboard-color-background-element-low-contrast: var(--color-background-element-low-contrast, #edf1f5);
+  --dashboard-color-background-element-medium-contrast: var(--color-background-element-medium-contrast, #e1e6eb);
+  --dashboard-color-background-popup: var(--color-background-popup, #ffffff);
+  --dashboard-color-background-dialog: var(--color-background-dialog, #2c3b47);
+  --dashboard-color-background-scrim: var(--color-background-scrim, rgba(0, 0, 0, 0.32));
+  --dashboard-color-background-action-high-contrast: var(--color-background-action-high-contrast, #3e92cc);
+  --dashboard-color-background-action-medium-contrast: var(--color-background-action-medium-contrast, #d3e8f5);
+  --dashboard-color-background-action-low-contrast: var(--color-background-action-low-contrast, #e6f4fe);
+  --dashboard-color-background-error-medium-contrast: var(--color-background-error-medium-contrast, #feeae7);
+  --dashboard-color-border-primary: var(--color-border-primary, #e1e6eb);
+  --dashboard-color-text-high-contrast: var(--color-text-high-contrast, #2f3740);
+  --dashboard-color-text-medium-contrast: var(--color-text-medium-contrast, #626d7a);
+  --dashboard-color-text-low-contrast: var(--color-text-low-contrast, #8593a3);
+  --dashboard-color-text-lower-contrast: var(--color-text-lower-contrast, #b4bfcc);
+  --dashboard-color-text-button: var(--color-text-button, #ffffff);
+  --dashboard-color-text-link: var(--color-text-link, #3e92cc);
+  --dashboard-color-text-status: var(--color-text-status, #0bbf7d);
+  --dashboard-color-text-error-high-contrast: var(--color-text-error-high-contrast, #da3317);
+  --dashboard-color-text-error-low-contrast: var(--color-text-error-low-contrast, #ffb238);
+  --dashboard-color-text-nav-high-contrast: var(--color-text-nav-high-contrast, #edf1f5);
+  --dashboard-color-text-nav-low-contrast: var(--color-text-nav-low-contrast, #b4bfcc);
+
+  // The host's victory value scale, low to high, as the app's Task Stats graph and task scores use it
+  --dashboard-victory-value-color-0: var(--victory-value-color-0, #e1e6eb);
+  --dashboard-victory-value-color-0-text: var(--victory-value-color-0-text, #b4bfcc);
+  --dashboard-victory-value-color-1: var(--victory-value-color-1, #c6e6f6);
+  --dashboard-victory-value-color-1-text: var(--victory-value-color-1-text, #7ec4e7);
+  --dashboard-victory-value-color-2: var(--victory-value-color-2, #96e1e8);
+  --dashboard-victory-value-color-2-text: var(--victory-value-color-2-text, #5dcbd5);
+  --dashboard-victory-value-color-3: var(--victory-value-color-3, #55d3be);
+  --dashboard-victory-value-color-3-text: var(--victory-value-color-3-text, #38ccb3);
+  --dashboard-victory-value-color-4: var(--victory-value-color-4, #0bbf7d);
+  --dashboard-victory-value-color-4-text: var(--victory-value-color-4-text, #0bbf7d);
+
+  // Fixed data colors: series and categories the host has no color for
   --dashboard-color-agenda-priority-critical: #e85353;
   --dashboard-color-agenda-priority-important: #e8853d;
   --dashboard-color-agenda-priority-normal: #7a8699;
   --dashboard-color-agenda-priority-urgent: #5b7bbf;
-  --dashboard-color-bg-card: var(--color-background-primary, #ffffff);
-  --dashboard-color-bg-page: var(--color-background-secondary, #eef1f5);
-  --dashboard-color-bg-page-hover: var(--color-background-tertiary, #e6ebf2);
-  --dashboard-color-bg-primary: var(--color-background-primary, #ffffff);
-  --dashboard-color-bg-secondary: var(--color-background-tertiary, #eef1f5);
-  --dashboard-color-bg-element: var(--color-background-element-low-contrast, #edf1f5);
-  --dashboard-color-bg-popup: var(--color-background-popup, #ffffff);
-  --dashboard-color-bg-element-medium: var(--color-background-element-medium-contrast, #e1e6eb);
-  /* The host's victory value scale, as the app's Task Stats graph and task scores use it, low to high */
-  --dashboard-victory-value-color-0: var(--victory-value-color-0, #E1E6EB);
-  --dashboard-victory-value-color-0-text: var(--victory-value-color-0-text, #B4BFCC);
-  --dashboard-victory-value-color-1: var(--victory-value-color-1, #C6E6F6);
-  --dashboard-victory-value-color-1-text: var(--victory-value-color-1-text, #7EC4E7);
-  --dashboard-victory-value-color-2: var(--victory-value-color-2, #96E1E8);
-  --dashboard-victory-value-color-2-text: var(--victory-value-color-2-text, #5DCBD5);
-  --dashboard-victory-value-color-3: var(--victory-value-color-3, #55D3BE);
-  --dashboard-victory-value-color-3-text: var(--victory-value-color-3-text, #38CCB3);
-  --dashboard-victory-value-color-4: var(--victory-value-color-4, #0BBF7D);
-  --dashboard-victory-value-color-4-text: var(--victory-value-color-4-text, #0BBF7D);
-  --dashboard-color-bg-hover: color-mix(in srgb, var(--dashboard-color-text) 6%, transparent);
-  --dashboard-color-action-low: var(--color-background-action-low-contrast, #e6f4fe);
-  --dashboard-color-bg-warning: var(--color-background-error-medium-contrast, #ffd7d7);
-  --dashboard-color-blue: var(--color-background-action-high-contrast, #5b7bbf);
-  --dashboard-color-blue-light: var(--color-background-action-medium-contrast, #e8edf5);
-  --dashboard-color-border: var(--color-border-primary, #d8dde6);
-  --dashboard-color-danger: var(--color-text-error-high-contrast, #e85353);
-  /* The widget header sits on the card surface, like section headings in the host app */
-  --dashboard-color-header-bg: var(--color-background-primary, #ffffff);
-  --dashboard-color-header-text: var(--color-text-medium-contrast, #626d7a);
-  --dashboard-color-info: var(--color-text-link, #5b7bbf);
   --dashboard-color-intent-personal: #6b5ea8;
   --dashboard-color-intent-work: #4caf80;
-  --dashboard-color-link: var(--color-text-link, #5b7bbf);
-  --dashboard-color-navy: var(--color-text-high-contrast, #2c3e6b);
-  --dashboard-color-overlay-backdrop: var(--color-background-scrim, rgba(0, 0, 0, 0.4));
   --dashboard-color-overlay-shadow: rgba(0, 0, 0, 0.15);
-  --dashboard-color-success: var(--color-text-status, #4caf80);
-  --dashboard-color-text: var(--color-text-high-contrast, #1e2a3a);
-  --dashboard-color-text-muted: var(--color-text-low-contrast, #90999f);
-  --dashboard-color-text-lower: var(--color-text-lower-contrast, #b4bfcc);
-  /* Paired fill and ink. The fill is the host action color. The ink is --color-text-button, the text those
-   * themes put on that fill: white on the blues, near-black on Honeybee yellow. Reversed white fails on that
-   * yellow, and high-contrast body text fails on the medium-blue light themes. */
-  --dashboard-color-background-accent: var(--color-background-action-high-contrast, #e8853d);
-  --dashboard-color-text-on-accent: var(--color-text-button, #ffffff);
-  --dashboard-color-text-on-accent-muted: color-mix(in srgb, var(--dashboard-color-text-on-accent) 65%, transparent);
-  --dashboard-color-text-secondary: var(--color-text-medium-contrast, #7a8699);
-  --dashboard-color-tooltip-accent: var(--color-text-reversed-link, #5b7bbf);
-  --dashboard-color-tooltip-bg: var(--color-background-popup-small, #1f2937);
-  --dashboard-color-tooltip-border: rgba(255, 255, 255, 0.15);
-  --dashboard-color-tooltip-shadow: rgba(0, 0, 0, 0.3);
-  --dashboard-color-tooltip-text: var(--color-text-reversed, #f9fafb);
-  --dashboard-color-tooltip-text-muted: rgba(255, 255, 255, 0.5);
-  --dashboard-color-warning: #e8853d;
   --dashboard-color-plan-created-bg: rgba(76, 175, 128, 0.08);
   --dashboard-color-plan-created-border: #4caf80;
   --dashboard-color-project-complete: #3a7550;
@@ -72,8 +63,8 @@
   --dashboard-color-project-window-purple: #7658ad;
   --dashboard-color-project-window-red: #d65353;
   --dashboard-color-project-window-teal: #268f89;
-  // Victory Value bars colored by project, in color slot order; the sixth slot also holds "Other projects". Each is dark
-  // enough to carry --dashboard-color-text-on-category, and none is orange, the default accent "No project" is drawn in.
+  // Victory Value bars colored by project, in color slot order; the sixth slot also holds "Other projects". Each is
+  // dark enough to carry --dashboard-color-text-on-category.
   --dashboard-color-category-1: #3b6fb6;
   --dashboard-color-category-2: #2e7d4f;
   --dashboard-color-category-3: #8152ad;

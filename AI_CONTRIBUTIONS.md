@@ -5,6 +5,26 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-14 — Host-named color tokens
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/styles/theme-light.scss`, `theme-dark.scss` — Rewritten from one list: every host color the dashboard uses under the host's own name (`--dashboard-color-text-low-contrast` from `--color-text-low-contrast`), with the host's Classic light/dark values as fallbacks; the victory value scale; fixed data colors. Legacy aliases, unused tokens, and all tooltip tokens removed.
+- `lib/dashboard/styles/theme-tokens.scss` — Color section grouped by role with host names (`$color-background-primary`, `$color-text-medium-contrast`, `$victory-value-color-2`, …); shared `$shadow-elevation-2/3/24`; `contrasting-color` documented as for fixed data colors only.
+- Every component stylesheet — Renamed to the host-named tokens; direct `var(--color-*)` reads replaced by tokens; duplicate MDC shadows replaced by the shared ones; Goal Coach badge tints, Task Retirement Center hover fill, and chart pill ink moved onto tokens; the Proposed Agenda popover's link-colored fills now use the action color with its button ink.
+- `lib/dashboard/styles/dashboard-tippy.scss`, `graveyard.scss` — The remaining dark tooltips take the light popup look of the chart tooltips (popup surface, elevation 3); the `$color-tooltip-*` tokens are gone.
+- `lib/dashboard/styles/widget.scss` — Uses the tokens module.
+- `lib/dashboard/projects/completed-task-project-colors.js`, `mood.jsx`, `util/browser-dev-app.js`, `test/victory-value-chart.test.js` — Renamed CSS variable references.
+- `test/design-tokens.test.js` (created) — Fails on removed token names, direct host variable reads, unknown `--dashboard-*` color names, and raw colors outside the theme files and a documented list of fixed colors.
+- `doc/plan-app-design-restyle.md` — Token table by role.
+- `build/compiled.js` — Rebuilt (806,857 bytes).
+
+**Validation:** Jest: 1367 passed, 1 failed (`test/dream-task-actions.test.js`, failing before these changes); the guard test was checked to fail on a planted legacy name, raw color, and host variable read. Tokens, card and header colors, and a former dark tooltip checked in the dev server.
+**Task:** Remove legacy color tokens and name the remaining ones after the host's variables.
+**Prompt summary:** "make the decision that makes color-tooltip-* disappear completely. And use option B for naming. Go"
+
+---
+
 ## 2026-10-14 — Use react-icons for Material icons
 
 **Model:** Claude Opus 5.5

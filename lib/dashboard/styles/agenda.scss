@@ -18,7 +18,7 @@ $agenda-transition-duration: 0.12s;
 /* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .widget-agenda {
   a {
-    color: $color-link;
+    color: $color-text-link;
     text-decoration: none;
 
     &:hover {
@@ -61,7 +61,7 @@ $agenda-transition-duration: 0.12s;
   }
 
   .agenda-empty-day {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: $smaller-font-size;
     font-style: italic;
     padding: $sp-xs 0;
@@ -103,14 +103,14 @@ $agenda-transition-duration: 0.12s;
       gap: $sp-xs;
 
       .agenda-time {
-        color: $color-text-muted;
+        color: $color-text-low-contrast;
         font-size: 12px;
         font-variant-numeric: tabular-nums;
         font-weight: 500;
       }
 
       .agenda-text {
-        color: $color-text;
+        color: $color-text-high-contrast;
         font-size: $default-font-size;
         overflow: hidden;
         white-space: nowrap;
@@ -119,7 +119,7 @@ $agenda-transition-duration: 0.12s;
       .agenda-note-link {
         background: transparent;
         border: 0;
-        color: $color-link;
+        color: $color-text-link;
         cursor: pointer;
         font-size: $smaller-font-size;
         margin: 0;
@@ -134,7 +134,7 @@ $agenda-transition-duration: 0.12s;
     }
 
     .agenda-duration {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       font-size: $smaller-font-size;
     }
   }
@@ -146,12 +146,12 @@ $agenda-transition-duration: 0.12s;
     transition: background-color $agenda-transition-duration ease;
 
     &:hover {
-      background: $color-bg-element;
+      background: $color-background-element-low-contrast;
     }
   }
 
   .agenda-empty {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: $default-font-size;
     padding: $sp-xl 0;
     text-align: center;
@@ -172,7 +172,7 @@ $agenda-transition-duration: 0.12s;
   }
 
   .agenda-page-indicator {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: 12px;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;

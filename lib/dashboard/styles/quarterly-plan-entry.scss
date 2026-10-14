@@ -5,13 +5,13 @@
 $plan-entry-video-background: #152033;
 
 .quarterly-plan-entry {
-  color: $color-text;
+  color: $color-text-high-contrast;
   display: flex;
   flex-direction: column;
   gap: $sp-md;
 
   .plan-entry-title {
-    color: $color-text;
+    color: $color-text-high-contrast;
     font-size: $large-font-size;
     font-weight: 500;
     line-height: 1.25;
@@ -29,7 +29,7 @@ $plan-entry-video-background: #152033;
 
   .plan-entry-copy,
   .plan-entry-footnote {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: $smaller-font-size;
     line-height: 1.45;
     margin: 0;
@@ -46,7 +46,7 @@ $plan-entry-video-background: #152033;
   }
 
   .plan-entry-progress-labels {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     display: flex;
     font-size: $smaller-font-size;
     justify-content: space-between;
@@ -55,14 +55,14 @@ $plan-entry-video-background: #152033;
 
   /* The host's linear progress bar: a 4px track in the medium action color under an action-color fill. */
   .plan-entry-progress-track {
-    background: $color-blue-light;
+    background: $color-background-action-medium-contrast;
     border-radius: 2px;
     height: 4px;
     overflow: hidden;
   }
 
   .plan-entry-progress-fill {
-    background: $color-accent;
+    background: $color-background-action-high-contrast;
     height: 100%;
   }
 
@@ -87,7 +87,7 @@ $plan-entry-video-background: #152033;
   }
 
   .plan-entry-import-copied {
-    color: $color-text;
+    color: $color-text-high-contrast;
     font-size: $smaller-font-size;
     font-weight: 500;
     margin: 0;
@@ -95,7 +95,7 @@ $plan-entry-video-background: #152033;
   }
 
   .plan-entry-divider {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: $smaller-font-size;
     margin: 0;
     text-align: center;
@@ -116,7 +116,7 @@ $plan-entry-video-background: #152033;
   .plan-entry-build { width: 100%; }
 
   .plan-entry-preview {
-    background: $color-bg-secondary;
+    background: $color-background-tertiary;
     border-radius: $radius-md;
     display: flex;
     flex-direction: column;
@@ -130,9 +130,9 @@ $plan-entry-video-background: #152033;
   }
 
   .plan-entry-month {
-    background: $color-bg-card;
+    background: $color-background-primary;
     border-radius: $radius-sm;
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     flex: 1;
     font-size: $smaller-font-size;
     font-weight: 500;
@@ -141,20 +141,20 @@ $plan-entry-video-background: #152033;
   }
 
   .plan-entry-month--current {
-    background: $color-background-accent;
-    color: $color-text-on-accent;
+    background: $color-background-action-high-contrast;
+    color: $color-text-button;
   }
 
   .plan-entry-preview-row {
     align-items: center;
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     display: flex;
     font-size: $smaller-font-size;
     gap: $sp-md;
   }
 
   .plan-entry-preview-bar {
-    background: $color-border;
+    background: $color-border-primary;
     border-radius: 999px;
     display: block;
     height: 8px;
@@ -170,7 +170,7 @@ $plan-entry-video-background: #152033;
   }
 
   .plan-entry-choice {
-    border: 1px solid $color-border;
+    border: 1px solid $color-border-primary;
     border-radius: $radius-md;
     display: flex;
     flex-direction: column;
@@ -178,16 +178,16 @@ $plan-entry-video-background: #152033;
     padding: $sp-md;
   }
 
-  .plan-entry-choice--recommended { border-color: $color-accent; }
+  .plan-entry-choice--recommended { border-color: $color-background-action-high-contrast; }
 
   .plan-entry-choice-badge {
     @include overline-label;
-    color: $color-link;
+    color: $color-text-link;
     margin: 0;
   }
 
   .plan-entry-choice-title {
-    color: $color-text;
+    color: $color-text-high-contrast;
     font-size: $default-font-size;
     font-weight: 500;
     margin: 0;
@@ -195,7 +195,7 @@ $plan-entry-video-background: #152033;
 
   .plan-entry-choice-copy,
   .plan-entry-choice-price {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: $smaller-font-size;
     line-height: 1.4;
     margin: 0;
@@ -207,9 +207,9 @@ $plan-entry-video-background: #152033;
 
   .plan-entry-starts {
     align-self: flex-end;
-    background: $color-action-low;
+    background: $color-background-action-low-contrast;
     border-radius: 10px;
-    color: $color-text;
+    color: $color-text-high-contrast;
     font-size: 12px;
     font-weight: 500;
     margin: 0;
@@ -294,14 +294,14 @@ $plan-entry-video-background: #152033;
     gap: $sp-sm;
 
     strong {
-      color: $color-text;
+      color: $color-text-high-contrast;
       display: block;
       font-weight: 500;
     }
   }
 
   .plan-entry-benefit-icon {
-    color: $color-success;
+    color: $color-text-status;
     flex-shrink: 0;
     height: 22px;
     width: 22px;
@@ -309,7 +309,7 @@ $plan-entry-video-background: #152033;
 }
 
 .quarterly-plan-entry--loading {
-  color: $color-text-muted;
+  color: $color-text-low-contrast;
   font-style: italic;
 }
 

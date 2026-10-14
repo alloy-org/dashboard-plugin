@@ -9,8 +9,6 @@ $button-height: 36px;
 $dense-button-height: 32px;
 $field-height: 36px;
 $icon-button-size: 28px;
-$raised-button-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0, 0, 0.14),
-  0 1px 5px 0 rgba(0, 0, 0, 0.12);
 
 // ------------------------------------------------------------------------------------------
 // @desc Shared shape of the host's MDC buttons: uppercase 500-weight label, 4px corners, icon gap.
@@ -46,7 +44,7 @@ $raised-button-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0,
 // @desc A centered empty or first-run state: faint icon, short title, one sentence, optional actions.
 @mixin empty-state {
   align-items: center;
-  color: $color-text-secondary;
+  color: $color-text-medium-contrast;
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -56,7 +54,7 @@ $raised-button-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0,
   text-align: center;
 
   > .material-icon {
-    color: $color-text-lower;
+    color: $color-text-lower-contrast;
   }
 }
 
@@ -67,7 +65,7 @@ $raised-button-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0,
   background: transparent;
   border: none;
   border-radius: 50%;
-  color: $color-text-muted;
+  color: $color-text-low-contrast;
   cursor: pointer;
   display: inline-flex;
   flex-shrink: 0;
@@ -79,8 +77,8 @@ $raised-button-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0,
   width: $size;
 
   &:hover:not(:disabled) {
-    background: $color-bg-element;
-    color: $color-text;
+    background: $color-background-element-low-contrast;
+    color: $color-text-high-contrast;
   }
 
   &:disabled {
@@ -94,19 +92,19 @@ $raised-button-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0,
 @mixin outlined-button($height: $dense-button-height) {
   @include button-base($height);
   background: transparent;
-  border: 1px solid $color-border;
-  color: $color-link;
+  border: 1px solid $color-border-primary;
+  color: $color-text-link;
   padding: 0 15px;
 
   &:hover:not(:disabled) {
-    background: color-mix(in srgb, $color-link 8%, transparent);
+    background: color-mix(in srgb, $color-text-link 8%, transparent);
   }
 }
 
 // ------------------------------------------------------------------------------------------
 // @desc Small uppercase label for groups inside a widget, matching the host's section headings.
 @mixin overline-label {
-  color: $color-text-muted;
+  color: $color-text-low-contrast;
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.04em;
@@ -117,13 +115,13 @@ $raised-button-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0,
 // @desc Filled primary button in the host action color with its paired ink.
 @mixin raised-button($height: $button-height) {
   @include button-base($height);
-  background: $color-background-accent;
-  box-shadow: $raised-button-shadow;
-  color: $color-text-on-accent;
+  background: $color-background-action-high-contrast;
+  box-shadow: $shadow-elevation-2;
+  color: $color-text-button;
   padding: 0 $sp-lg;
 
   &:hover:not(:disabled) {
-    background: color-mix(in srgb, $color-background-accent 88%, #000000);
+    background: color-mix(in srgb, $color-background-action-high-contrast 88%, #000000);
   }
 }
 
@@ -133,8 +131,8 @@ $raised-button-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0,
 @mixin select-field($height: $field-height) {
   @include text-field($height);
   appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, $color-text-muted 50%),
-    linear-gradient(135deg, $color-text-muted 50%, transparent 50%);
+  background-image: linear-gradient(45deg, transparent 50%, $color-text-low-contrast 50%),
+    linear-gradient(135deg, $color-text-low-contrast 50%, transparent 50%);
   background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%;
   background-repeat: no-repeat;
   background-size: 5px 5px, 5px 5px;
@@ -147,22 +145,22 @@ $raised-button-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0,
 @mixin text-button($height: $dense-button-height) {
   @include button-base($height);
   background: transparent;
-  color: $color-link;
+  color: $color-text-link;
   padding: 0 $sp-sm;
 
   &:hover:not(:disabled) {
-    background: color-mix(in srgb, $color-link 8%, transparent);
+    background: color-mix(in srgb, $color-text-link 8%, transparent);
   }
 }
 
 // ------------------------------------------------------------------------------------------
 // @desc Single-line input in the host's outlined field shape: 1px border, 4px corners, accent border on focus.
 @mixin text-field($height: $field-height) {
-  background-color: $color-bg-card;
-  border: 1px solid $color-border;
+  background-color: $color-background-primary;
+  border: 1px solid $color-border-primary;
   border-radius: $radius-sm;
   box-sizing: border-box;
-  color: $color-text;
+  color: $color-text-high-contrast;
   font-family: inherit;
   font-size: 14px;
   height: $height;
@@ -170,11 +168,11 @@ $raised-button-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0,
   transition: border-color 0.15s ease;
 
   &::placeholder {
-    color: $color-text-lower;
+    color: $color-text-lower-contrast;
   }
 
   &:focus {
-    border-color: $color-accent;
+    border-color: $color-background-action-high-contrast;
     outline: none;
   }
 
@@ -191,7 +189,7 @@ $raised-button-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0,
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  color: $color-text-muted;
+  color: $color-text-low-contrast;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
@@ -199,12 +197,12 @@ $raised-button-shadow: 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0,
   transition: border-color 0.15s ease, color 0.15s ease;
 
   &:hover {
-    color: $color-text;
+    color: $color-text-high-contrast;
   }
 
   &.active,
   &[aria-selected="true"] {
-    border-bottom-color: $color-text;
-    color: $color-text;
+    border-bottom-color: $color-text-high-contrast;
+    color: $color-text-high-contrast;
   }
 }

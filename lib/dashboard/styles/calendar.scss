@@ -85,7 +85,7 @@ $cal-transition-duration: 0.12s;
   }
 
   .cal-month {
-    color: $color-text;
+    color: $color-text-high-contrast;
     font-size: $default-font-size;
     font-weight: 500;
   }
@@ -98,7 +98,7 @@ $cal-transition-duration: 0.12s;
   }
 
   .cal-header {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: 12px;
     font-weight: 500;
     padding: $sp-xs 0;
@@ -120,7 +120,7 @@ $cal-transition-duration: 0.12s;
     transition: background-color $cal-transition-duration ease;
 
     &:not(.empty):hover {
-      background: $color-bg-element;
+      background: $color-background-element-low-contrast;
     }
 
     &.empty {
@@ -129,29 +129,29 @@ $cal-transition-duration: 0.12s;
     }
 
     &.today {
-      background: $color-background-accent;
+      background: $color-background-action-high-contrast;
 
       .cal-day {
-        color: $color-text-on-accent;
+        color: $color-text-button;
         font-weight: 500;
       }
 
       &:hover {
-        background: color-mix(in srgb, $color-background-accent 88%, #000000);
+        background: color-mix(in srgb, $color-background-action-high-contrast 88%, #000000);
       }
     }
 
     &.selected {
-      outline: $cal-outline-width solid $color-accent;
+      outline: $cal-outline-width solid $color-background-action-high-contrast;
       outline-offset: 0;
     }
 
     &.today.selected {
-      outline-color: $color-accent;
+      outline-color: $color-background-action-high-contrast;
     }
 
     .cal-day {
-      color: $color-text;
+      color: $color-text-high-contrast;
       font-size: $smaller-font-size;
       font-variant-numeric: tabular-nums;
       position: relative;

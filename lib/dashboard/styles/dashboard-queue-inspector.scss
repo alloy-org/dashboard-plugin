@@ -3,7 +3,7 @@
 @use 'theme-tokens' as *;
 
 .dashboard-queue-inspector {
-  color: $color-text;
+  color: $color-text-high-contrast;
   font-size: $smaller-font-size;
   padding: $sp-xs $sp-sm $sp-sm;
 
@@ -16,22 +16,22 @@
 
     button {
       background: none;
-      border: 1px solid $color-border;
+      border: 1px solid $color-border-primary;
       border-radius: 3px;
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       cursor: pointer;
       font-size: $smaller-font-size;
       padding: 2px 6px;
 
       &:hover {
-        background: $color-bg-page-hover;
-        color: $color-text;
+        background: $color-background-tertiary;
+        color: $color-text-high-contrast;
       }
     }
   }
 
   .queue-inspector-status {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
   }
 
   .queue-inspector-section {
@@ -53,7 +53,7 @@
     margin: 0;
 
     dt {
-      color: $color-text-secondary;
+      color: $color-text-medium-contrast;
     }
 
     dd {
@@ -74,7 +74,7 @@
     gap: $sp-xs;
 
     span {
-      color: $color-text-secondary;
+      color: $color-text-medium-contrast;
     }
 
     select,
@@ -90,7 +90,7 @@
 
     th,
     td {
-      border-bottom: 1px solid $color-border;
+      border-bottom: 1px solid $color-border-primary;
       padding: 2px $sp-xs;
       text-align: left;
       vertical-align: top;
@@ -98,24 +98,24 @@
     }
 
     th {
-      color: $color-text-secondary;
+      color: $color-text-medium-contrast;
       font-weight: 600;
     }
   }
 
   .queue-inspector-detail {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     max-width: 260px;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .queue-inspector-outcome--failed td {
-    color: $color-danger;
+    color: $color-text-error-high-contrast;
   }
 
   .queue-inspector-empty {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     margin: 0;
   }
 }

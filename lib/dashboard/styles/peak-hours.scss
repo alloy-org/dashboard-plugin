@@ -34,7 +34,7 @@
   }
 
   .peak-hours-metric-card {
-    border: 1px solid $color-border;
+    border: 1px solid $color-border-primary;
     border-radius: $radius-sm;
     padding: $sp-md $sp-lg;
   }
@@ -45,14 +45,14 @@
   }
 
   .peak-hours-metric-value {
-    color: $color-text;
+    color: $color-text-high-contrast;
     font-size: $medium-heading-font-size;
     font-variant-numeric: tabular-nums;
     font-weight: 500;
   }
 
   .peak-hours-legend {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     display: flex;
     flex-wrap: wrap;
     font-size: $smaller-font-size;
@@ -76,14 +76,14 @@
   /* Created and completed take two ends of the host's victory value scale, blue and green. */
   .peak-hours-legend-swatch--created,
   .peak-hours-bar--created {
-    background: $color-victory-value-1-text;
-    fill: $color-victory-value-1-text;
+    background: $victory-value-color-1-text;
+    fill: $victory-value-color-1-text;
   }
 
   .peak-hours-legend-swatch--completed,
   .peak-hours-bar--completed {
-    background: $color-victory-value-4;
-    fill: $color-victory-value-4;
+    background: $victory-value-color-4;
+    fill: $victory-value-color-4;
   }
 
   .peak-hours-chart-container {
@@ -97,7 +97,7 @@
     text-align: center;
 
     p {
-      color: $color-text-secondary;
+      color: $color-text-medium-contrast;
       font-size: $default-font-size;
       margin: 0;
     }

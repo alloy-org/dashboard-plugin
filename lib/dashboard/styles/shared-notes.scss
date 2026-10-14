@@ -41,10 +41,10 @@
   }
 
   .shared-notes-sharer-select {
-    background-color: $color-bg-page;
-    border: 1px solid $color-border;
+    background-color: $color-background-secondary;
+    border: 1px solid $color-border-primary;
     border-radius: $radius-sm;
-    color: $color-text;
+    color: $color-text-high-contrast;
     font-size: $smaller-font-size;
     min-width: 0;
     padding: 2px $sp-xs;
@@ -76,7 +76,7 @@
   }
 
   .shared-notes-page-indicator {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: $smaller-font-size;
   }
 
@@ -85,7 +85,7 @@
     display: flex;
 
     &:hover {
-      background-color: $color-bg-page;
+      background-color: $color-background-secondary;
     }
   }
 
@@ -95,11 +95,11 @@
   .shared-note-pin {
     @include icon-button;
     align-self: center;
-    color: $color-text-lower;
+    color: $color-text-lower-contrast;
     margin-left: $sp-xs;
 
     &.shared-note-pin-active {
-      color: $color-accent;
+      color: $color-background-action-high-contrast;
     }
   }
 
@@ -120,7 +120,7 @@
 
   /* Title abbreviated to a single line when it would otherwise consume more than one. */
   .shared-note-title {
-    color: $color-text;
+    color: $color-text-high-contrast;
     font-size: $smaller-font-size;
     font-weight: 500;
     overflow: hidden;
@@ -130,7 +130,7 @@
 
   .shared-note-meta {
     align-items: center;
-    color: $color-text;
+    color: $color-text-high-contrast;
     display: flex;
     font-size: $smaller-font-size;
     gap: $sp-sm;
@@ -146,8 +146,8 @@
 
     .collaborator-avatar {
       align-items: center;
-      background-color: $color-bg-page;
-      border: 1px solid $color-bg-card;
+      background-color: $color-background-secondary;
+      border: 1px solid $color-background-primary;
       border-radius: 50%;
       box-sizing: border-box;
       display: inline-flex;
@@ -167,7 +167,7 @@
     }
 
     .collaborator-avatar-text {
-      color: $color-text-secondary;
+      color: $color-text-medium-contrast;
     }
   }
 
@@ -183,7 +183,7 @@
   /* [Claude claude-opus-4-8 (1M context)] Task: move the datestamps onto a line below the sharer names */
   /* Prompt: "cleaner to list the dates on a line below the list of sharer names" */
   .shared-note-dates {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     display: flex;
     flex-wrap: wrap;
     font-size: $smaller-font-size;
@@ -193,20 +193,20 @@
 
   /* Middot separator between the two stamps when they share a line. */
   .shared-note-updated::before {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     content: "·";
   }
 
   .note-loading,
   .note-empty,
   .note-error {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: $default-font-size;
     padding: $sp-md 0;
     text-align: center;
   }
 
   .note-error {
-    color: $color-danger;
+    color: $color-text-error-high-contrast;
   }
 }

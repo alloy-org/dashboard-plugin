@@ -21,7 +21,7 @@
     margin-bottom: $sp-sm;
 
     .vv-total {
-      color: $color-text;
+      color: $color-text-high-contrast;
       font-size: $display-heading-font-size;
       font-variant-numeric: tabular-nums;
       font-weight: 500;
@@ -29,7 +29,7 @@
     }
 
     .vv-label {
-      color: $color-text-secondary;
+      color: $color-text-medium-contrast;
       font-size: $smaller-font-size;
     }
   }
@@ -43,7 +43,7 @@
 
   .vv-project-legend-item {
     align-items: center;
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     display: inline-flex;
     font-size: $smaller-font-size;
     gap: $sp-xs;
@@ -58,7 +58,7 @@
   }
 
   .vv-date-range {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: $smaller-font-size;
     font-weight: normal;
   }
@@ -92,7 +92,7 @@
   }
 
   .victory-value-chart-mood-indicator {
-    stroke: $color-bg-card;
+    stroke: $color-background-primary;
     stroke-width: 2px;
   }
 

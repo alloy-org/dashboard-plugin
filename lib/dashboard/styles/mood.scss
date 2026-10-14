@@ -28,7 +28,7 @@ $mood-transition-duration: 0.15s;
   /* Round faces on the host's low-contrast element fill, like the app's own mood meter. */
   .mood-btn {
     align-items: center;
-    background: $color-bg-element;
+    background: $color-background-element-low-contrast;
     border: 2px solid transparent;
     border-radius: 50%;
     cursor: pointer;
@@ -40,14 +40,14 @@ $mood-transition-duration: 0.15s;
     width: $mood-btn-size;
 
     &:hover {
-      background: $color-action-low;
+      background: $color-background-action-low-contrast;
       transform: scale(1.08);
     }
   }
 
   .mood-btn--selected {
-    background: $color-action-low;
-    border-color: $color-accent;
+    background: $color-background-action-low-contrast;
+    border-color: $color-background-action-high-contrast;
     transform: scale(1.08);
   }
 
@@ -71,29 +71,29 @@ $mood-transition-duration: 0.15s;
   }
 
   .mood-details-label {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     display: block;
     font-size: $smaller-font-size;
     margin-bottom: $sp-xs;
   }
 
   .mood-details-textarea {
-    background: $color-bg-card;
-    border: 1px solid $color-border;
+    background: $color-background-primary;
+    border: 1px solid $color-border-primary;
     border-radius: $radius-sm;
-    color: $color-text;
+    color: $color-text-high-contrast;
     font-size: $default-font-size;
     padding: $sp-sm;
     resize: vertical;
     width: 100%;
 
     &:focus {
-      border-color: $color-accent;
+      border-color: $color-background-action-high-contrast;
       outline: none;
     }
 
     &::placeholder {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
     }
   }
 
@@ -135,13 +135,13 @@ $mood-transition-duration: 0.15s;
   }
 
   .mood-confirmation-text {
-    color: $color-success;
+    color: $color-text-status;
     font-size: $default-font-size;
     font-weight: 600;
   }
 
   .mood-summary {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: $smaller-font-size;
     text-align: center;
   }
@@ -156,7 +156,7 @@ $mood-transition-duration: 0.15s;
   }
 
   .mood-dot {
-    background: $color-blue;
+    background: $color-background-action-high-contrast;
     border-radius: $mood-dot-radius;
     min-height: $mood-dot-size;
     position: relative;
@@ -190,7 +190,7 @@ $mood-transition-duration: 0.15s;
 
   .mood-viz-configure-link {
     @include text-button(28px);
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: 12px;
     gap: $sp-xs;
   }
@@ -204,7 +204,7 @@ $mood-transition-duration: 0.15s;
     padding: $sp-xs 0;
 
     input[type='radio'] {
-      accent-color: $color-accent;
+      accent-color: $color-background-action-high-contrast;
       cursor: pointer;
     }
   }

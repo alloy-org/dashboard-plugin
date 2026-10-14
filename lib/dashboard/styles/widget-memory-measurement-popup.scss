@@ -12,19 +12,19 @@
 
   .widget-memory-measurement-description,
   .widget-memory-measurement-note {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: 14px;
     line-height: 1.45;
     margin: 0;
   }
 
   .widget-memory-measurement-note {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: 12px;
   }
 
   .widget-memory-measurement-label {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: 12px;
     font-weight: 500;
     margin-top: $sp-sm;
@@ -44,7 +44,7 @@
   }
 
   .widget-memory-measurement-results {
-    background: $color-bg-element;
+    background: $color-background-element-low-contrast;
     border-radius: $radius-sm;
     display: flex;
     flex-direction: column;
@@ -58,12 +58,12 @@
   }
 
   .widget-memory-measurement-status {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: 12px;
   }
 
   .widget-memory-measurement-widget {
-    border-top: 1px solid $color-border;
+    border-top: 1px solid $color-border-primary;
     max-height: 30vh;
     margin-top: $sp-sm;
     overflow-y: auto;

@@ -9,16 +9,9 @@
 
 $config-popup-action-height: 36px;
 $config-popup-close-button-size: 40px;
-// MDC elevation 24, the shadow the host app puts under its dialogs
-$config-popup-elevation-shadow: 0 11px 15px -7px rgba(0, 0, 0, 0.2), 0 24px 38px 3px rgba(0, 0, 0, 0.14),
-  0 9px 46px 8px rgba(0, 0, 0, 0.12);
 $config-popup-max-width: 90%;
 $config-popup-min-width: 320px;
 $config-popup-z-index: 1000;
-// Used only when the host has not published its dialog title variables
-$dialog-close-icon-fallback: #B4BFCC;
-$dialog-title-background-fallback: #2C3B47;
-$dialog-title-text-fallback: #EDF1F5;
 
 /* [Claude] Task: modal overlay and popup card styles with submit/cancel actions */
 /* Prompt: "popup component that pops up setting options upon clicking Configure" */
@@ -31,7 +24,7 @@ $dialog-title-text-fallback: #EDF1F5;
  * visible left edge. */
 .config-popup-overlay {
   align-items: center;
-  background: $color-overlay-backdrop;
+  background: $color-background-scrim;
   bottom: 0;
   display: flex;
   justify-content: center;
@@ -48,10 +41,10 @@ $dialog-title-text-fallback: #EDF1F5;
    * had when they sat at the top level. A plain nested `.config-popup-overlay` would outweigh all of them. */
   :where(&) {
     .config-popup-container {
-      background: $color-bg-card;
+      background: $color-background-primary;
       border-radius: $radius-sm;
-      box-shadow: $config-popup-elevation-shadow;
-      color: $color-text;
+      box-shadow: $shadow-elevation-24;
+      color: $color-text-high-contrast;
       font-size: 14px;
       max-width: $config-popup-max-width;
       min-width: $config-popup-min-width;
@@ -59,7 +52,7 @@ $dialog-title-text-fallback: #EDF1F5;
       width: 650px;
 
       .explanation-paragraph {
-        color: $color-text-secondary;
+        color: $color-text-medium-contrast;
         font-size: 14px;
         margin: 0 0 $sp-lg;
       }
@@ -67,14 +60,14 @@ $dialog-title-text-fallback: #EDF1F5;
       // The host's MDC dialog title bar: dark in every theme, with high-contrast title text and a low-contrast close icon.
       .config-popup-header {
         align-items: center;
-        background: var(--color-background-dialog, #{$dialog-title-background-fallback});
+        background: $color-background-dialog;
         display: flex;
         gap: $sp-sm;
         padding: $sp-md $sp-md $sp-md $sp-xl;
       }
 
       .config-popup-title {
-        color: var(--color-text-nav-high-contrast, #{$dialog-title-text-fallback});
+        color: $color-text-nav-high-contrast;
         flex: 1;
         font-size: 20px;
         font-weight: 500;
@@ -86,11 +79,11 @@ $dialog-title-text-fallback: #EDF1F5;
 
       .config-popup-close-button {
         @include icon-button($config-popup-close-button-size);
-        color: var(--color-text-nav-low-contrast, #{$dialog-close-icon-fallback});
+        color: $color-text-nav-low-contrast;
 
         &:hover:not(:disabled) {
           background: rgba(255, 255, 255, 0.08);
-          color: var(--color-text-nav-high-contrast, #{$dialog-title-text-fallback});
+          color: $color-text-nav-high-contrast;
         }
       }
 
@@ -99,7 +92,7 @@ $dialog-title-text-fallback: #EDF1F5;
 
         label {
           align-items: center;
-          color: $color-text;
+          color: $color-text-high-contrast;
           cursor: pointer;
           display: flex;
           font-size: 14px;
@@ -109,7 +102,7 @@ $dialog-title-text-fallback: #EDF1F5;
 
         input[type="radio"],
         input[type="checkbox"] {
-          accent-color: $color-accent;
+          accent-color: $color-background-action-high-contrast;
           cursor: pointer;
           margin: 0;
         }
@@ -128,7 +121,7 @@ $dialog-title-text-fallback: #EDF1F5;
         }
 
         .config-field-label {
-          color: $color-text-muted;
+          color: $color-text-low-contrast;
           font-size: 12px;
           font-weight: 500;
           margin-bottom: $sp-xs;
@@ -151,7 +144,7 @@ $dialog-title-text-fallback: #EDF1F5;
       // The slot's own content is styled here rather than by the caller: it renders inside the actions row, which
       // this file owns, so a caller's stylesheet has no wrapper it could legally reach it through.
       .config-popup-footer-left {
-        color: $color-text-muted;
+        color: $color-text-low-contrast;
         font-size: 12px;
         min-width: 0;
 

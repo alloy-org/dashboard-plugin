@@ -11,7 +11,7 @@
   }
 
   .debug-console {
-    color: $color-text;
+    color: $color-text-high-contrast;
     font-family: 'Courier New', Courier, monospace;
     font-size: $smaller-font-size;
     height: 100%;
@@ -21,7 +21,7 @@
   }
 
   .debug-console__empty {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-family: inherit;
     font-size: $smaller-font-size;
     padding: 12px 4px;
@@ -29,7 +29,7 @@
 
   .debug-console__entry {
     align-items: baseline;
-    border-bottom: 1px solid $color-border;
+    border-bottom: 1px solid $color-border-primary;
     display: flex;
     gap: 8px;
     line-height: 1.4;
@@ -41,14 +41,14 @@
   }
 
   .debug-console__timestamp {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     flex-shrink: 0;
     font-size: $smaller-font-size;
     user-select: none;
   }
 
   .debug-console__message {
-    color: $color-text;
+    color: $color-text-high-contrast;
     overflow-wrap: break-word;
     word-break: break-all;
   }
@@ -61,23 +61,23 @@
 
   /* Copy status and the header buttons sit on the widget header bar. */
   .debug-console__copy-status {
-    color: $color-header-text;
+    color: $color-text-medium-contrast;
     font-size: $smaller-font-size;
     padding: 4px 8px;
   }
 
   .debug-console__header-button {
     background: none;
-    border: 1px solid color-mix(in srgb, $color-header-text 40%, transparent);
+    border: 1px solid color-mix(in srgb, $color-text-medium-contrast 40%, transparent);
     border-radius: 3px;
-    color: $color-header-text;
+    color: $color-text-medium-contrast;
     cursor: pointer;
     font-size: $smaller-font-size;
     line-height: 1;
     padding: 2px 6px;
 
     &:hover {
-      background: color-mix(in srgb, $color-header-text 15%, transparent);
+      background: color-mix(in srgb, $color-text-medium-contrast 15%, transparent);
     }
 
     &:disabled {

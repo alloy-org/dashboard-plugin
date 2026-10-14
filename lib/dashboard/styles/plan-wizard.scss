@@ -18,11 +18,9 @@ $plan-wizard-z-index: 1100;
 
 // The host's MDC dialog: elevation 24 surface under a title bar in the host's dialog color, which is dark in every
 // theme, so the title ink is the navigation's high-contrast text rather than the page's.
-$plan-wizard-dialog-shadow: 0 11px 15px -7px rgba(0, 0, 0, 0.2), 0 24px 38px 3px rgba(0, 0, 0, 0.14),
-  0 9px 46px 8px rgba(0, 0, 0, 0.12);
-$plan-wizard-title-bar-background: var(--color-background-dialog, #2C3B47);
-$plan-wizard-title-bar-text: var(--color-text-nav-high-contrast, #EDF1F5);
-$plan-wizard-title-bar-text-low: var(--color-text-nav-low-contrast, #B4BFCC);
+$plan-wizard-title-bar-background: $color-background-dialog;
+$plan-wizard-title-bar-text: $color-text-nav-high-contrast;
+$plan-wizard-title-bar-text-low: $color-text-nav-low-contrast;
 
 // Categorical slice colors for the rail's pace ring, one fixed hue per rhythm in the pace page's option order so a
 // rhythm keeps its color whichever others are present. Mid-tone steps that read on both the light and dark rail.
@@ -48,7 +46,7 @@ $pace-slice-other-color: #e87ba4;
  * dialog can use the rest of the width. */
 .plan-wizard-overlay {
   align-items: flex-start;
-  background: $color-overlay-backdrop;
+  background: $color-background-scrim;
   display: flex;
   justify-content: center;
   left: 0;
@@ -64,7 +62,7 @@ $pace-slice-other-color: #e87ba4;
   }
 
   .plan-wizard-backdrop {
-    background: $color-overlay-backdrop;
+    background: $color-background-scrim;
     bottom: 0;
     left: 0;
     position: fixed;
@@ -82,10 +80,10 @@ $pace-slice-other-color: #e87ba4;
      * ancestor of the rail rather than on the body it styles: an element cannot answer its own container query. */
     container-type: inline-size;
 
-    background: $color-bg-card;
+    background: $color-background-primary;
     border-radius: $radius-sm;
-    box-shadow: $plan-wizard-dialog-shadow;
-    color: $color-text;
+    box-shadow: $shadow-elevation-24;
+    color: $color-text-high-contrast;
     display: flex;
     flex-direction: column;
     font-family: $font-sans;
@@ -98,7 +96,7 @@ $pace-slice-other-color: #e87ba4;
     h2,
     h3,
     h4 {
-      color: $color-text;
+      color: $color-text-high-contrast;
     }
 
     /* Every page's inputs share one look, so a question added later needs no new field styling. */
@@ -106,10 +104,10 @@ $pace-slice-other-color: #e87ba4;
     input[type="date"],
     textarea.intent-step-input,
     textarea.project-row-name {
-      background: $color-bg-card;
-      border: 1px solid $color-border;
+      background: $color-background-primary;
+      border: 1px solid $color-border-primary;
       border-radius: $radius-sm;
-      color: $color-text;
+      color: $color-text-high-contrast;
       font-family: inherit;
       font-size: $default-font-size;
       min-height: $plan-wizard-input-min-height;
@@ -117,12 +115,12 @@ $pace-slice-other-color: #e87ba4;
       width: 100%;
 
       &:focus {
-        border-color: $color-accent;
+        border-color: $color-background-action-high-contrast;
         outline: none;
       }
 
       &::placeholder {
-        color: $color-text-muted;
+        color: $color-text-low-contrast;
       }
     }
 
@@ -144,9 +142,9 @@ $pace-slice-other-color: #e87ba4;
   :where(.plan-wizard-page button) {
     align-items: center;
     background: transparent;
-    border: 1px solid $color-border;
+    border: 1px solid $color-border-primary;
     border-radius: $radius-sm;
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     cursor: pointer;
     font-family: inherit;
     font-size: $smaller-font-size;
@@ -156,7 +154,7 @@ $pace-slice-other-color: #e87ba4;
     transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 
     &:hover:not(:disabled) {
-      background: $color-bg-element;
+      background: $color-background-element-low-contrast;
     }
 
     &:disabled {
@@ -165,7 +163,7 @@ $pace-slice-other-color: #e87ba4;
     }
 
     &:focus-visible {
-      outline: 2px solid $color-accent;
+      outline: 2px solid $color-background-action-high-contrast;
       outline-offset: 1px;
     }
   }
@@ -257,7 +255,7 @@ $pace-slice-other-color: #e87ba4;
   }
 
   .plan-wizard-step-dot {
-    background: $color-blue-light;
+    background: $color-background-action-medium-contrast;
     flex: 1 1 0;
     height: $plan-wizard-step-bar-height;
 
@@ -272,39 +270,39 @@ $pace-slice-other-color: #e87ba4;
 
   .plan-wizard-step-dot--current,
   .plan-wizard-step-dot:has(~ .plan-wizard-step-dot--current) {
-    background: $color-accent;
+    background: $color-background-action-high-contrast;
   }
 
   .plan-wizard-status {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: $default-font-size;
     padding: $sp-xl 0;
     text-align: center;
   }
 
   .plan-wizard-error {
-    background: $color-bg-warning;
-    border: 1px solid $color-border;
+    background: $color-background-error-medium-contrast;
+    border: 1px solid $color-border-primary;
     border-radius: $radius-sm;
     margin-top: $sp-lg;
     padding: $sp-md;
   }
 
   .plan-wizard-error-message {
-    color: $color-danger;
+    color: $color-text-error-high-contrast;
     font-size: $default-font-size;
     margin: 0 0 $sp-sm;
   }
 
   .plan-wizard-error-title {
-    color: $color-danger;
+    color: $color-text-error-high-contrast;
     font-size: $default-font-size;
     font-weight: 500;
     margin: 0 0 $sp-xs;
   }
 
   .plan-wizard-error-guidance {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: $smaller-font-size;
     margin: 0 0 $sp-sm;
   }
@@ -317,7 +315,7 @@ $pace-slice-other-color: #e87ba4;
    * with the raised primary last, as the host's dialogs place them. */
   .plan-wizard-navigation {
     align-items: center;
-    border-top: 1px solid $color-border;
+    border-top: 1px solid $color-border-primary;
     display: flex;
     gap: $sp-sm;
     justify-content: space-between;
@@ -345,7 +343,7 @@ $pace-slice-other-color: #e87ba4;
   }
 
   .plan-wizard-plan-note-error {
-    color: $color-danger;
+    color: $color-text-error-high-contrast;
     font-size: $default-font-size;
     margin: 0;
   }
@@ -370,7 +368,7 @@ $pace-slice-other-color: #e87ba4;
   }
 
   .plan-summary {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: $default-font-size;
     line-height: 1.5;
     margin: 0;
@@ -399,7 +397,7 @@ $pace-slice-other-color: #e87ba4;
   }
 
   .plan-error {
-    color: $color-danger;
+    color: $color-text-error-high-contrast;
     font-size: $smaller-font-size;
     margin: 0;
   }
@@ -410,24 +408,24 @@ $pace-slice-other-color: #e87ba4;
     text-decoration: underline;
 
     &:hover {
-      color: $color-text;
+      color: $color-text-high-contrast;
     }
   }
 
   .plan-saved {
-    color: $color-success;
+    color: $color-text-status;
     font-size: $smaller-font-size;
     margin: 0;
   }
 
   .plan-optional {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: $smaller-font-size;
     margin: 0;
   }
 
   .plan-empty {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: $smaller-font-size;
     line-height: 1.5;
     margin: 0;
@@ -455,8 +453,8 @@ $pace-slice-other-color: #e87ba4;
     /* Each category is a card of its own, so the two parallel questions read as two places to answer rather than
      * as one undifferentiated form: a 1px bordered tile on the dialog surface, as the host draws cards. */
     .intent-step-category {
-      background: $color-bg-card;
-      border: 1px solid $color-border;
+      background: $color-background-primary;
+      border: 1px solid $color-border-primary;
       border-radius: $radius-sm;
       display: flex;
       flex-direction: column;
@@ -475,7 +473,7 @@ $pace-slice-other-color: #e87ba4;
      * clickable below it. */
     .intent-step-suggestion-pending {
       align-items: center;
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       display: flex;
       font-size: $smaller-font-size;
       font-style: italic;
@@ -485,9 +483,9 @@ $pace-slice-other-color: #e87ba4;
 
     .intent-step-pending-spinner {
       animation: intent-step-pending-spin 0.8s linear infinite;
-      border: 2px solid $color-border;
+      border: 2px solid $color-border-primary;
       border-radius: 50%;
-      border-top-color: $color-link;
+      border-top-color: $color-text-link;
       box-sizing: border-box;
       flex-shrink: 0;
       height: $plan-wizard-pending-spinner-size;
@@ -514,10 +512,10 @@ $pace-slice-other-color: #e87ba4;
     /* Suggested intents are starting points, not chosen answers. They are element-filled pills with
      * medium-contrast text, inferred and default alike. */
     .intent-step-suggestion {
-      background: $color-bg-element;
+      background: $color-background-element-low-contrast;
       border: none;
       border-radius: 10px;
-      color: $color-text-secondary;
+      color: $color-text-medium-contrast;
       font-size: 12px;
       font-weight: 500;
       line-height: 1.35;
@@ -525,13 +523,13 @@ $pace-slice-other-color: #e87ba4;
       text-align: left;
 
       &:hover:not(:disabled) {
-        background: $color-action-low;
-        color: $color-text;
+        background: $color-background-action-low-contrast;
+        color: $color-text-high-contrast;
       }
     }
 
     .intent-step-suggestion-note {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       font-size: $smaller-font-size;
       font-style: italic;
       margin: 0;
@@ -543,12 +541,12 @@ $pace-slice-other-color: #e87ba4;
   /* The bar under the reading link and under the reading page's title. Its width is set inline from the elapsing
    * progress the wizard shell measures, so the fill carries on unbroken as the user moves between the two. */
   .intent-reading-progress-track {
-    background: $color-blue-light;
+    background: $color-background-action-medium-contrast;
     height: $plan-wizard-step-bar-height;
     overflow: hidden;
 
     .intent-reading-progress-fill {
-      background: $color-accent;
+      background: $color-background-action-high-contrast;
       height: 100%;
     }
   }
@@ -564,7 +562,7 @@ $pace-slice-other-color: #e87ba4;
       align-self: flex-start;
       background: none;
       border: 0;
-      color: $color-link;
+      color: $color-text-link;
       display: inline-flex;
       font-size: $smaller-font-size;
       font-weight: 500;
@@ -599,7 +597,7 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .intent-reading-status {
-      color: $color-text-secondary;
+      color: $color-text-medium-contrast;
       font-size: $default-font-size;
       margin: 0;
     }
@@ -624,14 +622,14 @@ $pace-slice-other-color: #e87ba4;
 
     .intent-reading-section-count,
     .intent-reading-section-hint {
-      color: $color-text-lower;
+      color: $color-text-lower-contrast;
       font-weight: 400;
       letter-spacing: normal;
       text-transform: none;
     }
 
     .intent-reading-placeholder {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       font-size: $smaller-font-size;
       font-style: italic;
       margin: 0;
@@ -664,7 +662,7 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .intent-reading-item-icon {
-      color: $color-text-lower;
+      color: $color-text-lower-contrast;
       flex-shrink: 0;
     }
 
@@ -673,8 +671,8 @@ $pace-slice-other-color: #e87ba4;
     .intent-reading-theme {
       align-items: center;
       animation: intent-reading-arrive 0.3s ease-out;
-      background: $color-bg-card;
-      border: 1px solid $color-border;
+      background: $color-background-primary;
+      border: 1px solid $color-border-primary;
       border-radius: $radius-sm;
       display: flex;
       font-size: $default-font-size;
@@ -683,13 +681,13 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .intent-reading-theme--pinned {
-      background: $color-action-low;
-      border-color: $color-accent;
+      background: $color-background-action-low-contrast;
+      border-color: $color-background-action-high-contrast;
     }
 
     .intent-reading-theme--dismissed .intent-reading-theme-label,
     .intent-reading-theme--dismissed .intent-reading-theme-count {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       text-decoration: line-through;
     }
 
@@ -700,7 +698,7 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .intent-reading-theme-count {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       font-size: $smaller-font-size;
       font-variant-numeric: tabular-nums;
     }
@@ -711,14 +709,14 @@ $pace-slice-other-color: #e87ba4;
       &:first-of-type { margin-left: auto; }
 
       &[aria-pressed="true"] {
-        background: $color-bg-element;
-        color: $color-text;
+        background: $color-background-element-low-contrast;
+        color: $color-text-high-contrast;
       }
     }
 
     .intent-reading-theme--pinned .intent-reading-theme-button[aria-pressed="true"] {
       background: transparent;
-      color: $color-accent;
+      color: $color-background-action-high-contrast;
     }
 
     .intent-reading-reread {
@@ -726,7 +724,7 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .intent-reading-directions {
-      border-top: 1px solid $color-border;
+      border-top: 1px solid $color-border-primary;
       display: flex;
       flex-direction: column;
       gap: $sp-sm;
@@ -738,8 +736,8 @@ $pace-slice-other-color: #e87ba4;
     /* Directions are selectable cards: a bordered row that takes the action fill on hover. */
     .intent-reading-direction {
       animation: intent-reading-arrive 0.35s ease-out;
-      background: $color-bg-card;
-      color: $color-text;
+      background: $color-background-primary;
+      color: $color-text-high-contrast;
       display: flex;
       font-size: $default-font-size;
       font-weight: 500;
@@ -749,13 +747,13 @@ $pace-slice-other-color: #e87ba4;
       width: 100%;
 
       &:hover:not(:disabled) {
-        background: $color-action-low;
-        border-color: $color-accent;
+        background: $color-background-action-low-contrast;
+        border-color: $color-background-action-high-contrast;
       }
     }
 
     .intent-reading-direction-icon {
-      color: $color-text-lower;
+      color: $color-text-lower-contrast;
       flex-shrink: 0;
     }
 
@@ -781,7 +779,7 @@ $pace-slice-other-color: #e87ba4;
    * reading page does not: the considered count, the thin-evidence warning, and project rows with their task counts. */
   .project-sources-page {
     .project-sources-considered {
-      color: $color-text;
+      color: $color-text-high-contrast;
       font-size: $large-font-size;
       margin: 0;
 
@@ -789,10 +787,10 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-sources-thin-warning {
-      background: $color-bg-warning;
-      border: 1px solid $color-warning;
+      background: $color-background-error-medium-contrast;
+      border: 1px solid $color-text-error-low-contrast;
       border-radius: $radius-sm;
-      color: $color-text;
+      color: $color-text-high-contrast;
       font-size: $default-font-size;
       line-height: 1.4;
       margin: 0;
@@ -811,15 +809,15 @@ $pace-slice-other-color: #e87ba4;
     .project-sources-intent-dot--personal { background: $color-intent-personal; }
 
     .project-sources-note-detail {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       font-size: $smaller-font-size;
       white-space: nowrap;
     }
 
     .project-sources-project {
       animation: intent-reading-arrive 0.35s ease-out;
-      background: $color-bg-card;
-      border: 1px solid $color-border;
+      background: $color-background-primary;
+      border: 1px solid $color-border-primary;
       border-radius: $radius-sm;
       font-size: $default-font-size;
       overflow: hidden;
@@ -842,11 +840,11 @@ $pace-slice-other-color: #e87ba4;
     button.project-sources-project-row {
       cursor: pointer;
 
-      &:hover { background: $color-action-low; }
+      &:hover { background: $color-background-action-low-contrast; }
     }
 
     .project-sources-project-chevron {
-      color: $color-text-lower;
+      color: $color-text-lower-contrast;
       flex-shrink: 0;
       transition: transform 0.15s ease;
     }
@@ -854,7 +852,7 @@ $pace-slice-other-color: #e87ba4;
     .project-sources-project--open .project-sources-project-chevron { transform: rotate(90deg); }
 
     .project-sources-task-panel {
-      border-top: 1px solid $color-border;
+      border-top: 1px solid $color-border-primary;
       display: flex;
       flex-direction: column;
       gap: $sp-xs;
@@ -887,16 +885,16 @@ $pace-slice-other-color: #e87ba4;
       overflow-wrap: anywhere;
     }
 
-    .project-sources-task--finished .project-sources-task-text { color: $color-text-muted; }
+    .project-sources-task--finished .project-sources-task-text { color: $color-text-low-contrast; }
 
     .project-sources-task-detail,
     .project-sources-task-placeholder {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       font-size: $smaller-font-size;
       margin: 0;
     }
 
-    .project-sources-project--ratified { border-color: $color-accent; }
+    .project-sources-project--ratified { border-color: $color-background-action-high-contrast; }
 
     .project-sources-project-name {
       flex: 1 1 12rem;
@@ -907,16 +905,16 @@ $pace-slice-other-color: #e87ba4;
 
     .project-sources-project-category,
     .project-sources-project-count {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       font-size: $smaller-font-size;
       font-variant-numeric: tabular-nums;
     }
 
     .project-sources-ratified-badge {
       align-items: center;
-      background: $color-action-low;
+      background: $color-background-action-low-contrast;
       border-radius: 10px;
-      color: $color-text;
+      color: $color-text-high-contrast;
       display: inline-flex;
       font-size: 12px;
       font-weight: 500;
@@ -950,7 +948,7 @@ $pace-slice-other-color: #e87ba4;
         align-self: flex-start;
         background: none;
         border: 0;
-        color: $color-link;
+        color: $color-text-link;
         display: inline-flex;
         font-size: $smaller-font-size;
         font-weight: 500;
@@ -964,7 +962,7 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .projects-step-discovery-notice {
-      color: $color-text-secondary;
+      color: $color-text-medium-contrast;
       flex: 1;
       font-size: $smaller-font-size;
       margin: 0;
@@ -975,14 +973,14 @@ $pace-slice-other-color: #e87ba4;
      * rate changes partway through. A CSS transition on width would fight that: it would restart on each tick
      * rather than smoothing between them, so the easing stays out of the stylesheet deliberately. */
     .projects-step-discovery-progress {
-      background: $color-blue-light;
+      background: $color-background-action-medium-contrast;
       flex-basis: 100%;
       height: $plan-wizard-step-bar-height;
       margin-top: $sp-xs;
       overflow: hidden;
 
       .discovery-progress-fill {
-        background: $color-accent;
+        background: $color-background-action-high-contrast;
         height: 100%;
       }
     }
@@ -1006,8 +1004,8 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-row {
-      background: $color-bg-card;
-      border: 1px solid $color-border;
+      background: $color-background-primary;
+      border: 1px solid $color-border-primary;
       border-radius: $radius-sm;
       display: flex;
       flex-direction: column;
@@ -1029,7 +1027,7 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-row-provenance {
-      color: $color-text-secondary;
+      color: $color-text-medium-contrast;
       font-size: $smaller-font-size;
       line-height: 1.45;
       margin: 0;
@@ -1043,9 +1041,9 @@ $pace-slice-other-color: #e87ba4;
      * open task carries a live dot; a finished one is checked off and quieter. */
     .project-row-task-chip {
       align-items: center;
-      background: $color-bg-element;
+      background: $color-background-element-low-contrast;
       border-radius: 10px;
-      color: $color-text;
+      color: $color-text-high-contrast;
       cursor: default;
       display: inline-flex;
       font-size: 12px;
@@ -1058,13 +1056,13 @@ $pace-slice-other-color: #e87ba4;
       white-space: nowrap;
 
       &:focus-visible {
-        outline: 2px solid $color-accent;
+        outline: 2px solid $color-background-action-high-contrast;
         outline-offset: 1px;
       }
     }
 
     .project-row-task-chip--active .project-row-task-chip-marker {
-      background: $color-accent;
+      background: $color-background-action-high-contrast;
       border-radius: 50%;
       flex-shrink: 0;
       height: 6px;
@@ -1072,24 +1070,24 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-row-task-chip--finished {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
 
       .project-row-task-chip-marker {
-        color: $color-success;
+        color: $color-text-status;
       }
     }
 
     .project-row-task-chip--pending {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       opacity: 0.7;
     }
 
     .project-row-reject {
       @include text-button;
-      color: $color-danger;
+      color: $color-text-error-high-contrast;
 
       &:hover:not(:disabled) {
-        background: color-mix(in srgb, $color-danger 8%, transparent);
+        background: color-mix(in srgb, $color-text-error-high-contrast 8%, transparent);
       }
 
       @include breakpoint($breakpoint-tablet) {
@@ -1116,7 +1114,7 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-row-status {
-      border-left: 1px solid $color-border;
+      border-left: 1px solid $color-border-primary;
       padding-left: $sp-md;
 
       .project-row-emphasis-label {
@@ -1155,7 +1153,7 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-row-emphasis-label {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       font-size: 12px;
       font-weight: 500;
       margin: $sp-sm 0;
@@ -1173,18 +1171,18 @@ $pace-slice-other-color: #e87ba4;
       text-align: center;
 
       &:disabled {
-        background: $color-bg-element;
-        color: $color-text-muted;
+        background: $color-background-element-low-contrast;
+        color: $color-text-low-contrast;
       }
 
       /* A chosen emphasis is a selected tile: the action edge over the action's low-contrast fill. */
       &[aria-pressed="true"] {
-        background: $color-action-low;
-        border-color: $color-accent;
-        color: $color-text;
+        background: $color-background-action-low-contrast;
+        border-color: $color-background-action-high-contrast;
+        color: $color-text-high-contrast;
 
         &:hover:not(:disabled) {
-          background: $color-action-low;
+          background: $color-background-action-low-contrast;
         }
       }
     }
@@ -1200,8 +1198,8 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-pace {
-      background: $color-bg-card;
-      border: 1px solid $color-border;
+      background: $color-background-primary;
+      border: 1px solid $color-border-primary;
       border-radius: $radius-sm;
       display: flex;
       flex-direction: column;
@@ -1233,19 +1231,19 @@ $pace-slice-other-color: #e87ba4;
       text-align: center;
 
       &:hover:not(:disabled) {
-        background: $color-action-low;
+        background: $color-background-action-low-contrast;
       }
     }
 
     .project-pace-choice--selected {
-      background: $color-action-low;
-      border-color: $color-accent;
-      color: $color-text;
+      background: $color-background-action-low-contrast;
+      border-color: $color-background-action-high-contrast;
+      color: $color-text-high-contrast;
     }
 
     .project-pace-deadline {
       align-items: center;
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       display: flex;
       flex-wrap: wrap;
       font-size: 12px;
@@ -1266,7 +1264,7 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-pace-days-label {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       font-size: 12px;
       font-weight: 500;
       margin-right: $sp-sm;
@@ -1274,7 +1272,7 @@ $pace-slice-other-color: #e87ba4;
 
     /* Weekdays are pill chips: element-filled when off, the action's low-contrast fill and edge when chosen. */
     .project-pace-day {
-      background: $color-bg-element;
+      background: $color-background-element-low-contrast;
       border-color: transparent;
       border-radius: 10px;
       font-size: 12px;
@@ -1284,12 +1282,12 @@ $pace-slice-other-color: #e87ba4;
       text-align: center;
 
       &[aria-pressed="true"] {
-        background: $color-action-low;
-        border-color: $color-accent;
-        color: $color-text;
+        background: $color-background-action-low-contrast;
+        border-color: $color-background-action-high-contrast;
+        color: $color-text-high-contrast;
 
         &:hover:not(:disabled) {
-          background: $color-action-low;
+          background: $color-background-action-low-contrast;
         }
       }
     }
@@ -1312,9 +1310,9 @@ $pace-slice-other-color: #e87ba4;
     /* Optional is a promise rather than a warning — the page is skippable — so it is set in the personal-intent
      * violet rather than in the danger or warning colors. */
     .done-enough-optional-badge {
-      background: $color-bg-element;
+      background: $color-background-element-low-contrast;
       border-radius: 10px;
-      color: $color-text-secondary;
+      color: $color-text-medium-contrast;
       font-size: 11px;
       font-weight: 500;
       letter-spacing: 0.04em;
@@ -1349,8 +1347,8 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .done-enough-conditions {
-      background: $color-bg-card;
-      border: 1px solid $color-border;
+      background: $color-background-primary;
+      border: 1px solid $color-border-primary;
       border-radius: $radius-sm;
       display: flex;
       flex-direction: column;
@@ -1383,21 +1381,21 @@ $pace-slice-other-color: #e87ba4;
       padding: $sp-sm;
 
       &:hover {
-        background: $color-action-low;
+        background: $color-background-action-low-contrast;
       }
     }
 
     .done-enough-condition--selected {
-      background: $color-action-low;
-      border-color: $color-accent;
+      background: $color-background-action-low-contrast;
+      border-color: $color-background-action-high-contrast;
 
       &:hover {
-        background: $color-action-low;
+        background: $color-background-action-low-contrast;
       }
     }
 
     .done-enough-condition-radio {
-      accent-color: $color-accent;
+      accent-color: $color-background-action-high-contrast;
       cursor: pointer;
       flex: 0 0 auto;
       margin: 2px 0 0;
@@ -1419,7 +1417,7 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .done-enough-condition-description {
-      color: $color-text-secondary;
+      color: $color-text-medium-contrast;
       font-size: $smaller-font-size;
       line-height: 1.4;
     }
@@ -1438,16 +1436,16 @@ $pace-slice-other-color: #e87ba4;
      * outlined in the success green the weekday chips use, kept as an outline because what someone would rather
      * be doing is an aside to the condition above it, not the page's decision. */
     .done-enough-release-choice {
-      background: $color-bg-element;
+      background: $color-background-element-low-contrast;
       border-color: transparent;
       border-radius: 10px;
       font-size: 12px;
       padding: $sp-xs $sp-md;
 
       &[aria-pressed="true"] {
-        background: $color-action-low;
-        border-color: $color-accent;
-        color: $color-text;
+        background: $color-background-action-low-contrast;
+        border-color: $color-background-action-high-contrast;
+        color: $color-text-high-contrast;
       }
     }
 
@@ -1456,8 +1454,8 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .done-enough-preview {
-      background: $color-bg-card;
-      border: 1px solid $color-border;
+      background: $color-background-primary;
+      border: 1px solid $color-border-primary;
       border-radius: $radius-sm;
       display: flex;
       flex-direction: column;
@@ -1476,17 +1474,17 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .done-enough-scene-sky {
-      fill: $color-success;
+      fill: $color-text-status;
       opacity: 0.1;
     }
 
     .done-enough-scene-sun {
-      fill: $color-warning;
+      fill: $color-text-error-low-contrast;
       opacity: 0.35;
     }
 
     .done-enough-scene-hill {
-      fill: $color-success;
+      fill: $color-text-status;
     }
 
     .done-enough-scene-hill--far {
@@ -1516,9 +1514,9 @@ $pace-slice-other-color: #e87ba4;
      * excluded one is italic and unmarked so the distinction survives without color alone carrying it. */
     .done-enough-signal {
       align-items: center;
-      background: $color-bg-element;
+      background: $color-background-element-low-contrast;
       border-radius: 10px;
-      color: $color-text-secondary;
+      color: $color-text-medium-contrast;
       display: inline-flex;
       font-size: 12px;
       font-weight: 500;
@@ -1527,8 +1525,8 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .done-enough-signal--credited {
-      background: $color-action-low;
-      color: $color-text;
+      background: $color-background-action-low-contrast;
+      color: $color-text-high-contrast;
     }
 
     .done-enough-signal--excluded {
@@ -1536,13 +1534,13 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .done-enough-signal-mark {
-      color: $color-accent;
+      color: $color-background-action-high-contrast;
     }
 
     /* Pushed to the bottom of the stretched panel, where a caption belongs, and stating that the wording is all
      * this page produces so far: nothing yet reads the stored condition at the end of a day. */
     .done-enough-preview-note {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       font-size: $smaller-font-size;
       font-style: italic;
       margin: auto 0 0;
@@ -1559,27 +1557,27 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .quarter-name-idea {
-      background: $color-bg-card;
-      color: $color-text;
+      background: $color-background-primary;
+      color: $color-text-high-contrast;
       font-size: $default-font-size;
       font-weight: 400;
       line-height: 1.45;
       text-align: left;
 
       &:hover:not(:disabled) {
-        background: $color-action-low;
+        background: $color-background-action-low-contrast;
       }
     }
 
     .quarter-name-idea--selected {
-      background: $color-action-low;
-      border-color: $color-accent;
+      background: $color-background-action-low-contrast;
+      border-color: $color-background-action-high-contrast;
     }
 
     .quarter-name-custom {
       align-items: center;
-      background: $color-bg-card;
-      border: 1px dashed $color-border;
+      background: $color-background-primary;
+      border: 1px dashed $color-border-primary;
       border-radius: $radius-sm;
       display: flex;
       gap: $sp-sm;
@@ -1588,8 +1586,8 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .quarter-name-custom--selected {
-      background: $color-action-low;
-      border-color: $color-accent;
+      background: $color-background-action-low-contrast;
+      border-color: $color-background-action-high-contrast;
       border-style: solid;
     }
 
@@ -1609,7 +1607,7 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .quarter-name-custom-mark {
-      color: $color-text-lower;
+      color: $color-text-lower-contrast;
       flex: 0 0 auto;
     }
 
@@ -1660,10 +1658,10 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .quarter-name-window-track {
-      background-color: $color-bg-element;
-      background-image: linear-gradient(to right, transparent 0 33.333%, $color-border 33.333% 66.666%,
-        transparent 66.666%), linear-gradient($color-text-muted, $color-text-muted),
-        linear-gradient($color-text-muted, $color-text-muted);
+      background-color: $color-background-element-low-contrast;
+      background-image: linear-gradient(to right, transparent 0 33.333%, $color-border-primary 33.333% 66.666%,
+        transparent 66.666%), linear-gradient($color-text-low-contrast, $color-text-low-contrast),
+        linear-gradient($color-text-low-contrast, $color-text-low-contrast);
       background-position: 0, 33.333%, 66.666%;
       background-repeat: no-repeat;
       background-size: 100% 100%, 1px 100%, 1px 100%;
@@ -1777,12 +1775,12 @@ $pace-slice-other-color: #e87ba4;
 
       &:hover:not(:disabled),
       &:focus-visible {
-        color: $color-danger;
+        color: $color-text-error-high-contrast;
       }
     }
 
     .quarter-name-deadline-note {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       font-size: $smaller-font-size;
       grid-column: 1 / -1;
       margin: 0;
@@ -1849,7 +1847,7 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .plan-wizard-body--with-sidebar .plan-wizard-progress-sidebar {
-      border-right: 1px solid $color-border;
+      border-right: 1px solid $color-border-primary;
       display: flex;
       flex-direction: column;
       gap: $sp-lg;
@@ -1864,7 +1862,7 @@ $pace-slice-other-color: #e87ba4;
    * show the bar at every width, rail included. Only the property the query needs to flip lives in the query;
    * the bar's layout below is shared by both states and stays out of it. */
   .plan-wizard-progress-bar {
-    border-bottom: 1px solid $color-border;
+    border-bottom: 1px solid $color-border-primary;
     display: none;
     flex-direction: column;
     padding: 0 $plan-wizard-body-padding;
@@ -1900,7 +1898,7 @@ $pace-slice-other-color: #e87ba4;
     width: 100%;
 
     &:focus-visible {
-      border-color: $color-accent;
+      border-color: $color-background-action-high-contrast;
       outline: none;
     }
   }
@@ -1908,11 +1906,11 @@ $pace-slice-other-color: #e87ba4;
   /* Open, the summary row reads as the lid of the panel below it, so it takes the panel's background and the
    * accent border the mockup gives it rather than staying a quiet strip of the page. */
   .plan-wizard-progress-bar--open {
-    background: $color-bg-card;
+    background: $color-background-primary;
   }
 
   .plan-wizard-progress-bar--open .progress-bar-summary {
-    border-color: $color-accent;
+    border-color: $color-background-action-high-contrast;
   }
 
   /* The bar's track is the step strip's segmented 4px bar in miniature: every step is already answered once the
@@ -1925,13 +1923,13 @@ $pace-slice-other-color: #e87ba4;
   }
 
   .progress-bar-dot {
-    background: $color-accent;
+    background: $color-background-action-high-contrast;
     height: $plan-wizard-step-bar-height;
     width: 16px;
   }
 
   .progress-bar-dot--current {
-    background: $color-text;
+    background: $color-text-high-contrast;
   }
 
   .progress-bar-position {
@@ -1943,7 +1941,7 @@ $pace-slice-other-color: #e87ba4;
   /* The step name is the one part of the row allowed to shrink: the dots, the position, and the disclosure are
    * all fixed-width, so a long step name truncates rather than pushing All steps off the edge. */
   .progress-bar-step-title {
-    color: $color-text;
+    color: $color-text-high-contrast;
     flex: 1 1 auto;
     font-size: $default-font-size;
     font-weight: 500;
@@ -1954,7 +1952,7 @@ $pace-slice-other-color: #e87ba4;
   }
 
   .progress-bar-disclosure {
-    color: $color-link;
+    color: $color-text-link;
     flex: 0 0 auto;
     font-size: $smaller-font-size;
     font-weight: 500;
@@ -1964,7 +1962,7 @@ $pace-slice-other-color: #e87ba4;
   }
 
   .progress-bar-chevron {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     flex: 0 0 auto;
   }
 
@@ -2018,11 +2016,11 @@ $pace-slice-other-color: #e87ba4;
     cursor: pointer;
 
     &:hover {
-      background: $color-bg-element;
+      background: $color-background-element-low-contrast;
     }
 
     &:focus-visible {
-      border-color: $color-accent;
+      border-color: $color-background-action-high-contrast;
       outline: none;
     }
   }
@@ -2030,17 +2028,17 @@ $pace-slice-other-color: #e87ba4;
   /* The step being read is the one row drawn as a selected tile, so the rail always answers "where am I" before
    * it answers "what have I done". */
   .progress-step-row--current .progress-step-static {
-    background: $color-action-low;
-    border-color: $color-accent;
+    background: $color-background-action-low-contrast;
+    border-color: $color-background-action-high-contrast;
   }
 
   .progress-step-icon {
-    color: $color-accent;
+    color: $color-background-action-high-contrast;
     flex: 0 0 auto;
   }
 
   .progress-step-icon--pending {
-    color: $color-text-lower;
+    color: $color-text-lower-contrast;
   }
 
   .progress-step-text {
@@ -2051,14 +2049,14 @@ $pace-slice-other-color: #e87ba4;
   }
 
   .progress-step-label {
-    color: $color-text;
+    color: $color-text-high-contrast;
     font-size: $default-font-size;
     font-weight: 500;
     line-height: 1.3;
   }
 
   .progress-step-summary {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: $smaller-font-size;
     line-height: 1.35;
   }
@@ -2094,7 +2092,7 @@ $pace-slice-other-color: #e87ba4;
   .pace-breakdown-slice--dimmed { opacity: 0.35; }
 
   .pace-breakdown-caption {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: $smaller-font-size;
     line-height: 1.35;
   }
@@ -2106,7 +2104,7 @@ $pace-slice-other-color: #e87ba4;
     background: none;
     border: 1px solid transparent;
     border-radius: $radius-sm;
-    border-top: 1px solid $color-border;
+    border-top: 1px solid $color-border-primary;
     cursor: pointer;
     display: flex;
     gap: $sp-sm;
@@ -2116,11 +2114,11 @@ $pace-slice-other-color: #e87ba4;
     width: 100%;
 
     &:hover:not(:disabled) {
-      background: $color-bg-element;
+      background: $color-background-element-low-contrast;
     }
 
     &:focus-visible {
-      border-color: $color-accent;
+      border-color: $color-background-action-high-contrast;
       outline: none;
     }
 
@@ -2131,7 +2129,7 @@ $pace-slice-other-color: #e87ba4;
   }
 
   .plan-note-icon {
-    color: $color-text-lower;
+    color: $color-text-lower-contrast;
     flex: 0 0 auto;
   }
 
@@ -2143,14 +2141,14 @@ $pace-slice-other-color: #e87ba4;
   }
 
   .plan-note-label {
-    color: $color-link;
+    color: $color-text-link;
     font-size: $default-font-size;
     font-weight: 500;
     line-height: 1.3;
   }
 
   .plan-note-hint {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: $smaller-font-size;
   }
 }

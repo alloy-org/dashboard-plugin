@@ -23,7 +23,7 @@
     transition: background-color 0.15s ease;
 
     &:hover {
-      background: $color-bg-element;
+      background: $color-background-element-low-contrast;
     }
 
     input[type="radio"] {
@@ -38,12 +38,12 @@
   }
 
   .llm-provider-option-name {
-    color: $color-text;
+    color: $color-text-high-contrast;
     font-weight: 500;
   }
 
   .llm-provider-option-desc {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: 12px;
     line-height: 1.4;
   }

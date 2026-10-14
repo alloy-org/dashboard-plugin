@@ -13,7 +13,7 @@ $provider-key-gate-message-width: 34rem;
   padding: $sp-xl $sp-md;
 
   .provider-key-gate-title {
-    color: $color-text;
+    color: $color-text-high-contrast;
     font-size: $medium-heading-font-size;
     font-weight: 500;
     line-height: 1.3;
@@ -21,7 +21,7 @@ $provider-key-gate-message-width: 34rem;
   }
 
   .provider-key-gate-message {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: $default-font-size;
     line-height: 1.5;
     margin: 0;
@@ -45,7 +45,7 @@ $provider-key-gate-message-width: 34rem;
   }
 
   .provider-key-gate-footnote {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: $smaller-font-size;
     margin: 0;
   }

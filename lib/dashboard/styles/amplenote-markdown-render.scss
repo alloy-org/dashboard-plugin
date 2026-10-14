@@ -33,18 +33,18 @@
 // ── Tippy theme for Rich Footnote popups, and the popup content mounted in them ──
 
 .tippy-box[data-theme~='rich-footnote'] {
-  background: $color-bg-card;
-  border: 1px solid $color-border;
+  background: $color-background-primary;
+  border: 1px solid $color-border-primary;
   border-radius: $radius-md;
   box-shadow: 0 4px 16px $color-overlay-shadow;
-  color: $color-text;
+  color: $color-text-high-contrast;
   font-size: $default-font-size;
   line-height: 1.5;
   max-width: 420px;
   min-width: 200px;
 
   > .tippy-arrow {
-    color: $color-bg-card;
+    color: $color-background-primary;
   }
 
   > .tippy-content {
@@ -63,12 +63,12 @@
     gap: $sp-xs;
 
     svg {
-      color: $color-accent;
+      color: $color-background-action-high-contrast;
       flex-shrink: 0;
     }
 
     a {
-      color: $color-link;
+      color: $color-text-link;
       overflow: hidden;
       text-decoration: none;
       text-overflow: ellipsis;
@@ -81,7 +81,7 @@
   }
 
   .rich-footnote-popup-text {
-    color: $color-text;
+    color: $color-text-high-contrast;
   }
 
   .rich-footnote-popup-media {
@@ -103,7 +103,7 @@
   }
 
   .rich-footnote-popup-actions {
-    border-top: 1px solid $color-border;
+    border-top: 1px solid $color-border-primary;
     display: flex;
     justify-content: flex-end;
     padding-top: $sp-sm;
@@ -112,7 +112,7 @@
   .rich-footnote-popup-close {
     background: none;
     border: none;
-    color: $color-accent;
+    color: $color-background-action-high-contrast;
     cursor: pointer;
     font-size: $smaller-font-size;
     font-weight: 600;

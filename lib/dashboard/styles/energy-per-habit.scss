@@ -9,8 +9,8 @@
 
 /* Positive deltas take the top of the host's victory value scale (green), negative ones its error color, as the host
  * Task Stats graph colors late tasks. */
-$positive-delta-color: $color-victory-value-4;
-$negative-delta-color: $color-danger;
+$positive-delta-color: $victory-value-color-4;
+$negative-delta-color: $color-text-error-high-contrast;
 $habit-bar-height: 12px;
 $habit-row-gap: 6px;
 
@@ -24,7 +24,7 @@ $habit-row-gap: 6px;
   }
 
   .habit-title {
-    color: $color-text;
+    color: $color-text-high-contrast;
     font-size: $large-heading-font-size;
     font-weight: 600;
     line-height: 1.15;
@@ -49,7 +49,7 @@ $habit-row-gap: 6px;
 
   /* The zero axis is drawn like a Task Stats grid line: the border color at reduced opacity. */
   .habit-zero-line {
-    border-left: 1px solid color-mix(in srgb, $color-border 60%, transparent);
+    border-left: 1px solid color-mix(in srgb, $color-border-primary 60%, transparent);
     bottom: 0;
     left: $habit-axis-position;
     position: absolute;
@@ -57,7 +57,7 @@ $habit-row-gap: 6px;
   }
 
   .habit-zero-label {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: 12px;
     left: -3px;
     position: absolute;
@@ -82,7 +82,7 @@ $habit-row-gap: 6px;
     transition: background-color 0.12s ease;
 
     &:hover {
-      background: color-mix(in srgb, $color-bg-element-medium 45%, transparent);
+      background: color-mix(in srgb, $color-background-element-medium-contrast 45%, transparent);
     }
   }
 
@@ -96,7 +96,7 @@ $habit-row-gap: 6px;
 
   .habit-row-icon {
     align-items: center;
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     display: inline-flex;
     flex: 0 0 auto;
     font-size: $large-font-size;
@@ -109,7 +109,7 @@ $habit-row-gap: 6px;
   }
 
   .habit-row-label {
-    color: $color-text;
+    color: $color-text-high-contrast;
     font-size: $default-font-size;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -122,13 +122,13 @@ $habit-row-gap: 6px;
 
     &:hover,
     &:focus-visible {
-      color: $color-link;
+      color: $color-text-link;
       text-decoration: underline;
     }
   }
 
   .habit-row-meta {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: 12px;
     margin-top: 1px;
   }
@@ -142,7 +142,7 @@ $habit-row-gap: 6px;
     gap: $sp-xs;
 
     &::before {
-      background-color: $color-victory-value-0-text;
+      background-color: $victory-value-color-0-text;
       border-radius: 2px;
       content: '';
       flex: 0 0 auto;
@@ -151,11 +151,11 @@ $habit-row-gap: 6px;
     }
 
     /* Streak strength climbs the host's victory value scale, grey to green. */
-    &.streak-week::before { background-color: $color-victory-value-0-text; }
-    &.streak-alive::before { background-color: $color-victory-value-1-text; }
-    &.streak-month::before { background-color: $color-victory-value-2-text; }
-    &.streak-quarter::before { background-color: $color-victory-value-3-text; }
-    &.streak-half-year::before { background-color: $color-victory-value-4; }
+    &.streak-week::before { background-color: $victory-value-color-0-text; }
+    &.streak-alive::before { background-color: $victory-value-color-1-text; }
+    &.streak-month::before { background-color: $victory-value-color-2-text; }
+    &.streak-quarter::before { background-color: $victory-value-color-3-text; }
+    &.streak-half-year::before { background-color: $victory-value-color-4; }
   }
 
   /* The two bar halves share a baseline; the negative half grows leftward (bar anchored right),
@@ -217,25 +217,25 @@ $habit-row-gap: 6px;
   }
 
   .habit-footnote {
-    background: $color-bg-page;
+    background: $color-background-secondary;
     border-radius: $radius-sm;
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: $smaller-font-size;
     line-height: 1.5;
     margin-top: $sp-lg;
     padding: $sp-md $sp-lg;
 
-    strong { color: $color-text; }
+    strong { color: $color-text-high-contrast; }
   }
 
   .habit-empty {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     padding: $sp-xl $sp-md;
     text-align: center;
   }
 
   .habit-empty-hint {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: $smaller-font-size;
     margin-top: $sp-sm;
   }

@@ -22,7 +22,7 @@ const VALUES = [ 4, 0, 10, 2, 0, 6, 8 ];
 // @returns {Array} Daily values.
 function dailyValuesFixture() {
   return VALUES.map((value, index) => ({ date: `2026-10-${ String(8 + index).padStart(2, "0") }`, day: DAY_NAMES[index],
-    segments: value ? [ { colorToken: "--dashboard-color-background-accent", key: "none", value } ] : [], value }));
+    segments: value ? [ { colorToken: "--dashboard-color-background-action-high-contrast", key: "none", value } ] : [], value }));
 }
 
 // ------------------------------------------------------------------------------------------
@@ -66,7 +66,7 @@ describe("VictoryValueChart", () => {
   it("keeps legend colors on project segments when bars are colored by project", async () => {
     const container = await renderChart({ hasProjectLegend: true });
     expect(container.querySelector(".victory-value-chart-bar path").getAttribute("fill"))
-      .toBe("var(--dashboard-color-background-accent)");
+      .toBe("var(--dashboard-color-background-action-high-contrast)");
   });
 
   it("marks the hovered day with a highlight line and value pill, and shows its tooltip", async () => {

@@ -23,7 +23,7 @@ $qa-transition-duration: 0.15s;
     align-items: center;
     background: none;
     border: none;
-    color: $color-text;
+    color: $color-text-high-contrast;
     cursor: pointer;
     display: flex;
     gap: $sp-lg;
@@ -33,11 +33,11 @@ $qa-transition-duration: 0.15s;
     transition: background $qa-transition-duration;
 
     &:hover {
-      background: $color-bg-element;
+      background: $color-background-element-low-contrast;
     }
 
     .qa-icon {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       flex-shrink: 0;
     }
 

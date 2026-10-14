@@ -69,7 +69,7 @@ $check-list-indent-step: 20px;
     background: none;
     border: none;
     border-radius: $radius-sm;
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     cursor: pointer;
     display: flex;
     flex: 1;
@@ -81,8 +81,8 @@ $check-list-indent-step: 20px;
     width: 100%;
 
     &:hover {
-      border-color: $color-navy;
-      color: $color-navy;
+      border-color: $color-text-high-contrast;
+      color: $color-text-high-contrast;
     }
   }
 
@@ -94,7 +94,7 @@ $check-list-indent-step: 20px;
   }
 
   .note-peek-chooser-icon {
-    color: $color-text-lower;
+    color: $color-text-lower-contrast;
   }
 
   .note-peek-chooser-label {
@@ -118,7 +118,7 @@ $check-list-indent-step: 20px;
    * container, whose own editor stylesheet is not present inside this embed — so the element styles the
    * note relies on are defined here, and apply equally to the local markdown-render fallback. */
   .note-peek-content {
-    color: $color-text;
+    color: $color-text-high-contrast;
     flex: 1;
     font-size: $smaller-font-size;
     line-height: 1.45;
@@ -135,7 +135,7 @@ $check-list-indent-step: 20px;
 
     h1, h2, h3, h4, h5, h6,
     .heading {
-      color: $color-navy;
+      color: $color-text-high-contrast;
       line-height: 1.25;
       margin: 0 0 $sp-xs;
       position: relative;
@@ -167,21 +167,21 @@ $check-list-indent-step: 20px;
     }
 
     a {
-      color: $color-link;
+      color: $color-text-link;
     }
 
     strong {
-      color: $color-navy;
+      color: $color-text-high-contrast;
     }
 
     blockquote {
-      border-left: 3px solid $color-border;
-      color: $color-text-secondary;
+      border-left: 3px solid $color-border-primary;
+      color: $color-text-medium-contrast;
       padding-left: $sp-sm;
     }
 
     code, pre {
-      background: $color-bg-page;
+      background: $color-background-secondary;
       border-radius: $radius-sm;
       font-size: $smaller-font-size;
     }
@@ -206,7 +206,7 @@ $check-list-indent-step: 20px;
       max-width: 100%;
 
       td, th {
-        border: 1px solid $color-border;
+        border: 1px solid $color-border-primary;
         padding: $sp-xs $sp-sm;
         text-align: left;
       }
@@ -214,7 +214,7 @@ $check-list-indent-step: 20px;
 
     hr {
       border: none;
-      border-top: 1px solid $color-border;
+      border-top: 1px solid $color-border-primary;
       margin: $sp-sm 0;
     }
 
@@ -314,8 +314,8 @@ $check-list-indent-step: 20px;
     .check-list-item,
     li:has(input[type="checkbox"]) {
       align-items: center;
-      background: $color-bg-page;
-      border-left: 4px solid $color-border;
+      background: $color-background-secondary;
+      border-left: 4px solid $color-border-primary;
       border-radius: 4px;
       margin: 0 0 6px;
       min-height: 44px;
@@ -356,8 +356,8 @@ $check-list-indent-step: 20px;
         }
       }
 
-      &.task-score-bucket-1 { border-left-color: $color-blue; }
-      &.task-score-bucket-2 { border-left-color: $color-warning; }
+      &.task-score-bucket-1 { border-left-color: $color-background-action-high-contrast; }
+      &.task-score-bucket-2 { border-left-color: $color-text-error-low-contrast; }
       &.task-score-bucket-3 { border-left-color: $color-agenda-priority-urgent; }
 
       /* The production renderer supplies this full row around the nested input and content containers.
@@ -384,7 +384,7 @@ $check-list-indent-step: 20px;
           }
 
           > .checkbox {
-            border: 2px solid $color-text-muted;
+            border: 2px solid $color-text-low-contrast;
             border-radius: 2px;
             box-sizing: border-box;
             display: block;
@@ -395,13 +395,13 @@ $check-list-indent-step: 20px;
           }
 
           > input[type="checkbox"]:checked + .checkbox {
-            background: $color-success;
-            border-color: $color-success;
+            background: $color-text-status;
+            border-color: $color-text-status;
 
             &::after {
               border: solid;
               border-width: 0 2px 2px 0;
-              @include contrasting-color(border-color, $color-success);
+              @include contrasting-color(border-color, $color-text-status);
               content: "";
               height: 7px;
               left: 4px;
@@ -454,7 +454,7 @@ $check-list-indent-step: 20px;
       > p > input[type="checkbox"] {
         appearance: none;
         background: transparent;
-        border: 2px solid $color-text-muted;
+        border: 2px solid $color-text-low-contrast;
         border-radius: 2px;
         box-sizing: border-box;
         flex-shrink: 0;
@@ -467,13 +467,13 @@ $check-list-indent-step: 20px;
         width: 16px;
 
         &:checked {
-          background: $color-success;
-          border-color: $color-success;
+          background: $color-text-status;
+          border-color: $color-text-status;
 
           &::after {
             border: solid;
             border-width: 0 2px 2px 0;
-            @include contrasting-color(border-color, $color-success);
+            @include contrasting-color(border-color, $color-text-status);
             content: "";
             height: 7px;
             left: 4px;

@@ -23,19 +23,32 @@ app uses on its own pages (the Task Stats page is the closest reference). This p
   `useStatsChartTooltip` in `charts/stats-chart-tooltip.jsx`.
 - `lib/dashboard/styles/controls.scss` — `@use 'controls' as *;` then `@include icon-button`, `text-button`,
   `outlined-button`, `raised-button`, `overline-label`, `empty-state`.
-- Tokens in `styles/theme-tokens.scss`: `$color-bg-card`, `$color-bg-page`, `$color-bg-element`, `$color-action-low`,
-  `$color-border`, `$color-text`, `$color-text-secondary`, `$color-text-muted`, `$color-text-lower`, `$color-link`,
-  `$color-accent`, `$color-background-accent` + `$color-text-on-accent`, `$radius-sm` (4px), `$radius-lg` (8px).
+- Colors: only the tokens in `styles/theme-tokens.scss`. Host colors carry the host app's own names, so
+  `$color-text-low-contrast` is ample-web's `--color-text-low-contrast` in the user's theme and mode:
+
+  | Role | Tokens |
+  |---|---|
+  | Surfaces | `$color-background-primary` (cards), `-secondary` (page), `-tertiary`, `-element-low-contrast`, `-element-medium-contrast`, `-popup` (tooltips, menus), `-dialog` (dialog title bar), `-scrim` |
+  | Text | `$color-text-high-contrast`, `-medium-contrast`, `-low-contrast`, `-lower-contrast`, `$color-text-link`, `$color-text-nav-high-contrast` / `-low-contrast` (on the dialog title bar) |
+  | Action | `$color-background-action-high-contrast` filled with ink `$color-text-button`; `-medium-contrast`, `-low-contrast` fills |
+  | Status | `$color-text-status`, `$color-text-error-high-contrast` (danger), `$color-text-error-low-contrast` (warning), `$color-background-error-medium-contrast` |
+  | Lines | `$color-border-primary` |
+  | Data | `$victory-value-color-0…4` (+ `-text`), and fixed series colors (`--dashboard-color-category-*`, project windows, priorities, intents) for charts only |
+
+  Values and fallbacks (the host's Classic light/dark) live in `theme-light.scss` / `theme-dark.scss`. Shadows:
+  `$shadow-elevation-2` (raised buttons), `-3` (tooltips, menus), `-24` (dialogs). Corners: `$radius-sm` (4px),
+  `$radius-lg` (8px). `test/design-tokens.test.js` fails on removed token names, direct `var(--color-*)` reads, and raw
+  colors outside the theme files.
 
 ## Dialogs and popups (host MDC dialog)
 
-- Surface: `$color-bg-card`, 4px corners, MDC elevation 24 shadow
-  (`0 11px 15px -7px rgba(0,0,0,.2), 0 24px 38px 3px rgba(0,0,0,.14), 0 9px 46px 8px rgba(0,0,0,.12)`), scrim behind.
-- Title bar: `var(--color-background-dialog)` fill (the host's dialog title color, dark in every theme) with
-  `var(--color-text-nav-high-contrast)` 20px/500 title text and a round close icon button in
-  `var(--color-text-nav-low-contrast)` on the right. Fallbacks: `#2C3B47`, `#EDF1F5`, `#B4BFCC`.
+- Surface: `$color-background-primary`, 4px corners, `$shadow-elevation-24`, `$color-background-scrim` behind.
+- Title bar: `$color-background-dialog` fill (the host's dialog title color, dark in every theme) with
+  `$color-text-nav-high-contrast` 20px/500 title text and a round close icon button in `$color-text-nav-low-contrast`
+  on the right.
 - Body: 24px padding, 14px text. Section titles use `overline-label`; field labels 12px/500 muted.
-- Inputs and selects: 1px `$color-border`, 4px corners, 36px tall, focus border `$color-accent`.
+- Inputs and selects: 1px `$color-border-primary`, 4px corners, 36px tall, focus border
+  `$color-background-action-high-contrast`.
 - Actions: right-aligned footer, text button for Cancel, raised button for the primary action.
 - Tabs inside dialogs: underline tabs like the dashboard header (2px bottom rule on the active tab).
 

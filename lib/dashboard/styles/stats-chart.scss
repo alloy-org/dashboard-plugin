@@ -13,19 +13,19 @@ $stats-chart-label-font-size: 12px;
 
   .stats-chart-grid-line {
     opacity: 0.4;
-    stroke: $color-border;
+    stroke: $color-border-primary;
     stroke-width: 1px;
   }
 
   .stats-chart-grid-label {
-    fill: $color-text-muted;
+    fill: $color-text-low-contrast;
     font-size: $stats-chart-label-font-size;
     font-variant-numeric: tabular-nums;
     text-anchor: end;
   }
 
   .stats-chart-x-axis-label {
-    fill: $color-text-muted;
+    fill: $color-text-low-contrast;
     font-size: $stats-chart-label-font-size;
     letter-spacing: 0.04em;
     text-anchor: middle;
@@ -33,14 +33,14 @@ $stats-chart-label-font-size: 12px;
   }
 
   .stats-chart-x-axis-sublabel {
-    fill: $color-text-lower;
+    fill: $color-text-lower-contrast;
     font-size: 11px;
     font-variant-numeric: tabular-nums;
     text-anchor: middle;
   }
 
   .stats-chart-highlight-line {
-    stroke: $color-bg-element-medium;
+    stroke: $color-background-element-medium-contrast;
     stroke-linecap: round;
     stroke-width: 4px;
   }
@@ -55,12 +55,12 @@ $stats-chart-label-font-size: 12px;
     pointer-events: none;
 
     rect {
-      fill: $color-victory-value-2-text;
+      fill: $victory-value-color-2-text;
     }
 
     text {
       dominant-baseline: central;
-      fill: #ffffff;
+      fill: $color-text-button;
       font-size: $stats-chart-label-font-size;
       font-variant-numeric: tabular-nums;
       font-weight: 500;

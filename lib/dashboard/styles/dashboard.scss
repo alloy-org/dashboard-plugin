@@ -55,7 +55,7 @@ $error-padding: 40px;
     /* [OpenAI gpt-5.4] Task: backdrop button that exits focused-widget mode on click */
     /* Prompt: "If the user clicks on the background in this state, the other components transition back into view" */
     .dashboard-grid-focus-backdrop {
-      background: color-mix(in srgb, $color-bg-page 18%, transparent);
+      background: color-mix(in srgb, $color-background-secondary 18%, transparent);
       border: none;
       cursor: zoom-out;
       inset: 0;
@@ -70,8 +70,8 @@ $error-padding: 40px;
      * left, icon buttons on the right, on a card-colored bar. */
     .dashboard-toolbar {
       align-items: center;
-      background-color: $color-bg-card;
-      border: 1px solid $color-border;
+      background-color: $color-background-primary;
+      border: 1px solid $color-border-primary;
       border-radius: $radius-lg;
       display: flex;
       flex-wrap: wrap;
@@ -221,8 +221,8 @@ $error-padding: 40px;
      * and actions on the right as icon buttons or text buttons. */
     .widget-header {
       align-items: center;
-      background: $color-header-bg;
-      color: $color-header-text;
+      background: $color-background-primary;
+      color: $color-text-medium-contrast;
       display: flex;
       gap: $sp-sm;
       min-height: 44px;
@@ -239,7 +239,7 @@ $error-padding: 40px;
 
     .widget-icon {
       align-items: center;
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       display: inline-flex;
       flex-shrink: 0;
       font-size: $large-font-size;
@@ -254,7 +254,7 @@ $error-padding: 40px;
     }
 
     .widget-title {
-      color: $color-header-text;
+      color: $color-text-medium-contrast;
       display: flex;
       flex: 1;
       font-size: 12px;
@@ -272,7 +272,7 @@ $error-padding: 40px;
     }
 
     .widget-title__subtitle {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       font-size: 12px;
       font-weight: 400;
       letter-spacing: 0;
@@ -282,7 +282,7 @@ $error-padding: 40px;
       white-space: nowrap;
 
       &::before {
-        color: $color-text-lower;
+        color: $color-text-lower-contrast;
         content: "·";
         margin-right: $sp-sm;
       }
@@ -311,7 +311,7 @@ $error-padding: 40px;
   // Loading state
   .dashboard-loading {
     align-items: center;
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     display: flex;
     flex-direction: column;
     gap: $sp-lg;
@@ -321,9 +321,9 @@ $error-padding: 40px;
 
     .spinner {
       animation: spin $spinner-duration linear infinite;
-      border: $spinner-border-width solid $color-border;
+      border: $spinner-border-width solid $color-border-primary;
       border-radius: 50%;
-      border-top-color: $color-blue;
+      border-top-color: $color-background-action-high-contrast;
       height: $spinner-size;
       width: $spinner-size;
     }
@@ -331,12 +331,12 @@ $error-padding: 40px;
 
   // Error state
   .dashboard-error {
-    color: $color-danger;
+    color: $color-text-error-high-contrast;
     padding: $error-padding;
     text-align: center;
 
     p {
-      color: $color-text-secondary;
+      color: $color-text-medium-contrast;
       margin-top: $sp-sm;
     }
   }
@@ -346,8 +346,8 @@ $error-padding: 40px;
   /* Date: 2026-03-21 | Model: claude-4.6-opus-high-thinking */
   .widget-error-fallback {
     align-items: center;
-    background: $color-bg-card;
-    border: 1px solid $color-border;
+    background: $color-background-primary;
+    border: 1px solid $color-border-primary;
     border-radius: $radius-lg;
     display: flex;
     flex-direction: column;
@@ -360,7 +360,7 @@ $error-padding: 40px;
 
   .widget-error-fallback-title {
     align-items: center;
-    color: $color-danger;
+    color: $color-text-error-high-contrast;
     display: inline-flex;
     font-size: $default-font-size;
     font-weight: 500;
@@ -368,7 +368,7 @@ $error-padding: 40px;
   }
 
   .widget-error-fallback-message {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: $smaller-font-size;
     max-width: 280px;
     word-break: break-word;
@@ -384,8 +384,8 @@ $error-padding: 40px;
   /* zero height, put every widget in the viewport at once, and mount them all — defeating deferral. */
   .lazy-widget-placeholder {
     align-items: center;
-    background: $color-bg-card;
-    border: 1px solid $color-border;
+    background: $color-background-primary;
+    border: 1px solid $color-border-primary;
     border-radius: $radius-lg;
     display: flex;
     height: 100%;
@@ -395,9 +395,9 @@ $error-padding: 40px;
 
     .lazy-widget-placeholder-spinner {
       animation: spin $spinner-duration linear infinite;
-      border: $spinner-border-width solid $color-border;
+      border: $spinner-border-width solid $color-border-primary;
       border-radius: 50%;
-      border-top-color: $color-blue;
+      border-top-color: $color-background-action-high-contrast;
       height: $spinner-size;
       opacity: 0.6;
       width: $spinner-size;
