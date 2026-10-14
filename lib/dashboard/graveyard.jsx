@@ -9,6 +9,7 @@ import confetti from "canvas-confetti";
 import { appendTaskToRetiredNote, loadGraveyardCandidates } from "graveyard-service";
 import { Button, EmptyState, ErrorState, IconButton, LoadingState } from "dashboard/controls";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
+import { richTooltipHtml } from "dashboard/tooltip-themes";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { MdArchive, MdDescription, MdPushPin, MdRefresh } from "react-icons/md";
@@ -105,11 +106,6 @@ function graveyardTaskScoreTone(task) {
   return 'hot';
 }
 
-// [OpenAI gpt-5.4] Task: escape plain-text graveyard tooltip metadata before HTML interpolation
-function escapeTooltipHtml(text) {
-  return `${ text ?? '' }`.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
 // [OpenAI gpt-5.4] Task: choose stable graveyard prompt indexes by hour and input parameter
 function stableHourIndex(parameter, maxValue) {
   if (!Number.isFinite(maxValue) || maxValue <= 0) return 0;
@@ -123,31 +119,21 @@ function stableHourIndex(parameter, maxValue) {
   return hash % maxValue;
 }
 
-// [OpenAI gpt-5.4] Task: render graveyard hover tooltip content through shared DashboardTippy
+// ----------------------------------------------------------------------------------------------
+// @desc Rich tooltip for a task: its note as title, the rendered task, when it was created, and its score.
+// @param {Object} task - The graveyard task.
+// @returns {string} Tooltip HTML.
 function renderTaskTooltipContent(task) {
   const createdAt = taskCreatedAtDate(task);
   const score = graveyardTaskScore(task);
   const displayScore = Number.isInteger(score) ? `${ score }` : score.toFixed(2).replace(/\.?0+$/, '');
   const noteLabel = task?.noteName || task?.noteTitle || task?.note?.name || 'Unknown note';
-  const scoreTone = graveyardTaskScoreTone(task);
   const createdLabel = createdAt ? createdAt.toLocaleDateString(undefined, { dateStyle: 'medium' }) : 'Unknown';
-  return `
-    <div class="graveyard-task-tooltip" role="tooltip">
-      <div class="graveyard-task-tooltip-meta">
-        <span class="graveyard-task-tooltip-note">${ escapeTooltipHtml(noteLabel) }</span>
-        <span class="graveyard-task-tooltip-created">Created ${ escapeTooltipHtml(createdLabel) }</span>
-      </div>
-      <div class="graveyard-task-tooltip-content">
-        ${ amplenoteMarkdownRender(task.content || task.title || 'Untitled task') }
-      </div>
-      <div class="graveyard-task-tooltip-footer">
-        <span class="graveyard-task-score graveyard-task-score--${ scoreTone }">
-          <span class="graveyard-task-score-dot" aria-hidden="true"></span>
-          <span>Score ${ escapeTooltipHtml(displayScore) }</span>
-        </span>
-      </div>
-    </div>
-  `;
+  return richTooltipHtml({ className: "graveyard-task-tooltip", rows: [
+    { className: "graveyard-task-tooltip-content", html: amplenoteMarkdownRender(task.content || task.title || 'Untitled task') },
+    { className: `graveyard-task-score graveyard-task-score--${ graveyardTaskScoreTone(task) }`,
+      text: `Created ${ createdLabel }`, trailing: `Score ${ displayScore }` },
+  ], title: noteLabel });
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -191,6 +177,7 @@ function TaskCard({ isDismissing, isSingleColumn, taskIndex, onOpenNote, onGrave
             maxWidth={isSingleColumn ? 280 : 340}
             onShown={(instance) => attachFootnotePopups(instance?.popper)}
             placement="bottom-start"
+            rich
           >
             <span className="graveyard-task-title" id={`graveyard-title-${ task.uuid }`} tabIndex={0}>{title}</span>
           </DashboardTippy>

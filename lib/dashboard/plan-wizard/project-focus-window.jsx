@@ -103,7 +103,7 @@ function ProjectFocusWindow({ draft, isDisabled, onChangeWindow, quarterEndOn, q
   return (
     <div className="quarter-name-window">
       <div className="quarter-name-window-label-cell">
-        <DashboardTippy content={ tooltipHtml } delay={ 0 } placement="right">
+        <DashboardTippy content={ tooltipHtml } delay={ 0 } placement="right" rich>
           <span className="quarter-name-window-label" tabIndex={ 0 }>{ draft.summary }</span>
         </DashboardTippy>
       </div>

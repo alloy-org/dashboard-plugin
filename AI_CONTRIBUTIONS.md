@@ -5,6 +5,27 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-14 — Two tooltip looks: hint and rich
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/tooltip-themes.js` (created) — `HINT_TOOLTIP_THEME` / `RICH_TOOLTIP_THEME`, shared `RICH_TOOLTIP_OPTIONS`, and `richTooltipHtml`, which builds the Task Stats tooltip markup as HTML for element and canvas tooltips.
+- `lib/dashboard/dashboard-tooltip-tippy.jsx` — Hint by default; `rich` prop switches to the Task Stats look.
+- `lib/dashboard/charts/stats-chart-tooltip.jsx`, `proposed-agenda.jsx` — Use the theme constants.
+- `lib/dashboard/mood.jsx` — Mood day tooltip is a rich tooltip (date title, one row per entry, time on the right, note as a muted line); fractional averaged ratings show the nearest mood instead of a question-mark glyph.
+- `lib/dashboard/graveyard.jsx`, `styles/graveyard.scss` — Task preview is a rich tooltip (note title, rendered task, created date, tone-colored score); its own tooltip look rules removed.
+- `lib/dashboard/plan-wizard/project-focus-window.jsx`, `project-focus-window-fields.js` — Focus window summary is a rich tooltip with a "Why this project" group.
+- `lib/dashboard/styles/dashboard-tippy.scss` — Themes renamed `dashboard-hint` and `dashboard-rich`; the hint theme holds no content rules; rich theme gains secondary, section, and detail rows.
+- `test/controls-usage.test.js` — Fails on any tooltip theme other than hint, rich, and the host's footnote popup.
+- `doc/design-system.md`, `CLAUDE.md` — "Tooltips" section: which look applies when, and how to build each.
+- `build/compiled.js` — Rebuilt (804,099 bytes).
+
+**Validation:** Jest: 1382 passed, 1 failed (`test/dream-task-actions.test.js`, failing before these changes); the theme guard was checked to fail on a planted unknown theme. Task Retirement Center and mood tooltips checked in the dev server.
+**Task:** Decide when each tooltip look applies, document it, and use the Task Stats look for all rich content.
+**Prompt summary:** "Decide when each applies, write it down, and use the light Task Stats one for rich content everywhere."
+
+---
+
 ## 2026-10-14 — Shared controls and full migration onto them
 
 **Model:** Claude Opus 5.5

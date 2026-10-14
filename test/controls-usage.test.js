@@ -30,6 +30,8 @@ const ALLOWED_RAW_CONTROLS = {
   // HTML string for the host's footnote popup, rendered outside React
   "util/amplenote-markdown-render.js": "footnote popup HTML string",
 };
+// The only tooltip themes: hint and rich (tooltip-themes.js), and the host's footnote popup look
+const TOOLTIP_THEMES = [ "dashboard-hint", "dashboard-rich", "rich-footnote" ];
 // Rotation keyframes allowed outside the spinner, by name
 const ALLOWED_SPIN_KEYFRAMES = [
   // The task-domain refresh icon turns while a refresh runs; it is the icon, not a loading indicator
@@ -133,6 +135,16 @@ describe("shared controls usage", () => {
       .map(line => line.replace(/:not\((?:[^()]|\([^()]*\))*\)/g, ""))
       .filter(line => CONTROL_CLASS_PATTERN.test(line))
       .map(line => `${ path.basename(file) }: ${ line.trim() }`));
+    expect(offenders).toEqual([]);
+  });
+
+  it("uses only the hint and rich tooltip themes", () => {
+    const scriptThemes = scriptFiles.flatMap(file => [ ...codeFromFile(file).matchAll(/theme:\s*["']([\w-]+)["']/g) ]
+      .map(match => ({ file, theme: match[1] })));
+    const stylesheetThemes = stylesheetFiles.flatMap(file => [ ...codeFromFile(file)
+      .matchAll(/data-theme~=['"]([\w-]+)['"]/g) ].map(match => ({ file, theme: match[1] })));
+    const offenders = [ ...scriptThemes, ...stylesheetThemes ].filter(({ theme }) => !TOOLTIP_THEMES.includes(theme))
+      .map(({ file, theme }) => `${ path.relative(LIB_DIRECTORY, file) }: ${ theme }`);
     expect(offenders).toEqual([]);
   });
 });

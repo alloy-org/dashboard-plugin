@@ -4,6 +4,7 @@ import { PROVIDER_DEFAULT_MODEL } from "constants/llm-providers";
 import { configuredProviderEms, SETTING_KEYS } from "constants/settings";
 import { Badge, Button, IconButton, LoadingState, PlainButton } from "dashboard/controls";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
+import { HINT_TOOLTIP_THEME } from "dashboard/tooltip-themes";
 import { useDashboardWork } from "dashboard/work-queue/dashboard-work-context";
 import { preparedDayRankingAwaiter } from "dashboard/work-queue/prepared-day-ranking";
 import LlmProviderSelector from "llm-provider-selector";
@@ -71,7 +72,7 @@ function useReasonTooltip(reason) {
     const reasonElement = reasonRef.current;
     const instance = tippy(reasonElement, { arrow: true, content: reason, delay: [500, 0], duration: [120, 80],
       maxWidth: 360, offset: [0, 8], onShow: () => reasonElement.scrollWidth > reasonElement.clientWidth,
-      placement: "bottom-start", theme: "dashboard" });
+      placement: "bottom-start", theme: HINT_TOOLTIP_THEME });
     return () => instance.destroy();
   }, [reason]);
   return reasonRef;

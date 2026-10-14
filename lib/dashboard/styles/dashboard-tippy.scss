@@ -7,7 +7,7 @@
  * replacement for tippy.css. The elements it names are built by the library and appended to the body, not
  * rendered by any component of ours, so there is no component class to scope them under — and scoping
  * `.tippy-box` would change the weight the rich-footnote theme in amplenote-markdown-render.scss overrides it
- * at. Rules specific to our own tooltips live under `.tippy-box[data-theme~='dashboard']` below.
+ * at. Our own tooltips are the 'dashboard-hint' and 'dashboard-rich' themes below.
  */
 
 @use 'theme-tokens' as *;
@@ -17,8 +17,6 @@
 $tippy-arrow-size: 8px;
 $tippy-arrow-offset: -$tippy-arrow-size + 1;
 $tooltip-max-width: 260px;
-$tooltip-min-width: 180px;
-$tooltip-row-padding-y: 2px;
 
 [data-tippy-root] {
   max-width: calc(100vw - 10px);
@@ -105,141 +103,26 @@ $tooltip-row-padding-y: 2px;
   }
 }
 
-// ── Dashboard theme ──
+// ── Hint tooltips (theme 'dashboard-hint') ──
+// One or two plain sentences about a control or a truncated line: popup surface, arrow, compact. Anything with
+// structure (a title, rows, rendered task text) uses the rich theme below; see "Tooltips" in doc/design-system.md.
 
-.tippy-box[data-theme~='dashboard'] {
+.tippy-box[data-theme~='dashboard-hint'] {
   background: $color-background-popup;
   box-shadow: $shadow-elevation-3;
   color: $color-text-medium-contrast;
   max-width: $tooltip-max-width;
-  min-width: $tooltip-min-width;
 
   > .tippy-arrow {
     color: $color-background-popup;
   }
-
-  // [Claude] Task: constrain tooltip height when placed below chart to avoid viewport overflow
-  // Prompt: "evaluate whether to pop tooltip above or below the date bar"
-  // Date: 2026-03-09 | Model: claude-4.6-opus-high-thinking
-
-  &.below-chart > .tippy-content {
-    max-height: 40vh;
-    overflow-y: auto;
-  }
-
-  // ── Victory-value tooltip content ──
-
-  .dashboard-tooltip-header {
-    border-bottom: 1px solid $color-border-primary;
-    font-weight: 600;
-    margin-bottom: $sp-xs;
-    padding-bottom: $sp-xs;
-  }
-
-  .dashboard-tooltip-section {
-    border-bottom: 1px solid $color-border-primary;
-    margin-bottom: $sp-xs;
-    padding-bottom: $sp-xs;
-  }
-
-  .dashboard-tooltip-row {
-    align-items: baseline;
-    display: flex;
-    gap: $sp-sm;
-    justify-content: space-between;
-    padding: $tooltip-row-padding-y 0;
-  }
-
-  .dashboard-tooltip-row-label {
-    flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-
-    p {
-      display: inline;
-      margin: 0;
-    }
-  }
-
-  .dashboard-tooltip-row-value {
-    color: $color-text-link;
-    flex-shrink: 0;
-    font-weight: 600;
-  }
-
-  // The project a Victory Value task advanced, between its text and its points.
-  .dashboard-tooltip-row-project {
-    align-items: center;
-    color: $color-text-low-contrast;
-    display: inline-flex;
-    flex-shrink: 1;
-    font-size: $smaller-font-size;
-    gap: 4px;
-    max-width: 40%;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .dashboard-tooltip-row-swatch {
-    border-radius: 2px;
-    flex-shrink: 0;
-    height: 8px;
-    width: 8px;
-  }
-
-  .dashboard-tooltip-empty {
-    color: $color-text-low-contrast;
-    font-style: italic;
-  }
-
-  // ── Mood viz tooltip content ──
-
-  .mood-viz-tooltip-date {
-    border-bottom: 1px solid $color-border-primary;
-    font-weight: 600;
-    margin-bottom: 4px;
-    padding-bottom: 4px;
-  }
-
-  .mood-viz-tooltip-entry {
-    align-items: baseline;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px 6px;
-    padding: 2px 0;
-  }
-
-  .mood-viz-tooltip-time {
-    color: $color-text-low-contrast;
-    font-size: $smaller-font-size;
-    min-width: 52px;
-  }
-
-  .mood-viz-tooltip-mood {
-    .mood-viz-label {
-      color: $color-text-low-contrast;
-    }
-  }
-
-  .mood-viz-tooltip-note {
-    color: $color-text-medium-contrast;
-    flex-basis: 100%;
-    font-size: $smaller-font-size;
-    font-style: italic;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: normal;
-    word-break: break-word;
-  }
 }
 
-// ── Chart tooltips (theme 'dashboard-chart'), styled like the host's Task Stats tooltip ──
-// Popup surface rather than the dark hint tooltip, 4px corners, MDC elevation 3, no arrow.
+// ── Rich tooltips (theme 'dashboard-rich'), styled like the host's Task Stats tooltip ──
+// For every tooltip with structure: charts, task previews, summaries. Popup surface, 4px corners, MDC elevation 3,
+// no arrow. Content comes from StatsChartTooltipContent (React) or richTooltipHtml (tooltip-themes.js).
 
-.tippy-box[data-theme~='dashboard-chart'] {
+.tippy-box[data-theme~='dashboard-rich'] {
   background: $color-background-popup;
   border-radius: $radius-sm;
   box-shadow: $shadow-elevation-3;
@@ -311,6 +194,30 @@ $tooltip-row-padding-y: 2px;
       display: inline;
       margin: 0;
     }
+  }
+
+  .stats-chart-tooltip-secondary {
+    color: $color-text-low-contrast;
+    display: block;
+    font-size: 12px;
+    font-style: italic;
+    line-height: 16px;
+  }
+
+  // A small heading row that starts a group of detail rows, e.g. "Why this project"
+  .stats-chart-tooltip-stat--section {
+    border-top: 1px solid $color-border-primary;
+    color: $color-text-low-contrast;
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: $sp-xs;
+    padding-top: $sp-xs;
+  }
+
+  .stats-chart-tooltip-stat--detail .stats-chart-tooltip-text {
+    color: $color-text-medium-contrast;
+    font-size: 12px;
+    line-height: 16px;
   }
 
   .stats-chart-tooltip-trailing {

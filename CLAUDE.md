@@ -28,6 +28,9 @@ Builder UI, read [`doc/design-system.md`](doc/design-system.md) and build only f
   (`$color-text-medium-contrast`, `$color-background-primary`, …). No hex, `rgb()`, or `var(--color-*)` in component
   stylesheets.
 - **Icons** only from `react-icons/md`. No emoji or Unicode glyphs as UI.
+- **Tooltips** come in two looks: a hint (`DashboardTippy`, one or two plain sentences) or the rich Task Stats look
+  for anything with a title, rows, or rendered task text (`DashboardTippy rich` + `richTooltipHtml`, or
+  `useStatsChartTooltip`). When unsure, it is rich. See "Tooltips" in the design system.
 - **Widget frame** from `WidgetWrapper`; a new widget gets its registry entry in `layout-profiles.js` and its icon in
   `widget-icons.jsx`.
 - **Widget stylesheets hold layout only**; never restyle `dashboard-*` control classes. If a control lacks something

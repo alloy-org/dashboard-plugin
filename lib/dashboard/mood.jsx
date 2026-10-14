@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import ConfigPopup from "config-popup";
 import { Button, PlainButton, TextField } from "dashboard/controls";
 import { useCanvasTippy } from "dashboard/dashboard-tooltip-tippy";
+import { RICH_TOOLTIP_OPTIONS, richTooltipHtml } from "dashboard/tooltip-themes";
 import { MdSettings } from "react-icons/md";
 import WidgetWrapper from "widget-wrapper";
 import { parseWidgetConfig, widgetConfigKey } from "constants/settings";
@@ -118,28 +119,22 @@ function visualizationMoodEmoji(vizValue) {
   return VISUALIZATION_MOOD_EMOJIS[Math.round(vizValue)] || '❓';
 }
 
-function pluginMoodLabel(pluginValue) {
-  const mood = MOODS.find(m => m.value === pluginValue);
-  return mood ? mood.label : '';
-}
-
+// ----------------------------------------------------------------------------------------------
+// @desc Rich tooltip for a hovered day: the date as title, then one row per mood entry with its time on the right
+//   and any note as a muted line.
+// @param {Object} data - { entries, fullDate }.
+// @returns {string} Tooltip HTML.
 function buildMoodTooltipHTML(data) {
   if (!data) return '';
   const { fullDate, entries } = data;
-  const parts = [`<div class="mood-viz-tooltip-date">${fullDate}</div>`];
-  for (const entry of entries) {
-    const emoji = MOODS.find(m => m.value === entry.rating)?.emoji || '❓';
-    const label = pluginMoodLabel(entry.rating);
-    let html = `<div class="mood-viz-tooltip-entry">` +
-      `<span class="mood-viz-tooltip-time">${entry.time}</span>` +
-      `<span class="mood-viz-tooltip-mood">${emoji} <span class="mood-viz-label">${label} (${entry.rating > 0 ? `+${entry.rating}` : entry.rating})</span></span>`;
-    if (entry.notes) {
-      html += `<div class="mood-viz-tooltip-note">${entry.notes}</div>`;
-    }
-    html += '</div>';
-    parts.push(html);
-  }
-  return parts.join('');
+  const rows = entries.map(entry => {
+    // Averaged days carry fractional ratings, so show the nearest mood
+    const mood = MOODS.reduce((nearest, candidate) => (Math.abs(candidate.value - entry.rating)
+      < Math.abs(nearest.value - entry.rating) ? candidate : nearest));
+    const rating = entry.rating > 0 ? `+${ entry.rating }` : entry.rating;
+    return { secondaryText: entry.notes, text: `${ mood.emoji } ${ mood.label } (${ rating })`, trailing: entry.time };
+  });
+  return richTooltipHtml({ rows, title: fullDate });
 }
 
 function handleMoodClick(mood, submitting, submitted, setSelectedMood) {
@@ -214,7 +209,7 @@ function RadialRing({ moodData }) {
   const canvasRef = useRef(null);
   const geometryRef = useRef(null);
   const [progress, setProgress] = useState(0);
-  const tip = useCanvasTippy();
+  const tip = useCanvasTippy(RICH_TOOLTIP_OPTIONS);
   const moodDataJson = JSON.stringify(moodData);
 
   useEffect(() => {
@@ -404,7 +399,7 @@ function WaveGraph({ moodData }) {
   const canvasRef = useRef(null);
   const pointsRef = useRef([]);
   const [progress, setProgress] = useState(0);
-  const tip = useCanvasTippy();
+  const tip = useCanvasTippy(RICH_TOOLTIP_OPTIONS);
   const moodDataJson = JSON.stringify(moodData);
 
   useEffect(() => {

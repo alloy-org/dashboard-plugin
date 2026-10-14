@@ -2,6 +2,7 @@
 // one stat row per value, each with a small icon in front. Content is React, rendered into the tooltip on show.
 import { useCanvasTippy } from "dashboard/dashboard-tooltip-tippy";
 import { ICON_DEFAULTS } from "dashboard/icon-defaults";
+import { RICH_TOOLTIP_OPTIONS } from "dashboard/tooltip-themes";
 import { useEffect, useRef } from "react";
 import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
@@ -10,10 +11,9 @@ import { IconContext } from "react-icons";
 const STAT_ICON_SIZE = 14;
 const TITLE_ICON_SIZE = 18;
 
-// Positioning for chart tooltips; the 'dashboard-chart' theme is styled in styles/dashboard-tippy.scss.
-export const STATS_CHART_TOOLTIP_OPTIONS = { arrow: false, interactive: true, offset: [ 0, 8 ],
-  placement: "right-start", popperOptions: { modifiers: [ { name: "flip",
-    options: { fallbackPlacements: [ "left-start", "bottom", "top" ] } } ] }, theme: "dashboard-chart" };
+// Positioning for chart tooltips, in the rich tooltip look (styles/dashboard-tippy.scss)
+export const STATS_CHART_TOOLTIP_OPTIONS = { ...RICH_TOOLTIP_OPTIONS, interactive: true, placement: "right-start",
+  popperOptions: { modifiers: [ { name: "flip", options: { fallbackPlacements: [ "left-start", "bottom", "top" ] } } ] } };
 
 // ------------------------------------------------------------------------------------------
 // @desc One stat row: an icon, the text (or rendered markup), and optional right-aligned trailing text.

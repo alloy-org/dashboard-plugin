@@ -76,7 +76,7 @@ import { Badge, Button, EmptyState, ErrorState, IconButton, LoadingState, PlainB
 | A checkbox or radio | native `<input type="checkbox">` / `type="radio"` inside its `<label>` | Tinted by `accent-color: $color-background-action-high-contrast` (set globally); no custom box. |
 | A status pill | `<Badge tone="neutral" \| "action" \| "status" \| "warning" \| "danger" title="…">Past</Badge>` | Uppercase by default; `uppercase={ false }` for names and prices. |
 | Dialogs and settings | `ConfigPopup` (`lib/dashboard/config-popup.jsx`) | Title bar, close button, footer with Cancel + primary. |
-| Chart tooltips | `useStatsChartTooltip`, `StatsChartTooltipContent`, `StatsChartTooltipRow` (`charts/stats-chart-tooltip.jsx`) | Task Stats tooltip layout. |
+| Tooltips | `DashboardTippy` (hint, or `rich`), `useStatsChartTooltip` for charts | See [Tooltips](#tooltips) for which look to use. |
 | Charts | `charts/stats-chart.jsx` pieces (`ChartGridLines`, `ChartHighlightLine`, `ChartValuePill`, `ChartHitArea`, `ChartXAxisLabels`, `useElementSize`) | See `charts/peak-hours-chart.jsx` for a compact example. |
 
 Every control forwards `ref` (for popout anchors and focus) and passes other attributes (`data-*`, `aria-*`, `role`,
@@ -88,6 +88,30 @@ When something truly cannot be a shared control (a bespoke editor line, an auto-
 `ALLOWED_RAW_CONTROLS` in `test/controls-usage.test.js` with the reason. That test fails on raw `<button>`, `<select>`,
 `<textarea>`, and text `<input>` elsewhere under `lib/`, on `href="#"` links, on spinner classes or spin keyframes
 outside `dashboard-controls.scss`, and on any widget stylesheet that styles a control class.
+
+## Tooltips
+
+There are two tooltip looks. Pick by what the tooltip **contains**, not by where it appears.
+
+| Look | Theme | Use when | Examples |
+|---|---|---|---|
+| **Hint** | `dashboard-hint` (the `DashboardTippy` default) | One or two plain sentences that explain a control or finish a truncated line. No title, rows, links, or markup. | Update indicator, planning suggestion note, cited-task chip, a truncated agenda reason |
+| **Rich** | `dashboard-rich` — the host's Task Stats tooltip | Anything with structure: a title, label/value rows, several entries, rendered task text, or something to click. | Chart bars (Victory Value, Peak Hours, Energy Delta), mood days, Task Retirement Center task preview, Plan Builder focus window |
+
+If you are unsure, it is rich. Never style tooltip content yourself; build it from the rich layout:
+
+- **React content on a chart:** `useStatsChartTooltip()` with `StatsChartTooltipContent` and `StatsChartTooltipRow`
+  (`charts/stats-chart-tooltip.jsx`).
+- **HTML content** (element tooltips, canvas charts): `richTooltipHtml({ title, rows })` from
+  `lib/dashboard/tooltip-themes.js`, shown with `<DashboardTippy rich content={ html }>` or
+  `useCanvasTippy(RICH_TOOLTIP_OPTIONS)`. Rows take `text` (escaped) or trusted `html`, an optional right-aligned
+  `trailing`, and an optional muted `secondaryText`; `stats-chart-tooltip-stat--section` and `--detail` row classes
+  start and fill a sub-group (e.g. "Why this project").
+- **Hints:** `<DashboardTippy content="Plain sentence.">`, or `HINT_TOOLTIP_THEME` for a bare `tippy()` call.
+- An `IconButton`'s own `title`/`tooltip` is the native browser hint and needs no theme.
+
+The host's Rich Footnote popup (`rich-footnote`, in `amplenote-markdown-render.scss`) is the third, host-owned look,
+used only for footnotes inside rendered task text. `test/controls-usage.test.js` fails on any other tooltip theme.
 
 ## Making a widget
 
@@ -139,7 +163,7 @@ export default function InboxWidget({ loading, onReseed, tasks }) {
 `WidgetWrapper` → card (`$color-background-primary`, 1px `$color-border-primary`, 8px corners) → header (18px icon in
 `$color-text-low-contrast`, 12px uppercase 500 title in `$color-text-medium-contrast`, subtitle after "·", actions on
 the right) → body (`4px 16px 16px` padding). Dialogs: `$color-background-dialog` title bar, 20px/500 title,
-`$shadow-elevation-24`. Tooltips: `$color-background-popup`, `$shadow-elevation-3`.
+`$shadow-elevation-24`. Tooltips: `$color-background-popup`, `$shadow-elevation-3` (see [Tooltips](#tooltips)).
 
 ## Theme refresh
 

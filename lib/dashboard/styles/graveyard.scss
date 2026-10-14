@@ -108,72 +108,28 @@
     text-decoration: underline dotted;
   }
 
-  .graveyard-task-tooltip {
-    display: flex;
-    flex-direction: column;
-    gap: $sp-sm;
-    max-height: 280px;
-    overflow-y: auto;
-    padding: $sp-md;
+  // The task tooltip uses the rich tooltip look (dashboard-tippy.scss); these only cover the rendered task and
+  // tint the score by tone.
+  .graveyard-task-tooltip-content code {
+    background: $color-background-element-low-contrast;
+    border-radius: $radius-sm;
+    padding: 1px 4px;
   }
 
-  .graveyard-task-tooltip-meta {
-    align-items: baseline;
-    display: flex;
-    flex-wrap: wrap;
-    gap: $sp-xs $sp-md;
-    justify-content: space-between;
-  }
-
-  .graveyard-task-tooltip-note {
-    color: $color-text-link;
-    font-size: $smaller-font-size;
-    font-weight: 600;
-  }
-
-  .graveyard-task-tooltip-created {
-    color: $color-text-low-contrast;
-    font-size: $smaller-font-size;
-  }
-
-  .graveyard-task-tooltip-content {
-    color: $color-text-medium-contrast;
-    font-size: $smaller-font-size;
-    line-height: 1.4;
-
-    code {
-      background: $color-background-element-low-contrast;
-      border-radius: 4px;
-      padding: 1px 4px;
-    }
-  }
-
-  .graveyard-task-tooltip-footer {
-    border-top: 1px solid $color-border-primary;
-    padding-top: $sp-sm;
-  }
-  .graveyard-task-score--muted {
+  .graveyard-task-tooltip .graveyard-task-score--muted .stats-chart-tooltip-trailing {
     color: $color-text-low-contrast;
   }
 
-  .graveyard-task-score--cool {
+  .graveyard-task-tooltip .graveyard-task-score--cool .stats-chart-tooltip-trailing {
     color: $color-background-action-medium-contrast;
   }
 
-  .graveyard-task-score--warm {
+  .graveyard-task-tooltip .graveyard-task-score--warm .stats-chart-tooltip-trailing {
     color: $color-text-error-low-contrast;
   }
 
-  .graveyard-task-score--hot {
+  .graveyard-task-tooltip .graveyard-task-score--hot .stats-chart-tooltip-trailing {
     color: $color-text-error-high-contrast;
-  }
-
-  .graveyard-task-score-dot {
-    background: currentColor;
-    border-radius: 999px;
-    display: inline-block;
-    height: 9px;
-    width: 9px;
   }
 
   .graveyard-task-age {
@@ -203,7 +159,7 @@
   /* [OpenAI gpt-5.4] Task: tighten graveyard tooltip width and date text for compact 1-column cards */
   /* Prompt: "When the component is only 1-wide, do not show the word Created..." */
   &.vertical-1-cell {
-    .graveyard-task-tooltip {
+    .graveyard-task-tooltip.stats-chart-tooltip-content {
       max-height: 220px;
     }
   }
