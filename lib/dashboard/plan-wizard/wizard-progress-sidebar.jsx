@@ -11,29 +11,29 @@
 // forward past an unanswered step would land them on a page whose inputs depend on answers that do not exist
 // yet, so the rail only offers the moves that lead somewhere usable.
 
-import MaterialIcon from "dashboard/material-icon";
 import PaceBreakdownPie from "dashboard/plan-wizard/pace-breakdown-pie";
 import { memo } from "react";
+import { MdCheckCircle, MdDescription, MdRadioButtonUnchecked } from "react-icons/md";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Draw the filled check that marks a step the user has stored an answer for.
 // @returns {JSX.Element} The check_circle Material icon.
 function StepCheckIcon() {
-  return <MaterialIcon className="progress-step-icon" name="check_circle" />;
+  return <MdCheckCircle className="progress-step-icon" />;
 }
 
 // ----------------------------------------------------------------------------------------------
 // @desc Draw the hollow ring that marks a step with nothing stored against it yet.
 // @returns {JSX.Element} The radio_button_unchecked Material icon.
 function StepPendingIcon() {
-  return <MaterialIcon className="progress-step-icon progress-step-icon--pending" name="radio_button_unchecked" />;
+  return <MdRadioButtonUnchecked className="progress-step-icon progress-step-icon--pending" />;
 }
 
 // ----------------------------------------------------------------------------------------------
 // @desc Draw the page glyph beside the link out to the quarter's plan note.
 // @returns {JSX.Element} The description Material icon.
 function PlanNoteIcon() {
-  return <MaterialIcon className="plan-note-icon" name="description" />;
+  return <MdDescription className="plan-note-icon" />;
 }
 
 // ----------------------------------------------------------------------------------------------

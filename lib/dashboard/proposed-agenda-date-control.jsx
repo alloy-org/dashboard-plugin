@@ -1,7 +1,7 @@
 // Navigate agenda days and choose dates from an anchored month calendar.
-import MaterialIcon from "material-icon";
 import ProposedAgendaPopover from "proposed-agenda-popover";
 import { useCallback, useRef, useState } from "react";
+import { MdChevronLeft, MdChevronRight, MdExpandMore } from "react-icons/md";
 import { calendarEventDateFromValue } from "util/calendar-utility";
 import { dateFromDateInput, dateKeyFromDateInput, monthGridCellsFromDateInput } from "util/date-utility";
 
@@ -40,10 +40,10 @@ function AgendaCalendar({ calendarEvents, dateValue, onSelectDate, savedDates })
       <strong aria-live="polite">{ month.toLocaleDateString([], { month: "long", year: "numeric" }) }</strong>
       <button aria-label="Previous month" className="agenda-calendar-month-arrow"
         onClick={ () => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1)) } type="button">
-        <MaterialIcon name="chevron_left" /></button>
+        <MdChevronLeft /></button>
       <button aria-label="Next month" className="agenda-calendar-month-arrow"
         onClick={ () => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1)) } type="button">
-        <MaterialIcon name="chevron_right" /></button>
+        <MdChevronRight /></button>
     </div>
     <div className="agenda-calendar-grid">
       { ["S", "M", "T", "W", "T", "F", "S"].map((day, index) => <span className="agenda-calendar-weekday" key={ index }>{ day }</span>) }
@@ -95,11 +95,11 @@ export default function ProposedAgendaDateControl({ calendarEvents = [], dateLab
   const shiftDate = amount => selectDate(dateKeyFromDateInput(new Date(date.getFullYear(), date.getMonth(), date.getDate() + amount)));
   return <div className="proposed-agenda-date-control">
     <button aria-label="Previous agenda day" className="proposed-agenda-day-arrow" onClick={ () => shiftDate(-1) } type="button">
-      <MaterialIcon name="chevron_left" /></button>
+      <MdChevronLeft /></button>
     <button aria-expanded={ editing } aria-haspopup="dialog" aria-label="Change agenda date" className="proposed-agenda-date-edit"
-      onClick={ () => setEditing(value => !value) } ref={ anchorRef } type="button">{ label }<MaterialIcon name="expand_more" /></button>
+      onClick={ () => setEditing(value => !value) } ref={ anchorRef } type="button">{ label }<MdExpandMore /></button>
     <button aria-label="Next agenda day" className="proposed-agenda-day-arrow" onClick={ () => shiftDate(1) } type="button">
-      <MaterialIcon name="chevron_right" /></button>
+      <MdChevronRight /></button>
     <span className="proposed-agenda-relative-date">{ relativeLabel }</span>
     { offset !== 0 ? <button className="proposed-agenda-today" onClick={ () => selectDate(dateKeyFromDateInput(today)) }
       type="button">Back to today</button> : null }

@@ -5,15 +5,19 @@
  * Prompt summary: "new energy-per-habit component styled like the 'Mood delta per habit' mockup"
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { MdBedtime, MdCampaign, MdCheckCircle, MdCleaningServices, MdDirectionsBike, MdDirectionsRun,
+  MdDirectionsWalk, MdEdit, MdEditNote, MdFavorite, MdFitnessCenter, MdFlight, MdHandshake, MdHiking, MdInbox,
+  MdLocalLaundryService, MdMenuBook, MdMovie, MdMusicNote, MdPalette, MdPeople, MdPhonelinkOff, MdPsychology,
+  MdRemoveCircleOutline, MdRepeat, MdRestaurant, MdSavings, MdSelfImprovement, MdSpa, MdSportsEsports,
+  MdTranslate, MdTrendingDown, MdTrendingUp, MdVolunteerActivism, MdWaterDrop,
+  MdWaves } from "react-icons/md";
 import WidgetWrapper from "widget-wrapper";
 import { noteUrlFromUUID } from "app-util";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { logIfEnabled } from "util/log";
 import { formatDelta, HABIT_ANALYSIS_WINDOW_DAYS, leadingEmoji, stripLeadingEmoji } from "energy-per-habit-analysis";
-import { STATS_CHART_TOOLTIP_OPTIONS, statsChartTooltipHtml } from "dashboard/charts/stats-chart-tooltip";
-import { useCanvasTippy } from "dashboard/dashboard-tooltip-tippy";
+import { StatsChartTooltipContent, StatsChartTooltipRow, useStatsChartTooltip } from "dashboard/charts/stats-chart-tooltip";
 import { loadEnergyPerHabit } from "energy-per-habit-service";
-import MaterialIcon from "material-icon";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import "styles/energy-per-habit.scss";
 
@@ -24,41 +28,41 @@ const MAX_HABIT_ROWS = 8;
 const ROUND_UP_TO_YEAR_ABOVE = 330;
 
 // Fallback icon plus keyword hints so common habits get a recognizable Material icon.
-const HABIT_ICON_FALLBACK = 'repeat';
+const HABIT_ICON_FALLBACK = MdRepeat;
 const HABIT_ICON_HINTS = [
-  { pattern: /exercise|workout|gym/, iconName: 'fitness_center' },
-  { pattern: /bike|cycling|cycle/, iconName: 'directions_bike' },
-  { pattern: /lift/, iconName: 'fitness_center' },
-  { pattern: /jog|run/, iconName: 'directions_run' },
-  { pattern: /hike|trail/, iconName: 'hiking' },
-  { pattern: /walk|outside|outdoor|steps/, iconName: 'directions_walk' },
-  { pattern: /inbox|email/, iconName: 'inbox' },
-  { pattern: /read|book|study|homework/, iconName: 'menu_book' },
-  { pattern: /deep work|focus|review|reflect/, iconName: 'psychology' },
-  { pattern: /screen|phone|social|digital/, iconName: 'phonelink_off' },
-  { pattern: /late.?night|night|midnight/, iconName: 'bedtime' },
-  { pattern: /meditat|breath|mindful|yoga/, iconName: 'self_improvement' },
-  { pattern: /sleep|bed|rest/, iconName: 'bedtime' },
-  { pattern: /water|hydrat|drink/, iconName: 'water_drop' },
-  { pattern: /plan|review|journal/, iconName: 'edit_note' },
-  { pattern: /contact|email|journal|message|text|write|writing/, iconName: 'edit' },
-  { pattern: /outreach|broadcast|advertise|distribution/, iconName: 'campaign' },
-  { pattern: /gratitude|thank/, iconName: 'volunteer_activism' },
-  { pattern: /clean|tidy|organize/, iconName: 'cleaning_services' },
-  { pattern: /cook|meal|recipe/, iconName: 'restaurant' },
-  { pattern: /music|song|sing/, iconName: 'music_note' },
-  { pattern: /art|draw|paint/, iconName: 'palette' },
-  { pattern: /game|play|fun/, iconName: 'sports_esports' },
-  { pattern: /family|friend|social/, iconName: 'people' },
-  { pattern: /volunteer|help|charity/, iconName: 'favorite' },
-  { pattern: /finance|budget|money/, iconName: 'savings' },
-  { pattern: /language|learn|study/, iconName: 'translate' },
-  { pattern: /travel|trip|vacation/, iconName: 'flight' },
-  { pattern: /garden|plant|nature/, iconName: 'spa' },
-  { pattern: /movie|film|cinema/, iconName: 'movie' },
-  { pattern: /cleaning|laundry|housework/, iconName: 'local_laundry_service' },
-  { pattern: /swim|pool|water/, iconName: 'waves' },
-  { pattern: /networking|bizdev/, iconName: 'handshake' },
+  { pattern: /exercise|workout|gym/, Icon: MdFitnessCenter },
+  { pattern: /bike|cycling|cycle/, Icon: MdDirectionsBike },
+  { pattern: /lift/, Icon: MdFitnessCenter },
+  { pattern: /jog|run/, Icon: MdDirectionsRun },
+  { pattern: /hike|trail/, Icon: MdHiking },
+  { pattern: /walk|outside|outdoor|steps/, Icon: MdDirectionsWalk },
+  { pattern: /inbox|email/, Icon: MdInbox },
+  { pattern: /read|book|study|homework/, Icon: MdMenuBook },
+  { pattern: /deep work|focus|review|reflect/, Icon: MdPsychology },
+  { pattern: /screen|phone|social|digital/, Icon: MdPhonelinkOff },
+  { pattern: /late.?night|night|midnight/, Icon: MdBedtime },
+  { pattern: /meditat|breath|mindful|yoga/, Icon: MdSelfImprovement },
+  { pattern: /sleep|bed|rest/, Icon: MdBedtime },
+  { pattern: /water|hydrat|drink/, Icon: MdWaterDrop },
+  { pattern: /plan|review|journal/, Icon: MdEditNote },
+  { pattern: /contact|email|journal|message|text|write|writing/, Icon: MdEdit },
+  { pattern: /outreach|broadcast|advertise|distribution/, Icon: MdCampaign },
+  { pattern: /gratitude|thank/, Icon: MdVolunteerActivism },
+  { pattern: /clean|tidy|organize/, Icon: MdCleaningServices },
+  { pattern: /cook|meal|recipe/, Icon: MdRestaurant },
+  { pattern: /music|song|sing/, Icon: MdMusicNote },
+  { pattern: /art|draw|paint/, Icon: MdPalette },
+  { pattern: /game|play|fun/, Icon: MdSportsEsports },
+  { pattern: /family|friend|social/, Icon: MdPeople },
+  { pattern: /volunteer|help|charity/, Icon: MdFavorite },
+  { pattern: /finance|budget|money/, Icon: MdSavings },
+  { pattern: /language|learn|study/, Icon: MdTranslate },
+  { pattern: /travel|trip|vacation/, Icon: MdFlight },
+  { pattern: /garden|plant|nature/, Icon: MdSpa },
+  { pattern: /movie|film|cinema/, Icon: MdMovie },
+  { pattern: /cleaning|laundry|housework/, Icon: MdLocalLaundryService },
+  { pattern: /swim|pool|water/, Icon: MdWaves },
+  { pattern: /networking|bizdev/, Icon: MdHandshake },
 ];
 
 // ------------------------------------------------------------------------------------------
@@ -67,15 +71,15 @@ const HABIT_ICON_HINTS = [
 //   month whose stored label predates emoji retention): it is the user's content, so it is kept. Only when the
 //   habit carries no leading emoji do we fall back to a keyword-hint Material icon, then a generic default.
 // @param {Object} habit - Habit with { label, fullText }.
-// @returns {Object} Either { emoji } from the habit's own text, or { iconName } naming a Material icon.
+// @returns {Object} Either { emoji } from the habit's own text, or { Icon }, a Material icon component.
 function habitIcon(habit) {
   const ownEmoji = leadingEmoji(habit.label) || leadingEmoji(habit.fullText);
   if (ownEmoji) return { emoji: ownEmoji };
   const lower = stripLeadingEmoji(habit.label).toLowerCase();
-  for (const { iconName, pattern } of HABIT_ICON_HINTS) {
-    if (pattern.test(lower)) return { iconName };
+  for (const { Icon, pattern } of HABIT_ICON_HINTS) {
+    if (pattern.test(lower)) return { Icon };
   }
-  return { iconName: HABIT_ICON_FALLBACK };
+  return { Icon: HABIT_ICON_FALLBACK };
 }
 
 // ------------------------------------------------------------------------------------------
@@ -100,17 +104,20 @@ function weekStreakLabel(weeks) {
 // @desc Build the hover tooltip for a habit's row in the host's Task Stats tooltip layout: the habit, its mood delta,
 //   and the average and rating count on days the habit was completed vs. days it was not.
 // @param {Object} habit - Habit with label, delta, avgMoodOnDone, avgMoodOnOff, doneWithMood, offWithMood.
-// @returns {string} Tooltip HTML.
-function habitTooltipHtml(habit) {
+// @returns {JSX.Element} Tooltip content.
+function habitTooltipContent(habit) {
   const days = count => `${ count } rated ${ count === 1 ? 'day' : 'days' }`;
-  const rows = [
-    { className: habit.delta >= 0 ? 'habit-tooltip-stat--positive' : 'habit-tooltip-stat--negative',
-      iconName: habit.delta >= 0 ? 'trending_up' : 'trending_down', text: `${ formatDelta(habit.delta) } energy delta` },
-    { iconName: 'check_circle', text: `When completed: ${ formatDelta(habit.avgMoodOnDone) } avg over ${ days(habit.doneWithMood) }` },
-    { iconName: 'remove_circle_outline',
-      text: `When not completed: ${ formatDelta(habit.avgMoodOnOff) } avg over ${ days(habit.offWithMood) }` },
-  ];
-  return statsChartTooltipHtml({ rows, title: stripLeadingEmoji(habit.label), titleIconName: 'repeat' });
+  const positive = habit.delta >= 0;
+  return (
+    <StatsChartTooltipContent title={stripLeadingEmoji(habit.label)} TitleIcon={MdRepeat}>
+      <StatsChartTooltipRow className={positive ? 'habit-tooltip-stat--positive' : 'habit-tooltip-stat--negative'}
+        Icon={positive ? MdTrendingUp : MdTrendingDown} text={`${ formatDelta(habit.delta) } energy delta`} />
+      <StatsChartTooltipRow Icon={MdCheckCircle}
+        text={`When completed: ${ formatDelta(habit.avgMoodOnDone) } avg over ${ days(habit.doneWithMood) }`} />
+      <StatsChartTooltipRow Icon={MdRemoveCircleOutline}
+        text={`When not completed: ${ formatDelta(habit.avgMoodOnOff) } avg over ${ days(habit.offWithMood) }`} />
+    </StatsChartTooltipContent>
+  );
 }
 
 // ------------------------------------------------------------------------------------------
@@ -136,7 +143,7 @@ function HabitRow({ habit, maxAbsDelta, onHover, onHoverEnd, onOpen, windowDays 
     <div className="habit-row" onMouseEnter={(event) => onHover(habit, event.currentTarget)} onMouseLeave={onHoverEnd}>
       <div className="habit-row-lead">
         <span className="habit-row-icon" aria-hidden="true">
-          {rowIcon.emoji ? rowIcon.emoji : <MaterialIcon name={ rowIcon.iconName } />}
+          {rowIcon.emoji ? rowIcon.emoji : <rowIcon.Icon />}
         </span>
         <div className="habit-row-text">
           <div
@@ -190,7 +197,7 @@ export default function EnergyPerHabitWidget({ app }) {
   const [loadError, setLoadError] = useState(false);
   const [loading, setLoading] = useState(true);
   const rowsRef = useRef(null);
-  const tooltip = useCanvasTippy(STATS_CHART_TOOLTIP_OPTIONS);
+  const tooltip = useStatsChartTooltip();
 
   useEffect(() => {
     if (!app) return;
@@ -234,7 +241,7 @@ export default function EnergyPerHabitWidget({ app }) {
   // values fill the row's right side, so the tooltip opens to the row's left, or below it where there is no room.
   const onHabitHover = useCallback((habit, rowElement) => {
     const rowBox = rowElement.getBoundingClientRect();
-    tooltip.show(habitTooltipHtml(habit), rowBox.left, rowBox.top, { placement: 'left-start' });
+    tooltip.show(habitTooltipContent(habit), rowBox.left, rowBox.top, { placement: 'left-start' });
   }, []);
   const onHabitHoverEnd = useCallback(() => tooltip.scheduleHide(150), []);
 

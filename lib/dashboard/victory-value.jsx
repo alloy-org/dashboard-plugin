@@ -1,15 +1,16 @@
 // Render seven days of completed-task victory values with weekly navigation and a mood overlay.
 import { parseWidgetConfig, widgetConfigKey } from "../constants/settings";
 import ConfigPopup from "./config-popup";
-import { escapedHtml, statsChartTooltipHtml } from "dashboard/charts/stats-chart-tooltip";
+import { StatsChartTooltipContent, StatsChartTooltipRow } from "dashboard/charts/stats-chart-tooltip";
 import VictoryValueChart, { moodColorFromRating } from "dashboard/charts/victory-value-chart";
 import { completedTasksWithAppliedValues } from "dashboard/projects/completed-task-potential";
 import { completedTaskProjectColor, dailyProjectSegments, projectLegendItems } from "dashboard/projects/completed-task-project-colors";
 import WidgetWrapper from "./widget-wrapper";
 import { useCompletedTaskProjects } from "hooks/use-completed-task-projects";
-import MaterialIcon from "material-icon";
 import { pluginSettings } from "plugin-data";
 import { useState } from "react";
+import { MdCheckCircle, MdChecklist, MdChevronLeft, MdChevronRight, MdEmojiEmotions, MdEqualizer,
+  MdEvent } from "react-icons/md";
 import "styles/victory-value.scss";
 import { dateFromDateInput, dateKeyFromDateInput, tooltipLabelFromDateInput, weekDateSlotsFromDateInput } from "util/date-utility";
 import { renderMarkdown } from "util/utility";
@@ -122,11 +123,15 @@ function getHoveredDayMood(index, moodByDay, dailyValues) {
 // ------------------------------------------------------------------------------------------
 // @desc The swatch and name of the project a tooltip row's task advanced.
 // @param {Object|null} projectColor - From completedTaskProjectColor, or null when no project claims the task.
-// @returns {string} HTML, empty when no project claims the task.
-function tooltipProjectHtml(projectColor) {
-  if (!projectColor) return '';
-  return `<span class="dashboard-tooltip-row-project"><span class="dashboard-tooltip-row-swatch" `
-    + `style="background: var(${ projectColor.colorToken })"></span>${ escapedHtml(projectColor.label) }</span>`;
+// @returns {JSX.Element|null} The project label, or nothing when no project claims the task.
+function TooltipProject({ projectColor }) {
+  if (!projectColor) return null;
+  return (
+    <span className="dashboard-tooltip-row-project">
+      <span className="dashboard-tooltip-row-swatch" style={{ backgroundColor: `var(${ projectColor.colorToken })` }} />
+      {projectColor.label}
+    </span>
+  );
 }
 
 // ------------------------------------------------------------------------------------------
@@ -138,28 +143,30 @@ function tooltipProjectHtml(projectColor) {
 // @param {Object} completedTasksByDate - Completed tasks grouped by local date key.
 // @param {Array} moodByDay - The mood recorded on each displayed day, or null.
 // @param {Object|null} [completedTaskProjects] - Ledger lookups from useCompletedTaskProjects.
-// @returns {string} Tooltip HTML.
-export function buildTooltipHTML(hoveredBar, dailyValues, completedTasksByDate, moodByDay, completedTaskProjects = null) {
+// @returns {JSX.Element} Tooltip content.
+export function tooltipContentFromDay(hoveredBar, dailyValues, completedTasksByDate, moodByDay, completedTaskProjects = null) {
   const day = dailyValues[hoveredBar];
   const tasks = getHoveredDayTasks(hoveredBar, dailyValues, completedTasksByDate);
   const mood = getHoveredDayMood(hoveredBar, moodByDay, dailyValues);
   const victoryValue = Math.round((day?.value || 0) * 10) / 10;
-  const noDataClassName = tasks.length ? '' : ' stats-chart-tooltip-stat--no-data';
-  const rows = [
-    { className: `stats-chart-tooltip-stat--victory-value${ noDataClassName }`, iconName: 'equalizer',
-      text: `${ victoryValue } Victory Value` },
-    { className: noDataClassName, iconName: 'checklist',
-      text: `${ tasks.length } completed task${ tasks.length === 1 ? '' : 's' }` },
-  ];
-  if (mood) rows.push({ iconName: 'emoji_emotions', iconStyle: `color: ${ moodColorFromRating(mood.value) }`, text: mood.label });
+  const noDataClassName = tasks.length ? '' : 'stats-chart-tooltip-stat--no-data';
   const dateKey = day ? dateKeyFromDateInput(day.date) : null;
-  for (const task of tasks) {
-    const projectColor = completedTaskProjectColor(task, dateKey, completedTaskProjects);
-    rows.push({ className: 'stats-chart-tooltip-stat--task', html: renderMarkdown(task.content) + tooltipProjectHtml(projectColor),
-      iconName: 'check_circle', trailing: `${ task.victoryValue || 0 } pts` });
-  }
-  const title = day ? tooltipLabelFromDateInput(day.date) : '';
-  return statsChartTooltipHtml({ rows, title, titleIconName: 'event' });
+  return (
+    <StatsChartTooltipContent title={day ? tooltipLabelFromDateInput(day.date) : ''} TitleIcon={MdEvent}>
+      <StatsChartTooltipRow className={`stats-chart-tooltip-stat--victory-value ${ noDataClassName }`} Icon={MdEqualizer}
+        text={`${ victoryValue } Victory Value`} />
+      <StatsChartTooltipRow className={noDataClassName} Icon={MdChecklist}
+        text={`${ tasks.length } completed task${ tasks.length === 1 ? '' : 's' }`} />
+      {mood ? <StatsChartTooltipRow Icon={MdEmojiEmotions} iconColor={moodColorFromRating(mood.value)} text={mood.label} /> : null}
+      {tasks.map((task, index) => (
+        <StatsChartTooltipRow className="stats-chart-tooltip-stat--task" Icon={MdCheckCircle} key={task.uuid || index}
+          trailing={`${ task.victoryValue || 0 } pts`}>
+          <span dangerouslySetInnerHTML={{ __html: renderMarkdown(task.content) }} />
+          <TooltipProject projectColor={completedTaskProjectColor(task, dateKey, completedTaskProjects)} />
+        </StatsChartTooltipRow>
+      ))}
+    </StatsChartTooltipContent>
+  );
 }
 
 // ------------------------------------------------------------------------------------------
@@ -241,7 +248,7 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
   const onConfigSubmit = handleConfigSubmit.bind(null, app, timeRange, showMood, setConfigOpen);
   const onConfigCancel = handleConfigCancel.bind(null, currentConfig, setTimeRange, setShowMood, setConfigOpen);
   const weekDateRange = formatWeekDateRange(chartDailyValues);
-  const tooltipHtmlFromIndex = index => buildTooltipHTML(index, chartDailyValues, displayedTasksByDate, moodByDay,
+  const tooltipContentFromIndex = index => tooltipContentFromDay(index, chartDailyValues, displayedTasksByDate, moodByDay,
     completedTaskProjects);
 
   return (
@@ -281,10 +288,10 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
           onClick={() => onReferenceDateChange && onReferenceDateChange(shiftWeekDate(-1, rangeEndDate))}
           title="Previous week"
           aria-label="Previous week"
-        ><MaterialIcon name="chevron_left" size={ 20 } /></button>
+        ><MdChevronLeft size={ 20 } /></button>
         <div className="vv-chart-wrap">
           <VictoryValueChart dailyValues={chartDailyValues} hasProjectLegend={legendItems.length > 0} moodByDay={moodByDay}
-            showMood={showMood} tooltipHtmlFromIndex={tooltipHtmlFromIndex} />
+            showMood={showMood} tooltipContentFromIndex={tooltipContentFromIndex} />
         </div>
         <button
           className="vv-nav-arrow"
@@ -293,7 +300,7 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
           onClick={() => onReferenceDateChange && onReferenceDateChange(shiftWeekDate(1, rangeEndDate))}
           title="Next week"
           aria-label="Next week"
-        ><MaterialIcon name="chevron_right" size={ 20 } /></button>
+        ><MdChevronRight size={ 20 } /></button>
       </div>
     </WidgetWrapper>
   );

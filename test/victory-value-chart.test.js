@@ -5,8 +5,8 @@ import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 
 const shownTooltips = [];
-await jest.unstable_mockModule("dashboard/dashboard-tooltip-tippy", async () => ({
-  useCanvasTippy: () => ({ cancelScheduledHide: () => {}, hide: () => {}, scheduleHide: () => {},
+await jest.unstable_mockModule("dashboard/charts/stats-chart-tooltip", async () => ({
+  useStatsChartTooltip: () => ({ scheduleHide: () => {},
     show: (content, screenX, screenY) => shownTooltips.push({ content, screenX, screenY }) }),
 }));
 
@@ -34,7 +34,7 @@ async function renderChart(props = {}) {
   document.body.appendChild(container);
   await act(async () => {
     createRoot(container).render(createElement(VictoryValueChart, { dailyValues: dailyValuesFixture(), hasProjectLegend: false,
-      moodByDay: [], showMood: false, tooltipHtmlFromIndex: index => `tooltip ${ index }`, ...props }));
+      moodByDay: [], showMood: false, tooltipContentFromIndex: index => `tooltip ${ index }`, ...props }));
   });
   return container;
 }

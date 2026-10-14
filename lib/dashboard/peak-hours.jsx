@@ -5,11 +5,11 @@
  * Prompt summary: "rewrite peak-hours as a project-native widget consuming completed tasks from dashboard"
  */
 import PeakHoursChart from "dashboard/charts/peak-hours-chart";
-import MaterialIcon from "material-icon";
 import { useEffect, useRef, useMemo, useCallback, useState } from "react";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { dateFromDateInput, dateFromMonthKey, formatHourLabel, monthKeyFromDateInput,
   monthStartFromDateInput } from "util/date-utility";
+import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 import { logIfEnabled } from "util/log";
 import WidgetWrapper from "widget-wrapper";
 import "styles/peak-hours.scss";
@@ -127,7 +127,7 @@ function MonthNavigator({ label, forwardDisabled, onNavigate }) {
         aria-label="Previous month"
         onClick={() => onNavigate(-1)}
       >
-        <MaterialIcon name="chevron_left" />
+        <MdChevronLeft />
       </button>
       <span className="peak-hours-month-nav-label">{label}</span>
       <button
@@ -137,7 +137,7 @@ function MonthNavigator({ label, forwardDisabled, onNavigate }) {
         disabled={forwardDisabled}
         onClick={() => onNavigate(1)}
       >
-        <MaterialIcon name="chevron_right" />
+        <MdChevronRight />
       </button>
     </span>
   );

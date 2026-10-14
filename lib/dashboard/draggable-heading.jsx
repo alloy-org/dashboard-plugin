@@ -1,5 +1,5 @@
-import MaterialIcon from "material-icon";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { MdSettings } from "react-icons/md";
 
 export const DASHBOARD_WIDGET_FOCUS_EVENT = "dashboard:widget-focus-request";
 export const MIN_MS_TO_BEGIN_DRAG = 2000;
@@ -185,12 +185,11 @@ export function useDashboardDrag(activeComponents, onReorder) {
 // [Claude] Task: widget header component that emits long-press drag-ready events
 // [Claude claude-4.7-opus] Task: migrate DraggableHeading from createElement to JSX
 // Prompt: "translate this project to render components with JSX instead"
-// @param {string} iconName - Material icon drawn in place of the emoji `icon` when the registry names one.
+// @param {JSX.Element|null} icon - The widget's icon element, already resolved by WidgetWrapper.
 export default function DraggableHeading({
   configurable,
   headerActions,
   icon,
-  iconName,
   onConfigure,
   subtitle,
   title,
@@ -257,7 +256,6 @@ export default function DraggableHeading({
     };
   }, [dragEventDetail]);
 
-  const renderedIcon = iconName ? <MaterialIcon name={ iconName } /> : icon;
   return (
     <div
       ref={headerRef}
@@ -270,9 +268,9 @@ export default function DraggableHeading({
           title={`Focus ${title}`}
           aria-label={`Focus ${title}`}
           onClick={() => window.dispatchEvent(new CustomEvent(DASHBOARD_WIDGET_FOCUS_EVENT, { detail: dragEventDetail }))}
-        >{renderedIcon}</button>
+        >{icon}</button>
       ) : (
-        <span className="widget-icon">{renderedIcon}</span>
+        <span className="widget-icon">{icon}</span>
       )}
       <h3 className="widget-title">
         <span className="widget-title__label">{title}</span>
@@ -281,7 +279,7 @@ export default function DraggableHeading({
       {headerActions || null}
       {configurable ? (
         <button aria-label={ `Configure ${ title }` } className="widget-configure" onClick={onConfigure} title="Configure">
-          <MaterialIcon name="settings" />
+          <MdSettings />
         </button>
       ) : null}
     </div>

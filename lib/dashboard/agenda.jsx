@@ -5,9 +5,9 @@
  * Prompt summary: "widget listing today's scheduled tasks with time, priority indicator, and duration"
  */
 import { DASHBOARD_NOTE_TAG } from "constants/settings"
-import MaterialIcon from "material-icon"
 import { obligationsFromTasksAndEvents, TODAY_OBLIGATIONS_EVENT, TODAY_OBLIGATIONS_REQUEST_EVENT } from "proposed-agenda-obligations"
 import { useState, useEffect, useRef } from "react"
+import { MdChevronLeft, MdChevronRight } from "react-icons/md"
 import WidgetWrapper from "widget-wrapper"
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render"
 // [Claude] Task: use shared `formatDateKey` from date-utility (single YYYY-MM-DD implementation)
@@ -203,7 +203,7 @@ export default function AgendaWidget({ app, calendarEvents, currentDate, selecte
         onClick={() => setPage(p => Math.max(0, p - 1))}
         disabled={currentPage === 0}
         title="Previous page"
-      ><MaterialIcon name="chevron_left" /></button>
+      ><MdChevronLeft /></button>
       <span className="agenda-page-indicator">{`${currentPage + 1} / ${totalPages}`}</span>
       <button
         aria-label="Next page"
@@ -211,7 +211,7 @@ export default function AgendaWidget({ app, calendarEvents, currentDate, selecte
         onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
         disabled={currentPage >= totalPages - 1}
         title="Next page"
-      ><MaterialIcon name="chevron_right" /></button>
+      ><MdChevronRight /></button>
     </div>
   ) : null;
 

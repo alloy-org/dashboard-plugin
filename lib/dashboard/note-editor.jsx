@@ -1,7 +1,7 @@
 // Dev-mode inline note editor: load a note's markdown into a contentEditable field with save and back.
 
-import MaterialIcon from "material-icon";
 import { useEffect, useRef, useState } from "react";
+import { MdArrowBack } from "react-icons/md";
 import "styles/note-editor.scss";
 import { fetchNoteContent, saveNoteContent } from "util/goal-notes";
 
@@ -54,7 +54,7 @@ export default function NoteEditor({ app, noteUUID, onBack }) {
   return (
     <div className="note-editor">
       <div className="note-editor-toolbar">
-        <button className="note-editor-btn note-editor-btn--back" onClick={ onBack } type="button"><MaterialIcon name="arrow_back" size={ 16 } />Back</button>
+        <button className="note-editor-btn note-editor-btn--back" onClick={ onBack } type="button"><MdArrowBack size={ 16 } />Back</button>
         <button className="note-editor-btn note-editor-btn--save" disabled={ saving } onClick={ handleSave }
           type="button">{ saving ? "Saving…" : "Save" }</button>
       </div>

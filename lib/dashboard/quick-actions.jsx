@@ -4,17 +4,17 @@
  * Task: Quick actions widget — list of shortcut buttons
  * Prompt summary: "widget with a 2x2 grid of quick-action buttons (Daily Jot, Journal, etc.)"
  */
-import MaterialIcon from "material-icon";
+import { MdDateRange, MdEdit, MdFeedback, MdMenuBook, MdShuffle } from "react-icons/md";
 import WidgetWrapper from "widget-wrapper";
 import "styles/quick-actions.scss"
 
-// Buttons in display order; iconName is a Material icon drawn by MaterialIcon
+// Buttons in display order, each with the Material icon component it shows
 const QUICK_ACTIONS = [
-  { action: 'dailyJot', iconName: 'edit', label: 'Daily Jot' },
-  { action: 'journal', iconName: 'menu_book', label: 'Journal' },
-  { action: 'calendar', iconName: 'date_range', label: 'Calendar' },
-  { action: 'randomNote', iconName: 'shuffle', label: 'Random Note' },
-  { action: 'leaveFeedback', iconName: 'feedback', label: 'Leave Feedback' },
+  { action: 'dailyJot', Icon: MdEdit, label: 'Daily Jot' },
+  { action: 'journal', Icon: MdMenuBook, label: 'Journal' },
+  { action: 'calendar', Icon: MdDateRange, label: 'Calendar' },
+  { action: 'randomNote', Icon: MdShuffle, label: 'Random Note' },
+  { action: 'leaveFeedback', Icon: MdFeedback, label: 'Leave Feedback' },
 ];
 
 const QUICK_ACTION_URLS = {
@@ -79,7 +79,7 @@ export default function QuickActionsWidget({ app }) {
             onClick={() => handleAction(quickAction.action)}
             type="button"
           >
-            <MaterialIcon className="qa-icon" name={ quickAction.iconName } />
+            <quickAction.Icon className="qa-icon" />
             <span className="qa-label">{quickAction.label}</span>
           </button>
         ))}

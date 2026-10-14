@@ -8,10 +8,10 @@
 // It borrows the intent reading page's layout classes, since the two pages are the same kind of explanation for
 // different steps and should read alike.
 
-import MaterialIcon from "dashboard/material-icon";
 import { IntentReadingProgressBar, ReadItemIcon, useStaggeredReveal } from "dashboard/plan-wizard/intent-reading-page";
 import { hasThinSources, projectTaskItems, sourceProjectRows } from "dashboard/plan-wizard/project-sources-page-fields";
 import { useEffect, useState } from "react";
+import { MdCheck, MdChevronRight, MdTrackChanges } from "react-icons/md";
 
 const INTENT_REVEAL_MS = 120;
 const NOTE_REVEAL_MS = 90;
@@ -124,12 +124,12 @@ function ProjectSourcesProject({ projectRow, projectSources }) {
   const hasTasks = projectRow.servedTaskCount > 0;
   const rowContent = (
     <>
-      <MaterialIcon className="intent-reading-direction-icon" name="track_changes" />
+      <MdTrackChanges className="intent-reading-direction-icon" />
       <span className="project-sources-project-name">{ projectRow.summary }</span>
       { projectRow.userCategoryEm === "personal" ? <span className="project-sources-project-category">Personal</span> : null }
       { isRatified ? (
         <span className="project-sources-ratified-badge" title="You chose this project's cadence">
-          <MaterialIcon name="check" size={ 14 } />
+          <MdCheck size={ 14 } />
           { projectRow.paceLabel }
         </span>
       ) : null }
@@ -137,7 +137,7 @@ function ProjectSourcesProject({ projectRow, projectSources }) {
         { projectTaskCountLabel(projectRow) }
       </span>
       { hasTasks ? (
-        <MaterialIcon className="project-sources-project-chevron" name="chevron_right" />
+        <MdChevronRight className="project-sources-project-chevron" />
       ) : null }
     </>
   );

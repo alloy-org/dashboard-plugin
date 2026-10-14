@@ -2,13 +2,13 @@
 // near either edge to resize it, or drag its middle to move the whole range.
 
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
-import MaterialIcon from "dashboard/material-icon";
 import { FOCUS_WINDOW_EDGE_HIT_PIXELS, dayOffsetFromPointer, monthIndexFromPointer, movedWindowDraft,
   pointerOperationFromPosition, projectTooltipHtmlFromDraft, removedWindowDraft,
   windowDraftFromMonthIndex } from "dashboard/plan-wizard/project-focus-window-fields";
 import { dayOffsetFromDateKey, deadlineNoteFromDraft,
   updatedWindowDraft } from "dashboard/plan-wizard/quarter-name-step-fields";
 import { memo, useRef, useState } from "react";
+import { MdChevronLeft, MdChevronRight, MdClose } from "react-icons/md";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Render one project's bar on the shared month axis, converting thumb movement into a clamped window.
@@ -114,8 +114,8 @@ function ProjectFocusWindow({ draft, isDisabled, onChangeWindow, quarterEndOn, q
           <>
             <div className={ `quarter-name-bar quarter-name-bar--${ draft.colorIndex }${ pulseVersion
               ? " quarter-name-bar--pulse" : "" }` } key={ pulseVersion } style={ barStyle }>
-              <MaterialIcon className="quarter-name-bar-handle" name="chevron_left" size={ 16 } />
-              <MaterialIcon className="quarter-name-bar-handle" name="chevron_right" size={ 16 } />
+              <MdChevronLeft className="quarter-name-bar-handle" size={ 16 } />
+              <MdChevronRight className="quarter-name-bar-handle" size={ 16 } />
               <span aria-hidden="true" className="quarter-name-bar-end-hit" />
             </div>
             <input aria-label={ `Start of ${ draft.summary }` } className="quarter-name-window-start"
@@ -132,7 +132,7 @@ function ProjectFocusWindow({ draft, isDisabled, onChangeWindow, quarterEndOn, q
       { hasWindow ? (
         <button aria-label={ `Remove focus window for ${ draft.summary }` } className="quarter-name-window-remove"
           disabled={ isDisabled } onClick={ () => onChangeWindow(removedWindowDraft(draft)) }
-          title="Remove this date range" type="button"><MaterialIcon name="close" /></button>
+          title="Remove this date range" type="button"><MdClose /></button>
       ) : <span aria-hidden="true" className="quarter-name-window-remove-spacer" /> }
       { deadlineNote ? <p className="quarter-name-deadline-note">{ deadlineNote }</p> : null }
     </div>

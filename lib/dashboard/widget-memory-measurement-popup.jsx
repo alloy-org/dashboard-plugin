@@ -7,8 +7,8 @@ import { flushSync } from "react-dom";
 import { DASHBOARD_WIDGET_LOADED_EVENT, DashboardLoadContext, useDashboardLoadTracker } from "dashboard-load-tracking";
 import ConfigPopup from "config-popup";
 import { WIDGET_REGISTRY } from "layout-profiles";
-import MaterialIcon from "material-icon";
 import { collectGarbageIfAvailable, lowestMemorySample } from "util/memory-instrumentation";
+import { WidgetIcon } from "widget-icons";
 import "styles/widget-memory-measurement-popup.scss";
 
 const MEASURED_WIDGET_ICON_SIZE = 18;
@@ -173,7 +173,7 @@ export default function WidgetMemoryMeasurementPopup({ onClose, renderWidget }) 
         {mountedWidgetId ? (
           <div className="widget-memory-measurement-widget">
             <h4>
-              <MaterialIcon name={ selectedWidget?.iconName } size={ MEASURED_WIDGET_ICON_SIZE } />
+              <WidgetIcon size={ MEASURED_WIDGET_ICON_SIZE } widgetId={ selectedWidget?.widgetId } />
               {selectedWidget?.visibleTitle || selectedWidget?.name}
             </h4>
             <DashboardLoadContext.Provider value={loadTracker}>

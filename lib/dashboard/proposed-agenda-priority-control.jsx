@@ -1,9 +1,9 @@
 // Present agenda priorities with explanations and an optional custom day description.
-import MaterialIcon from "material-icon";
 import ProposedAgendaPopover from "proposed-agenda-popover";
 import { CUSTOM_PRIORITY_PREFIX, MAX_CUSTOM_PRIORITY_LENGTH, priorityOptionFromKey,
   PROPOSED_AGENDA_PRIORITY_OPTIONS } from "proposed-agenda-priority";
 import { useCallback, useRef, useState } from "react";
+import { MdCheck, MdExpandMore, MdTrackChanges } from "react-icons/md";
 import { dateFromDateInput } from "util/date-utility";
 
 // ----------------------------------------------------------------------------------------------
@@ -31,7 +31,7 @@ export default function ProposedAgendaPriorityControl({ dateValue, onPriorityCha
     <div className="proposed-agenda-controls">
       <button aria-expanded={ open } aria-haspopup="dialog" aria-label="Change agenda priority" className="proposed-agenda-priority-select"
         onClick={ () => setOpen(value => !value) } ref={ anchorRef } type="button">
-        <MaterialIcon name="track_changes" />{ selected.displayLabel || selected.label }<MaterialIcon name="expand_more" />
+        <MdTrackChanges />{ selected.displayLabel || selected.label }<MdExpandMore />
       </button>
       <span className="proposed-agenda-priority-description">{ selected.description }</span>
       { open ? <ProposedAgendaPopover anchorRef={ anchorRef } label="Choose agenda priority" onClose={ close }>
@@ -39,7 +39,7 @@ export default function ProposedAgendaPriorityControl({ dateValue, onPriorityCha
         <div className="agenda-priority-options">
           { PROPOSED_AGENDA_PRIORITY_OPTIONS.map(option => <button aria-pressed={ priorityKey === option.key }
             className="agenda-priority-option" key={ option.key } onClick={ () => selectPriority(option.key) } type="button">
-            <span aria-hidden="true" className="agenda-priority-check"><MaterialIcon name="check" size={ 16 } /></span>
+            <span aria-hidden="true" className="agenda-priority-check"><MdCheck size={ 16 } /></span>
             <span><strong>{ option.displayLabel || option.label }</strong><small>{ option.description }</small></span>
           </button>) }
         </div>

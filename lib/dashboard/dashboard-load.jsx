@@ -3,10 +3,12 @@
 // [Claude claude-4.7-opus] Task: migrate dashboard-load entry from createElement to JSX
 // Prompt: "translate this project to render components with JSX instead"
 import { createRoot } from "react-dom/client";
+import { IconContext } from "react-icons";
 import { createBrowserDevApp } from "util/browser-dev-app";
 import { publishDeviceProfileDiagnostic } from "util/device-profile";
 import { installDashboardSentryReporting, observeEmbedCall } from "util/sentry-reporting";
 import DashboardApp from "./dashboard.jsx";
+import { ICON_DEFAULTS } from "./icon-defaults";
 import { installHostThemeRefresh } from "./host-theme";
 
 // Adopt the queue of any errors the loader snippet in embed-html.js recorded while this bundle was still evaluating,
@@ -74,4 +76,8 @@ if (process.env.NODE_ENV === "development") {
   initPromise = window.callAmplenotePlugin("init");
 }
 
-createRoot(document.getElementById("dashboard-root")).render(<DashboardApp app={app} initPromise={initPromise} />);
+createRoot(document.getElementById("dashboard-root")).render(
+  <IconContext.Provider value={ ICON_DEFAULTS }>
+    <DashboardApp app={app} initPromise={initPromise} />
+  </IconContext.Provider>
+);

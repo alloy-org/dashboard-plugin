@@ -7,9 +7,11 @@
 import { ConfigPopupHeader } from "config-popup";
 import { WIDGET_REGISTRY } from "dashboard/layout-profiles";
 import { LAYOUT_PROFILES, getProfileById, sizingFromProfile } from "layout-profiles";
-import MaterialIcon from "material-icon";
 import { useState, useRef } from "react";
+import { MdArrowDownward, MdArrowUpward, MdDragIndicator, MdVisibility,
+  MdVisibilityOff } from "react-icons/md";
 import { snapDashboardAction } from "util/plausible";
+import { WidgetIcon } from "widget-icons";
 import "styles/dashboard-layout-popup.scss"
 
 const ARROW_ICON_SIZE = 18;
@@ -123,10 +125,10 @@ function LayoutItem({ widgetId, ctx }) {
       onDrop={(e) => ctx.onDropOnItem(e, widgetId)}
     >
       <span className="dashboard-layout-popup-item-handle" aria-hidden="true">
-        <MaterialIcon name="drag_indicator" size={ DRAG_HANDLE_ICON_SIZE } />
+        <MdDragIndicator size={ DRAG_HANDLE_ICON_SIZE } />
       </span>
       <span className="dashboard-layout-popup-item-icon" aria-hidden="true">
-        <MaterialIcon name={ widget.iconName } size={ WIDGET_ICON_SIZE } />
+        <WidgetIcon size={ WIDGET_ICON_SIZE } widgetId={ widget.widgetId } />
       </span>
       <div className="dashboard-layout-popup-item-info">
         <span className="dashboard-layout-popup-item-name">{widget.name}</span>
@@ -141,7 +143,7 @@ function LayoutItem({ widgetId, ctx }) {
           aria-label={`Move ${widget.name} up`}
           onClick={(e) => { e.stopPropagation(); ctx.onMove(widgetId, 'up'); }}
         >
-          <MaterialIcon name="arrow_upward" size={ ARROW_ICON_SIZE } />
+          <MdArrowUpward size={ ARROW_ICON_SIZE } />
         </button>
         <button
           className="dashboard-layout-popup-arrow-button"
@@ -151,14 +153,14 @@ function LayoutItem({ widgetId, ctx }) {
           aria-label={`Move ${widget.name} down`}
           onClick={(e) => { e.stopPropagation(); ctx.onMove(widgetId, 'down'); }}
         >
-          <MaterialIcon name="arrow_downward" size={ ARROW_ICON_SIZE } />
+          <MdArrowDownward size={ ARROW_ICON_SIZE } />
         </button>
       </div>
     </div>
   );
 }
 
-function LayoutSection({ sectionId, label, iconName, items, ctx }) {
+function LayoutSection({ sectionId, label, Icon, items, ctx }) {
   const className = [
     'dashboard-layout-popup-section',
     ctx.dragOverSection === sectionId ? 'dashboard-layout-popup-section--drag-over' : '',
@@ -172,7 +174,7 @@ function LayoutSection({ sectionId, label, iconName, items, ctx }) {
     >
       <div className="dashboard-layout-popup-section-header">
         <span className="dashboard-layout-popup-section-icon" aria-hidden="true">
-          <MaterialIcon name={ iconName } size={ SECTION_ICON_SIZE } />
+          <Icon size={ SECTION_ICON_SIZE } />
         </span>
         <h4 className="dashboard-layout-popup-section-title">{label}</h4>
       </div>
@@ -208,7 +210,7 @@ function SizingItem({ widgetId, sizing, onSizingChange }) {
     <div className="dashboard-layout-popup-sizing-item">
       <div className="dashboard-layout-popup-sizing-item-header">
         <span className="dashboard-layout-popup-item-icon" aria-hidden="true">
-          <MaterialIcon name={ widget.iconName } size={ WIDGET_ICON_SIZE } />
+          <WidgetIcon size={ WIDGET_ICON_SIZE } widgetId={ widget.widgetId } />
         </span>
         <span className="dashboard-layout-popup-item-name">{widget.name}</span>
       </div>
@@ -369,8 +371,8 @@ export default function DashboardLayoutPopup({ currentLayout, excludeWidgetIds, 
 
   const bodyContent = activeTab === 'components' ? (
     <>
-      <LayoutSection sectionId="rendered" label="Rendered Dashboard Elements" iconName="visibility" items={renderedIds} ctx={ctx} />
-      <LayoutSection sectionId="hidden" label="Hidden Dashboard Elements" iconName="visibility_off" items={hiddenIds} ctx={ctx} />
+      <LayoutSection sectionId="rendered" label="Rendered Dashboard Elements" Icon={ MdVisibility } items={renderedIds} ctx={ctx} />
+      <LayoutSection sectionId="hidden" label="Hidden Dashboard Elements" Icon={ MdVisibilityOff } items={hiddenIds} ctx={ctx} />
     </>
   ) : (
     renderedIds.length === 0 ? (

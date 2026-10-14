@@ -6,7 +6,6 @@ import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { useDashboardWork } from "dashboard/work-queue/dashboard-work-context";
 import { preparedDayRankingAwaiter } from "dashboard/work-queue/prepared-day-ranking";
 import LlmProviderSelector from "llm-provider-selector";
-import MaterialIcon from "material-icon";
 import NoConfigUpsell from "no-config-upsell";
 import { pluginSettings, updatePluginSetting } from "plugin-data";
 import { PROPOSED_TASK_STATUS, saveAgendaReplacement } from "proposed-agenda-archive";
@@ -22,6 +21,8 @@ import { resolveProposedAgendaDate } from "proposed-agenda-service";
 import { isAmpleAgentProInstalled } from "providers/ai-provider-settings";
 import { refillAndRecordSuggestion } from "ranked-task-suggestions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { MdAlarm, MdBalance, MdCalendarToday, MdClose, MdEventNote, MdExpandMore, MdInfo, MdPsychology,
+  MdRefresh, MdStarBorder, MdTrackChanges } from "react-icons/md";
 import "styles/dashboard-tippy.scss";
 import "styles/proposed-agenda.scss";
 import tippy from "tippy.js";
@@ -40,12 +41,12 @@ const NO_CONFIG_ERROR_CODES = new Set(["invalid_api_key", "llm_error", "no_provi
 const AGENT_PRO_FAILED_MESSAGE = "Ample Agent Pro didn't return a schedule. Please try again in a moment.";
 
 const NO_CONFIG_FEATURES = [
-  { iconName: "event_note", label: "Auto-draft your day" },
-  { iconName: "balance", label: "Balance work by priority" },
-  { iconName: "track_changes", label: "Align the day to goals" },
-  { iconName: "alarm", label: "Schedule around obligations" },
-  { iconName: "refresh", label: "Reseed with any model" },
-  { iconName: "psychology", label: "Frontier models, no key" },
+  { Icon: MdEventNote, label: "Auto-draft your day" },
+  { Icon: MdBalance, label: "Balance work by priority" },
+  { Icon: MdTrackChanges, label: "Align the day to goals" },
+  { Icon: MdAlarm, label: "Schedule around obligations" },
+  { Icon: MdRefresh, label: "Reseed with any model" },
+  { Icon: MdPsychology, label: "Frontier models, no key" },
 ];
 
 // ----------------------------------------------------------------------------------------------
@@ -111,13 +112,13 @@ function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, ti
                   aria-label={ `${ reasonExpanded ? "Hide" : "Show" } why this task was proposed` }
                   className="proposed-agenda-reason-toggle" onClick={ () => setReasonExpanded(expanded => !expanded) }
                   title={ `${ reasonExpanded ? "Hide" : "Show" } why this task was proposed` }
-                  type="button"><MaterialIcon name="info" size={ 16 } /></button>
+                  type="button"><MdInfo size={ 16 } /></button>
               : null }
           </span>
           { hasReason
             ? <span className="proposed-agenda-reason proposed-agenda-reason--desktop" ref={ reasonRef }>{ reason }</span>
             : null }
-          { row.projectUuid ? <span className="proposed-agenda-goal-badge"><MaterialIcon name="star_border" size={ 14 } />Quarterly goal</span> : null }
+          { row.projectUuid ? <span className="proposed-agenda-goal-badge"><MdStarBorder size={ 14 } />Quarterly goal</span> : null }
         </div>
         { isScheduled
           ? <span className="proposed-agenda-scheduled-meta">
@@ -127,13 +128,12 @@ function ActivityRow({ onDismiss, onOpenNote, onSchedule, row, scheduledKeys, ti
               <span className="proposed-agenda-actions">
                 <button className="proposed-agenda-add" title={ `Schedule for ${ row.startTime } on the agenda date` }
                   onClick={ (event) => onSchedule(event, row) }>
-                  <span className="proposed-agenda-add-label"><MaterialIcon className="proposed-agenda-schedule-icon"
-                    name="calendar_today" size={ 16 } />Add to schedule</span>
+                  <span className="proposed-agenda-add-label"><MdCalendarToday className="proposed-agenda-schedule-icon" size={ 16 } />Add to schedule</span>
                   { row.durationMinutes
                     ? <span className="proposed-agenda-add-duration">{ `${ row.durationMinutes }m` } duration</span> : null }
                 </button>
                 <button aria-label="Dismiss this suggestion" className="proposed-agenda-dismiss" title="Dismiss this suggestion"
-                  onClick={ (event) => onDismiss(event, row) }><MaterialIcon name="close" /></button>
+                  onClick={ (event) => onDismiss(event, row) }><MdClose /></button>
               </span>
             </>
         }
@@ -384,9 +384,9 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   const calendarCount = obligations.filter(row => row.source === "event").length;
   const headerActions = <div className="proposed-agenda-header-actions">
     <button className="proposed-agenda-model" onClick={ onChangeModel } title="Change AI provider" type="button">
-      <MaterialIcon name="psychology" />{ _modelName(modelProviderEm) }<MaterialIcon name="expand_more" /></button>
+      <MdPsychology />{ _modelName(modelProviderEm) }<MdExpandMore /></button>
     <button className="proposed-agenda-regenerate" onClick={ () => runGeneration({ forceRegenerate: true }) } type="button">
-      <MaterialIcon name="refresh" />Regenerate</button>
+      <MdRefresh />Regenerate</button>
   </div>;
 
   // ------------------------------------------------------------------------------------------

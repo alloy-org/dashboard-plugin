@@ -3,9 +3,9 @@ import { widgetTitleFromId } from "constants/settings";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { fetchNotePeekHtml, NOTE_PEEK_WIDGET_ID, notePeekSelectionFromSettings, promptForNotePeekNote,
   storeNotePeekSelection } from "note-peek-service";
-import MaterialIcon from "material-icon";
 import { pluginSettings } from "plugin-data";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { MdDescription, MdSettings } from "react-icons/md";
 import "styles/note-peek.scss";
 import { attachFootnotePopups } from "util/amplenote-markdown-render";
 import { logIfEnabled } from "util/log";
@@ -71,9 +71,9 @@ function useRenderedNoteHtml({ app, noteUUID }) {
 function NotePeekChooser({ onChoose }) {
   return (
     <div className="note-peek-chooser" onClick={onChoose} role="presentation" title="Choose a note">
-      <MaterialIcon className="note-peek-chooser-icon" name="description" size={ 32 } />
+      <MdDescription className="note-peek-chooser-icon" size={ 32 } />
       <span className="note-peek-chooser-label">Choose a note to display here</span>
-      <button className="note-peek-chooser-button" type="button"><MaterialIcon name="settings" />{CONFIGURE_LABEL}</button>
+      <button className="note-peek-chooser-button" type="button"><MdSettings />{CONFIGURE_LABEL}</button>
     </div>
   );
 }

@@ -104,19 +104,39 @@ runtime, so `.jsx` files do NOT need to `import { createElement } from "react"`
 just to render markup. Non-component files (services, hooks, utilities,
 constants) stay as `.js`.
 
-Example of a JSX widget component matching the project's conventions:
+Example of a JSX widget component matching the project's conventions. Its title comes from its `WIDGET_REGISTRY`
+entry in `lib/dashboard/layout-profiles.js` and its header icon from `WIDGET_ICON_BY_ID` in
+`lib/dashboard/widget-icons.jsx` (e.g. `"counter": MdAddCircle`), so the widget only passes its `widgetId`. Icons are
+Google Material icons from `react-icons/md`, never emoji; styles use the tokens in `styles/theme-tokens.scss` and the
+mixins in `styles/controls.scss` (see `doc/plan-app-design-restyle.md`).
 
 ```jsx
 import { useState } from "react";
+import { MdAdd } from "react-icons/md";
+import "styles/counter.scss";
 import WidgetWrapper from "widget-wrapper";
 
-export default function CounterCard({ title }) {
+export default function CounterWidget() {
   const [count, setCount] = useState(0);
   return (
-    <WidgetWrapper title={title} icon="🔢" widgetId="counter">
-      <button onClick={() => setCount(c => c + 1)}>Clicked {count} times</button>
+    <WidgetWrapper widgetId="counter">
+      <button className="counter-add-button" onClick={() => setCount(c => c + 1)} type="button">
+        <MdAdd />Clicked {count} times
+      </button>
     </WidgetWrapper>
   );
+}
+```
+
+```scss
+// styles/counter.scss
+@use 'theme-tokens' as *;
+@use 'controls' as *;
+
+.widget-counter {
+  .counter-add-button {
+    @include outlined-button;
+  }
 }
 ```
 

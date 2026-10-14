@@ -5,6 +5,27 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-14 — Use react-icons for Material icons
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `package.json`, `package-lock.json` — Added `react-icons` 5.7.0 (MIT); its `md` set is Google's Material icons, the set the host app's icon font uses.
+- `lib/dashboard/icon-defaults.js` (created), `lib/dashboard/dashboard-load.jsx` — `IconContext` defaults for every icon: 18px, the `material-icon` class, `aria-hidden`.
+- `lib/dashboard/widget-icons.jsx` (created) — Icon per widget and layout profile, and a `WidgetIcon` component, kept out of the host-readable registry. The Layout icon is `web_asset` (`MdWebAsset`), the closest Google icon to the former community `application-edit-outline`.
+- `lib/dashboard/layout-profiles.js`, `lib/constants/settings.js`, `widget-wrapper.jsx`, `draggable-heading.jsx` — Removed the registry's emoji `icon` and `iconName` fields and their lookups; the header icon comes from `WIDGET_ICON_BY_ID`.
+- `lib/dashboard/charts/stats-chart-tooltip.jsx` (replaces `stats-chart-tooltip.js`) — Chart tooltips as React content (`StatsChartTooltipContent`, `StatsChartTooltipRow`, `useStatsChartTooltip`) instead of HTML strings with inlined SVG paths.
+- Every component that drew `MaterialIcon` (widgets, popups, Plan Builder) — Imports its icons from `react-icons/md`; lists that pick an icon per item hold the component.
+- Deleted `lib/dashboard/material-icon.jsx` and `lib/constants/material-icon-paths.js`.
+- `test/widget-wrapper-defaults.test.js`, `test/victory-value-chart.test.js`, `test/completed-task-project-colors.test.js` — Updated for the icon map and React tooltip content.
+- `doc/plan-app-design-restyle.md` — Icon usage.
+- `build/compiled.js` — Rebuilt (807,090 bytes).
+
+**Validation:** Jest: 1363 passed, 1 failed (`test/dream-task-actions.test.js`, failing before these changes). Header icons, icon defaults, and the Victory Value tooltip checked in the dev server with no console errors.
+**Task:** Replace the generated icon path file with an icon package.
+**Prompt summary:** "Use view-dashboard-edit if its in there, if not use web_asset. Otherwise, go and do the icon change please"
+
+---
+
 ## 2026-10-14 — Task Stats style charts, settings dialogs, and Plan Builder restyle
 
 **Model:** Claude Opus 5.5

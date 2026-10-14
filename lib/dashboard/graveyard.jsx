@@ -9,8 +9,8 @@ import confetti from "canvas-confetti";
 import { appendTaskToRetiredNote, loadGraveyardCandidates } from "graveyard-service";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
-import MaterialIcon from "material-icon";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { MdArchive, MdDescription, MdPushPin, MdRefresh } from "react-icons/md";
 import "styles/graveyard.scss";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import { graveyardMeadowUrl } from "util/background-splash-images";
@@ -75,7 +75,7 @@ function RefreshLink({ isRefreshing, onRefresh }) {
       onClick={onRefresh}
       tabIndex={isRefreshing ? -1 : 0}
       title={isRefreshing ? 'Refreshing graveyard candidates' : 'Refresh: find a new set of graveyard candidates'}
-    ><MaterialIcon name="refresh" /></a>
+    ><MdRefresh /></a>
   );
 }
 
@@ -207,21 +207,21 @@ function TaskCard({ isDismissing, isSingleColumn, taskIndex, onOpenNote, onGrave
           onClick={(e) => { e.preventDefault(); onGraveyard(e, task); }}
           title="Dismiss this task — removes it from your task domain and places it in an archived note you can revisit later if desired"
         >
-          <MaterialIcon name="archive" size={ 16 } />{ dismissPrompt }</a>
+          <MdArchive size={ 16 } />{ dismissPrompt }</a>
         <a
           className="graveyard-task-action graveyard-task-action--keep"
           href="#"
           onClick={(e) => { e.preventDefault(); onKeep(task); }}
           title="Preserve this task — remove it from this list without dismissing it"
         >
-          <MaterialIcon name="push_pin" size={ 16 } />Keep</a>
+          <MdPushPin size={ 16 } />Keep</a>
         <a
           className="graveyard-task-action graveyard-task-action--note"
           href="#"
           onClick={(e) => { e.preventDefault(); onOpenNote(task); }}
           title="Open the note where this task lives"
         >
-          <MaterialIcon name="description" size={ 16 } />Note</a>
+          <MdDescription size={ 16 } />Note</a>
       </div>
     </li>
   );

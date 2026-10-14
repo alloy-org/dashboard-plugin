@@ -7,8 +7,8 @@
 import ConfigPopup from 'config-popup';
 import { PROVIDER_API_KEY_RETRIEVE_URL } from 'constants/llm-providers';
 import { apiKeySettingFromKeyProvider, BUILD_DATE, JEV_KEY_PROVIDER, SETTING_KEYS } from 'constants/settings';
-import MaterialIcon from 'material-icon';
 import { useState } from 'react';
+import { MdOpenInNew, MdVisibility, MdVisibilityOff } from "react-icons/md";
 import { logIfEnabled } from "util/log";
 import "styles/dashboard-settings-popup.scss"
 
@@ -118,7 +118,7 @@ function AiProviderSection({ apiKey, apiKeyVisible, keyOnlyHint, linkParenthetic
             rel="noopener noreferrer"
           >
             {`Retrieve your ${ providerName } API key (${ linkParenthetical })`}
-            <MaterialIcon name="open_in_new" size={ API_KEY_LINK_ICON_SIZE } />
+            <MdOpenInNew size={ API_KEY_LINK_ICON_SIZE } />
           </a>
           <div className="dashboard-settings-api-key-input-row">
             <input
@@ -137,7 +137,7 @@ function AiProviderSection({ apiKey, apiKeyVisible, keyOnlyHint, linkParenthetic
               title={apiKeyVisible ? 'Hide API key' : 'Show API key'}
               aria-label={apiKeyVisible ? 'Hide API key' : 'Show API key'}
             >
-              <MaterialIcon name={ apiKeyVisible ? 'visibility_off' : 'visibility' } size={ API_KEY_VISIBILITY_ICON_SIZE } />
+              { apiKeyVisible ? <MdVisibilityOff size={ API_KEY_VISIBILITY_ICON_SIZE } /> : <MdVisibility size={ API_KEY_VISIBILITY_ICON_SIZE } /> }
             </button>
           </div>
         </div>

@@ -9,7 +9,6 @@ import PlanWizard from "dashboard/plan-wizard/plan-wizard";
 import { quarterPageWindow, quarterPlanForPage, quartersMatch } from "dashboard/quarter-page";
 import QuarterPageButton from "dashboard/quarter-page-button";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
-import MaterialIcon from "material-icon";
 import useQuarterPlanProgress, { quarterProgressKey } from "hooks/use-quarter-plan-progress";
 import NoteEditor from "note-editor";
 import { mirrorQuarterPlanNote } from "plan-wizard/mirror-quarter-plan";
@@ -19,6 +18,7 @@ import QuarterlyPlanEntry from "quarterly-plan-entry";
 import { createOrAppendMonthlyPlan, createOrAppendWeeklyPlan, createQuarterlyPlan, findQuarterPlan,
   getMonthlyPlanContent, starMonthFocusProject } from "quarterly-plan-service";
 import { useEffect, useRef, useState } from "react";
+import { MdAdd, MdDescription, MdEdit, MdEditNote, MdUndo } from "react-icons/md";
 import { navigateToNote } from "util/goal-notes";
 import { logIfEnabled } from "util/log";
 import { isQuarterPlanEnabled, quarterlyPlanTogglesFromSetting, quarterlyPlanTogglesWithState,
@@ -124,11 +124,11 @@ function QuarterCard({ isPast, onCardClick, onSuggestionToggle, plan, planBegun 
   if (isUnrecorded) cardClassNames.push("quarter-card--unrecorded");
   const quarterTitle = plan.domainName ? `${ plan.label } · ${ plan.domainName }` : plan.label;
   let statusText = "Create Plan";
-  let statusIconName = "add";
-  if (isPending) [ statusText, statusIconName ] = [ "Loading…", null ];
-  else if (isUnrecorded) [ statusText, statusIconName ] = [ "No plan recorded", null ];
-  else if (hasNote) [ statusText, statusIconName ] = [ "Open Plan", "description" ];
-  else if (isInProgress) [ statusText, statusIconName ] = [ "Continue Plan", "edit" ];
+  let StatusIcon = MdAdd;
+  if (isPending) [ statusText, StatusIcon ] = [ "Loading…", null ];
+  else if (isUnrecorded) [ statusText, StatusIcon ] = [ "No plan recorded", null ];
+  else if (hasNote) [ statusText, StatusIcon ] = [ "Open Plan", MdDescription ];
+  else if (isInProgress) [ statusText, StatusIcon ] = [ "Continue Plan", MdEdit ];
   const showSuggestionToggle = hasNote && !isPast && !isPending;
 
   const suggestionTip = usedForSuggestions
@@ -145,7 +145,7 @@ function QuarterCard({ isPast, onCardClick, onSuggestionToggle, plan, planBegun 
       </div>
       <div className="quarter-status-row">
         <span className="quarter-status">
-          { statusIconName ? <MaterialIcon name={ statusIconName } size={ 16 } /> : null }{ statusText }
+          { StatusIcon ? <StatusIcon size={ 16 } /> : null }{ statusText }
         </span>
         { showSuggestionToggle ? (
           <DashboardTippy content={`${ suggestionTip } ${ monthsTip }`} placement="bottom">
@@ -322,12 +322,12 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   const buildPlanAction = canStartWizard && !showPlanEntry && !checkingPlanProgress ? (
     <button className="widget-header-action" onClick={ () => setWizardPlan({ mirrorTarget: null,
       quarter: wizardQuarterPlan.quarter, year: wizardQuarterPlan.year }) } title={ buildPlanTitle } type="button">
-      <MaterialIcon name="edit_note" />Build plan
+      <MdEditNote />Build plan
     </button>
   ) : null;
   const returnToCurrentAction = pageOffset !== 0 && currentPlan?.label ? (
     <button className="planning-return-quarter" onClick={ () => setPageOffset(0) } type="button">
-      <MaterialIcon name="undo" />{ `Back to ${ currentPlan.label }` }
+      <MdUndo />{ `Back to ${ currentPlan.label }` }
     </button>
   ) : null;
   const headerActions = buildPlanAction || returnToCurrentAction ? (

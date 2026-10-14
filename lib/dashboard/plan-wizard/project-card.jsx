@@ -3,12 +3,12 @@
 
 import confetti from "canvas-confetti";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
-import MaterialIcon from "dashboard/material-icon";
 import ExpandingTextarea from "dashboard/plan-wizard/expanding-textarea";
 import { PROJECT_PRIORITY_OPTIONS } from "dashboard/plan-wizard/projects-step-fields";
 import { citedTaskUuidsFromSubstantiations, substantiationSegments,
   taskChipLabel } from "dashboard/plan-wizard/substantiation-task-references";
 import { memo, useEffect, useRef, useState } from "react";
+import { MdCheck } from "react-icons/md";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Celebrate a finished project with confetti bursting from the middle of its card.
@@ -42,7 +42,7 @@ function CitedTaskChip({ citedTask }) {
   return (
     <DashboardTippy content={ tooltipHtml } delay={ [150, 0] }>
       <span className={ chipClass } tabIndex={ 0 }>
-        { isFinished ? <MaterialIcon className="project-row-task-chip-marker" name="check" size={ 12 } />
+        { isFinished ? <MdCheck className="project-row-task-chip-marker" size={ 12 } />
           : <span aria-hidden="true" className="project-row-task-chip-marker" /> }
         { taskChipLabel(citedTask.text) || "Untitled task" }
       </span>
@@ -169,7 +169,7 @@ function ProjectCard({ citedTaskByUuid = {}, isDisabled, onChangeSummary, onReje
             onClick={ handleToggleCompletion }
             title={ isCompleted ? "Reopen this project so it is suggested again" : "Mark this project finished" }
             type="button">
-            <MaterialIcon name="check" size={ 16 } />{ isCompleted ? "Done" : "Complete" }
+            <MdCheck size={ 16 } />{ isCompleted ? "Done" : "Complete" }
           </button>
         </div>
       </div>

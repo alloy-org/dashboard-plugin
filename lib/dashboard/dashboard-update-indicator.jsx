@@ -1,7 +1,7 @@
 // Check for a published Dashboard update without delaying the dashboard, and explain how to install it.
 import DashboardTippy from "dashboard-tooltip-tippy";
-import MaterialIcon from "material-icon";
 import { useEffect, useState } from "react";
+import { MdUpdate } from "react-icons/md";
 import { logIfEnabled } from "util/log";
 
 const UPDATE_MESSAGE = 'A newer version of Dashboard is available. Click to visit Jots, then click the "Update Mission Control Dashboard plugin" to retrieve the latest. No restart necessary.';
@@ -40,7 +40,7 @@ export default function DashboardUpdateIndicator({ app }) {
     <DashboardTippy allowHTML={false} content={UPDATE_MESSAGE} placement="bottom" trigger="mouseenter focusin click">
       <button aria-label={UPDATE_MESSAGE} className="dashboard-configure-button dashboard-update-button"
         onClick={() => app.navigate("https://www.amplenote.com/notes/jots")} type="button">
-        <MaterialIcon name="update" size={ 20 } />
+        <MdUpdate size={ 20 } />
       </button>
     </DashboardTippy>
   );

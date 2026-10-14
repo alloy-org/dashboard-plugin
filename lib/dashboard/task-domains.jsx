@@ -4,8 +4,8 @@
  * Task: Task Domains component — domain selector with refresh and settings links
  * Prompt summary: "allow user to choose which Task Domain their dashboard focuses on"
  */
-import MaterialIcon from "material-icon";
 import { useState } from "react";
+import { MdExpandLess, MdExpandMore, MdRefresh } from "react-icons/md";
 import { refreshTaskDomains, switchTaskDomain } from "task-domain-service";
 import { logIfEnabled } from "util/log";
 import "styles/task-domains.scss"
@@ -28,7 +28,7 @@ function RefreshDomainsButton({ onRefresh, refreshing }) {
       title={label}
       type="button"
     >
-      <MaterialIcon className="task-domains-refresh-icon" name="refresh" size={ 20 } />
+      <MdRefresh className="task-domains-refresh-icon" size={ 20 } />
     </button>
   );
 }
@@ -113,7 +113,7 @@ export default function TaskDomains({ activeTaskDomain, app, domains, onDomainCh
           title={expanded ? 'Hide other task domains' : 'Show other task domains'}
           type="button"
         >
-          <MaterialIcon name={ expanded ? 'expand_less' : 'expand_more' } size={ 20 } />
+          { expanded ? <MdExpandLess size={ 20 } /> : <MdExpandMore size={ 20 } /> }
         </button>
       ) : null}
       <RefreshDomainsButton onRefresh={handleRefresh} refreshing={refreshing} />

@@ -5,8 +5,8 @@
  * Prompt summary: "replace AI & Plugins widget with Recent Notes showing notes whose tasks have gone stale"
  */
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
-import MaterialIcon from "material-icon";
 import { useEffect, useMemo, useState } from "react";
+import { MdRefresh } from "react-icons/md";
 import { buildRecentNotesSeed, findStaleTaskNotes } from "recent-notes-service";
 import "styles/recent-notes.scss"
 import { logIfEnabled } from "util/log";
@@ -68,7 +68,7 @@ export default function RecentNotesWidget({ app, gridHeightSize = 1, taskDomainU
       onClick={handleReseed}
       title="Reseed: show a different set of notes"
     >
-      <MaterialIcon name="refresh" />
+      <MdRefresh />
     </button>
   );
 

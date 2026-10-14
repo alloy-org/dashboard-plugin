@@ -2,7 +2,6 @@
 // ideas are drafted from Focus projects (then other live work, then static fallbacks); the user picks one or
 // writes their own. A timeline stores each project's exact date range along with its month placement buckets.
 
-import MaterialIcon from "dashboard/material-icon";
 import ProjectFocusWindow from "dashboard/plan-wizard/project-focus-window";
 import { answerTextFromRecord, hasUnsavedAnswer, quarterAnswerFromDraft } from "dashboard/plan-wizard/quarter-answer-fields";
 import { CUSTOM_QUARTER_NAME, TIMELINE_HEADING, TIMELINE_SUMMARY,
@@ -11,6 +10,7 @@ import { CUSTOM_QUARTER_NAME, TIMELINE_HEADING, TIMELINE_SUMMARY,
 import { useRegisteredNavigate } from "dashboard/plan-wizard/step-navigation";
 import { wizardStepFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { MdEdit } from "react-icons/md";
 
 const QUARTER_NAME_STEP_COPY = wizardStepFromKey("quarter-name");
 
@@ -130,7 +130,7 @@ export default function QuarterNameStep({ isSaving, onNavigate, onRegisterNaviga
           </button>
         )) }
         <label className={ `quarter-name-custom${ selectedName === CUSTOM_QUARTER_NAME ? " quarter-name-custom--selected" : "" }` }>
-          <MaterialIcon className="quarter-name-custom-mark" name="edit" />
+          <MdEdit className="quarter-name-custom-mark" />
           <input className="quarter-name-custom-input" disabled={ isSaving }
             onChange={ event => handleChangeCustom(event.target.value) } onFocus={ handleSelectCustom }
             placeholder="Write my own" type="text" value={ customText } />

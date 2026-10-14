@@ -15,8 +15,12 @@ app uses on its own pages (the Task Stats page is the closest reference). This p
 
 ## Shared building blocks
 
-- `lib/dashboard/material-icon.jsx` — `<MaterialIcon name="refresh" size={ 18 } />`, drawn in `currentColor`. Path data
-  lives in `lib/constants/material-icon-paths.js`; add icons by regenerating that file rather than hand-editing it.
+- Icons: Google's Material icons (the set the host app's icon font uses) from the `react-icons` package —
+  `import { MdRefresh } from "react-icons/md";` then `<MdRefresh />`. `IconContext` in `dashboard-load.jsx` sets the
+  defaults (`lib/dashboard/icon-defaults.js`: 18px, `material-icon` class, `aria-hidden`); pass `size` or `className`
+  to override. Widget and layout profile icons live in `lib/dashboard/widget-icons.jsx`, not the registry, because host
+  code reads the registry and may not import packages. Chart tooltips render React content through
+  `useStatsChartTooltip` in `charts/stats-chart-tooltip.jsx`.
 - `lib/dashboard/styles/controls.scss` — `@use 'controls' as *;` then `@include icon-button`, `text-button`,
   `outlined-button`, `raised-button`, `overline-label`, `empty-state`.
 - Tokens in `styles/theme-tokens.scss`: `$color-bg-card`, `$color-bg-page`, `$color-bg-element`, `$color-action-low`,
@@ -46,9 +50,9 @@ app uses on its own pages (the Task Stats page is the closest reference). This p
 
 ## 2. Icons
 
-- The embed runs from an opaque-origin document and can't load Google Fonts, so Material icons ship as inline SVG
-  paths through a small `MaterialIcon` component.
-- Widget registry entries get an `iconName` for the card header. The emoji `icon` stays for popups not yet restyled.
+- Google Material icons from `react-icons/md`, imported per icon; esbuild bundles only the icons that are imported.
+- Widget header icons come from `WIDGET_ICON_BY_ID` in `widget-icons.jsx`; layout profile icons from
+  `LAYOUT_PROFILE_ICON_BY_ID`. The registry's emoji `icon` field is gone.
 
 ## 3. Widget chrome
 

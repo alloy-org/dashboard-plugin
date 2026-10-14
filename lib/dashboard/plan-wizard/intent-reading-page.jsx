@@ -4,9 +4,9 @@
 // Pinning or dismissing a theme is stored in the Vision Guide and steers the next reading, which is how the user
 // shapes what Plan Builder sends to the model without editing that data note by hand.
 
-import MaterialIcon from "dashboard/material-icon";
 import { themeKey } from "plan-wizard/intent-reading";
 import { useEffect, useRef, useState } from "react";
+import { MdCheckBox, MdClose, MdDescription, MdPushPin, MdTrackChanges } from "react-icons/md";
 
 const READ_ITEM_REVEAL_MS = 90;
 const THEME_REVEAL_MS = 220;
@@ -69,7 +69,8 @@ export function IntentReadingProgressBar({ fraction }) {
 //   - {string} kind - note or task.
 // @returns {JSX.Element} The Material icon.
 export function ReadItemIcon({ kind }) {
-  return <MaterialIcon className="intent-reading-item-icon" name={ kind === "task" ? "check_box" : "description" } size={ 16 } />;
+  const KindIcon = kind === "task" ? MdCheckBox : MdDescription;
+  return <KindIcon className="intent-reading-item-icon" size={ 16 } />;
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -92,12 +93,12 @@ function IntentReadingTheme({ isSaving, judgement, onJudge, theme }) {
       <button aria-label={ `${ isPinned ? "Unpin" : "Pin" } ${ theme.label }` } aria-pressed={ isPinned }
         className="intent-reading-theme-button" disabled={ isSaving } onClick={ () => onJudge(isPinned ? null : "pinned") }
         title={ isPinned ? "Pinned: favored in the next reading" : "Pin: this matters" } type="button">
-        <MaterialIcon name="push_pin" size={ 16 } />
+        <MdPushPin size={ 16 } />
       </button>
       <button aria-label={ `${ isDismissed ? "Restore" : "Dismiss" } ${ theme.label }` } aria-pressed={ isDismissed }
         className="intent-reading-theme-button" disabled={ isSaving } onClick={ () => onJudge(isDismissed ? null : "dismissed") }
         title={ isDismissed ? "Dismissed: left out of the next reading" : "Dismiss: this doesn't matter" } type="button">
-        <MaterialIcon name="close" size={ 16 } />
+        <MdClose size={ 16 } />
       </button>
     </li>
   );
@@ -227,7 +228,7 @@ export default function IntentReadingPage({ directions, intentReading, isRefresh
               <li key={ direction.uuid }>
                 <button className="intent-reading-direction" onClick={ () => onApplyDirection(direction) }
                   title={ direction.substantiation } type="button">
-                  <MaterialIcon className="intent-reading-direction-icon" name="track_changes" />
+                  <MdTrackChanges className="intent-reading-direction-icon" />
                   <span>{ direction.intent }</span>
                 </button>
               </li>

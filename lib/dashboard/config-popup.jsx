@@ -4,8 +4,8 @@
  * Task: Reusable settings popup with Submit/Cancel actions
  * Prompt summary: "popup component for widget configuration with onSubmit, onCancel, and content props"
  */
-import MaterialIcon from "material-icon";
 import { useEffect, useRef } from "react";
+import { MdClose } from "react-icons/md";
 import "styles/config-popup.scss"
 
 const CLOSE_ICON_SIZE = 20;
@@ -72,7 +72,7 @@ export function ConfigPopupHeader({ onClose, title }) {
     <div className="config-popup-header">
       <h3 className="config-popup-title">{ title }</h3>
       <button aria-label="Close" className="config-popup-close-button" onClick={ onClose } title="Close" type="button">
-        <MaterialIcon name="close" size={ CLOSE_ICON_SIZE } />
+        <MdClose size={ CLOSE_ICON_SIZE } />
       </button>
     </div>
   );

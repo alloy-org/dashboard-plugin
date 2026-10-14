@@ -3,8 +3,7 @@
 // a Task Stats style tooltip.
 import { ChartGridLines, ChartHighlightLine, ChartHitArea, ChartValuePill, ChartXAxisLabels, niceChartMaximum,
     useElementSize } from "dashboard/charts/stats-chart";
-import { STATS_CHART_TOOLTIP_OPTIONS } from "dashboard/charts/stats-chart-tooltip";
-import { useCanvasTippy } from "dashboard/dashboard-tooltip-tippy";
+import { useStatsChartTooltip } from "dashboard/charts/stats-chart-tooltip";
 import { NO_PROJECT_KEY } from "dashboard/projects/completed-task-project-colors";
 import { useEffect, useState } from "react";
 import { dateFromDateInput } from "util/date-utility";
@@ -103,12 +102,12 @@ function MoodOverlay({ hoveredIndex, moodPoints }) {
 //   - {boolean} hasProjectLegend - True when bars are colored by project, so segments keep their legend colors.
 //   - {Array} moodByDay - The mood recorded on each displayed day, or null.
 //   - {boolean} showMood - Whether to draw the mood line.
-//   - {function(number): string} tooltipHtmlFromIndex - Tooltip HTML for a day's index.
+//   - {function(number): JSX.Element} tooltipContentFromIndex - Tooltip content for a day's index.
 // @returns {JSX.Element} The chart.
-export default function VictoryValueChart({ dailyValues, hasProjectLegend, moodByDay, showMood, tooltipHtmlFromIndex }) {
+export default function VictoryValueChart({ dailyValues, hasProjectLegend, moodByDay, showMood, tooltipContentFromIndex }) {
   const [ containerRef, { height, width } ] = useElementSize();
   const [ hoveredIndex, setHoveredIndex ] = useState(null);
-  const tooltip = useCanvasTippy(STATS_CHART_TOOLTIP_OPTIONS);
+  const tooltip = useStatsChartTooltip();
   const plot = { bottom: Math.max(height - PLOT_PADDING.bottom, PLOT_PADDING.top + 1), left: PLOT_PADDING.left,
     right: Math.max(width - PLOT_PADDING.right, PLOT_PADDING.left + 1), top: PLOT_PADDING.top };
   const maximum = niceChartMaximum(Math.max(...dailyValues.map(day => day.value || 0), 0), GRID_LABEL_COUNT);
@@ -122,7 +121,7 @@ export default function VictoryValueChart({ dailyValues, hasProjectLegend, moodB
     if (hoveredIndex === null || !containerRef.current) { tooltip.scheduleHide(150); return; }
     const containerBox = containerRef.current.getBoundingClientRect();
     const anchorX = containerBox.left + columnCenter(hoveredIndex) + columnWidth / 2 - 8;
-    tooltip.show(tooltipHtmlFromIndex(hoveredIndex), anchorX, containerBox.top + plot.top);
+    tooltip.show(tooltipContentFromIndex(hoveredIndex), anchorX, containerBox.top + plot.top);
   }, [ hoveredIndex ]);
 
   const xAxisLabels = dailyValues.map((day, index) => ({ key: String(index), sublabel: dateFromDateInput(day.date)

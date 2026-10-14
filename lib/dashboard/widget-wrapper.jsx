@@ -4,9 +4,10 @@
  * Task: Reusable widget wrapper with header, icon, and optional configure button
  * Prompt summary: "shared widget chrome component used by all dashboard widgets"
  */
-import { widgetIconFromId, widgetIconNameFromId, widgetSubtitleFromId, widgetTitleFromId } from "constants/settings";
+import { widgetSubtitleFromId, widgetTitleFromId } from "constants/settings";
 import { createContext, useContext } from "react"
 import DraggableHeading from "draggable-heading";
+import { WIDGET_ICON_BY_ID } from "widget-icons";
 
 import "./styles/widget.scss";
 
@@ -32,19 +33,19 @@ export const WidgetSizeContext = createContext(null);
 // [Claude claude-4.7-opus] Task: migrate WidgetWrapper from createElement to JSX
 // Prompt: "translate this project to render components with JSX instead"
 // ------------------------------------------------------------------------------------------
-// @desc The header's icon, title, and subtitle all default to what WIDGET_REGISTRY says about
-//   widgetId, so a widget only names them when it needs something the registry cannot know (a
-//   state-dependent icon, a subtitle carrying today's date or a chosen note's name). A widgetId
-//   missing from the registry falls back to no icon and the id itself as the title.
+// @desc The header's title and subtitle default to what WIDGET_REGISTRY says about widgetId, and its icon to the
+//   widget's Material icon in WIDGET_ICON_BY_ID, so a widget only names them when it needs something the registry
+//   cannot know (a state-dependent icon, a subtitle carrying today's date or a chosen note's name). A widgetId
+//   missing from both falls back to no icon and the id itself as the title.
+// @param {JSX.Element} [icon] - Icon element overriding the widget's own Material icon.
 // [Claude claude-opus-5 (1M context)] Task: default icon/title/subtitle from the widget registry
 // Prompt: "sets default title, icon and subtitle props based on the widgetId that is passed to the
 //   component ... so they don't need to include icon/title/subtitle"
 export default function WidgetWrapper({ app, children, configurable, gridHeightSize, gridWidthSize, headerActions,
-    icon, iconName, onConfigure, subtitle, title, widgetId }) {
+    icon, onConfigure, subtitle, title, widgetId }) {
   const cellSizing = useContext(WidgetSizeContext);
-  const resolvedIcon = icon ?? widgetIconFromId(widgetId);
-  // A widget passing its own emoji icon keeps it; otherwise the registry's Material icon is drawn
-  const resolvedIconName = iconName ?? (icon ? null : widgetIconNameFromId(widgetId));
+  const WidgetIcon = WIDGET_ICON_BY_ID[widgetId];
+  const resolvedIcon = icon ?? (WidgetIcon ? <WidgetIcon /> : null);
   const resolvedSubtitle = subtitle ?? widgetSubtitleFromId(widgetId);
   const resolvedTitle = title ?? widgetTitleFromId(widgetId);
   const handleConfigure = async () => {
@@ -66,7 +67,6 @@ export default function WidgetWrapper({ app, children, configurable, gridHeightS
         configurable={configurable}
         headerActions={headerActions}
         icon={resolvedIcon}
-        iconName={resolvedIconName}
         subtitle={resolvedSubtitle}
         title={resolvedTitle}
         widgetId={widgetId}

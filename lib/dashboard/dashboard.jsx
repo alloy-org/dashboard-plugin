@@ -34,7 +34,6 @@ import { useProjectMaintenanceQueue } from 'hooks/use-project-maintenance-queue'
 import LayoutPickerWidget, { saveLayoutWithProfile } from 'layout-picker';
 import { WIDGET_REGISTRY } from 'layout-profiles';
 import LazyWidgetMount from "lazy-widget-mount";
-import MaterialIcon from "material-icon";
 import MoodWidget from 'mood';
 import NotePeekWidget from 'note-peek';
 import PeakHoursWidget from 'peak-hours';
@@ -42,6 +41,7 @@ import ProposedAgendaWidget from 'proposed-agenda';
 import { setPluginData, updatePluginSetting } from "plugin-data";
 import QuotesWidget from 'quotes';
 import QuickActionsWidget from 'quick-actions';
+import { MdErrorOutline, MdSettings, MdWebAsset } from "react-icons/md";
 import RecentNotesWidget from 'recent-notes';
 import SharedNotesWidget from 'shared-notes';
 import TaskDomains from 'task-domains';
@@ -110,7 +110,7 @@ class WidgetErrorBoundary extends Component {
     if (this.state.hasError) {
       return (
         <div className="widget-error-fallback">
-          <p className="widget-error-fallback-title"><MaterialIcon name="error_outline" />{ this.props.widgetId }</p>
+          <p className="widget-error-fallback-title"><MdErrorOutline />{ this.props.widgetId }</p>
           <p className="widget-error-fallback-message">
             {this.state.error?.message || 'An unexpected error occurred'}
           </p>
@@ -797,14 +797,14 @@ export default function DashboardApp({ app, initPromise }) {
               onClick={() => setFocusState(DASHBOARD_FOCUS.LAYOUT_CONFIG)}
               title="Layout: configure which widgets are shown and in what order"
               type="button"
-            ><MaterialIcon name="mdi_application_edit_outline" size={ 20 } /></button>
+            ><MdWebAsset size={ 20 } /></button>
             <button
               aria-label="Settings"
               className="dashboard-configure-button"
               onClick={() => { logIfEnabled('[dashboard] opening Settings popup'); handleOpenSettings(); }}
               title="Settings: configure LLM provider and API key for AI-powered features"
               type="button"
-            ><MaterialIcon name="settings" size={ 20 } /></button>
+            ><MdSettings size={ 20 } /></button>
           </div>
         </div>
         <div className={`dashboard-grid-shell${isWidgetFocusMode ? ' dashboard-grid-shell--focused' : ''}`}>

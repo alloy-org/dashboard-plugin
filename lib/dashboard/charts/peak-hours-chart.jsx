@@ -2,9 +2,9 @@
 // the way the host app's Task Stats graph draws its charts, with a highlighted hour and a Task Stats style tooltip.
 import { ChartGridLines, ChartHighlightLine, ChartHitArea, ChartXAxisLabels, niceChartMaximum,
     useElementSize } from "dashboard/charts/stats-chart";
-import { STATS_CHART_TOOLTIP_OPTIONS, statsChartTooltipHtml } from "dashboard/charts/stats-chart-tooltip";
-import { useCanvasTippy } from "dashboard/dashboard-tooltip-tippy";
+import { StatsChartTooltipContent, StatsChartTooltipRow, useStatsChartTooltip } from "dashboard/charts/stats-chart-tooltip";
 import { useEffect, useState } from "react";
+import { MdAddCircle, MdCheckCircle, MdSchedule } from "react-icons/md";
 
 const BAR_GAP = 1;
 const BAR_SHARE_OF_COLUMN = 0.7;
@@ -37,7 +37,7 @@ function HourBar({ className, height, left, plot, width }) {
 export default function PeakHoursChart({ completedByHour, createdByHour, hourLabels }) {
   const [ containerRef, { height, width } ] = useElementSize();
   const [ hoveredIndex, setHoveredIndex ] = useState(null);
-  const tooltip = useCanvasTippy(STATS_CHART_TOOLTIP_OPTIONS);
+  const tooltip = useStatsChartTooltip();
   const plot = { bottom: Math.max(height - PLOT_PADDING.bottom, PLOT_PADDING.top + 1), left: PLOT_PADDING.left,
     right: Math.max(width - PLOT_PADDING.right, PLOT_PADDING.left + 1), top: PLOT_PADDING.top };
   const maximum = niceChartMaximum(Math.max(...createdByHour, ...completedByHour, 0), GRID_LABEL_COUNT);
@@ -49,13 +49,15 @@ export default function PeakHoursChart({ completedByHour, createdByHour, hourLab
   useEffect(() => {
     if (hoveredIndex === null || !containerRef.current) { tooltip.scheduleHide(150); return; }
     const containerBox = containerRef.current.getBoundingClientRect();
-    const rows = [
-      { className: "peak-hours-tooltip-stat--created", iconName: "add_circle", text: `${ createdByHour[hoveredIndex] } pts created` },
-      { className: "peak-hours-tooltip-stat--completed", iconName: "check_circle",
-        text: `${ completedByHour[hoveredIndex] } pts completed` },
-    ];
-    tooltip.show(statsChartTooltipHtml({ rows, title: hourLabels[hoveredIndex], titleIconName: "schedule" }),
-      containerBox.left + columnCenter(hoveredIndex) + columnWidth / 2, containerBox.top + plot.top);
+    const content = (
+      <StatsChartTooltipContent title={ hourLabels[hoveredIndex] } TitleIcon={ MdSchedule }>
+        <StatsChartTooltipRow className="peak-hours-tooltip-stat--created" Icon={ MdAddCircle }
+          text={ `${ createdByHour[hoveredIndex] } pts created` } />
+        <StatsChartTooltipRow className="peak-hours-tooltip-stat--completed" Icon={ MdCheckCircle }
+          text={ `${ completedByHour[hoveredIndex] } pts completed` } />
+      </StatsChartTooltipContent>
+    );
+    tooltip.show(content, containerBox.left + columnCenter(hoveredIndex) + columnWidth / 2, containerBox.top + plot.top);
   }, [ hoveredIndex ]);
 
   const labelStep = HOUR_LABEL_STEPS.find(step => step * columnWidth >= HOUR_LABEL_MINIMUM_SPACING) || HOUR_COUNT / 2;

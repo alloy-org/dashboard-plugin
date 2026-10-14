@@ -30,19 +30,19 @@ describe("WidgetWrapper header defaults", () => {
     document.body.innerHTML = "";
   });
 
-  it("takes the Material icon and title from the registry when the widget passes only its id", async () => {
+  it("takes the Material icon from the widget icon map and the title from the registry", async () => {
     const registryEntry = widgetDataFromId("victory-value");
     const container = await renderWrapper({ widgetId: "victory-value" });
-    expect(container.querySelector(".widget-icon svg.material-icon")).not.toBeNull();
+    expect(container.querySelector(".widget-icon svg")).not.toBeNull();
     expect(headerText(container, ".widget-icon")).toBe("");
     expect(headerText(container, ".widget-title__label")).toBe(registryEntry.name);
   });
 
-  it("names a Material icon with path data for every registered widget", async () => {
-    const { MATERIAL_ICON_PATHS } = await import("constants/material-icon-paths");
+  it("has a Material icon for every registered widget", async () => {
+    const { WIDGET_ICON_BY_ID } = await import("widget-icons");
     const { WIDGET_REGISTRY } = await import("layout-profiles");
-    const missingIconWidgetIds = WIDGET_REGISTRY.filter(entry => !MATERIAL_ICON_PATHS[entry.iconName]);
-    expect(missingIconWidgetIds.map(entry => entry.widgetId)).toEqual([]);
+    const widgetIdsWithoutIcons = WIDGET_REGISTRY.filter(entry => !WIDGET_ICON_BY_ID[entry.widgetId]);
+    expect(widgetIdsWithoutIcons.map(entry => entry.widgetId)).toEqual([]);
   });
 
   it("prefers the registry's visibleTitle over its name, as the widget's own call used to", async () => {
