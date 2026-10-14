@@ -5,6 +5,27 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-14 — Prepare for the day's meetings in the Proposed Agenda, and narrow large pools by Jev salience
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/meeting-preparation.js` (created) — Meetings are a day's timed calendar events with an invitee who has not declined. Matching terms come from attendee names, a company email domain (personal mail providers skipped) and distinctive title words. Terms matching more than 10% of open tasks (minimum 5) are dropped. Builds one meeting group per meeting and project from matching project candidates and loose open tasks, reading native and compact task shapes alike.
+- `lib/dashboard/meeting-preparation-ideas.js` (created) — Brainstorms up to 3 prep tasks per meeting nothing matched, in one generative request. Stores them in the archived "Dashboard Meeting Preparation <domain>" note so each meeting is brainstormed once, and skips ideas that restate an open task.
+- `lib/dashboard/suggestion-salience.js` (created) — Jev salience pass (1–10) over a pool larger than 30 candidates. Weighs the day's meetings, the projects focused on that weekday, and personal pursuits on weekends. Keeps the 30 most salient, and drops meeting candidates scored below 5 as word-only matches.
+- `lib/dashboard/day-project-candidates.js` — `everyProjectCandidate`, so a meeting can draw on projects that don't qualify today.
+- `lib/dashboard/ranked-task-suggestions.js` — `prepareDayRanking` reads the day's meetings (or takes `calendarEvents`), puts meeting groups first, folds the meetings into the revision, and runs the salience pass before Jev ranks.
+- `lib/dashboard/suggestion-task-rank.js` — `dayRankingRevision` takes an optional meetings digest; ranked candidates carry `meetingStartMinutes`.
+- `lib/dashboard/suggestion-task-slots.js` — Places up to 3 prep tasks per meeting first, in the 3 hours before it (else the earliest hour ending before it); activities are returned in start order.
+- `lib/util/browser-dev-app.js` — The mock work event has invitees.
+- `test/meeting-preparation.test.js` (created) — Meeting detection, term matching, placement, salience narrowing, idea reuse, and revision changes.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite and production bundle smoke test pass. Not yet run against real calendar data: Amplenote's `app.getExternalCalendarEvents` does not yet return `attendees` (see ample-notes-store `get-plugin-external-calendar-events.js`).
+**Task:** Focus the 2–3 hours before a customer call on tasks for that prospect, and filter a moderately large prospect pool by Jev salience.
+**Prompt summary:** "When the day contains an event from external calendar that includes invitees, look for any existing or brainstormed tasks that pertain to the person or company that is being met on the call" → "have Jev give a quick score of task 'salience' (1-10) … For weekends, high salience=personal projects/pursuits."
+
+---
+
 ## 2026-10-14 — Hold maintenance while the user interacts, confirm young claims by reading, and time slow app calls
 
 **Model:** Claude Opus 5.5
