@@ -4,43 +4,9 @@
  * Prompt summary: "create a dashboard settings popup with LLM provider dropdown and API key input"
  */
 
-@use 'controls' as *;
 @use 'theme-tokens' as *;
 
 .dashboard-settings-container {
-
-  // ── Sections ─────────────────────────────────────────────────────────────────────────
-
-  .dashboard-settings-section {
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* [Composer] Task: visual separation between stacked settings blocks (matches header/footer hairlines) */
-  /* Prompt: "section class — obvious line between sections" | Date: 2026-04-09 */
-  .dashboard-settings-section.section:not(:first-child) {
-    border-top: 1px solid $color-border-primary;
-    margin-top: $sp-xl;
-    padding-top: $sp-xl;
-  }
-
-  .dashboard-settings-section-header {
-    display: flex;
-    flex-direction: column;
-    gap: $sp-xs;
-  }
-
-  .dashboard-settings-section-title {
-    @include overline-label;
-    margin: 0;
-  }
-
-  .dashboard-settings-section-desc {
-    color: $color-text-medium-contrast;
-    font-size: 14px;
-    line-height: 1.5;
-    margin: 0;
-  }
 
   // ── API key field ────────────────────────────────────────────────────────────────────
 

@@ -1,7 +1,7 @@
 // [Claude claude-opus-4-8-authored file]
 // Prompt summary: "new dashboard widget showing which notes have been recently updated by
 // collaborators, with a checkbox to limit results to notes that have tasks"
-import { EmptyState, IconButton, LoadingState, PlainButton, Select } from "dashboard/controls";
+import { CheckboxField, EmptyState, IconButton, LoadingState, PlainButton, Select } from "dashboard/controls";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { useCallback, useEffect, useState } from "react";
 import { MdChevronLeft, MdChevronRight, MdPushPin } from "react-icons/md";
@@ -127,13 +127,8 @@ function paginateSharedNotes({ notes, page, pageSize, pinnedUuids, selectedShare
 // Prompt: "When we show the user filter, show the 'Has tasks' checkbox on the right side of the same line"
 function TasksToggle({ inHeader, onChange, onlyWithTasks }) {
   return (
-    <label
-      className={`shared-notes-toggle${ inHeader ? " shared-notes-toggle--header" : "" }`}
-      title="Only show shared notes that have tasks"
-    >
-      <input type="checkbox" checked={onlyWithTasks} onChange={event => onChange(event.target.checked)} />
-      Has tasks
-    </label>
+    <CheckboxField checked={ onlyWithTasks } className={ `shared-notes-toggle${ inHeader ? " shared-notes-toggle--header" : "" }` }
+      compact label="Has tasks" onChange={ onChange } title="Only show shared notes that have tasks" />
   );
 }
 

@@ -6,6 +6,7 @@
  */
 import { Button, IconButton } from "dashboard/controls";
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { MdClose } from "react-icons/md";
 import "styles/config-popup.scss"
 
@@ -38,7 +39,7 @@ export default function ConfigPopup({ title, onSubmit, onCancel, submitLabel = '
         alignItems: 'flex-start', padding: '16px' }
     : undefined;
 
-  return (
+  const popup = (
     <div
       className="config-popup-overlay"
       style={overlayStyle}
@@ -61,6 +62,10 @@ export default function ConfigPopup({ title, onSubmit, onCancel, submitLabel = '
       </div>
     </div>
   );
+  // A widget's popup renders at the page level, so the widget card's stacking and transforms cannot trap or cover
+  // it; a document-anchored popup (scrollTop) stays where its caller positions it.
+  const rendersAtPageLevel = scrollTop === undefined && typeof document !== "undefined" && document.body;
+  return rendersAtPageLevel ? createPortal(popup, document.body) : popup;
 }
 
 // ----------------------------------------------------------------------------------------------

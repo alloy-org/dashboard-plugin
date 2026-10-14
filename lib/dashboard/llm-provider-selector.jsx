@@ -3,11 +3,10 @@
 //   offered provider with what it excels at, plus Submit / Cancel, replacing the native app.prompt radio dialog.
 //   Shared by the proposed-agenda and dream-task widgets."
 import ConfigPopup from "config-popup";
+import { RadioGroup } from "dashboard/controls";
 import { defaultSelectedProviderEm, selectableProviderOptions } from "llm-provider";
 import { useState } from "react";
-import { createPortal } from "react-dom";
 
-import "styles/llm-provider-selector.scss";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Modal AI-provider chooser styled to match the dashboard's other popups. Renders one themed radio per
@@ -35,23 +34,12 @@ export default function LlmProviderSelector({ allowKeylessProviders = false, con
     const preferred = defaultSelectedProviderEm(currentProviderEm);
     return options.some(option => option.providerEm === preferred) ? preferred : options[0].providerEm;
   });
-  const popup = (
+  return (
     <ConfigPopup title={ title } submitLabel={ submitLabel } onCancel={ onCancel }
         onSubmit={ () => onSelect(selected) }>
-      <div className="llm-provider-options">
-        {
-          options.map(option => (
-          <label key={ option.providerEm } className="llm-provider-option">
-            <input type="radio" name="llm-provider" value={ option.providerEm }
-              checked={ selected === option.providerEm } onChange={ () => setSelected(option.providerEm) } />
-            <span className="llm-provider-option-text">
-              <span className="llm-provider-option-name">{ option.label }</span>
-              <span className="llm-provider-option-desc">{ option.description }</span>
-            </span>
-          </label>))
-        }
-      </div>
+      <RadioGroup hideLabel label="AI provider" onChange={ setSelected }
+        options={ options.map(option => ({ description: option.description, label: option.label,
+          value: option.providerEm })) } value={ selected } />
     </ConfigPopup>
   );
-  return typeof document !== "undefined" && document.body ? createPortal(popup, document.body) : popup;
 }

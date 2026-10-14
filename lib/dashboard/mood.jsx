@@ -7,7 +7,7 @@
 import { useThemeRevision } from "hooks/use-theme-revision";
 import { useEffect, useRef, useState } from "react";
 import ConfigPopup from "config-popup";
-import { Button, PlainButton, TextField } from "dashboard/controls";
+import { Button, PlainButton, RadioGroup, TextField } from "dashboard/controls";
 import { useCanvasTippy } from "dashboard/dashboard-tooltip-tippy";
 import { RICH_TOOLTIP_OPTIONS, richTooltipHtml } from "dashboard/tooltip-themes";
 import { MdSettings } from "react-icons/md";
@@ -91,6 +91,9 @@ const WAVE_TOOLTIP_HIT_RADIUS = 25;
 const RING_ANIM_DURATION_MS  = 1200;
 const WAVE_ANIM_DURATION_MS  = 1000;
 const ANIM_EASE_EXPONENT     = 3;
+
+// The visualization's display styles, chosen in its configure popup
+const VISUALIZATION_MODE_OPTIONS = [ { label: "Ring", value: "ring" }, { label: "Wave", value: "wave" } ];
 
 const MOODS = [
   { value: -2, emoji: '😵‍💫', label: 'Awful' },
@@ -781,21 +784,8 @@ export default function MoodWidget({ app, moodRatings, onMoodRecorded }) {
       onCancel={handleConfigureCancel}
       submitLabel="Apply"
     >
-      <div className="config-field">
-        <div className="config-field-label">Display style</div>
-        {[['ring', 'Ring'], ['wave', 'Wave']].map(([value, label]) => (
-          <label key={value} className="mood-viz-config-option">
-            <input
-              type="radio"
-              name="mood-viz-mode"
-              value={value}
-              checked={pendingVisualizationMode === value}
-              onChange={() => setPendingVisualizationMode(value)}
-            />
-            {label}
-          </label>
-        ))}
-      </div>
+      <RadioGroup label="Display style" onChange={ setPendingVisualizationMode } options={ VISUALIZATION_MODE_OPTIONS }
+        value={ pendingVisualizationMode } />
     </ConfigPopup>
   ) : null;
 

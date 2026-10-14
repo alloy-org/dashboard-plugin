@@ -2,7 +2,7 @@
 import { parseWidgetConfig, widgetConfigKey } from "../constants/settings";
 import ConfigPopup from "./config-popup";
 import { StatsChartTooltipContent, StatsChartTooltipRow } from "dashboard/charts/stats-chart-tooltip";
-import { IconButton } from "dashboard/controls";
+import { CheckboxField, ConfigField, IconButton, RadioGroup } from "dashboard/controls";
 import VictoryValueChart, { moodColorFromRating } from "dashboard/charts/victory-value-chart";
 import { completedTasksWithAppliedValues } from "dashboard/projects/completed-task-potential";
 import { completedTaskProjectColor, dailyProjectSegments, projectLegendItems } from "dashboard/projects/completed-task-project-colors";
@@ -17,6 +17,13 @@ import { dateFromDateInput, dateKeyFromDateInput, tooltipLabelFromDateInput, wee
 import { renderMarkdown } from "util/utility";
 
 // Mood ratings and their labels, as the Mood widget names them
+// The chart's time range choices, saved in the widget config
+const TIME_RANGE_OPTIONS = [
+  { label: "Last 7 days", value: "week" },
+  { label: "This month", value: "month" },
+  { label: "Last 30 days", value: "30days" },
+];
+
 const MOODS = [
   { label: 'Awful', value: -2 },
   { label: 'Bad', value: -1 },
@@ -184,28 +191,6 @@ function shiftWeekDate(deltaWeeks, referenceDate) {
 }
 
 // ------------------------------------------------------------------------------------------
-// @desc Render the saved time range options with a seven-day default.
-// @param {Object} props - Time range selection and its state setter.
-function TimeRangeOptions({ setTimeRange, timeRange }) {
-  return (
-    <>
-      {['week', 'month', '30days'].map((value) => (
-        <label key={value}>
-          <input
-            type="radio"
-            name="vv-time-range"
-            value={value}
-            checked={timeRange === value}
-            onChange={setTimeRange.bind(null, value)}
-          />
-          {value === 'week' ? 'Last 7 days' : value === 'month' ? 'This month' : 'Last 30 days'}
-        </label>
-      ))}
-    </>
-  );
-}
-
-// ------------------------------------------------------------------------------------------
 // @desc Render a swatch and name for each project the displayed days' bars are colored by.
 // @param {Object} props - { items }: legend items from projectLegendItems.
 // @returns {JSX.Element|null} The legend, or nothing when no bar is colored by project.
@@ -260,21 +245,10 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
           onSubmit={onConfigSubmit}
           onCancel={onConfigCancel}
         >
-          <div className="config-field">
-            <div className="config-field-label">Time range</div>
-            <TimeRangeOptions setTimeRange={setTimeRange} timeRange={timeRange} />
-          </div>
-          <div className="config-field">
-            <div className="config-field-label">Mood overlay</div>
-            <label>
-              <input
-                type="checkbox"
-                checked={showMood}
-                onChange={(event) => setShowMood(event.target.checked)}
-              />
-              Show mood overlay
-            </label>
-          </div>
+          <RadioGroup label="Time range" onChange={ setTimeRange } options={ TIME_RANGE_OPTIONS } value={ timeRange } />
+          <ConfigField label="Mood overlay">
+            <CheckboxField checked={ showMood } label="Show mood overlay" onChange={ setShowMood } />
+          </ConfigField>
         </ConfigPopup>
       ) : null}
       <div className="vv-header">

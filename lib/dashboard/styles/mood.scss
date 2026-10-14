@@ -147,20 +147,6 @@ $mood-transition-duration: 0.15s;
     width: 220px;
   }
 
-  .mood-viz-config-option {
-    align-items: center;
-    cursor: pointer;
-    display: flex;
-    font-size: $default-font-size;
-    gap: $sp-sm;
-    padding: $sp-xs 0;
-
-    input[type='radio'] {
-      accent-color: $color-background-action-high-contrast;
-      cursor: pointer;
-    }
-  }
-
   /* [Claude] Task: fade-out animation for mood confirmation auto-dismiss */
   /* Prompt: "Update the 'Mood rating recorded' confirmation to fade out after 5 seconds" */
   /* Date: 2026-03-07 | Model: claude-4.6-opus-high-thinking */

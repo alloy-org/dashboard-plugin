@@ -22,8 +22,10 @@ The dashboard must look like the Amplenote app it lives in. Before writing or ch
 Builder UI, read [`doc/design-system.md`](doc/design-system.md) and build only from its shared layers:
 
 - **Controls** from `"dashboard/controls"`: `Button`, `IconButton`, `PlainButton`, `Select`, `TextField`,
-  `UnderlineTabs`, `Badge`, `Spinner`, `EmptyState`, `LoadingState`, `ErrorState`. Never write a raw `<button>`,
-  `<select>`, text `<input>`/`<textarea>`, `<a href="#">` button, spinner, or hand-made empty/loading/error markup.
+  `UnderlineTabs`, `Badge`, `Spinner`, `EmptyState`, `LoadingState`, `ErrorState`, and for settings `ConfigSection`,
+  `ConfigField`, `RadioGroup`, `CheckboxField`. Never write a raw `<button>`, `<select>`, `<input>`/`<textarea>`
+  (checkboxes and radios included), `<a href="#">` button, spinner, or hand-made empty/loading/error markup. A
+  widget's configure popup is a `ConfigPopup` filled with the settings controls.
 - **Colors** only from the tokens in `lib/dashboard/styles/theme-tokens.scss`, named after the host's colors
   (`$color-text-medium-contrast`, `$color-background-primary`, …). No hex, `rgb()`, or `var(--color-*)` in component
   stylesheets, and no color literals in scripts. Data colors (priorities, projects, moods, task counts) are named once

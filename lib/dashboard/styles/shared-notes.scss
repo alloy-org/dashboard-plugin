@@ -16,17 +16,8 @@
   }
 
   /* Checkbox toggle, laid out inline either in the header or on the filter row. */
-  .shared-notes-toggle {
-    align-items: center;
-    cursor: pointer;
-    display: inline-flex;
-    font-size: $smaller-font-size;
-    gap: $sp-xs;
-  }
-
   .shared-notes-toggle--header {
     color: $color-text-medium-contrast;
-    font-size: 12px;
     white-space: nowrap;
   }
 

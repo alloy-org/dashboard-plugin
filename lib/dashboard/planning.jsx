@@ -151,8 +151,8 @@ function QuarterCard({ isPast, onCardClick, onSuggestionToggle, plan, planBegun 
         { showSuggestionToggle ? (
           <DashboardTippy content={`${ suggestionTip } ${ monthsTip }`} placement="bottom">
             <label className="quarter-suggestion-toggle" onClick={(event) => event.stopPropagation()}>
-              <input checked={usedForSuggestions} onChange={(event) => onSuggestionToggle(event.target.checked)}
-                type="checkbox" />
+              <input checked={usedForSuggestions} className="quarter-suggestion-checkbox"
+                onChange={(event) => onSuggestionToggle(event.target.checked)} type="checkbox" />
             </label>
           </DashboardTippy>
         ) : null}

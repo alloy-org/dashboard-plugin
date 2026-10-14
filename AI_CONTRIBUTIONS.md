@@ -5,6 +5,27 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-14 — Shared settings controls
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/controls/settings-fields.jsx` (created) — `ConfigSection` (overline title, description, hairline between sections), `ConfigField` (labeled group with hint), `RadioGroup` (fieldset and legend; two-line options with descriptions), `CheckboxField` (with description and compact variants). Values, not events, reach `onChange`.
+- `lib/dashboard/controls.js`, `styles/dashboard-controls.scss` — Export and style them; the option-row, field-label, and section rules moved here from four stylesheets.
+- `lib/dashboard/victory-value.jsx`, `mood.jsx`, `dashboard-settings-popup.jsx`, `llm-provider-selector.jsx` — Configure popups built from the settings controls instead of their own option rows and section markup.
+- `lib/dashboard/shared-notes.jsx`, `styles/shared-notes.scss` — "Has tasks" is a compact CheckboxField.
+- `lib/dashboard/config-popup.jsx`, `styles/config-popup.scss` — Widget popups render at the page level (portal), so other widget cards no longer cover them; the generic label, input, and field rules removed.
+- `lib/dashboard/styles/llm-provider-selector.scss` (deleted), `styles/dashboard-settings-popup.scss`, `styles/mood.scss` — Their option-row and section rules removed.
+- `lib/dashboard/planning.jsx` — Class on the quarter card's checkbox, so the guard can list it as an exception.
+- `test/controls.test.js`, `test/controls-usage.test.js` — Settings controls tested; raw checkboxes and radios now fail the guard outside two listed option cards.
+- `doc/design-system.md`, `CLAUDE.md` — Settings controls in the controls table and the UI rules.
+- `build/compiled.js` — Rebuilt (804,499 bytes).
+
+**Validation:** Jest: 1384 passed, 1 failed (`test/dream-task-actions.test.js`, failing before these changes). Dashboard Settings and Victory Value configure popups checked in the dev server, including choosing an option.
+**Task:** Share the configure popup's fields so every widget's settings look the same.
+**Prompt summary:** "Shared <ConfigField label> / <RadioGroup> / <CheckboxField> components would make every widget's settings look the same."
+
+---
+
 ## 2026-10-14 — Data colors named in one place
 
 **Model:** Claude Opus 5.5

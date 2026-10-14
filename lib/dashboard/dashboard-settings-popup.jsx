@@ -7,13 +7,21 @@
 import ConfigPopup from 'config-popup';
 import { PROVIDER_API_KEY_RETRIEVE_URL } from 'constants/llm-providers';
 import { apiKeySettingFromKeyProvider, BUILD_DATE, JEV_KEY_PROVIDER, SETTING_KEYS } from 'constants/settings';
-import { Button, IconButton, Select, TextField } from "dashboard/controls";
+import { Button, ConfigField, ConfigSection, IconButton, RadioGroup, Select, TextField } from "dashboard/controls";
 import { useState } from 'react';
 import { MdOpenInNew, MdVisibility, MdVisibilityOff } from "react-icons/md";
 import { logIfEnabled } from "util/log";
 import "styles/dashboard-settings-popup.scss"
 
 const API_KEY_LINK_ICON_SIZE = 14;
+const TIME_FORMAT_OPTIONS = [
+  { label: "Use meridian (am/pm) times", value: "meridian" },
+  { label: "24 hour time", value: "24h" },
+];
+const WEEK_FORMAT_OPTIONS = [
+  { label: "Week begins on Sunday", value: "sunday" },
+  { label: "Week begins on Monday", value: "monday" },
+];
 
 // An option marked keyOnly edits a key without becoming the LLM Provider setting: Jev rates tasks against projects
 // but cannot write text, so choosing it leaves the generative provider chosen before it in place. keyLinkName names
@@ -88,42 +96,34 @@ function _jevKeyHint(generativeProvider) {
 function AiProviderSection({ apiKey, apiKeyVisible, keyOnlyHint, linkParenthetical, note, onApiKeyChange, onProviderChange,
     onToggleKeyVisibility, providerApiKeyUrl, providerName, selectedProvider }) {
   return (
-    <div className="dashboard-settings-section section">
-      <div className="dashboard-settings-section-header">
-        <h4 className="dashboard-settings-section-title">AI Provider</h4>
-        <p className="dashboard-settings-section-desc">Enable analysis of quarterly plan & suggested tasks.</p>
+    <ConfigSection description="Enable analysis of quarterly plan & suggested tasks." title="AI Provider">
+      <div>
+        <Select className="dashboard-settings-select" label="LLM Provider" onChange={ onProviderChange }
+          options={ LLM_OPTIONS } value={ selectedProvider } />
+        {keyOnlyHint ? <p className="dashboard-settings-api-key-hint">{keyOnlyHint}</p> : null}
       </div>
-      <div className="config-field">
-        <div className="config-line">
-          <Select className="dashboard-settings-select" label="LLM Provider" onChange={ onProviderChange }
-            options={ LLM_OPTIONS } value={ selectedProvider } />
-          {keyOnlyHint ? <p className="dashboard-settings-api-key-hint">{keyOnlyHint}</p> : null}
+      <ConfigField hint={ note } label="API Key">
+        <a
+          className="dashboard-settings-api-key-link"
+          href={providerApiKeyUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {`Retrieve your ${ providerName } API key (${ linkParenthetical })`}
+          <MdOpenInNew size={ API_KEY_LINK_ICON_SIZE } />
+        </a>
+        <div className="dashboard-settings-api-key-input-row">
+          <TextField autoComplete="off" className="dashboard-settings-api-key-input" hideLabel
+            label="API Key" onChange={ onApiKeyChange } placeholder="Paste your API key here"
+            spellCheck={ false }
+            type={ apiKeyVisible ? 'text' : 'password' } value={ apiKey } />
+          <IconButton className="dashboard-settings-api-key-toggle"
+            Icon={ apiKeyVisible ? MdVisibilityOff : MdVisibility }
+            label={ apiKeyVisible ? 'Hide API key' : 'Show API key' } onClick={ onToggleKeyVisibility }
+            size="large" />
         </div>
-        <div className="config-line">
-          <div className="config-field-label">API Key</div>
-          <p className="dashboard-settings-api-key-hint">{note}</p>
-          <a
-            className="dashboard-settings-api-key-link"
-            href={providerApiKeyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {`Retrieve your ${ providerName } API key (${ linkParenthetical })`}
-            <MdOpenInNew size={ API_KEY_LINK_ICON_SIZE } />
-          </a>
-          <div className="dashboard-settings-api-key-input-row">
-            <TextField autoComplete="off" className="dashboard-settings-api-key-input" hideLabel
-              label="API Key" onChange={ onApiKeyChange } placeholder="Paste your API key here"
-              spellCheck={ false }
-              type={ apiKeyVisible ? 'text' : 'password' } value={ apiKey } />
-            <IconButton className="dashboard-settings-api-key-toggle"
-              Icon={ apiKeyVisible ? MdVisibilityOff : MdVisibility }
-              label={ apiKeyVisible ? 'Hide API key' : 'Show API key' } onClick={ onToggleKeyVisibility }
-              size="large" />
-          </div>
-        </div>
-      </div>
-    </div>
+      </ConfigField>
+    </ConfigSection>
   );
 }
 
@@ -133,16 +133,13 @@ function AiProviderSection({ apiKey, apiKeyVisible, keyOnlyHint, linkParenthetic
 // @param {function(): void} onOpenMemoryMeasurement - Opens the widget memory measurement panel.
 function DebugToolsSection({ onOpenMemoryMeasurement }) {
   return (
-    <div className="dashboard-settings-section section">
-      <div className="dashboard-settings-section-header">
-        <h4 className="dashboard-settings-section-title">Debug Tools</h4>
-        <p className="dashboard-settings-section-desc">Measure a widget's approximate incremental JavaScript heap footprint.</p>
-      </div>
+    <ConfigSection description="Measure a widget's approximate incremental JavaScript heap footprint."
+      title="Debug Tools">
       <Button className="dashboard-settings-debug-button" dense onClick={ onOpenMemoryMeasurement }
         variant="outlined">
         Open widget memory measurement
       </Button>
-    </div>
+    </ConfigSection>
   );
 }
 
@@ -152,36 +149,13 @@ function DebugToolsSection({ onOpenMemoryMeasurement }) {
 // Prompt: "break the settings popup render into local functions per section"
 function TimeDateSection({ onTimeFormatChange, onWeekFormatChange, timeFormat, weekFormat }) {
   return (
-    <div className="dashboard-settings-section section">
-      <div className="dashboard-settings-section-header">
-        <h4 className="dashboard-settings-section-title">Time & Date Format</h4>
-        <p className="dashboard-settings-section-desc">Choose how times and weeks are displayed across the dashboard.</p>
-      </div>
-      <div className="config-field">
-        <div className="config-line">
-          <div className="config-field-label">Time Format</div>
-          <label>
-            <input type="radio" name="time-format" value="meridian" checked={timeFormat === 'meridian'} onChange={() => onTimeFormatChange('meridian')} />
-            Use meridian (am/pm) times
-          </label>
-          <label>
-            <input type="radio" name="time-format" value="24h" checked={timeFormat === '24h'} onChange={() => onTimeFormatChange('24h')} />
-            24 hour time
-          </label>
-        </div>
-        <div className="config-line">
-          <div className="config-field-label">Week Format</div>
-          <label>
-            <input type="radio" name="week-format" value="sunday" checked={weekFormat === 'sunday'} onChange={() => onWeekFormatChange('sunday')} />
-            Week begins on Sunday
-          </label>
-          <label>
-            <input type="radio" name="week-format" value="monday" checked={weekFormat === 'monday'} onChange={() => onWeekFormatChange('monday')} />
-            Week begins on Monday
-          </label>
-        </div>
-      </div>
-    </div>
+    <ConfigSection description="Choose how times and weeks are displayed across the dashboard."
+      title="Time & Date Format">
+      <RadioGroup label="Time Format" onChange={ onTimeFormatChange } options={ TIME_FORMAT_OPTIONS }
+        value={ timeFormat } />
+      <RadioGroup label="Week Format" onChange={ onWeekFormatChange } options={ WEEK_FORMAT_OPTIONS }
+        value={ weekFormat } />
+    </ConfigSection>
   );
 }
 

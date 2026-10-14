@@ -80,9 +80,12 @@ import { Badge, Button, EmptyState, ErrorState, IconButton, LoadingState, PlainB
 | A dropdown | `<Select label="Collaborator" options={ [ { label, value } ] } value onChange={ value => … } />` | `onChange` gets the value. `hideLabel` for compact toolbars, `dense` (32px) in toolbars and rows. |
 | Text input | `<TextField label="Details" multiline value onChange={ text => … } />` | `inputClassName` for a class on the input itself, `dense`, `ref` reaches the input. |
 | Switching views | `<UnderlineTabs ariaLabel="Month" tabs={ [ { id, label } ] } value onChange />` | Arrow keys work. `deselectable` when clicking the open tab closes it (`onChange(null)`). |
-| A checkbox or radio | native `<input type="checkbox">` / `type="radio"` inside its `<label>` | Tinted by `accent-color: $color-background-action-high-contrast` (set globally); no custom box. |
+| A choice of one | `<RadioGroup label="Time range" options={ [ { label, value, description } ] } value onChange={ value => … } />` | A fieldset with its legend; options with a `description` get the two-line row with a hover fill. `hideLabel` when the popup title already says it. |
+| An on/off setting | `<CheckboxField checked label="Show mood overlay" onChange={ checked => … } />` | `description` for a muted second line; `compact` for a toolbar or widget header. |
+| A labeled group of settings | `<ConfigField label="API Key" hint="…">…</ConfigField>` | For anything that is not one radio group: a Select, a TextField, a link, several checkboxes. |
+| A settings section | `<ConfigSection title="Time & Date Format" description="…">…</ConfigSection>` | Overline title and one sentence; consecutive sections get a hairline between them. |
 | A status pill | `<Badge tone="neutral" \| "action" \| "status" \| "warning" \| "danger" title="…">Past</Badge>` | Uppercase by default; `uppercase={ false }` for names and prices. |
-| Dialogs and settings | `ConfigPopup` (`lib/dashboard/config-popup.jsx`) | Title bar, close button, footer with Cancel + primary. |
+| Dialogs and settings | `ConfigPopup` (`lib/dashboard/config-popup.jsx`) | Title bar, close button, footer with Cancel + primary. Renders at the page level, so a widget's popup is never covered by other cards. Fill it with the settings controls above, never with your own option rows. |
 | Tooltips | `DashboardTippy` (hint, or `rich`), `useStatsChartTooltip` for charts | See [Tooltips](#tooltips) for which look to use. |
 | Charts | `charts/stats-chart.jsx` pieces (`ChartGridLines`, `ChartHighlightLine`, `ChartValuePill`, `ChartHitArea`, `ChartXAxisLabels`, `useElementSize`) | See `charts/peak-hours-chart.jsx` for a compact example. |
 

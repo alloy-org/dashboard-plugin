@@ -5,8 +5,8 @@ import { act, createElement, createRef } from "react";
 import { createRoot } from "react-dom/client";
 import { MdRefresh } from "react-icons/md";
 
-const { Badge, Button, EmptyState, ErrorState, IconButton, LoadingState, PlainButton, Select, Spinner,
-  TextField, UnderlineTabs } = await import("dashboard/controls");
+const { Badge, Button, CheckboxField, ConfigField, ConfigSection, EmptyState, ErrorState, IconButton, LoadingState,
+  PlainButton, RadioGroup, Select, Spinner, TextField, UnderlineTabs } = await import("dashboard/controls");
 
 // ------------------------------------------------------------------------------------------
 // @desc Mount an element and return its container.
@@ -164,5 +164,29 @@ describe("shared controls", () => {
     expect(error.querySelector(".dashboard-empty-state-title")).toBeNull();
     expect(error.querySelectorAll(".dashboard-empty-state-actions a, .dashboard-empty-state-actions button"))
       .toHaveLength(2);
+  });
+
+  it("builds settings from sections, labeled fields, radio groups, and checkboxes that report values", async () => {
+    const onRadio = jest.fn();
+    const onCheck = jest.fn();
+    const options = [ { label: "Ring", value: "ring" }, { description: "A line over the week", label: "Wave",
+      value: "wave" } ];
+    const container = await render(createElement(ConfigSection, { description: "How it looks.", title: "Display" },
+      createElement(RadioGroup, { label: "Display style", onChange: onRadio, options, value: "ring" }),
+      createElement(ConfigField, { hint: "Shown on the chart.", label: "Mood overlay" },
+        createElement(CheckboxField, { checked: false, label: "Show mood overlay", onChange: onCheck }))));
+    expect(container.querySelector(".dashboard-config-section-title").textContent).toBe("Display");
+    expect(container.querySelector("fieldset legend").textContent).toBe("Display style");
+    const radios = container.querySelectorAll("input[type='radio']");
+    expect(radios[0].name).toBe(radios[1].name);
+    expect(radios[0].checked).toBe(true);
+    expect(container.querySelector(".dashboard-option-row--described .dashboard-option-row-description").textContent)
+      .toBe("A line over the week");
+    await act(async () => { radios[1].click(); });
+    expect(onRadio).toHaveBeenCalledWith("wave");
+    const group = container.querySelector("[role='group']");
+    expect(document.getElementById(group.getAttribute("aria-labelledby")).textContent).toBe("Mood overlay");
+    await act(async () => { container.querySelector("input[type='checkbox']").click(); });
+    expect(onCheck).toHaveBeenCalledWith(true);
   });
 });

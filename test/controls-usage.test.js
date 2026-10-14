@@ -10,8 +10,8 @@ const LIB_DIRECTORY = path.resolve("lib");
 const CONTROLS_DIRECTORY = path.join(LIB_DIRECTORY, "dashboard", "controls");
 const STYLES_DIRECTORY = path.join(LIB_DIRECTORY, "dashboard", "styles");
 const CONTROL_STYLESHEET = "dashboard-controls.scss";
-// Native inputs that stay native: tinted globally through accent-color, or a slider
-const NATIVE_INPUT_TYPES = [ "checkbox", "radio", "range" ];
+// Native inputs that stay native: sliders. Checkboxes and radios come from CheckboxField and RadioGroup.
+const NATIVE_INPUT_TYPES = [ "range" ];
 const RAW_CONTROL_TAGS = [ "button", "input", "select", "textarea" ];
 // The control classes that only dashboard-controls.scss may style
 const CONTROL_CLASS_PATTERN = new RegExp("\\.dashboard-(badge|button|empty-state|error-state|field"
@@ -27,6 +27,10 @@ const ALLOWED_RAW_CONTROLS = {
   // Inputs drawn inside a selectable option row, styled as part of that row
   "dashboard/plan-wizard/done-enough-conditions.jsx .done-enough-custom-input": "inline option input",
   "dashboard/plan-wizard/quarter-name-step.jsx .quarter-name-custom-input": "inline option input",
+  // A radio drawn inside each selectable condition card, which is itself the option's label
+  "dashboard/plan-wizard/done-enough-conditions.jsx .done-enough-condition-radio": "radio inside an option card",
+  // The quarter card's suggestion checkbox, drawn in the card's own checked style inside a clickable card
+  "dashboard/planning.jsx .quarter-suggestion-checkbox": "checkbox inside a clickable card",
   // HTML string for the host's footnote popup, rendered outside React
   "util/amplenote-markdown-render.js": "footnote popup HTML string",
 };
@@ -94,7 +98,7 @@ const stylesheetFiles = filesUnder(STYLES_DIRECTORY).filter(file => file.endsWit
   .filter(file => path.basename(file) !== CONTROL_STYLESHEET);
 
 describe("shared controls usage", () => {
-  it("uses Button, IconButton, PlainButton, Select, and TextField instead of raw controls", () => {
+  it("uses the shared buttons, fields, checkboxes, and radio groups instead of raw controls", () => {
     const usedAllowlistKeys = new Set();
     const offenders = scriptFiles.flatMap(file => {
       const relativePath = path.relative(LIB_DIRECTORY, file);

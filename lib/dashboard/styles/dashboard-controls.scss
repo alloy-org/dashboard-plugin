@@ -325,6 +325,133 @@ $spinner-sizes: (large: 32px, medium: 24px, small: 16px);
   }
 }
 
+// ── Settings: sections, fields, radio groups, checkboxes ──
+
+.dashboard-config-section {
+  display: flex;
+  flex-direction: column;
+  gap: $sp-md;
+
+  & + .dashboard-config-section {
+    border-top: 1px solid $color-border-primary;
+    margin-top: $sp-xl;
+    padding-top: $sp-xl;
+  }
+
+  .dashboard-config-section-header {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+  }
+
+  .dashboard-config-section-title {
+    @include overline-label;
+    margin: 0;
+  }
+
+  .dashboard-config-section-description {
+    color: $color-text-medium-contrast;
+    font-size: $default-font-size;
+    line-height: 1.5;
+    margin: 0;
+  }
+}
+
+.dashboard-config-field {
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 $sp-md;
+  min-width: 0;
+  padding: 0;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .dashboard-config-field-label {
+    color: $color-text-low-contrast;
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: $sp-xs;
+    padding: 0;
+  }
+
+  .dashboard-config-field-label--hidden {
+    clip: rect(0 0 0 0);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+
+  .dashboard-config-field-hint {
+    color: $color-text-low-contrast;
+    font-size: 12px;
+    line-height: 1.4;
+    margin: 0 0 $sp-xs;
+  }
+}
+
+.dashboard-option-row {
+  align-items: center;
+  color: $color-text-high-contrast;
+  cursor: pointer;
+  display: flex;
+  font-size: $default-font-size;
+  gap: $sp-sm;
+  padding: $sp-xs 0;
+
+  input {
+    cursor: pointer;
+    flex-shrink: 0;
+    margin: 0;
+  }
+
+  // Two-line options (label over description): top-aligned, padded, with a hover fill
+  &.dashboard-option-row--described {
+    align-items: flex-start;
+    border-radius: $radius-sm;
+    gap: $sp-md;
+    padding: $sp-sm;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+      background: $color-background-element-low-contrast;
+    }
+
+    input {
+      margin-top: 3px;
+    }
+  }
+
+  &.dashboard-option-row--compact {
+    color: inherit;
+    display: inline-flex;
+    font-size: $smaller-font-size;
+    gap: $sp-xs;
+    padding: 0;
+  }
+
+  .dashboard-option-row-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .dashboard-option-row-text .dashboard-option-row-label {
+    font-weight: 500;
+  }
+
+  .dashboard-option-row-description {
+    color: $color-text-low-contrast;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+}
+
 // ── Checkboxes and radios ──
 // Native inputs, tinted with the host's action color.
 

@@ -32,9 +32,8 @@ $config-popup-z-index: 1000;
   z-index: $config-popup-z-index;
 
   /* Everything the popup contains is scoped to the overlay so no other card in the dashboard can pick these
-   * rules up, but scoped through `:where()` so the scoping costs no specificity. Four stylesheets extend the
-   * popup by class — dashboard-layout-popup, dashboard-settings-popup, llm-provider-selector, and
-   * widget-memory-measurement-popup — and their overrides are balanced against the weight these selectors
+   * rules up, but scoped through `:where()` so the scoping costs no specificity. Three stylesheets extend the
+   * popup by class — dashboard-layout-popup, dashboard-settings-popup, and widget-memory-measurement-popup — and their overrides are balanced against the weight these selectors
    * had when they sat at the top level. A plain nested `.config-popup-overlay` would outweigh all of them. */
   :where(&) {
     .config-popup-container {
@@ -86,45 +85,6 @@ $config-popup-z-index: 1000;
 
       .config-popup-body {
         padding: $sp-xl;
-
-        // Option labels around radios and checkboxes. Select / TextField labels keep their own look; the exclusion
-        // sits inside :where() so this rule keeps the weight the popup's extenders balance against.
-        label:not(:where(.dashboard-field-label)) {
-          align-items: center;
-          color: $color-text-high-contrast;
-          cursor: pointer;
-          display: flex;
-          font-size: 14px;
-          gap: $sp-sm;
-          padding: $sp-xs 0;
-        }
-
-        // Native inputs take their tint from the global rule in dashboard-controls.scss; this is spacing only.
-        input[type="radio"],
-        input[type="checkbox"] {
-          cursor: pointer;
-          margin: 0;
-        }
-
-        .config-field {
-          margin-bottom: $sp-md;
-
-          .config-line {
-            margin-bottom: $sp-md;
-            margin-top: $sp-md;
-          }
-
-          &:last-child {
-            margin-bottom: 0;
-          }
-        }
-
-        .config-field-label {
-          color: $color-text-low-contrast;
-          font-size: 12px;
-          font-weight: 500;
-          margin-bottom: $sp-xs;
-        }
       }
 
       .config-popup-actions {
