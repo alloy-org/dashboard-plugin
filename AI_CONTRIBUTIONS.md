@@ -5,6 +5,28 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-14 — Plan the Proposed Agenda provisionally while calendar events are pending, then refine it for meetings
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/util/calendar-utility.js` — `externalCalendarEventsForTargetDate` takes `timeoutMs`, after which it returns `[]` and lets the request keep running. A request still waiting on the host is shared by later calls that use the same options.
+- `lib/dashboard/ranked-task-suggestions.js` — `agendaSuggestionsFromProjects` passes the agenda's `calendarEvents` to the ranking and returns `meetingKeys`. `prepareDayRanking` returns the `meetings` it gathered. A ranking that reads the calendar itself, such as the background job or Dream Task, waits at most 5 s.
+- `lib/dashboard/proposed-agenda-meeting-refinement.js` (created) — `agendaWithNewMeetingPreparation` adds prep for meetings that a stored agenda was not planned for. It ranks the day again, places those meetings' prep tasks, and moves overlapping pending suggestions back to the reserves.
+- `lib/dashboard/proposed-agenda-service.js` — Threads `calendarEvents` into fresh schedules and adds a `calendarPending` mode. In that mode the stored agenda is served whatever its all-day-event context and is not written back. When a cached day's events arrive, it gains prep for meetings it did not know of. Fresh agendas store their `meetingKeys`.
+- `lib/dashboard/proposed-agenda-archive.js` — Records store and return `meetingKeys`; the value is null when they are unknown.
+- `lib/dashboard/proposed-agenda-range.js`, `lib/dashboard/proposed-agenda-llm-generator.js` — Pass `calendarPending` through. The `refining` option keeps the provisional agenda on screen instead of showing the loading state.
+- `lib/dashboard/proposed-agenda.jsx` — Waits 5 s for the Dashboard's calendar events and then plans the day provisionally. When the events arrive, it generates again as a refinement.
+- `lib/dashboard/suggestion-task-slots.js` — Slotted activities carry `meetingStartMinutes`.
+- `lib/hooks/use-external-calendar-events.js` — Fetches 4 days of events, which reaches the Monday the agenda plans for on a Friday evening.
+- `test/proposed-agenda-meeting-refinement.test.js` (created), `test/proposed-agenda-archive.test.js`, `test/prepared-day-ranking-consumers.test.js`, `test/day-ranking-store.test.js` — Cover the time-limited shared fetch, the refinement, meeting keys on records, planning without a calendar request while events are pending, and the new return shape.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite and production bundle smoke test pass.
+**Task:** Keep a slow external-calendar response (about 50 s observed) from holding up the Proposed Agenda. The agenda is proposed first and refined once the events arrive.
+**Prompt summary:** "how do we handle proposing calendar events when external calendar events are pending?" → "we can submit preliminary results and then refine those results as external calendar events are eventually returned."
+
+---
+
 ## 2026-10-14 — Prepare for the day's meetings in the Proposed Agenda, and narrow large pools by Jev salience
 
 **Model:** Claude Opus 5.5

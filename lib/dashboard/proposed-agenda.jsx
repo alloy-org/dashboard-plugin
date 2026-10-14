@@ -31,6 +31,8 @@ import { snapDashboardAction } from "util/plausible";
 import WidgetWrapper from "widget-wrapper";
 
 const WIDGET_ID = "proposed-agenda";
+// How long the first generation waits for the Dashboard's calendar events before planning the day without them.
+const CALENDAR_EVENTS_WAIT_MILLISECONDS = 5000;
 
 // Error codes that mean generation failed for want of a reachable LLM (no API key + no working Ample Agent Pro).
 // When there is also no configured key, the Ample Agent Pro upsell shows if Agent Pro is not installed, and
@@ -176,12 +178,27 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   //   .map, so the reference changes on each return to the dashboard even when the events are unchanged. Keying
   //   on the fields that can alter a proposal (timing, title, all-day) means navigating away and back no longer
   //   re-runs the LLM; a genuine calendar change still does.
+  // The Dashboard passes null while it is still fetching calendar events, which the host can take most of a minute to
+  // return. The first generation waits a few seconds for them, then plans the day provisionally without them; their
+  // arrival generates again, refining that day with the meetings it did not know of. Undefined means no calendar source
+  // was given at all, and generation proceeds.
+  const [calendarWaitExpired, setCalendarWaitExpired] = useState(false);
+  const calendarPending = calendarEvents === null && calendarWaitExpired;
+  const awaitingCalendarEvents = calendarEvents === null && !calendarWaitExpired;
+  const pendingGenerationRanRef = useRef(false);
+  useEffect(() => {
+    if (!awaitingCalendarEvents) return undefined;
+    const timer = setTimeout(() => setCalendarWaitExpired(true), CALENDAR_EVENTS_WAIT_MILLISECONDS);
+    return () => clearTimeout(timer);
+  }, [awaitingCalendarEvents]);
+
   const calendarEventsKey = useMemo(() => {
+    if (calendarPending) return "pending";
     if (!Array.isArray(calendarEvents)) return null;
     const eventIdentities = calendarEvents.map(event => [ calendarEventDateFromValue(event?.start)?.getTime() ?? "",
       calendarEventDateFromValue(event?.end)?.getTime() ?? "", event?.title || "", event?.allDay ? "1" : "0" ].join("|"));
     return eventIdentities.join("~");
-  }, [calendarEvents]);
+  }, [calendarEvents, calendarPending]);
 
   const [approving, setApproving] = useState(false);
   // Null until the Agent Pro lookup answers, so the upsell never shows to a subscriber while it is in flight
@@ -230,10 +247,12 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
       setRecordProviderEm, setReserveTasks, setScheduledKeys };
     const guardedSetters = Object.fromEntries(Object.entries(setters).map(([name, setter]) =>
       [name, value => { if (generation === generationRef.current) setter(value); }]));
-    return runProposedAgendaGeneration(app, { calendarEvents, currentDate, dateRange, domainName: taskDomainName,
-      domainUuid: taskDomainUUID, explicitDate: selectedDate,
+    const refining = !calendarPending && pendingGenerationRanRef.current;
+    pendingGenerationRanRef.current = calendarPending;
+    return runProposedAgendaGeneration(app, { calendarEvents: calendarPending ? [] : calendarEvents, calendarPending,
+      currentDate, dateRange, domainName: taskDomainName, domainUuid: taskDomainUUID, explicitDate: selectedDate,
       isCurrentGeneration: () => generation === generationRef.current, priorityKey,
-      providerEm: modelProviderEm, rankingPreparer: rankingPreparerRef.current, ...guardedSetters }).catch(error => {
+      providerEm: modelProviderEm, rankingPreparer: rankingPreparerRef.current, refining, ...guardedSetters }).catch(error => {
       guardedSetters.setError({ error: error?.message || "Could not prepare the agenda. Please try again.",
         errorCode: "agenda_error", noteUuid: error?.noteUuid || null });
       guardedSetters.setProposed([]);
@@ -311,10 +330,7 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
       setApproving, setScheduledKeys });
   }, [app, defaultNoteUuid, dismissedKeys, llmDateRecord, proposed, scheduledKeys]);
 
-  // The Dashboard passes null while it is still fetching calendar events, and their arrival changes runGeneration.
-  // Generating before then would plan the day twice, so the first run waits for the events. Undefined means no
-  // calendar source was given at all, and generation proceeds.
-  const awaitingCalendarEvents = calendarEvents === null;
+  // The first run waits for the calendar events, or for CALENDAR_EVENTS_WAIT_MILLISECONDS to pass without them.
   useEffect(() => {
     if (awaitingCalendarEvents) return undefined;
     runGeneration();

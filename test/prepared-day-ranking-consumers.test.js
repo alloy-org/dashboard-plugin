@@ -1,6 +1,7 @@
 // Verify that Dream Task and the Proposed Agenda let the Dashboard's work queue prepare the day's shared ranking before
 // ranking a day on a cold cache, and that a Dream Task generation excluding cards, which asks a different question
-// than the queue prepares, ranks the day itself.
+// than the queue prepares, ranks the day itself. While the Dashboard's calendar events are pending, the agenda plans
+// the day without asking the host for them.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
 import { setPluginData } from "plugin-data";
@@ -76,5 +77,16 @@ describe("the agenda's ranking preparation", () => {
     const result = await generateProposedAgenda(coldApp(), { domainName: "Work", domainUuid: "dom-work", rankingPreparer, targetDate });
     expect(rankingPreparer).toHaveBeenCalledWith({ domainName: "Work", domainUuid: "dom-work", targetDate });
     expect(result.activities).toEqual(expect.arrayContaining([expect.objectContaining({ taskUuid: "task-7" })]));
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc While the Dashboard's calendar events are pending, the day is planned without asking the host for them.
+  it("plans a day without asking for calendar events while they are pending", async () => {
+    const app = { ...coldApp(), getExternalCalendarEvents: jest.fn(() => new Promise(() => {})) };
+    const targetDate = new Date();
+    const result = await generateProposedAgenda(app, { calendarEvents: [], calendarPending: true, domainName: "Work",
+      domainUuid: "dom-work", targetDate });
+    expect(app.getExternalCalendarEvents).not.toHaveBeenCalled();
+    expect(result.activities.length).toBeGreaterThan(0);
   });
 });

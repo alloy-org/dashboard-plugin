@@ -187,7 +187,7 @@ describe("prepareDayRanking", () => {
     await storeQualifyingProject(app);
     const requestAnswers = positionalAnswers();
     const beforeRanking = await prepareDayRanking(app, { ...DOMAIN, openTasks: TASKS, requestAnswers, storedOnly: true, targetDate: NOW });
-    expect(beforeRanking).toEqual({ outcome: "notStored", ranking: null });
+    expect(beforeRanking).toEqual({ meetings: [], outcome: "notStored", ranking: null });
     await prepareDayRanking(app, { ...DOMAIN, openTasks: TASKS, requestAnswers, targetDate: NOW });
     const current = await prepareDayRanking(app, { ...DOMAIN, openTasks: TASKS, requestAnswers, storedOnly: true, targetDate: NOW });
     expect(current.outcome).toBe("stored");

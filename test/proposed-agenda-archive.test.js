@@ -132,6 +132,17 @@ describe("proposed-agenda-archive", () => {
     expect(loaded.dismissedKeys).toEqual([]);
   });
 
+  it("keeps the meetings an agenda was planned for, and reports a record without them as not knowing", async () => {
+    const app = buildNoteApp();
+    await storeProposedAgenda(app, { activities: [ACT_A], date: DATE, meetingKeys: ["meeting-1"], priorityKey: PRIORITY,
+      providerEm: PROVIDER });
+    const planned = await loadCachedProposedAgenda(app, { date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER });
+    await storeProposedAgenda(app, { activities: [ACT_A], date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER });
+    const unknown = await loadCachedProposedAgenda(app, { date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER });
+    expect(planned.meetingKeys).toEqual(["meeting-1"]);
+    expect(unknown.meetingKeys).toBeNull();
+  });
+
   it("misses on a different date, priority, or LLM", async () => {
     const app = buildNoteApp();
     await storeProposedAgenda(app, { activities: [ACT_A], date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER });
