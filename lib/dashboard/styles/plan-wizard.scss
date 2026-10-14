@@ -22,14 +22,6 @@ $plan-wizard-title-bar-background: $color-background-dialog;
 $plan-wizard-title-bar-text: $color-text-nav-high-contrast;
 $plan-wizard-title-bar-text-low: $color-text-nav-low-contrast;
 
-// Categorical slice colors for the rail's pace ring, one fixed hue per rhythm in the pace page's option order so a
-// rhythm keeps its color whichever others are present. Mid-tone steps that read on both the light and dark rail.
-$pace-slice-small-move-color: #2a78d6;
-$pace-slice-two-blocks-color: #eb6834;
-$pace-slice-one-block-color: #1baf7a;
-$pace-slice-deadline-color: #eda100;
-$pace-slice-other-color: #e87ba4;
-
 /* The overlay is anchored in the document rather than pinned to the viewport: plan-wizard.jsx sets `top` inline
  * to the scroll offset the wizard opened at, so the dialog appears at the top of what the user was looking at
  * and is free to be taller than the screen, with the page scrolling to reach the rest. An absolutely positioned
@@ -1923,11 +1915,11 @@ $pace-slice-other-color: #e87ba4;
     transition: opacity 120ms ease, stroke-width 120ms ease;
   }
 
-  .pace-breakdown-slice--smallMoveMostDays { stroke: $pace-slice-small-move-color; }
-  .pace-breakdown-slice--twoFocusedBlocks { stroke: $pace-slice-two-blocks-color; }
-  .pace-breakdown-slice--oneSubstantialBlock { stroke: $pace-slice-one-block-color; }
-  .pace-breakdown-slice--deadlineSprint { stroke: $pace-slice-deadline-color; }
-  .pace-breakdown-slice--maintenanceOnly { stroke: $pace-slice-other-color; }
+  .pace-breakdown-slice--smallMoveMostDays { stroke: $color-pace-small-move-most-days; }
+  .pace-breakdown-slice--twoFocusedBlocks { stroke: $color-pace-two-focused-blocks; }
+  .pace-breakdown-slice--oneSubstantialBlock { stroke: $color-pace-one-substantial-block; }
+  .pace-breakdown-slice--deadlineSprint { stroke: $color-pace-deadline-sprint; }
+  .pace-breakdown-slice--maintenanceOnly { stroke: $color-pace-maintenance-only; }
 
   .pace-breakdown-slice--hovered { stroke-width: 11; }
   .pace-breakdown-slice--dimmed { opacity: 0.35; }

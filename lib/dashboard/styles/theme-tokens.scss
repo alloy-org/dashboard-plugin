@@ -9,7 +9,7 @@
 // ── Colors ──────────────────────────────────────────────────────────────────────────────────────────────────────
 // Use only these. Each host color carries the host app's own name (ample-web's --color-* custom properties), so
 // $color-text-low-contrast here is --color-text-low-contrast in the app, in whatever theme and mode the user picked.
-// Values and fallbacks live in theme-light.scss / theme-dark.scss. Pairings to keep:
+// Values and fallbacks live in theme-light.scss / theme-dark.scss, data colors in data-colors.scss. Pairings to keep:
 //   - Fill $color-background-action-high-contrast takes ink $color-text-button.
 //   - Text on a fixed data color takes the contrasting-color mixin below.
 
@@ -51,18 +51,26 @@ $victory-value-color-3-text: var(--dashboard-victory-value-color-3-text);
 $victory-value-color-4: var(--dashboard-victory-value-color-4);
 $victory-value-color-4-text: var(--dashboard-victory-value-color-4-text);
 
-// Fixed data colors: series and categories the host has no color for. Never use these for UI chrome.
+// Dashboard-only surface colors with no host equivalent
+$color-overlay-shadow: var(--dashboard-color-overlay-shadow);
+$color-plan-created-bg: var(--dashboard-color-plan-created-bg);
+$color-plan-created-border: var(--dashboard-color-plan-created-border);
+$color-project-complete: var(--dashboard-color-project-complete);
+$color-project-complete-bg: var(--dashboard-color-project-complete-bg);
+
+// Fixed data colors (data-colors.scss): what a mark means, never UI chrome. Category, mood, and task-count colors are
+// read by scripts through their custom properties.
 $color-agenda-priority-critical: var(--dashboard-color-agenda-priority-critical);
 $color-agenda-priority-important: var(--dashboard-color-agenda-priority-important);
 $color-agenda-priority-normal: var(--dashboard-color-agenda-priority-normal);
 $color-agenda-priority-urgent: var(--dashboard-color-agenda-priority-urgent);
 $color-intent-personal: var(--dashboard-color-intent-personal);
 $color-intent-work: var(--dashboard-color-intent-work);
-$color-overlay-shadow: var(--dashboard-color-overlay-shadow);
-$color-plan-created-bg: var(--dashboard-color-plan-created-bg);
-$color-plan-created-border: var(--dashboard-color-plan-created-border);
-$color-project-complete: var(--dashboard-color-project-complete);
-$color-project-complete-bg: var(--dashboard-color-project-complete-bg);
+$color-pace-deadline-sprint: var(--dashboard-color-pace-deadline-sprint);
+$color-pace-maintenance-only: var(--dashboard-color-pace-maintenance-only);
+$color-pace-one-substantial-block: var(--dashboard-color-pace-one-substantial-block);
+$color-pace-small-move-most-days: var(--dashboard-color-pace-small-move-most-days);
+$color-pace-two-focused-blocks: var(--dashboard-color-pace-two-focused-blocks);
 $color-project-window-canary: var(--dashboard-color-project-window-canary);
 $color-project-window-orange: var(--dashboard-color-project-window-orange);
 $color-project-window-purple: var(--dashboard-color-project-window-purple);

@@ -11,6 +11,10 @@ import { monthGridCellsFromDateInput } from "util/date-utility";
 import WidgetWrapper from "widget-wrapper";
 import "styles/calendar.scss"
 
+// Calendar dot levels by tasks on the day
+const TASK_COUNT_LOW_MAXIMUM = 2;
+const TASK_COUNT_MEDIUM_MAXIMUM = 5;
+
 // [Claude] Task: accept openTasks + completedTasks grouped objects instead of flat tasks array
 // Prompt: "split DashboardApp state and extract useDomainTasks hook"
 // Date: 2026-02-22 | Model: claude-opus-4-6
@@ -71,7 +75,7 @@ export default function CalendarWidget({ app, completedTasksByDate, currentDate,
     if (!cellDate) return <div key={'empty-' + index} className="cal-cell empty" />;
     const day = cellDate.getDate();
     const count = taskCountByDay[day] || 0;
-    const dotColor = count === 0 ? 'none' : count <= 2 ? '#86efac' : count <= 5 ? '#fbbf24' : '#f87171';
+    const dotColor = count === 0 ? 'none' : `var(--dashboard-color-task-count-${ taskCountLevelFromCount(count) })`;
     let cellClass = 'cal-cell';
     if (isToday(day)) cellClass += ' today';
     if (isSelected(day)) cellClass += ' selected';
@@ -98,4 +102,13 @@ export default function CalendarWidget({ app, completedTasksByDate, currentDate,
       </div>
     </WidgetWrapper>
   );
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc The calendar dot level for a day's task count, naming its data color in data-colors.scss.
+// @param {number} count - Tasks on the day (at least one).
+// @returns {string} "low" (1-2), "medium" (3-5), or "high" (more).
+function taskCountLevelFromCount(count) {
+  if (count <= TASK_COUNT_LOW_MAXIMUM) return "low";
+  return count <= TASK_COUNT_MEDIUM_MAXIMUM ? "medium" : "high";
 }

@@ -58,10 +58,11 @@ const WAVE_PADDING_BOTTOM   = 44;
 const WAVE_AXIS_LABEL_X_GAP = 5;
 const WAVE_BEZIER_FRACTION  = 1 / 3;
 const WAVE_ANIM_SCALE       = 1.3;
+// The wave's fill fades from the best mood at the top to the worst at the bottom: [stop, mood rating, hex alpha]
 const WAVE_FILL_GRADIENT    = [
-  [0,   '#27AE6050'],
-  [0.5, '#F2C94C20'],
-  [1,   '#E8453C08'],
+  [0,   2,  '50'],
+  [0.5, 0,  '20'],
+  [1,   -2, '08'],
 ];
 const WAVE_LINE_WIDTH        = 2;
 const WAVE_DOT_OUTER_RADIUS  = 3.5;
@@ -99,20 +100,29 @@ const MOODS = [
   { value: 2, emoji: '🤩', label: 'Great' },
 ];
 
-const VISUALIZATION_MOOD_COLORS = {
-  '-2': '#E8453C',
-  '-1': '#F2994A',
-  '0': '#F2C94C',
-  '1': '#6FCF97',
-  '2': '#27AE60',
+// The host's mood rating scale by rating, as data color custom properties from data-colors.scss, so a mood has the
+// same color here as in Victory Value and the host's Task Stats. The canvas needs real colors, so
+// visualizationMoodColor reads them when drawing, which follows theme changes.
+const VISUALIZATION_MOOD_COLOR_PROPERTIES = {
+  '-2': '--dashboard-color-mood-rating-ugh',
+  '-1': '--dashboard-color-mood-rating-meh',
+  '0': '--dashboard-color-mood-rating-ok',
+  '1': '--dashboard-color-mood-rating-good',
+  '2': '--dashboard-color-mood-rating-fantastic',
 };
+const VISUALIZATION_MOOD_FALLBACK_PROPERTY = '--dashboard-color-text-lower-contrast';
 
 const VISUALIZATION_MOOD_EMOJIS = Object.fromEntries(
   MOODS.map((mood) => [mood.value, mood.emoji])
 );
 
+// ----------------------------------------------------------------------------------------------
+// @desc The canvas color for a mood rating, read from its data color custom property.
+// @param {number} vizValue - Mood rating from -2 to 2; averages are rounded.
+// @returns {string} The resolved color.
 function visualizationMoodColor(vizValue) {
-  return VISUALIZATION_MOOD_COLORS[Math.round(vizValue)] || '#ccc';
+  const property = VISUALIZATION_MOOD_COLOR_PROPERTIES[Math.round(vizValue)] || VISUALIZATION_MOOD_FALLBACK_PROPERTY;
+  return getComputedStyle(document.documentElement).getPropertyValue(property).trim();
 }
 
 function visualizationMoodEmoji(vizValue) {
@@ -502,8 +512,8 @@ function WaveGraph({ moodData }) {
 
     if (animatedPoints.length >= 2) {
       const fillGradient = ctx.createLinearGradient(0, paddingTop, 0, graphBottom);
-      for (const [stop, color] of WAVE_FILL_GRADIENT) {
-        fillGradient.addColorStop(stop, color);
+      for (const [stop, rating, hexAlpha] of WAVE_FILL_GRADIENT) {
+        fillGradient.addColorStop(stop, colorWithAlpha(visualizationMoodColor(rating), hexAlpha));
       }
       drawSmoothCurve(animatedPoints, true);
       ctx.fillStyle = fillGradient;

@@ -7,7 +7,7 @@ import path from "node:path";
 const LIB_DIRECTORY = path.resolve("lib");
 const STYLES_DIRECTORY = path.join(LIB_DIRECTORY, "dashboard", "styles");
 // Files that define tokens, where raw colors and host --color-* variables belong
-const THEME_FILES = [ "theme-dark.scss", "theme-light.scss", "theme-tokens.scss" ];
+const THEME_FILES = [ "data-colors.scss", "theme-dark.scss", "theme-light.scss", "theme-tokens.scss" ];
 
 // SCSS color names replaced by host-named tokens; see the color section of styles/theme-tokens.scss
 const REMOVED_SCSS_TOKENS = [ "accent", "action-low", "background-accent", "bg-card", "bg-element", "bg-element-medium",
@@ -17,6 +17,9 @@ const REMOVED_SCSS_TOKENS = [ "accent", "action-low", "background-accent", "bg-c
   "tooltip-border", "tooltip-shadow", "tooltip-text", "tooltip-text-muted", "victory-value-0", "victory-value-1",
   "victory-value-2", "victory-value-3", "victory-value-4", "warning" ];
 
+// Scripts allowed to hold color literals: the browser dev harness, which mocks the host's theme
+const SCRIPT_FILES_WITH_COLORS = [ "util/browser-dev-app.js" ];
+
 // Raw colors allowed outside the theme files, each a fixed color with no host equivalent, by file
 const ALLOWED_RAW_COLORS = {
   // Darkening the action color on hover, as MDC does
@@ -24,13 +27,11 @@ const ALLOWED_RAW_COLORS = {
   "controls.scss": [ "#000000" ],
   // Hover fill on the dialog title bar, which is dark in every theme
   "config-popup.scss": [ "rgba(255, 255, 255, 0.08)" ],
-  // Pace ring slice colors: a categorical data series
-  "plan-wizard.scss": [ "#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4" ],
   // The quarterly plan video frame and the play button drawn over its thumbnail
   "quarterly-plan-entry.scss": [ "#152033", "rgba(0, 0, 0, 0.85)", "rgba(0, 0, 0, 0.65)", "#ffffff",
     "rgba(255, 255, 255, 0.6)" ],
   // Quote text drawn over photos
-  "quotes.scss": [ "rgba(0, 0, 0, 0.6)", "#fff", "rgba(255, 255, 255, 0.85)" ],
+  "quotes.scss": [ "rgba(0, 0, 0, 0.5)", "rgba(0, 0, 0, 0.6)", "#fff", "rgba(255, 255, 255, 0.85)" ],
   // The inlined Roboto font has no colors, but its base64 data can contain color-like text
   "roboto-font.scss": null,
 };
@@ -71,8 +72,8 @@ describe("dashboard color tokens", () => {
   });
 
   it("refers to dashboard color variables only by their current names", () => {
-    const currentNames = new Set(codeFromFile(path.join(STYLES_DIRECTORY, "theme-light.scss"))
-      .match(/--dashboard-[\w-]+(?=:)/g));
+    const currentNames = new Set([ "data-colors.scss", "theme-light.scss" ].flatMap(file => codeFromFile(path
+      .join(STYLES_DIRECTORY, file)).match(/--dashboard-[\w-]+(?=:)/g)));
     const references = [ ...componentStylesheetFiles, ...scriptFiles ].flatMap(file => (codeFromFile(file)
       .match(/--dashboard-(?:color|victory-value-color)-[\w-]*[\w]/g) || []).map(name => ({ file, name })));
     // Template strings build some names from a prefix, e.g. `--dashboard-color-category-${ slot }`
@@ -90,5 +91,12 @@ describe("dashboard color tokens", () => {
       return colors.filter(color => !(allowed || []).includes(color)).map(color => `${ path.basename(file) }: ${ color }`);
     });
     expect(offenders).toEqual([]);
+  });
+
+  it("keeps color literals out of scripts; data colors are named in data-colors.scss", () => {
+    const colorPattern = /["'`]#[0-9a-fA-F]{3,8}\b|rgba?\(\s*\d/;
+    const offenders = scriptFiles.filter(file => !SCRIPT_FILES_WITH_COLORS.includes(path.relative(LIB_DIRECTORY, file)))
+      .filter(file => colorPattern.test(codeFromFile(file)));
+    expect(offenders.map(file => path.relative(LIB_DIRECTORY, file))).toEqual([]);
   });
 });

@@ -10,7 +10,8 @@ Reference look: the host app's Task Stats page (cards, charts, tooltips) and its
 ## Rules
 
 1. **Colors only from tokens** in `lib/dashboard/styles/theme-tokens.scss`. No hex, `rgb()`, or `var(--color-*)` in
-   component stylesheets. Fixed data colors (chart series) live in the theme files, not in widgets.
+   component stylesheets, and no color literals in scripts. Data colors (what a mark means: a priority, a project, a
+   mood, a task count) are named once in `styles/data-colors.scss`, never written in a widget.
 2. **Icons only from `react-icons/md`** (Google Material icons, the set the host app uses). No emoji or Unicode glyphs
    as UI (✓ ✕ ← → ↻ ⚙ …). Emoji inside user content (task text, habit names) and the mood faces are content and stay.
 3. **Controls only from `dashboard/controls`.** No raw `<button>`, `<select>`, `<input>`/`<textarea>` fields,
@@ -36,11 +37,17 @@ low-contrast text in whatever theme and light/dark mode the user picked. `@use '
 | Action | `$color-background-action-high-contrast` fill with `$color-text-button` ink; `$color-background-action-medium-contrast`, `$color-background-action-low-contrast` (selected/hover tint) |
 | Status | `$color-text-status` (success), `$color-text-error-high-contrast` (danger), `$color-text-error-low-contrast` (warning), `$color-background-error-medium-contrast` |
 | Lines | `$color-border-primary` |
-| Data | `$victory-value-color-0…4` and `-text` (the app's victory value scale), then fixed series colors (`--dashboard-color-category-*`, project windows, priorities, intents) for charts only |
+| Data | `$victory-value-color-0…4` and `-text` (the host's victory value scale); then the fixed data colors in `data-colors.scss`, each with light and dark values: agenda priorities, project categories (`--dashboard-color-category-1…6`), intents, the host's mood rating scale (`mood-rating-ugh…fantastic`, for every mood mark), pace slices, project windows, and calendar task counts (`task-count-low/medium/high`). Charts and marks only, never chrome. |
 
 Other tokens: spacing `$sp-xs/sm/md/lg/xl` (4/8/12/16/24px); type `$smaller-font-size` (13px), `$default-font-size`
 (14px), `$large-font-size` (16px), headings from `$small-heading-font-size`; shadows `$shadow-elevation-2` (raised
 buttons), `-3` (tooltips, menus), `-24` (dialogs). The `contrasting-color` mixin is only for text on a fixed data color.
+
+Using a data color from a script: inline styles and SVG `style` take `var(--dashboard-color-…)` directly (SVG
+presentation attributes such as `fill=` do not reliably resolve `var()`, so use `style={ { fill } }`). Canvas needs a
+real color, so read it when drawing with `getComputedStyle(document.documentElement).getPropertyValue(name)`; redraw on
+`useThemeRevision()` so it follows theme changes. A new data color goes in `data-colors.scss` (light value, plus a dark
+value if it needs lifting) and, for stylesheets, as a `$color-…` variable in `theme-tokens.scss`.
 
 ## Icons
 

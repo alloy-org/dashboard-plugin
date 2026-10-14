@@ -5,6 +5,28 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-14 — Data colors named in one place
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/styles/data-colors.scss` (created) — Every fixed data color as a named `--dashboard-color-*` property with light and dark values: agenda priorities, project categories, intents, the host's mood rating scale, pace slices, project windows, calendar task counts.
+- `lib/dashboard/styles/theme-light.scss`, `theme-dark.scss`, `theme.scss` — Data colors moved out; the theme files hold host colors and a few dashboard-only surface colors.
+- `lib/dashboard/styles/theme-tokens.scss` — Data color section regrouped; pace slice variables added.
+- `lib/dashboard/styles/plan-wizard.scss` — Pace ring uses the pace tokens instead of local hex variables.
+- `lib/dashboard/calendar.jsx` — Day dots use task-count tokens, with named thresholds.
+- `lib/dashboard/charts/victory-value-chart.jsx` — Mood line and dots use the mood rating tokens (through `style`, so SVG resolves them).
+- `lib/dashboard/mood.jsx` — Week ring and wave use the host's mood rating scale (the one Victory Value and Task Stats use) instead of their own red-to-green scale, read from the tokens when drawing; the wave fill is built from them.
+- `lib/dashboard/quotes.jsx`, `styles/quotes.scss` — The photo's dark overlay moved from an inline style into the stylesheet.
+- `test/design-tokens.test.js` — Knows data-colors.scss; pace colors no longer allowed in plan-wizard.scss; fails on color literals in scripts.
+- `doc/design-system.md`, `CLAUDE.md` — Where data colors live and how scripts use them.
+- `build/compiled.js` — Rebuilt (804,447 bytes).
+
+**Validation:** Jest: 1383 passed, 1 failed (`test/dream-task-actions.test.js`, failing before these changes); the script color guard was checked to fail on a planted hex literal. Calendar dots, mood ring, Victory Value mood line, agenda priorities, and quote overlays checked in the dev server.
+**Task:** Move widget-specific hard-coded data colors into named tokens in one place.
+**Prompt summary:** "They're intentional data colors, but they should live as named tokens in one place (for example a data-colors.scss section), not scattered through files."
+
+---
+
 ## 2026-10-14 — Two tooltip looks: hint and rich
 
 **Model:** Claude Opus 5.5

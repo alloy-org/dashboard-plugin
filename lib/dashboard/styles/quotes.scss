@@ -26,6 +26,8 @@ $quote-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
   }
 
   .quote-tile {
+    // quotes.jsx sets the photo; the fixed dark gradient over it keeps the white quote readable
+    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.6)), var(--quote-tile-photo);
     background-position: center;
     background-size: cover;
     border-radius: $radius-sm;

@@ -26,7 +26,8 @@ Builder UI, read [`doc/design-system.md`](doc/design-system.md) and build only f
   `<select>`, text `<input>`/`<textarea>`, `<a href="#">` button, spinner, or hand-made empty/loading/error markup.
 - **Colors** only from the tokens in `lib/dashboard/styles/theme-tokens.scss`, named after the host's colors
   (`$color-text-medium-contrast`, `$color-background-primary`, …). No hex, `rgb()`, or `var(--color-*)` in component
-  stylesheets.
+  stylesheets, and no color literals in scripts. Data colors (priorities, projects, moods, task counts) are named once
+  in `lib/dashboard/styles/data-colors.scss`; add new ones there.
 - **Icons** only from `react-icons/md`. No emoji or Unicode glyphs as UI.
 - **Tooltips** come in two looks: a hint (`DashboardTippy`, one or two plain sentences) or the rich Task Stats look
   for anything with a title, rows, or rendered task text (`DashboardTippy rich` + `richTooltipHtml`, or

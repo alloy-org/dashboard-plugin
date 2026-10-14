@@ -16,7 +16,9 @@ const GRID_LABEL_COUNT = 4;
 const MOOD_GRADIENT_ID = "victory-value-mood-gradient";
 const MOOD_INDICATOR_RADIUS = 7;
 // The host app's mood meter colors, worst (index 0) to best, matching the mood ratings -2 through 2
-export const MOOD_RATING_COLORS = [ "#CE60D7", "#F5624C", "#F8914D", "#FFB238", "#F8D616" ];
+// The host's mood rating scale, rating -2 to +2, as data colors from data-colors.scss
+export const MOOD_RATING_COLORS = [ "ugh", "meh", "ok", "good", "fantastic" ]
+  .map(rating => `var(--dashboard-color-mood-rating-${ rating })`);
 const PLOT_PADDING = { bottom: 36, left: 32, right: 4, top: 12 };
 const VALUE_BUCKET_COUNT = 5;
 
@@ -61,7 +63,11 @@ function GradientDefinitions({ plot }) {
         )) }
       </linearGradient>
       <linearGradient gradientUnits="userSpaceOnUse" id={ MOOD_GRADIENT_ID } x1="0" x2="0" y1={ plot.bottom } y2={ plot.top }>
-        { MOOD_RATING_COLORS.map((color, index) => <stop key={ color } offset={ `${ index * 25 }%` } stopColor={ color } />) }
+        {
+          MOOD_RATING_COLORS.map((color, index) => (
+            <stop key={ color } offset={ `${ index * 25 }%` } style={ { stopColor: color } } />
+          ))
+        }
       </linearGradient>
     </defs>
   );
@@ -85,11 +91,11 @@ function MoodOverlay({ hoveredIndex, moodPoints }) {
       )) }
       { moodPoints.length === 1 ? (
         <circle className="victory-value-chart-mood-point" cx={ moodPoints[0].x } cy={ moodPoints[0].y } r="3"
-          fill={ moodColorFromRating(moodPoints[0].rating) } />
+          style={ { fill: moodColorFromRating(moodPoints[0].rating) } } />
       ) : null }
       { hoveredPoint ? (
         <circle className="victory-value-chart-mood-indicator" cx={ hoveredPoint.x } cy={ hoveredPoint.y }
-          fill={ moodColorFromRating(hoveredPoint.rating) } r={ MOOD_INDICATOR_RADIUS } />
+          r={ MOOD_INDICATOR_RADIUS } style={ { fill: moodColorFromRating(hoveredPoint.rating) } } />
       ) : null }
     </g>
   );
@@ -168,7 +174,7 @@ function formatChartValue(value) {
 // ------------------------------------------------------------------------------------------
 // @desc The mood meter color for a rating from -2 to 2, rounding ratings that are averages.
 // @param {number} rating - Mood rating.
-// @returns {string} Hex color.
+// @returns {string} A CSS color (a data color custom property).
 export function moodColorFromRating(rating) {
   const index = Math.min(MOOD_RATING_COLORS.length - 1, Math.max(0, Math.round(rating) + 2));
   return MOOD_RATING_COLORS[index];

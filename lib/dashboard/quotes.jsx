@@ -54,7 +54,7 @@ export default function QuotesWidget({ gridHeightSize, planContent, quotes }) {
           <div
             key={i}
             className="quote-tile"
-            style={{ backgroundImage: 'linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.6)), url(' + backgroundSplashUrl('small', backgroundSeed, i) + ')' }}
+            style={{ '--quote-tile-photo': 'url(' + backgroundSplashUrl('small', backgroundSeed, i) + ')' }}
           >
             <p className="quote-text">{'"' + q.text + '"'}</p>
             {q.author ? <span className="quote-author">{'— ' + q.author}</span> : null}
