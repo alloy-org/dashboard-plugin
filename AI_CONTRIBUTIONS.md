@@ -5,6 +5,19 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-14 — Keep the Proposed Agenda date on one line beside its arrows
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda-date-control.jsx` — `useFittingDateLabel` tries "Wednesday, October 14", "Wed, October 14", "October 14", then "Oct 14", keeping the first whose text does not overflow its nowrap label; a width change of the surrounding row restarts at the full label. The arrows and date sit in a `proposed-agenda-day-stepper` group so they never wrap apart; the full date stays in the button's title.
+- `lib/dashboard/styles/proposed-agenda.scss` — Nowrap stepper group, ellipsis as the final fallback, and caret kept from shrinking.
+
+**Validation:** Proposed agenda Jest suites pass (14 suites, 126 tests). Not yet checked in a browser.
+**Task:** Stop the date heading from wrapping its back/forward arrows at narrow widths.
+**Prompt summary:** "When Desktop @proposed-agenda has low width, it wraps unprofessionally ... either truncate ("Wed" instead of "Wednesday") or hide the day-of-week"
+
+---
+
 ## 2026-10-11 — Time each widget from mount request to rendered content
 
 **Model:** Claude Opus 5.5

@@ -56,6 +56,8 @@
     }
   }
   .proposed-agenda-date-control { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
+  // The arrows and date never separate: the label shortens (see useFittingDateLabel) and, past its shortest form, ellipsizes.
+  .proposed-agenda-day-stepper { align-items: center; display: flex; gap: inherit; min-width: 0; }
   .proposed-agenda-day-arrow {
     background: $color-bg-card;
     border: 1px solid $color-border;
@@ -79,8 +81,11 @@
     min-width: 0;
     padding: 0 8px;
     text-align: left;
+    white-space: nowrap;
 
+    .proposed-agenda-date-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .proposed-agenda-date-caret {
+      flex-shrink: 0;
       align-items: center;
       border: 1px solid $color-border;
       border-radius: 8px;
@@ -204,6 +209,7 @@
   @container (max-width: 420px) {
     .widget-header { align-items: flex-start; }
     .proposed-agenda-date-control { gap: 5px; }
+    .proposed-agenda-day-stepper { flex: 1; }
     .proposed-agenda-date-edit { flex: 1; font-size: $medium-heading-font-size; }
     // Too narrow for a time column: stack "7:30 AM · Note" (with the status at its right) above a full-width title,
     // and drop pending-row actions onto their own line beneath it.
