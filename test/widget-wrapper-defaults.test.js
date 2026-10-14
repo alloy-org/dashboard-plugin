@@ -2,6 +2,7 @@
 //   title, and subtitle from widgetId via WIDGET_REGISTRY, so widgets need not pass them
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
+import { MdScience } from "react-icons/md";
 
 const { default: WidgetWrapper } = await import("widget-wrapper");
 const { widgetDataFromId } = await import("constants/settings");
@@ -51,8 +52,9 @@ describe("WidgetWrapper header defaults", () => {
   });
 
   it("lets a widget with a state-dependent header override either default", async () => {
-    const container = await renderWrapper({ icon: "🧪", title: "Overridden", widgetId: "victory-value" });
-    expect(headerText(container, ".widget-icon")).toBe("🧪");
+    const container = await renderWrapper({ icon: createElement(MdScience, { "data-testid": "override-icon" }),
+      title: "Overridden", widgetId: "victory-value" });
+    expect(container.querySelector(".widget-icon [data-testid='override-icon']")).not.toBeNull();
     expect(headerText(container, ".widget-title__label")).toBe("Overridden");
   });
 
