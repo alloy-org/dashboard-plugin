@@ -129,7 +129,7 @@ function visualizationMoodColor(vizValue) {
 }
 
 function visualizationMoodEmoji(vizValue) {
-  return VISUALIZATION_MOOD_EMOJIS[Math.round(vizValue)] || '❓';
+  return VISUALIZATION_MOOD_EMOJIS[Math.round(vizValue)] || '';
 }
 
 // ----------------------------------------------------------------------------------------------

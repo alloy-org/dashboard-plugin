@@ -9,7 +9,6 @@
 
 $agenda-indicator-height: 36px;
 $agenda-indicator-width: 4px;
-$agenda-indicator-radius: 2px;
 $agenda-list-max-height: 280px;
 $agenda-transition-duration: 0.12s;
 
@@ -67,7 +66,7 @@ $agenda-transition-duration: 0.12s;
     padding: $sp-sm 0;
 
     .agenda-indicator {
-      border-radius: $agenda-indicator-radius;
+      border-radius: $radius-mark;
       flex-shrink: 0;
       height: $agenda-indicator-height;
       width: $agenda-indicator-width;

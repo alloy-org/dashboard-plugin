@@ -19,11 +19,36 @@ Reference look: the host app's Task Stats page (cards, charts, tooltips) and its
 4. **Widget stylesheets contain layout only**: positioning, gaps, grids, sizes, and content typography that is truly
    specific to the widget. They never restyle `dashboard-*` control classes.
 5. **No glows, gradients on chrome, colored shadows, font weights above 500, or new corner radii.** Corners are
-   `$radius-sm` (4px: buttons, fields, tiles) and `$radius-lg` (8px: cards). Shadows are `$shadow-elevation-*`.
+   `$radius-mark` (2px: swatches, bar segments), `$radius-sm` (4px: buttons, fields, tiles), `$radius-lg` (8px: cards,
+   menus, popovers), and `$radius-pill` (chips, badges). Shadows are `$shadow-elevation-*`; an inset line may mark a
+   selection.
 6. **Words stay with icons.** An icon-only control always has a label (`IconButton label="…"`), which becomes its
    accessible name and tooltip.
 
-`test/design-tokens.test.js` and `test/controls-usage.test.js` fail when rules 1 and 3 are broken.
+## Guardrails
+
+These run in `npm test`, so breaking a rule fails the suite with the file and the offending line:
+
+| Test | Fails on |
+|---|---|
+| `test/design-tokens.test.js` | Removed or unknown color names, direct `var(--color-*)`, raw colors in stylesheets outside the theme and data color files, color literals in scripts (rule 1) |
+| `test/design-rules.test.js` | Emoji and Unicode glyphs as UI, icon imports other than `react-icons/md` (rule 2); font weights above 500, corner radii other than the radius tokens, shadows other than the elevation tokens (rule 5) |
+| `test/controls-usage.test.js` | Raw buttons, selects, text inputs, textareas, checkboxes, radios; `href="#"`; hand-made spinners; widget stylesheets styling control classes; tooltip themes other than hint and rich (rules 3, 4) |
+
+Each has a short, commented list of exceptions (mood faces and text written into notes are content; a ruled-line
+editor and an auto-growing textarea cannot be shared controls). Add to a list only with a reason; prefer changing the
+code. The rules live in Jest rather than a linter because the repo has none, and these need to know the design
+system (which tokens exist, which glyphs are content), not just CSS syntax.
+
+## Style guide
+
+Run `npm run dev` and open **http://localhost:3000/styleguide** (or your `DASHBOARD_DEV_PORT`). It shows every color
+token as it resolves, the type, spacing, corner, and shadow scales, every widget and profile icon, every control
+variant, the empty/loading/error states, the settings controls, both tooltip looks, both charts with sample data, two
+widget frames, and a configure dialog. The bar at the top switches between the host's Classic and Plum themes and
+light and dark mode, fetched from the dev server the way the dashboard fetches the host theme. Check it after any
+change to tokens or controls; add a sample there when you add a control or a variant. The page lives in
+`dev/styleguide/` and is never part of the plugin build.
 
 ## Tokens
 

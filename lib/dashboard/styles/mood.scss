@@ -9,7 +9,6 @@
 
 $mood-btn-size: 44px;
 $mood-dot-gap: 3px;
-$mood-dot-radius: 2px;
 $mood-dot-size: 4px;
 $mood-sparkline-height: 24px;
 $mood-transition-duration: 0.15s;
@@ -96,7 +95,7 @@ $mood-transition-duration: 0.15s;
   .mood-confirmation-text {
     color: $color-text-status;
     font-size: $default-font-size;
-    font-weight: 600;
+    font-weight: 500;
   }
 
   .mood-summary {
@@ -116,7 +115,7 @@ $mood-transition-duration: 0.15s;
 
   .mood-dot {
     background: $color-background-action-high-contrast;
-    border-radius: $mood-dot-radius;
+    border-radius: $radius-mark;
     min-height: $mood-dot-size;
     position: relative;
     width: $mood-dot-size;

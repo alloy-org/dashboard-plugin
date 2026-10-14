@@ -5,6 +5,26 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-14 — Design guardrails and the dev style guide
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `test/design-rules.test.js` (created) — Fails on emoji and Unicode glyphs as UI (content files listed with reasons), icon imports other than `react-icons/md`, font weights above 500, corner radii other than the radius tokens, and shadows other than the elevation tokens.
+- `lib/dashboard/styles/theme-tokens.scss` — `$radius-mark` (2px) and `$radius-pill` added; `$color-overlay-shadow` removed with its theme entries.
+- 19 component stylesheets — Weights above 500 lowered to 500; literal radii replaced by radius tokens (pills, popovers, data marks); the agenda popover and footnote popup shadows replaced by `$shadow-elevation-3`.
+- `lib/dashboard/icon-markup.js` (created), `lib/util/amplenote-markdown-render.js` — Footnote indicators draw Material icons (serialized from `react-icons/md`) instead of emoji.
+- `lib/dashboard/mood.jsx` — No question-mark glyph for a missing mood.
+- `dev/styleguide/` (created: `styleguide-app.jsx`, `styleguide-tokens.jsx`, `styleguide-controls.jsx`, `styleguide-showcase.jsx`, `styleguide.scss`), `dev/styleguide.html` (created), `dev/dev-server.js` — A `/styleguide` page with every color token (read live from the stylesheets), the type, spacing, corner, and shadow scales, every icon, control variant, state, settings control, both tooltip looks, both charts, widget frames, and a configure dialog; a theme bar switches Classic or Plum, light or dark. Built as its own watched bundle.
+- `dev/dev-theme-api.js`, `dev/themes/_theme-plum-light.scss`, `_theme-plum-dark.scss` (created) — The dev theme API serves Plum as well as Classic.
+- `doc/design-system.md`, `CLAUDE.md`, `README.md` — Guardrails table, radius tokens, and the style guide.
+- `build/compiled.js` — Rebuilt (804,692 bytes).
+
+**Validation:** Jest: 1392 passed, 1 failed (`test/dream-task-actions.test.js`, failing before these changes); each new rule was checked to fail on a planted violation. The style guide checked in Classic light and Plum dark, including chart hover, both tooltips, and the dialog. The footnote indicator icons were not checked in a browser.
+**Task:** Add guardrails for the design rules and a dev style guide page.
+**Prompt summary:** "What about guardrails such as style lint rules or prohibiting emojis? ... a /styleguide page on the dev server showing every token, control, icon, chart and dialog in light and dark, with a theme switcher"
+
+---
+
 ## 2026-10-14 — Generic column chart
 
 **Model:** Claude Opus 5.5

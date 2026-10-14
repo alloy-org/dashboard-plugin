@@ -7,7 +7,6 @@
 @use 'theme-tokens' as *;
 @use 'controls' as *;
 
-$badge-radius: 10px;
 $empty-state-icon-size: 32px;
 $focus-ring-width: 2px;
 $icon-button-sizes: (dialog: 40px, large: 36px, medium: 32px, small: 28px);
@@ -290,7 +289,7 @@ $spinner-sizes: (large: 32px, medium: 24px, small: 16px);
 
 .dashboard-badge {
   align-items: center;
-  border-radius: $badge-radius;
+  border-radius: $radius-pill;
   display: inline-flex;
   font-size: 11px;
   font-weight: 500;

@@ -56,7 +56,7 @@
 
     .material-icon { color: $color-text-low-contrast; }
   }
-  .proposed-agenda-relative-date { background: $color-background-element-low-contrast; border-radius: 10px; color: $color-text-medium-contrast; font-size: $smaller-font-size; font-weight: 500; padding: 2px 8px; }
+  .proposed-agenda-relative-date { background: $color-background-element-low-contrast; border-radius: $radius-pill; color: $color-text-medium-contrast; font-size: $smaller-font-size; font-weight: 500; padding: 2px 8px; }
   .proposed-agenda-today { margin-left: auto; }
   .proposed-agenda-day-summary { color: $color-text-low-contrast; margin-top: 2px; }
   .proposed-agenda-controls { align-items: center; display: flex; gap: 10px; padding: $sp-sm 0 $sp-md; }
@@ -96,7 +96,7 @@
   .proposed-agenda-note-link { color: $color-text-low-contrast; font-size: $smaller-font-size; text-decoration: none; }
   button.proposed-agenda-note-link:hover { color: $color-text-link; text-decoration: underline; }
   .proposed-agenda-content { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .proposed-agenda-text { font-weight: 600; overflow-wrap: anywhere; }
+  .proposed-agenda-text { font-weight: 500; overflow-wrap: anywhere; }
   .proposed-agenda-text p { display: inline; }
   .proposed-agenda-reason { color: $color-text-medium-contrast; }
   .proposed-agenda-reason--desktop { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -152,7 +152,7 @@
     .proposed-agenda-content { grid-column: 1 / -1; grid-row: 2; }
     .proposed-agenda-actions { grid-column: 1 / -1; grid-row: 3; justify-self: start; margin-top: 6px; }
     .proposed-agenda-reason--desktop { display: none; }
-    .proposed-agenda-reason--mobile { background: $color-background-tertiary; border-radius: 6px; display: block; grid-column: 1 / -1; padding: $sp-sm; }
+    .proposed-agenda-reason--mobile { background: $color-background-tertiary; border-radius: $radius-sm; display: block; grid-column: 1 / -1; padding: $sp-sm; }
     .proposed-agenda-reason-toggle { display: inline-flex; margin-left: 5px; vertical-align: middle; }
   }
 }

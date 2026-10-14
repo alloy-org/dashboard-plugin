@@ -41,7 +41,10 @@ Builder UI, read [`doc/design-system.md`](doc/design-system.md) and build only f
 - **Widget stylesheets hold layout only**; never restyle `dashboard-*` control classes. If a control lacks something
   you need, add it to the control in `lib/dashboard/controls/` (and `styles/dashboard-controls.scss`), not to a widget.
 
-`test/design-tokens.test.js` and `test/controls-usage.test.js` fail when these rules are broken. Before reaching for
+`test/design-tokens.test.js`, `test/design-rules.test.js` (no emoji or glyphs as UI, weights ≤ 500, radius and
+shadow tokens only, icons only from `react-icons/md`), and `test/controls-usage.test.js` fail when these rules are
+broken. After any UI change, check `/styleguide` on the dev server in Classic and Plum, light and dark, and add a
+sample there for a new control or variant. Before reaching for
 a raw element, check the control's JSDoc: they forward refs, pass attributes through, and cover submit buttons, inline
 links, danger actions, separate tooltips, dense fields, and compact empty states. A raw element that truly cannot be a
 control goes in `ALLOWED_RAW_CONTROLS` in `test/controls-usage.test.js` with its reason; a new control capability goes

@@ -273,7 +273,7 @@ $tooltip-max-width: 260px;
   }
 
   .stats-chart-tooltip-swatch {
-    border-radius: 2px;
+    border-radius: $radius-mark;
     display: inline-block;
     height: 8px;
     margin-right: 4px;
@@ -290,7 +290,7 @@ $tooltip-max-width: 260px;
   }
 
   .dashboard-tooltip-row-swatch {
-    border-radius: 2px;
+    border-radius: $radius-mark;
     display: inline-block;
     flex-shrink: 0;
     height: 8px;

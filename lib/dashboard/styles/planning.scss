@@ -57,7 +57,7 @@ $quarter-toggle-size: 26px;
 
   .quarter-page-label {
     font-size: $smaller-font-size;
-    font-weight: 700;
+    font-weight: 500;
     letter-spacing: 0.06em;
     writing-mode: vertical-rl;
   }
@@ -273,13 +273,13 @@ $quarter-toggle-size: 26px;
   .month-intensity-title {
     color: $color-text-high-contrast;
     font-size: $smaller-font-size;
-    font-weight: 700;
+    font-weight: 500;
   }
 
   .month-intensity-level {
     color: var(--month-intensity-color);
     font-size: $medium-heading-font-size;
-    font-weight: 700;
+    font-weight: 500;
   }
 
   .month-intensity-segments,
@@ -292,7 +292,7 @@ $quarter-toggle-size: 26px;
   .month-intensity-segment {
     --month-segment-color: #{$color-text-status};
     background: color-mix(in srgb, var(--month-segment-color) 18%, transparent);
-    border-radius: 3px;
+    border-radius: $radius-mark;
     height: 10px;
 
     &.month-intensity-segment--ambitious { --month-segment-color: #{$color-text-error-low-contrast}; }
@@ -312,7 +312,7 @@ $quarter-toggle-size: 26px;
 
     &.month-intensity-scale-label--current {
       color: var(--month-intensity-color);
-      font-weight: 700;
+      font-weight: 500;
     }
   }
 
@@ -383,7 +383,7 @@ $quarter-toggle-size: 26px;
 
     &:last-child { border-bottom: 0; }
 
-    &.month-project-row--starred .month-project-label { font-weight: 700; }
+    &.month-project-row--starred .month-project-label { font-weight: 500; }
   }
 
   .month-project-label {
@@ -414,7 +414,7 @@ $quarter-toggle-size: 26px;
   .weekly-plan-header {
     color: $color-text-high-contrast;
     font-size: $default-font-size;
-    font-weight: 700;
+    font-weight: 500;
     margin-bottom: $sp-sm;
   }
 

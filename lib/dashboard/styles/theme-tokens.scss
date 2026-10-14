@@ -52,7 +52,6 @@ $victory-value-color-4: var(--dashboard-victory-value-color-4);
 $victory-value-color-4-text: var(--dashboard-victory-value-color-4-text);
 
 // Dashboard-only surface colors with no host equivalent
-$color-overlay-shadow: var(--dashboard-color-overlay-shadow);
 $color-plan-created-bg: var(--dashboard-color-plan-created-bg);
 $color-plan-created-border: var(--dashboard-color-plan-created-border);
 $color-project-complete: var(--dashboard-color-project-complete);
@@ -90,10 +89,13 @@ $sp-md: 12px;
 $sp-lg: 16px;
 $sp-xl: 24px;
 
-// Radii, matching the host app: 4px for buttons, inputs, and tiles inside a card; 8px for cards themselves
+// Radii, matching the host app: 4px for buttons, inputs, and tiles inside a card; 8px for cards, menus, and popovers;
+// 2px for small data marks (swatches, bar segments); a full pill for chips and badges. Use only these.
+$radius-mark: 2px;
 $radius-sm: 4px;
 $radius-md: 4px;
 $radius-lg: 8px;
+$radius-pill: 999px;
 
 // Fonts
 // Roboto is loaded on the dashboard page (see lib/embed-html.js); the system stack remains as a fallback

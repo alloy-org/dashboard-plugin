@@ -36,7 +36,7 @@
   background: $color-background-primary;
   border: 1px solid $color-border-primary;
   border-radius: $radius-md;
-  box-shadow: 0 4px 16px $color-overlay-shadow;
+  box-shadow: $shadow-elevation-3;
   color: $color-text-high-contrast;
   font-size: $default-font-size;
   line-height: 1.5;
@@ -115,7 +115,7 @@
     color: $color-background-action-high-contrast;
     cursor: pointer;
     font-size: $smaller-font-size;
-    font-weight: 600;
+    font-weight: 500;
     letter-spacing: 0.5px;
     padding: $sp-xs $sp-sm;
 

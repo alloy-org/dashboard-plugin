@@ -61,8 +61,9 @@ The dashboard is styled to match the Amplenote app it is embedded in. Read
 [`doc/design-system.md`](doc/design-system.md) before building UI: it lists the color tokens (named after the host's
 own colors, which the plugin reads with `app.context.getStyleProperties()` and refreshes when the user returns to the
 dashboard), the shared controls in `lib/dashboard/controls/` (`Button`, `IconButton`, `EmptyState`, …), Material icons
-from `react-icons/md`, and a step-by-step for adding a widget. `test/design-tokens.test.js` and
-`test/controls-usage.test.js` keep new code on these.
+from `react-icons/md`, and a step-by-step for adding a widget. `test/design-tokens.test.js`,
+`test/design-rules.test.js`, and `test/controls-usage.test.js` keep new code on these. With `npm run dev` running,
+`/styleguide` shows every token, control, icon, tooltip, chart, and dialog in the Classic or Plum theme, light or dark.
 
 ## Project Structure
 

@@ -56,7 +56,7 @@ $plan-entry-video-background: #152033;
   /* The host's linear progress bar: a 4px track in the medium action color under an action-color fill. */
   .plan-entry-progress-track {
     background: $color-background-action-medium-contrast;
-    border-radius: 2px;
+    border-radius: $radius-mark;
     height: 4px;
     overflow: hidden;
   }
@@ -143,7 +143,7 @@ $plan-entry-video-background: #152033;
 
   .plan-entry-preview-bar {
     background: $color-border-primary;
-    border-radius: 999px;
+    border-radius: $radius-pill;
     display: block;
     height: 8px;
   }
@@ -192,7 +192,7 @@ $plan-entry-video-background: #152033;
   .plan-entry-starts {
     align-self: flex-end;
     background: $color-background-action-low-contrast;
-    border-radius: 10px;
+    border-radius: $radius-pill;
     color: $color-text-high-contrast;
     font-size: 12px;
     font-weight: 500;
@@ -254,7 +254,7 @@ $plan-entry-video-background: #152033;
       color: rgba(255, 255, 255, 0.6);
       display: block;
       font-size: $smaller-font-size;
-      font-weight: 700;
+      font-weight: 500;
       letter-spacing: 0.04em;
       text-transform: uppercase;
     }

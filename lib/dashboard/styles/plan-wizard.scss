@@ -246,11 +246,11 @@ $plan-wizard-title-bar-text-low: $color-text-nav-low-contrast;
     height: $plan-wizard-step-bar-height;
 
     &:first-child {
-      border-radius: 2px 0 0 2px;
+      border-radius: $radius-mark 0 0 $radius-mark;
     }
 
     &:last-child {
-      border-radius: 0 2px 2px 0;
+      border-radius: 0 $radius-mark $radius-mark 0;
     }
   }
 
@@ -433,7 +433,7 @@ $plan-wizard-title-bar-text-low: $color-text-nav-low-contrast;
     .intent-step-suggestion {
       background: $color-background-element-low-contrast;
       border: none;
-      border-radius: 10px;
+      border-radius: $radius-pill;
       color: $color-text-medium-contrast;
       font-size: 12px;
       font-weight: 500;
@@ -912,7 +912,7 @@ $plan-wizard-title-bar-text-low: $color-text-nav-low-contrast;
     .project-row-task-chip {
       align-items: center;
       background: $color-background-element-low-contrast;
-      border-radius: 10px;
+      border-radius: $radius-pill;
       color: $color-text-high-contrast;
       cursor: default;
       display: inline-flex;
@@ -1126,7 +1126,7 @@ $plan-wizard-title-bar-text-low: $color-text-nav-low-contrast;
     .project-pace-day {
       background: $color-background-element-low-contrast;
       border-color: transparent;
-      border-radius: 10px;
+      border-radius: $radius-pill;
       font-size: 12px;
       justify-content: center;
       min-width: 44px;
@@ -1277,7 +1277,7 @@ $plan-wizard-title-bar-text-low: $color-text-nav-low-contrast;
     .done-enough-release-choice {
       background: $color-background-element-low-contrast;
       border-color: transparent;
-      border-radius: 10px;
+      border-radius: $radius-pill;
       font-size: 12px;
       padding: $sp-xs $sp-md;
 
@@ -1354,7 +1354,7 @@ $plan-wizard-title-bar-text-low: $color-text-nav-low-contrast;
     .done-enough-signal {
       align-items: center;
       background: $color-background-element-low-contrast;
-      border-radius: 10px;
+      border-radius: $radius-pill;
       color: $color-text-medium-contrast;
       display: inline-flex;
       font-size: 12px;
@@ -1504,7 +1504,7 @@ $plan-wizard-title-bar-text-low: $color-text-nav-low-contrast;
       background-position: 0, 33.333%, 66.666%;
       background-repeat: no-repeat;
       background-size: 100% 100%, 1px 100%, 1px 100%;
-      border-radius: 999px;
+      border-radius: $radius-pill;
       cursor: grab;
       height: 28px;
       position: relative;
@@ -1522,7 +1522,7 @@ $plan-wizard-title-bar-text-low: $color-text-nav-low-contrast;
 
     .quarter-name-bar {
       align-items: center;
-      border-radius: 999px;
+      border-radius: $radius-pill;
       bottom: 4px;
       display: flex;
       justify-content: space-between;

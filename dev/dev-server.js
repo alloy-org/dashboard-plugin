@@ -440,6 +440,28 @@ function handleDevShell(res) {
 }
 
 // ----------------------------------------------------------------------------------------------
+// @desc The style guide's own watched bundle (dev/styleguide), written next to the dashboard bundle so the same
+//   server serves it; it imports the dashboard's controls, tokens, and charts from lib/.
+// @returns {Promise<object>} The esbuild context.
+async function createStyleguideContext() {
+  return esbuild.context({
+    bundle: true,
+    define: { "process.env.BUILD_DATE": JSON.stringify(new Date().toISOString().slice(0, 10)),
+      "process.env.NODE_ENV": '"development"' },
+    entryNames: "styleguide",
+    entryPoints: [ path.join(devDir, "styleguide", "styleguide-app.jsx") ],
+    format: "iife",
+    jsx: "automatic",
+    jsxImportSource: "react",
+    loader: { ".jsx": "jsx" },
+    outdir: path.join(devDir, "compiled"),
+    plugins: [ createLibImportsPlugin(path.join(rootDir, "lib")), scssPlugin, liveReloadPlugin ],
+    sourcemap: true,
+    target: [ "chrome91", "firefox90", "safari15", "edge91" ],
+  });
+}
+
+// ----------------------------------------------------------------------------------------------
 // @desc Start an optionally isolated development server with acceptance instrumentation only when requested.
 // @returns {Promise<void>} Resolves when the watch server has started.
 async function main() {
@@ -468,6 +490,8 @@ async function main() {
 
   await ctx.watch();
   console.log("[watch] watching for changes...");
+  const styleguideContext = await createStyleguideContext();
+  await styleguideContext.watch();
 
   const { host, port: esbuildPort } = await ctx.serve({
     servedir: devDir,
@@ -496,6 +520,11 @@ async function main() {
     }
     if (requestPath === "/" || requestPath === "/index.html") {
       if (handleDevShell(res)) return;
+    }
+    if (requestPath === "/styleguide") {
+      res.writeHead(200, { "Cache-Control": "no-store", "Content-Type": "text/html; charset=utf-8" });
+      res.end(fs.readFileSync(path.join(devDir, "styleguide.html"), "utf8"));
+      return;
     }
 
     if (requestPath === "/api/theme-styles") {
