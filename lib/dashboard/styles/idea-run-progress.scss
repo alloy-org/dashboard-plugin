@@ -7,6 +7,20 @@
   gap: $sp-sm;
   min-width: 280px;
 
+  .progress-header-row {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    justify-content: space-between;
+  }
+
+  .progress-heading-text {
+    font-size: $medium-heading-font-size;
+    font-weight: 600;
+    margin: 0;
+  }
+
   .progress-status-line {
     align-items: center;
     color: $color-text-muted;
@@ -14,6 +28,12 @@
     flex-wrap: wrap;
     font-size: $smaller-font-size;
     gap: 4px 12px;
+    margin-left: auto;
+  }
+
+  .progress-run-title {
+    font-size: $small-heading-font-size;
+    font-weight: 600;
   }
 
   .progress-quota-meter {
@@ -46,18 +66,51 @@
     flex-direction: column;
     font-size: $smaller-font-size;
     gap: 4px;
+    position: relative;
     text-align: center;
+
+    // The connector to the next step's circle: a track, and a fill over it that grows left to right once this step
+    // is done. It spans from this circle's edge to the next one's, across the list's 6px gap.
+    &:not(:last-child)::before,
+    &:not(:last-child)::after {
+      content: "";
+      height: 2px;
+      left: calc(50% + 17px);
+      position: absolute;
+      top: 12px;
+      width: calc(100% - 28px);
+    }
+
+    &:not(:last-child)::before {
+      background: $color-border;
+    }
+
+    &:not(:last-child)::after {
+      background: $color-link;
+      transform: scaleX(0);
+      transform-origin: left center;
+      transition: transform 0.6s ease-out;
+    }
+  }
+
+  .progress-step-item--done:not(:last-child)::after,
+  .progress-step-item--timedOut:not(:last-child)::after {
+    transform: scaleX(1);
   }
 
   .progress-step-circle {
     align-items: center;
+    background: $color-bg-card;
     border: 2px solid $color-border;
     border-radius: 50%;
     box-sizing: border-box;
     display: flex;
     height: 26px;
     justify-content: center;
+    position: relative;
+    transition: background-color 0.3s, border-color 0.3s;
     width: 26px;
+    z-index: 1;
   }
 
   .progress-step-item--active .progress-step-circle {
@@ -95,6 +148,11 @@
 
   .progress-detail-line {
     margin: 2px 0;
+  }
+
+  .progress-note-link {
+    color: $color-link;
+    cursor: pointer;
   }
 
   .progress-summary-list {

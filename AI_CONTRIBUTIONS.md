@@ -5,6 +5,35 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-15 — Planning widget re-reads the plan note after Plan Builder closes
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/planning.jsx` — The open-month and weekly-section effects now depend on `pageLoadGeneration`, which the wizard's `onClose` bumps, so the month's Focus line and its project count reflect the note Plan Builder just republished instead of the content read at page load.
+
+**Validation:** Planning Jest suites pass (4 suites, 17 tests).
+**Task:** Quarterly Planning widget kept showing the pre-wizard project count until the dashboard was reloaded.
+
+---
+
+## 2026-10-15 — Generate ideas progress window polish
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/idea-run-progress-embed.js` — "Generate ideas" h2 beside a right-aligned status line; step list kept between polls so connector lines fill (animated) as each step completes; ✅ beside "Done"; progress and summary lines drawn from segments (bold, or a link that navigates through the plugin).
+- `lib/dashboard/idea-generation/idea-run-progress-view.js` — `heading`, `lineSegments`, `lineText`; summary project names as bold segments; discovery sentence adds "(N already defined)" linked to the terms dictionary note.
+- `lib/dashboard/idea-generation/idea-run-progress.jsx`, `lib/dashboard/styles/idea-run-progress.scss`, `lib/dashboard/planning.jsx` — In-Dashboard fallback matches the embed (header row, connectors, ✅, rich lines); receives `app` to open the linked note.
+- `lib/dashboard/idea-generation/idea-generation-run-plan.js`, `idea-generation-run.js` — Plan reads the dictionary note's UUID and term count (`dictionaryReader`, failures ignored); snapshots carry it in `progress.dictionary`.
+- `lib/plan-wizard/stack-rank/user-terms-dictionary.js` — `userTermsDictionarySummary`.
+- `lib/hooks/use-idea-generation-run.js` — Progress prompt has an empty message and `primaryAction: { label: "Accept" }`.
+- `lib/util/browser-dev-app.js` — Dev prompt/alert honor `primaryAction.label`; an empty prompt message shows no heading; taller embed frame.
+- `test/idea-run-progress.test.js` — Segment lines, dictionary link, heading.
+
+**Validation:** Full Jest suite passes (166 suites, 1456 tests); `npm run build` and the production bundle smoke test pass.
+**Task:** Seven UI refinements to the Generate ideas progress window from a screenshot review.
+
+---
+
 ## 2026-10-15 — Group dashboard modules into subdirectories
 
 **Model:** Claude Opus 5.5

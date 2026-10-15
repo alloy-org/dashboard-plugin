@@ -1,6 +1,6 @@
 // Exercise the "Generate ideas" progress window's host side: the words it shows for a snapshot, the relay that carries
 // snapshots from the Dashboard to the window, and the page an Amplenote prompt renders for a run.
-import { etaLabel, ideaRunProgressLines, ideaRunProgressView, ideaRunSummaryLines } from "dashboard/idea-generation/idea-run-progress-view";
+import { etaLabel, ideaRunProgressLines, ideaRunProgressView, ideaRunSummaryLines, lineText } from "dashboard/idea-generation/idea-run-progress-view";
 import { buildIdeaRunProgressHTML, ideaRunProgressRunId } from "idea-run-progress-embed";
 import { readIdeaRunProgress, updateIdeaRunProgress } from "idea-run-progress-relay";
 
@@ -18,6 +18,7 @@ describe("idea run progress", () => {
     expect(view.etaLabel).toBe("About 4 min left");
     expect(ideaRunProgressView({ ...SNAPSHOT, quotaUsedFraction: null }).quotaPercent).toBeNull();
     expect(ideaRunProgressView(null).found).toBe(false);
+    expect(view.heading).toBe("Generate ideas");
   });
 
   // ----------------------------------------------------------------------------------------------
@@ -52,13 +53,26 @@ describe("idea run progress", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc The summary says what each project gained, how many definitions were refined, and what failed.
+  // @desc Once discovery settles, its sentence counts the terms the dictionary already defined, linked to its note.
+  it("links the discovery sentence to the terms dictionary", () => {
+    const steps = [{ key: "refine", state: "active" }];
+    const progress = { dictionary: { noteUuid: "dictionary-uuid", termCount: 12 }, foundTerms: { count: 0, examples: [] },
+      ideaProjects: { count: 0, examples: [] }, refiningTerms: { count: 0, examples: [] }, storeCounts: null };
+    const [discoveryLine] = ideaRunProgressLines(progress, steps);
+    expect(lineText(discoveryLine)).toBe("Found no new terms to define (12 already defined).");
+    expect(discoveryLine[1]).toEqual({ noteUuid: "dictionary-uuid", text: "12 already defined" });
+    expect(ideaRunProgressLines({ ...progress, dictionary: null }, steps)[0]).toBe("Found no new terms to define.");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc The summary says what each project gained, its name in bold, how many definitions were refined, and what failed.
   it("writes the summary as sentences", () => {
     const lines = ideaRunSummaryLines({ failures: [{ detail: "Provider down", jobType: "rateProjectIdeas", subject: "Hiring" }],
       projects: [{ ideasDetail: "Generated 5 ideas, kept 3", name: "Launch", recommendableAfter: 4, recommendableBefore: 1, relatedTasksAfter: 6,
         relatedTasksBefore: 4, targeted: true }], refinedTermCount: 2 });
-    expect(lines).toEqual(['"Launch": Generated 5 ideas, kept 3; 4 recommendable ideas (was 1); 2 more related tasks.',
+    expect(lines.map(line => lineText(line))).toEqual(["Launch: Generated 5 ideas, kept 3; 4 recommendable ideas (was 1); 2 more related tasks.",
       "Refined 2 dictionary definitions.", 'Could not finish "Hiring": Provider down']);
+    expect(lines[0][0]).toEqual({ strong: true, text: "Launch" });
   });
 
   // ----------------------------------------------------------------------------------------------

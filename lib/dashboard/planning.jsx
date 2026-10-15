@@ -399,6 +399,10 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
     setMonthContent(null);
   }, [pageOffset]);
 
+  // ----------------------------------------------------------------------------------------------
+  // @desc Open a month whenever the viewed quarters change or Plan Builder closes. Closing the wizard bumps
+  //   pageLoadGeneration without changing any note UUID, so the generation is what makes the month re-read a plan
+  //   note the wizard just republished.
   useEffect(() => {
     if (!viewedQuarterKey) return undefined;
     const monthsForPage = getQuarterMonths(leftPlan, rightPlan);
@@ -410,7 +414,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
     setInitialLoadDone(true);
     openPlanningMonth(monthToOpen, null);
     return undefined;
-  }, [viewedQuarterKey]);
+  }, [pageLoadGeneration, viewedQuarterKey]);
 
   useEffect(() => {
     if (!plansReady || pageOffset === 0 || !currentPlan?.quarter) return undefined;
@@ -450,7 +454,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
       })
       .catch(() => setWeekContent({ found: false, content: null }))
       .finally(() => setWeekLoading(false));
-  }, [currentPlan?.noteUUID, plansReady, weekLabel, weekSectionVisible]);
+  }, [currentPlan?.noteUUID, pageLoadGeneration, plansReady, weekLabel, weekSectionVisible]);
 
   if (editingNoteUUID && IS_DEV_ENVIRONMENT) {
     return (
@@ -660,7 +664,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
         />
       ) : null}
       {planWizardOverlay}
-      {ideaRun.fallbackOpen && ideaRun.snapshot ? <IdeaRunProgressPopup onClose={ ideaRun.closeFallback } snapshot={ ideaRun.snapshot } /> : null}
+      {ideaRun.fallbackOpen && ideaRun.snapshot ? <IdeaRunProgressPopup app={ app } onClose={ ideaRun.closeFallback } snapshot={ ideaRun.snapshot } /> : null}
     </WidgetWrapper>
   );
 }
