@@ -251,17 +251,17 @@ function storedPlanToggles() {
 // @returns {JSX.Element} The widget.
 // ----------------------------------------------------------------------------------------------
 // @desc The header action that replaces "Build plan" once the quarter has a plan: it starts a "Generate ideas" run, or
-//   reopens the progress window of one under way. It is disabled once the day's runs are spent, or when the Dashboard
-//   has no durable work runner to run the jobs on.
+//   reopens the progress window of one under way. Once the day's runs are spent, a click says when ideas can be
+//   generated again. It is disabled when the Dashboard has no durable work runner to run the jobs on.
 // @param {object} ideaRun - From useIdeaGenerationRun.
 // @returns {JSX.Element} The button.
 function generateIdeasButton(ideaRun) {
   const { allowance, available, running } = ideaRun;
-  const disabled = !running && (!available || !allowance.allowed);
+  const disabled = !running && !available;
   let title = `Generate ideas for this month's projects (run ${ allowance.runNumber } of ${ allowance.maximum } today)`;
   if (running) title = "Show the progress of the ideas being generated";
   else if (!available) title = "Generating ideas needs the Dashboard's work queue, which is switched off";
-  else if (!allowance.allowed) title = `Both of today's ${ allowance.maximum } runs are used. Available again tomorrow`;
+  else if (!allowance.allowed) title = `Both of today's ${ allowance.maximum } runs are used. You can generate ideas again tomorrow`;
   const startRun = () => {
     Promise.resolve(ideaRun.start()).catch(error => logIfEnabled("[planning] could not start idea generation", error?.message));
   };
