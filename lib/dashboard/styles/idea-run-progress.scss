@@ -1,0 +1,98 @@
+// Styles for the in-Dashboard "Generate ideas" progress window, shown when the host cannot open it in a prompt.
+@use 'theme-tokens' as *;
+
+.idea-run-progress {
+  display: flex;
+  flex-direction: column;
+  gap: $sp-sm;
+  min-width: 280px;
+
+  .progress-status-line {
+    align-items: center;
+    color: $color-text-muted;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: $smaller-font-size;
+    gap: 4px 12px;
+  }
+
+  .progress-quota-meter {
+    background: $color-border;
+    border-radius: 2px;
+    display: inline-block;
+    height: 4px;
+    overflow: hidden;
+    width: 60px;
+  }
+
+  .progress-quota-fill {
+    background: $color-text-muted;
+    display: block;
+    height: 100%;
+  }
+
+  .progress-step-list {
+    display: flex;
+    gap: 6px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .progress-step-item {
+    align-items: center;
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    font-size: $smaller-font-size;
+    gap: 4px;
+    text-align: center;
+  }
+
+  .progress-step-circle {
+    align-items: center;
+    border: 2px solid $color-border;
+    border-radius: 50%;
+    box-sizing: border-box;
+    display: flex;
+    height: 26px;
+    justify-content: center;
+    width: 26px;
+  }
+
+  .progress-step-item--active .progress-step-circle {
+    animation: idea-run-progress-pulse 1.2s ease-in-out infinite;
+    border-color: $color-link;
+  }
+
+  .progress-step-item--done .progress-step-circle,
+  .progress-step-item--timedOut .progress-step-circle {
+    background: $color-link;
+    border-color: $color-link;
+    color: $color-text-on-accent;
+  }
+
+  .progress-eta-row {
+    align-items: center;
+    display: flex;
+    gap: $sp-sm;
+  }
+
+  .progress-spinner-dot {
+    animation: idea-run-progress-pulse 1.2s ease-in-out infinite;
+    background: $color-link;
+    border-radius: 50%;
+    height: 10px;
+    width: 10px;
+  }
+
+  .progress-summary-list {
+    margin: 0;
+    padding-left: 18px;
+  }
+
+  @keyframes idea-run-progress-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.45; transform: scale(0.85); }
+  }
+}

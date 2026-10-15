@@ -178,3 +178,27 @@ describe("DurableWorkRunner failures and checkpoints", () => {
     await expect(runtime.durable.submit({ key: "x", type: "unknown" })).rejects.toThrow("No work handler");
   });
 });
+
+describe("DurableWorkRunner outcome follow-ups", () => {
+  // ----------------------------------------------------------------------------------------------
+  // @desc An outcome names the follow-up jobs its attempt saved, with their saved status, and the handler's detail, so
+  //   a listener waiting on a chain of jobs learns of the next one before it runs.
+  it("publishes the follow-ups an attempt saved with its outcome", async () => {
+    const app = workQueueNotesApp();
+    const clockState = { now: 1_000_000 };
+    const parent = { run: async () => ({ followUps: [{ desiredRevision: "c1", key: "child:p", type: "child" }], outcomeDetail: "Ranked 3",
+      revision: "p1" }), type: "parent" };
+    const child = { run: async ({ job }) => ({ revision: job.desiredRevision }), type: "child" };
+    const { runtime } = durableRuntime({ app, clockState, handlers: [parent, child] });
+    const outcomes = [];
+    runtime.durable.subscribeOutcomes(outcome => outcomes.push(outcome));
+    await runtime.durable.submit({ desiredRevision: "p1", key: "parent:p", type: "parent" });
+    await settle();
+    await settle();
+    const parentOutcome = outcomes.find(outcome => outcome.jobKey === "parent:p");
+    expect(parentOutcome).toMatchObject({ followUps: [{ jobKey: "child:p", jobType: "child", status: "pending" }], outcomeDetail: "Ranked 3",
+      status: "completed" });
+    expect(outcomes.map(outcome => outcome.jobKey)).toEqual(["parent:p", "child:p"]);
+    expect(outcomes[1]).toMatchObject({ followUps: [], outcomeDetail: null, status: "completed" });
+  });
+});

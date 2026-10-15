@@ -123,6 +123,20 @@ describe("PlanningWidget build plan", () => {
     await cleanup();
   });
 
+  // ----------------------------------------------------------------------------------------------
+  // @desc Once the quarter the header targets has a plan, the header offers Generate ideas instead of Build plan;
+  //   outside a Dashboard work queue there is nothing to run its jobs on, so the button is disabled.
+  it("offers Generate ideas in place of Build plan once the plan exists", async () => {
+    const quarterlyPlans = { current: { ...currentPlan, noteUUID: "plan-q3" }, next: nextPlan };
+    const { cleanup, container } = await renderPlanning({ app: createPlanWizardApp(), now: new Date(2026, 8, 1), quarterlyPlans });
+    const headerButtons = [...container.querySelectorAll(".widget-header-action")];
+    const headerLabels = headerButtons.map(button => button.textContent.trim());
+    expect(headerLabels).toContain("💡 Generate ideas");
+    expect(headerLabels).not.toContain("✍️ Build plan");
+    expect(headerButtons.find(button => button.textContent.includes("Generate ideas")).disabled).toBe(true);
+    await cleanup();
+  });
+
   it("opens the current quarter from its card outside the lead window", async () => {
     const { cleanup, container } = await renderPlanning({ app: createPlanWizardApp(), now: new Date(2026, 8, 1) });
     await clickAndSettle(container.querySelector(".plan-entry-scratch"));

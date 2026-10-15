@@ -3,6 +3,19 @@
 Written October 15, 2026. This is a working plan to be split into commits, not a specification. Each commit below
 should leave the suite green, `npm run build` passing, and the production bundle smoke test passing.
 
+## Status (October 15, 2026)
+
+Commits 1 through 5 and 7 are implemented, uncommitted, with the open questions below taken at their planned defaults.
+
+- **Not yet tried in a live client:** the prompt embed. If `app.prompt` with an embed input rejects or answers with an
+  error envelope, the hook opens the in-Dashboard window instead. A prompt that opens but renders blank would not be
+  caught; check that first.
+- **Commit 6 is blocked on Agent Pro.** Agent Pro's `onPluginCall` reads its first argument as prompt instructions, so
+  calling it with an unknown action such as `"quotaStatus"` would run, and bill, a prompt. Nothing calls it until
+  Agent Pro exposes a quota call. The window already draws the meter whenever a snapshot carries `quotaUsedFraction`
+  (`IdeaGenerationRun#setQuotaUsedFraction`).
+- **Similarity of existing ideas (open question 2)** is not rated; step 3 rates new and unrated ideas only.
+
 ## Goal
 
 When the quarter's plan note exists, the Quarterly Planning header action reads **💡 Generate ideas**, not

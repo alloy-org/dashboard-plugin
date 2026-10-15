@@ -5,6 +5,33 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-15 — "Generate ideas" run from the Quarterly Planning widget
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/idea-generation-run-plan.js` (created) — Pick the quarter's projects in focus this month, the ones not saturated with ideas (`ideasSaturated`), and build the run's foreground requests: discovery holding forced rankings plus up to four term evidence collections, ideas named for the run, and ratings for untargeted projects with unrated ideas.
+- `lib/dashboard/idea-generation-run.js` (created) — `IdeaGenerationRun` drives the four steps on the durable runner, waiting for each step's jobs and their follow-ups, ending a step at its budget (75/120/75/30 s), keeping an estimate that only shrinks, and writing the summary.
+- `lib/dashboard/idea-generation-allowance.js` (created) — Two runs per local day, stored in `SETTING_KEYS.IDEA_GENERATION_RUNS`.
+- `lib/dashboard/idea-run-progress-view.js` (created) — The text the progress window shows: status line, steps, time left, summary sentences.
+- `lib/idea-run-progress-relay.js`, `lib/idea-run-progress-embed.js` (created) — Host relay for run snapshots and the self-contained page a prompt embed renders, polling the relay once a second.
+- `lib/dashboard/idea-run-progress.jsx`, `lib/dashboard/styles/idea-run-progress.scss` (created) — In-Dashboard progress window for hosts that cannot open the prompt.
+- `lib/hooks/use-idea-generation-run.js` (created) — Starts a run, opens its prompt, retains its work scope, and pushes throttled snapshots to the relay.
+- `lib/plugin.js` — `renderEmbed` renders the progress page for a prompt naming a run; `onEmbedCall` gains `ideaRunProgressRead` and `ideaRunProgressUpdate`.
+- `lib/dashboard/planning.jsx` — "💡 Generate ideas" replaces "✍️ Build plan" once the targeted and current quarters have plan notes.
+- `lib/dashboard/work-queue/durable-work-runner.js` — Outcomes carry `followUps` and `outcomeDetail`; follow-ups are saved before the outcome is published.
+- `lib/dashboard/work-queue/jobs/project-job-requests.js`, `generate-project-ideas.js`, `collect-term-evidence.js` — Ideas, ratings, rankings, term evidence and refinement requests take a category; rating and refinement follow-ups keep their parent's category.
+- `lib/plan-wizard/stack-rank/dictionary-term-schedule.js` — `dueTermEvidence` and `dueTermEvidenceRequests` take a term limit and category.
+- `lib/constants/settings.js` — Add `IDEA_GENERATION_RUNS`.
+- `doc/plan-generate-ideas.md` — Record what was built and what remains.
+- Tests: `test/idea-generation-run-plan.test.js`, `test/idea-generation-run.test.js`, `test/idea-generation-allowance.test.js`, `test/idea-run-progress.test.js` (created); `test/durable-work-runner.test.js`, `test/planning-build-plan.test.js`.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes (166 suites); `npm run build` and the production bundle smoke test pass. The prompt embed has not been tried in a live Amplenote client.
+**Task:** Implement the Generate ideas run planned in `doc/plan-generate-ideas.md`, except the Agent Pro quota source.
+**Prompt summary:** Commence the plan.
+
+---
+
 ## 2026-10-15 — Plan the "Generate ideas" run
 
 **Model:** Claude Opus 5.5
