@@ -3,6 +3,7 @@
 // `idea:` candidates beside existing tasks in ranking and slotting, and the user's decisions on a shown idea, including
 // an acceptance retried from another surface that reuses the task the idea already became.
 import { jest } from "@jest/globals";
+import { SETTING_KEYS } from "constants/settings";
 import { handleTaskClick } from "dashboard/dream-task-internals";
 import { decidedIdeaRecords, IDEA_STATUSES, ideaIdFor, normalizedIdeaRecords } from "dashboard/project-idea-records";
 import { minutesSinceIdeaRecommended } from "dashboard/project-suggestion-log";
@@ -124,6 +125,19 @@ describe("idea ratings", () => {
 
 describe("rateProjectIdeas job", () => {
   beforeEach(() => setPluginData({ settings: {} }));
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc New idea ratings schedule OpenAI duration choices independently of the scorer label used for those ratings.
+  it("schedules available OpenAI duration choices after a generative idea rating", async () => {
+    setPluginData({ settings: { [SETTING_KEYS.LLM_API_KEY_OPENAI]: "openai-test-key" } });
+    const app = maintenanceApp({ tasks: [] });
+    await storeIdeas(app, [{ taskText: "Profile the widget grid" }]);
+    const requestAnswers = jest.fn().mockResolvedValue({ answers: { idea_1_actionability: answer(9), idea_1_relevance: answer(7) } });
+    const handler = createRateProjectIdeasHandler({ requestAnswers, taskScorer: async () => "generative" });
+    const job = { category: "maintenance", input: { ...SCOPE_INPUT, projectUuid: PROJECT_UUID } };
+    const result = await handler.run({ context: jobContext(app), job, signal: null });
+    expect(result.followUps).toEqual([expect.objectContaining({ type: "estimateTaskDurations" })]);
+  });
 
   // ----------------------------------------------------------------------------------------------
   // @desc The job rates only the ideas awaiting a rating, leaves when ideas were generated as it was, and records the

@@ -5,6 +5,57 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-14 — Cap the day ranking's wait for duration estimates at 5000ms
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/ranked-task-suggestions.js` — `_estimateDurationsWithin` races the duration pass against `DURATION_WAIT_MILLISECONDS` (5000ms); the pass keeps running afterward so late batches are still written to the Project Tasks note for the next preparation.
+- `lib/dashboard/task-duration-service.js` — `_readTask` no longer swallows errors or guards for a missing `app.getTask`; a deleted task already resolves null.
+- `test/task-duration-estimates.test.js` — Verify the ranking settles at 5000ms with a pending duration answer, and that the late answer is saved and slotted by a stored-only read.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes; production build and the 8 production bundle smoke checks pass.
+**Task:** Review the pending duration-estimate implementation for sufficiency and unneeded try/catch, and bound the Proposed Suggestion wait.
+**Prompt summary:** Confirm the duration job meets its intent, remove unrealistic try/catch, and ensure suggestion preparation waits no more than 5000ms for estimates.
+
+---
+
+## 2026-10-14 — Schedule duration estimates through available DecisionsEndpoint providers
+
+**Model:** GPT-6 (Codex)
+**Files created/modified:**
+- `lib/dashboard/work-queue/jobs/project-job-requests.js` — Add a shared availability check that resolves the configured DecisionsEndpoint before requesting duration maintenance. Categorical questions use available decision-provider routes rather than the score-only generative adapter.
+- `lib/dashboard/work-queue/jobs/rank-project-tasks.js`, `lib/dashboard/work-queue/jobs/rate-project-ideas.js`, `lib/dashboard/work-queue/jobs/reconcile-projects.js` — Replace duration scheduling checks against the legacy `"jev"` scorer label with the endpoint availability check.
+- `test/task-duration-estimates.test.js` — Verify OpenAI-only scheduling, the actual OpenAI Decisions request shape and persisted duration, and absence of scheduling when no decision provider is available.
+- `test/project-maintenance-jobs.test.js`, `test/project-task-idea-ratings.test.js`, `test/quarter-project-work-planner.test.js` — Regress duration scheduling with an available OpenAI endpoint independently of local, generative, or other scorer labels.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Offline Jest suite: 157 suites and 1,410 tests passed; 17 live-provider tests skipped with provider-token environment overrides. Production build and all 8 production bundle smoke checks pass. Live provider calls are mocked in the OpenAI-only regression.
+**Task:** Use any available DecisionsEndpoint decision provider for fast duration choices, including OpenAI.
+**Prompt summary:** Remove the Jev-specific scheduling assumption and let DecisionsEndpoint choose the available provider.
+
+---
+
+## 2026-10-14 — Estimate conservative durations for recommended tasks and ideas
+
+**Model:** GPT-6 (Codex)
+**Files created/modified:**
+- `lib/dashboard/task-duration-estimates.js` (created) — Seven categorical minute choices and a context revision; read and merge a shared UUID/idea ID index in the quarterly Project Tasks note, preserving project sections and Rich Footnotes.
+- `lib/dashboard/task-duration-service.js` (created) — Resolve native/compact tasks, note titles, hierarchical tags, direct or outline parents, and the resolved user dictionary. Batch decision-model requests, reuse unchanged estimates, preserve explicit durations, and save successful batches before retrying failures.
+- `lib/dashboard/work-queue/jobs/estimate-task-durations.js` (created) — Durable quarter maintenance pass over the candidates projects can recommend, independent of their weekday qualification.
+- `lib/dashboard/work-queue/jobs/project-job-requests.js`, `lib/dashboard/work-queue/dashboard-work-handlers.js` — Define and register the maintenance request.
+- `lib/dashboard/work-queue/jobs/reconcile-projects.js`, `lib/dashboard/work-queue/jobs/rank-project-tasks.js`, `lib/dashboard/work-queue/jobs/rate-project-ideas.js` — Schedule duration maintenance during reconciliation and after task associations or newly rated ideas change.
+- `lib/dashboard/ranked-task-suggestions.js` — Estimate missing durations before preparing or reusing day rankings; stored-only reads reuse estimates without provider calls. Calendar slotters receive the resulting minutes.
+- `test/task-duration-estimates.test.js` (created) — Context, dictionary Rich Footnotes, parent resolution, choices/refusals, reuse/invalidation, explicit-duration precedence, batch recovery, serialized persistence, maintenance, and calendar placement.
+- `test/project-maintenance-jobs.test.js`, `test/quarter-project-work-planner.test.js` — Extend registry and queue integration expectations for duration maintenance.
+- `build/compiled.js` — Rebuilt with the host-compatible duration services.
+
+**Validation:** Offline Jest suite: 157 suites and 1,405 tests passed; 17 live-provider tests skipped with provider-token environment overrides. Production build and all 8 production bundle smoke checks passed. An initial live OpenAI integration attempt failed because this sandbox could not resolve api.openai.com.
+**Task:** Add a periodic Jev duration pass for tasks and task ideas considered for recommendations, using conservative choices of 30, 60, 90, 120, 180, 240, or 300 minutes.
+**Prompt summary:** Send the user's dictionary plus task text, note name, hierarchical tags, and available parent task text; persist estimated minutes alongside similarity information or in a dedicated Project Note index.
+
+---
+
 ## 2026-10-14 — Plan the Proposed Agenda provisionally while calendar events are pending, then refine it for meetings
 
 **Model:** Claude Opus 5.5

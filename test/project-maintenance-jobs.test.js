@@ -21,6 +21,17 @@ describe("project maintenance jobs", () => {
   beforeEach(() => setPluginData({ settings: { [SETTING_KEYS.JEV_ACCESS_TOKEN]: "token" } }));
 
   // ----------------------------------------------------------------------------------------------
+  // @desc Even a local association refresh schedules durations when OpenAI Decisions is available to estimate them.
+  it("schedules available OpenAI duration choices independently of the task ranker", async () => {
+    setPluginData({ settings: { [SETTING_KEYS.LLM_API_KEY_OPENAI]: "openai-test-key" } });
+    const app = maintenanceApp({ tasks: backlogTasks() });
+    const input = { ...SCOPE_INPUT, projectUuid: await storedProjectUuid(app) };
+    const handler = createRankProjectTasksHandler({ rankerFactory: async () => null });
+    const { result } = await runProjectJob(handler, { context: jobContext(app), input });
+    expect(result.followUps).toEqual(expect.arrayContaining([expect.objectContaining({ type: "estimateTaskDurations" })]));
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc Discovery, a ranking spread over two turns, and ideas persist local and similar tasks, completion text,
   //   generated ideas, and operation-specific successful refresh revisions.
   it("stores project evidence with ranking and ideas as separate jobs", async () => {
@@ -208,10 +219,11 @@ describe("project maintenance jobs", () => {
   it("registers the maintenance handlers and validates their input", () => {
     const registry = workHandlerRegistry(dashboardWorkHandlers());
     expect([...registry.keys()].sort()).toEqual(["classifyCompletedTasks", "collectTermEvidence", "discoverDictionaryTerms",
-      "generateProjectIdeas", "prepareDayRanking", "rankProjectTasks", "rateProjectIdeas", "reconcileProjects", "refineDictionaryTerm",
+      "estimateTaskDurations", "generateProjectIdeas", "prepareDayRanking", "rankProjectTasks", "rateProjectIdeas", "reconcileProjects", "refineDictionaryTerm",
       "scoreCompletedTaskPotential"]);
     expect(() => registry.get("collectTermEvidence").validateInput({ term: " ", year: 2026 })).toThrow("term");
     expect(() => registry.get("reconcileProjects").validateInput(SCOPE_INPUT)).not.toThrow();
+    expect(() => registry.get("estimateTaskDurations").validateInput(SCOPE_INPUT)).not.toThrow();
     expect(() => registry.get("rankProjectTasks").validateInput(SCOPE_INPUT)).toThrow("projectUuid");
     expect(() => registry.get("discoverDictionaryTerms").validateInput(SCOPE_INPUT)).not.toThrow();
     expect(() => registry.get("generateProjectIdeas").validateInput({ ...SCOPE_INPUT, quarter: 5 })).toThrow("quarter");

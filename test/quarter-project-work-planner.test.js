@@ -15,6 +15,7 @@ import { workHandlerRegistry } from "dashboard/work-queue/dashboard-work-handler
 import DashboardWorkRepository from "dashboard/work-queue/dashboard-work-repository";
 import { createDashboardWorkRuntime } from "dashboard/work-queue/dashboard-work-runtime";
 import { createDiscoverDictionaryTermsHandler } from "dashboard/work-queue/jobs/discover-dictionary-terms";
+import { createEstimateTaskDurationsHandler } from "dashboard/work-queue/jobs/estimate-task-durations";
 import { createGenerateProjectIdeasHandler } from "dashboard/work-queue/jobs/generate-project-ideas";
 import { projectReconciliationRequest } from "dashboard/work-queue/jobs/project-job-requests";
 import { createRankProjectTasksHandler } from "dashboard/work-queue/jobs/rank-project-tasks";
@@ -78,12 +79,14 @@ function highIdeaRatings() {
 // @param {object} app - From maintenanceApp.
 // @param {object} options - { discoveryRunner, ideaGenerator, ideaRatingAnswers, planner, requestAnswers }: ideaRatingAnswers
 //   answers idea ratings, rating every question 8 when omitted.
+//   Duration maintenance is registered with an estimator stub; contextual duration behavior is tested separately.
 // @returns {object} { outcomes, repository, runtime }.
 function maintenanceRuntime(app, { discoveryRunner, ideaGenerator, ideaRatingAnswers = highIdeaRatings(), planner,
   requestAnswers }) {
   const taskScorer = async () => "jev";
   const handlers = workHandlerRegistry([
     createDiscoverDictionaryTermsHandler({ promptRunner: discoveryRunner }),
+    createEstimateTaskDurationsHandler({ estimator: async () => ({ estimatedCount: 0, reusedCount: 0, waitingCount: 0 }) }),
     createGenerateProjectIdeasHandler({ ideaGenerator, taskScorer }),
     createRateProjectIdeasHandler({ requestAnswers: ideaRatingAnswers, taskScorer }),
     createRankProjectTasksHandler({ rankerFactory: (currentApp, options) => prepareProjectTaskRanker(currentApp,
@@ -233,6 +236,17 @@ describe("reconcileProjects", () => {
   beforeEach(() => setPluginData({ settings: { [SETTING_KEYS.JEV_ACCESS_TOKEN]: "token" } }));
 
   // ----------------------------------------------------------------------------------------------
+  // @desc Duration scheduling follows DecisionsEndpoint availability rather than the task scorer's batching label.
+  it("schedules OpenAI duration choices even when the task scorer reports a different label", async () => {
+    setPluginData({ settings: { [SETTING_KEYS.LLM_API_KEY_OPENAI]: "openai-test-key" } });
+    const app = maintenanceApp({ tasks: backlogTasks() });
+    const handler = createReconcileProjectsHandler({ planner: new QuarterProjectWorkPlanner(), taskScorer: async () => "generative" });
+    const job = { category: "maintenance", input: SCOPE_INPUT, scopeKey: SCOPE_KEY };
+    const result = await handler.run({ context: jobContext(app), job, signal: null });
+    expect(result.followUps).toEqual(expect.arrayContaining([expect.objectContaining({ type: "estimateTaskDurations" })]));
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc A project drawn only from the quarterly plan is stored before any job names it, so a second reconciliation
   //   plans it under the same UUID, and a stored project the plan no longer holds is retired.
   it("stores a plan-only project once and retires one that left the plan", async () => {
@@ -248,7 +262,7 @@ describe("reconcileProjects", () => {
     const projects = await readCollectedProjectTasks(app, scope, { includeInactive: true });
     const launch = projects.find(project => project.summary === "Launch dashboard");
     expect(projects.find(project => project.uuid === "dropped").isActive).toBe(false);
-    expect(first.followUps.map(request => request.key)).toEqual(["discoverDictionaryTerms:2026-Q3"]);
+    expect(first.followUps.map(request => request.key)).toEqual(["discoverDictionaryTerms:2026-Q3", "estimateTaskDurations:2026-Q3"]);
     expect(first.followUps[0].input.heldRequests.map(request => request.key)).toEqual([`rankProjectTasks:${ launch.uuid }`]);
     expect(second.followUps[0].input.heldRequests.map(request => request.key)).toEqual([`rankProjectTasks:${ launch.uuid }`]);
   });
@@ -267,11 +281,11 @@ describe("reconcileProjects", () => {
     const discoveryRunner = jest.fn().mockResolvedValue(DISCOVERED_TERMS);
     const { outcomes, repository, runtime } = maintenanceRuntime(app, { discoveryRunner, ideaGenerator, ideaRatingAnswers,
       planner, requestAnswers });
-    const allFinished = jobs => jobs.length === 5 && jobs.every(job => job.status === "completed");
+    const allFinished = jobs => jobs.length === 6 && jobs.every(job => job.status === "completed");
     await runtime.durable.submit(projectReconciliationRequest(SCOPE_INPUT, { category: "foregroundData", requestedAt: 1 }));
     const jobs = await settledJobs(repository, allFinished);
     const categoryByType = Object.fromEntries(jobs.map(job => [job.type, job.category]));
-    expect(categoryByType).toEqual({ discoverDictionaryTerms: "foregroundData", generateProjectIdeas: "maintenance",
+    expect(categoryByType).toEqual({ discoverDictionaryTerms: "foregroundData", estimateTaskDurations: "maintenance", generateProjectIdeas: "maintenance",
       rankProjectTasks: "foregroundData", rateProjectIdeas: "maintenance", reconcileProjects: "foregroundData" });
     const [project] = await readCollectedProjectTasks(app, { ...SCOPE_INPUT, quarterKey: "2026-Q3" });
     expect(project.lastRankedAt).toBe(NOW.toISOString());
@@ -279,7 +293,8 @@ describe("reconcileProjects", () => {
     expect(project.suggestedTasks[0].rating).toMatchObject({ actionability: 8, raterEm: "jev", relevance: 8 });
     expect(project.lastSuggestedAt).toBe(NOW.toISOString());
     expect(planner.coverage(SCOPE_KEY)).toMatchObject({ covered: 1, rated: 1, succeeded: 1, target: 1 });
-    expect(outcomes.map(outcome => outcome.jobType)).toEqual(["reconcileProjects", "discoverDictionaryTerms", "rankProjectTasks",
+    expect(outcomes.filter(outcome => outcome.jobType !== "estimateTaskDurations").map(outcome => outcome.jobType))
+      .toEqual(["reconcileProjects", "discoverDictionaryTerms", "rankProjectTasks",
       "generateProjectIdeas", "rateProjectIdeas"]);
 
     const ratingCalls = requestAnswers.mock.calls.length;
@@ -287,7 +302,7 @@ describe("reconcileProjects", () => {
     const secondJobs = await settledJobs(repository, current => current.some(job => job.type === "reconcileProjects"
       && job.succeededRevision === "2"));
     runtime.dispose();
-    expect(secondJobs.filter(job => job.type !== "reconcileProjects").map(job => job.status)).toEqual(["completed", "completed",
+    expect(secondJobs.filter(job => !["estimateTaskDurations", "reconcileProjects"].includes(job.type)).map(job => job.status)).toEqual(["completed", "completed",
       "completed", "completed"]);
     expect(requestAnswers.mock.calls.length).toBe(ratingCalls);
     expect(ideaGenerator).toHaveBeenCalledTimes(1);
@@ -306,7 +321,7 @@ describe("reconcileProjects", () => {
     const discoveryRunner = jest.fn().mockResolvedValue(DISCOVERED_TERMS);
     const { outcomes, repository, runtime } = maintenanceRuntime(app, { discoveryRunner, ideaGenerator, planner, requestAnswers });
     await runtime.durable.submit(projectReconciliationRequest(SCOPE_INPUT, { requestedAt: 1 }));
-    await settledJobs(repository, jobs => jobs.length === 4 && jobs.every(job => job.status === "completed"));
+    await settledJobs(repository, jobs => jobs.length === 6 && jobs.every(job => job.status === "completed"));
 
     const dictionaryHandle = await app.findNote({ name: "User terms dictionary 2026" });
     const dictionaryContent = app.noteContent("User terms dictionary 2026");
@@ -333,12 +348,12 @@ describe("reconcileProjects", () => {
     const discoveryRunner = jest.fn().mockRejectedValue(new Error("Provider unavailable"));
     const { repository, runtime } = maintenanceRuntime(app, { discoveryRunner, ideaGenerator, planner,
       requestAnswers: ratingRequest() });
-    const rankingFinished = jobs => jobs.some(job => job.type === "rateProjectIdeas" && job.status === "completed");
+    const rankingFinished = jobs => jobs.length === 6 && jobs.every(job => ["completed", "retryWaiting"].includes(job.status));
     await runtime.durable.submit(projectReconciliationRequest(SCOPE_INPUT, { requestedAt: 1 }));
     const jobs = await settledJobs(repository, rankingFinished);
     runtime.dispose();
     const statusByType = Object.fromEntries(jobs.map(job => [job.type, job.status]));
-    expect(statusByType).toEqual({ discoverDictionaryTerms: "retryWaiting", generateProjectIdeas: "completed",
+    expect(statusByType).toEqual({ discoverDictionaryTerms: "retryWaiting", estimateTaskDurations: "completed", generateProjectIdeas: "completed",
       rankProjectTasks: "completed", rateProjectIdeas: "completed", reconcileProjects: "completed" });
     expect(planner.coverage(SCOPE_KEY)).toMatchObject({ covered: 1, rated: 1 });
   });
