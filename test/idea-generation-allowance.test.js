@@ -1,6 +1,6 @@
 // Exercise the two-runs-per-day limit on "Generate ideas": counting runs within the local day and pruning old ones.
 import { IDEA_GENERATION_DAILY_MAXIMUM, ideaGenerationRunAllowance, ideaGenerationRunTimes,
-  runTimesWithRun } from "dashboard/idea-generation-allowance";
+  runTimesWithRun } from "dashboard/idea-generation/idea-generation-allowance";
 
 const NOW = new Date(2026, 9, 15, 14, 0, 0);
 

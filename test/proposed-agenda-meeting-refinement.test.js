@@ -2,8 +2,8 @@
 // callers, and that an agenda planned before the day's calendar events arrived gains preparation for the meetings it
 // did not know of, moving aside the pending suggestions that held those hours.
 import { jest } from "@jest/globals";
-import { meetingsFromCalendarEvents } from "dashboard/meeting-preparation";
-import { agendaWithNewMeetingPreparation } from "dashboard/proposed-agenda-meeting-refinement";
+import { meetingsFromCalendarEvents } from "dashboard/proposed-agenda/meeting-preparation";
+import { agendaWithNewMeetingPreparation } from "dashboard/proposed-agenda/proposed-agenda-meeting-refinement";
 import { externalCalendarEventsForTargetDate } from "util/calendar-utility";
 
 const TARGET_DATE = new Date(2026, 8, 17);

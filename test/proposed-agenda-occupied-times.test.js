@@ -12,7 +12,7 @@ const llmMock = jest.fn();
 
 await mockFetchAiProvider({ llmPromptWithPluginFallback: (...args) => llmMock(...args) });
 
-const { generateProposedAgenda, scheduleProposedActivity } = await import("proposed-agenda-service");
+const { generateProposedAgenda, scheduleProposedActivity } = await import("dashboard/proposed-agenda/proposed-agenda-service");
 
 // ----------------------------------------------------------------------------------------------
 // @desc Resolve the domain-scoped plan-note name the service looks up ("QN YYYY Work Plan").

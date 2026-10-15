@@ -4,7 +4,7 @@ import { formatWeekLabel, getQuarterMonths, getUpcomingWeekMonday, hasQuarterEnd
 import { IS_DEV_ENVIRONMENT, SETTING_KEYS } from "constants/settings";
 import { buildPlanTargetFromPlans, currentQuarterCardAction } from "dashboard/build-plan-quarter";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
-import IdeaRunProgressPopup from "dashboard/idea-run-progress";
+import IdeaRunProgressPopup from "dashboard/idea-generation/idea-run-progress";
 import MonthFocusPlan, { MonthIntensityMeter } from "dashboard/month-focus-plan";
 import PlanWizard from "dashboard/plan-wizard/plan-wizard";
 import { quarterPageWindow, quarterPlanForPage, quartersMatch } from "dashboard/quarter-page";

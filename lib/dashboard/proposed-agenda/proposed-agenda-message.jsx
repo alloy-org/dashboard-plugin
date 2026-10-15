@@ -1,9 +1,9 @@
 // Show agenda failures with a retry action and access to the source note when its content cannot be read.
 import { noteUrlFromUUID } from "app-util";
-import NoteEditor from "note-editor";
+import NoteEditor from "dashboard/note-editor";
 import { useState } from "react";
 import { navigateToNote } from "util/goal-notes";
-import WidgetWrapper from "widget-wrapper";
+import WidgetWrapper from "dashboard/widget-wrapper";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Show the agenda error and open its source in Amplenote or the existing development note editor.

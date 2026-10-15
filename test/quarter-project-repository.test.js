@@ -1,7 +1,7 @@
 // Exercise QuarterProjectRepository: detached reads, plan-versus-store authority, and field-level result commits.
 import { jest } from "@jest/globals";
 import { guideHeadingRanges } from "plan-wizard/vision-guide-markdown";
-import { initialProjectTaskStoreMarkdown } from "project-task-store-markdown";
+import { initialProjectTaskStoreMarkdown } from "dashboard/project-tasks/project-task-store-markdown";
 import QuarterProject from "quarter-project";
 import QuarterProjectRepository from "quarter-project-repository";
 import DashboardNoteWriter from "dashboard/work-queue/dashboard-note-writer";

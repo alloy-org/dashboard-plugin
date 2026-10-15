@@ -3,7 +3,7 @@
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
 import { changedNoteUuidsSinceLastGeneration, recordSuggestionGeneration, RECENT_GENERATION_WINDOW_SECONDS,
-  staleSuggestionReview, suggestionIdentityKey } from "suggestion-staleness";
+  staleSuggestionReview, suggestionIdentityKey } from "dashboard/suggestions/suggestion-staleness";
 
 const NOW_SECONDS = 1_790_000_000;
 const DAY_KEYS = ["Tue Oct 06 2026", "Wed Oct 07 2026"];

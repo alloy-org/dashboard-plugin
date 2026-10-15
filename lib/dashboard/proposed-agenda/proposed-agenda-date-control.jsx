@@ -1,5 +1,5 @@
 // Navigate agenda days and choose dates from an anchored month calendar.
-import ProposedAgendaPopover from "proposed-agenda-popover";
+import ProposedAgendaPopover from "dashboard/proposed-agenda/proposed-agenda-popover";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { calendarEventDateFromValue } from "util/calendar-utility";
 import { dateFromDateInput, dateKeyFromDateInput, monthGridCellsFromDateInput } from "util/date-utility";

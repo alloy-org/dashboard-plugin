@@ -38,7 +38,7 @@ import LazyWidgetMount from "lazy-widget-mount";
 import MoodWidget from 'mood';
 import NotePeekWidget from 'note-peek';
 import PeakHoursWidget from 'peak-hours';
-import ProposedAgendaWidget from 'proposed-agenda';
+import ProposedAgendaWidget from 'dashboard/proposed-agenda/proposed-agenda';
 import { setPluginData, updatePluginSetting } from "plugin-data";
 import QuotesWidget from 'quotes';
 import QuickActionsWidget from 'quick-actions';

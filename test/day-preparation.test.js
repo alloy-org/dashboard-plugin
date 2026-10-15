@@ -5,7 +5,7 @@ import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
 import QuarterProject from "dashboard/quarter-project";
 import QuarterProjectRepository from "dashboard/quarter-project-repository";
-import { prepareDayRanking } from "dashboard/ranked-task-suggestions";
+import { prepareDayRanking } from "dashboard/suggestions/ranked-task-suggestions";
 import DayPreparationTrigger, { dayPreparationDateKeys } from "dashboard/work-queue/day-preparation-trigger";
 import { workHandlerRegistry } from "dashboard/work-queue/dashboard-work-handlers";
 import DashboardWorkRepository from "dashboard/work-queue/dashboard-work-repository";

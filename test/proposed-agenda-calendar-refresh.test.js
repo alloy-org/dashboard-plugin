@@ -13,7 +13,7 @@ const llmMock = jest.fn();
 
 await mockFetchAiProvider({ llmPromptWithPluginFallback: (...args) => llmMock(...args) });
 
-const { default: ProposedAgendaWidget } = await import("proposed-agenda");
+const { default: ProposedAgendaWidget } = await import("dashboard/proposed-agenda/proposed-agenda");
 const { setPluginData } = await import("plugin-data");
 
 // A stable reference date, so re-rendering does not look like a changed `currentDate` prop.

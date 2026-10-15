@@ -20,10 +20,10 @@ const llmMock = jest.fn();
 
 await mockFetchAiProvider({ llmPromptWithPluginFallback: (...args) => llmMock(...args) });
 
-const { activityKey, mergedAgendaRows } = await import("proposed-agenda-llm-generator");
-const { proposedTaskKey } = await import("proposed-agenda-archive");
-const { agendaRowsGroupedByDay, proposedAgendaDaysInRange } = await import("proposed-agenda-range");
-const { calendarSuggestionFromActivity, suggestScheduledTasksFromDashboard } = await import("proposed-agenda-suggest-action");
+const { activityKey, mergedAgendaRows } = await import("dashboard/proposed-agenda/proposed-agenda-llm-generator");
+const { proposedTaskKey } = await import("dashboard/proposed-agenda/proposed-agenda-archive");
+const { agendaRowsGroupedByDay, proposedAgendaDaysInRange } = await import("dashboard/proposed-agenda/proposed-agenda-range");
+const { calendarSuggestionFromActivity, suggestScheduledTasksFromDashboard } = await import("dashboard/proposed-agenda/proposed-agenda-suggest-action");
 
 // ----------------------------------------------------------------------------------------------
 // @desc Build a plugin-side Amplenote app stub: fixture tasks, a quarterly plan note, and the note-writing

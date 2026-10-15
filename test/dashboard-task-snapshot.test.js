@@ -1,7 +1,7 @@
 // Exercise DashboardTaskSnapshot and its store: change detection across reads, partial versus complete observations,
 // watermarks, capacity, the archived note each domain's index lives in, and one reconciliation per shared task read.
 import { jest } from "@jest/globals";
-import { reconciledTaskSnapshot } from "dashboard/project-collection-steps";
+import { reconciledTaskSnapshot } from "dashboard/project-tasks/project-collection-steps";
 import DashboardNoteWriter from "dashboard/work-queue/dashboard-note-writer";
 import DashboardTaskSnapshot, { MAXIMUM_TRACKED_TASKS } from "dashboard/work-queue/dashboard-task-snapshot";
 import DashboardTaskSnapshotStore, { taskSnapshotNoteName } from "dashboard/work-queue/dashboard-task-snapshot-store";

@@ -6,8 +6,8 @@
 // a second reconciliation nothing to do, and still ranks when discovery fails.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
-import { readCollectedProjectTasks } from "dashboard/project-task-store";
-import { ideaRatingsRevision } from "dashboard/project-task-idea-ratings";
+import { readCollectedProjectTasks } from "dashboard/project-tasks/project-task-store";
+import { ideaRatingsRevision } from "dashboard/project-tasks/project-task-idea-ratings";
 import QuarterProject from "dashboard/quarter-project";
 import { ideasInputRevision, similarityInputRevision } from "dashboard/quarter-project-refresh-state";
 import QuarterProjectRepository from "dashboard/quarter-project-repository";

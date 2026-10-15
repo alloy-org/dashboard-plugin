@@ -4,7 +4,7 @@
 // work fails the attempt for the queue to retry.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
-import { readCollectedProjectTasks } from "dashboard/project-task-store";
+import { readCollectedProjectTasks } from "dashboard/project-tasks/project-task-store";
 import { refreshRevision } from "dashboard/quarter-project-refresh-state";
 import { dashboardWorkHandlers, workHandlerRegistry } from "dashboard/work-queue/dashboard-work-handlers";
 import DashboardWorkRepository from "dashboard/work-queue/dashboard-work-repository";

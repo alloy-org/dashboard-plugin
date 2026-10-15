@@ -56,10 +56,10 @@ The key implementation points are:
   creation time after `lastRankedAt` and rechecks retained similar tasks by checksum. An old, edited task whose low
   score was discarded can be missed. The checksum covers project summary and task text, but not dictionary or other
   context supplied to the model. The Builder's due-project selection also needs explicit change triggers.
-- [`project-task-ideas.js`](../lib/dashboard/project-task-ideas.js) receives open tasks and plan prose, but its prompt
+- [`project-task-ideas.js`](../lib/dashboard/project-tasks/project-task-ideas.js) receives open tasks and plan prose, but its prompt
   does not include completed task text. Completion records currently preserve UUID and date, rather than text.
-- [`day-project-candidates.js`](../lib/dashboard/day-project-candidates.js) draws from existing task records;
-  [`ranked-task-suggestions.js`](../lib/dashboard/ranked-task-suggestions.js) makes Dream Task cards with
+- [`day-project-candidates.js`](../lib/dashboard/suggestions/day-project-candidates.js) draws from existing task records;
+  [`ranked-task-suggestions.js`](../lib/dashboard/suggestions/ranked-task-suggestions.js) makes Dream Task cards with
   `isExisting: true`. Stored ideas can reach fallback agenda generation, but cannot compete in this primary path.
 - [`wizard-prompt-runner.js`](../lib/plan-wizard/wizard-prompt-runner.js) races Agent Pro and the direct provider,
   leaving the losing request running. Reusing that runner for every maintenance job can spend two requests per job.
@@ -794,7 +794,7 @@ consumer support together as 8b. Existing ideas remain unrated/ineligible for th
 revision/decision handling, same-text deduplication, actionability, completion history and acceptance retries. The stop
 point uses existing on-demand daily generators, so background preparation is not a hidden dependency.
 
-As built, 8a adds `lib/dashboard/project-idea-records.js`. A project's `suggestedTasks` hold idea records ({ ideaId,
+As built, 8a adds `lib/dashboard/project-tasks/project-idea-records.js`. A project's `suggestedTasks` hold idea records ({ ideaId,
 projectUuid, taskText, generatedAt, sourceRevision, supersedesIdeaId, status, decidedAt, acceptedTaskUuid }), status
 being `open`, `accepted`, or `dismissed`. A text-only legacy idea reads as an open idea whose `ideaId` digests its
 project UUID and comparison key (lowercase words without punctuation), so every reader agrees on it before a write
@@ -814,7 +814,7 @@ The ideas input revision appends the linked intent UUIDs only when there are som
 every project's ideas at once. Rolling back to a pre-8a writer keeps idea text but drops identities and decisions,
 which re-derive as open ideas.
 
-As built, 8b adds `lib/dashboard/project-task-idea-ratings.js`, the `rateProjectIdeas` job
+As built, 8b adds `lib/dashboard/project-tasks/project-task-idea-ratings.js`, the `rateProjectIdeas` job
 (`work-queue/jobs/rate-project-ideas.js`), and `lib/dashboard/quarter-project-task-candidates.js`. A rating asks two
 score questions per open idea, actionability (specific, feasible, unblocked, startable in one work block) and relevance
 to the project and its intents (a restatement of open or completed work rates 1), through Jev or, without it, the fast
@@ -851,7 +851,7 @@ background activation. Until 9b, existing foreground generation remains the sele
 context keys, no exposure on prefetch, unchanged accepted/dismissed choices, cold-cache settling, and native Calendar
 output. Admins must be able to follow a project revision through preparation to the published result revision.
 
-As built, 9a adds `lib/dashboard/day-ranking-store.js` and the `prepareDayRanking` job
+As built, 9a adds `lib/dashboard/suggestions/day-ranking-store.js` and the `prepareDayRanking` job
 (`work-queue/jobs/prepare-day-ranking.js`). One archived `Dashboard Day Ranking <domainUuid>` JSON note per domain
 (`all-notes` for the fallback) keeps rankings by local day and revision. A revision is the scorer (`jev` or `generative`)
 plus a digest of everything the ranker is shown (project names, rationales, and candidates), except each candidate's
@@ -1189,13 +1189,13 @@ Concrete integration changes:
   service are removed; shared transformations in `project-collection-steps.js` call `QuarterProject` methods.
 - `lib/hooks/use-dashboard-task-updates.js` sends observations to `DashboardTaskSnapshot` and invalidates affected
   work, while preserving the immediate existing widget update behavior.
-- `lib/dashboard/day-project-candidates.js` qualifies projects for the day and asks each hydrated project's
+- `lib/dashboard/suggestions/day-project-candidates.js` qualifies projects for the day and asks each hydrated project's
   `taskCandidates` for its candidate records. `suggestion-task-rank.js` and `suggestion-task-slots.js` carry the
   shared `task:`/`idea:` identity through ranking, reserve promotion, and deduplication.
-- `lib/dashboard/dream-task.jsx` and `lib/dashboard/proposed-agenda.jsx` subscribe to narrow result revisions, promote
+- `lib/dashboard/dream-task.jsx` and `lib/dashboard/proposed-agenda/proposed-agenda.jsx` subscribe to narrow result revisions, promote
   jobs for missing visible data, and keep stable cached UI. An accepted result updates the relevant surface, not the
   whole Dashboard tree on every queue transition.
-- `lib/dashboard/proposed-agenda-suggest-action.js` reads prepared output through a bounded host runtime. Neither
+- `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` reads prepared output through a bounded host runtime. Neither
   it nor `lib/plugin.js` imports the browser driver, mount coordinator, context, or React hook.
 
 Keep urgent rendering and maintenance activation independently selectable. Later enrichment features can be disabled

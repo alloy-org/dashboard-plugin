@@ -4,12 +4,12 @@
 // as shown, and the queued preparation stores a ranking that a later request reuses.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
-import DayRankingStore, { dayRankingNoteName } from "dashboard/day-ranking-store";
+import DayRankingStore, { dayRankingNoteName } from "dashboard/suggestions/day-ranking-store";
 import QuarterProject from "dashboard/quarter-project";
 import QuarterProjectRepository from "dashboard/quarter-project-repository";
 import { agendaSuggestionsFromProjects, dreamSuggestionsFromProjects, prepareDayRanking,
-  recordShownTaskSuggestions } from "dashboard/ranked-task-suggestions";
-import { dayRankingRevision, suggestionQuestions } from "dashboard/suggestion-task-rank";
+  recordShownTaskSuggestions } from "dashboard/suggestions/ranked-task-suggestions";
+import { dayRankingRevision, suggestionQuestions } from "dashboard/suggestions/suggestion-task-rank";
 import { createPrepareDayRankingHandler } from "dashboard/work-queue/jobs/prepare-day-ranking";
 import { setPluginData } from "plugin-data";
 import { jobContext, maintenanceApp, NOW, PROJECT_UUID, SCOPE_INPUT } from "./project-maintenance-test-app";

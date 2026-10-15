@@ -1,11 +1,11 @@
 // The day-project selection, Jev and generative ranking, hour placement, and the project-note suggestion log.
-import { dayProjectGroups, deadlineWithinComingWeek } from "day-project-candidates";
-import { suggestionSectionsMarkdown } from "project-suggestion-log";
+import { dayProjectGroups, deadlineWithinComingWeek } from "dashboard/suggestions/day-project-candidates";
+import { suggestionSectionsMarkdown } from "dashboard/project-tasks/project-suggestion-log";
 import QuarterProject from "quarter-project";
 import DecisionsResponse from "providers/decisions-response";
-import { generativeRankPrompt, rankedTasksFromCandidateIds, rankedTasksFromResponse, suggestionQuestions } from "suggestion-task-rank";
+import { generativeRankPrompt, rankedTasksFromCandidateIds, rankedTasksFromResponse, suggestionQuestions } from "dashboard/suggestions/suggestion-task-rank";
 import { activitiesClearOfObligations, refillRejectedSuggestion, slotRankedTasks, suggestionHourAvailability,
-  tasksNotRecentlySuggested } from "suggestion-task-slots";
+  tasksNotRecentlySuggested } from "dashboard/suggestions/suggestion-task-slots";
 
 const TUESDAY = new Date(2026, 9, 6, 15, 0, 0);
 

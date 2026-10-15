@@ -6,14 +6,14 @@ import { taskDurationEstimatesRequest, taskDurationEstimatesRequestIfAvailable }
 import { guideSectionRange } from "plan-wizard/vision-guide-markdown";
 import { setPluginData } from "plugin-data";
 import { OPENAI_DECISIONS_ENDPOINT } from "providers/decisions-endpoint";
-import { initialProjectTaskStoreMarkdown } from "project-task-store-markdown";
-import { projectTaskStoreNoteName, storedProjectRecords } from "project-task-store";
+import { initialProjectTaskStoreMarkdown } from "dashboard/project-tasks/project-task-store-markdown";
+import { projectTaskStoreNoteName, storedProjectRecords } from "dashboard/project-tasks/project-task-store";
 import QuarterProject from "quarter-project";
-import { prepareDayRanking } from "ranked-task-suggestions";
-import { slotRankedTasks } from "suggestion-task-slots";
+import { prepareDayRanking } from "dashboard/suggestions/ranked-task-suggestions";
+import { slotRankedTasks } from "dashboard/suggestions/suggestion-task-slots";
 import { DURATION_BATCH_SIZE, DURATION_MINUTE_CHOICES, durationEstimatesFromContent, readDurationEstimates,
-  writeDurationEstimates } from "task-duration-estimates";
-import { estimateCandidateDurations } from "task-duration-service";
+  writeDurationEstimates } from "dashboard/project-tasks/task-duration-estimates";
+import { estimateCandidateDurations } from "dashboard/project-tasks/task-duration-service";
 
 const SCOPE = { domainName: "Work", domainUuid: "work-domain", quarter: 4, quarterKey: "Q4 2026", year: 2026 };
 const STORE_NAME = projectTaskStoreNoteName(SCOPE);

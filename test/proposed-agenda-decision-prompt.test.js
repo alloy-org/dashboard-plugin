@@ -14,8 +14,8 @@ const llmMock = jest.fn();
 
 await mockFetchAiProvider({ llmPromptWithPluginFallback: (...args) => llmMock(...args) });
 
-const { AGENDA_DECISION, decisionLogNoteName, recordAgendaDecisions } = await import("proposed-agenda-decision-log");
-const { generateProposedAgenda } = await import("proposed-agenda-service");
+const { AGENDA_DECISION, decisionLogNoteName, recordAgendaDecisions } = await import("dashboard/proposed-agenda/proposed-agenda-decision-log");
+const { generateProposedAgenda } = await import("dashboard/proposed-agenda/proposed-agenda-service");
 
 const DOMAIN_NAME = "Work";
 const DOMAIN_UUID = "dom-work";

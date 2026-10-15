@@ -2,9 +2,9 @@
 // could not rank keeps the tasks the similarity hash holds, that a completed ranking keeps low scores only for cited
 // tasks while an unfinished one keeps every rating, and
 // that the suggestion log is read from and appended to its headings.
-import { associationResult, projectTaskMatches } from "dashboard/project-collection-steps";
-import { suggestionLogAppends, suggestionLogFromSection } from "dashboard/project-suggestion-log";
-import { isSuggestableTaskRecord, TASK_LINK_REASONS } from "dashboard/project-task-evidence";
+import { associationResult, projectTaskMatches } from "dashboard/project-tasks/project-collection-steps";
+import { suggestionLogAppends, suggestionLogFromSection } from "dashboard/project-tasks/project-suggestion-log";
+import { isSuggestableTaskRecord, TASK_LINK_REASONS } from "dashboard/project-tasks/project-task-evidence";
 import QuarterProject from "dashboard/quarter-project";
 import { rankedTaskAssociations } from "plan-wizard/stack-rank/stack-rank-project-tasks";
 import { similarityScoresAfterRanking } from "plan-wizard/stack-rank/task-rating-cache";

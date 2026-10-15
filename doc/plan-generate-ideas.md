@@ -49,7 +49,7 @@ projects and watches them through to the end.
 Other pieces already in place:
 
 - **Saturation.** `ideasSaturated` and `IDEA_SATURATION_COUNT = 12` live in
-  `lib/dashboard/project-task-idea-ratings.js`.
+  `lib/dashboard/project-tasks/project-task-idea-ratings.js`.
 - **Active this month.** `QuarterProject.focusMonths` holds `"YYYY-MM"` keys. An empty list means every month of the
   quarter, which matches `progressEvidence`.
 - **Watching outcomes.** `DurableWorkRunner#subscribeOutcomes` reports `{ entityId, jobKey, jobType, scopeKey,
@@ -104,7 +104,7 @@ that does not share the dashboard's in-memory runner. So:
   `projectRankingRequest`. Existing callers are unchanged.
 - `DurableWorkRunner#_recordOutcome` adds `followUpKeys` (the keys `_submitFollowUps` saved) and `outcomeDetail` to
   the outcome it publishes.
-- New `lib/dashboard/idea-generation-run-plan.js`:
+- New `lib/dashboard/idea-generation/idea-generation-run-plan.js`:
   - `activeMonthProjects(projects, now)` returns the projects whose `focusMonths` is empty or includes this month.
   - `ideaGenerationTargets(storedProjects)` returns the active projects not `ideasSaturated`. Their count is the X in
     the window title.
@@ -121,7 +121,7 @@ that does not share the dashboard's in-memory runner. So:
 
 ### 2. Run coordinator and progress model (host-compatible, no UI)
 
-- New `lib/dashboard/idea-generation-run.js`, the `IdeaGenerationRun` class. It takes the durable runner, a clock,
+- New `lib/dashboard/idea-generation/idea-generation-run.js`, the `IdeaGenerationRun` class. It takes the durable runner, a clock,
   and the plan from commit 1.
   - It submits step 1, subscribes to outcomes in its scope, and tracks the jobs it is waiting for. It adds each
     outcome's `followUpKeys`, so evidence → refinement and ideas → rating are awaited.
@@ -163,7 +163,7 @@ that does not share the dashboard's in-memory runner. So:
   - `onEmbedCall` gains `ideaRunProgress:update` and `ideaRunProgress:read`.
   - `renderEmbed` branches on `renderEmbedTarget === "prompt"` with args `{ view: "ideaRunProgress", runId }`.
 - Client side:
-  - `lib/dashboard/idea-run-progress.jsx` renders the status line, the four-circle stepper, the pulsing spinner, the
+  - `lib/dashboard/idea-generation/idea-run-progress.jsx` renders the status line, the four-circle stepper, the pulsing spinner, the
     ETA, and the summary panel at step 4.
   - It has one wrapping class per stylesheet, in `styles/idea-run-progress.scss`.
   - The quota meter is a thin bar in the status line. It renders only when quota data exists.

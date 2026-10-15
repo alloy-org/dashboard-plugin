@@ -9,7 +9,7 @@ import { loadProjectProgress } from "project-progress-service";
 
 const settings = await import("constants/settings");
 await jest.unstable_mockModule("constants/settings", () => ({ ...settings, IS_DEV_ENVIRONMENT: true }));
-const { default: ProposedAgendaMessage } = await import("proposed-agenda-message");
+const { default: ProposedAgendaMessage } = await import("dashboard/proposed-agenda/proposed-agenda-message");
 const scope = resolvePlanScope({ domainName: "Work", domainUuid: "work-domain", quarter: 3, year: 2026 });
 
 // ----------------------------------------------------------------------------------------------

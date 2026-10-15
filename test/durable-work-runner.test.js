@@ -187,7 +187,7 @@ describe("DurableWorkRunner outcome follow-ups", () => {
     const app = workQueueNotesApp();
     const clockState = { now: 1_000_000 };
     const parent = { run: async () => ({ followUps: [{ desiredRevision: "c1", key: "child:p", type: "child" }], outcomeDetail: "Ranked 3",
-      revision: "p1" }), type: "parent" };
+      outcomeFacts: { rankedCount: 3 }, revision: "p1" }), type: "parent" };
     const child = { run: async ({ job }) => ({ revision: job.desiredRevision }), type: "child" };
     const { runtime } = durableRuntime({ app, clockState, handlers: [parent, child] });
     const outcomes = [];
@@ -197,8 +197,8 @@ describe("DurableWorkRunner outcome follow-ups", () => {
     await settle();
     const parentOutcome = outcomes.find(outcome => outcome.jobKey === "parent:p");
     expect(parentOutcome).toMatchObject({ followUps: [{ jobKey: "child:p", jobType: "child", status: "pending" }], outcomeDetail: "Ranked 3",
-      status: "completed" });
+      outcomeFacts: { rankedCount: 3 }, status: "completed" });
     expect(outcomes.map(outcome => outcome.jobKey)).toEqual(["parent:p", "child:p"]);
-    expect(outcomes[1]).toMatchObject({ followUps: [], outcomeDetail: null, status: "completed" });
+    expect(outcomes[1]).toMatchObject({ followUps: [], outcomeDetail: null, outcomeFacts: null, status: "completed" });
   });
 });

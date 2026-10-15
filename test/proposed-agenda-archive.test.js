@@ -9,8 +9,8 @@ import { loadCachedProposedAgenda as loadCachedProposedAgendaRecord, PROPOSED_AG
   proposedAgendaNoteNameFromDate as proposedAgendaNoteName, proposedTaskKey,
   recentProposedTaskHistory as recentProposedTaskHistoryRecord,
   storeProposedAgenda as storeProposedAgendaRecord, storeProposedAgendaWhenReady,
-  updateProposedTaskStatuses as updateProposedTaskStatusesRecord } from "proposed-agenda-archive";
-import { generateProposedAgenda } from "proposed-agenda-service";
+  updateProposedTaskStatuses as updateProposedTaskStatusesRecord } from "dashboard/proposed-agenda/proposed-agenda-archive";
+import { generateProposedAgenda } from "dashboard/proposed-agenda/proposed-agenda-service";
 import { jsonFenceContent } from "util/json-utility";
 import { setLoggingEnabled } from "util/log";
 

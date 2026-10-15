@@ -1,8 +1,8 @@
 // Exercise what a "Generate ideas" run asks the work queue for: the projects in focus this month, the ones not yet
 // saturated with well-rated ideas, and requests that run in the foreground even when the same work completed before.
-import { activeMonthProjects, ideaGenerationRunRequests, ideaGenerationTargets, RUN_CATEGORY } from "dashboard/idea-generation-run-plan";
-import { normalizedIdeaRecords } from "dashboard/project-idea-records";
-import { ratedIdeaRecords } from "dashboard/project-task-idea-ratings";
+import { activeMonthProjects, ideaGenerationRunRequests, ideaGenerationTargets, RUN_CATEGORY, RUN_IDEA_COUNT } from "dashboard/idea-generation/idea-generation-run-plan";
+import { normalizedIdeaRecords } from "dashboard/project-tasks/project-idea-records";
+import { ratedIdeaRecords } from "dashboard/project-tasks/project-task-idea-ratings";
 import { DISCOVER_DICTIONARY_TERMS_JOB_TYPE, GENERATE_PROJECT_IDEAS_JOB_TYPE, RANK_PROJECT_TASKS_JOB_TYPE,
   RATE_PROJECT_IDEAS_JOB_TYPE } from "dashboard/work-queue/jobs/project-job-requests";
 
@@ -71,6 +71,7 @@ describe("idea generation run plan", () => {
     expect(refineRest).toEqual(termRequests);
     expect(requests.ideas.map(request => [request.type, request.entityId, request.category, request.desiredRevision]))
       .toEqual([[GENERATE_PROJECT_IDEAS_JOB_TYPE, "weak", RUN_CATEGORY, "run:run-1"]]);
+    expect(requests.ideas[0].input.ideaCount).toBe(RUN_IDEA_COUNT);
     expect(requests.rate.map(request => [request.type, request.entityId, request.category]))
       .toEqual([[RATE_PROJECT_IDEAS_JOB_TYPE, "full", RUN_CATEGORY]]);
   });

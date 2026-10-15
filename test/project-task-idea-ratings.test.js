@@ -6,17 +6,17 @@
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
 import { handleTaskClick } from "dashboard/dream-task-internals";
-import { decidedIdeaRecords, IDEA_STATUSES, ideaIdFor, normalizedIdeaRecords } from "dashboard/project-idea-records";
-import { minutesSinceIdeaRecommended } from "dashboard/project-suggestion-log";
-import { readCollectedProjectTasks } from "dashboard/project-task-store";
+import { decidedIdeaRecords, IDEA_STATUSES, ideaIdFor, normalizedIdeaRecords } from "dashboard/project-tasks/project-idea-records";
+import { minutesSinceIdeaRecommended } from "dashboard/project-tasks/project-suggestion-log";
+import { readCollectedProjectTasks } from "dashboard/project-tasks/project-task-store";
 import { ideaAverageRating, ideaRatingPrompt, ideaRecommendable, ideasAwaitingRating, ideasSaturated, keptIdeaRecords,
-  rateProjectIdeas, ratedIdeaRecords } from "dashboard/project-task-idea-ratings";
-import { scheduleProposedActivity } from "dashboard/proposed-agenda-service";
+  MAXIMUM_IDEAS_PER_RATING, rateProjectIdeas, ratedIdeaRecords } from "dashboard/project-tasks/project-task-idea-ratings";
+import { scheduleProposedActivity } from "dashboard/proposed-agenda/proposed-agenda-service";
 import QuarterProject from "dashboard/quarter-project";
 import QuarterProjectRepository from "dashboard/quarter-project-repository";
-import { existingTaskForAcceptedIdea, recordSuggestedIdeaDecisions } from "dashboard/ranked-task-suggestions";
-import { rankedTasksFromResponse, suggestionQuestions } from "dashboard/suggestion-task-rank";
-import { slotRankedTasks } from "dashboard/suggestion-task-slots";
+import { existingTaskForAcceptedIdea, recordSuggestedIdeaDecisions } from "dashboard/suggestions/ranked-task-suggestions";
+import { rankedTasksFromResponse, suggestionQuestions } from "dashboard/suggestions/suggestion-task-rank";
+import { slotRankedTasks } from "dashboard/suggestions/suggestion-task-slots";
 import { createGenerateProjectIdeasHandler } from "dashboard/work-queue/jobs/generate-project-ideas";
 import { createRateProjectIdeasHandler } from "dashboard/work-queue/jobs/rate-project-ideas";
 import { ideasRefreshDue, ideasRequestIfDue } from "dashboard/work-queue/quarter-project-work-planner";
@@ -160,6 +160,25 @@ describe("rateProjectIdeas job", () => {
     expect(result).toMatchObject({ outcomeDetail: "Rated 1 idea", outcomeSubject: project.summary });
     expect(await handler.appliedRevision({ context: jobContext(app), job })).toBe(result.revision);
     expect(await handler.run({ context: jobContext(app), job, signal: null })).toEqual({ status: "superseded" });
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc One attempt rates at most MAXIMUM_IDEAS_PER_RATING ideas; when more still await a rating it asks for another
+  //   rating at its own priority, and the last batch asks for none.
+  it("asks for another rating while ideas still await one", async () => {
+    const app = maintenanceApp({ tasks: [] });
+    const ideaTexts = Array.from({ length: MAXIMUM_IDEAS_PER_RATING + 2 }, (_unused, index) => ({ taskText: `Draft outreach email ${ index + 1 }` }));
+    await storeIdeas(app, ideaTexts);
+    const requestAnswers = jest.fn(async ({ questions }) => ({ answers: Object.fromEntries(Object.keys(questions).map(name => [name, answer(8)])) }));
+    const handler = createRateProjectIdeasHandler({ requestAnswers, taskScorer: async () => "jev" });
+    const job = { category: "foregroundData", input: { ...SCOPE_INPUT, projectUuid: PROJECT_UUID } };
+    const first = await handler.run({ context: jobContext(app), job, signal: null });
+    const nextRating = first.followUps.find(followUp => followUp.type === "rateProjectIdeas");
+    expect(nextRating).toMatchObject({ category: "foregroundData", entityId: PROJECT_UUID });
+    expect(nextRating.desiredRevision).not.toBe(first.revision);
+    const second = await handler.run({ context: jobContext(app), job, signal: null });
+    expect(second.outcomeDetail).toBe("Rated 2 ideas");
+    expect(second.followUps.filter(followUp => followUp.type === "rateProjectIdeas")).toEqual([]);
   });
 
   // ----------------------------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-import "styles/proposed-agenda-popover.scss";
+import "dashboard/styles/proposed-agenda-popover.scss";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Anchor a keyboard-accessible popout to its trigger, keeping it inside the viewport.

@@ -5,6 +5,84 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-15 — Group dashboard modules into subdirectories
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- Moved 41 modules out of `lib/dashboard/` (contents unchanged apart from import specifiers):
+  - `lib/dashboard/idea-generation/` — `idea-generation-allowance.js`, `idea-generation-run-plan.js`, `idea-generation-run.js`, `idea-run-progress-view.js`, `idea-run-progress.jsx`.
+  - `lib/dashboard/project-tasks/` — `project-task-store.js`, `project-task-store-markdown.js`, `project-task-ideas.js`, `project-task-idea-ratings.js`, `project-task-evidence.js`, `project-idea-records.js`, `project-collection-steps.js`, `project-candidate-tasks.js`, `project-suggestion-log.js`, `task-duration-estimates.js`, `task-duration-service.js`.
+  - `lib/dashboard/suggestions/` — `ranked-task-suggestions.js`, `suggestion-salience.js`, `suggestion-staleness.js`, `suggestion-task-rank.js`, `suggestion-task-slots.js`, `day-project-candidates.js`, `day-ranking-store.js`, `calendar-suggestion-explanation.js`.
+  - `lib/dashboard/proposed-agenda/` — every `proposed-agenda*.js(x)` module, `meeting-preparation.js`, `meeting-preparation-ideas.js`.
+- Import specifiers across `lib/`, `test/`, and `dev/` (including `jest.unstable_mockModule` paths) now name the moved modules as `dashboard/<group>/<name>`. Moved files name the base-directory modules and stylesheets they use as `dashboard/<name>`, since esbuild resolves bare imports from the importer's own directory first.
+- `doc/plan-generate-ideas.md`, `doc/plan-dashboard-work-queue.md` — Paths updated.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes (166 suites, 1455 tests); `npm run build` passes.
+**Task:** Move new and recently modified dashboard modules into subdirectories of related files.
+
+---
+
+## 2026-10-15 — Progress messages during a Generate ideas run
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/idea-generation-run.js` — Snapshots carry `progress`: the new terms discovery added, the terms whose evidence the run collects (with how many were refined so far), the projects ideas are generated for, and store counts re-read after each ranking, ideas, or rating outcome (`ideaRunStoreCounts`: new ideas rated and recommendable, and eligible existing tasks and ideas). Reads are coalesced to one at a time.
+- `lib/dashboard/idea-run-progress-view.js` — `ideaRunProgressLines` writes one sentence per subject with counts and quoted examples.
+- `lib/idea-run-progress-embed.js`, `lib/dashboard/idea-run-progress.jsx`, `lib/dashboard/styles/idea-run-progress.scss` — Show those sentences under the step circles.
+- `lib/dashboard/work-queue/durable-work-runner.js` — Outcomes carry a handler's `outcomeFacts` to listeners (not to the history store).
+- `lib/dashboard/work-queue/jobs/discover-dictionary-terms.js`, `refine-dictionary-term.js` — Report added and refined terms, and the refined term, as `outcomeFacts`; discovery also gains an `outcomeDetail`.
+- `lib/dashboard/work-queue/jobs/rate-project-ideas.js` — When ideas still await a rating after an attempt (each rates at most 8), queue another rating at the job's own priority.
+- `lib/dashboard/project-task-idea-ratings.js` — `ideaRated`.
+- Tests: `test/idea-generation-run.test.js`, `test/idea-run-progress.test.js`, `test/durable-work-runner.test.js`, `test/project-task-idea-ratings.test.js`, `test/dictionary-term-refinement.test.js`.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes (166 suites, 1455 tests); `npm run build` passes.
+**Task:** Show terms being defined and refined, projects getting ideas, ideas meeting the bar after rating, and eligible suggestions while a run works.
+
+---
+
+## 2026-10-15 — Restore a project task store's missing root heading
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/project-task-store.js` — `openProjectTaskStore` appends an "Active projects" or "Past projects" root the existing note lacks (`_contentWithProjectRoots`, via `insertNoteContent` at the end), so writing a retired project no longer fails with `Project task store is missing its "Past projects" heading` on every pass.
+- `test/project-task-store.test.js` — The store mock gains `insertNoteContent`; cover restoring the root and writing beneath it.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes; `npm run build` passes. How the production note lost the heading is not yet known.
+**Task:** Look into the "missing its Past projects heading" errors in the production log.
+
+---
+
+## 2026-10-15 — Read Agent Pro's bare Decisions replies; ask a Generate ideas run for ten ideas
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/plan-wizard/stack-rank/agent-pro-jev-requester.js` — Agent Pro answered Decisions batches with a bare `{ questionName: value }` map (at the top level or under `answers`), which was rejected as "carried no answers". Each bare value is now read by its question's type: a 1-based score within the rubric, a choice key, or a predicate probability. Values outside the question are left unanswered.
+- `lib/dashboard/project-task-ideas.js` — `generateProjectTaskIdeas` takes `ideaCount` (default `DEFAULT_IDEAS_PER_PROJECT`, 3) for the prompt and the kept ideas.
+- `lib/dashboard/project-collection-steps.js`, `lib/dashboard/work-queue/jobs/generate-project-ideas.js`, `project-job-requests.js`, `project-job-inputs.js` — An ideas job input may carry `ideaCount`, validated as a positive integer and passed to the generator.
+- `lib/dashboard/idea-generation-run-plan.js` — `RUN_IDEA_COUNT = 10` on every run's ideas request.
+- Tests: `test/decisions-endpoint.test.js`, `test/project-idea-records.test.js`, `test/idea-generation-run-plan.test.js`.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes (166 suites, 1450 tests); `npm run build` passes.
+**Task:** A production Generate ideas run finished in 30 seconds with 3 ideas per project and every rating failed.
+
+---
+
+## 2026-10-15 — Dev prompt renders embed inputs
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/util/browser-dev-app.js` — The dev `app.prompt` draws an `embed` input as a full-width frame holding the page the plugin's `renderEmbed` would return for its value (the "Generate ideas" progress page), with a `window.callAmplenotePlugin` bridge back to the dev app. Adds the `ideaRunProgressUpdate` and `ideaRunProgressRead` relay actions.
+- `test/browser-dev-app-prompt.test.js` — Cover the embed frame and its relay.
+
+**Validation:** Full Jest suite passes (166 suites, 1448 tests); `npm run build` passes.
+**Task:** Let the Generate ideas progress window be tested locally instead of showing "[object Object]" in a text field.
+
+---
+
 ## 2026-10-15 — "Generate ideas" run from the Quarterly Planning widget
 
 **Model:** Claude Opus 5.5

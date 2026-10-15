@@ -2,12 +2,12 @@
 // day's ranking, that a meeting nothing pertains to is brainstormed once and its ideas reused, that a large pool is
 // narrowed by Jev salience, and that the agenda places preparation in the hours before each meeting.
 import { jest } from "@jest/globals";
-import { meetingMatchTerms, meetingPreparationGroups, meetingsFromCalendarEvents } from "dashboard/meeting-preparation";
+import { meetingMatchTerms, meetingPreparationGroups, meetingsFromCalendarEvents } from "dashboard/proposed-agenda/meeting-preparation";
 import QuarterProject from "dashboard/quarter-project";
 import QuarterProjectRepository from "dashboard/quarter-project-repository";
-import { prepareDayRanking } from "dashboard/ranked-task-suggestions";
-import { SALIENCE_POOL_LIMIT, salientCandidateGroups } from "dashboard/suggestion-salience";
-import { slotRankedTasks } from "dashboard/suggestion-task-slots";
+import { prepareDayRanking } from "dashboard/suggestions/ranked-task-suggestions";
+import { SALIENCE_POOL_LIMIT, salientCandidateGroups } from "dashboard/suggestions/suggestion-salience";
+import { slotRankedTasks } from "dashboard/suggestions/suggestion-task-slots";
 import { maintenanceApp, PROJECT_UUID, SCOPE_INPUT } from "./project-maintenance-test-app";
 
 const DOMAIN = { domainName: SCOPE_INPUT.domainName, domainUuid: SCOPE_INPUT.domainUuid };

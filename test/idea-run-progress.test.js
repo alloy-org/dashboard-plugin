@@ -1,6 +1,6 @@
 // Exercise the "Generate ideas" progress window's host side: the words it shows for a snapshot, the relay that carries
 // snapshots from the Dashboard to the window, and the page an Amplenote prompt renders for a run.
-import { etaLabel, ideaRunProgressView, ideaRunSummaryLines } from "dashboard/idea-run-progress-view";
+import { etaLabel, ideaRunProgressLines, ideaRunProgressView, ideaRunSummaryLines } from "dashboard/idea-generation/idea-run-progress-view";
 import { buildIdeaRunProgressHTML, ideaRunProgressRunId } from "idea-run-progress-embed";
 import { readIdeaRunProgress, updateIdeaRunProgress } from "idea-run-progress-relay";
 
@@ -27,6 +27,28 @@ describe("idea run progress", () => {
     expect(etaLabel({ etaSeconds: 30, finished: false })).toBe("Less than a minute left");
     expect(etaLabel({ etaSeconds: 0, finished: false })).toBe("Finishing up…");
     expect(etaLabel({ etaSeconds: null, finished: true })).toBe("Done");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc While refining, discovery says it is looking; later each subject the run reached gets a sentence with a
+  //   count and quoted examples, and the eligible suggestions appear once rating starts.
+  it("writes progress messages as the run reaches each subject", () => {
+    const refiningSteps = [{ key: "refine", state: "active" }, { key: "ideas", state: "waiting" }, { key: "rate", state: "waiting" },
+      { key: "summarize", state: "waiting" }];
+    const progress = { foundTerms: null, ideaProjects: { count: 4, examples: ["Launch", "Hiring", "Docs"] },
+      refiningTerms: { count: 2, examples: ["Roadmap", "Jots"], refinedCount: 0 }, storeCounts: { eligibleIdeaCount: 0,
+        eligibleTaskCount: 5, newEligibleIdeaCount: 0, newIdeaCount: 0, newRatedIdeaCount: 0 } };
+    expect(ideaRunProgressLines(progress, refiningSteps)).toEqual(["Looking through your projects for new terms to define…",
+      'Better defining 2 terms, such as "Roadmap" and "Jots".', 'Generating ideas for 4 projects: "Launch", "Hiring", "Docs" and 1 more.']);
+
+    const ratingSteps = [{ key: "refine", state: "done" }, { key: "ideas", state: "done" }, { key: "rate", state: "active" },
+      { key: "summarize", state: "waiting" }];
+    const ratedProgress = { ...progress, foundTerms: { count: 1, examples: ["GTD"] }, refiningTerms: { ...progress.refiningTerms, refinedCount: 1 },
+      storeCounts: { eligibleIdeaCount: 7, eligibleTaskCount: 5, newEligibleIdeaCount: 6, newIdeaCount: 10, newRatedIdeaCount: 8 } };
+    expect(ideaRunProgressLines(ratedProgress, ratingSteps)).toEqual(['Defining 1 new term, such as "GTD".',
+      'Better defining 2 terms, such as "Roadmap" and "Jots"; 1 refined so far.', 'Generating ideas for 4 projects: "Launch", "Hiring", "Docs" and 1 more.',
+      "6 of 8 rated new ideas met the bar (actionability 7+, relevance 6+); 2 still awaiting a rating.",
+      "12 suggestions eligible to recommend: 5 of your tasks and 7 generated ideas."]);
   });
 
   // ----------------------------------------------------------------------------------------------

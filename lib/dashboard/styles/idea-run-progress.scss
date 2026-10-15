@@ -86,6 +86,17 @@
     width: 10px;
   }
 
+  .progress-detail-list {
+    color: $color-text-muted;
+    font-size: $smaller-font-size;
+    margin: 0;
+    padding-left: 18px;
+  }
+
+  .progress-detail-line {
+    margin: 2px 0;
+  }
+
   .progress-summary-list {
     margin: 0;
     padding-left: 18px;

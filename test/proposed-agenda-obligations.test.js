@@ -1,6 +1,6 @@
 // Tests that Proposed Agenda only takes the Agenda widget's obligations broadcast for the day it is planning.
 import { jest } from "@jest/globals";
-import { requestTodayObligations, TODAY_OBLIGATIONS_EVENT, TODAY_OBLIGATIONS_REQUEST_EVENT } from "proposed-agenda-obligations";
+import { requestTodayObligations, TODAY_OBLIGATIONS_EVENT, TODAY_OBLIGATIONS_REQUEST_EVENT } from "dashboard/proposed-agenda/proposed-agenda-obligations";
 
 const PLANNED_DAY = new Date(2026, 9, 5);
 const AGENDA_TODAY_KEY = "2026-10-04";

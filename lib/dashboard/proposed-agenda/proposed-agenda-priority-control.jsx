@@ -1,7 +1,7 @@
 // Present agenda priorities with explanations and an optional custom day description.
-import ProposedAgendaPopover from "proposed-agenda-popover";
+import ProposedAgendaPopover from "dashboard/proposed-agenda/proposed-agenda-popover";
 import { CUSTOM_PRIORITY_PREFIX, MAX_CUSTOM_PRIORITY_LENGTH, priorityOptionFromKey,
-  PROPOSED_AGENDA_PRIORITY_OPTIONS } from "proposed-agenda-priority";
+  PROPOSED_AGENDA_PRIORITY_OPTIONS } from "dashboard/proposed-agenda/proposed-agenda-priority";
 import { useCallback, useRef, useState } from "react";
 import { dateFromDateInput } from "util/date-utility";
 

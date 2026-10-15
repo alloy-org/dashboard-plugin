@@ -1,6 +1,8 @@
 // Exercise the "Generate ideas" run coordinator against a fake durable runner: steps that end when their jobs and
 // follow-ups settle, a step that ends when its budget runs out, an estimate that only shrinks, and the summary.
-import IdeaGenerationRun, { ideaGenerationRunSummary, ideaGenerationRunTitle, STEP_BUDGET_SECONDS } from "dashboard/idea-generation-run";
+import IdeaGenerationRun, { ideaGenerationRunSummary, ideaGenerationRunTitle, ideaRunStoreCounts,
+  STEP_BUDGET_SECONDS } from "dashboard/idea-generation/idea-generation-run";
+import { ideaComparisonKey } from "dashboard/project-tasks/project-idea-records";
 import { GENERATE_PROJECT_IDEAS_JOB_TYPE, RANK_PROJECT_TASKS_JOB_TYPE, RATE_PROJECT_IDEAS_JOB_TYPE,
   REFINE_DICTIONARY_TERM_JOB_TYPE } from "dashboard/work-queue/jobs/project-job-requests";
 
@@ -103,6 +105,59 @@ describe("IdeaGenerationRun", () => {
     expect(snapshot.summary.failures).toEqual([]);
     expect(snapshot.summary.projects[0]).toMatchObject({ ideasDetail: "Generated 5 ideas, kept 4", name: "Launch", relatedTasksAfter: 1,
       relatedTasksBefore: 0, targeted: true });
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc The snapshot's progress names the terms discovery found and the terms being refined with how many were
+  //   rewritten, the projects ideas are generated for, and, recounted from the store after each ideas or rating
+  //   outcome, how many new ideas met the bar and how many suggestions are eligible.
+  it("reports what it has found as it runs", async () => {
+    const { durable, publish } = fakeDurable();
+    const storeState = { projects: [] };
+    const activeProjects = [{ summary: "Launch", uuid: "launch" }];
+    const plan = { activeProjects, requests: { ideas: [{ key: "generateProjectIdeas:launch", type: GENERATE_PROJECT_IDEAS_JOB_TYPE }], rate: [],
+      refine: [{ key: "discoverDictionaryTerms:2026-Q4", type: "discoverDictionaryTerms" },
+        { input: { term: "Roadmap" }, key: "collectTermEvidence:2026:roadmap", type: "collectTermEvidence" },
+        { input: { term: "Jots" }, key: "collectTermEvidence:2026:jots", type: "collectTermEvidence" }] },
+    storedProjects: [], targets: activeProjects };
+    const run = new IdeaGenerationRun({ clock: () => 1000, durable, plan, projectReader: async () => storeState.projects, runId: "run-1",
+      scopeKey: SCOPE, setTimer: () => 1 });
+    await run.start();
+    expect(run.snapshot().progress).toMatchObject({ foundTerms: null, ideaProjects: { count: 1, examples: ["Launch"] },
+      refiningTerms: { count: 2, examples: ["Roadmap", "Jots"], refinedCount: 0 } });
+
+    publish({ jobKey: "discoverDictionaryTerms:2026-Q4", jobType: "discoverDictionaryTerms",
+      outcomeFacts: { addedTerms: ["Ample Agent Pro", "GTD"], refinedTerms: [] } });
+    publish({ followUps: [{ jobKey: "refineDictionaryTerm:2026:roadmap", jobType: REFINE_DICTIONARY_TERM_JOB_TYPE, status: "pending" }],
+      jobKey: "collectTermEvidence:2026:roadmap", jobType: "collectTermEvidence" });
+    publish({ jobKey: "collectTermEvidence:2026:jots", jobType: "collectTermEvidence" });
+    publish({ jobKey: "refineDictionaryTerm:2026:roadmap", jobType: REFINE_DICTIONARY_TERM_JOB_TYPE,
+      outcomeFacts: { outcome: "refined", term: "Roadmap" } });
+    await settle();
+    expect(run.snapshot().progress).toMatchObject({ foundTerms: { count: 2, examples: ["Ample Agent Pro", "GTD"] },
+      refiningTerms: { refinedCount: 1 } });
+
+    const rated = (taskText, actionability, relevance) => ({ generatedAt: "2026-10-15T19:30:00.000Z", status: "open", taskText,
+      rating: { actionability, ratedTextKey: ideaComparisonKey(taskText), relevance } });
+    storeState.projects = [{ completedTasks: [], relatedTaskRecords: [{ taskUuid: "t1" }, { matchScore: 2, taskUuid: "t2" }],
+      suggestedTasks: [rated("Call the lender", 8, 9), rated("Think about lakes", 3, 8), { generatedAt: "2026-10-15T19:30:00.000Z",
+        status: "open", taskText: "Book a viewing" }], uuid: "launch" }];
+    publish({ followUps: [{ jobKey: "rateProjectIdeas:launch", jobType: RATE_PROJECT_IDEAS_JOB_TYPE, status: "pending" }],
+      jobKey: "generateProjectIdeas:launch", jobType: GENERATE_PROJECT_IDEAS_JOB_TYPE });
+    await settle();
+    await settle();
+    expect(run.snapshot().progress.storeCounts).toEqual({ eligibleIdeaCount: 1, eligibleTaskCount: 1, newEligibleIdeaCount: 1, newIdeaCount: 3,
+      newRatedIdeaCount: 2 });
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Ideas generated before the run began are not new, and projects outside the run are not counted.
+  it("counts only the run's new ideas and its active projects", () => {
+    const projects = [{ suggestedTasks: [{ generatedAt: "2026-10-01T00:00:00.000Z", taskText: "Old" },
+      { generatedAt: "2026-10-15T00:00:00.000Z", taskText: "New" }], uuid: "launch" },
+    { relatedTaskRecords: [{ taskUuid: "t9" }], suggestedTasks: [{ generatedAt: "2026-10-15T00:00:00.000Z", taskText: "Other" }], uuid: "other" }];
+    const counts = ideaRunStoreCounts(projects, { activeProjects: [{ uuid: "launch" }], since: "2026-10-10T00:00:00.000Z" });
+    expect(counts).toEqual({ eligibleIdeaCount: 0, eligibleTaskCount: 0, newEligibleIdeaCount: 0, newIdeaCount: 1, newRatedIdeaCount: 0 });
   });
 
   // ----------------------------------------------------------------------------------------------

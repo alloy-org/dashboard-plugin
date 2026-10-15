@@ -1,34 +1,34 @@
 // Render the proposed agenda with date navigation, priority choices, and scheduling actions.
-import { calendarSuggestionExplanation } from "calendar-suggestion-explanation";
+import { calendarSuggestionExplanation } from "dashboard/suggestions/calendar-suggestion-explanation";
 import { PROVIDER_DEFAULT_MODEL } from "constants/llm-providers";
 import { configuredProviderEms, SETTING_KEYS } from "constants/settings";
-import { useWidgetLoadedEvent } from "dashboard-load-tracking";
+import { useWidgetLoadedEvent } from "dashboard/dashboard-load-tracking";
 import { useDashboardWork } from "dashboard/work-queue/dashboard-work-context";
 import { preparedDayRankingAwaiter } from "dashboard/work-queue/prepared-day-ranking";
-import LlmProviderSelector from "llm-provider-selector";
-import NoConfigUpsell from "no-config-upsell";
+import LlmProviderSelector from "dashboard/llm-provider-selector";
+import NoConfigUpsell from "dashboard/no-config-upsell";
 import { pluginSettings, updatePluginSetting } from "plugin-data";
-import { PROPOSED_TASK_STATUS, saveAgendaReplacement } from "proposed-agenda-archive";
-import ProposedAgendaDateControl from "proposed-agenda-date-control";
+import { PROPOSED_TASK_STATUS, saveAgendaReplacement } from "dashboard/proposed-agenda/proposed-agenda-archive";
+import ProposedAgendaDateControl from "dashboard/proposed-agenda/proposed-agenda-date-control";
 import { activityKey, approveAllProposed, mergedAgendaRows, pendingCount, recordProposedRowStatuses,
-  runProposedAgendaGeneration, scheduleProposedRow } from "proposed-agenda-llm-generator";
-import ProposedAgendaMessage from "proposed-agenda-message";
-import { populateAgendaNote, prepareAgendaNote } from "proposed-agenda-note";
-import { DEFAULT_PRIORITY_KEY } from "proposed-agenda-priority";
-import ProposedAgendaPriorityControl from "proposed-agenda-priority-control";
-import { agendaRowsGroupedByDay } from "proposed-agenda-range";
-import { resolveProposedAgendaDate } from "proposed-agenda-service";
+  runProposedAgendaGeneration, scheduleProposedRow } from "dashboard/proposed-agenda/proposed-agenda-llm-generator";
+import ProposedAgendaMessage from "dashboard/proposed-agenda/proposed-agenda-message";
+import { populateAgendaNote, prepareAgendaNote } from "dashboard/proposed-agenda/proposed-agenda-note";
+import { DEFAULT_PRIORITY_KEY } from "dashboard/proposed-agenda/proposed-agenda-priority";
+import ProposedAgendaPriorityControl from "dashboard/proposed-agenda/proposed-agenda-priority-control";
+import { agendaRowsGroupedByDay } from "dashboard/proposed-agenda/proposed-agenda-range";
+import { resolveProposedAgendaDate } from "dashboard/proposed-agenda/proposed-agenda-service";
 import { isAmpleAgentProInstalled } from "providers/ai-provider-settings";
-import { refillAndRecordSuggestion } from "ranked-task-suggestions";
+import { refillAndRecordSuggestion } from "dashboard/suggestions/ranked-task-suggestions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import "styles/dashboard-tippy.scss";
-import "styles/proposed-agenda.scss";
+import "dashboard/styles/dashboard-tippy.scss";
+import "dashboard/styles/proposed-agenda.scss";
 import tippy from "tippy.js";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import { calendarEventDateFromValue } from "util/calendar-utility";
 import { dateFromDateInput, dateKeyFromDateInput, formatClockLabel } from "util/date-utility";
 import { snapDashboardAction } from "util/plausible";
-import WidgetWrapper from "widget-wrapper";
+import WidgetWrapper from "dashboard/widget-wrapper";
 
 const WIDGET_ID = "proposed-agenda";
 // How long the first generation waits for the Dashboard's calendar events before planning the day without them.

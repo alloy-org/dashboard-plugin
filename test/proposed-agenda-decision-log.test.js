@@ -1,7 +1,7 @@
 import { jest } from "@jest/globals";
-import { PROPOSED_TASK_STATUS, storeProposedAgenda } from "proposed-agenda-archive";
-import { AGENDA_DECISION, agendaDecisionsFromRows, decisionLogNoteName, recentAgendaDecisionsMarkdown, recordAgendaDecisions } from "proposed-agenda-decision-log";
-import { recordProposedRowStatuses } from "proposed-agenda-llm-generator";
+import { PROPOSED_TASK_STATUS, storeProposedAgenda } from "dashboard/proposed-agenda/proposed-agenda-archive";
+import { AGENDA_DECISION, agendaDecisionsFromRows, decisionLogNoteName, recentAgendaDecisionsMarkdown, recordAgendaDecisions } from "dashboard/proposed-agenda/proposed-agenda-decision-log";
+import { recordProposedRowStatuses } from "dashboard/proposed-agenda/proposed-agenda-llm-generator";
 import { setLoggingEnabled } from "util/log";
 
 const DOMAIN_NAME = "Work";

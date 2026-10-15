@@ -20,7 +20,7 @@ import { taskMatchScoresByProject, taskRatingKey } from "plan-wizard/stack-rank/
 import { dictionaryEntriesFromContent, examinedProjectSummaries, mergedDictionaryContent,
   openUserTermsDictionary } from "plan-wizard/stack-rank/user-terms-dictionary";
 import { pluginSettings, setPluginData } from "plugin-data";
-import { initialProjectTaskStoreMarkdown, projectSectionHeadingText } from "project-task-store-markdown";
+import { initialProjectTaskStoreMarkdown, projectSectionHeadingText } from "dashboard/project-tasks/project-task-store-markdown";
 import { AMPLE_AGENT_PRO_UUID } from "providers/ai-provider-settings";
 import { DecisionsEndpoint, forgetJevFailure, jevKeyRoute } from "providers/decisions-endpoint";
 import QuarterProject from "quarter-project";

@@ -11,7 +11,7 @@ import { mockFetchAiProvider } from "./mock-fetch-ai-provider.js";
 const llmMock = jest.fn();
 await mockFetchAiProvider({ llmPromptWithPluginFallback: (...args) => llmMock(...args) });
 const { analyzeDreamTasks } = await import("dream-task-service");
-const { generateProposedAgenda } = await import("proposed-agenda-service");
+const { generateProposedAgenda } = await import("dashboard/proposed-agenda/proposed-agenda-service");
 
 const TODAY_NOTE = `Dashboard proposed tasks for ${ new Date().toLocaleString([], { day: "numeric", month: "long", year: "numeric" }) }`;
 

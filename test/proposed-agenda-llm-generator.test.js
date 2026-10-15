@@ -8,19 +8,19 @@ import { jest } from "@jest/globals";
 const generateProposedAgendaMock = jest.fn();
 const requestTodayObligationsMock = jest.fn();
 
-await jest.unstable_mockModule("proposed-agenda-service", async () => ({
+await jest.unstable_mockModule("dashboard/proposed-agenda/proposed-agenda-service", async () => ({
   approveProposedAgenda: jest.fn(),
   generateProposedAgenda: (...args) => generateProposedAgendaMock(...args),
   resolveProposedAgendaDate: () => new Date(2026, 5, 24, 0, 0, 0),
   scheduleProposedActivity: jest.fn(),
 }));
 
-await jest.unstable_mockModule("proposed-agenda-obligations", async () => ({
+await jest.unstable_mockModule("dashboard/proposed-agenda/proposed-agenda-obligations", async () => ({
   obligationsFromTasksAndEvents: () => [],
   requestTodayObligations: (...args) => requestTodayObligationsMock(...args),
 }));
 
-const { runProposedAgendaGeneration } = await import("proposed-agenda-llm-generator");
+const { runProposedAgendaGeneration } = await import("dashboard/proposed-agenda/proposed-agenda-llm-generator");
 
 // ----------------------------------------------------------------------------------------------
 // @desc Build the setter bundle runProposedAgendaGeneration expects, using jest spies for assertions.
