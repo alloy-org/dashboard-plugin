@@ -1,6 +1,7 @@
 // Verify rated ideas end to end: the rating questions and their 1–10 reading, which ideas await a rating and when a
 // text change invalidates one, the queued rating job writing ratings without restamping generation, ideas competing as
-// `idea:` candidates beside existing tasks in ranking and slotting, and the user's decisions on a shown idea, including
+// `idea:` candidates beside existing tasks in ranking and slotting, a project saturated with well-rated ideas that stops
+// generating and drops the ideas it no longer keeps, and the user's decisions on a shown idea, including
 // an acceptance retried from another surface that reuses the task the idea already became.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
@@ -8,15 +9,17 @@ import { handleTaskClick } from "dashboard/dream-task-internals";
 import { decidedIdeaRecords, IDEA_STATUSES, ideaIdFor, normalizedIdeaRecords } from "dashboard/project-idea-records";
 import { minutesSinceIdeaRecommended } from "dashboard/project-suggestion-log";
 import { readCollectedProjectTasks } from "dashboard/project-task-store";
-import { ideaRatingPrompt, ideaRecommendable, ideasAwaitingRating, rateProjectIdeas,
-  ratedIdeaRecords } from "dashboard/project-task-idea-ratings";
+import { ideaAverageRating, ideaRatingPrompt, ideaRecommendable, ideasAwaitingRating, ideasSaturated, keptIdeaRecords,
+  rateProjectIdeas, ratedIdeaRecords } from "dashboard/project-task-idea-ratings";
 import { scheduleProposedActivity } from "dashboard/proposed-agenda-service";
 import QuarterProject from "dashboard/quarter-project";
 import QuarterProjectRepository from "dashboard/quarter-project-repository";
 import { existingTaskForAcceptedIdea, recordSuggestedIdeaDecisions } from "dashboard/ranked-task-suggestions";
 import { rankedTasksFromResponse, suggestionQuestions } from "dashboard/suggestion-task-rank";
 import { slotRankedTasks } from "dashboard/suggestion-task-slots";
+import { createGenerateProjectIdeasHandler } from "dashboard/work-queue/jobs/generate-project-ideas";
 import { createRateProjectIdeasHandler } from "dashboard/work-queue/jobs/rate-project-ideas";
+import { ideasRefreshDue, ideasRequestIfDue } from "dashboard/work-queue/quarter-project-work-planner";
 import { generativeScoreRequester } from "plan-wizard/stack-rank/generative-task-scores";
 import { setPluginData } from "plugin-data";
 import { DECISIONS_PROVIDER_GENERATIVE, DecisionsEndpoint, decisionsRoute } from "providers/decisions-endpoint";
@@ -172,6 +175,69 @@ describe("rateProjectIdeas job", () => {
       taskScorer: async () => "jev" });
     await expect(failing.run({ context: jobContext(app), job, signal: null })).rejects.toThrow("Jev down");
     expect((await storedProject(app)).suggestedTasks[0].rating).toBeUndefined();
+  });
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc A dozen open ideas averaging 8, enough to saturate a project.
+// @returns {Array<object>} Idea records.
+function wellRatedIdeas() {
+  const ideaNumbers = Array.from({ length: 12 }, (_, index) => index + 1);
+  const ideas = ideaNumbers.map(ideaNumber => ratedIdea(`Well rated idea ${ ideaNumber }`));
+  return ideas;
+}
+
+describe("idea saturation", () => {
+  // ----------------------------------------------------------------------------------------------
+  // @desc The average reads whichever ratings were scored; a project counts as saturated only once a dozen open ideas
+  //   reach the keeping average, and it then drops low-rated and completed ideas while keeping unrated ones.
+  it("averages scored ratings and keeps only well-rated, unfinished ideas", () => {
+    expect(ideaAverageRating(ratedIdea("Half answered", { actionability: 7, relevance: null }))).toBe(7);
+    expect(ideaAverageRating(ratedIdea("Mixed", { actionability: 4, relevance: 7 }))).toBe(5.5);
+    expect(ideaAverageRating({ ...ratedIdea("Reworded"), taskText: "Reworded since" })).toBeNull();
+    const ideas = wellRatedIdeas();
+    expect(ideasSaturated(ideas.slice(1))).toBe(false);
+    expect(ideasSaturated(ideas)).toBe(true);
+    const lowRated = ratedIdea("Low rated", { actionability: 4, relevance: 5 });
+    const done = ratedIdea("Ship the picker");
+    const [unrated, accepted] = normalizedIdeaRecords([{ taskText: "Not yet rated" }, { acceptedTaskUuid: "finished-task",
+      status: IDEA_STATUSES.accepted, taskText: "Accepted and done" }], { projectUuid: PROJECT_UUID });
+    const completedTasks = [{ taskText: "Ship the picker!", taskUuid: "other-task" }, { taskUuid: "finished-task" }];
+    const kept = keptIdeaRecords([...ideas, lowRated, done, unrated, accepted], { completedTasks });
+    expect(kept).toEqual([...ideas, unrated]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc The planner asks a saturated project for no new ideas, and for an ideas pass only while it holds ideas to
+  //   drop, naming no revision so the pass runs even when the project's inputs are unchanged.
+  it("stops requesting ideas for a saturated project except to drop ideas", () => {
+    const project = new QuarterProject({ summary: "Launch dashboard", uuid: PROJECT_UUID });
+    project.setSuggestedTasks(wellRatedIdeas());
+    expect(ideasRefreshDue(project, NOW)).toBe(false);
+    project.setSuggestedTasks([...project.suggestedTasks, ratedIdea("Low rated", { actionability: 3, relevance: 4 })]);
+    expect(ideasRefreshDue(project, NOW)).toBe(true);
+    expect(ideasRequestIfDue(SCOPE_INPUT, project, NOW)).toMatchObject({ desiredRevision: null, type: "generateProjectIdeas" });
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc An ideas job for a saturated project never asks the provider: it drops the low-rated idea and asks for the
+  //   unrated one to be rated.
+  it("prunes instead of generating once the project is saturated", async () => {
+    const app = maintenanceApp({ tasks: [] });
+    const unratedText = "Profile the widget grid";
+    await storeIdeas(app, [...wellRatedIdeas(), ratedIdea("Low rated", { actionability: 4, relevance: 5 }), { taskText: unratedText }]);
+    const ideaGenerator = jest.fn();
+    const handler = createGenerateProjectIdeasHandler({ ideaGenerator, taskScorer: async () => "jev" });
+    const job = { attempt: 1, category: "maintenance", desiredRevision: null, input: { ...SCOPE_INPUT, projectUuid: PROJECT_UUID } };
+    const result = await handler.run({ context: jobContext(app), job, signal: null });
+    expect(ideaGenerator).not.toHaveBeenCalled();
+    expect(result.outcomeDetail).toBe("Skipped generation: enough ideas rated 6+; removed 1 idea");
+    expect(result.followUps).toEqual([expect.objectContaining({ type: "rateProjectIdeas" })]);
+    const project = await storedProject(app);
+    const storedTexts = project.suggestedTasks.map(idea => idea.taskText);
+    expect(storedTexts).toHaveLength(13);
+    expect(storedTexts).not.toContain("Low rated");
+    expect(storedTexts).toContain(unratedText);
   });
 });
 

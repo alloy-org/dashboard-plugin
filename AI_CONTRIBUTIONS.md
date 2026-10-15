@@ -5,6 +5,23 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-14 — Stop generating ideas for projects saturated with well-rated ideas
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/project-task-idea-ratings.js` — Add `IDEA_SATURATION_COUNT` (12) and `IDEA_KEEPING_AVERAGE_MINIMUM` (6), `ideaAverageRating` (mean of whichever of actionability, relevance, similarity were scored), `ideasSaturated`, and `keptIdeaRecords`, which drops open ideas rated below the average or matching a completed task, and accepted ideas whose task was completed.
+- `lib/dashboard/work-queue/quarter-project-work-planner.js` — `ideasRefreshDue` stops requesting ideas for a saturated project unless it holds ideas to drop; that request names no revision so it always runs.
+- `lib/dashboard/work-queue/jobs/generate-project-ideas.js` — A saturated project's attempt skips the provider, drops the ideas it no longer keeps, and requests ratings for any unrated ones.
+- `lib/dashboard/work-queue/jobs/rate-project-ideas.js` — After writing ratings, a project left saturated drops its low-rated and completed ideas in the same write.
+- `test/project-task-idea-ratings.test.js` — Verify averaging, saturation, pruning, planner requests, and the saturated ideas job.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes; production build and the 8 production bundle smoke checks pass.
+**Task:** Stop the work queue from filling with generateProjectIdeas jobs for projects that already hold plenty of good ideas.
+**Prompt summary:** Once a project has 10–15 ideas averaging 6+ across their scored ratings, stop generating, ensure every pending idea is rated, and remove completed or below-6 ideas.
+
+---
+
 ## 2026-10-14 — Cap the day ranking's wait for duration estimates at 5000ms
 
 **Model:** Claude Opus 5.5
