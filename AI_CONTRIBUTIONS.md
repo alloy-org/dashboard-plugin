@@ -223,6 +223,22 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-14 — Time widgetMount outcomes through to rendered content
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/widget-mount-coordinator.js` — `reportContentReady` records a `contentReady` diagnostics event for the widget's `widgetMount` job, timed from admission to content, with how long it waited for its turn and took to commit; a mount job's completion now names what released its permit.
+- `lib/dashboard/work-queue/dashboard-queue-inspector-model.js` — `recentOutcomes` lists `contentReady` events and hides a mount's commit-only completion once its content outcome arrives.
+- `lib/dashboard/work-queue/dashboard-work-diagnostics.js` — Run timings count only events that end an attempt; exported mounts keep `contentOutcome` and `contentReadyAt`.
+- `test/widget-mount-coordinator.test.js` — Verify the content outcome replaces the commit completion and stays out of run timings.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes; production build succeeds.
+**Task:** Recent outcomes showed every widgetMount at 1–4 ms because the job ends at React's commit, before data-loading widgets render real content.
+**Prompt summary:** widgetMount should show the time from when a widget begins loading until it renders with real data.
+
+---
+
 ## 2026-10-14 — Stop generating ideas for projects saturated with well-rated ideas
 
 **Model:** Claude Opus 5.5

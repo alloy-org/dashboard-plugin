@@ -3,6 +3,7 @@
 // mounts.
 import { createDashboardWorkRuntime } from "dashboard/work-queue/dashboard-work-runtime";
 import WidgetMountCoordinator from "dashboard/work-queue/widget-mount-coordinator";
+import { recentOutcomes } from "dashboard/work-queue/dashboard-queue-inspector-model";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Let queued microtasks, such as job starts and completions, run.
@@ -217,5 +218,28 @@ describe("WidgetMountCoordinator", () => {
     setNow(9000);
     expect(coordinator.reportContentReady("agenda", "error")).toBeNull();
     expect(coordinator.snapshot().widgets[0]).toMatchObject({ contentOutcome: "loaded", contentReadyAt: 2600, requestedAt: 100 });
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc The content report becomes the mount's outcome, timed from admission to content, in place of the job's
+  //   commit-only completion; the content duration stays out of the mount job's run timings.
+  it("records the content report as the mount's outcome, timed from admission", async () => {
+    const { coordinator, pass, register, report, runtime, setNow } = harness();
+    const generation = register("agenda");
+    setNow(100);
+    report(1, { agenda: true });
+    setNow(150);
+    await pass();
+    setNow(153);
+    coordinator.reportCommitted("agenda", generation);
+    await pass();
+    expect(recentOutcomes(runtime.diagnostics.snapshot().events).map(event => event.type)).toEqual(["completed"]);
+    setNow(2600);
+    coordinator.reportContentReady("agenda");
+    const outcomes = recentOutcomes(runtime.diagnostics.snapshot().events);
+    expect(outcomes).toHaveLength(1);
+    expect(outcomes[0]).toMatchObject({ durationMilliseconds: 2450, jobKey: "widgetMount:agenda", jobType: "widgetMount",
+      outcomeDetail: "Rendered its content; waited 50 ms for its turn, committed in 3 ms", type: "contentReady" });
+    expect(runtime.diagnostics.snapshot().timings.widgetMount.runs).toBe(1);
   });
 });
