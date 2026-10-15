@@ -5,6 +5,18 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-15 — Plan the "Generate ideas" run
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `doc/plan-generate-ideas.md` (created) — Seven-commit plan for replacing the Build plan header action with a Generate ideas run: forced dictionary refinement and ranking, idea generation for unsaturated active-this-month projects, rating, a summary, a progress window hosted in an `app.prompt` embed, a two-per-day limit, and an Agent Pro quota meter.
+
+**Validation:** Documentation only; no code changed.
+**Task:** Scope a user-initiated idea generation run with a progress window before implementing it.
+**Prompt summary:** Change "Build plan" to "Generate ideas" after a quarterly plan exists; run definition refinement, idea generation, and rating with a four-step progress popup, an ETA, a daily limit of two, and an Agent Pro quota meter; write a plan if it exceeds three commits.
+
+---
+
 ## 2026-10-14 — Stop generating ideas for projects saturated with well-rated ideas
 
 **Model:** Claude Opus 5.5
