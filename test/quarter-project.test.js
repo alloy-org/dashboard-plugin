@@ -89,6 +89,22 @@ describe("QuarterProject", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
+  // @desc Amplenote saves the store's nested bullets indented four spaces with a blank line between items, and escapes
+  //   the parentheses in list labels; the existing tasks in both lists are still read back from that form.
+  it("reads existing tasks back from the form Amplenote saves them in", () => {
+    const project = new QuarterProject({ summary: "Launch dashboard", uuid: "project-uuid" });
+    project.setRelatedTaskRecords([{ matchScore: 10, taskText: "Polish the widget grid", taskUuid: "similar-task" },
+      { matchScore: 3, taskText: "Water the plants", taskUuid: "dissimilar-task" }]);
+    const [listsMarkdown, ...rest] = project.toStoreSection().split("```");
+    const savedLists = listsMarkdown.replace(/^ {2}- /gm, "    - ").replace(/^(- [^\n(]*)\(/gm, "$1\\(").replace(/- \(none yet\)/g, "- \\(none yet)").replace(/\n/g, "\n\n");
+    const restored = QuarterProject.fromStoreSection([savedLists, ...rest].join("```"));
+    expect(savedLists).toContain("    - [Polish the widget grid]");
+    expect(savedLists).toContain("- Existing tasks not suggested \\(similarity below");
+    expect(restored.relatedTaskRecords).toEqual([{ matchScore: 10, taskText: "Polish the widget grid", taskUuid: "similar-task" },
+      { matchScore: 3, taskText: "Water the plants", taskUuid: "dissimilar-task" }]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc The revision and refresh state are store-owned: written to the store payload, read back from its section,
   //   adopted by a guide project, and defaulted for a section written before they existed.
   it("persists its revision and refresh state in the store", () => {

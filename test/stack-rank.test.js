@@ -149,6 +149,16 @@ describe("user terms dictionary", () => {
     expect([...examinedProjectSummaries(content)]).toEqual(["old project"]);
   });
 
+  it("reads examined projects back from the escaped form Amplenote saves them in", () => {
+    const savedContent = "# Terms\n- **Amplenote**: Notes app\n\n# Examined projects\n\n"
+      + "- Ship the \\(beta) dashboard \\(examined 2026-09-01)\n\n- Old project \\(examined 2026-09-02)\n";
+    expect([...examinedProjectSummaries(savedContent)]).toEqual(["ship the (beta) dashboard", "old project"]);
+    const { content: mergedContent } = mergedDictionaryContent(savedContent, { examinedOn: "2026-10-15",
+      examinedSummaries: ["Old project", "New project"] });
+    expect(mergedContent.match(/Old project/g)).toHaveLength(1);
+    expect(mergedContent).toContain("- New project (examined 2026-10-15)");
+  });
+
   it("refines plugin-owned terms in place, never rewrites the user's, and appends new ones", () => {
     const merged = mergedDictionaryContent(content, { examinedOn: "2026-10-01", examinedSummaries: ["Diff Digest launch"],
       incomingEntries: [{ definition: "Extensible notes, tasks, and calendar app", term: "amplenote" },

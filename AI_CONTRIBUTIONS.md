@@ -5,6 +5,29 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-15 — Dictionary's examined projects read back from Amplenote's escaped markdown
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/util/amplenote-markdown-escapes.js` (new) — `unescapedMarkdownText` removes the backslashes Amplenote adds before markdown punctuation when it saves a note.
+- `lib/plan-wizard/stack-rank/user-terms-dictionary.js` — `examinedProjectSummaries` unescapes each bullet before matching, since Amplenote saves "(examined YYYY-MM-DD)" as "\(examined YYYY-MM-DD)" and every examined project was otherwise read as unexamined.
+- `lib/dashboard/quarter-project-serialization.js` — uses the shared helper in place of its own escape pattern.
+- `test/stack-rank.test.js` — escaped examined-projects round trip.
+
+---
+
+## 2026-10-15 — Project task store reads existing tasks back from Amplenote's saved markdown
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-project-serialization.js` — `EXISTING_TASK_LINE_PATTERN` accepts any indentation (Amplenote saves the store's nested bullets indented four spaces, not the two written) and trailing whitespace; list labels are compared after removing the backslashes Amplenote adds before punctuation (through `unescapedMarkdownText`), so "Existing tasks not suggested \(similarity below 6)" is still recognized.
+- `test/quarter-project.test.js` — Round-trips a section through Amplenote's saved form (four-space bullets, blank lines between items, escaped label parentheses); fails against the previous parser.
+
+**Validation:** Full Jest suite passes. Production symptom traced through the store note's raw content, read with `app.getNoteContent`: `    - \(none yet)`.
+**Task:** Every project's existing tasks read back empty once Amplenote saved the store note, so the next write after a ranking (the ideas job) replaced the accepted tasks with "(none yet)", and the "Generate ideas" summary reported "0 of your tasks".
+
+---
+
 ## 2026-10-15 — Dictionary discovery holds rankings compactly so it fits the job input limit
 
 **Model:** Claude Opus 5.5
