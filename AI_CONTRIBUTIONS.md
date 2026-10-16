@@ -5,6 +5,24 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-15 — Proposed Agenda latency: incidental model, timed-event research, batched queue writes
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/constants/llm-providers.js` — `PROVIDER_INCIDENTAL_MODEL` (OpenAI: `gpt-5.4-mini`) and `INCIDENTAL_TIER_REASONING_EFFORT` ("none"); registers `gpt-5.4-mini` and `gpt-5.4-nano`.
+- `lib/providers/ai-provider-settings.js` — `incidentalModelOptions`: the fast tier's provider and key, with the smaller incidental model where one exists.
+- `lib/plan-wizard/wizard-prompt-diagnostics.js` — `incidentalLlmOptions`, sharing `_llmOptionsWithModel` with `wizardLlmOptions`.
+- `lib/dashboard/suggestions/calendar-suggestion-explanation.js` — benefit sentences use `incidentalLlmOptions` instead of the wizard's fast tier.
+- `lib/recommendation-context/day-recommendation-context.js` — the research-note scan now runs only for travel-like events with a set start time, not all-day events. Calendar events are read once per context. The term searches and note reads run concurrently (six at a time), and note content that is not a string no longer throws (`c.toLowerCase is not a function`).
+- `lib/recommendation-context/recommendation-instructions.js` — research notes move to their own timed-event prompt section.
+- `lib/dashboard/work-queue/dashboard-work-repository.js` — `_update` adds changes requested while an earlier update to the same queue note waits into one read-and-write batch (`_applyBatch`), so project jobs started together no longer queue up behind each other's claim and completion writes.
+- `test/recommendation-context.test.js`, `test/fast-model-selection.test.js`, `test/dashboard-work-repository.test.js` — coverage for the above.
+
+**Validation:** Full Jest suite (1467 tests), `npm run build`, production plugin smoke test.
+**Task:** A Proposed Agenda fetch took about 37s: 5.7s on a research-note scan triggered by someone else's all-day conference (which then threw), about 7.5s while six project rankings were staggered by serialized writes to the queue note, and 6.5s for gpt-5.6 to write the benefit sentences.
+
+---
+
 ## 2026-10-15 — Dictionary's examined projects read back from Amplenote's escaped markdown
 
 **Model:** Claude Opus 5.5

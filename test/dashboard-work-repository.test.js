@@ -6,6 +6,7 @@ import { workQueueNotesApp } from "./work-queue-test-notes";
 import DashboardWorkJob, { MAXIMUM_INPUT_CHARACTERS, WORK_JOB_SCHEMA_VERSION } from "dashboard/work-queue/dashboard-work-job";
 import { WORK_QUEUE_SCHEMA_VERSION, workQueueNotePayload } from "dashboard/work-queue/dashboard-work-note";
 import { CLAIM_LEASE_MILLISECONDS, MAXIMUM_JOB_ATTEMPTS } from "dashboard/work-queue/dashboard-work-policy";
+import { CallTimingMeter } from "util/call-timing-meter";
 import DashboardWorkRepository, { TERMINAL_RECORD_LIMIT, TERMINAL_RECORD_RETENTION_MILLISECONDS,
   workQueueNoteName } from "dashboard/work-queue/dashboard-work-repository";
 
@@ -46,6 +47,28 @@ describe("DashboardWorkRepository persistence", () => {
     expect(payload.jobs[0]).toMatchObject({ desiredRevision: "r2", schemaVersion: WORK_JOB_SCHEMA_VERSION, status: "pending" });
     const pending = await repository.readPending(SCOPE);
     expect(pending.map(job => job.key)).toEqual(["rank:project-1"]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Claims requested while an earlier change to the note is still running share one read and one write, and
+  //   each caller still receives its own job. A refused change rejects alone.
+  it("batches changes requested together into one write of the queue note", async () => {
+    const app = workQueueNotesApp();
+    const meter = new CallTimingMeter();
+    const repository = new DashboardWorkRepository({ app, callTimingMeter: meter, clock: () => 1_000_000 });
+    const projectKeys = ["rank:p1", "rank:p2", "rank:p3", "rank:p4"];
+    await repository.saveJobs(SCOPE, projectKeys.map(key => ({ input: {}, key, type: "rank" })));
+    const firstClaim = repository.claim(SCOPE, projectKeys[0], { ownerId: "session", token: `session:${ projectKeys[0] }` });
+    const laterClaims = projectKeys.slice(1).map(key => repository.claim(SCOPE, key, { ownerId: "session", token: `session:${ key }` }));
+    const refused = repository.saveJob(SCOPE, { input: { run: () => {} }, key: "bad", type: "rank" });
+    const claimedJobs = await Promise.all([firstClaim, ...laterClaims]);
+    await expect(refused).rejects.toThrow("plain JSON");
+    expect(claimedJobs.map(job => job.key)).toEqual(projectKeys);
+    const writeTimings = meter.snapshot().labels.filter(timing => timing.label.endsWith(".write") && timing.label !== "queueNote.save.write");
+    const writeCount = writeTimings.reduce((total, timing) => total + timing.calls, 0);
+    expect(writeCount).toBe(1);
+    const runningRecords = queuePayload(app).jobs.filter(record => record.status === "running");
+    expect(runningRecords).toHaveLength(projectKeys.length);
   });
 
   // ----------------------------------------------------------------------------------------------
