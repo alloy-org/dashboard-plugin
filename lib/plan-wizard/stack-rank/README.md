@@ -100,6 +100,22 @@ attributed by the idea generator). A direct link always qualifies a task; otherw
 an assigned one included, matching the sources page. `quarter-project-task-candidates.js` applies the same rule to a
 day's candidates. The second list is written only when it holds a task.
 
+A third list, written only when it holds a task, accounts for every task the similarity hash rates 6 or higher that
+neither list above holds, so the hash's similar entries always add up to the tasks listed
+(`dashboard/project-tasks/disqualified-similar-tasks.js`):
+
+```
+- Similar tasks disqualified from suggestion (similarity 6+)
+  - [Old launch checklist](https://www.amplenote.com/notes/tasks/…) — similarity 8; completed
+  - [Pricing page copy](https://www.amplenote.com/notes/tasks/…) — similarity 6.5; below this project's minimum match score of 7
+```
+
+The ranking job names each reason once its result is applied, from the tasks it read: completed, dismissed, not among
+the open tasks read (deleted, or outside the task domain), no text, edited since rated, below the project's minimum
+match score, beyond the 20 best-rated similar tasks, or ranking unfinished. A task rated by a paused ranking, which
+saves its scores without accepting tasks, is listed as "ranking unfinished" until the ranking completes. The reasons
+are read back from the list, so a write by another job keeps them.
+
 The lists are the only record of the existing tasks and of the project's assigned task UUIDs: they are read back from
 their task links and annotations, and the payload no longer carries `relatedTasks`. A refresh that cannot rank still
 lists the open tasks the hash holds, so the lists do not empty out until a ranking succeeds. Sections written before

@@ -5,6 +5,22 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-16 — Project task store: list similar tasks disqualified from suggestion, with reasons
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/project-tasks/disqualified-similar-tasks.js` (created) — `disqualifiedSimilarTasks` names why each task the similarity hash rates ≥ 6 is missing from the existing tasks lists (completed, dismissed, not read, no text, edited since rated, below the project's minimum, beyond the competitive top 20, ranking unfinished). `listedDisqualifiedTasks` reconciles the hash against the lists at render time, falling back to a generic reason.
+- `lib/dashboard/quarter-project-serialization.js` — renders and reads back the `Similar tasks disqualified from suggestion (similarity 6+)` list; list-line reading shared through `_listedTaskLineMatches`.
+- `lib/dashboard/quarter-project.js` — store-owned `disqualifiedTaskRecords` field and `setDisqualifiedTaskRecords`.
+- `lib/dashboard/work-queue/jobs/rank-project-tasks.js` — records the reasons when a ranking's result is applied.
+- `lib/plan-wizard/stack-rank/README.md` — documents the new list.
+- `test/disqualified-similar-tasks.test.js` (created) — reason coverage and store-section round trip.
+
+**Validation:** Full Jest suite (1482 tests), `npm run build`, production plugin smoke test.
+**Task:** The similarity hash showed 9 tasks at ≥ 6 while the eligible list showed 6, with nothing in the note explaining the gap.
+
+---
+
 ## 2026-10-16 — Energy Delta data note: repeating tasks only, mood columns preserved
 
 **Model:** Claude Opus 5.5
