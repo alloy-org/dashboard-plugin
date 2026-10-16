@@ -5,6 +5,37 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-15 — Dictionary discovery holds rankings compactly so it fits the job input limit
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/jobs/project-job-requests.js` — `dictionaryDiscoveryRequest` no longer takes held requests; new `dictionaryDiscoveryRequests` holds rankings as `heldRankings: [{ projectUuid, desiredRevision? }]` plus one `heldRankingCategory`, filling the input up to `MAXIMUM_INPUT_CHARACTERS` and returning rankings that do not fit beside the discovery request; new `heldRankingRequests` rebuilds full requests (and still reads the legacy `heldRequests`).
+- `lib/dashboard/work-queue/jobs/discover-dictionary-terms.js` — Releases held work through `heldRankingRequests`, on success or failure; validates the new fields.
+- `lib/dashboard/work-queue/dashboard-work-job.js` — Exports `MAXIMUM_INPUT_CHARACTERS`; `_requirePlainJson` now names the serialized length and limit in its error and always reports it with `console.error`, with each top-level field's length, since every caller logs the refusal only behind the Console Logging setting.
+- `test/dashboard-work-repository.test.js` — Covers the oversized-input error message and console report.
+- `lib/dashboard/idea-generation/idea-generation-run-plan.js`, `lib/dashboard/work-queue/quarter-project-work-planner.js` — Use `dictionaryDiscoveryRequests`.
+- `test/idea-generation-run-plan.test.js`, `test/quarter-project-work-planner.test.js` — Read held rankings through `heldRankingRequests`; new test with 6 and 60 projects under a real domain UUID and name.
+
+**Validation:** Full Jest suite passes (166 suites, 1459 tests); build and production bundle smoke test pass. Six projects measured 2354 characters in the old form (over the 2000 limit) and 502 in the new.
+**Task:** "Generate ideas" failed with `Input of work job "discoverDictionaryTerms:2026-Q4" is too large to queue`, which also kept every held task ranking from running, so projects showed "0 of your tasks".
+
+---
+
+## 2026-10-15 — Generate ideas progress window scrolls in production
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/idea-run-progress-embed.js` — Page styles set `html { overflow-y: scroll; }`, the rule `global-reset.scss` uses for the Dashboard embed, so results taller than the prompt's fixed-height embed frame can be scrolled.
+- `lib/dashboard/idea-generation/idea-run-progress-view.js` — When the refine step ends before discovery reports its terms, a "still being looked for" sentence keeps the "(N already defined)" dictionary link, which previously vanished.
+- `lib/dashboard/idea-generation/idea-generation-run.js` — Summary projects carry `suggestableTasksBefore/After` (open, suggestable associated tasks, via the new `_suggestableTaskCount`, which `ideaRunStoreCounts` now shares) in place of raw `relatedTaskRecords` lengths.
+- `lib/dashboard/idea-generation/idea-run-progress-view.js` — Each project's summary line always names "N of your tasks (was M)", not only an increase.
+- `test/idea-run-progress.test.js`, `test/idea-generation-run.test.js` — Cover the "still being looked for" sentence and the renamed summary fields.
+
+**Validation:** Idea run progress and idea generation Jest suites pass (4 suites, 19 tests); build and production bundle smoke test pass; not yet verified in a production prompt.
+**Task:** The "Generate ideas" progress prompt could not be scrolled in production, showed nothing about dictionary definitions, and its per-project summary cited only generated ideas, not the user's own tasks.
+
+---
+
 ## 2026-10-15 — Planning widget re-reads the plan note after Plan Builder closes
 
 **Model:** Claude Opus 5.5

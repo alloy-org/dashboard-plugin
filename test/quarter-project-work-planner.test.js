@@ -17,7 +17,7 @@ import { createDashboardWorkRuntime } from "dashboard/work-queue/dashboard-work-
 import { createDiscoverDictionaryTermsHandler } from "dashboard/work-queue/jobs/discover-dictionary-terms";
 import { createEstimateTaskDurationsHandler } from "dashboard/work-queue/jobs/estimate-task-durations";
 import { createGenerateProjectIdeasHandler } from "dashboard/work-queue/jobs/generate-project-ideas";
-import { projectReconciliationRequest } from "dashboard/work-queue/jobs/project-job-requests";
+import { heldRankingRequests, projectReconciliationRequest } from "dashboard/work-queue/jobs/project-job-requests";
 import { createRankProjectTasksHandler } from "dashboard/work-queue/jobs/rank-project-tasks";
 import { createRateProjectIdeasHandler } from "dashboard/work-queue/jobs/rate-project-ideas";
 import { createReconcileProjectsHandler } from "dashboard/work-queue/jobs/reconcile-projects";
@@ -202,7 +202,7 @@ describe("QuarterProjectWorkPlanner", () => {
     const requests = planned(planner, storedProjects, { dictionaryDiscoveryDue: true });
     const [discoveryRequest] = requests;
     expect(requests.map(request => request.key)).toEqual(["discoverDictionaryTerms:2026-Q3", "generateProjectIdeas:stale-ideas"]);
-    expect(discoveryRequest.input.heldRequests.map(request => request.key)).toEqual(["rankProjectTasks:never"]);
+    expect(heldRankingRequests(discoveryRequest.input).map(request => request.key)).toEqual(["rankProjectTasks:never"]);
     expect(discoveryRequest.desiredRevision).toMatch(new RegExp(`@${ NOW.getTime() }$`));
     expect(planner.coverage(SCOPE_KEY)).toMatchObject({ inFlight: 2, submitted: 2 });
   });
@@ -263,8 +263,8 @@ describe("reconcileProjects", () => {
     const launch = projects.find(project => project.summary === "Launch dashboard");
     expect(projects.find(project => project.uuid === "dropped").isActive).toBe(false);
     expect(first.followUps.map(request => request.key)).toEqual(["discoverDictionaryTerms:2026-Q3", "estimateTaskDurations:2026-Q3"]);
-    expect(first.followUps[0].input.heldRequests.map(request => request.key)).toEqual([`rankProjectTasks:${ launch.uuid }`]);
-    expect(second.followUps[0].input.heldRequests.map(request => request.key)).toEqual([`rankProjectTasks:${ launch.uuid }`]);
+    expect(heldRankingRequests(first.followUps[0].input).map(request => request.key)).toEqual([`rankProjectTasks:${ launch.uuid }`]);
+    expect(heldRankingRequests(second.followUps[0].input).map(request => request.key)).toEqual([`rankProjectTasks:${ launch.uuid }`]);
   });
 
   // ----------------------------------------------------------------------------------------------

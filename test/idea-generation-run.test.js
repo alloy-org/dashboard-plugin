@@ -103,8 +103,8 @@ describe("IdeaGenerationRun", () => {
     expect(snapshot.steps.map(step => step.state)).toEqual(["done", "done", "done", "done"]);
     expect(snapshot.summary.refinedTermCount).toBe(1);
     expect(snapshot.summary.failures).toEqual([]);
-    expect(snapshot.summary.projects[0]).toMatchObject({ ideasDetail: "Generated 5 ideas, kept 4", name: "Launch", relatedTasksAfter: 1,
-      relatedTasksBefore: 0, targeted: true });
+    expect(snapshot.summary.projects[0]).toMatchObject({ ideasDetail: "Generated 5 ideas, kept 4", name: "Launch", suggestableTasksAfter: 1,
+      suggestableTasksBefore: 0, targeted: true });
   });
 
   // ----------------------------------------------------------------------------------------------
@@ -187,6 +187,6 @@ describe("IdeaGenerationRun", () => {
     const summary = ideaGenerationRunSummary({ activeProjects: [launch], afterProjects: null, beforeProjects: [],
       failures: [{ detail: "Provider down", entityId: "launch", jobType: GENERATE_PROJECT_IDEAS_JOB_TYPE }], outcomes: [], targets: [] });
     expect(summary.failures[0]).toMatchObject({ detail: "Provider down", subject: "Launch" });
-    expect(summary.projects[0]).toMatchObject({ recommendableAfter: null, relatedTasksAfter: null, targeted: false });
+    expect(summary.projects[0]).toMatchObject({ recommendableAfter: null, suggestableTasksAfter: null, targeted: false });
   });
 });

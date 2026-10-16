@@ -65,12 +65,22 @@ describe("idea run progress", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
+  // @desc A refine step that ends before discovery reports still names the dictionary's count.
+  it("keeps the dictionary count when discovery has not reported by the end of refining", () => {
+    const steps = [{ key: "refine", state: "timedOut" }, { key: "ideas", state: "active" }];
+    const progress = { dictionary: { noteUuid: "dictionary-uuid", termCount: 12 }, foundTerms: null,
+      ideaProjects: { count: 0, examples: [] }, refiningTerms: { count: 0, examples: [] }, storeCounts: null };
+    const [discoveryLine] = ideaRunProgressLines(progress, steps);
+    expect(lineText(discoveryLine)).toBe("New terms to define are still being looked for (12 already defined).");
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc The summary says what each project gained, its name in bold, how many definitions were refined, and what failed.
   it("writes the summary as sentences", () => {
     const lines = ideaRunSummaryLines({ failures: [{ detail: "Provider down", jobType: "rateProjectIdeas", subject: "Hiring" }],
-      projects: [{ ideasDetail: "Generated 5 ideas, kept 3", name: "Launch", recommendableAfter: 4, recommendableBefore: 1, relatedTasksAfter: 6,
-        relatedTasksBefore: 4, targeted: true }], refinedTermCount: 2 });
-    expect(lines.map(line => lineText(line))).toEqual(["Launch: Generated 5 ideas, kept 3; 4 recommendable ideas (was 1); 2 more related tasks.",
+      projects: [{ ideasDetail: "Generated 5 ideas, kept 3", name: "Launch", recommendableAfter: 4, recommendableBefore: 1, suggestableTasksAfter: 6,
+        suggestableTasksBefore: 4, targeted: true }], refinedTermCount: 2 });
+    expect(lines.map(line => lineText(line))).toEqual(["Launch: Generated 5 ideas, kept 3; 4 recommendable ideas (was 1); 6 of your tasks (was 4).",
       "Refined 2 dictionary definitions.", 'Could not finish "Hiring": Provider down']);
     expect(lines[0][0]).toEqual({ strong: true, text: "Launch" });
   });

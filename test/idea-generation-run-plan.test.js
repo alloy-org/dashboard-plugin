@@ -4,7 +4,8 @@ import { activeMonthProjects, ideaGenerationRunRequests, ideaGenerationTargets, 
 import { normalizedIdeaRecords } from "dashboard/project-tasks/project-idea-records";
 import { ratedIdeaRecords } from "dashboard/project-tasks/project-task-idea-ratings";
 import { DISCOVER_DICTIONARY_TERMS_JOB_TYPE, GENERATE_PROJECT_IDEAS_JOB_TYPE, RANK_PROJECT_TASKS_JOB_TYPE,
-  RATE_PROJECT_IDEAS_JOB_TYPE } from "dashboard/work-queue/jobs/project-job-requests";
+  RATE_PROJECT_IDEAS_JOB_TYPE, heldRankingRequests } from "dashboard/work-queue/jobs/project-job-requests";
+import { MAXIMUM_INPUT_CHARACTERS } from "dashboard/work-queue/dashboard-work-job";
 
 const NOW = new Date("2026-10-15T12:00:00");
 const INPUT = { domainName: "Work", domainUuid: "domain-1", quarter: 4, year: 2026 };
@@ -66,7 +67,7 @@ describe("idea generation run plan", () => {
 
     const [discovery, ...refineRest] = requests.refine;
     expect(discovery).toMatchObject({ category: RUN_CATEGORY, desiredRevision: "run:run-1", type: DISCOVER_DICTIONARY_TERMS_JOB_TYPE });
-    expect(discovery.input.heldRequests.map(request => [request.type, request.entityId, request.category, request.desiredRevision]))
+    expect(heldRankingRequests(discovery.input).map(request => [request.type, request.entityId, request.category, request.desiredRevision]))
       .toEqual([[RANK_PROJECT_TASKS_JOB_TYPE, "full", RUN_CATEGORY, null], [RANK_PROJECT_TASKS_JOB_TYPE, "weak", RUN_CATEGORY, null]]);
     expect(refineRest).toEqual(termRequests);
     expect(requests.ideas.map(request => [request.type, request.entityId, request.category, request.desiredRevision]))
@@ -74,6 +75,28 @@ describe("idea generation run plan", () => {
     expect(requests.ideas[0].input.ideaCount).toBe(RUN_IDEA_COUNT);
     expect(requests.rate.map(request => [request.type, request.entityId, request.category]))
       .toEqual([[RATE_PROJECT_IDEAS_JOB_TYPE, "full", RUN_CATEGORY]]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Rankings for many projects, under a real domain's UUID and name, are held compactly within the job input
+  //   limit; once even the compact form is full, the rest are submitted beside discovery rather than failing it.
+  it("holds rankings for many projects within the job input limit", () => {
+    const domainInput = { ...INPUT, domainName: "Personal Projects and Planning", domainUuid: "0d6e2a1c-5f4b-4c1e-9a7d-3b8e6f2c1a90" };
+    const sixProjects = Array.from({ length: 6 }, (_, index) => project(`3f1c9e2a-7b4d-4e8f-a1c6-5d2b8e9f0a1${ index }`));
+    const sixRefine = ideaGenerationRunRequests({ activeProjects: sixProjects, input: domainInput, now: NOW, runId: "run-1", scorerEm: "jev",
+      storedProjects: [], targets: [], termRequests: [] }).refine;
+    expect(sixRefine).toHaveLength(1);
+    expect(JSON.stringify(sixRefine[0].input).length).toBeLessThanOrEqual(MAXIMUM_INPUT_CHARACTERS);
+    expect(heldRankingRequests(sixRefine[0].input).map(request => [request.key, request.category, request.input.domainUuid]))
+      .toEqual(sixProjects.map(sixProject => [`${ RANK_PROJECT_TASKS_JOB_TYPE }:${ sixProject.uuid }`, RUN_CATEGORY, domainInput.domainUuid]));
+
+    const manyProjects = Array.from({ length: 60 }, (_, index) => project(`3f1c9e2a-7b4d-4e8f-a1c6-5d2b8e9f${ String(index).padStart(4, "0") }`));
+    const [discovery, ...overflow] = ideaGenerationRunRequests({ activeProjects: manyProjects, input: domainInput, now: NOW, runId: "run-1",
+      scorerEm: "jev", storedProjects: [], targets: [], termRequests: [] }).refine;
+    expect(JSON.stringify(discovery.input).length).toBeLessThanOrEqual(MAXIMUM_INPUT_CHARACTERS);
+    expect(overflow.length).toBeGreaterThan(0);
+    const coveredKeys = [...heldRankingRequests(discovery.input), ...overflow].map(request => request.key);
+    expect(coveredKeys).toEqual(manyProjects.map(manyProject => `${ RANK_PROJECT_TASKS_JOB_TYPE }:${ manyProject.uuid }`));
   });
 
   // ----------------------------------------------------------------------------------------------
