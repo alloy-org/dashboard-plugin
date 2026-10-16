@@ -74,12 +74,13 @@ describe("loadEnergyPerHabit", () => {
     expect(result.habits[0].delta).toBeGreaterThan(0);
     expect(result.cached).toBe(false);
 
-    // First fetch reached back roughly a year (>= 300 days), and the note now exists with month sections.
-    const firstFrom = app.calls.tasks[0].fromSec;
+    // The oldest fetch reached back roughly a year (>= 300 days), and the note now exists with month sections.
+    const firstFrom = Math.min(...app.calls.tasks.map(call => call.fromSec));
     const nowSec = Math.floor(today.getTime() / 1000);
     expect((nowSec - firstFrom) / DAY).toBeGreaterThan(300);
     const note = Object.values(app.store).find(n => n.name === HABIT_CACHE_NOTE_NAME);
     expect(note.content).toContain("## July 2026");
+    expect(result.cacheNoteUUID).toBe(Object.keys(app.store)[0]);
   });
 
   // [GPT-5.6 Sol] Task: verify cached loads still refresh at least four weeks of complete-month history
@@ -90,6 +91,7 @@ describe("loadEnergyPerHabit", () => {
     const app = makeApp(tasks, moods);
 
     await loadEnergyPerHabit(app, { today });          // populate cache
+    const firstLoadTaskCallCount = app.calls.tasks.length;
     const secondResult = await loadEnergyPerHabit(app, { today });
 
     // Same habit recovered from cache + fresh current month.
@@ -97,7 +99,8 @@ describe("loadEnergyPerHabit", () => {
     expect(secondResult.habits[0].completions).toBe(daysDone.length);
 
     // July 18's four-week floor reaches June, so June is safely recomputed from its month boundary.
-    const secondFrom = app.calls.tasks[1].fromSec;
+    expect(app.calls.tasks).toHaveLength(firstLoadTaskCallCount + 1);
+    const secondFrom = app.calls.tasks[firstLoadTaskCallCount].fromSec;
     const juneStart = Math.floor(new Date(2026, 5, 1).getTime() / 1000);
     expect(secondFrom).toBe(juneStart);
   });
@@ -116,7 +119,39 @@ describe("loadEnergyPerHabit", () => {
     await loadEnergyPerHabit(app, { today });
 
     const nowSec = Math.floor(today.getTime() / 1000);
-    expect((nowSec - app.calls.tasks[0].fromSec) / DAY).toBeGreaterThan(365);
+    const oldestFrom = Math.min(...app.calls.tasks.map(call => call.fromSec));
+    expect((nowSec - oldestFrom) / DAY).toBeGreaterThan(365);
     expect(app.store.legacy.content).toContain(`Cache format: ${HABIT_CACHE_FORMAT_VERSION}`);
+  });
+
+  test("a cached load reports habits from the cache note before the task fetch resolves", async () => {
+    const daysDone = [1, 2, 3, 10, 40, 41, 42, 70, 71, 72];
+    const { tasks, moods } = buildFixture(today, daysDone, 2);
+    const app = makeApp(tasks, moods);
+    await loadEnergyPerHabit(app, { today });
+
+    let releaseTasks;
+    const fetchCompleted = app.getCompletedTasks;
+    app.getCompletedTasks = (fromSec, toSec) => new Promise(resolve => {
+      releaseTasks = () => resolve(fetchCompleted(fromSec, toSec));
+    });
+    const cachedResults = [];
+    const loadPromise = loadEnergyPerHabit(app, { onCachedResult: result => cachedResults.push(result), today });
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(cachedResults).toHaveLength(1);
+    expect(cachedResults[0].habits[0].label).toBe("🏋️ Exercise");
+    expect(cachedResults[0].cacheNoteUUID).toBe(Object.keys(app.store)[0]);
+    releaseTasks();
+    const result = await loadPromise;
+    expect(result.habits[0].completions).toBe(daysDone.length);
+  });
+
+  test("the first load does not report a cached result", async () => {
+    const { tasks, moods } = buildFixture(today, [1, 2, 3, 10, 40], 2);
+    const app = makeApp(tasks, moods);
+    const cachedResults = [];
+    await loadEnergyPerHabit(app, { onCachedResult: result => cachedResults.push(result), today });
+    expect(cachedResults).toHaveLength(0);
   });
 });

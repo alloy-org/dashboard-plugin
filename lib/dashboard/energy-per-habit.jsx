@@ -19,6 +19,8 @@ const WIDGET_ID = 'energy-per-habit';
 // Number of habits to render (mockup shows the strongest handful; keeps the tile readable).
 const MAX_HABIT_ROWS = 8;
 const ROUND_UP_TO_YEAR_ABOVE = 330;
+// Below this many rows the data note link would crowd a short list, so it is left out.
+const MIN_ROWS_FOR_DATA_NOTE_LINK = 4;
 
 // Fallback icon plus keyword→emoji hints so common habits get a recognizable glyph like the mockup.
 const HABIT_ICON_FALLBACK = '🔁';
@@ -190,22 +192,30 @@ export default function EnergyPerHabitWidget({ app }) {
   const [loading, setLoading] = useState(true);
   const rowsRef = useRef(null);
 
+  // Render as soon as the cache note yields habits, then replace them with the refreshed analysis. A failed
+  //   refresh keeps the cached rows on screen rather than replacing them with the empty state.
   useEffect(() => {
     if (!app) return;
     let cancelled = false;
+    let showingCachedResult = false;
     setLoadError(false);
     setLoading(true);
-    loadEnergyPerHabit(app).then(result => {
+    const onCachedResult = cachedResult => {
+      if (cancelled) return;
+      showingCachedResult = true;
+      setAnalysis(cachedResult);
+      setLoading(false);
+    };
+    loadEnergyPerHabit(app, { onCachedResult }).then(result => {
       if (cancelled) return;
       setAnalysis(result);
       setLoading(false);
     }).catch(err => {
       logIfEnabled(`[${WIDGET_ID}] failed to load habit data`, err);
-      if (!cancelled) {
-        setAnalysis({ habits: [], windowDays: HABIT_ANALYSIS_WINDOW_DAYS });
-        setLoadError(true);
-        setLoading(false);
-      }
+      if (cancelled || showingCachedResult) return;
+      setAnalysis({ habits: [], windowDays: HABIT_ANALYSIS_WINDOW_DAYS });
+      setLoadError(true);
+      setLoading(false);
     });
     return () => { cancelled = true; };
   }, [app]);
@@ -227,6 +237,13 @@ export default function EnergyPerHabitWidget({ app }) {
     if (!app || !habit?.noteUUID) return;
     app.navigate(noteUrlFromUUID(habit.noteUUID));
   }, [app]);
+
+  // Open the archived note that stores each month's Energy Delta inputs.
+  const onOpenDataNote = useCallback((event) => {
+    event.preventDefault();
+    if (!app || !analysis?.cacheNoteUUID) return;
+    app.navigate(noteUrlFromUUID(analysis.cacheNoteUUID));
+  }, [analysis, app]);
 
   let windowDays = analysis?.windowDays || HABIT_ANALYSIS_WINDOW_DAYS;
   windowDays = windowDays >= ROUND_UP_TO_YEAR_ABOVE ? 365 : windowDays;
@@ -265,6 +282,12 @@ export default function EnergyPerHabitWidget({ app }) {
           }
         </div>
       </div>
+      {
+        rows.length >= MIN_ROWS_FOR_DATA_NOTE_LINK && analysis.cacheNoteUUID && (
+        <a className="habit-data-link" href={noteUrlFromUUID(analysis.cacheNoteUUID)} onClick={onOpenDataNote}>
+          View Energy Delta data note
+        </a>)
+      }
     </WidgetWrapper>
   );
 }

@@ -216,6 +216,15 @@ $habit-row-gap: 14px;
     strong { color: $color-text; }
   }
 
+  .habit-data-link {
+    color: $color-text-muted;
+    display: inline-block;
+    font-size: $smaller-font-size;
+    margin-top: $sp-lg;
+
+    &:hover { color: $color-text; }
+  }
+
   .habit-empty {
     color: $color-text-secondary;
     padding: $sp-xl $sp-md;
