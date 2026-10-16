@@ -20,6 +20,22 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-16 — Calendar suggestions: Debug Console generation report note
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/suggestions/calendar-generation-report.js` (created) — `debugConsoleInLayout`, `calendarGenerationReportName` ("Calendar Work Generate: 3 days at 13:32"), `calendarGenerationReportMarkdown` (one h1 per evaluated day: source, eligible, considered, suggested, next in line, rated rows with each one's fate, and "Not filled because" reasons for a day with an open hour; ranking rows shrink, then the text is cut, to stay under 3k characters), `rankingSelectionTrace`, and `writeCalendarGenerationReport` (archived, dashboard-tagged note; failures are logged, never thrown).
+- `lib/dashboard/proposed-agenda/proposed-agenda-range.js` — `traceSelection` option gives each day result a `selectionTrace`.
+- `lib/dashboard/proposed-agenda/proposed-agenda-service.js` — `selectionTrace` option threaded through the cached, fresh, and joined in-flight paths, recording the cache source, eligible counts, and which generator ran.
+- `lib/dashboard/suggestions/ranked-task-suggestions.js` — `agendaSuggestionsFromProjects` records the ranking's outcome and top rows into `selectionTrace`.
+- `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` — traces and writes the report when the Debug Console is in the layout; per-day outcomes now carry the refill count, remaining reserves, and hour availability.
+- `test/calendar-generation-report.test.js` (created), `test/proposed-agenda-date-range.test.js` — report rendering, the size cap, and whether the note gets written.
+
+**Validation:** Full Jest suite (1490 tests), `npm run build`, production plugin smoke test.
+**Task:** When Debug Console is in the layout, record how each calendar suggestion pass chose its tasks in an archived note.
+
+---
+
 ## 2026-10-16 — Project task store: list similar tasks disqualified from suggestion, with reasons
 
 **Model:** Claude Opus 5.5

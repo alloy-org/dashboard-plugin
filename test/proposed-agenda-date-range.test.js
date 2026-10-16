@@ -337,6 +337,35 @@ describe("suggestScheduledTasksFromDashboard", () => {
     expect(llmMock).not.toHaveBeenCalled();
     expect(app.context.setScheduledTasks).not.toHaveBeenCalled();
   });
+
+  // With the Debug Console in the layout, the pass writes an archived note named for its domain, day count and start
+  // time, with one h1 per evaluated day describing how the day was planned.
+  it("writes an archived generation report when the Debug Console is in the layout", async () => {
+    const layout = JSON.stringify([{ widgetId: "debug-console" }]);
+    const { app } = buildApp({ [SETTING_KEYS.DASHBOARD_COMPONENTS]: layout });
+    app.createNote = jest.fn().mockResolvedValue("report-note");
+    app.insertNoteContent = jest.fn().mockResolvedValue(true);
+    await suggestScheduledTasksFromDashboard(app, { ...windowFromToday(1), scheduledTasks: [],
+      taskDomain: { name: "Work", uuid: "dom-work" } });
+
+    const reportCall = app.createNote.mock.calls.find(([name]) => name.startsWith("Calendar Work Generate"));
+    expect(reportCall[0]).toMatch(/^Calendar Work Generate: 1 day at \d\d:\d\d$/);
+    expect(reportCall[2]).toEqual({ archive: true });
+    const [noteHandle, markdown] = app.insertNoteContent.mock.calls[0];
+    expect(noteHandle).toEqual({ uuid: "report-note" });
+    expect(markdown.match(/^# /gm)).toHaveLength(1);
+    expect(markdown).toContain("- Source: LLM generator");
+    expect(markdown.length).toBeLessThanOrEqual(3000);
+  });
+
+  // Without the Debug Console in the layout, no report note is written.
+  it("writes no generation report without the Debug Console in the layout", async () => {
+    const { app } = buildApp({ [SETTING_KEYS.DASHBOARD_COMPONENTS]: JSON.stringify([{ widgetId: "agenda" }]) });
+    app.insertNoteContent = jest.fn().mockResolvedValue(true);
+    await suggestScheduledTasksFromDashboard(app, { ...windowFromToday(1), scheduledTasks: [] });
+    const reportNames = app.createNote.mock.calls.filter(([name]) => String(name).startsWith("Calendar "));
+    expect(reportNames).toEqual([]);
+  });
 });
 
 // [Claude claude-opus-5[1m]] Generated tests for: day-aware row keys, ordering, and grouping
