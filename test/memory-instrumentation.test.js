@@ -4,8 +4,8 @@
  *   present, no-ops when absent (iOS WKWebView), and buckets pressure correctly.
  */
 import { jest } from "@jest/globals";
-import { collectGarbageIfAvailable, logMemorySample, lowestMemorySample, memoryPressureBucket, readMemorySample,
-  startMemorySampling } from "util/memory-instrumentation";
+import { collectGarbageIfAvailable, logMemorySample, lowestMemorySample, memoryPressureBucket, readMemorySample }
+  from "util/memory-instrumentation";
 
 const MB = 1024 * 1024;
 
@@ -79,25 +79,5 @@ describe("logMemorySample", () => {
     stubMemory({ limitMb: 1000, totalMb: 400, usedMb: 300 });
     const sample = logMemorySample("load-settle");
     expect(sample.usedMb).toBe(300);
-  });
-});
-
-describe("startMemorySampling", () => {
-  test("returns a no-op stopper when heap data is unavailable", () => {
-    const stop = startMemorySampling(1000);
-    expect(typeof stop).toBe("function");
-    expect(() => stop()).not.toThrow();
-  });
-
-  test("samples on an interval and stops cleanly when heap data is available", () => {
-    jest.useFakeTimers();
-    stubMemory({ limitMb: 1000, totalMb: 400, usedMb: 300 });
-    const setIntervalSpy = jest.spyOn(global, "setInterval");
-    const clearIntervalSpy = jest.spyOn(global, "clearInterval");
-    const stop = startMemorySampling(5000);
-    expect(setIntervalSpy).toHaveBeenCalledTimes(1);
-    stop();
-    expect(clearIntervalSpy).toHaveBeenCalledTimes(1);
-    jest.useRealTimers();
   });
 });

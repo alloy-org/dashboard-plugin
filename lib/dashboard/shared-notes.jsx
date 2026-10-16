@@ -4,7 +4,7 @@
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { useCallback, useEffect, useState } from "react";
 import { loadPinnedNoteUuids, storePinnedNoteUuids } from "shared-notes-archive";
-import { avatarTextFromName, collaboratorNoteCounts, findCollaboratorUpdatedNotes,
+import { avatarTextFromName, findCollaboratorUpdatedNotes,
   lastUpdatedLabelFromMs, orderNotesPinnedFirst } from "shared-notes-service";
 import "styles/shared-notes.scss";
 import { logIfEnabled } from "util/log";
@@ -56,9 +56,6 @@ function useCollaboratorUpdatedNotes({ app, onlyWithTasks, taskDomainUUID }) {
       if (!isActive) return;
       setNotes(results);
       setSharerNames(names);
-      // Log name/count per collaborator only — dumping every note handle floods the Debug Console.
-      logIfEnabled("[SharedNotes] notes:", results.length, "collaborators:", collaboratorNoteCounts(results),
-        "onlyWithTasks:", onlyWithTasks);
     }).catch(err => {
       if (!isActive) return;
       logIfEnabled("[SharedNotes] fetch failed:", err);

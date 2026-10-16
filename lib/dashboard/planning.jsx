@@ -53,7 +53,6 @@ async function handleMonthClick(app, month, { activeTab, setActiveTab, setMonthL
       setMonthContent({ found: false, plan: month.plan, monthName: month.full, year: month.plan.year });
     } else {
       const result = await getMonthlyPlanContent(app, noteUUID, month.full);
-      logIfEnabled(`[Planning] Raw markdown for ${month.full}:`, result?.content);
       setMonthContent({
         ...result,
         plan: month.plan,
