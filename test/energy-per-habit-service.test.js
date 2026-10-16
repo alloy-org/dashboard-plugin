@@ -154,4 +154,21 @@ describe("loadEnergyPerHabit", () => {
     await loadEnergyPerHabit(app, { onCachedResult: result => cachedResults.push(result), today });
     expect(cachedResults).toHaveLength(0);
   });
+
+  test("a cached month keeps its mood columns when this client retrieves no mood ratings for it", async () => {
+    const daysDone = [1, 2, 3, 10, 40, 41, 42, 70, 71, 72];
+    const { tasks, moods } = buildFixture(today, daysDone, 2);
+    const app = makeApp(tasks, moods);
+    await loadEnergyPerHabit(app, { today });
+    const noteUuid = Object.keys(app.store)[0];
+    const julyBefore = app.store[noteUuid].content.match(/## July 2026[\s\S]*?(?=## )/)[0];
+
+    app.getMoodRatings = async () => [];
+    app.getCompletedTasks = async () => [...tasks, { content: "Turn down bass by 15%", completedAt: tasks[0].completedAt }];
+    const result = await loadEnergyPerHabit(app, { today });
+
+    expect(app.store[noteUuid].content).toContain(julyBefore);
+    expect(app.store[noteUuid].content).not.toContain("Turn down bass");
+    expect(result.habits[0].doneWithMood).toBeGreaterThan(0);
+  });
 });

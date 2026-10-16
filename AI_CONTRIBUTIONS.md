@@ -5,6 +5,20 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-16 — Energy Delta data note: repeating tasks only, mood columns preserved
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/energy-per-habit-analysis.js` — `isPossiblyRepeatingTask` drops completed tasks that report `isRepeating: false` without an RRULE, and keeps tasks that don't report the attribute. `computeMonthlyAggregates` stores no rows for a month with no mood ratings (streaks still carry through it) and reports each month's `moodDayCount`.
+- `lib/dashboard/energy-per-habit-cache.js` — format 4 (one-time rebuild). `monthSectionMarkdown` writes a single line for a month with no rows, and `moodDayCountFromMonth` reads a month's mood-rated day count from its rows.
+- `lib/dashboard/energy-per-habit-service.js` — a recomputed month replaces its cached copy only when this client retrieved at least as many mood-rated days for it. The cached render no longer waits out a format rebuild.
+- `test/energy-per-habit-analysis.test.js`, `test/energy-per-habit-cache.test.js`, `test/energy-per-habit-service.test.js` — coverage for the above.
+
+**Validation:** Full Jest suite (1476 tests), `npm run build`, production plugin smoke test.
+**Task:** The data note filled up with one-off tasks whose mood columns were empty, because a client only receives the few months of mood ratings the server syncs to it, and later loads overwrote mood columns that earlier loads had filled in.
+
+---
+
 ## 2026-10-15 — Proposed Agenda latency: incidental model, timed-event research, batched queue writes
 
 **Model:** Claude Opus 5.5

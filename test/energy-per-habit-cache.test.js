@@ -4,8 +4,8 @@
  *   pipe escaping, and the load/persist flow (create note, in-place current-month section replace, full rewrite)"
  */
 import {
-  HABIT_CACHE_FORMAT_VERSION, HABIT_CACHE_NOTE_NAME, loadHabitCache, monthsFromNoteContent, monthTableMarkdown,
-  persistHabitCache,
+  HABIT_CACHE_FORMAT_VERSION, HABIT_CACHE_NOTE_NAME, loadHabitCache, monthSectionMarkdown, monthsFromNoteContent,
+  monthTableMarkdown, moodDayCountFromMonth, persistHabitCache,
 } from "energy-per-habit-cache";
 
 // Minimal in-memory app double backing findNote/getNoteContent/createNote/replaceNoteContent.
@@ -113,5 +113,21 @@ describe("persistHabitCache", () => {
     expect(app.calls.replace[0].options.section.heading.text).toBe("July 2026");
     expect(app.store.n1.content).toContain("Morning exercise"); // July updated
     expect(monthsFromNoteContent(app.store.n1.content).get("2026-06").rows).toHaveLength(1); // June untouched
+  });
+});
+
+describe("empty months and mood-day counts", () => {
+  test("a month with no rows is written as one line and still parses as a cached month", () => {
+    const content = `## June 2026\n\n${monthSectionMarkdown([])}\n`;
+    expect(content).not.toContain("| Task |");
+    const june = monthsFromNoteContent(content).get("2026-06");
+    expect(june.rows).toEqual([]);
+    expect(moodDayCountFromMonth(june)).toBe(0);
+  });
+
+  test("moodDayCountFromMonth prefers a computed count, else derives it from a row's mood lists", () => {
+    expect(moodDayCountFromMonth({ moodDayCount: 4, rows: [] })).toBe(4);
+    expect(moodDayCountFromMonth({ rows: [{ doneMoods: [1, 2], offMoods: [0] }] })).toBe(3);
+    expect(moodDayCountFromMonth(undefined)).toBe(0);
   });
 });

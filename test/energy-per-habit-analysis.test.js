@@ -6,7 +6,7 @@
  */
 import {
   aggregateMonthlyHabits, analyzeHabitMoodDeltas, computeMonthlyAggregates, formatDelta, habitGroupKey,
-  isHabitTask, leadingEmoji, moodByDayFromRatings, stripLeadingEmoji, trailingMonthKeys,
+  isHabitTask, isPossiblyRepeatingTask, leadingEmoji, moodByDayFromRatings, stripLeadingEmoji, trailingMonthKeys,
 } from "energy-per-habit-analysis";
 import { dateKeyFromDateInput, monthKeyFromMonthLabel, monthLabelFromMonthKey } from "util/date-utility";
 
@@ -206,6 +206,31 @@ describe("computeMonthlyAggregates + aggregateMonthlyHabits", () => {
     expect(habits[0].completions).toBe(5);                   // 2 (June) + 3 (July)
     expect(habits[0].avgMoodOnDone).toBeCloseTo(2);
     expect(habits[0].delta).toBeGreaterThan(0);
+  });
+
+  test("skips tasks reported as not repeating and stores no rows for a month without mood ratings", () => {
+    const ref = new Date(2026, 6, 18);
+    const monthKeys = ["2026-06", "2026-07"];
+    const tasks = [
+      task("Walk", 40, ref), task("Walk", 1, ref), task("Walk", 2, ref),
+      { ...task("Turn down bass by 15%", 3, ref), isRepeating: false },
+      { ...task("Stretch daily", 4, ref), isRepeating: true },
+    ];
+    const moods = [mood(2, 1, ref), mood(-1, 5, ref)];  // July only
+    const months = computeMonthlyAggregates({ completedTasks: tasks, moodRatings: moods, monthKeys });
+
+    expect(months.get("2026-06").rows).toEqual([]);
+    expect(months.get("2026-06").moodDayCount).toBe(0);
+    expect(months.get("2026-07").moodDayCount).toBe(2);
+    expect(months.get("2026-07").rows.map(r => r.label).sort()).toEqual(["Stretch daily", "Walk"]);
+  });
+
+  test("isPossiblyRepeatingTask keeps tasks that repeat or do not report isRepeating", () => {
+    expect(isPossiblyRepeatingTask({ isRepeating: true })).toBe(true);
+    expect(isPossiblyRepeatingTask({ isRepeating: false, repeat: "FREQ=DAILY" })).toBe(true);
+    expect(isPossiblyRepeatingTask({ content: "No attribute" })).toBe(true);
+    expect(isPossiblyRepeatingTask({ isRepeating: false })).toBe(false);
+    expect(isPossiblyRepeatingTask(null)).toBe(false);
   });
 
   test("shows a habit completed once per month more than 10 times in the trailing year", () => {
