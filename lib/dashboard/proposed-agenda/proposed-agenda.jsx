@@ -21,6 +21,7 @@ import { resolveProposedAgendaDate } from "dashboard/proposed-agenda/proposed-ag
 import { isAmpleAgentProInstalled } from "providers/ai-provider-settings";
 import { refillAndRecordSuggestion } from "dashboard/suggestions/ranked-task-suggestions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { logIfEnabled } from "util/log";
 import "dashboard/styles/dashboard-tippy.scss";
 import "dashboard/styles/proposed-agenda.scss";
 import tippy from "tippy.js";
@@ -298,7 +299,8 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
       setProposed(previous => [...previous, refill.placed]);
       setReserveTasks(previous => [...previous.filter(task => !sameDay(task)), ...refill.reserveTasks]);
       saveAgendaReplacement(app, { activity: refill.placed, date: targetDate, domainName: recordDomainName,
-        domainUuid: recordDomainUuid, priorityKey, providerEm: recordProviderEm, reserveTasks: refill.reserveTasks });
+        domainUuid: recordDomainUuid, priorityKey, providerEm: recordProviderEm, reserveTasks: refill.reserveTasks })
+        .catch(error => logIfEnabled("[proposed-agenda] failed to store replacement suggestion", error?.message));
     });
   }, [app, dismissedKeys, isFutureDay, llmDateRecord, obligations, priorityKey, proposed, recordDomainName,
     recordDomainUuid, recordProviderEm, reserveTasks]);

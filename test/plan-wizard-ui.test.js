@@ -4,6 +4,7 @@
 // the plugin runs.
 
 import { jest } from "@jest/globals";
+import { NOTE_WRITE_BACKSTOP_CHARACTERS } from "constants/units";
 import { createPlanWizardApp } from "./fixtures/plan-wizard-app.js";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
@@ -1482,12 +1483,12 @@ describe("PlanWizard pace cards step", () => {
 
     const workingReplace = app.replaceNoteContent;
     app.replaceNoteContent = jest.fn(async () => {
-      throw new Error("Vision Guide section \"Professional ideas & prospects\" is 288538 characters; the write limit is 100000");
+      throw new Error(`Vision Guide section "Professional ideas & prospects" is 288538 characters; the write limit is ${ NOTE_WRITE_BACKSTOP_CHARACTERS }`);
     });
     await clickAndSettle(container.querySelector(".plan-wizard-next"));
 
     const error = container.querySelector(".plan-error");
-    expect(error.textContent).toContain("write limit is 100000");
+    expect(error.textContent).toContain(`write limit is ${ NOTE_WRITE_BACKSTOP_CHARACTERS }`);
     const noteLink = container.querySelector(".plan-error-note-link");
     expect(noteLink.textContent).toBe("Open data note");
     expect(noteLink.getAttribute("href")).toBe(`https://www.amplenote.com/notes/${ app.notes[0].uuid }`);
