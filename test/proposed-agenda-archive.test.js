@@ -474,6 +474,20 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
     expect(app.getTask).toHaveBeenCalledWith("task-2");
   });
 
+  // A traced cached day reads the day's projects so the calendar generation report can say which fit its month and
+  // weekday, without asking the provider for anything new.
+  it("traces the project cadence of a day served from its cached agenda", async () => {
+    const app = buildGenerationApp();
+    await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    const selectionTrace = {};
+    const cached = await generateProposedAgenda(app, { priorityKey: PRIORITY, selectionTrace, targetDate: DATE });
+    expect(cached.fromCache).toBe(true);
+    expect(selectionTrace.source).toBe("cache");
+    expect(selectionTrace.eligibleCount).toBeUndefined();
+    expect(selectionTrace.projectCadence).toEqual(expect.objectContaining({ cadenceCount: 0, weekdayProjectNames: [] }));
+    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+  });
+
   it("moves a cached suggestion off an event scheduled after the agenda was generated", async () => {
     const app = buildGenerationApp();
     await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });

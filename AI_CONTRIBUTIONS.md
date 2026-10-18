@@ -5,17 +5,19 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
-## 2026-10-18 — Calendar generation report: scores for suggestions served from a cached agenda
+## 2026-10-18 — Calendar generation report: scores, notes, projects, and cadence for cached-agenda days
 
 **Model:** Claude Opus 5.5
 **Files created/modified:**
-- `lib/dashboard/suggestions/calendar-report-stored-scores.js` (created) — `storedScoresByCandidateId` reads the project task store note of each reported day's quarter and the next (past projects included) and returns an existing task's `matchScore` as its similarity and an idea's rating as its actionability and relevance, by candidate ID. It reads only when some suggested or next-in-line record lacks its own scores (`missingSuggestionScores`), so a fresh ranking costs no extra reads.
-- `lib/dashboard/suggestions/calendar-generation-report.js` — `calendarGenerationReportMarkdown` takes `storedScoresByCandidateId`; a record's own score still wins, and the ranker rating remains the last fallback. `writeCalendarGenerationReport` takes `domainUuid` and does the lookup before rendering.
+- `lib/dashboard/suggestions/calendar-report-stored-details.js` (created) — `storedDetailsByCandidateId` reads the project task store note of each reported day's quarter and the next (past projects included) and returns, by candidate ID, the project's name plus an existing task's `matchScore` as its similarity or an idea's rating as its actionability and relevance. It reads only when some suggested or next-in-line record lacks its project or scores (`missingSuggestionDetails`), so a fresh ranking costs no extra reads.
+- `lib/dashboard/suggestions/calendar-generation-report.js` — `calendarGenerationReportMarkdown` takes `storedDetailsByCandidateId` and `noteUuidByTaskUuid`; a record's own score and project still win, and the ranker rating remains the last fallback. Every suggestion line now links the note it lives in (an existing task's current note, from `app.getTask`) and names its project. The weekday cadence count lists the matching project names, and a cached day with no fresh schedule run shows the cadence counts in its Source bullet. `writeCalendarGenerationReport` takes `domainUuid` and does the lookups before rendering.
+- `lib/dashboard/suggestions/day-project-candidates.js` — `projectCadenceCounts` also returns `weekdayProjectNames`.
+- `lib/dashboard/proposed-agenda/proposed-agenda-service.js` — `_traceCachedProjectCadence` records the cadence counts for a traced day served from its cached agenda (only Debug Console passes are traced).
 - `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` — passes the Task Domain UUID to the report.
-- `test/calendar-generation-report.test.js` — stored-score rendering, an end-to-end read from a store note, and no store read when every suggestion carries its scores.
+- `test/calendar-generation-report.test.js`, `test/proposed-agenda-archive.test.js` — stored-detail rendering, an end-to-end read from a store note with task note lookup, no store read when every suggestion is complete, weekday project names, the cached Source bullet, and the cached path's cadence trace.
 
-**Validation:** Full Jest suite (1506 tests), `npm run build`.
-**Task:** Show similarity/actionability/relevance in the Debug Console report for suggestions reused from a cached agenda, reading them from the project note.
+**Validation:** Full Jest suite (1508 tests), `npm run build`.
+**Task:** Make the Debug Console report for cached-agenda days show scores, cadence-matched projects, each task's note, and its project.
 
 ---
 

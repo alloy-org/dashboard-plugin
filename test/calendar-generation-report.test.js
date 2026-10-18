@@ -1,6 +1,6 @@
 // The calendar generation report names its pass, notices the Debug Console in the layout, renders each evaluated day
-// with the scores behind each suggestion, its rankings, and the reasons a day was left with open hours, and stays under
-// its per-day character budget.
+// with the scores, note, and project behind each suggestion, its rankings, and the reasons a day was left with open
+// hours, and stays under its per-day character budget.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
 import { initialProjectTaskStoreMarkdown } from "dashboard/project-tasks/project-task-store-markdown";
@@ -25,8 +25,8 @@ function cachedDay() {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Mock the app bridge with one quarter's project task store note holding the cached day's project, and capture
-//   the report note written.
+// @desc Mock the app bridge with one quarter's project task store note holding the cached day's project, task-1 living
+//   in a note of its own, and capture the report note written.
 // @returns {object} App mock carrying `reportContent` for assertions.
 function projectStoreApp() {
   const project = new QuarterProject({ relatedTaskRecords: [{ matchScore: 6.9, taskText: "Draft launch email", taskUuid: "task-1" }],
@@ -40,9 +40,11 @@ function projectStoreApp() {
     createNote: jest.fn(async () => "report-note"),
     findNote: jest.fn(async ({ name, uuid } = {}) => {
       if (uuid === "note-1") return { name: "Launch", uuid };
+      if (uuid === "note-2") return { name: "Launch notes", uuid };
       return name === "Project Tasks Q4 2026 Work" ? { uuid: "store-note" } : null;
     }),
     getNoteContent: jest.fn(async ({ uuid }) => (uuid === "store-note" ? storeContent : "")),
+    getTask: jest.fn(async uuid => (uuid === "task-1" ? { noteUuid: "note-2", uuid } : null)),
     insertNoteContent: jest.fn(async (handle, markdown) => { state.reportContent = markdown; return true; }),
   };
   Object.defineProperty(app, "reportContent", { get: () => state.reportContent });
@@ -69,7 +71,8 @@ function rankedDay({ obligations = [] } = {}) {
   const slotted = { activities: [{ candidateId: "task:task-1" }], reserveTasks: [rankedTasks[2]] };
   const rankingTrace = rankingSelectionTrace({ excludedSuggestionKeys: new Set(["task:task-2"]), outcome: "ranked",
     ranking: { fromStore: true, rankedTasks, rankerEm: "jev" }, slotted });
-  const projectCadence = { cadenceCount: 2, monthCount: 1, monthLabel: "October", weekdayCount: 1, weekdayLabel: "Mondays" };
+  const projectCadence = { cadenceCount: 2, monthCount: 1, monthLabel: "October", weekdayCount: 1, weekdayLabel: "Mondays",
+    weekdayProjectNames: ["Ship the dashboard"] };
   const selectionTrace = { eligibleCount: 40, generator: "ranking", projectCadence, projectCandidateCount: 6, projectCount: 2,
     selectedTaskCount: 34, source: "fresh", ...rankingTrace };
   const offered = [{ candidateId: "task:task-1", durationMinutes: 30, isExisting: true, score: 6.9, startTime: "09:00",
@@ -108,9 +111,10 @@ describe("calendar generation report", () => {
     expect(markdown).toMatch(/^# Monday, October 19 — 2 suggested/);
     expect(markdown).toContain("- Source: fresh ranking by jev (stored ranking reused)");
     expect(markdown).toContain("- Eligible: 40 tasks (34 recent open tasks, 6 project candidates) across 2 projects; "
-      + "active projects: 2 with a cadence, 1 for October, 1 targeting Mondays");
+      + "active projects: 2 with a cadence, 1 for October, 1 targeting Mondays (Ship the dashboard)");
     expect(markdown).toContain("- Considered: 3 rated by jev; 1 already suggested on an earlier day; best 2 pooled for slotting");
-    expect(markdown).toContain("- Next in line:\n  - 6.3 similarity score for existing task \"Task number 3\" (task-3)");
+    expect(markdown).toContain("- Next in line:\n  - 6.3 similarity score for existing task \"Task number 3\", "
+      + "project \"Ship the dashboard\" (task-3)");
     expect(markdown).toContain("  - 9.2 Task number 1 [Ship the dashboard] → 09:00");
     expect(markdown).toContain("  - 8.8 Task number 2 [Ship the dashboard] earlier day");
     expect(markdown).toContain("  - 7.4 Task number 3 [Ship the dashboard] reserve");
@@ -140,38 +144,43 @@ describe("calendar generation report", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Scores from the project task store fill in for a suggestion that has none of its own, while a suggestion's
-  //   own scores win over stored ones.
-  it("shows stored scores for a suggestion that arrived without its own", () => {
-    const storedScoresByCandidateId = new Map([["idea:idea-1", { actionability: 8, relevance: 9.1, similarity: null }],
-      ["task:task-1", { actionability: null, relevance: null, similarity: 6.9 }]]);
-    const markdown = calendarGenerationReportMarkdown([cachedDay()], { storedScoresByCandidateId });
-    expect(markdown).toContain("  - 9:00am: 6.9 similarity score for existing task \"Draft launch email\" (task-1)");
-    expect(markdown).toContain("- Next in line:\n  - 8.0 actionability, 9.1 relevance for suggested task \"Outline pricing page\"");
+  // @desc Projects and scores from the project task store fill in for a suggestion that has none of its own, while a
+  //   suggestion's own scores win over stored ones.
+  it("shows stored details for a suggestion that arrived without its own", () => {
+    const storedDetailsByCandidateId = new Map([
+      ["idea:idea-1", { actionability: 8, projectName: "Launch", relevance: 9.1, similarity: null }],
+      ["task:task-1", { actionability: null, projectName: "Launch", relevance: null, similarity: 6.9 }]]);
+    const markdown = calendarGenerationReportMarkdown([cachedDay()], { storedDetailsByCandidateId });
+    expect(markdown).toContain("  - 9:00am: 6.9 similarity score for existing task \"Draft launch email\", project \"Launch\" (task-1)");
+    expect(markdown).toContain("- Next in line:\n  - 8.0 actionability, 9.1 relevance for suggested task \"Outline pricing page\" in "
+      + "[note](https://www.amplenote.com/notes/note-1), project \"Launch\"");
     const ownScored = rankedDay();
-    const overridden = new Map([["task:task-1", { actionability: null, relevance: null, similarity: 2 }]]);
-    const ownMarkdown = calendarGenerationReportMarkdown([ownScored], { storedScoresByCandidateId: overridden });
+    const overridden = new Map([["task:task-1", { actionability: null, projectName: null, relevance: null, similarity: 2 }]]);
+    const ownMarkdown = calendarGenerationReportMarkdown([ownScored], { storedDetailsByCandidateId: overridden });
     expect(ownMarkdown).toContain("9:00am: 6.9 similarity score for existing task \"Task number 1\"");
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Writing the report for a cached day reads the quarter's project task store for the scores the cache dropped.
-  it("reads a cached day's scores back from the project task store note", async () => {
+  // @desc Writing the report for a cached day reads the quarter's project task store for the scores and projects the
+  //   cache dropped, and each existing task's current note from the task itself.
+  it("reads a cached day's scores and projects back from the project task store note", async () => {
     const app = projectStoreApp();
     const uuid = await writeCalendarGenerationReport(app, { days: [cachedDay()], domainName: "Work", domainUuid: "work-domain",
       startedAt: new Date(2026, 9, 18, 9, 5) });
     expect(uuid).toBe("report-note");
     expect(app.reportContent).toContain("- Source: cached agenda (1 cached, 0 replaced as stale)");
-    expect(app.reportContent).toContain("  - 9:00am: 6.9 similarity score for existing task \"Draft launch email\" (task-1)");
+    expect(app.reportContent).toContain("  - 9:00am: 6.9 similarity score for existing task \"Draft launch email\" in "
+      + "[Launch notes](https://www.amplenote.com/notes/note-2), project \"Launch\" (task-1)");
     expect(app.reportContent).toContain("  - 8.0 actionability, 9.1 relevance for suggested task \"Outline pricing page\" in "
-      + "[Launch](https://www.amplenote.com/notes/note-1)");
+      + "[Launch](https://www.amplenote.com/notes/note-1), project \"Launch\"");
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc A freshly ranked pass already carries its scores, so the report reads no project task store.
-  it("reads no project task store when every suggestion carries its scores", async () => {
+  // @desc A freshly ranked pass already carries its scores and projects, so the report reads no project task store.
+  it("reads no project task store when every suggestion carries its scores and project", async () => {
     const app = projectStoreApp();
     const day = rankedDay();
+    day.dayOutcome.activities = day.dayOutcome.activities.map(activity => ({ ...activity, projectSummary: "Launch" }));
     day.dayOutcome.reserveTasks = [];
     await writeCalendarGenerationReport(app, { days: [day], domainName: "Work", domainUuid: "work-domain",
       startedAt: new Date(2026, 9, 18, 9, 5) });
@@ -182,12 +191,23 @@ describe("calendar generation report", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc Active projects count when they carry a cadence, then by whether they fit the planned month and weekday.
   it("counts active projects by cadence, month, and weekday", () => {
-    const projects = [{ focusMonths: [], preferredWeekdays: ["monday"], priorityEm: "quarterFocus" },
+    const projects = [{ focusMonths: [], preferredWeekdays: ["monday"], priorityEm: "quarterFocus", summary: "Launch" },
       { focusMonths: ["2026-11"], preferredWeekdays: [], priorityEm: "stayWarm" },
       { focusMonths: ["2026-10"], paceEm: "twoFocusedBlocks", preferredWeekdays: ["tuesday"], priorityEm: null },
       { focusMonths: [], preferredWeekdays: ["monday"], priorityEm: "notNow" }, { focusMonths: [], preferredWeekdays: [] }];
     expect(projectCadenceCounts({ now: MONDAY, projects })).toEqual({ cadenceCount: 3, monthCount: 2, monthLabel: "October",
-      weekdayCount: 1, weekdayLabel: "Mondays" });
+      weekdayCount: 1, weekdayLabel: "Mondays", weekdayProjectNames: ["Launch"] });
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A cached day that ran no fresh schedule says in its Source bullet which projects fit its month and weekday.
+  it("names the projects targeting a cached day's weekday in its source", () => {
+    const day = cachedDay();
+    day.dayResult.selectionTrace.projectCadence = { cadenceCount: 3, monthCount: 2, monthLabel: "October", weekdayCount: 2,
+      weekdayLabel: "Mondays", weekdayProjectNames: ["Launch", "Hiring"] };
+    const markdown = calendarGenerationReportMarkdown([day]);
+    expect(markdown).toContain("- Source: cached agenda (1 cached, 0 replaced as stale); active projects: 3 with a cadence, "
+      + "2 for October, 2 targeting Mondays (Launch, Hiring)");
   });
 
   // ----------------------------------------------------------------------------------------------
