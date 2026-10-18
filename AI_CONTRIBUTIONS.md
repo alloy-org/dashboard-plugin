@@ -5,6 +5,20 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-18 — Calendar generation report: scores for suggestions served from a cached agenda
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/suggestions/calendar-report-stored-scores.js` (created) — `storedScoresByCandidateId` reads the project task store note of each reported day's quarter and the next (past projects included) and returns an existing task's `matchScore` as its similarity and an idea's rating as its actionability and relevance, by candidate ID. It reads only when some suggested or next-in-line record lacks its own scores (`missingSuggestionScores`), so a fresh ranking costs no extra reads.
+- `lib/dashboard/suggestions/calendar-generation-report.js` — `calendarGenerationReportMarkdown` takes `storedScoresByCandidateId`; a record's own score still wins, and the ranker rating remains the last fallback. `writeCalendarGenerationReport` takes `domainUuid` and does the lookup before rendering.
+- `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` — passes the Task Domain UUID to the report.
+- `test/calendar-generation-report.test.js` — stored-score rendering, an end-to-end read from a store note, and no store read when every suggestion carries its scores.
+
+**Validation:** Full Jest suite (1506 tests), `npm run build`.
+**Task:** Show similarity/actionability/relevance in the Debug Console report for suggestions reused from a cached agenda, reading them from the project note.
+
+---
+
 ## 2026-10-18 — Proposed Agenda: prompt to connect a calendar to the Task Domain
 
 **Model:** Claude Opus 5.5

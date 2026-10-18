@@ -1,12 +1,53 @@
 // The calendar generation report names its pass, notices the Debug Console in the layout, renders each evaluated day
 // with the scores behind each suggestion, its rankings, and the reasons a day was left with open hours, and stays under
 // its per-day character budget.
+import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
+import { initialProjectTaskStoreMarkdown } from "dashboard/project-tasks/project-task-store-markdown";
 import { calendarGenerationReportMarkdown, calendarGenerationReportName, debugConsoleInLayout,
-  rankingSelectionTrace } from "dashboard/suggestions/calendar-generation-report";
+  rankingSelectionTrace, writeCalendarGenerationReport } from "dashboard/suggestions/calendar-generation-report";
 import { projectCadenceCounts } from "dashboard/suggestions/day-project-candidates";
+import QuarterProject from "quarter-project";
 
 const MONDAY = new Date(2026, 9, 19);
+
+// ----------------------------------------------------------------------------------------------
+// @desc A day served from a cached agenda: its activity and reserve carry no scores, as persisted entries do not.
+// @returns {object} { dayOutcome, dayResult }
+function cachedDay() {
+  const activities = [{ durationMinutes: 30, isExisting: true, projectUuid: "project-1", startTime: "09:00",
+    taskUuid: "task-1", title: "Draft launch email" }];
+  const reserveTasks = [{ ideaId: "idea-1", isExisting: false, noteUuid: "note-1", projectUuid: "project-1",
+    taskText: "Outline pricing page" }];
+  const dayOutcome = { activities, droppedTitles: [], refilledCount: 0, reserveTasks, suggestionHours: null };
+  const selectionTrace = { cachedActivityCount: 1, replacedCount: 0, source: "cache" };
+  return { dayOutcome, dayResult: { day: MONDAY, dismissedKeys: [], obligations: [], scheduledKeys: [], selectionTrace } };
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Mock the app bridge with one quarter's project task store note holding the cached day's project, and capture
+//   the report note written.
+// @returns {object} App mock carrying `reportContent` for assertions.
+function projectStoreApp() {
+  const project = new QuarterProject({ relatedTaskRecords: [{ matchScore: 6.9, taskText: "Draft launch email", taskUuid: "task-1" }],
+    suggestedTasks: [{ generatedAt: "2026-10-01T12:00:00.000Z", ideaId: "idea-1", rating: { actionability: 8,
+      ratedAt: "2026-10-02T12:00:00.000Z", relevance: 9.1 }, taskText: "Outline pricing page" }],
+    summary: "Launch", uuid: "project-1" });
+  const storeContent = initialProjectTaskStoreMarkdown().replace("# Past projects",
+    `## ${ project.summary } (project:${ project.uuid })\n\n${ project.toStoreSection() }\n# Past projects`);
+  const state = { reportContent: null };
+  const app = {
+    createNote: jest.fn(async () => "report-note"),
+    findNote: jest.fn(async ({ name, uuid } = {}) => {
+      if (uuid === "note-1") return { name: "Launch", uuid };
+      return name === "Project Tasks Q4 2026 Work" ? { uuid: "store-note" } : null;
+    }),
+    getNoteContent: jest.fn(async ({ uuid }) => (uuid === "store-note" ? storeContent : "")),
+    insertNoteContent: jest.fn(async (handle, markdown) => { state.reportContent = markdown; return true; }),
+  };
+  Object.defineProperty(app, "reportContent", { get: () => state.reportContent });
+  return app;
+}
 
 // ----------------------------------------------------------------------------------------------
 // @desc A ranked task as prepareDayRanking returns it.
@@ -96,6 +137,46 @@ describe("calendar generation report", () => {
     day.dayOutcome.activities = [{ candidateId: "task:task-9", rating: 7.2, startTime: "10:00", taskUuid: "task-9", title: "Old" }];
     const markdown = calendarGenerationReportMarkdown([day]);
     expect(markdown).toContain("  - 10:00am: 7.2 ranker rating for existing task \"Old\" (task-9)");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Scores from the project task store fill in for a suggestion that has none of its own, while a suggestion's
+  //   own scores win over stored ones.
+  it("shows stored scores for a suggestion that arrived without its own", () => {
+    const storedScoresByCandidateId = new Map([["idea:idea-1", { actionability: 8, relevance: 9.1, similarity: null }],
+      ["task:task-1", { actionability: null, relevance: null, similarity: 6.9 }]]);
+    const markdown = calendarGenerationReportMarkdown([cachedDay()], { storedScoresByCandidateId });
+    expect(markdown).toContain("  - 9:00am: 6.9 similarity score for existing task \"Draft launch email\" (task-1)");
+    expect(markdown).toContain("- Next in line:\n  - 8.0 actionability, 9.1 relevance for suggested task \"Outline pricing page\"");
+    const ownScored = rankedDay();
+    const overridden = new Map([["task:task-1", { actionability: null, relevance: null, similarity: 2 }]]);
+    const ownMarkdown = calendarGenerationReportMarkdown([ownScored], { storedScoresByCandidateId: overridden });
+    expect(ownMarkdown).toContain("9:00am: 6.9 similarity score for existing task \"Task number 1\"");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Writing the report for a cached day reads the quarter's project task store for the scores the cache dropped.
+  it("reads a cached day's scores back from the project task store note", async () => {
+    const app = projectStoreApp();
+    const uuid = await writeCalendarGenerationReport(app, { days: [cachedDay()], domainName: "Work", domainUuid: "work-domain",
+      startedAt: new Date(2026, 9, 18, 9, 5) });
+    expect(uuid).toBe("report-note");
+    expect(app.reportContent).toContain("- Source: cached agenda (1 cached, 0 replaced as stale)");
+    expect(app.reportContent).toContain("  - 9:00am: 6.9 similarity score for existing task \"Draft launch email\" (task-1)");
+    expect(app.reportContent).toContain("  - 8.0 actionability, 9.1 relevance for suggested task \"Outline pricing page\" in "
+      + "[Launch](https://www.amplenote.com/notes/note-1)");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A freshly ranked pass already carries its scores, so the report reads no project task store.
+  it("reads no project task store when every suggestion carries its scores", async () => {
+    const app = projectStoreApp();
+    const day = rankedDay();
+    day.dayOutcome.reserveTasks = [];
+    await writeCalendarGenerationReport(app, { days: [day], domainName: "Work", domainUuid: "work-domain",
+      startedAt: new Date(2026, 9, 18, 9, 5) });
+    const storeLookups = app.findNote.mock.calls.filter(([query]) => String(query?.name || "").startsWith("Project Tasks"));
+    expect(storeLookups).toEqual([]);
   });
 
   // ----------------------------------------------------------------------------------------------
