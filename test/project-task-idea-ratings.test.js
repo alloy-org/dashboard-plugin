@@ -10,7 +10,7 @@ import { decidedIdeaRecords, IDEA_STATUSES, ideaIdFor, normalizedIdeaRecords } f
 import { minutesSinceIdeaRecommended } from "dashboard/project-tasks/project-suggestion-log";
 import { readCollectedProjectTasks } from "dashboard/project-tasks/project-task-store";
 import { ideaAverageRating, ideaRatingPrompt, ideaRecommendable, ideasAwaitingRating, ideasSaturated, keptIdeaRecords,
-  MAXIMUM_IDEAS_PER_RATING, rateProjectIdeas, ratedIdeaRecords } from "dashboard/project-tasks/project-task-idea-ratings";
+  MAXIMUM_IDEAS_PER_RATING, projectTooAbstract, rateProjectIdeas, ratedIdeaRecords } from "dashboard/project-tasks/project-task-idea-ratings";
 import { scheduleProposedActivity } from "dashboard/proposed-agenda/proposed-agenda-service";
 import QuarterProject from "dashboard/quarter-project";
 import QuarterProjectRepository from "dashboard/quarter-project-repository";
@@ -40,12 +40,14 @@ function answer(rating) {
 // ----------------------------------------------------------------------------------------------
 // @desc An open idea rated for its current text.
 // @param {string} taskText - The idea's text.
-// @param {object} [rating] - { actionability = 8, ratedAt, relevance = 8 }.
+// @param {object} [rating] - { actionability = 8, projectClarity, projectSummary, ratedAt, relevance = 8 }: projectClarity
+//   is left unrated unless given, judged under projectSummary.
 // @returns {object} Idea record.
-function ratedIdea(taskText, { actionability = 8, ratedAt = NOW.toISOString(), relevance = 8 } = {}) {
+function ratedIdea(taskText, { actionability = 8, projectClarity = null, projectSummary = "Launch dashboard",
+  ratedAt = NOW.toISOString(), relevance = 8 } = {}) {
   const [idea] = normalizedIdeaRecords([{ taskText }], { projectUuid: PROJECT_UUID });
-  return ratedIdeaRecords([idea], new Map([[idea.ideaId, { actionability, relevance }]]), { ratedAt, ratedIdeas: [idea],
-    raterEm: "jev" })[0];
+  const rating = { actionability, projectClarity, projectSummaryKey: projectSummary.toLowerCase(), relevance };
+  return ratedIdeaRecords([idea], new Map([[idea.ideaId, rating]]), { ratedAt, ratedIdeas: [idea], raterEm: "jev" })[0];
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -70,21 +72,23 @@ async function storedProject(app) {
 
 describe("idea ratings", () => {
   // ----------------------------------------------------------------------------------------------
-  // @desc Each idea gets an actionability and a relevance question, and every answer is read onto 1–10 by one adapter;
-  //   a question left unanswered rates nothing.
+  // @desc Each idea gets an actionability and a relevance question, the project one clarity question shared by every
+  //   idea, and every answer is read onto 1–10 by one adapter; a question left unanswered rates nothing.
   it("asks two questions per idea and reads the answers onto the 1–10 scale", async () => {
     const project = new QuarterProject({ summary: "Launch dashboard", uuid: PROJECT_UUID });
     const ideas = normalizedIdeaRecords([{ taskText: "Benchmark the picker" }, { taskText: "Rewrite everything" }],
       { projectUuid: PROJECT_UUID });
     const requestAnswers = jest.fn().mockResolvedValue({ answers: { idea_1_actionability: answer(8),
-      idea_1_relevance: { score: 2.4, type: "score" }, idea_2_actionability: answer(3) } });
+      idea_1_relevance: { score: 2.4, type: "score" }, idea_2_actionability: answer(3), project_clarity: answer(6) } });
     const { ratingsById } = await rateProjectIdeas({ decisionsEndpoint: DecisionsEndpoint.fromRequester(requestAnswers), ideas,
       intentTexts: ["Grow paying users"], project });
     const { questions, state } = requestAnswers.mock.calls[0][0];
-    expect(Object.keys(questions)).toEqual(["idea_1_actionability", "idea_1_relevance", "idea_2_actionability", "idea_2_relevance"]);
+    expect(Object.keys(questions)).toEqual(["idea_1_actionability", "idea_1_relevance", "idea_2_actionability", "idea_2_relevance",
+      "project_clarity"]);
     expect(state.project).toMatchObject({ intents: ["Grow paying users"], summary: "Launch dashboard" });
-    expect(ratingsById.get(ideas[0].ideaId)).toEqual({ actionability: 8, relevance: 3.4 });
-    expect(ratingsById.get(ideas[1].ideaId)).toEqual({ actionability: 3, relevance: null });
+    const projectFields = { projectClarity: 6, projectSummaryKey: "launch dashboard" };
+    expect(ratingsById.get(ideas[0].ideaId)).toEqual({ actionability: 8, ...projectFields, relevance: 3.4 });
+    expect(ratingsById.get(ideas[1].ideaId)).toEqual({ actionability: 3, ...projectFields, relevance: null });
     const failingEndpoint = DecisionsEndpoint.fromRequester(jest.fn().mockRejectedValue(new Error("Jev down")));
     const failed = await rateProjectIdeas({ decisionsEndpoint: failingEndpoint, ideas, project });
     expect(failed).toEqual({ failureReason: "Jev down", ratingsById: null });
@@ -94,7 +98,7 @@ describe("idea ratings", () => {
   // @desc The generative stand-in asks with the idea rubric and returns Jev's shape, so its 1–10 ratings read back
   //   unchanged.
   it("rates through the generative fast model with the idea rubric", async () => {
-    const promptRunner = jest.fn().mockResolvedValue({ ratings: { idea_1_actionability: 9, idea_1_relevance: 7 } });
+    const promptRunner = jest.fn().mockResolvedValue({ ratings: { idea_1_actionability: 9, idea_1_relevance: 7, project_clarity: 8 } });
     const fastScoreRequest = generativeScoreRequester({}, { promptBuilder: ideaRatingPrompt, promptRunner });
     const decisionsEndpoint = new DecisionsEndpoint({ routes: [decisionsRoute(DECISIONS_PROVIDER_GENERATIVE, fastScoreRequest)],
       scorerEm: "generative" });
@@ -102,7 +106,9 @@ describe("idea ratings", () => {
     const ideas = normalizedIdeaRecords([{ taskText: "Benchmark the picker" }], { projectUuid: PROJECT_UUID });
     const { ratingsById } = await rateProjectIdeas({ decisionsEndpoint, ideas, project });
     expect(promptRunner.mock.calls[0][1]).toContain("Actionability rubric");
-    expect(ratingsById.get(ideas[0].ideaId)).toEqual({ actionability: 9, relevance: 7 });
+    expect(promptRunner.mock.calls[0][1]).toContain("Project clarity rubric");
+    expect(ratingsById.get(ideas[0].ideaId)).toEqual({ actionability: 9, projectClarity: 8, projectSummaryKey: "launch dashboard",
+      relevance: 7 });
   });
 
   // ----------------------------------------------------------------------------------------------
@@ -123,6 +129,27 @@ describe("idea ratings", () => {
     expect(ideaRecommendable(ratedIdea("Vague", { actionability: 6 }))).toBe(false);
     expect(ideaRecommendable(ratedIdea("Off topic", { relevance: 5 }))).toBe(false);
     expect(ideaRecommendable({ ...rated, status: IDEA_STATUSES.accepted })).toBe(false);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A project whose latest clarity rating under its current summary falls below the minimum is too abstract:
+  //   it asks for no more ideas, until a reworded summary, or a clearer later rating, lets it be judged afresh.
+  it("withholds suggestions from a project judged too abstract", () => {
+    const unjudged = new QuarterProject({ summary: "Launch dashboard", suggestedTasks: [ratedIdea("Benchmark the picker")],
+      uuid: PROJECT_UUID });
+    expect(projectTooAbstract(unjudged)).toBe(false);
+    const earlier = new Date(NOW.getTime() - HOUR).toISOString();
+    const abstractIdeas = [ratedIdea("Benchmark the picker", { projectClarity: 8, ratedAt: earlier }),
+      ratedIdea("Profile the widget grid", { projectClarity: 3 })];
+    const abstractProject = new QuarterProject({ summary: "Launch dashboard", suggestedTasks: abstractIdeas, uuid: PROJECT_UUID });
+    expect(projectTooAbstract(abstractProject)).toBe(true);
+    expect(ideasRefreshDue(abstractProject, NOW)).toBe(false);
+    const reworded = new QuarterProject({ summary: "Ship the dashboard beta", suggestedTasks: abstractIdeas, uuid: PROJECT_UUID });
+    expect(projectTooAbstract(reworded)).toBe(false);
+    const clarifiedIdeas = [ratedIdea("Benchmark the picker", { projectClarity: 3, ratedAt: earlier }),
+      ratedIdea("Profile the widget grid", { projectClarity: 7 })];
+    const clarified = new QuarterProject({ summary: "Launch dashboard", suggestedTasks: clarifiedIdeas, uuid: PROJECT_UUID });
+    expect(projectTooAbstract(clarified)).toBe(false);
   });
 });
 
@@ -148,14 +175,15 @@ describe("rateProjectIdeas job", () => {
   it("rates awaiting ideas without restamping their generation", async () => {
     const app = maintenanceApp({ tasks: [] });
     await storeIdeas(app, [ratedIdea("Benchmark the picker"), { taskText: "Profile the widget grid" }]);
-    const requestAnswers = jest.fn().mockResolvedValue({ answers: { idea_1_actionability: answer(9), idea_1_relevance: answer(7) } });
+    const requestAnswers = jest.fn().mockResolvedValue({ answers: { idea_1_actionability: answer(9), idea_1_relevance: answer(7),
+      project_clarity: answer(8) } });
     const handler = createRateProjectIdeasHandler({ requestAnswers, taskScorer: async () => "jev" });
     const job = { attempt: 1, category: "maintenance", desiredRevision: "pending", input: { ...SCOPE_INPUT, projectUuid: PROJECT_UUID } };
     const result = await handler.run({ context: jobContext(app), job, signal: null });
-    expect(Object.keys(requestAnswers.mock.calls[0][0].questions)).toEqual(["idea_1_actionability", "idea_1_relevance"]);
+    expect(Object.keys(requestAnswers.mock.calls[0][0].questions)).toEqual(["idea_1_actionability", "idea_1_relevance", "project_clarity"]);
     const project = await storedProject(app);
     expect(project.lastSuggestedAt).toBe("2026-09-18T12:00:00.000Z");
-    expect(project.suggestedTasks[1].rating).toMatchObject({ actionability: 9, raterEm: "jev", relevance: 7 });
+    expect(project.suggestedTasks[1].rating).toMatchObject({ actionability: 9, projectClarity: 8, raterEm: "jev", relevance: 7 });
     expect(project.refreshState.ideaRatings.inputRevision).toBe(result.revision);
     expect(result).toMatchObject({ outcomeDetail: "Rated 1 idea", outcomeSubject: project.summary });
     expect(await handler.appliedRevision({ context: jobContext(app), job })).toBe(result.revision);

@@ -5,6 +5,21 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-17 — Idea ratings: "obvious where to start" actionability, and no suggestions for abstract projects
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/project-tasks/project-task-idea-ratings.js` — actionability rubric and question now require an obvious first step; an abstract action that needs breaking down scores ≤ 5. Each rating request adds one `project_clarity` question (new rubric, `PROJECT_CLARITY_MINIMUM = 5`), stored on every rated idea with the project summary it judged. New `projectTooAbstract(project)` reads the latest clarity rating under the current summary.
+- `lib/dashboard/quarter-project-task-candidates.js`, `lib/dashboard/idea-generation/idea-generation-run.js` — an abstract project contributes no idea candidates or eligible-idea counts.
+- `lib/dashboard/work-queue/quarter-project-work-planner.js`, `lib/dashboard/idea-generation/idea-generation-run-plan.js`, `lib/dashboard/work-queue/jobs/generate-project-ideas.js` — no more ideas are generated for an abstract project until its summary changes.
+- `lib/dashboard/suggestions/suggestion-task-rank.js` — the ranker weighs "obvious where to start" for existing tasks too.
+- `test/project-task-idea-ratings.test.js` — request-shape updates and abstract-project gate coverage.
+
+**Validation:** Full Jest suite (1483 tests), `npm run build`, production plugin smoke test.
+**Task:** Make actionability ask "Is it obvious where to start?" and make no suggestions for a project that is itself too abstract.
+
+---
+
 ## 2026-10-16 — Project task store: list similar tasks disqualified from suggestion, with reasons
 
 **Model:** Claude Opus 5.5
