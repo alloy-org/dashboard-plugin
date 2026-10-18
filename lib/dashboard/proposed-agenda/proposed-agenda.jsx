@@ -18,6 +18,7 @@ import { DEFAULT_PRIORITY_KEY } from "dashboard/proposed-agenda/proposed-agenda-
 import ProposedAgendaPriorityControl from "dashboard/proposed-agenda/proposed-agenda-priority-control";
 import { agendaRowsGroupedByDay } from "dashboard/proposed-agenda/proposed-agenda-range";
 import { resolveProposedAgendaDate } from "dashboard/proposed-agenda/proposed-agenda-service";
+import { taskDomainCalendarSettingsUrl, taskDomainHasConnectedCalendar } from "dashboard/proposed-agenda/task-domain-calendar-connection";
 import { isAmpleAgentProInstalled } from "providers/ai-provider-settings";
 import { refillAndRecordSuggestion } from "dashboard/suggestions/ranked-task-suggestions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -160,6 +161,31 @@ function LoadingState({ dateControl }) {
 }
 
 // ----------------------------------------------------------------------------------------------
+// @desc Point a user whose Task Domain has no external calendar toward its calendar settings, since the agenda can
+//   only plan around meetings it can see. The link opens a new tab because app.navigate only routes note and
+//   in-app areas, and the Task Domains settings page is neither. The × at the right edge matches the dismiss control
+//   on the agenda rows beneath it.
+// @param {object} props - { domainName, domainUuid, onDismiss }.
+//   - {Function} onDismiss - Called when the user dismisses the prompt for good.
+// @returns {JSX.Element} Prompt with a link to the domain's calendar settings and a dismiss control.
+function CalendarConnectionPrompt({ domainName, domainUuid, onDismiss }) {
+  return (
+    <div className="proposed-agenda-calendar-prompt">
+      <p className="proposed-agenda-calendar-text">
+        <span aria-hidden="true" className="proposed-agenda-calendar-icon">📅</span>
+        No calendar is connected to { domainName ? `the ${ domainName } Task Domain` : "this Task Domain" }, so this
+        agenda can't plan around your meetings.{ " " }
+        <a className="proposed-agenda-calendar-link" href={ taskDomainCalendarSettingsUrl(domainUuid) }
+          onClick={ () => snapDashboardAction("connectProposedAgendaCalendar") } rel="noopener noreferrer"
+          target="_blank">Connect a calendar →</a>
+      </p>
+      <button aria-label="Dismiss this notice" className="proposed-agenda-dismiss proposed-agenda-calendar-dismiss" onClick={ onDismiss }
+        title="Dismiss this notice" type="button">×</button>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------------------------
 // @desc Render obligations and LLM proposals for one day or an optional calendar range.
 // @param {object} props - { app, calendarEvents, currentDate, dateRange, defaultNoteUuid, providerApiKey,
 //   providerEm, taskDomainName, taskDomainUUID, timeFormat }.
@@ -208,6 +234,8 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   const [dateLabel, setDateLabel] = useState(null);
   const [dismissedKeys, setDismissedKeys] = useState(() => new Set());
   const [error, setError] = useState(null);
+  const [calendarPromptDismissed, setCalendarPromptDismissed] = useState(() => !!pluginSettings()[SETTING_KEYS.PROPOSED_AGENDA_CALENDAR_PROMPT_DISMISSED]);
+  const [hasConnectedCalendar, setHasConnectedCalendar] = useState(null);
   const [isFutureDay, setIsFutureDay] = useState(false);
   const [loading, setLoading] = useState(true);
   const [modelProviderEm, setModelProviderEm] = useState(persistedProviderEm || providerEm || null);
@@ -280,6 +308,16 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
     setPriorityKey(nextKey);
     app.setSetting(SETTING_KEYS.PROPOSED_AGENDA_PRIORITY, nextKey);
     updatePluginSetting(SETTING_KEYS.PROPOSED_AGENDA_PRIORITY, nextKey);
+  }, [app]);
+
+  // ------------------------------------------------------------------------------------------
+  // @desc Hide the "connect a calendar" prompt and record when, so it stays hidden on later dashboard loads.
+  const onDismissCalendarPrompt = useCallback(() => {
+    const dismissedAt = new Date().toISOString();
+    setCalendarPromptDismissed(true);
+    snapDashboardAction("dismissProposedAgendaCalendarPrompt");
+    app.setSetting(SETTING_KEYS.PROPOSED_AGENDA_CALENDAR_PROMPT_DISMISSED, dismissedAt);
+    updatePluginSetting(SETTING_KEYS.PROPOSED_AGENDA_CALENDAR_PROMPT_DISMISSED, dismissedAt);
   }, [app]);
 
   const onDismiss = useCallback((event, row) => {
@@ -357,6 +395,16 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
     return () => { cancelled = true; };
   }, [app]);
 
+  // Learn whether the agenda's Task Domain has an external calendar, so a working agenda can suggest connecting one.
+  useEffect(() => {
+    let cancelled = false;
+    setHasConnectedCalendar(null);
+    taskDomainHasConnectedCalendar(app, recordDomainUuid).then(connected => {
+      if (!cancelled) setHasConnectedCalendar(connected);
+    });
+    return () => { cancelled = true; };
+  }, [app, recordDomainUuid]);
+
   useWidgetLoadedEvent(WIDGET_ID, !loading && !error, !!error);
 
   const fallbackDate = resolveProposedAgendaDate(dateFromDateInput(currentDate || new Date()));
@@ -430,6 +478,10 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
           { dateControl }
           <ProposedAgendaPriorityControl dateValue={ dateValue } onPriorityChange={ onPriorityChange } priorityKey={ priorityKey } />
         </div>
+        { hasConnectedCalendar === false && recordDomainUuid && !calendarPromptDismissed
+          ? <CalendarConnectionPrompt domainName={ recordDomainName } domainUuid={ recordDomainUuid }
+              onDismiss={ onDismissCalendarPrompt } />
+          : null }
         <div className="proposed-agenda-list" ref={ listRef }>
           { dayGroups.map(dayGroup => (
             <div className="proposed-agenda-day-group" key={ dayGroup.targetMidnightSeconds ?? "undated" }>

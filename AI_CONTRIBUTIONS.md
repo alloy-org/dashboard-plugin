@@ -5,6 +5,21 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-18 — Proposed Agenda: prompt to connect a calendar to the Task Domain
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda/task-domain-calendar-connection.js` (created) — `taskDomainHasConnectedCalendar` reads the undocumented `hasConnectedCalendar` boolean that `app.getTaskDomains()` gives each domain (added in ample-web `ac1135d67`); a missing flag, domain, or failed call is `null` (unknown). `taskDomainCalendarSettingsUrl` builds `https://www.amplenote.com/task_calendar?taskDomainUUID=…`.
+- `lib/dashboard/proposed-agenda/proposed-agenda.jsx` — `CalendarConnectionPrompt` shows between the date/priority row and the list of a successfully rendered agenda, only when the domain reports `hasConnectedCalendar === false`; the link opens a new tab because `app.navigate` does not route the Task Domains settings page. A × dismisses it for good, recording the time in the new `PROPOSED_AGENDA_CALENDAR_PROMPT_DISMISSED` setting (`lib/constants/settings.js`).
+- `lib/dashboard/styles/proposed-agenda.scss` — prompt styles; both footer rows gain horizontal padding.
+- `lib/util/browser-dev-app.js`, `dev/dev-app.js` — sample domains carry `hasConnectedCalendar` (Work connected; Personal and Side Projects not, so switching to either shows the prompt).
+- `test/task-domain-calendar-connection.test.js` (created), `test/proposed-agenda-widget-range.test.js` — flag reading, when the prompt shows, and its persisted dismissal.
+
+**Validation:** Full Jest suite (1500 tests), `npm run build`, production plugin smoke test.
+**Task:** Link the Proposed Agenda to Task Domain calendar settings when the user has everything needed for an agenda except a connected calendar.
+
+---
+
 ## 2026-10-17 — Idea ratings: "obvious where to start" actionability, and no suggestions for abstract projects
 
 **Model:** Claude Opus 5.5

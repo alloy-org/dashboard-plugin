@@ -6,6 +6,7 @@
   container-type: inline-size;
 
   button:focus-visible, a:focus-visible { outline: 2px solid $color-link; outline-offset: 3px; }
+  button:not(:disabled) { cursor: pointer; }
 
   .proposed-agenda-header-actions { align-items: center; display: flex; gap: 8px; }
   .proposed-agenda-model {
@@ -169,7 +170,20 @@
   .proposed-agenda-dismiss { background: none; border: 0; border-radius: 6px; color: $color-text-muted; font-size: $medium-heading-font-size; line-height: 1; padding: $sp-xs 6px; }
   .proposed-agenda-dismiss:hover { background: $color-bg-warning; color: $color-danger; }
   .proposed-agenda-scheduled-badge { color: $color-text-muted; font-size: $smaller-font-size; padding: 0 $sp-xs; white-space: nowrap; }
-  .proposed-agenda-footer { align-items: center; background: $color-bg-secondary; border-top: 1px solid $color-border; display: flex; gap: $sp-sm; margin-top: $sp-md; padding: $sp-md 0 $sp-sm; }
+  // Sits between the date/priority row and the agenda list, so the divider above it already separates it.
+  .proposed-agenda-calendar-prompt {
+    align-items: center;
+    border-bottom: 1px solid $color-border;
+    color: $color-text-secondary;
+    display: flex;
+    font-size: $smaller-font-size;
+    gap: $sp-sm;
+    padding: $sp-sm 0;
+  }
+  .proposed-agenda-calendar-text { flex: 1; margin: 0; min-width: 0; }
+  .proposed-agenda-calendar-icon { margin-right: $sp-xs; }
+  .proposed-agenda-calendar-link { color: $color-link; white-space: nowrap; }
+  .proposed-agenda-footer { align-items: center; background: $color-bg-secondary; border-top: 1px solid $color-border; display: flex; gap: $sp-sm; margin-top: $sp-md; padding: $sp-md $sp-md $sp-sm; }
   .proposed-agenda-pending { color: $color-text-muted; flex: 1; }
   .proposed-agenda-approve, .proposed-agenda-schedule-all {
     border: 1px solid $color-border;
@@ -181,7 +195,7 @@
   }
   .proposed-agenda-approve { background: $color-link; border-color: $color-link; @include contrasting-color(color, $color-link); }
   .proposed-agenda-schedule-all { background: $color-bg-card; color: $color-text; }
-  .proposed-agenda-secondary-footer { align-items: center; background: $color-bg-secondary; color: $color-text-muted; display: flex; gap: 12px; justify-content: space-between; padding-bottom: $sp-sm; }
+  .proposed-agenda-secondary-footer { align-items: center; background: $color-bg-secondary; color: $color-text-muted; display: flex; gap: 12px; justify-content: space-between; padding: 0 $sp-md $sp-sm; }
   .proposed-agenda-attribution { font-size: $smaller-font-size; }
   .proposed-agenda-dismiss-all { background: none; border: 0; color: $color-text-muted; font-size: $smaller-font-size; margin-left: auto; padding: 0; }
   .proposed-agenda-message, .proposed-agenda-loading { align-items: center; color: $color-text-secondary; display: flex; flex-direction: column; font-size: $default-font-size; gap: 10px; padding: 24px; text-align: center; }
