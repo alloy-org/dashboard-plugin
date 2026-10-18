@@ -24,13 +24,12 @@ describe("taskDomainHasConnectedCalendar", () => {
     expect(await taskDomainHasConnectedCalendar(app, "dom-work")).toBeNull();
   });
 
-  it("answers unknown without a domain, for a missing domain, or when the host fails", async () => {
+  it("answers unknown without a domain, for a missing domain, or without getTaskDomains", async () => {
     expect(await taskDomainHasConnectedCalendar(appWithDomains([]), null)).toBeNull();
     expect(await taskDomainHasConnectedCalendar(appWithDomains([{ hasConnectedCalendar: false, uuid: "other" }]),
       "dom-work")).toBeNull();
     expect(await taskDomainHasConnectedCalendar(appWithDomains({ error: "offline" }), "dom-work")).toBeNull();
-    const throwingApp = { getTaskDomains: jest.fn().mockRejectedValue(new Error("offline")) };
-    expect(await taskDomainHasConnectedCalendar(throwingApp, "dom-work")).toBeNull();
+    expect(await taskDomainHasConnectedCalendar({}, "dom-work")).toBeNull();
   });
 });
 
