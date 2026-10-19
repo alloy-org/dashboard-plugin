@@ -622,6 +622,26 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
     expect(stored.reserveTasks).toEqual([]);
   });
 
+  // A day stored while one task was listed once per matching project can hold that task in several hours.
+  it("drops a repeat of a cached suggestion and fills its hour from the stored reserves", async () => {
+    const app = buildGenerationApp(TWO_CALL_SCHEDULES);
+    await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    rewriteStoredRecords(app, DATE, records => records.map(record => {
+      const repeatedTask = { ...record.proposedTasks[0], startMinutes: 900, startTime: "15:00" };
+      return { ...record, proposedTasks: [...record.proposedTasks, repeatedTask], reserveTasks: [{ durationMinutes: 30,
+        noteUuid: "note-3", rationale: "draft", taskText: "Draft the proposal", taskUuid: "task-3" }] };
+    }));
+
+    const reconciled = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+
+    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+    const reconciledTaskUuids = reconciled.activities.map(activity => activity.taskUuid);
+    expect(reconciledTaskUuids.filter(taskUuid => taskUuid === "task-1")).toHaveLength(1);
+    expect(reconciledTaskUuids).toEqual(expect.arrayContaining(["task-1", "task-2", "task-3"]));
+    const storedTaskUuids = storedRecords(app, DATE)[0].proposedTasks.map(task => task.taskUuid);
+    expect(storedTaskUuids.filter(taskUuid => taskUuid === "task-1")).toHaveLength(1);
+  });
+
   // A reload after one suggestion went stale must not wait on a ranking and a provider call when a reserve can stand in.
   it("replaces a completed suggestion from the stored reserves, in its slot, without generating again", async () => {
     const app = buildGenerationApp(TWO_CALL_SCHEDULES);
