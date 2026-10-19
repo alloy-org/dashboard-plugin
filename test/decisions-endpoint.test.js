@@ -204,6 +204,28 @@ describe("decisionsEndpointForApp", () => {
     expect(jevFailedRecently()).toBe(true);
   });
 
+  // ----------------------------------------------------------------------------------------------
+  // @desc Agent Pro has answered with bare maps of question name to rating or choice, at the top level and under
+  //   `answers`; each value is read by its question's type, and a value outside the question is left unanswered.
+  it("reads Agent Pro's bare rating and choice maps by question type", async () => {
+    const tenLevels = Array.from({ length: 10 }, (_unused, index) => `level ${ index + 1 }`);
+    const questions = { duration_1: choiceQuestion("How many minutes?", { 30: "30 minutes", 60: "60 minutes" }),
+      duration_2: choiceQuestion("How many minutes?", { 30: "30 minutes", 60: "60 minutes" }),
+      idea_1_relevance: scoreQuestion("How relevant?", tenLevels), idea_2_relevance: scoreQuestion("How relevant?", tenLevels) };
+    const callPlugin = jest.fn()
+      .mockResolvedValueOnce('{"idea_1_relevance":8,"idea_2_relevance":11,"duration_1":"60","duration_2":45}')
+      .mockResolvedValueOnce({ answers: { duration_1: 30, idea_1_relevance: "3" } });
+    const endpoint = await decisionsEndpointForApp(agentProApp(callPlugin));
+    const flatResponse = await endpoint.rankedResponses({ questions, state: {} });
+    expect(flatResponse.ratingFor("idea_1_relevance")).toBe(8);
+    expect(flatResponse.answerFor("idea_2_relevance")).toBeNull();
+    expect(flatResponse.answerFor("duration_1")).toMatchObject({ choice: "60", type: "choice" });
+    expect(flatResponse.answerFor("duration_2")).toBeNull();
+    const wrappedResponse = await endpoint.rankedResponses({ questions, state: {} });
+    expect(wrappedResponse.answerFor("duration_1")).toMatchObject({ choice: "30", type: "choice" });
+    expect(wrappedResponse.ratingFor("idea_1_relevance")).toBe(3);
+  });
+
   it("falls to the fast model only when no decision model can be asked, and to null without one", async () => {
     expect(await decisionsEndpointForApp({})).toBeNull();
     setPluginData({ settings: { [SETTING_KEYS.LLM_API_KEY_GEMINI]: "gemini-key" } });

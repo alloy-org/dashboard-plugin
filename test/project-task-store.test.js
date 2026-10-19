@@ -4,9 +4,9 @@ import { jest } from "@jest/globals";
 import { taskRatingKey } from "plan-wizard/stack-rank/task-rating-cache";
 import { guideHeadingRanges } from "plan-wizard/vision-guide-markdown";
 import { projectNeedsRefresh } from "dashboard/project-refresh-policy";
-import { initialProjectTaskStoreMarkdown, projectSectionHeadingText } from "project-task-store-markdown";
+import { initialProjectTaskStoreMarkdown, projectSectionHeadingText } from "dashboard/project-tasks/project-task-store-markdown";
 import { collectedIdeasMarkdown, openProjectTaskStore, projectTaskStoreNoteName, readCollectedProjectTasks, storedProjectRecords,
-  writeProjectSection } from "project-task-store";
+  writeProjectSection } from "dashboard/project-tasks/project-task-store";
 import QuarterProject from "quarter-project";
 import { LEGACY_JEV_RATINGS_LABEL, SIMILARITY_SCORES_LABEL } from "quarter-project-serialization";
 
@@ -39,6 +39,11 @@ function storeApp({ content = null, tasks = [] } = {}) {
     }),
     getNoteContent: jest.fn(async ({ uuid }) => (uuid === "snapshot-note" ? state.snapshotContent : state.noteContent) ?? ""),
     getTaskDomainTasks: jest.fn().mockResolvedValue(tasks),
+    insertNoteContent: jest.fn(async (handle, body, options) => {
+      if (!options?.atEnd) throw new Error("The mock appends only at the end");
+      state.noteContent = `${ state.noteContent }${ state.noteContent.endsWith("\n") ? "" : "\n" }${ body }`;
+      return true;
+    }),
     replaceNoteContent: jest.fn(async (handle, body, options) => {
       if (typeof handle?.uuid !== "string") throw new Error("Write received a non-uuid handle");
       if (handle.uuid === "snapshot-note") { state.snapshotContent = body; return true; }
@@ -266,6 +271,23 @@ describe("project task store sections", () => {
     const content = await writeProjectSection(app, { content: store.content, noteHandle: store.noteHandle,
       project: storedProject({ isActive: false }) });
     expect(storedProjectRecords(content).recordsByUuid.get("project-uuid").isActive).toBe(false);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A store that has lost its "Past projects" root gets it back at the end when opened, leaving the rest of the
+  //   note alone, so a retired project can be written instead of failing on every pass.
+  it("restores a missing root heading when the store is opened", async () => {
+    const withoutPast = initialProjectTaskStoreMarkdown().replace("# Past projects\n", "# Task duration estimates\n\nEstimates\n");
+    const app = storeApp({ content: withoutPast });
+    const store = await openProjectTaskStore(app, scope);
+    expect(app.insertNoteContent).toHaveBeenCalledTimes(1);
+    expect(app.noteContent).toContain("Estimates\n\n# Past projects\n");
+    const content = await writeProjectSection(app, { content: store.content, noteHandle: store.noteHandle,
+      project: storedProject({ isActive: false }) });
+    expect(storedProjectRecords(content).recordsByUuid.get("project-uuid").isActive).toBe(false);
+    expect(storedProjectRecords(app.noteContent).recordsByUuid.get("project-uuid").isActive).toBe(false);
+    await openProjectTaskStore(app, scope);
+    expect(app.insertNoteContent).toHaveBeenCalledTimes(1);
   });
 
   // ----------------------------------------------------------------------------------------------

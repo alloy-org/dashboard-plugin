@@ -229,6 +229,563 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-18 — Re-roll calendar suggestions from a second Suggest click
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/suggestions/suggestion-reroll-store.js` (created) — focus options (Quarter plan, Layups, Moonshots), the three-minute re-roll window (`rerollablePreviousPass`), and the archived "Dashboard Suggestion Re-rolls" JSON note recording each re-rolled day's excluded suggestion keys until the day passes (`recordRerolledPass`, `readRerolledDays`, `markFreshlyPlannedDays`, `discardedKeysByDay`, `rerollTaskDomain`).
+- `lib/dashboard/suggestions/suggestion-reroll-prompt.js` (created) — `promptedRerollChoice` opens `app.prompt` with the re-roll embed and reads back the focus and up to three boosted projects.
+- `lib/suggestion-reroll-embed.js` (created) — the prompt embed's self-contained page (focus radio cards, wrapping project chips) and `suggestionRerollValue`.
+- `lib/dashboard/suggestions/suggestion-reroll-range.js` (created) — `generateRerolledRange` ranks and slots each day under the chosen focus/projects, excluding the discarded set, scheduled tasks, and earlier days' picks, without storing an agenda.
+- `lib/dashboard/suggestions/ranked-task-suggestions.js` — `rerolledDayRanking` (unstored, focus-weighted ranking; boosted projects alternate up to the salience pool limit); `_dayGroups` accepts `priorityProjectUuids`.
+- `lib/dashboard/suggestions/day-project-candidates.js` — `priorityProjectGroups`.
+- `lib/dashboard/suggestions/suggestion-task-rank.js` — `focusInstruction` reaches every Jev question and the generative prompt.
+- `lib/dashboard/suggestions/suggestion-staleness.js` — the generation record keeps `finishedAtSeconds`, `suggestionCount`, and `offeredKeysByDay`; `previousSuggestionGeneration` exported.
+- `lib/dashboard/proposed-agenda/proposed-agenda-range.js` — `rerolledDays` forces a re-rolled day fresh and excludes its keys.
+- `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` — prompts on a re-roll, runs the re-roll or ordinary pass through `_runSuggestionPass`, and records the outcome.
+- `lib/dashboard/suggestions/calendar-generation-report.js` — re-roll note name, opening "Re-roll requested" section, Source bullet, and outcome wording.
+- `lib/plugin.js` — renders the re-roll embed and stores its choice via `updateEmbedArgs` (`suggestionRerollChoice`).
+- `doc/plan-suggestion-reroll.md` (created) — phased plan toward the full "Pick your loadout" design.
+- `test/suggestion-reroll.test.js`, `test/proposed-agenda-rerolled-range.test.js` (created), `test/suggestion-staleness.test.js`.
+
+**Validation:** Full Jest suite (1520 tests), `npm run build`, production bundle smoke test.
+**Task:** Let a second Suggest click within three minutes re-roll suggestions by focus and boosted projects, excluding prior sets and memorializing the pass.
+
+---
+
+## 2026-10-18 — Calendar generation report: scores, notes, projects, and cadence for cached-agenda days
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/suggestions/calendar-report-stored-details.js` (created) — `storedDetailsByCandidateId` reads the project task store note of each reported day's quarter and the next (past projects included) and returns, by candidate ID, the project's name plus an existing task's `matchScore` as its similarity or an idea's rating as its actionability and relevance. It reads only when some suggested or next-in-line record lacks its project or scores (`missingSuggestionDetails`), so a fresh ranking costs no extra reads.
+- `lib/dashboard/suggestions/calendar-generation-report.js` — `calendarGenerationReportMarkdown` takes `storedDetailsByCandidateId` and `noteUuidByTaskUuid`; a record's own score and project still win, and the ranker rating remains the last fallback. Every suggestion line now links the note it lives in (an existing task's current note, from `app.getTask`) and names its project. The weekday cadence count lists the matching project names, and a cached day with no fresh schedule run shows the cadence counts in its Source bullet. `writeCalendarGenerationReport` takes `domainUuid` and does the lookups before rendering.
+- `lib/dashboard/suggestions/day-project-candidates.js` — `projectCadenceCounts` also returns `weekdayProjectNames`.
+- `lib/dashboard/proposed-agenda/proposed-agenda-service.js` — `_traceCachedProjectCadence` records the cadence counts for a traced day served from its cached agenda (only Debug Console passes are traced).
+- `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` — passes the Task Domain UUID to the report.
+- `test/calendar-generation-report.test.js`, `test/proposed-agenda-archive.test.js` — stored-detail rendering, an end-to-end read from a store note with task note lookup, no store read when every suggestion is complete, weekday project names, the cached Source bullet, and the cached path's cadence trace.
+
+**Validation:** Full Jest suite (1508 tests), `npm run build`.
+**Task:** Make the Debug Console report for cached-agenda days show scores, cadence-matched projects, each task's note, and its project.
+
+---
+
+## 2026-10-18 — Proposed Agenda: prompt to connect a calendar to the Task Domain
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda/task-domain-calendar-connection.js` (created) — `taskDomainHasConnectedCalendar` reads the undocumented `hasConnectedCalendar` boolean that `app.getTaskDomains()` gives each domain (added in ample-web `ac1135d67`); a missing flag, domain, or failed call is `null` (unknown). `taskDomainCalendarSettingsUrl` builds `https://www.amplenote.com/task_calendar?taskDomainUUID=…`.
+- `lib/dashboard/proposed-agenda/proposed-agenda.jsx` — `CalendarConnectionPrompt` shows between the date/priority row and the list of a successfully rendered agenda, only when the domain reports `hasConnectedCalendar === false`; the link opens a new tab because `app.navigate` does not route the Task Domains settings page. A × dismisses it for good, recording the time in the new `PROPOSED_AGENDA_CALENDAR_PROMPT_DISMISSED` setting (`lib/constants/settings.js`).
+- `lib/dashboard/styles/proposed-agenda.scss` — prompt styles; both footer rows gain horizontal padding.
+- `lib/util/browser-dev-app.js`, `dev/dev-app.js` — sample domains carry `hasConnectedCalendar` (Work connected; Personal and Side Projects not, so switching to either shows the prompt).
+- `test/task-domain-calendar-connection.test.js` (created), `test/proposed-agenda-widget-range.test.js` — flag reading, when the prompt shows, and its persisted dismissal.
+
+**Validation:** Full Jest suite (1500 tests), `npm run build`, production plugin smoke test.
+**Task:** Link the Proposed Agenda to Task Domain calendar settings when the user has everything needed for an agenda except a connected calendar.
+
+---
+
+## 2026-10-17 — Idea ratings: "obvious where to start" actionability, and no suggestions for abstract projects
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/project-tasks/project-task-idea-ratings.js` — actionability rubric and question now require an obvious first step; an abstract action that needs breaking down scores ≤ 5. Each rating request adds one `project_clarity` question (new rubric, `PROJECT_CLARITY_MINIMUM = 5`), stored on every rated idea with the project summary it judged. New `projectTooAbstract(project)` reads the latest clarity rating under the current summary.
+- `lib/dashboard/quarter-project-task-candidates.js`, `lib/dashboard/idea-generation/idea-generation-run.js` — an abstract project contributes no idea candidates or eligible-idea counts.
+- `lib/dashboard/work-queue/quarter-project-work-planner.js`, `lib/dashboard/idea-generation/idea-generation-run-plan.js`, `lib/dashboard/work-queue/jobs/generate-project-ideas.js` — no more ideas are generated for an abstract project until its summary changes.
+- `lib/dashboard/suggestions/suggestion-task-rank.js` — the ranker weighs "obvious where to start" for existing tasks too.
+- `test/project-task-idea-ratings.test.js` — request-shape updates and abstract-project gate coverage.
+
+**Validation:** Full Jest suite (1483 tests), `npm run build`, production plugin smoke test.
+**Task:** Make actionability ask "Is it obvious where to start?" and make no suggestions for a project that is itself too abstract.
+
+---
+
+## 2026-10-16 — Calendar suggestions: Debug Console generation report note
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/suggestions/calendar-generation-report.js` (created) — `debugConsoleInLayout`, `calendarGenerationReportName` ("Calendar Work Generate: 3 days at 13:32"), `calendarGenerationReportMarkdown` (one h1 per evaluated day: source, eligible, considered, suggested, next in line, rated rows with each one's fate, and "Not filled because" reasons for a day with an open hour; ranking rows shrink, then the text is cut, to stay under 3k characters), `rankingSelectionTrace`, and `writeCalendarGenerationReport` (archived, dashboard-tagged note; failures are logged, never thrown).
+- `lib/dashboard/proposed-agenda/proposed-agenda-range.js` — `traceSelection` option gives each day result a `selectionTrace`.
+- `lib/dashboard/proposed-agenda/proposed-agenda-service.js` — `selectionTrace` option threaded through the cached, fresh, and joined in-flight paths, recording the cache source, eligible counts, and which generator ran.
+- `lib/dashboard/suggestions/ranked-task-suggestions.js` — `agendaSuggestionsFromProjects` records the ranking's outcome and top rows into `selectionTrace`.
+- `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` — traces and writes the report when the Debug Console is in the layout; per-day outcomes now carry the refill count, remaining reserves, and hour availability.
+- `test/calendar-generation-report.test.js` (created), `test/proposed-agenda-date-range.test.js` — report rendering, the size cap, and whether the note gets written.
+
+**Validation:** Full Jest suite (1490 tests), `npm run build`, production plugin smoke test.
+**Task:** When Debug Console is in the layout, record how each calendar suggestion pass chose its tasks in an archived note.
+
+---
+
+## 2026-10-16 — Project task store: list similar tasks disqualified from suggestion, with reasons
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/project-tasks/disqualified-similar-tasks.js` (created) — `disqualifiedSimilarTasks` names why each task the similarity hash rates ≥ 6 is missing from the existing tasks lists (completed, dismissed, not read, no text, edited since rated, below the project's minimum, beyond the competitive top 20, ranking unfinished). `listedDisqualifiedTasks` reconciles the hash against the lists at render time, falling back to a generic reason.
+- `lib/dashboard/quarter-project-serialization.js` — renders and reads back the `Similar tasks disqualified from suggestion (similarity 6+)` list; list-line reading shared through `_listedTaskLineMatches`.
+- `lib/dashboard/quarter-project.js` — store-owned `disqualifiedTaskRecords` field and `setDisqualifiedTaskRecords`.
+- `lib/dashboard/work-queue/jobs/rank-project-tasks.js` — records the reasons when a ranking's result is applied.
+- `lib/plan-wizard/stack-rank/README.md` — documents the new list.
+- `test/disqualified-similar-tasks.test.js` (created) — reason coverage and store-section round trip.
+
+**Validation:** Full Jest suite (1482 tests), `npm run build`, production plugin smoke test.
+**Task:** The similarity hash showed 9 tasks at ≥ 6 while the eligible list showed 6, with nothing in the note explaining the gap.
+
+---
+
+## 2026-10-16 — Energy Delta data note: repeating tasks only, mood columns preserved
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/energy-per-habit-analysis.js` — `isPossiblyRepeatingTask` drops completed tasks that report `isRepeating: false` without an RRULE, and keeps tasks that don't report the attribute. `computeMonthlyAggregates` stores no rows for a month with no mood ratings (streaks still carry through it) and reports each month's `moodDayCount`.
+- `lib/dashboard/energy-per-habit-cache.js` — format 4 (one-time rebuild). `monthSectionMarkdown` writes a single line for a month with no rows, and `moodDayCountFromMonth` reads a month's mood-rated day count from its rows.
+- `lib/dashboard/energy-per-habit-service.js` — a recomputed month replaces its cached copy only when this client retrieved at least as many mood-rated days for it. The cached render no longer waits out a format rebuild.
+- `test/energy-per-habit-analysis.test.js`, `test/energy-per-habit-cache.test.js`, `test/energy-per-habit-service.test.js` — coverage for the above.
+
+**Validation:** Full Jest suite (1476 tests), `npm run build`, production plugin smoke test.
+**Task:** The data note filled up with one-off tasks whose mood columns were empty, because a client only receives the few months of mood ratings the server syncs to it, and later loads overwrote mood columns that earlier loads had filled in.
+
+---
+
+## 2026-10-15 — Proposed Agenda latency: incidental model, timed-event research, batched queue writes
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/constants/llm-providers.js` — `PROVIDER_INCIDENTAL_MODEL` (OpenAI: `gpt-5.4-mini`) and `INCIDENTAL_TIER_REASONING_EFFORT` ("none"); registers `gpt-5.4-mini` and `gpt-5.4-nano`.
+- `lib/providers/ai-provider-settings.js` — `incidentalModelOptions`: the fast tier's provider and key, with the smaller incidental model where one exists.
+- `lib/plan-wizard/wizard-prompt-diagnostics.js` — `incidentalLlmOptions`, sharing `_llmOptionsWithModel` with `wizardLlmOptions`.
+- `lib/dashboard/suggestions/calendar-suggestion-explanation.js` — benefit sentences use `incidentalLlmOptions` instead of the wizard's fast tier.
+- `lib/recommendation-context/day-recommendation-context.js` — the research-note scan now runs only for travel-like events with a set start time, not all-day events. Calendar events are read once per context. The term searches and note reads run concurrently (six at a time), and note content that is not a string no longer throws (`c.toLowerCase is not a function`).
+- `lib/recommendation-context/recommendation-instructions.js` — research notes move to their own timed-event prompt section.
+- `lib/dashboard/work-queue/dashboard-work-repository.js` — `_update` adds changes requested while an earlier update to the same queue note waits into one read-and-write batch (`_applyBatch`), so project jobs started together no longer queue up behind each other's claim and completion writes.
+- `test/recommendation-context.test.js`, `test/fast-model-selection.test.js`, `test/dashboard-work-repository.test.js` — coverage for the above.
+
+**Validation:** Full Jest suite (1467 tests), `npm run build`, production plugin smoke test.
+**Task:** A Proposed Agenda fetch took about 37s: 5.7s on a research-note scan triggered by someone else's all-day conference (which then threw), about 7.5s while six project rankings were staggered by serialized writes to the queue note, and 6.5s for gpt-5.6 to write the benefit sentences.
+
+---
+
+## 2026-10-15 — Dictionary's examined projects read back from Amplenote's escaped markdown
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/util/amplenote-markdown-escapes.js` (new) — `unescapedMarkdownText` removes the backslashes Amplenote adds before markdown punctuation when it saves a note.
+- `lib/plan-wizard/stack-rank/user-terms-dictionary.js` — `examinedProjectSummaries` unescapes each bullet before matching, since Amplenote saves "(examined YYYY-MM-DD)" as "\(examined YYYY-MM-DD)" and every examined project was otherwise read as unexamined.
+- `lib/dashboard/quarter-project-serialization.js` — uses the shared helper in place of its own escape pattern.
+- `test/stack-rank.test.js` — escaped examined-projects round trip.
+
+---
+
+## 2026-10-15 — Project task store reads existing tasks back from Amplenote's saved markdown
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-project-serialization.js` — `EXISTING_TASK_LINE_PATTERN` accepts any indentation (Amplenote saves the store's nested bullets indented four spaces, not the two written) and trailing whitespace; list labels are compared after removing the backslashes Amplenote adds before punctuation (through `unescapedMarkdownText`), so "Existing tasks not suggested \(similarity below 6)" is still recognized.
+- `test/quarter-project.test.js` — Round-trips a section through Amplenote's saved form (four-space bullets, blank lines between items, escaped label parentheses); fails against the previous parser.
+
+**Validation:** Full Jest suite passes. Production symptom traced through the store note's raw content, read with `app.getNoteContent`: `    - \(none yet)`.
+**Task:** Every project's existing tasks read back empty once Amplenote saved the store note, so the next write after a ranking (the ideas job) replaced the accepted tasks with "(none yet)", and the "Generate ideas" summary reported "0 of your tasks".
+
+---
+
+## 2026-10-15 — Dictionary discovery holds rankings compactly so it fits the job input limit
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/jobs/project-job-requests.js` — `dictionaryDiscoveryRequest` no longer takes held requests; new `dictionaryDiscoveryRequests` holds rankings as `heldRankings: [{ projectUuid, desiredRevision? }]` plus one `heldRankingCategory`, filling the input up to `MAXIMUM_INPUT_CHARACTERS` and returning rankings that do not fit beside the discovery request; new `heldRankingRequests` rebuilds full requests (and still reads the legacy `heldRequests`).
+- `lib/dashboard/work-queue/jobs/discover-dictionary-terms.js` — Releases held work through `heldRankingRequests`, on success or failure; validates the new fields.
+- `lib/dashboard/work-queue/dashboard-work-job.js` — Exports `MAXIMUM_INPUT_CHARACTERS`; `_requirePlainJson` now names the serialized length and limit in its error and always reports it with `console.error`, with each top-level field's length, since every caller logs the refusal only behind the Console Logging setting.
+- `test/dashboard-work-repository.test.js` — Covers the oversized-input error message and console report.
+- `lib/dashboard/idea-generation/idea-generation-run-plan.js`, `lib/dashboard/work-queue/quarter-project-work-planner.js` — Use `dictionaryDiscoveryRequests`.
+- `test/idea-generation-run-plan.test.js`, `test/quarter-project-work-planner.test.js` — Read held rankings through `heldRankingRequests`; new test with 6 and 60 projects under a real domain UUID and name.
+
+**Validation:** Full Jest suite passes (166 suites, 1459 tests); build and production bundle smoke test pass. Six projects measured 2354 characters in the old form (over the 2000 limit) and 502 in the new.
+**Task:** "Generate ideas" failed with `Input of work job "discoverDictionaryTerms:2026-Q4" is too large to queue`, which also kept every held task ranking from running, so projects showed "0 of your tasks".
+
+---
+
+## 2026-10-15 — Generate ideas progress window scrolls in production
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/idea-run-progress-embed.js` — Page styles set `html { overflow-y: scroll; }`, the rule `global-reset.scss` uses for the Dashboard embed, so results taller than the prompt's fixed-height embed frame can be scrolled.
+- `lib/dashboard/idea-generation/idea-run-progress-view.js` — When the refine step ends before discovery reports its terms, a "still being looked for" sentence keeps the "(N already defined)" dictionary link, which previously vanished.
+- `lib/dashboard/idea-generation/idea-generation-run.js` — Summary projects carry `suggestableTasksBefore/After` (open, suggestable associated tasks, via the new `_suggestableTaskCount`, which `ideaRunStoreCounts` now shares) in place of raw `relatedTaskRecords` lengths.
+- `lib/dashboard/idea-generation/idea-run-progress-view.js` — Each project's summary line always names "N of your tasks (was M)", not only an increase.
+- `test/idea-run-progress.test.js`, `test/idea-generation-run.test.js` — Cover the "still being looked for" sentence and the renamed summary fields.
+
+**Validation:** Idea run progress and idea generation Jest suites pass (4 suites, 19 tests); build and production bundle smoke test pass; not yet verified in a production prompt.
+**Task:** The "Generate ideas" progress prompt could not be scrolled in production, showed nothing about dictionary definitions, and its per-project summary cited only generated ideas, not the user's own tasks.
+
+---
+
+## 2026-10-15 — Planning widget re-reads the plan note after Plan Builder closes
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/planning.jsx` — The open-month and weekly-section effects now depend on `pageLoadGeneration`, which the wizard's `onClose` bumps, so the month's Focus line and its project count reflect the note Plan Builder just republished instead of the content read at page load.
+
+**Validation:** Planning Jest suites pass (4 suites, 17 tests).
+**Task:** Quarterly Planning widget kept showing the pre-wizard project count until the dashboard was reloaded.
+
+---
+
+## 2026-10-15 — Generate ideas progress window polish
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/idea-run-progress-embed.js` — "Generate ideas" h2 beside a right-aligned status line; step list kept between polls so connector lines fill (animated) as each step completes; ✅ beside "Done"; progress and summary lines drawn from segments (bold, or a link that navigates through the plugin).
+- `lib/dashboard/idea-generation/idea-run-progress-view.js` — `heading`, `lineSegments`, `lineText`; summary project names as bold segments; discovery sentence adds "(N already defined)" linked to the terms dictionary note.
+- `lib/dashboard/idea-generation/idea-run-progress.jsx`, `lib/dashboard/styles/idea-run-progress.scss`, `lib/dashboard/planning.jsx` — In-Dashboard fallback matches the embed (header row, connectors, ✅, rich lines); receives `app` to open the linked note.
+- `lib/dashboard/idea-generation/idea-generation-run-plan.js`, `idea-generation-run.js` — Plan reads the dictionary note's UUID and term count (`dictionaryReader`, failures ignored); snapshots carry it in `progress.dictionary`.
+- `lib/plan-wizard/stack-rank/user-terms-dictionary.js` — `userTermsDictionarySummary`.
+- `lib/hooks/use-idea-generation-run.js` — Progress prompt has an empty message and `primaryAction: { label: "Accept" }`.
+- `lib/util/browser-dev-app.js` — Dev prompt/alert honor `primaryAction.label`; an empty prompt message shows no heading; taller embed frame.
+- `test/idea-run-progress.test.js` — Segment lines, dictionary link, heading.
+
+**Validation:** Full Jest suite passes (166 suites, 1456 tests); `npm run build` and the production bundle smoke test pass.
+**Task:** Seven UI refinements to the Generate ideas progress window from a screenshot review.
+
+---
+
+## 2026-10-15 — Group dashboard modules into subdirectories
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- Moved 41 modules out of `lib/dashboard/` (contents unchanged apart from import specifiers):
+  - `lib/dashboard/idea-generation/` — `idea-generation-allowance.js`, `idea-generation-run-plan.js`, `idea-generation-run.js`, `idea-run-progress-view.js`, `idea-run-progress.jsx`.
+  - `lib/dashboard/project-tasks/` — `project-task-store.js`, `project-task-store-markdown.js`, `project-task-ideas.js`, `project-task-idea-ratings.js`, `project-task-evidence.js`, `project-idea-records.js`, `project-collection-steps.js`, `project-candidate-tasks.js`, `project-suggestion-log.js`, `task-duration-estimates.js`, `task-duration-service.js`.
+  - `lib/dashboard/suggestions/` — `ranked-task-suggestions.js`, `suggestion-salience.js`, `suggestion-staleness.js`, `suggestion-task-rank.js`, `suggestion-task-slots.js`, `day-project-candidates.js`, `day-ranking-store.js`, `calendar-suggestion-explanation.js`.
+  - `lib/dashboard/proposed-agenda/` — every `proposed-agenda*.js(x)` module, `meeting-preparation.js`, `meeting-preparation-ideas.js`.
+- Import specifiers across `lib/`, `test/`, and `dev/` (including `jest.unstable_mockModule` paths) now name the moved modules as `dashboard/<group>/<name>`. Moved files name the base-directory modules and stylesheets they use as `dashboard/<name>`, since esbuild resolves bare imports from the importer's own directory first.
+- `doc/plan-generate-ideas.md`, `doc/plan-dashboard-work-queue.md` — Paths updated.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes (166 suites, 1455 tests); `npm run build` passes.
+**Task:** Move new and recently modified dashboard modules into subdirectories of related files.
+
+---
+
+## 2026-10-15 — Progress messages during a Generate ideas run
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/idea-generation-run.js` — Snapshots carry `progress`: the new terms discovery added, the terms whose evidence the run collects (with how many were refined so far), the projects ideas are generated for, and store counts re-read after each ranking, ideas, or rating outcome (`ideaRunStoreCounts`: new ideas rated and recommendable, and eligible existing tasks and ideas). Reads are coalesced to one at a time.
+- `lib/dashboard/idea-run-progress-view.js` — `ideaRunProgressLines` writes one sentence per subject with counts and quoted examples.
+- `lib/idea-run-progress-embed.js`, `lib/dashboard/idea-run-progress.jsx`, `lib/dashboard/styles/idea-run-progress.scss` — Show those sentences under the step circles.
+- `lib/dashboard/work-queue/durable-work-runner.js` — Outcomes carry a handler's `outcomeFacts` to listeners (not to the history store).
+- `lib/dashboard/work-queue/jobs/discover-dictionary-terms.js`, `refine-dictionary-term.js` — Report added and refined terms, and the refined term, as `outcomeFacts`; discovery also gains an `outcomeDetail`.
+- `lib/dashboard/work-queue/jobs/rate-project-ideas.js` — When ideas still await a rating after an attempt (each rates at most 8), queue another rating at the job's own priority.
+- `lib/dashboard/project-task-idea-ratings.js` — `ideaRated`.
+- Tests: `test/idea-generation-run.test.js`, `test/idea-run-progress.test.js`, `test/durable-work-runner.test.js`, `test/project-task-idea-ratings.test.js`, `test/dictionary-term-refinement.test.js`.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes (166 suites, 1455 tests); `npm run build` passes.
+**Task:** Show terms being defined and refined, projects getting ideas, ideas meeting the bar after rating, and eligible suggestions while a run works.
+
+---
+
+## 2026-10-15 — Restore a project task store's missing root heading
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/project-task-store.js` — `openProjectTaskStore` appends an "Active projects" or "Past projects" root the existing note lacks (`_contentWithProjectRoots`, via `insertNoteContent` at the end), so writing a retired project no longer fails with `Project task store is missing its "Past projects" heading` on every pass.
+- `test/project-task-store.test.js` — The store mock gains `insertNoteContent`; cover restoring the root and writing beneath it.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes; `npm run build` passes. How the production note lost the heading is not yet known.
+**Task:** Look into the "missing its Past projects heading" errors in the production log.
+
+---
+
+## 2026-10-15 — Read Agent Pro's bare Decisions replies; ask a Generate ideas run for ten ideas
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/plan-wizard/stack-rank/agent-pro-jev-requester.js` — Agent Pro answered Decisions batches with a bare `{ questionName: value }` map (at the top level or under `answers`), which was rejected as "carried no answers". Each bare value is now read by its question's type: a 1-based score within the rubric, a choice key, or a predicate probability. Values outside the question are left unanswered.
+- `lib/dashboard/project-task-ideas.js` — `generateProjectTaskIdeas` takes `ideaCount` (default `DEFAULT_IDEAS_PER_PROJECT`, 3) for the prompt and the kept ideas.
+- `lib/dashboard/project-collection-steps.js`, `lib/dashboard/work-queue/jobs/generate-project-ideas.js`, `project-job-requests.js`, `project-job-inputs.js` — An ideas job input may carry `ideaCount`, validated as a positive integer and passed to the generator.
+- `lib/dashboard/idea-generation-run-plan.js` — `RUN_IDEA_COUNT = 10` on every run's ideas request.
+- Tests: `test/decisions-endpoint.test.js`, `test/project-idea-records.test.js`, `test/idea-generation-run-plan.test.js`.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes (166 suites, 1450 tests); `npm run build` passes.
+**Task:** A production Generate ideas run finished in 30 seconds with 3 ideas per project and every rating failed.
+
+---
+
+## 2026-10-15 — Dev prompt renders embed inputs
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/util/browser-dev-app.js` — The dev `app.prompt` draws an `embed` input as a full-width frame holding the page the plugin's `renderEmbed` would return for its value (the "Generate ideas" progress page), with a `window.callAmplenotePlugin` bridge back to the dev app. Adds the `ideaRunProgressUpdate` and `ideaRunProgressRead` relay actions.
+- `test/browser-dev-app-prompt.test.js` — Cover the embed frame and its relay.
+
+**Validation:** Full Jest suite passes (166 suites, 1448 tests); `npm run build` passes.
+**Task:** Let the Generate ideas progress window be tested locally instead of showing "[object Object]" in a text field.
+
+---
+
+## 2026-10-15 — "Generate ideas" run from the Quarterly Planning widget
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/idea-generation-run-plan.js` (created) — Pick the quarter's projects in focus this month, the ones not saturated with ideas (`ideasSaturated`), and build the run's foreground requests: discovery holding forced rankings plus up to four term evidence collections, ideas named for the run, and ratings for untargeted projects with unrated ideas.
+- `lib/dashboard/idea-generation-run.js` (created) — `IdeaGenerationRun` drives the four steps on the durable runner, waiting for each step's jobs and their follow-ups, ending a step at its budget (75/120/75/30 s), keeping an estimate that only shrinks, and writing the summary.
+- `lib/dashboard/idea-generation-allowance.js` (created) — Two runs per local day, stored in `SETTING_KEYS.IDEA_GENERATION_RUNS`.
+- `lib/dashboard/idea-run-progress-view.js` (created) — The text the progress window shows: status line, steps, time left, summary sentences.
+- `lib/idea-run-progress-relay.js`, `lib/idea-run-progress-embed.js` (created) — Host relay for run snapshots and the self-contained page a prompt embed renders, polling the relay once a second.
+- `lib/dashboard/idea-run-progress.jsx`, `lib/dashboard/styles/idea-run-progress.scss` (created) — In-Dashboard progress window for hosts that cannot open the prompt.
+- `lib/hooks/use-idea-generation-run.js` (created) — Starts a run, opens its prompt, retains its work scope, and pushes throttled snapshots to the relay.
+- `lib/plugin.js` — `renderEmbed` renders the progress page for a prompt naming a run; `onEmbedCall` gains `ideaRunProgressRead` and `ideaRunProgressUpdate`.
+- `lib/dashboard/planning.jsx` — "💡 Generate ideas" replaces "✍️ Build plan" once the targeted and current quarters have plan notes.
+- `lib/dashboard/work-queue/durable-work-runner.js` — Outcomes carry `followUps` and `outcomeDetail`; follow-ups are saved before the outcome is published.
+- `lib/dashboard/work-queue/jobs/project-job-requests.js`, `generate-project-ideas.js`, `collect-term-evidence.js` — Ideas, ratings, rankings, term evidence and refinement requests take a category; rating and refinement follow-ups keep their parent's category.
+- `lib/plan-wizard/stack-rank/dictionary-term-schedule.js` — `dueTermEvidence` and `dueTermEvidenceRequests` take a term limit and category.
+- `lib/constants/settings.js` — Add `IDEA_GENERATION_RUNS`.
+- `doc/plan-generate-ideas.md` — Record what was built and what remains.
+- Tests: `test/idea-generation-run-plan.test.js`, `test/idea-generation-run.test.js`, `test/idea-generation-allowance.test.js`, `test/idea-run-progress.test.js` (created); `test/durable-work-runner.test.js`, `test/planning-build-plan.test.js`.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes (166 suites); `npm run build` and the production bundle smoke test pass. The prompt embed has not been tried in a live Amplenote client.
+**Task:** Implement the Generate ideas run planned in `doc/plan-generate-ideas.md`, except the Agent Pro quota source.
+**Prompt summary:** Commence the plan.
+
+---
+
+## 2026-10-15 — Plan the "Generate ideas" run
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `doc/plan-generate-ideas.md` (created) — Seven-commit plan for replacing the Build plan header action with a Generate ideas run: forced dictionary refinement and ranking, idea generation for unsaturated active-this-month projects, rating, a summary, a progress window hosted in an `app.prompt` embed, a two-per-day limit, and an Agent Pro quota meter.
+
+**Validation:** Documentation only; no code changed.
+**Task:** Scope a user-initiated idea generation run with a progress window before implementing it.
+**Prompt summary:** Change "Build plan" to "Generate ideas" after a quarterly plan exists; run definition refinement, idea generation, and rating with a four-step progress popup, an ETA, a daily limit of two, and an Agent Pro quota meter; write a plan if it exceeds three commits.
+
+---
+
+## 2026-10-14 — Time widgetMount outcomes through to rendered content
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/widget-mount-coordinator.js` — `reportContentReady` records a `contentReady` diagnostics event for the widget's `widgetMount` job, timed from admission to content, with how long it waited for its turn and took to commit; a mount job's completion now names what released its permit.
+- `lib/dashboard/work-queue/dashboard-queue-inspector-model.js` — `recentOutcomes` lists `contentReady` events and hides a mount's commit-only completion once its content outcome arrives.
+- `lib/dashboard/work-queue/dashboard-work-diagnostics.js` — Run timings count only events that end an attempt; exported mounts keep `contentOutcome` and `contentReadyAt`.
+- `test/widget-mount-coordinator.test.js` — Verify the content outcome replaces the commit completion and stays out of run timings.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes; production build succeeds.
+**Task:** Recent outcomes showed every widgetMount at 1–4 ms because the job ends at React's commit, before data-loading widgets render real content.
+**Prompt summary:** widgetMount should show the time from when a widget begins loading until it renders with real data.
+
+---
+
+## 2026-10-14 — Stop generating ideas for projects saturated with well-rated ideas
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/project-task-idea-ratings.js` — Add `IDEA_SATURATION_COUNT` (12) and `IDEA_KEEPING_AVERAGE_MINIMUM` (6), `ideaAverageRating` (mean of whichever of actionability, relevance, similarity were scored), `ideasSaturated`, and `keptIdeaRecords`, which drops open ideas rated below the average or matching a completed task, and accepted ideas whose task was completed.
+- `lib/dashboard/work-queue/quarter-project-work-planner.js` — `ideasRefreshDue` stops requesting ideas for a saturated project unless it holds ideas to drop; that request names no revision so it always runs.
+- `lib/dashboard/work-queue/jobs/generate-project-ideas.js` — A saturated project's attempt skips the provider, drops the ideas it no longer keeps, and requests ratings for any unrated ones.
+- `lib/dashboard/work-queue/jobs/rate-project-ideas.js` — After writing ratings, a project left saturated drops its low-rated and completed ideas in the same write.
+- `test/project-task-idea-ratings.test.js` — Verify averaging, saturation, pruning, planner requests, and the saturated ideas job.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes; production build and the 8 production bundle smoke checks pass.
+**Task:** Stop the work queue from filling with generateProjectIdeas jobs for projects that already hold plenty of good ideas.
+**Prompt summary:** Once a project has 10–15 ideas averaging 6+ across their scored ratings, stop generating, ensure every pending idea is rated, and remove completed or below-6 ideas.
+
+---
+
+## 2026-10-14 — Cap the day ranking's wait for duration estimates at 5000ms
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/ranked-task-suggestions.js` — `_estimateDurationsWithin` races the duration pass against `DURATION_WAIT_MILLISECONDS` (5000ms); the pass keeps running afterward so late batches are still written to the Project Tasks note for the next preparation.
+- `lib/dashboard/task-duration-service.js` — `_readTask` no longer swallows errors or guards for a missing `app.getTask`; a deleted task already resolves null.
+- `test/task-duration-estimates.test.js` — Verify the ranking settles at 5000ms with a pending duration answer, and that the late answer is saved and slotted by a stored-only read.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes; production build and the 8 production bundle smoke checks pass.
+**Task:** Review the pending duration-estimate implementation for sufficiency and unneeded try/catch, and bound the Proposed Suggestion wait.
+**Prompt summary:** Confirm the duration job meets its intent, remove unrealistic try/catch, and ensure suggestion preparation waits no more than 5000ms for estimates.
+
+---
+
+## 2026-10-14 — Schedule duration estimates through available DecisionsEndpoint providers
+
+**Model:** GPT-6 (Codex)
+**Files created/modified:**
+- `lib/dashboard/work-queue/jobs/project-job-requests.js` — Add a shared availability check that resolves the configured DecisionsEndpoint before requesting duration maintenance. Categorical questions use available decision-provider routes rather than the score-only generative adapter.
+- `lib/dashboard/work-queue/jobs/rank-project-tasks.js`, `lib/dashboard/work-queue/jobs/rate-project-ideas.js`, `lib/dashboard/work-queue/jobs/reconcile-projects.js` — Replace duration scheduling checks against the legacy `"jev"` scorer label with the endpoint availability check.
+- `test/task-duration-estimates.test.js` — Verify OpenAI-only scheduling, the actual OpenAI Decisions request shape and persisted duration, and absence of scheduling when no decision provider is available.
+- `test/project-maintenance-jobs.test.js`, `test/project-task-idea-ratings.test.js`, `test/quarter-project-work-planner.test.js` — Regress duration scheduling with an available OpenAI endpoint independently of local, generative, or other scorer labels.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Offline Jest suite: 157 suites and 1,410 tests passed; 17 live-provider tests skipped with provider-token environment overrides. Production build and all 8 production bundle smoke checks pass. Live provider calls are mocked in the OpenAI-only regression.
+**Task:** Use any available DecisionsEndpoint decision provider for fast duration choices, including OpenAI.
+**Prompt summary:** Remove the Jev-specific scheduling assumption and let DecisionsEndpoint choose the available provider.
+
+---
+
+## 2026-10-14 — Estimate conservative durations for recommended tasks and ideas
+
+**Model:** GPT-6 (Codex)
+**Files created/modified:**
+- `lib/dashboard/task-duration-estimates.js` (created) — Seven categorical minute choices and a context revision; read and merge a shared UUID/idea ID index in the quarterly Project Tasks note, preserving project sections and Rich Footnotes.
+- `lib/dashboard/task-duration-service.js` (created) — Resolve native/compact tasks, note titles, hierarchical tags, direct or outline parents, and the resolved user dictionary. Batch decision-model requests, reuse unchanged estimates, preserve explicit durations, and save successful batches before retrying failures.
+- `lib/dashboard/work-queue/jobs/estimate-task-durations.js` (created) — Durable quarter maintenance pass over the candidates projects can recommend, independent of their weekday qualification.
+- `lib/dashboard/work-queue/jobs/project-job-requests.js`, `lib/dashboard/work-queue/dashboard-work-handlers.js` — Define and register the maintenance request.
+- `lib/dashboard/work-queue/jobs/reconcile-projects.js`, `lib/dashboard/work-queue/jobs/rank-project-tasks.js`, `lib/dashboard/work-queue/jobs/rate-project-ideas.js` — Schedule duration maintenance during reconciliation and after task associations or newly rated ideas change.
+- `lib/dashboard/ranked-task-suggestions.js` — Estimate missing durations before preparing or reusing day rankings; stored-only reads reuse estimates without provider calls. Calendar slotters receive the resulting minutes.
+- `test/task-duration-estimates.test.js` (created) — Context, dictionary Rich Footnotes, parent resolution, choices/refusals, reuse/invalidation, explicit-duration precedence, batch recovery, serialized persistence, maintenance, and calendar placement.
+- `test/project-maintenance-jobs.test.js`, `test/quarter-project-work-planner.test.js` — Extend registry and queue integration expectations for duration maintenance.
+- `build/compiled.js` — Rebuilt with the host-compatible duration services.
+
+**Validation:** Offline Jest suite: 157 suites and 1,405 tests passed; 17 live-provider tests skipped with provider-token environment overrides. Production build and all 8 production bundle smoke checks passed. An initial live OpenAI integration attempt failed because this sandbox could not resolve api.openai.com.
+**Task:** Add a periodic Jev duration pass for tasks and task ideas considered for recommendations, using conservative choices of 30, 60, 90, 120, 180, 240, or 300 minutes.
+**Prompt summary:** Send the user's dictionary plus task text, note name, hierarchical tags, and available parent task text; persist estimated minutes alongside similarity information or in a dedicated Project Note index.
+
+---
+
+## 2026-10-14 — Plan the Proposed Agenda provisionally while calendar events are pending, then refine it for meetings
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/util/calendar-utility.js` — `externalCalendarEventsForTargetDate` takes `timeoutMs`, after which it returns `[]` and lets the request keep running. A request still waiting on the host is shared by later calls that use the same options.
+- `lib/dashboard/ranked-task-suggestions.js` — `agendaSuggestionsFromProjects` passes the agenda's `calendarEvents` to the ranking and returns `meetingKeys`. `prepareDayRanking` returns the `meetings` it gathered. A ranking that reads the calendar itself, such as the background job or Dream Task, waits at most 5 s.
+- `lib/dashboard/proposed-agenda-meeting-refinement.js` (created) — `agendaWithNewMeetingPreparation` adds prep for meetings that a stored agenda was not planned for. It ranks the day again, places those meetings' prep tasks, and moves overlapping pending suggestions back to the reserves.
+- `lib/dashboard/proposed-agenda-service.js` — Threads `calendarEvents` into fresh schedules and adds a `calendarPending` mode. In that mode the stored agenda is served whatever its all-day-event context and is not written back. When a cached day's events arrive, it gains prep for meetings it did not know of. Fresh agendas store their `meetingKeys`.
+- `lib/dashboard/proposed-agenda-archive.js` — Records store and return `meetingKeys`; the value is null when they are unknown.
+- `lib/dashboard/proposed-agenda-range.js`, `lib/dashboard/proposed-agenda-llm-generator.js` — Pass `calendarPending` through. The `refining` option keeps the provisional agenda on screen instead of showing the loading state.
+- `lib/dashboard/proposed-agenda.jsx` — Waits 5 s for the Dashboard's calendar events and then plans the day provisionally. When the events arrive, it generates again as a refinement.
+- `lib/dashboard/suggestion-task-slots.js` — Slotted activities carry `meetingStartMinutes`.
+- `lib/hooks/use-external-calendar-events.js` — Fetches 4 days of events, which reaches the Monday the agenda plans for on a Friday evening.
+- `test/proposed-agenda-meeting-refinement.test.js` (created), `test/proposed-agenda-archive.test.js`, `test/prepared-day-ranking-consumers.test.js`, `test/day-ranking-store.test.js` — Cover the time-limited shared fetch, the refinement, meeting keys on records, planning without a calendar request while events are pending, and the new return shape.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite and production bundle smoke test pass.
+**Task:** Keep a slow external-calendar response (about 50 s observed) from holding up the Proposed Agenda. The agenda is proposed first and refined once the events arrive.
+**Prompt summary:** "how do we handle proposing calendar events when external calendar events are pending?" → "we can submit preliminary results and then refine those results as external calendar events are eventually returned."
+
+---
+
+## 2026-10-14 — Prepare for the day's meetings in the Proposed Agenda, and narrow large pools by Jev salience
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/meeting-preparation.js` (created) — Meetings are a day's timed calendar events with an invitee who has not declined. Matching terms come from attendee names, a company email domain (personal mail providers skipped) and distinctive title words. Terms matching more than 10% of open tasks (minimum 5) are dropped. Builds one meeting group per meeting and project from matching project candidates and loose open tasks, reading native and compact task shapes alike.
+- `lib/dashboard/meeting-preparation-ideas.js` (created) — Brainstorms up to 3 prep tasks per meeting nothing matched, in one generative request. Stores them in the archived "Dashboard Meeting Preparation <domain>" note so each meeting is brainstormed once, and skips ideas that restate an open task.
+- `lib/dashboard/suggestion-salience.js` (created) — Jev salience pass (1–10) over a pool larger than 30 candidates. Weighs the day's meetings, the projects focused on that weekday, and personal pursuits on weekends. Keeps the 30 most salient, and drops meeting candidates scored below 5 as word-only matches.
+- `lib/dashboard/day-project-candidates.js` — `everyProjectCandidate`, so a meeting can draw on projects that don't qualify today.
+- `lib/dashboard/ranked-task-suggestions.js` — `prepareDayRanking` reads the day's meetings (or takes `calendarEvents`), puts meeting groups first, folds the meetings into the revision, and runs the salience pass before Jev ranks.
+- `lib/dashboard/suggestion-task-rank.js` — `dayRankingRevision` takes an optional meetings digest; ranked candidates carry `meetingStartMinutes`.
+- `lib/dashboard/suggestion-task-slots.js` — Places up to 3 prep tasks per meeting first, in the 3 hours before it (else the earliest hour ending before it); activities are returned in start order.
+- `lib/util/browser-dev-app.js` — The mock work event has invitees.
+- `test/meeting-preparation.test.js` (created) — Meeting detection, term matching, placement, salience narrowing, idea reuse, and revision changes.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite and production bundle smoke test pass. Not yet run against real calendar data: Amplenote's `app.getExternalCalendarEvents` does not yet return `attendees` (see ample-notes-store `get-plugin-external-calendar-events.js`).
+**Task:** Focus the 2–3 hours before a customer call on tasks for that prospect, and filter a moderately large prospect pool by Jev salience.
+**Prompt summary:** "When the day contains an event from external calendar that includes invitees, look for any existing or brainstormed tasks that pertain to the person or company that is being met on the call" → "have Jev give a quick score of task 'salience' (1-10) … For weekends, high salience=personal projects/pursuits."
+
+---
+
+## 2026-10-14 — Hold maintenance while the user interacts, confirm young claims by reading, and time slow app calls
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/interaction-tracker.js` — Optional `onInteractingChange` listener, told when an interaction starts and when it has been quiet for 1s, using one timer re-armed only when it fires.
+- `lib/dashboard/work-queue/dashboard-work-policy.js` — `interacting` condition holds new maintenance (waiting reason `interaction`). Running maintenance, renders and foreground data are unaffected. New `CLAIM_RENEWAL_REMAINING_MILLISECONDS` (half the lease).
+- `lib/dashboard/work-queue/dashboard-work-scheduler.js` — Accepts the `interacting` condition.
+- `lib/hooks/use-dashboard-work-queue.js` — Feeds the interaction tracker's changes to the scheduler.
+- `lib/dashboard/work-queue/dashboard-queue-inspector-sections.jsx` — Overview shows the Interaction condition.
+- `lib/dashboard/work-queue/dashboard-work-job.js` — `renewClaim(token, now)` confirms the attempt and extends the claim only once less than half the lease remains.
+- `lib/dashboard/work-queue/dashboard-work-repository.js` — `renew` uses `renewClaim`, so a young claim is confirmed by a fresh read without writing the queue note.
+- `lib/util/call-timing-meter.js` — Slow-call timeline (calls of 250ms or more, epoch times, up to 200 entries), merging overlapping calls of one label into one burst entry.
+- `lib/dashboard/work-queue/dashboard-work-diagnostics.js` — Sanitizes timeline labels in the export.
+- `lib/dashboard/work-queue/main-thread-lag-monitor.js` — Snapshot includes `startedAt`, the epoch stall offsets count from.
+- `test/main-thread-instrumentation.test.js` — Covers the timeline merge, the tracker's change events, the maintenance pause, and young-claim renewal.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes (159 suites, 1391 tests); production bundle smoke test passes. Not yet run on a device.
+**Task:** Act on the October phone, desktop and Brave profiles: stop background jobs starting mid-scroll, cut queue note writes without losing data, and make the next profile able to line slow calls up with stalls.
+**Prompt summary:** "Pausing background jobs that don't pertain to widget load during scroll seems like a good win … Cutting the job queue's note saves seems like a worthwhile win … Improving the profiling prob a good idea" → "Yes"
+
+---
+
+## 2026-10-14 — Measure main-thread lag and app call costs in the Queue inspector export
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/main-thread-lag-monitor.js` (created) — `MainThreadLagMonitor` records long animation frames (or long tasks) with their longest script, plus a 250ms timer-lateness sampler that works in WebKit. Each stall of 50ms or more is credited to the job types that could have caused it and marked when it happened during an interaction. Also exports the device profile.
+- `lib/dashboard/work-queue/interaction-tracker.js` (created) — Passive capture listeners for scroll, touch, wheel, pointer and key input; the user counts as interacting until 1s of quiet.
+- `lib/util/call-timing-meter.js` (created) — `CallTimingMeter` totals call count, time, failures, slow calls and peak concurrency per label; `bridgeCallMeter` times every app bridge call by method.
+- `lib/dashboard/dashboard-load.jsx` — The production app bridge records each call into `bridgeCallMeter`.
+- `lib/dashboard/work-queue/dashboard-work-repository.js` — Optional `callTimingMeter`; queue note reads and writes are labelled by transition (`queueNote.claim.write`, `queueNote.renew.unchanged`, …).
+- `lib/dashboard/work-queue/dashboard-work-diagnostics-store.js` — Optional `callTimingMeter` for history note reads and writes.
+- `lib/dashboard/work-queue/dashboard-work-diagnostics.js` — Ring raised to 500 events, the session's first 150 events kept separately, `jobTypesActiveSince`, and `appCalls`/`mainThread` sections in the export.
+- `lib/dashboard/work-queue/dashboard-work-scheduler.js` — `runningJobTypes()`.
+- `lib/dashboard/work-queue/dashboard-work-runtime.js` — `activeJobTypesSince`, plus app call timings and the main-thread snapshot in `exportSnapshot`.
+- `lib/hooks/use-dashboard-work-queue.js`, `lib/dashboard/work-queue/dashboard-queue-inspector.jsx` — Start the monitor and tracker with the runtime, and include them in Copy/Download snapshot.
+- `test/main-thread-instrumentation.test.js` (created) — Covers the meter, tracker, monitor, repository labels, and export.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes (159 suites, 1387 tests); production bundle smoke test passes. Not yet run on a device.
+**Task:** Gather enough signal from production Dashboards to tell which queued work causes device lag, especially on mobile.
+**Prompt summary:** "does the existing logging contain enough signal that we can just run it on production and copy all the logs, or do we need to amend logging to print extra detail?" → "Yes, proceed"
+
+---
+
+## 2026-10-14 — Keep the Proposed Agenda date on one line beside its arrows
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda-date-control.jsx` — `useFittingDateLabel` tries "Wednesday, October 14", "Wed, October 14", "October 14", then "Oct 14", keeping the first whose text does not overflow its nowrap label; a width change of the surrounding row restarts at the full label. The arrows and date sit in a `proposed-agenda-day-stepper` group so they never wrap apart; the full date stays in the button's title.
+- `lib/dashboard/styles/proposed-agenda.scss` — Nowrap stepper group, ellipsis as the final fallback, and caret kept from shrinking.
+
+**Validation:** Proposed agenda Jest suites pass (14 suites, 126 tests). Not yet checked in a browser.
+**Task:** Stop the date heading from wrapping its back/forward arrows at narrow widths.
+**Prompt summary:** "When Desktop @proposed-agenda has low width, it wraps unprofessionally ... either truncate ("Wed" instead of "Wednesday") or hide the day-of-week"
+
+---
+
+## 2026-10-11 — Time each widget from mount request to rendered content
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/widget-mount-coordinator.js` — New `reportContentReady(widgetId, outcome)` records the first content-ready time and outcome per registration and returns the milliseconds since the mount request; the snapshot carries `contentReadyAt` and `contentOutcome`.
+- `lib/dashboard/dashboard-load-tracking.js` — `useWidgetLoadedEvent` also reports to the Dashboard's mount coordinator and, with Console Logging on, logs the request-to-content duration.
+- `lib/dashboard/work-queue/dashboard-queue-inspector-sections.jsx` — Urgent renders gains a "To content" column.
+- `lib/dashboard/dashboard.jsx`, `lib/util/widget-timing.js` (deleted) — Removed `useWidgetLoadTiming`, which only timed a cell's first React commit.
+- `test/widget-mount-coordinator.test.js`, `test/dashboard-load-tracking.test.js` — Cover the timing and the hook's report.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes (154 suites run, 1365 tests).
+**Task:** Replace the meaningless widget load timing with the time until a widget renders its main content, such as the Proposed Agenda's schedule suggestions.
+**Prompt summary:** "measure how much time is consumed not just by the initial widgetMount, but how much time elapses until it renders the intended content of the widget"
+
+---
+
+## 2026-10-11 — Debug Console Recent outcomes: what each job did, and for which project or note
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/dashboard-work-scheduler.js` — A completed run's `outcomeDetail` and `outcomeSubject` are recorded on its completion event.
+- `lib/dashboard/work-queue/dashboard-work-diagnostics.js` — Events may carry `outcomeDetail` and `outcomeSubject`; the subject (user-written project or note text) is held in memory for the inspector and left out of exported snapshots.
+- `lib/dashboard/work-queue/durable-work-runner.js` — Passes a handler's `outcomeDetail` and `outcomeSubject` to the scheduler; a recovered completion reports "Output already written".
+- `lib/dashboard/work-queue/dashboard-queue-inspector-sections.jsx` — Recent outcomes shows the subject under the job type in place of its key, and the reported detail when there is no error.
+- `lib/dashboard/project-collection-steps.js` — `generatedIdeas` also returns `addedCount` and `generatedCount`.
+- `lib/dashboard/work-queue/jobs/generate-project-ideas.js`, `rate-project-ideas.js`, `rank-project-tasks.js` — Report ideas generated and kept (and tasks attributed), ideas rated, and tasks ranked, newly rated, and accepted, each with the project's summary as subject.
+- `lib/dashboard/work-queue/jobs/classify-completed-tasks.js`, `score-completed-task-potential.js` — Report tasks classified (by model and by link) and tasks scored for victory value and raised, with the ledger note(s) as subject.
+- `test/dashboard-work-scheduler.test.js`, `test/dashboard-queue-inspector.test.js`, `test/project-maintenance-jobs.test.js`, `test/project-task-idea-ratings.test.js`, `test/classify-completed-tasks-job.test.js`, `test/score-completed-task-potential-job.test.js` — Cover the new fields, their exclusion from exports, and their rendering.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Full Jest suite passes (154 suites run, 1363 tests); production-plugin smoke test passes.
+**Task:** Make the Debug Console's Recent outcomes Detail and Job columns say what each job did and what it worked on.
+**Prompt summary:** "For Debug Console, let's update the 'Details' column ... For the Job column, let's update the second line so it shows the text of which Project and/or note was involved"
+
+---
+
 ## 2026-10-11 — Rate completed project tasks and raise their victory value (Completed Tasks by Project, commit 3)
 
 **Model:** Claude Opus 5.5

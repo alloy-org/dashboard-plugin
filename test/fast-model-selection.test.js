@@ -3,8 +3,8 @@
 // the key that authenticates it, which is what a request carrying `key=null` demonstrated was possible.
 import { SETTING_KEYS } from "constants/settings";
 import { WIZARD_LLM_TIMEOUT_SECONDS } from "plan-wizard/plan-models";
-import { wizardLlmOptions } from "plan-wizard/wizard-prompt-diagnostics";
-import { fastModelOptions } from "providers/ai-provider-settings";
+import { incidentalLlmOptions, wizardLlmOptions } from "plan-wizard/wizard-prompt-diagnostics";
+import { fastModelOptions, incidentalModelOptions } from "providers/ai-provider-settings";
 
 describe("fastModelOptions", () => {
   it("prefers Gemini's flash tier when a Gemini key is stored, even under another configured provider", () => {
@@ -57,5 +57,25 @@ describe("wizardLlmOptions", () => {
     expect(options).toEqual({ jsonResponse: true, timeoutSeconds: WIZARD_LLM_TIMEOUT_SECONDS });
     expect("aiModel" in options).toBe(false);
     expect("apiKey" in options).toBe(false);
+  });
+});
+
+describe("incidentalModelOptions", () => {
+  // Incidental text, such as an agenda suggestion's benefit sentence, needs no deliberation, so OpenAI is asked for its
+  // small model with reasoning off rather than the reasoning model its fast tier names.
+  it("asks OpenAI for its small model with reasoning switched off", () => {
+    const settings = { [SETTING_KEYS.LLM_API_KEY_OPENAI]: "openai-key", [SETTING_KEYS.LLM_PROVIDER_MODEL]: "openai" };
+    expect(incidentalModelOptions(settings)).toEqual({ aiModel: "gpt-5.4-mini", apiKey: "openai-key", providerEm: "openai",
+      reasoningEffort: "none" });
+  });
+
+  it("uses the fast tier for a provider with no smaller incidental model", () => {
+    const settings = { [SETTING_KEYS.LLM_API_KEY_ANTHROPIC]: "anthropic-key", [SETTING_KEYS.LLM_PROVIDER_MODEL]: "anthropic" };
+    expect(incidentalModelOptions(settings)).toEqual(fastModelOptions(settings));
+  });
+
+  it("names no model when no provider has a key", () => {
+    expect(incidentalModelOptions({})).toBeNull();
+    expect(incidentalLlmOptions({})).toEqual({ jsonResponse: true, timeoutSeconds: WIZARD_LLM_TIMEOUT_SECONDS });
   });
 });

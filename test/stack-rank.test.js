@@ -20,7 +20,7 @@ import { taskMatchScoresByProject, taskRatingKey } from "plan-wizard/stack-rank/
 import { dictionaryEntriesFromContent, examinedProjectSummaries, mergedDictionaryContent,
   openUserTermsDictionary } from "plan-wizard/stack-rank/user-terms-dictionary";
 import { pluginSettings, setPluginData } from "plugin-data";
-import { initialProjectTaskStoreMarkdown, projectSectionHeadingText } from "project-task-store-markdown";
+import { initialProjectTaskStoreMarkdown, projectSectionHeadingText } from "dashboard/project-tasks/project-task-store-markdown";
 import { AMPLE_AGENT_PRO_UUID } from "providers/ai-provider-settings";
 import { DecisionsEndpoint, forgetJevFailure, jevKeyRoute } from "providers/decisions-endpoint";
 import QuarterProject from "quarter-project";
@@ -147,6 +147,16 @@ describe("user terms dictionary", () => {
     expect(entries.map(entry => [entry.term, entry.definition, entry.isBuilderOwned])).toEqual([
       ["Amplenote", "Notes app", true], ["GitClear", "My company", false]]);
     expect([...examinedProjectSummaries(content)]).toEqual(["old project"]);
+  });
+
+  it("reads examined projects back from the escaped form Amplenote saves them in", () => {
+    const savedContent = "# Terms\n- **Amplenote**: Notes app\n\n# Examined projects\n\n"
+      + "- Ship the \\(beta) dashboard \\(examined 2026-09-01)\n\n- Old project \\(examined 2026-09-02)\n";
+    expect([...examinedProjectSummaries(savedContent)]).toEqual(["ship the (beta) dashboard", "old project"]);
+    const { content: mergedContent } = mergedDictionaryContent(savedContent, { examinedOn: "2026-10-15",
+      examinedSummaries: ["Old project", "New project"] });
+    expect(mergedContent.match(/Old project/g)).toHaveLength(1);
+    expect(mergedContent).toContain("- New project (examined 2026-10-15)");
   });
 
   it("refines plugin-owned terms in place, never rewrites the user's, and appends new ones", () => {

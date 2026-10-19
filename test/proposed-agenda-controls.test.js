@@ -1,8 +1,8 @@
 // Exercise agenda popout navigation, dismissal, and custom priority instructions.
 import { jest } from "@jest/globals";
-import ProposedAgendaDateControl from "proposed-agenda-date-control";
-import { priorityOptionFromKey } from "proposed-agenda-priority";
-import ProposedAgendaPriorityControl from "proposed-agenda-priority-control";
+import ProposedAgendaDateControl from "dashboard/proposed-agenda/proposed-agenda-date-control";
+import { priorityOptionFromKey } from "dashboard/proposed-agenda/proposed-agenda-priority";
+import ProposedAgendaPriorityControl from "dashboard/proposed-agenda/proposed-agenda-priority-control";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 

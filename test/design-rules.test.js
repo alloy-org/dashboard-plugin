@@ -19,6 +19,7 @@ const FILES_WITH_CONTENT_GLYPHS = {
   // Debug console output for developers
   "dashboard/debug-evaluate-service.js": "debug output",
   // Text written into the user's notes, in the note's own markup
+  "dashboard/suggestions/calendar-generation-report.js": "note text (the Debug Console's calendar pass report)",
   "dashboard/projects/completed-task-project-ledger.js": "note text",
   "plan-wizard/quarterly-plan-markdown.js": "note markup (the month focus star)",
 };

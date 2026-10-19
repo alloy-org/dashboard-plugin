@@ -1,6 +1,7 @@
 // Verify fixed queue buckets, legacy migration, and independent clients applying narrow updates to current note content.
 import { workQueueNotesApp } from "./work-queue-test-notes";
 import { jest } from "@jest/globals";
+import { NOTE_WRITE_BACKSTOP_CHARACTERS } from "constants/units";
 import { readJsonNote } from "dashboard/work-queue/dashboard-json-note";
 import { workQueueBucketIndex, WORK_QUEUE_BUCKET_COUNT, WORK_QUEUE_SCHEMA_VERSION, workQueueNoteMarkdown, workQueueNotePayload } from "dashboard/work-queue/dashboard-work-note";
 import DashboardWorkRepository, { TERMINAL_RECORD_RETENTION_MILLISECONDS, workQueueNoteName } from "dashboard/work-queue/dashboard-work-repository";
@@ -147,14 +148,14 @@ async function verifyLargeQueue() {
   const repository = new DashboardWorkRepository({ app, clock: () => 1000 });
   await repository.saveJob(SCOPE, { key: "seed", type: "rank" });
   app.replaceNoteContent.mockClear();
-  const requests = Array.from({ length: 64 }, (unused, index) => ({ input: { evidence: "x".repeat(1800) },
+  const requests = Array.from({ length: 128 }, (unused, index) => ({ input: { evidence: "x".repeat(1800) },
     key: `rank:project-${ index }`, type: "rank" }));
   await repository.saveJobs(SCOPE, requests);
-  expect(app.noteContent(workQueueNoteName(SCOPE)).length).toBeGreaterThan(100000);
-  expect(payloadFromApp(app).jobs).toHaveLength(65);
+  expect(app.noteContent(workQueueNoteName(SCOPE)).length).toBeGreaterThan(NOTE_WRITE_BACKSTOP_CHARACTERS);
+  expect(payloadFromApp(app).jobs).toHaveLength(129);
   for (const call of app.replaceNoteContent.mock.calls) {
     expect(call[2].section).toBeDefined();
-    expect(call[1].length).toBeLessThanOrEqual(100000);
+    expect(call[1].length).toBeLessThanOrEqual(NOTE_WRITE_BACKSTOP_CHARACTERS);
   }
 }
 

@@ -17,8 +17,11 @@ const REMOVED_SCSS_TOKENS = [ "accent", "action-low", "background-accent", "bg-c
   "tooltip-border", "tooltip-shadow", "tooltip-text", "tooltip-text-muted", "victory-value-0", "victory-value-1",
   "victory-value-2", "victory-value-3", "victory-value-4", "warning" ];
 
-// Scripts allowed to hold color literals: the browser dev harness, which mocks the host's theme
-const SCRIPT_FILES_WITH_COLORS = [ "util/browser-dev-app.js" ];
+// Pages the host shows in a prompt. They carry no bundle and so no dashboard tokens: they read the host's --color-*
+// properties directly, each with a fallback color of its own.
+const HOST_PROMPT_PAGE_FILES = [ "idea-run-progress-embed.js", "suggestion-reroll-embed.js" ];
+// Scripts allowed to hold color literals: the browser dev harness, which mocks the host's theme, and the prompt pages
+const SCRIPT_FILES_WITH_COLORS = [ ...HOST_PROMPT_PAGE_FILES, "util/browser-dev-app.js" ];
 
 // Raw colors allowed outside the theme files, each a fixed color with no host equivalent, by file
 const ALLOWED_RAW_COLORS = {
@@ -69,7 +72,9 @@ describe("dashboard color tokens", () => {
   });
 
   it("reads host colors only through tokens, never a host --color-* variable directly", () => {
-    const offenders = [ ...componentStylesheetFiles, ...scriptFiles ].filter(file => /var\(--color-/.test(codeFromFile(file)));
+    const offenders = [ ...componentStylesheetFiles, ...scriptFiles ]
+      .filter(file => !HOST_PROMPT_PAGE_FILES.includes(path.relative(LIB_DIRECTORY, file)))
+      .filter(file => /var\(--color-/.test(codeFromFile(file)));
     expect(offenders.map(file => path.relative(LIB_DIRECTORY, file))).toEqual([]);
   });
 

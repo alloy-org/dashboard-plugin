@@ -13,17 +13,22 @@
   // The model name keeps its own casing inside the uppercase header button.
   .proposed-agenda-model-name { text-transform: none; }
   // A one-cell widget stacks the date and priority. Two cells or wider places them on one row, vertically centered.
+  // Either way, "Back to today" sits on its own line beneath them.
   .proposed-agenda-overview {
     border-bottom: 1px solid $color-border-primary;
     display: flex;
     flex-direction: column;
+
+    > .proposed-agenda-today { order: 1; }
   }
   @for $columns from 2 through sizings.$dashboard-grid-column-count {
     &.horizontal-#{$columns}-cell .proposed-agenda-overview {
       align-items: center;
-      flex-direction: row;
-      gap: $sp-lg;
-      justify-content: space-between;
+      column-gap: $sp-lg;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      row-gap: $sp-xs;
+      > .proposed-agenda-today { grid-column: 1 / -1; grid-row: 2; justify-self: end; }
       // The widget body already insets the top by $sp-lg. Matching that below the row puts the
       // date and priority midway between the header and the divider.
       padding-bottom: $sp-lg;
@@ -41,6 +46,8 @@
     }
   }
   .proposed-agenda-date-control { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; }
+  // The arrows and date never separate: the label shortens (see useFittingDateLabel) and, past its shortest form, ellipsizes.
+  .proposed-agenda-day-stepper { align-items: center; display: flex; gap: inherit; min-width: 0; }
   .proposed-agenda-date-edit {
     align-items: center;
     color: $color-text-high-contrast;
@@ -53,11 +60,13 @@
     min-width: 0;
     padding: 0 8px;
     text-align: left;
+    white-space: nowrap;
 
-    .material-icon { color: $color-text-low-contrast; }
+    .proposed-agenda-date-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .proposed-agenda-date-caret { color: $color-text-low-contrast; flex-shrink: 0; }
   }
   .proposed-agenda-relative-date { background: $color-background-element-low-contrast; border-radius: $radius-pill; color: $color-text-medium-contrast; font-size: $smaller-font-size; font-weight: 500; padding: 2px 8px; }
-  .proposed-agenda-today { margin-left: auto; }
+  .proposed-agenda-today { align-self: flex-end; }
   .proposed-agenda-day-summary { color: $color-text-low-contrast; margin-top: 2px; }
   .proposed-agenda-controls { align-items: center; display: flex; gap: 10px; padding: $sp-sm 0 $sp-md; }
   .proposed-agenda-priority-label, .proposed-agenda-priority-description { color: $color-text-low-contrast; font-size: $smaller-font-size; }
@@ -123,6 +132,28 @@
   .proposed-agenda-footer { align-items: center; border-top: 1px solid $color-border-primary; display: flex; gap: $sp-sm; margin-top: $sp-md; padding: $sp-md 0 $sp-sm; }
   .proposed-agenda-pending { color: $color-text-low-contrast; flex: 1; }
   .proposed-agenda-secondary-footer { align-items: center; color: $color-text-low-contrast; display: flex; gap: 12px; justify-content: space-between; padding-bottom: $sp-sm; }
+  // Sits between the date/priority row and the agenda list, so the divider above it already separates it.
+  .proposed-agenda-calendar-prompt {
+    align-items: center;
+    border-bottom: 1px solid $color-border-primary;
+    color: $color-text-medium-contrast;
+    display: flex;
+    font-size: $smaller-font-size;
+    gap: $sp-sm;
+    padding: $sp-sm 0;
+  }
+  .proposed-agenda-calendar-text { flex: 1; margin: 0; min-width: 0; }
+  .proposed-agenda-calendar-icon { color: $color-text-low-contrast; margin-right: $sp-xs; vertical-align: text-bottom; }
+  .proposed-agenda-calendar-link {
+    align-items: center;
+    color: $color-text-link;
+    display: inline-flex;
+    gap: 2px;
+    text-decoration: none;
+    white-space: nowrap;
+
+    &:hover { text-decoration: underline; }
+  }
   .proposed-agenda-attribution { font-size: $smaller-font-size; }
   .proposed-agenda-dismiss-all { margin-left: auto; }
 
@@ -140,8 +171,8 @@
   @container (max-width: 420px) {
     .widget-header { align-items: flex-start; }
     .proposed-agenda-date-control { gap: 5px; }
+    .proposed-agenda-day-stepper { flex: 1; }
     .proposed-agenda-date-edit { flex: 1; font-size: $medium-heading-font-size; }
-    .proposed-agenda-today { flex-basis: 100%; text-align: right; }
     // Too narrow for a time column: stack "7:30 AM · Note" (with the status at its right) above a full-width title,
     // and drop pending-row actions onto their own line beneath it.
     .proposed-agenda-item { grid-template-columns: minmax(0, 1fr) max-content; row-gap: 2px; }

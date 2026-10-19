@@ -323,4 +323,21 @@ describe("createDashboardWorkRuntime", () => {
     expect(exported.scheduler.counts).toEqual({ pending: 0, running: 0 });
     runtime.dispose();
   });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A completed job's reported detail and subject reach its completion event; the subject, user-written text
+  //   such as a project name, stays out of the exported snapshot.
+  it("records a completed job's outcome detail and keeps its subject out of exports", async () => {
+    const runtime = createDashboardWorkRuntime({ clock: () => 1000 });
+    runtime.scheduler.setConditions({ loadSettled: true });
+    await runtime.scheduler.enqueue({ key: "ideas:project", run: () => ({ outcomeDetail: "Generated 5 ideas, kept 3",
+      outcomeSubject: "Launch dashboard" }), type: "generateProjectIdeas" });
+    const completedEvent = runtime.diagnostics.snapshot().events.find(event => event.type === "completed");
+    expect(completedEvent).toMatchObject({ outcomeDetail: "Generated 5 ideas, kept 3", outcomeSubject: "Launch dashboard" });
+    const exportedEvents = runtime.exportSnapshot().diagnostics.events;
+    const exportedCompletion = exportedEvents.find(event => event.type === "completed");
+    expect(exportedCompletion.outcomeDetail).toBe("Generated 5 ideas, kept 3");
+    expect(exportedCompletion.outcomeSubject).toBeUndefined();
+    runtime.dispose();
+  });
 });

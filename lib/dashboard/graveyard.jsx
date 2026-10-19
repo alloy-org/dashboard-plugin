@@ -250,7 +250,6 @@ export default function GraveyardWidget({ app, gridHeightSize = 1, gridWidthSize
 
   const loadCandidates = useCallback(async (options = {}) => {
     const forceRefresh = Boolean(options?.forceRefresh);
-    logIfEnabled('[Graveyard] loadCandidates fired, taskDomainUUID:', taskDomainUUID, 'forceRefresh:', forceRefresh);
     setError(null);
     if (forceRefresh) setDismissingUuids(new Set());
     setLoading(true);

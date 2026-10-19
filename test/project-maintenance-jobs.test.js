@@ -4,7 +4,7 @@
 // work fails the attempt for the queue to retry.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
-import { readCollectedProjectTasks } from "dashboard/project-task-store";
+import { readCollectedProjectTasks } from "dashboard/project-tasks/project-task-store";
 import { refreshRevision } from "dashboard/quarter-project-refresh-state";
 import { dashboardWorkHandlers, workHandlerRegistry } from "dashboard/work-queue/dashboard-work-handlers";
 import DashboardWorkRepository from "dashboard/work-queue/dashboard-work-repository";
@@ -19,6 +19,17 @@ import { backlogTasks, DISCOVERED_TERMS, GENERATED_IDEA, jobContext, maintenance
 
 describe("project maintenance jobs", () => {
   beforeEach(() => setPluginData({ settings: { [SETTING_KEYS.JEV_ACCESS_TOKEN]: "token" } }));
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Even a local association refresh schedules durations when OpenAI Decisions is available to estimate them.
+  it("schedules available OpenAI duration choices independently of the task ranker", async () => {
+    setPluginData({ settings: { [SETTING_KEYS.LLM_API_KEY_OPENAI]: "openai-test-key" } });
+    const app = maintenanceApp({ tasks: backlogTasks() });
+    const input = { ...SCOPE_INPUT, projectUuid: await storedProjectUuid(app) };
+    const handler = createRankProjectTasksHandler({ rankerFactory: async () => null });
+    const { result } = await runProjectJob(handler, { context: jobContext(app), input });
+    expect(result.followUps).toEqual(expect.arrayContaining([expect.objectContaining({ type: "estimateTaskDurations" })]));
+  });
 
   // ----------------------------------------------------------------------------------------------
   // @desc Discovery, a ranking spread over two turns, and ideas persist local and similar tasks, completion text,
@@ -47,6 +58,9 @@ describe("project maintenance jobs", () => {
     expect(stored.lastSuggestedAt).toBe(NOW.toISOString());
     expect(ranking.result.revision).toBe(refreshRevision(stored.refreshState, "similarity"));
     expect(ideas.result.revision).toBe(stored.refreshState.ideas.inputRevision);
+    expect(ideas.result).toMatchObject({ outcomeDetail: "Generated 1 idea, kept 1", outcomeSubject: stored.summary });
+    expect(ranking.result.outcomeSubject).toBe(stored.summary);
+    expect(ranking.result.outcomeDetail).toMatch(/^Ranked \d+ tasks \(\d+ newly rated\), accepted \d+$/);
     expect(ideaGenerator.mock.calls[0][1].project.candidateTaskRecords).toEqual([]);
     expect(typeof ideaGenerator.mock.calls[0][1].promptRunner).toBe("function");
   });
@@ -64,7 +78,8 @@ describe("project maintenance jobs", () => {
     const input = { ...SCOPE_INPUT, projectUuid: await storedProjectUuid(queueApp) };
     const ranking = await runProjectJob(createRankProjectTasksHandler(), { context, input });
     await runProjectJob(createGenerateProjectIdeasHandler({ ideaGenerator }), { context, input });
-    expect(ranking).toMatchObject({ result: { revision: undefined }, turns: 1 });
+    expect(ranking).toMatchObject({ result: { outcomeDetail: "Matched 1 task locally; nothing could rank", revision: undefined },
+      turns: 1 });
     const [stored] = await readCollectedProjectTasks(queueApp, { ...SCOPE_INPUT, quarterKey: "2026-Q3" });
     expect(stored.relatedTaskRecords.map(record => record.taskUuid)).toEqual(["open-task", "errand-5"]);
     expect(stored.relatedTasks).toContain("errand-5");
@@ -204,10 +219,11 @@ describe("project maintenance jobs", () => {
   it("registers the maintenance handlers and validates their input", () => {
     const registry = workHandlerRegistry(dashboardWorkHandlers());
     expect([...registry.keys()].sort()).toEqual(["classifyCompletedTasks", "collectTermEvidence", "discoverDictionaryTerms",
-      "generateProjectIdeas", "prepareDayRanking", "rankProjectTasks", "rateProjectIdeas", "reconcileProjects", "refineDictionaryTerm",
+      "estimateTaskDurations", "generateProjectIdeas", "prepareDayRanking", "rankProjectTasks", "rateProjectIdeas", "reconcileProjects", "refineDictionaryTerm",
       "scoreCompletedTaskPotential"]);
     expect(() => registry.get("collectTermEvidence").validateInput({ term: " ", year: 2026 })).toThrow("term");
     expect(() => registry.get("reconcileProjects").validateInput(SCOPE_INPUT)).not.toThrow();
+    expect(() => registry.get("estimateTaskDurations").validateInput(SCOPE_INPUT)).not.toThrow();
     expect(() => registry.get("rankProjectTasks").validateInput(SCOPE_INPUT)).toThrow("projectUuid");
     expect(() => registry.get("discoverDictionaryTerms").validateInput(SCOPE_INPUT)).not.toThrow();
     expect(() => registry.get("generateProjectIdeas").validateInput({ ...SCOPE_INPUT, quarter: 5 })).toThrow("quarter");

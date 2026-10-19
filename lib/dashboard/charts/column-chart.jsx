@@ -35,15 +35,16 @@ const TOOLTIP_HIDE_DELAY = 150;
 //   - {Array<Object>} series - [{ className, key, values }]: `values[index]` is a number, or an array of stacked
 //     segments [{ className, fill, key, value }] whose sum is the column's value.
 //   - {number} [tooltipAnchorInset] - Pixels the tooltip anchor moves left from the column's right edge.
+//   - {boolean} [tooltipWide] - Use the wide rich tooltip, for tooltips that list whole task rows.
 //   - {Function} [valuePillFromIndex] - (index, maximum) => { className, text } for a pill on the hovered column's
 //     tallest bar, or null.
 // @returns {JSX.Element} The chart.
 export default function ColumnChart(props) {
   const { className, columns, padding = DEFAULT_PLOT_PADDING, renderTooltip, resetHoverKey, series,
-    tooltipAnchorInset = 0 } = props;
+    tooltipAnchorInset = 0, tooltipWide } = props;
   const [ containerRef, { height, width } ] = useElementSize();
   const [ hoveredIndex, setHoveredIndex ] = useState(null);
-  const tooltip = useStatsChartTooltip();
+  const tooltip = useStatsChartTooltip({ wide: tooltipWide });
   const layout = chartLayoutFromSize({ ...props, columns, height, padding, series, width });
 
   useEffect(() => { setHoveredIndex(null); }, [ resetHoverKey ]);

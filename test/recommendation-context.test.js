@@ -68,7 +68,7 @@ describe("day recommendation context", () => {
     expect(isDateNamedNoteTitle("GitClear marketing")).toBe(false);
   });
 
-  it("classifies travel all-day events, finds research notes, and emits overriding LLM instructions", async () => {
+  it("classifies travel all-day events and emits overriding LLM instructions without scanning for research notes", async () => {
     const app = buildContextApp();
     const context = await buildDayRecommendationContext(app, {
       calendarEvents: [{ allDay: true, end: new Date(2026, 7, 3), start: TARGET_DATE,
@@ -77,11 +77,36 @@ describe("day recommendation context", () => {
     });
 
     expect(context.eventContext.isTravelLike).toBe(true);
-    expect(context.researchNotes[0]).toMatchObject({ name: "Kyoto food research", uuid: "kyoto-note" });
+    expect(context.researchNotes).toEqual([]);
+    expect(app.getNoteContent).not.toHaveBeenCalled();
     const instructions = recommendationInstructionsFromContext(context, { allowInventedTravelActivities: true,
       scheduleMode: true });
     expect(instructions).toContain("overrides ordinary weekday routines");
+    expect(instructions).not.toContain("Kyoto food research");
+  });
+
+  it("finds research notes for a travel event with a set start time and presents them to the LLM", async () => {
+    const app = buildContextApp();
+    const context = await buildDayRecommendationContext(app, {
+      calendarEvents: [{ allDay: false, end: new Date(2026, 7, 2, 11, 0, 0), start: new Date(2026, 7, 2, 9, 0, 0),
+        title: "Flight to Kyoto" }],
+      targetDate: TARGET_DATE,
+    });
+
+    expect(context.timedEventContext.isTravelLike).toBe(true);
+    expect(context.researchNotes[0]).toMatchObject({ name: "Kyoto food research", uuid: "kyoto-note" });
+    const instructions = recommendationInstructionsFromContext(context);
+    expect(instructions).toContain("Flight to Kyoto");
     expect(instructions).toContain("Kyoto food research");
+  });
+
+  it("skips notes whose content the host returns as something other than text", async () => {
+    const app = buildContextApp();
+    app.getNoteContent = jest.fn(async ({ uuid }) => (uuid === "project-note" ? { unexpected: true }
+      : "Kyoto research: Nishiki Market"));
+    const notes = await researchNotesForEventTerms(app, ["Kyoto"]);
+    expect(notes.map(note => note.uuid)).toContain("kyoto-note");
+    expect(notes.map(note => note.uuid)).not.toContain("project-note");
   });
 
   it("finds event-term research notes from title matches and bounded content snippets", async () => {

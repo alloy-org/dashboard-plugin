@@ -2,7 +2,7 @@
 // one stat row per value, each with a small icon in front. Content is React, rendered into the tooltip on show.
 import { useCanvasTippy } from "dashboard/dashboard-tooltip-tippy";
 import { ICON_DEFAULTS } from "dashboard/icon-defaults";
-import { RICH_TOOLTIP_OPTIONS } from "dashboard/tooltip-themes";
+import { RICH_TOOLTIP_OPTIONS, WIDE_TOOLTIP_MAX_WIDTH } from "dashboard/tooltip-themes";
 import { useEffect, useRef } from "react";
 import { flushSync } from "react-dom";
 import { createRoot } from "react-dom/client";
@@ -50,9 +50,11 @@ export function StatsChartTooltipContent({ children, title, TitleIcon }) {
 // ------------------------------------------------------------------------------------------
 // @desc A chart tooltip anchored at a screen point, showing React content. The tooltip lives outside the dashboard's
 //   React tree, so its content renders through its own root, with the dashboard's icon defaults.
+// @param {Object} [options] - { wide }: true for the wide rich tooltip, for content that lists whole task rows.
 // @returns {Object} { scheduleHide(delay), show(content, screenX, screenY, options) }.
-export function useStatsChartTooltip() {
-  const tooltip = useCanvasTippy(STATS_CHART_TOOLTIP_OPTIONS);
+export function useStatsChartTooltip({ wide } = {}) {
+  const tooltip = useCanvasTippy(wide ? { ...STATS_CHART_TOOLTIP_OPTIONS, maxWidth: WIDE_TOOLTIP_MAX_WIDTH }
+    : STATS_CHART_TOOLTIP_OPTIONS);
   const contentRef = useRef(null);
   useEffect(() => () => {
     const content = contentRef.current;

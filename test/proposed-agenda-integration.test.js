@@ -8,7 +8,7 @@
 import { jest } from "@jest/globals";
 import dotenv from "dotenv";
 import fetch from "isomorphic-fetch";
-import { generateProposedAgenda } from "proposed-agenda-service";
+import { generateProposedAgenda } from "dashboard/proposed-agenda/proposed-agenda-service";
 import { SETTING_KEYS } from "constants/settings";
 import { setPluginData } from "plugin-data";
 import { SAMPLE_TASKS } from "./fixtures/tasks.js";

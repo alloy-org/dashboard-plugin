@@ -17,7 +17,7 @@ import "dashboard/styles/dashboard-queue-inspector.scss";
 
 // ------------------------------------------------------------------------------------------
 // @desc Render the Queue inspector for the Dashboard's work runtime, or explain that none is running.
-// @param {object} props - { work }: { mountCoordinator, runtime } as the Dashboard provides it, or null.
+// @param {object} props - { work }: { mainThreadMonitor, mountCoordinator, runtime } as the Dashboard provides it, or null.
 export default function DashboardQueueInspector({ work }) {
   const view = useDashboardQueueDiagnostics(work);
   const { durable, loading, refresh } = useDashboardQueueHistory(work);
@@ -34,7 +34,8 @@ export default function DashboardQueueInspector({ work }) {
   }
   if (!view) return <div className="dashboard-queue-inspector" />;
 
-  const exportText = () => JSON.stringify(work.runtime.exportSnapshot({ mountSnapshot: work.mountCoordinator?.snapshot() }), null, 2);
+  const exportText = () => JSON.stringify(work.runtime.exportSnapshot({ mainThread: work.mainThreadMonitor?.snapshot() || null,
+    mountSnapshot: work.mountCoordinator?.snapshot() }), null, 2);
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(exportText());

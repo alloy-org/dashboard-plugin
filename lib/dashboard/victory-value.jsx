@@ -255,7 +255,6 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
         <span className="vv-total">{roundedWeeklyTotal}</span>
         <span className="vv-label">{`points ${ weekDateRange }`}</span>
       </div>
-      <ProjectLegend items={legendItems} />
       <div className="vv-chart-container">
         <IconButton className="vv-nav-arrow" Icon={ MdChevronLeft } label="Previous week"
           onClick={ () => onReferenceDateChange && onReferenceDateChange(shiftWeekDate(-1, rangeEndDate)) } />
@@ -267,6 +266,7 @@ export default function VictoryValueWidget({ app, completedTasksByDate, dailyVal
           Icon={ MdChevronRight } label="Next week"
           onClick={ () => onReferenceDateChange && onReferenceDateChange(shiftWeekDate(1, rangeEndDate)) } />
       </div>
+      <ProjectLegend items={legendItems} />
     </WidgetWrapper>
   );
 }

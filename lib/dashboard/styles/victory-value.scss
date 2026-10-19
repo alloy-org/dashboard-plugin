@@ -6,12 +6,14 @@
 
 @use 'theme-tokens' as *;
 @use 'controls' as *;
+@use 'widget-sizings' as *;
+
+$chart-share-of-widget-height: 0.55;
 
 .widget-victory-value {
   .widget-body {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
   }
 
   .vv-header {
@@ -38,7 +40,8 @@
     display: flex;
     flex-wrap: wrap;
     gap: $sp-xs $sp-sm;
-    margin-bottom: $sp-sm;
+    justify-content: center;
+    padding-top: $sp-sm;
   }
 
   .vv-project-legend-item {
@@ -63,10 +66,13 @@
     font-weight: normal;
   }
 
+  // Auto margins split the body's spare height above and below the chart, centering it between the header and the
+  // legend, which they push to the bottom.
   .vv-chart-container {
     align-items: center;
     display: flex;
     gap: $sp-xs;
+    margin: auto 0;
   }
 
   .vv-chart-wrap {
@@ -96,19 +102,13 @@
     stroke-width: 2px;
   }
 
+  // 55% of the shortest height the widget can have at its vertical size, leaving the header and legend the rest.
+  // Width does not change the widget's height, so horizontal size has no say.
   .vertical-1-cell & .vv-chart {
-    height: 180px;
-  }
-
-  .horizontal-2-cell & .vv-chart {
-    height: 260px;
+    height: widget-minimum-height(1) * $chart-share-of-widget-height;
   }
 
   .vertical-2-cell & .vv-chart {
-    height: 380px;
-  }
-
-  .horizontal-2-cell.vertical-2-cell & .vv-chart {
-    height: 460px;
+    height: widget-minimum-height(2) * $chart-share-of-widget-height;
   }
 }

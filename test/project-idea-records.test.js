@@ -3,10 +3,10 @@
 // what they replace, ideas the user took on are recognized, and the idea prompt carries the project's intents, its
 // completed work, and its idea history.
 import { jest } from "@jest/globals";
-import { projectIntentTexts } from "project-collection-steps";
+import { projectIntentTexts } from "dashboard/project-tasks/project-collection-steps";
 import { IDEA_STATUSES, ideaIdFor, ideasAcceptedByTasks, MAXIMUM_DECIDED_IDEAS, mergedIdeaRecords,
-  normalizedIdeaRecords, openIdeas } from "project-idea-records";
-import { generateProjectTaskIdeas, MAXIMUM_PROMPT_COMPLETIONS } from "project-task-ideas";
+  normalizedIdeaRecords, openIdeas } from "dashboard/project-tasks/project-idea-records";
+import { generateProjectTaskIdeas, MAXIMUM_PROMPT_COMPLETIONS } from "dashboard/project-tasks/project-task-ideas";
 import QuarterProject, { observedCompletionRecord } from "quarter-project";
 import { ideasInputRevision } from "quarter-project-refresh-state";
 import { textDigest } from "util/text-digest";
@@ -157,6 +157,19 @@ describe("idea generation context", () => {
     const result = await generateProjectTaskIdeas({}, { project: project(), promptRunner, quarterlyContext: null });
     expect(promptRunner.mock.calls[0][1]).not.toContain("noteUuid");
     expect(result.suggestedTasks[0].noteUuid).toBeNull();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc The background pass asks for three ideas and keeps three; a caller asking for more is asked and kept as many.
+  it("asks for and keeps the requested number of ideas", async () => {
+    const returnedIdeas = Array.from({ length: 12 }, (_unused, index) => ({ beforeTask: null, taskText: `Draft outreach email ${ index + 1 }` }));
+    const promptRunner = jest.fn().mockResolvedValue({ foundTasks: [], ideas: returnedIdeas });
+    const background = await generateProjectTaskIdeas({}, { project: project(), promptRunner, quarterlyContext: null });
+    expect(promptRunner.mock.calls[0][1]).toContain("Suggest up to 3 concrete");
+    expect(background.suggestedTasks).toHaveLength(3);
+    const requested = await generateProjectTaskIdeas({}, { ideaCount: 10, project: project(), promptRunner, quarterlyContext: null });
+    expect(promptRunner.mock.calls[1][1]).toContain("Suggest up to 10 concrete");
+    expect(requested.suggestedTasks).toHaveLength(10);
   });
 
   // ----------------------------------------------------------------------------------------------

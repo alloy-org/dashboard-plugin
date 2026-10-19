@@ -195,3 +195,33 @@ describe("browser dev app debugEvaluate", () => {
     expect(evaluation.output).toBe('"function"');
   });
 });
+
+// ----------------------------------------------------------------------------------------------
+// @desc A prompt's embed input shows the page the plugin would render for its value, bridged back to the dev app, so
+//   the "Generate ideas" progress window can be followed locally instead of appearing as a text field.
+describe("browser dev app prompt embeds", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("renders a run's progress page in a frame and relays its snapshots", async () => {
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn(async () => ({ ok: true, text: async () => ":root{}" }));
+    try {
+      const app = createBrowserDevApp();
+      app.ideaRunProgressUpdate({ runId: "run-dev", steps: [], title: "Generating ideas for 1 Project" });
+      const promise = app.prompt("Generate ideas", { inputs: [{ type: "embed", value: { runId: "run-dev", view: "ideaRunProgress" } }] });
+      const frame = document.querySelector("[data-dev-prompt-embed] iframe");
+      expect(document.querySelector('[data-dev-prompt="overlay"] input')).toBeNull();
+      await new Promise(resolve => setTimeout(resolve, 0));
+      expect(frame.srcdoc).toContain('data-run-id="run-dev"');
+      expect(frame.srcdoc).toContain("__devCallAmplenotePlugin");
+      await expect(window.__devCallAmplenotePlugin("ideaRunProgressRead", "run-dev")).resolves.toMatchObject({
+        found: true, title: "Generating ideas for 1 Project" });
+      document.querySelector("[data-dev-prompt-cancel]").click();
+      await expect(promise).resolves.toBeNull();
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+});

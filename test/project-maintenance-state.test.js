@@ -1,7 +1,7 @@
 // Preserve task-change, idea-refinement, and completion evidence through the queued handlers after legacy removal.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
-import { readCollectedProjectTasks } from "dashboard/project-task-store";
+import { readCollectedProjectTasks } from "dashboard/project-tasks/project-task-store";
 import QuarterProjectRepository from "dashboard/quarter-project-repository";
 import { createGenerateProjectIdeasHandler } from "dashboard/work-queue/jobs/generate-project-ideas";
 import { createRankProjectTasksHandler } from "dashboard/work-queue/jobs/rank-project-tasks";

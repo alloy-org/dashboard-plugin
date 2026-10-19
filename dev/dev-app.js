@@ -19,9 +19,9 @@ const DEFAULT_MOODS_PATH = process.env.DASHBOARD_DEV_MOODS_PATH || path.join(COM
 const NOTES_DIR = process.env.DASHBOARD_DEV_NOTES_DIR || path.join(__dirname, "..", "notes");
 
 const SAMPLE_DOMAINS = [
-  { id: "domain-work-uuid",     name: "Work",          uuid: "domain-work-uuid",     notes: SAMPLE_NOTE_HANDLES["domain-work-uuid"] },
-  { id: "domain-personal-uuid", name: "Personal",      uuid: "domain-personal-uuid", notes: SAMPLE_NOTE_HANDLES["domain-personal-uuid"] },
-  { id: "domain-side-uuid",     name: "Side Projects", uuid: "domain-side-uuid",     notes: SAMPLE_NOTE_HANDLES["domain-side-uuid"] },
+  { hasConnectedCalendar: true,  id: "domain-work-uuid",     name: "Work",          uuid: "domain-work-uuid",     notes: SAMPLE_NOTE_HANDLES["domain-work-uuid"] },
+  { hasConnectedCalendar: false, id: "domain-personal-uuid", name: "Personal",      uuid: "domain-personal-uuid", notes: SAMPLE_NOTE_HANDLES["domain-personal-uuid"] },
+  { hasConnectedCalendar: false, id: "domain-side-uuid",     name: "Side Projects", uuid: "domain-side-uuid",     notes: SAMPLE_NOTE_HANDLES["domain-side-uuid"] },
 ];
 
 // [Claude] Task: map task domain UUIDs to their corresponding note tag names

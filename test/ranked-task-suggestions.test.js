@@ -1,11 +1,12 @@
 // The day-project selection, Jev and generative ranking, hour placement, and the project-note suggestion log.
-import { dayProjectGroups, deadlineWithinComingWeek } from "day-project-candidates";
-import { suggestionSectionsMarkdown } from "project-suggestion-log";
+import { dayProjectGroups, deadlineWithinComingWeek } from "dashboard/suggestions/day-project-candidates";
+import { suggestionSectionsMarkdown } from "dashboard/project-tasks/project-suggestion-log";
 import QuarterProject from "quarter-project";
 import DecisionsResponse from "providers/decisions-response";
-import { generativeRankPrompt, rankedTasksFromCandidateIds, rankedTasksFromResponse, suggestionQuestions } from "suggestion-task-rank";
+import { generativeRankPrompt, rankedTasksFromCandidateIds, rankedTasksFromRatings, rankedTasksFromResponse,
+  suggestionQuestions } from "dashboard/suggestions/suggestion-task-rank";
 import { activitiesClearOfObligations, refillRejectedSuggestion, slotRankedTasks, suggestionHourAvailability,
-  tasksNotRecentlySuggested } from "suggestion-task-slots";
+  tasksNotRecentlySuggested } from "dashboard/suggestions/suggestion-task-slots";
 
 const TUESDAY = new Date(2026, 9, 6, 15, 0, 0);
 
@@ -127,6 +128,28 @@ describe("suggestion ranking", () => {
     const ranked = rankedTasksFromCandidateIds([listed[0], second], ["task:task-2", "missing", "task-1"]);
     expect(ranked.map(task => task.taskUuid)).toEqual(["task-2", "task-1"]);
     expect(ranked[0].rating).toBeGreaterThan(ranked[1].rating);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A task matching several projects is asked about and slotted once, so the day offers it in only one hour.
+  it("lists and slots a task shared by several projects once", () => {
+    const sharedGroups = ["project-1", "project-2", "project-3"].map((uuid, index) => ({ ...groups[0], projectUuid: uuid,
+      summary: `Project ${ index + 1 }` }));
+    const { listed, questions } = suggestionQuestions(sharedGroups);
+    expect(listed).toHaveLength(1);
+    expect(Object.keys(questions)).toEqual(["task_1"]);
+    const ranked = rankedTasksFromResponse(listed, new DecisionsResponse({ answers: { task_1: { score: 7.6, type: "score" } },
+      providerEm: "jev" }));
+    const slottedTaskUuids = slotRankedTasks(ranked).activities.map(activity => activity.taskUuid);
+    expect(slottedTaskUuids).toEqual(["task-1"]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A ranking stored while a shared task was listed once per project rebuilds with that task only once.
+  it("ignores repeated ratings of one candidate in a stored ranking", () => {
+    const { listed } = suggestionQuestions(groups);
+    const ranked = rankedTasksFromRatings(listed, [["task:task-1", 9], ["task:task-1", 9], ["task:task-1", 8]]);
+    expect(ranked.map(task => task.taskUuid)).toEqual(["task-1"]);
   });
 
   // ----------------------------------------------------------------------------------------------

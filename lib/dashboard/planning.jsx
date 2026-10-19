@@ -5,11 +5,13 @@ import { IS_DEV_ENVIRONMENT, SETTING_KEYS } from "constants/settings";
 import { buildPlanTargetFromPlans, currentQuarterCardAction } from "dashboard/build-plan-quarter";
 import { Badge, Button, LoadingState, UnderlineTabs } from "dashboard/controls";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
+import IdeaRunProgressPopup from "dashboard/idea-generation/idea-run-progress";
 import MonthFocusPlan, { MonthIntensityMeter } from "dashboard/month-focus-plan";
 import PlanWizard from "dashboard/plan-wizard/plan-wizard";
 import { quarterPageWindow, quarterPlanForPage, quartersMatch } from "dashboard/quarter-page";
 import QuarterPageButton from "dashboard/quarter-page-button";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
+import { useIdeaGenerationRun } from "hooks/use-idea-generation-run";
 import useQuarterPlanProgress, { quarterProgressKey } from "hooks/use-quarter-plan-progress";
 import NoteEditor from "note-editor";
 import { mirrorQuarterPlanNote } from "plan-wizard/mirror-quarter-plan";
@@ -19,7 +21,7 @@ import QuarterlyPlanEntry from "quarterly-plan-entry";
 import { createOrAppendMonthlyPlan, createOrAppendWeeklyPlan, createQuarterlyPlan, findQuarterPlan,
   getMonthlyPlanContent, starMonthFocusProject } from "quarterly-plan-service";
 import { useEffect, useRef, useState } from "react";
-import { MdAdd, MdDescription, MdEdit, MdEditNote, MdUndo } from "react-icons/md";
+import { MdAdd, MdAutoAwesome, MdDescription, MdEdit, MdEditNote, MdUndo } from "react-icons/md";
 import { navigateToNote } from "util/goal-notes";
 import { logIfEnabled } from "util/log";
 import { isQuarterPlanEnabled, quarterlyPlanTogglesFromSetting, quarterlyPlanTogglesWithState,
@@ -53,7 +55,6 @@ async function handleMonthClick(app, month, { activeTab, setActiveTab, setMonthL
       setMonthContent({ found: false, plan: month.plan, monthName: month.full, year: month.plan.year });
     } else {
       const result = await getMonthlyPlanContent(app, noteUUID, month.full);
-      logIfEnabled(`[Planning] Raw markdown for ${month.full}:`, result?.content);
       setMonthContent({
         ...result,
         plan: month.plan,
@@ -252,6 +253,30 @@ function storedPlanToggles() {
 //   - {string|null} [taskDomainName] - Active task domain's display name, or null for All Notes.
 //   - {string|null} [taskDomainUUID] - Active task domain's UUID, or null for All Notes.
 // @returns {JSX.Element} The widget.
+// ----------------------------------------------------------------------------------------------
+// @desc The header action that replaces "Build plan" once the quarter has a plan: it starts a "Generate ideas" run, or
+//   reopens the progress window of one under way. Once the day's runs are spent, a click says when ideas can be
+//   generated again. It is disabled when the Dashboard has no durable work runner to run the jobs on.
+// @param {object} ideaRun - From useIdeaGenerationRun.
+// @returns {JSX.Element} The button.
+function generateIdeasButton(ideaRun) {
+  const { allowance, available, running } = ideaRun;
+  const disabled = !running && !available;
+  let title = `Generate ideas for this month's projects (run ${ allowance.runNumber } of ${ allowance.maximum } today)`;
+  if (running) title = "Show the progress of the ideas being generated";
+  else if (!available) title = "Generating ideas needs the Dashboard's work queue, which is switched off";
+  else if (!allowance.allowed) title = `Both of today's ${ allowance.maximum } runs are used. You can generate ideas again tomorrow`;
+  const startRun = () => {
+    Promise.resolve(ideaRun.start()).catch(error => logIfEnabled("[planning] could not start idea generation", error?.message));
+  };
+  return (
+    <Button className="planning-generate-ideas" dense disabled={ disabled } Icon={ MdAutoAwesome }
+      onClick={ running ? ideaRun.openProgress : startRun } title={ title }>
+      { running ? "Generating ideas…" : "Generate ideas" }
+    </Button>
+  );
+}
+
 export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings = null, quarterlyPlans,
     taskDomainName = null, taskDomainUUID = null }) {
   const [activeTab, setActiveTab] = useState(null);
@@ -265,6 +290,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   const [mirroredCurrentNoteUuid, setMirroredCurrentNoteUuid] = useState(null);
   const [planEntrySettled, setPlanEntrySettled] = useState(false);
   const [planToggles, setPlanToggles] = useState(() => storedPlanToggles());
+  const ideaRun = useIdeaGenerationRun({ app, domainName: taskDomainName, domainUuid: taskDomainUUID });
   const [pageOffset, setPageOffset] = useState(0);
   const [pagedPlans, setPagedPlans] = useState(null);
   const [pageLoadGeneration, setPageLoadGeneration] = useState(0);
@@ -320,10 +346,12 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   const checkingPlanProgress = planNotesMissing && !wizardQuarterProgress;
   const showPlanEntry = planNotesMissing && wizardQuarterProgress?.begun === false;
   const weekSectionVisible = isTwoTall && pageOffset === 0;
-  const buildPlanAction = canStartWizard && !showPlanEntry && !checkingPlanProgress ? (
+  const planCreated = !!(wizardQuarterPlan?.noteUUID && currentPlan?.noteUUID);
+  const generateIdeasAction = planCreated ? generateIdeasButton(ideaRun) : null;
+  const buildPlanAction = canStartWizard && !showPlanEntry && !checkingPlanProgress && !planCreated ? (
     <Button className="planning-build-plan" dense Icon={ MdEditNote } onClick={ () => setWizardPlan({ mirrorTarget: null,
       quarter: wizardQuarterPlan.quarter, year: wizardQuarterPlan.year }) } title={ buildPlanTitle }>Build plan</Button>
-  ) : null;
+  ) : generateIdeasAction;
   const returnToCurrentAction = pageOffset !== 0 && currentPlan?.label ? (
     <Button className="planning-return-quarter" dense Icon={ MdUndo } onClick={ () => setPageOffset(0) }>
       { `Back to ${ currentPlan.label }` }
@@ -374,6 +402,10 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
     setMonthContent(null);
   }, [pageOffset]);
 
+  // ----------------------------------------------------------------------------------------------
+  // @desc Open a month whenever the viewed quarters change or Plan Builder closes. Closing the wizard bumps
+  //   pageLoadGeneration without changing any note UUID, so the generation is what makes the month re-read a plan
+  //   note the wizard just republished.
   useEffect(() => {
     if (!viewedQuarterKey) return undefined;
     const monthsForPage = getQuarterMonths(leftPlan, rightPlan);
@@ -385,7 +417,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
     setInitialLoadDone(true);
     openPlanningMonth(monthToOpen, null);
     return undefined;
-  }, [viewedQuarterKey]);
+  }, [pageLoadGeneration, viewedQuarterKey]);
 
   useEffect(() => {
     if (!plansReady || pageOffset === 0 || !currentPlan?.quarter) return undefined;
@@ -425,7 +457,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
       })
       .catch(() => setWeekContent({ found: false, content: null }))
       .finally(() => setWeekLoading(false));
-  }, [currentPlan?.noteUUID, plansReady, weekLabel, weekSectionVisible]);
+  }, [currentPlan?.noteUUID, pageLoadGeneration, plansReady, weekLabel, weekSectionVisible]);
 
   if (editingNoteUUID && IS_DEV_ENVIRONMENT) {
     return (
@@ -632,6 +664,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
         />
       ) : null}
       {planWizardOverlay}
+      {ideaRun.fallbackOpen && ideaRun.snapshot ? <IdeaRunProgressPopup app={ app } onClose={ ideaRun.closeFallback } snapshot={ ideaRun.snapshot } /> : null}
     </WidgetWrapper>
   );
 }

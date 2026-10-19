@@ -2,7 +2,7 @@
 // better off, in one sentence or two.
 import { jest } from "@jest/globals";
 import { activitiesWithBenefitRationales, agendaWithBenefitRationales, benefitRationalePrompt,
-  calendarSuggestionExplanation, PENDING_RATIONALE_TEXT } from "calendar-suggestion-explanation";
+  calendarSuggestionExplanation, PENDING_RATIONALE_TEXT } from "dashboard/suggestions/calendar-suggestion-explanation";
 
 const WALK = { projectSummary: "Make one new friend",
   title: "Choose a nearby 45-minute walking route and text one acquaintance" };

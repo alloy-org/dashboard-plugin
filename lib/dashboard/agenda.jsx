@@ -6,7 +6,7 @@
  */
 import { DASHBOARD_NOTE_TAG } from "constants/settings"
 import { EmptyState, IconButton, PlainButton } from "dashboard/controls"
-import { obligationsFromTasksAndEvents, TODAY_OBLIGATIONS_EVENT, TODAY_OBLIGATIONS_REQUEST_EVENT } from "proposed-agenda-obligations"
+import { obligationsFromTasksAndEvents, TODAY_OBLIGATIONS_EVENT, TODAY_OBLIGATIONS_REQUEST_EVENT } from "dashboard/proposed-agenda/proposed-agenda-obligations"
 import { useState, useEffect, useRef } from "react"
 import { MdChevronLeft, MdChevronRight } from "react-icons/md"
 import WidgetWrapper from "widget-wrapper"

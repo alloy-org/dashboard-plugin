@@ -101,7 +101,7 @@ export default function VictoryValueChart({ dailyValues, hasProjectLegend, moodB
       renderTooltip={ tooltipContentFromIndex }
       resetHoverKey={ dailyValues.length && dateFromDateInput(dailyValues[0].date).getTime() }
       series={ [ { className: "victory-value-chart-bar", key: "victory-value", values } ] }
-      tooltipAnchorInset={ TOOLTIP_ANCHOR_INSET } valuePillFromIndex={ valuePillFromIndex } />
+      tooltipAnchorInset={ TOOLTIP_ANCHOR_INSET } tooltipWide valuePillFromIndex={ valuePillFromIndex } />
   );
 }
 

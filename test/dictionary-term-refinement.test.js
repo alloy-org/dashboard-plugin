@@ -87,7 +87,8 @@ describe("dictionary term refinement", () => {
     const handler = createRefineDictionaryTermHandler({ promptRunner });
     const job = await collectedRefinementJob(app, handler);
     const result = await handler.run({ context: jobContext(app), job, signal: null });
-    expect(result).toEqual({ evidenceQuality: "strong", outcome: REFINEMENT_OUTCOMES.refined, revision: job.desiredRevision, term: "Widget" });
+    expect(result).toEqual({ evidenceQuality: "strong", outcome: REFINEMENT_OUTCOMES.refined, outcomeFacts: { outcome: REFINEMENT_OUTCOMES.refined,
+      term: "Widget" }, revision: job.desiredRevision, term: "Widget" });
     expect(promptRunner.mock.calls[0][1]).toContain("[2] From the note \"Planning\":\nEach widget is a resizable card on the Dashboard.");
     expect(app.noteContent(DICTIONARY_NAME)).toContain(`- **Widget**: ${ REFINED_DEFINITION } [builder]\n- **Gadget**: A tool the user named.`);
     const stored = (await storedTermEvidence(app, { year: YEAR })).widget;

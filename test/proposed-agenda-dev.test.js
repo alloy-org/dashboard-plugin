@@ -4,7 +4,7 @@ import { EventEmitter } from "events";
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { populateAgendaNote, prepareAgendaNote } from "proposed-agenda-note";
+import { populateAgendaNote, prepareAgendaNote } from "dashboard/proposed-agenda/proposed-agenda-note";
 import { createBrowserDevApp } from "util/browser-dev-app";
 import { createDevApp } from "../dev/dev-app.js";
 import { handleTaskApi } from "../dev/dev-task-api.js";

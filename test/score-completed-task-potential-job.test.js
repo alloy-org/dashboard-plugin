@@ -115,7 +115,8 @@ describe("completed task potential", () => {
     const app = await potentialApp([completedTask("keystone", "Ship keystone API", 6), completedTask("polish", "Polish widget", 9),
       completedTask("errand", "Buy groceries", 2)]);
     const requestAnswers = ratingRequest();
-    expect(await runPotential(app, requestAnswers)).toEqual({ raisedCount: 1, scoredCount: 2, skippedCount: 0, waitingCount: 0 });
+    expect(await runPotential(app, requestAnswers)).toEqual({ outcomeDetail: "Scored 2 tasks for victory value, raised 1",
+      outcomeSubject: "Completed Tasks by Project Q3 2026 Work", raisedCount: 1, scoredCount: 2, skippedCount: 0, waitingCount: 0 });
     expect(requestAnswers).toHaveBeenCalledTimes(1);
     expect(requestAnswers.mock.calls[0][0].state.completedTasks.map(({ task }) => task)).toEqual(["Ship keystone API", "Polish widget"]);
     expect(app.updateTask.mock.calls).toEqual([["keystone", { victoryValue: 17 }]]);
@@ -126,7 +127,8 @@ describe("completed task potential", () => {
     expect(entries.errand.potentialScoredAt).toBeUndefined();
     expect(app.noteContent("Completed Tasks by Project Q3 2026 Work"))
       .toContain("Ship keystone API → **Launch dashboard** (victory value 6 → 17)");
-    expect(await runPotential(app, requestAnswers)).toEqual({ raisedCount: 0, scoredCount: 0, skippedCount: 0, waitingCount: 0 });
+    expect(await runPotential(app, requestAnswers)).toEqual({ outcomeDetail: "Scored 0 tasks for victory value, raised 0",
+      outcomeSubject: "Completed Tasks by Project Q3 2026 Work", raisedCount: 0, scoredCount: 0, skippedCount: 0, waitingCount: 0 });
     expect(requestAnswers).toHaveBeenCalledTimes(1);
     expect(app.updateTask).toHaveBeenCalledTimes(1);
   });
@@ -137,7 +139,8 @@ describe("completed task potential", () => {
   it("records a refused raise and shows it on the chart", async () => {
     const tasks = [completedTask("keystone", "Ship keystone API", 6)];
     const app = await potentialApp(tasks, { acceptsUpdates: false });
-    expect(await runPotential(app, ratingRequest())).toEqual({ raisedCount: 1, scoredCount: 1, skippedCount: 0, waitingCount: 0 });
+    expect(await runPotential(app, ratingRequest())).toEqual({ outcomeDetail: "Scored 1 task for victory value, raised 1",
+      outcomeSubject: "Completed Tasks by Project Q3 2026 Work", raisedCount: 1, scoredCount: 1, skippedCount: 0, waitingCount: 0 });
     const entries = await ledgerEntriesByTask(app);
     expect(entries.keystone).toMatchObject({ appliedVictoryValue: 17, priorVictoryValue: 6, raiseConfirmed: false });
     expect(tasks[0].victoryValue).toBe(6);
@@ -153,7 +156,9 @@ describe("completed task potential", () => {
   it("marks vanished completions and waits without a decision model", async () => {
     const app = await potentialApp([completedTask("keystone", "Ship keystone API", 6), completedTask("gone", "Uncompleted later", 3)]);
     app.getCompletedTasks.mockImplementation(async () => [completedTask("keystone", "Ship keystone API", 6)]);
-    expect(await runPotential(app, null)).toEqual({ raisedCount: 0, scoredCount: 0, skippedCount: 1, waitingCount: 1 });
+    expect(await runPotential(app, null)).toEqual({
+      outcomeDetail: "Scored 0 tasks for victory value, raised 0; 1 skipped, 1 waiting", outcomeSubject: "Completed Tasks by Project Q3 2026 Work", raisedCount: 0,
+      scoredCount: 0, skippedCount: 1, waitingCount: 1 });
     const entries = await ledgerEntriesByTask(app);
     expect(entries.gone).toMatchObject({ potentialScoredAt: SEPTEMBER_NOW.toISOString(),
       potentialSkippedReason: POTENTIAL_SKIPPED_COMPLETION_MISSING });

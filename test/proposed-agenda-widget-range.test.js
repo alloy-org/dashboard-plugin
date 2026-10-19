@@ -12,7 +12,7 @@ const llmMock = jest.fn();
 
 await mockFetchAiProvider({ llmPromptWithPluginFallback: (...args) => llmMock(...args) });
 
-const { default: ProposedAgendaWidget } = await import("proposed-agenda");
+const { default: ProposedAgendaWidget } = await import("dashboard/proposed-agenda/proposed-agenda");
 const { setPluginData } = await import("plugin-data");
 
 // ----------------------------------------------------------------------------------------------
@@ -52,12 +52,14 @@ const CURRENT_DATE = new Date();
 // @desc Mount the widget with the given props and return its container plus a `rerender` that reuses the same
 //   React root (a second createRoot on one container would remount, which would regenerate regardless).
 // @param {object} [props={}] - Props merged over the defaults (notably `dateRange`).
+// @param {object} [appOverrides={}] - App stub methods replaced before the first render.
+// @param {object} [extraSettings={}] - Plugin settings added to the provider key and model.
 // @returns {Promise<object>} { app, container, rerender }
 // [Claude claude-opus-5[1m]] Task: mount the Proposed Agenda widget for range-rendering assertions
-async function renderWidget(props = {}) {
-  setPluginData({ context: {},
-    settings: { [SETTING_KEYS.LLM_API_KEY_OPENAI]: "test-key", [SETTING_KEYS.LLM_PROVIDER_MODEL]: "openai" } });
-  const app = buildMockApp();
+async function renderWidget(props = {}, appOverrides = {}, extraSettings = {}) {
+  setPluginData({ context: {}, settings: { [SETTING_KEYS.LLM_API_KEY_OPENAI]: "test-key",
+    [SETTING_KEYS.LLM_PROVIDER_MODEL]: "openai", ...extraSettings } });
+  const app = { ...buildMockApp(), ...appOverrides };
   const container = document.createElement("div");
   document.body.appendChild(container);
   const baseProps = { app, calendarEvents: [], currentDate: CURRENT_DATE, defaultNoteUuid: null,
@@ -214,5 +216,65 @@ describe("ProposedAgendaWidget date range", () => {
     expect(llmMock).toHaveBeenCalledTimes(3);
     await rerender({ dateRange: futureWeekdayWindow() });
     expect(llmMock).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("ProposedAgendaWidget calendar connection prompt", () => {
+  afterEach(() => {
+    document.body.innerHTML = "";
+    setPluginData({ context: {}, settings: {} });
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Render the widget for the Work domain with getTaskDomains() reporting the given calendar flag.
+  // @param {boolean|undefined} hasConnectedCalendar - The flag Amplenote gives the domain; undefined omits it
+  // @returns {Promise<object>} { app, container, rerender }
+  function renderForWorkDomain(hasConnectedCalendar) {
+    const workDomain = hasConnectedCalendar === undefined ? { name: "Work", uuid: "dom-work" }
+      : { hasConnectedCalendar, name: "Work", uuid: "dom-work" };
+    return renderWidget({ taskDomainName: "Work", taskDomainUUID: "dom-work" },
+      { getTaskDomains: jest.fn().mockResolvedValue([workDomain]) });
+  }
+
+  it("links a working agenda to its domain's calendar settings when no calendar is connected", async () => {
+    const { container } = await renderForWorkDomain(false);
+    expect(container.querySelectorAll(".proposed-agenda-item").length).toBeGreaterThan(0);
+    const prompt = container.querySelector(".proposed-agenda-calendar-prompt");
+    expect(prompt.textContent).toContain("No calendar is connected to the Work Task Domain");
+    const link = prompt.querySelector(".proposed-agenda-calendar-link");
+    expect(link.getAttribute("href")).toBe("https://www.amplenote.com/task_calendar?taskDomainUUID=dom-work");
+    expect(link.getAttribute("target")).toBe("_blank");
+  });
+
+  it("hides for good once dismissed, persisting the dismissal to the plugin settings", async () => {
+    const { app, container } = await renderForWorkDomain(false);
+    await act(async () => container.querySelector(".proposed-agenda-calendar-dismiss").click());
+    expect(container.querySelector(".proposed-agenda-calendar-prompt")).toBeNull();
+    const dismissalCall = app.setSetting.mock.calls.find(([key]) => key === SETTING_KEYS.PROPOSED_AGENDA_CALENDAR_PROMPT_DISMISSED);
+    expect(Number.isNaN(Date.parse(dismissalCall[1]))).toBe(false);
+  });
+
+  it("does not show to a user who dismissed it on an earlier load", async () => {
+    const workDomain = { hasConnectedCalendar: false, name: "Work", uuid: "dom-work" };
+    const { container } = await renderWidget({ taskDomainName: "Work", taskDomainUUID: "dom-work" },
+      { getTaskDomains: jest.fn().mockResolvedValue([workDomain]) },
+      { [SETTING_KEYS.PROPOSED_AGENDA_CALENDAR_PROMPT_DISMISSED]: "2026-10-18T09:00:00.000Z" });
+    expect(container.querySelectorAll(".proposed-agenda-item").length).toBeGreaterThan(0);
+    expect(container.querySelector(".proposed-agenda-calendar-prompt")).toBeNull();
+  });
+
+  it("stays quiet when a calendar is connected or the client does not report the flag", async () => {
+    const connected = await renderForWorkDomain(true);
+    expect(connected.container.querySelector(".proposed-agenda-calendar-prompt")).toBeNull();
+    document.body.innerHTML = "";
+    const unreported = await renderForWorkDomain(undefined);
+    expect(unreported.container.querySelector(".proposed-agenda-calendar-prompt")).toBeNull();
+  });
+
+  it("does not suggest a calendar while the agenda itself cannot be produced", async () => {
+    llmMock.mockRejectedValue(new Error("Model unavailable"));
+    const { container } = await renderForWorkDomain(false);
+    expect(container.querySelector(".proposed-agenda-item")).toBeNull();
+    expect(container.querySelector(".proposed-agenda-calendar-prompt")).toBeNull();
   });
 });

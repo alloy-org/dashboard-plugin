@@ -10,9 +10,9 @@ import { promoteDreamTaskReserve } from "dream-task-service";
 import LlmProviderSelector from "llm-provider-selector";
 import NoConfigUpsell from "no-config-upsell";
 import { pluginSettings } from "plugin-data";
-import { IDEA_STATUSES } from "project-idea-records";
+import { IDEA_STATUSES } from "dashboard/project-tasks/project-idea-records";
 import { isAmpleAgentProInstalled, providerNameFromProviderEm } from "providers/ai-provider-settings";
-import { recordShownTaskSuggestions } from "ranked-task-suggestions";
+import { recordShownTaskSuggestions } from "dashboard/suggestions/ranked-task-suggestions";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { Badge, Button, EmptyState, ErrorState, IconButton, LoadingState } from "dashboard/controls";
@@ -206,9 +206,7 @@ function DreamTaskEmpty({ noteLink, onRetry }) {
 // [Claude claude-4.7-opus] Task: convert renderTaskList to JSX TaskList component
 // Prompt: "translate this project to render components with JSX instead"
 function TaskList({ dreamTasks, maxTasks, headerActions, onTaskClick, listRef, llmAttributionFooter, actionHandlers }) {
-  const t0 = performance.now();
   const displayDreamTasks = _selectDisplayTasks(dreamTasks, maxTasks);
-  logIfEnabled(`[DreamTask] _selectDisplayTasks: ${(performance.now() - t0).toFixed(1)}ms (${dreamTasks.length} → ${displayDreamTasks.length} tasks)`);
 
   const {
     dismissingTaskKeys, expandedExplanationKeys, onComplete, onPreserve, onRemove, onSchedule, onToggleExplanation,
@@ -539,10 +537,8 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
         snapDashboardAction("generateDreamTasks", { count: result.tasks.length });
       }
       if (analysisRunId !== analysisRunIdRef.current) return;
-      const applyStart = performance.now();
       await applyDreamTaskAnalysisResult(result, { app, providerName: providerNameForRun, recordTaskUuids,
         setDefaultNoteUUID, setError, setLlmAttributionFooter, setNoteUUID, setReserveTasks, setTasks });
-      logIfEnabled(`[DreamTask] applyDreamTaskAnalysisResult took ${(performance.now() - applyStart).toFixed(1)}ms`);
     } catch (err) {
       if (analysisRunId !== analysisRunIdRef.current) return;
       logIfEnabled('[DreamTask] runAnalysis caught unexpected error', err);
@@ -590,9 +586,7 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   }, [hasLlmConfig, taskGenerateCount, tasks]);
 
   useEffect(() => {
-    const start = performance.now();
     attachFootnotePopups(listRef.current);
-    logIfEnabled(`[DreamTask] attachFootnotePopups: ${(performance.now() - start).toFixed(1)}ms`);
   }, [tasks, error, loading]);
 
   const onOpenNote = async () => {

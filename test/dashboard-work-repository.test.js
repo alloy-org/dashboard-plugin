@@ -1,10 +1,12 @@
 // Exercise DashboardWorkRepository and DashboardWorkJob: versioned persistence in an archived queue note, coalescing
 // requests, stale-attempt rejection, checkpoints that survive an expired claim, retry and configuration states, the
 // records and notes a newer version wrote, and bounded retention of finished jobs.
+import { jest } from "@jest/globals";
 import { workQueueNotesApp } from "./work-queue-test-notes";
-import DashboardWorkJob, { WORK_JOB_SCHEMA_VERSION } from "dashboard/work-queue/dashboard-work-job";
+import DashboardWorkJob, { MAXIMUM_INPUT_CHARACTERS, WORK_JOB_SCHEMA_VERSION } from "dashboard/work-queue/dashboard-work-job";
 import { WORK_QUEUE_SCHEMA_VERSION, workQueueNotePayload } from "dashboard/work-queue/dashboard-work-note";
 import { CLAIM_LEASE_MILLISECONDS, MAXIMUM_JOB_ATTEMPTS } from "dashboard/work-queue/dashboard-work-policy";
+import { CallTimingMeter } from "util/call-timing-meter";
 import DashboardWorkRepository, { TERMINAL_RECORD_LIMIT, TERMINAL_RECORD_RETENTION_MILLISECONDS,
   workQueueNoteName } from "dashboard/work-queue/dashboard-work-repository";
 
@@ -48,11 +50,49 @@ describe("DashboardWorkRepository persistence", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
+  // @desc Claims requested while an earlier change to the note is still running share one read and one write, and
+  //   each caller still receives its own job. A refused change rejects alone.
+  it("batches changes requested together into one write of the queue note", async () => {
+    const app = workQueueNotesApp();
+    const meter = new CallTimingMeter();
+    const repository = new DashboardWorkRepository({ app, callTimingMeter: meter, clock: () => 1_000_000 });
+    const projectKeys = ["rank:p1", "rank:p2", "rank:p3", "rank:p4"];
+    await repository.saveJobs(SCOPE, projectKeys.map(key => ({ input: {}, key, type: "rank" })));
+    const firstClaim = repository.claim(SCOPE, projectKeys[0], { ownerId: "session", token: `session:${ projectKeys[0] }` });
+    const laterClaims = projectKeys.slice(1).map(key => repository.claim(SCOPE, key, { ownerId: "session", token: `session:${ key }` }));
+    const refused = repository.saveJob(SCOPE, { input: { run: () => {} }, key: "bad", type: "rank" });
+    const claimedJobs = await Promise.all([firstClaim, ...laterClaims]);
+    await expect(refused).rejects.toThrow("plain JSON");
+    expect(claimedJobs.map(job => job.key)).toEqual(projectKeys);
+    const writeTimings = meter.snapshot().labels.filter(timing => timing.label.endsWith(".write") && timing.label !== "queueNote.save.write");
+    const writeCount = writeTimings.reduce((total, timing) => total + timing.calls, 0);
+    expect(writeCount).toBe(1);
+    const runningRecords = queuePayload(app).jobs.filter(record => record.status === "running");
+    expect(runningRecords).toHaveLength(projectKeys.length);
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc Inputs carrying callbacks or class instances are refused, keeping executable code out of the queue.
   it("refuses inputs that are not plain JSON", async () => {
     const { repository } = repositoryHarness();
     await expect(repository.saveJob(SCOPE, { input: { run: () => {} }, key: "a", type: "rank" })).rejects.toThrow("plain JSON");
     await expect(repository.saveJob(SCOPE, { input: { when: new Date() }, key: "b", type: "rank" })).rejects.toThrow("plain JSON");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc An input over the size limit is refused, and reported to the console with its size and each field's, since
+  //   callers log the refusal only when Console Logging is on.
+  it("refuses and reports an input too large to queue", async () => {
+    const { repository } = repositoryHarness();
+    const consoleError = jest.spyOn(console, "error").mockImplementation(() => {});
+    const input = { quarter: 4, padding: "x".repeat(MAXIMUM_INPUT_CHARACTERS) };
+    const expectedMessage = `Input of work job "large" is too large to queue (${ JSON.stringify(input).length } characters; the limit is ${ MAXIMUM_INPUT_CHARACTERS })`;
+    try {
+      await expect(repository.saveJob(SCOPE, { input, key: "large", type: "rank" })).rejects.toThrow(expectedMessage);
+      expect(consoleError).toHaveBeenCalledWith(`[dashboard-work-job] ${ expectedMessage }`, { padding: MAXIMUM_INPUT_CHARACTERS + 2, quarter: 1 });
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 
   // ----------------------------------------------------------------------------------------------

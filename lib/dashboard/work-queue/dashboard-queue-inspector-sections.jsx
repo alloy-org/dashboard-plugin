@@ -67,7 +67,9 @@ export function QueueJobSection({ allJobs, filters, jobs, now, onFiltersChange }
 }
 
 // ------------------------------------------------------------------------------------------
-// @desc Recently finished jobs, newest first, with failure messages already sanitized by diagnostics.
+// @desc Recently finished jobs, newest first, with failure messages already sanitized by diagnostics. Under each job
+//   type is the project or note it worked on when the job reported one, otherwise its key; the detail is the failure,
+//   or what a completed job reported doing, such as how many ideas it kept.
 // @param {object} props - { now, outcomes }.
 export function QueueOutcomeSection({ now, outcomes }) {
   return (
@@ -81,9 +83,11 @@ export function QueueOutcomeSection({ now, outcomes }) {
               <tr key={`${ event.at }:${ event.jobKey }:${ index }`} className={`queue-inspector-outcome--${ event.type }`}>
                 <td>{formattedAge(event.at, now)}</td>
                 <td>{event.type}</td>
-                <td title={event.jobKey}>{event.jobType}<div className="queue-inspector-detail">{event.jobKey}</div></td>
+                <td title={event.jobKey}>
+                  {event.jobType}<div className="queue-inspector-detail">{event.outcomeSubject || event.jobKey}</div>
+                </td>
                 <td>{formattedDuration(event.durationMilliseconds)}</td>
-                <td>{event.error || "—"}</td>
+                <td>{event.error || event.outcomeDetail || "—"}</td>
               </tr>
             ))}
           </tbody>
@@ -105,6 +109,7 @@ export function QueueOverviewSection({ now, overview }) {
     ["Scope", overview.scopeKey || "—"],
     ["Features", `Scheduled widget mounting ${ overview.mountingEnabled ? "on" : "off" }; project maintenance ${ overview.durableEnabled ? "on the queue" : "on its legacy path" }`],
     ["Page", conditions.hidden ? "Hidden: near renders and maintenance paused" : "Visible"],
+    ["Interaction", conditions.interacting ? "In use: new maintenance waits for a quiet second" : "Quiet"],
     ["Overlay", conditions.overlayHeld ? "Holding renders and maintenance" : "None"],
     ["Load gate", conditions.loadSettled ? "Open" : "Closed: maintenance waits for the initial load and its grace period"],
     ["Foreground demand", overview.foregroundDemand ? "Yes" : "None"],
@@ -177,7 +182,8 @@ export function QueueTimingSection({ timings }) {
 }
 
 // ------------------------------------------------------------------------------------------
-// @desc Each lazily mounted widget: its visibility, its request, why it waits, and how long admission and commit took.
+// @desc Each lazily mounted widget: its visibility, its request, why it waits, how long admission and commit took, and
+//   how long from its mount request until it rendered its main content, such as the Proposed Agenda's suggestions.
 // @param {object} props - { now, rows }: rows from urgentRenderRows.
 export function UrgentRenderSection({ now, rows }) {
   return (
@@ -188,7 +194,7 @@ export function UrgentRenderSection({ now, rows }) {
           <thead>
             <tr>
               <th>Widget</th><th>Visibility</th><th>Status</th><th>Request</th><th>Waiting because</th><th>To admission</th><th>To commit</th>
-              <th>Permit</th>
+              <th>To content</th><th>Permit</th>
             </tr>
           </thead>
           <tbody>
@@ -201,6 +207,7 @@ export function UrgentRenderSection({ now, rows }) {
                 <td title={row.waitingReason || ""}>{row.waitingExplanation || "—"}</td>
                 <td>{formattedDuration(row.admittedAt !== null && row.requestedAt !== null ? row.admittedAt - row.requestedAt : null)}</td>
                 <td>{formattedDuration(row.committedAt !== null && row.admittedAt !== null ? row.committedAt - row.admittedAt : null)}</td>
+                <td>{_contentDurationText(row)}</td>
                 <td>{row.watchdogActive ? "Held, watchdog armed" : row.releasedBy ? `Released by ${ row.releasedBy }` : "—"}</td>
               </tr>
             ))}
@@ -214,6 +221,16 @@ export function UrgentRenderSection({ now, rows }) {
 // ------------------------------------------------------------------------------------------
 // Local helpers
 // ------------------------------------------------------------------------------------------
+
+// ------------------------------------------------------------------------------------------
+// @desc The "To content" cell's text: time from a widget's mount request until it rendered its main content.
+// @param {object} row - { contentOutcome, contentReadyAt, requestedAt } from urgentRenderRows.
+// @returns {string} Such as "2.4 s", "1.1 s (error)", or "—" before the widget has reported its content.
+function _contentDurationText({ contentOutcome, contentReadyAt, requestedAt }) {
+  if (contentReadyAt === null || requestedAt === null) return "—";
+  const durationText = formattedDuration(contentReadyAt - requestedAt);
+  return contentOutcome === "error" ? `${ durationText } (error)` : durationText;
+}
 
 // ------------------------------------------------------------------------------------------
 // @desc Describe this visit's project coverage in one line.

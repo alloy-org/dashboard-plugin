@@ -1,6 +1,6 @@
 // Verify date-note persistence preserves existing work and retries without duplicate suggestions.
 import { jest } from "@jest/globals";
-import { existingAgendaNoteTasks, populateAgendaNote, prepareAgendaNote, scheduleProjectStep } from "proposed-agenda-note";
+import { existingAgendaNoteTasks, populateAgendaNote, prepareAgendaNote, scheduleProjectStep } from "dashboard/proposed-agenda/proposed-agenda-note";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Provide a stateful note API that records inserted tasks and simulates actual subsequent reads.

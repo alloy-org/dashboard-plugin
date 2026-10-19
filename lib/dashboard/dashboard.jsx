@@ -40,7 +40,7 @@ import LazyWidgetMount from "lazy-widget-mount";
 import MoodWidget from 'mood';
 import NotePeekWidget from 'note-peek';
 import PeakHoursWidget from 'peak-hours';
-import ProposedAgendaWidget from 'proposed-agenda';
+import ProposedAgendaWidget from 'dashboard/proposed-agenda/proposed-agenda';
 import { setPluginData, updatePluginSetting } from "plugin-data";
 import QuotesWidget from 'quotes';
 import QuickActionsWidget from 'quick-actions';
@@ -52,7 +52,6 @@ import { dateKeyFromDateInput, localMidnightFromDateInput, weekStartFromDateInpu
 import { logIfEnabled, setLoggingEnabled } from "util/log";
 import { snapDashboardAction } from "util/plausible";
 import { captureDashboardException, captureDashboardMessage, capturePluginFailure, logSentryStatus } from "util/sentry-reporting";
-import { useWidgetLoadTiming } from "util/widget-timing";
 import { WidgetSizeContext } from "widget-wrapper";
 import WidgetMemoryMeasurementPopup from "widget-memory-measurement-popup";
 import VictoryValueWidget from 'victory-value';
@@ -60,7 +59,7 @@ import { DashboardWorkProvider } from "dashboard/work-queue/dashboard-work-conte
 import { SCHEDULED_WIDGET_MOUNTING_ENABLED, queuedMaintenanceSelected } from "dashboard/work-queue/dashboard-work-features";
 import { projectWorkScopeKey } from "dashboard/work-queue/jobs/project-job-requests";
 import { deviceProfile as readDeviceProfile, isMemoryConstrainedDevice } from "util/device-profile";
-import { logMemorySample, startMemorySampling } from "util/memory-instrumentation";
+import { logMemorySample } from "util/memory-instrumentation";
 
 import "styles/dashboard.scss"
 
@@ -143,7 +142,6 @@ function WidgetLoadedEventReporter({ hasError = false, isReady, widgetId }) {
 // @param {function(Object): Object} buildWidgetProps - Selects widget-specific props from cell props.
 function createWidgetCell(widgetId, WidgetComponent, buildWidgetProps) {
   return memo(function DashboardWidgetCell(cellProps) {
-    useWidgetLoadTiming(widgetId);
     const { config, draggingWidgetId, focusedWidgetId, focusedWidgetSurfaceStyle, layoutConfig, loadedEventError,
       loadedEventReady, mountImmediately, widgetFocusTransform } = cellProps;
     const widgetSizeValue = {
@@ -524,14 +522,16 @@ export default function DashboardApp({ app, initPromise }) {
     return () => clearTimeout(initWatchdogTimer);
   }, []);
 
-  // Periodic heap sampling, active only when console logging is enabled (the DebugConsole is the
-  // surface for the samples). startMemorySampling no-ops on runtimes without performance.memory
-  // (e.g. iOS WKWebView), so this never spins uselessly there.
+  // Report whether the Debug Console is available once per settings change. Logged from an effect
+  // rather than the render body, which re-runs on every state change across the dashboard.
   useEffect(() => {
-    const loggingEnabled = ['true', 'yes', '1', 'on', 'enabled'].includes(
-      String(configParams?.[SETTING_KEYS.CONSOLE_LOGGING] || '').trim().toLowerCase());
-    if (!loggingEnabled) return undefined;
-    return startMemorySampling();
+    if (!configParams) return;
+    const adminTools = dashboardAdminToolsAvailability(configParams);
+    if (adminTools.enabled) {
+      logIfEnabled(`[dashboard] Debug console enabled (setting "${ adminTools.settingValue || "(empty)" }", dev bundle ${ adminTools.developmentBundle }, dev server ${ adminTools.devServerHosted }, plugin ${ adminTools.pluginUuid }), including in layout popup`);
+    } else {
+      logIfEnabled(`[dashboard] Debug console disabled (${ SETTING_KEYS.DEBUG_CONSOLE } is '${ adminTools.settingValue }', dev bundle ${ adminTools.developmentBundle }, dev server ${ adminTools.devServerHosted }, pluginUUID ${ adminTools.pluginUuid }), excluding from layout popup`);
+    }
   }, [configParams]);
 
   const victoryReferenceDate = selectedDate || currentDate;
@@ -740,11 +740,6 @@ export default function DashboardApp({ app, initPromise }) {
   const adminTools = dashboardAdminToolsAvailability(configParams);
   const debugConsoleEnabled = adminTools.enabled;
   const memoryMeasurementEnabled = debugConsoleEnabled;
-  if (debugConsoleEnabled) {
-    logIfEnabled(`[dashboard] Debug console enabled (setting "${ adminTools.settingValue || "(empty)" }", dev bundle ${ adminTools.developmentBundle }, dev server ${ adminTools.devServerHosted }, plugin ${ adminTools.pluginUuid }), including in layout popup`);
-  } else {
-    logIfEnabled(`[dashboard] Debug console disabled (${ SETTING_KEYS.DEBUG_CONSOLE } is '${ adminTools.settingValue }', dev bundle ${ adminTools.developmentBundle }, dev server ${ adminTools.devServerHosted }, pluginUUID ${ adminTools.pluginUuid }), excluding from layout popup`);
-  }
   const layoutPopupExcludeWidgetIds = debugConsoleEnabled ? [] : ['debug-console'];
 
   const bannerImageURL = bannerImageURLFromBannerImageName(bannerImageName);

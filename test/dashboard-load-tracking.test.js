@@ -3,6 +3,7 @@ import { act, createElement, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 
 const { DASHBOARD_WIDGET_LOADED_EVENT, useDashboardLoadTracker, useWidgetLoadedEvent } = await import("dashboard-load-tracking");
+const { DashboardWorkProvider } = await import("dashboard/work-queue/dashboard-work-context");
 
 // [Claude claude-opus-4-8 (1M context)] Task: harness that drives the tracker via a reporting script
 //   and surfaces the settle result to the test.
@@ -70,5 +71,21 @@ test("dispatches an error outcome when a widget initial load settles with an err
   expect(listener).toHaveBeenCalledTimes(1);
   expect(listener.mock.calls[0][0].detail).toEqual({ outcome: "error", widgetId: "graveyard" });
   window.removeEventListener(DASHBOARD_WIDGET_LOADED_EVENT, listener);
+  act(() => root.unmount());
+});
+
+// ------------------------------------------------------------------------------------------
+// @desc Inside a Dashboard work provider, the settled load is reported once to the mount coordinator with its outcome.
+test("reports a widget's settled content to the mount coordinator", () => {
+  const mountCoordinator = { reportContentReady: jest.fn(() => 1200) };
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  const renderHarness = isReady => createElement(DashboardWorkProvider, { value: { mountCoordinator } },
+    createElement(WidgetLoadedHarness, { isReady, widgetId: "proposed-agenda" }));
+  act(() => root.render(renderHarness(false)));
+  expect(mountCoordinator.reportContentReady).not.toHaveBeenCalled();
+  act(() => root.render(renderHarness(true)));
+  act(() => root.render(renderHarness(true)));
+  expect(mountCoordinator.reportContentReady.mock.calls).toEqual([["proposed-agenda", "loaded"]]);
   act(() => root.unmount());
 });

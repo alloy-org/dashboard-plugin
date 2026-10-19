@@ -227,4 +227,13 @@ $habit-row-gap: 6px;
 
     strong { color: $color-text-high-contrast; }
   }
+
+  .habit-data-link {
+    color: $color-text-low-contrast;
+    display: inline-block;
+    font-size: $smaller-font-size;
+    margin-top: $sp-lg;
+
+    &:hover { color: $color-text-high-contrast; }
+  }
 }

@@ -4,13 +4,14 @@
 //   request from the note (no second LLM call) yet replaces the stored record when reseeding"
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
+import { NOTE_WRITE_CHARACTER_LIMIT } from "constants/units";
 import { setPluginData } from "plugin-data";
 import { loadCachedProposedAgenda as loadCachedProposedAgendaRecord, PROPOSED_AGENDA_RECORD_VERSION, PROPOSED_TASK_STATUS,
   proposedAgendaNoteNameFromDate as proposedAgendaNoteName, proposedTaskKey,
   recentProposedTaskHistory as recentProposedTaskHistoryRecord,
   storeProposedAgenda as storeProposedAgendaRecord, storeProposedAgendaWhenReady,
-  updateProposedTaskStatuses as updateProposedTaskStatusesRecord } from "proposed-agenda-archive";
-import { generateProposedAgenda } from "proposed-agenda-service";
+  updateProposedTaskStatuses as updateProposedTaskStatusesRecord } from "dashboard/proposed-agenda/proposed-agenda-archive";
+import { generateProposedAgenda } from "dashboard/proposed-agenda/proposed-agenda-service";
 import { jsonFenceContent } from "util/json-utility";
 import { setLoggingEnabled } from "util/log";
 
@@ -88,8 +89,15 @@ function buildNoteApp(extra = {}) {
     createNote: jest.fn(async (name, tags) => { const uuid = `note-${ ++counter }`; notes.push({ content: "", name,
       tags, uuid }); return uuid; }),
     getNoteContent: jest.fn(async ({ uuid }) => notes.find(note => note.uuid === uuid)?.content ?? ""),
-    replaceNoteContent: jest.fn(async (handle, content) => { const note = notes.find(n => n.uuid === handle.uuid);
-      if (note) note.content = content; }),
+    // Amplenote throws above its write limit, which the embed bridge hands back as a resolved failure envelope.
+    replaceNoteContent: jest.fn(async (handle, content) => {
+      if (content.length > NOTE_WRITE_CHARACTER_LIMIT) {
+        return { embedCallFailed: true, error: `Markdown content is over ${ NOTE_WRITE_CHARACTER_LIMIT } characters` };
+      }
+      const note = notes.find(n => n.uuid === handle.uuid);
+      if (note) note.content = content;
+      return true;
+    }),
     _notes: notes,
     ...extra,
   };
@@ -105,6 +113,17 @@ function storedRecords(app, date) {
   const note = app._notes.find(n => n.name === proposedAgendaNoteNameFromDate(date));
   if (!note) return [];
   return JSON.parse(jsonFenceContent(note.content)).records;
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Fake only the clock, so the archive pares past days relative to the June dates these tests store, while
+//   promises and timers keep running for real.
+// @param {Date} now - Time Date.now and new Date() should report.
+// @returns {void}
+function useClockAt(now) {
+  jest.useFakeTimers({ doNotFake: ["clearImmediate", "clearInterval", "clearTimeout", "nextTick", "queueMicrotask",
+    "setImmediate", "setInterval", "setTimeout"] });
+  jest.setSystemTime(now);
 }
 
 // [Claude claude-opus-4-8 (1M context)] Generated tests for: monthly proposed-agenda record store/cache
@@ -130,6 +149,17 @@ describe("proposed-agenda-archive", () => {
     expect(loaded.llmAttributionFooter).toBe("by Claude");
     expect(loaded.scheduledKeys).toEqual([]);
     expect(loaded.dismissedKeys).toEqual([]);
+  });
+
+  it("keeps the meetings an agenda was planned for, and reports a record without them as not knowing", async () => {
+    const app = buildNoteApp();
+    await storeProposedAgenda(app, { activities: [ACT_A], date: DATE, meetingKeys: ["meeting-1"], priorityKey: PRIORITY,
+      providerEm: PROVIDER });
+    const planned = await loadCachedProposedAgenda(app, { date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER });
+    await storeProposedAgenda(app, { activities: [ACT_A], date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER });
+    const unknown = await loadCachedProposedAgenda(app, { date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER });
+    expect(planned.meetingKeys).toEqual(["meeting-1"]);
+    expect(unknown.meetingKeys).toBeNull();
   });
 
   it("misses on a different date, priority, or LLM", async () => {
@@ -250,6 +280,61 @@ describe("proposed-agenda-archive", () => {
 
     const loaded = await loadCachedProposedAgenda(app, { date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER });
     expect(loaded.dismissedKeys).toEqual([proposedTaskKey(ACT_A)]);
+  });
+
+  it("pares past days on each store: the last week keeps its proposals without reserves, older days go", async () => {
+    const app = buildNoteApp();
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayKey = date => `${ date.getFullYear() }-${ String(date.getMonth() + 1).padStart(2, "0") }-${
+      String(date.getDate()).padStart(2, "0") }`;
+    const longRationale = "Keeps the quarter's priorities moving. ".repeat(80);
+    const reserveTasks = Array.from({ length: 12 }, (_unused, index) => ({ durationMinutes: 30, rationale: longRationale,
+      taskText: `Reserve ${ index }`, taskUuid: `reserve-${ index }` }));
+    // Thirty earlier days, each with a full set of reserves, written straight into the note so it starts above the
+    //   write limit the way a long-running month did before past days were pared.
+    const pastRecords = Array.from({ length: 30 }, (_unused, index) => ({
+      dateKey: dayKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 30 + index)),
+      domainUuid: DOMAIN_UUID, priorityKey: PRIORITY, proposedTasks: [{ ...ACT_A, time: "09:00" }],
+      providerEm: PROVIDER, recordVersion: PROPOSED_AGENDA_RECORD_VERSION, reserveTasks }));
+    const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+    await storeProposedAgenda(app, { activities: [ACT_A], date: tomorrow, priorityKey: PRIORITY, providerEm: PROVIDER });
+    const note = app._notes.find(n => n.name === proposedAgendaNoteName(tomorrow, DOMAIN_NAME));
+    note.content = "```json\n" + JSON.stringify({ records: pastRecords }, null, 2) + "\n```";
+    expect(note.content.length).toBeGreaterThan(NOTE_WRITE_CHARACTER_LIMIT);
+
+    await storeProposedAgenda(app, { activities: [ACT_A, ACT_B], date: tomorrow, priorityKey: PRIORITY,
+      providerEm: PROVIDER, reserveTasks });
+
+    const loaded = await loadCachedProposedAgenda(app, { date: tomorrow, priorityKey: PRIORITY, providerEm: PROVIDER });
+    expect(loaded.activities.map(activity => activity.title)).toEqual(["Deep work block", "Walk break"]);
+    expect(loaded.reserveTasks).toHaveLength(12);
+    const storedPastRecords = JSON.parse(jsonFenceContent(note.content)).records.slice(1);
+    const lastWeekKeys = Array.from({ length: 7 }, (_unused, index) =>
+      dayKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7 + index)));
+    expect(storedPastRecords.map(record => record.dateKey).sort()).toEqual(lastWeekKeys);
+    expect(storedPastRecords.every(record => record.reserveTasks.length === 0
+      && record.proposedTasks[0].taskUuid === "task-1")).toBe(true);
+  });
+
+  it("rejects a store the host did not perform instead of reporting it stored", async () => {
+    const app = buildNoteApp();
+    await storeProposedAgenda(app, { activities: [ACT_A], date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER });
+    app.replaceNoteContent.mockResolvedValueOnce({ embedCallFailed: true, error: "host refused" });
+
+    await expect(storeProposedAgenda(app, { activities: [ACT_B], date: DATE, priorityKey: PRIORITY,
+      providerEm: PROVIDER })).rejects.toThrow("host refused");
+  });
+
+  it("does not overwrite a month's note whose content could not be read", async () => {
+    const app = buildNoteApp();
+    await storeProposedAgenda(app, { activities: [ACT_A], date: DATE, priorityKey: "other-priority",
+      providerEm: PROVIDER });
+    app.getNoteContent.mockResolvedValueOnce({ embedCallFailed: true, error: "bridge timeout" });
+
+    await expect(storeProposedAgenda(app, { activities: [ACT_B], date: DATE, priorityKey: PRIORITY,
+      providerEm: PROVIDER })).rejects.toThrow("not overwritten");
+    expect(storedRecords(app, DATE).map(record => record.priorityKey)).toEqual(["other-priority"]);
   });
 });
 
@@ -389,6 +474,20 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
     expect(app.getTask).toHaveBeenCalledWith("task-2");
   });
 
+  // A traced cached day reads the day's projects so the calendar generation report can say which fit its month and
+  // weekday, without asking the provider for anything new.
+  it("traces the project cadence of a day served from its cached agenda", async () => {
+    const app = buildGenerationApp();
+    await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    const selectionTrace = {};
+    const cached = await generateProposedAgenda(app, { priorityKey: PRIORITY, selectionTrace, targetDate: DATE });
+    expect(cached.fromCache).toBe(true);
+    expect(selectionTrace.source).toBe("cache");
+    expect(selectionTrace.eligibleCount).toBeUndefined();
+    expect(selectionTrace.projectCadence).toEqual(expect.objectContaining({ cadenceCount: 0, weekdayProjectNames: [] }));
+    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+  });
+
   it("moves a cached suggestion off an event scheduled after the agenda was generated", async () => {
     const app = buildGenerationApp();
     await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
@@ -523,6 +622,26 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
     expect(stored.reserveTasks).toEqual([]);
   });
 
+  // A day stored while one task was listed once per matching project can hold that task in several hours.
+  it("drops a repeat of a cached suggestion and fills its hour from the stored reserves", async () => {
+    const app = buildGenerationApp(TWO_CALL_SCHEDULES);
+    await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+    rewriteStoredRecords(app, DATE, records => records.map(record => {
+      const repeatedTask = { ...record.proposedTasks[0], startMinutes: 900, startTime: "15:00" };
+      return { ...record, proposedTasks: [...record.proposedTasks, repeatedTask], reserveTasks: [{ durationMinutes: 30,
+        noteUuid: "note-3", rationale: "draft", taskText: "Draft the proposal", taskUuid: "task-3" }] };
+    }));
+
+    const reconciled = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
+
+    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+    const reconciledTaskUuids = reconciled.activities.map(activity => activity.taskUuid);
+    expect(reconciledTaskUuids.filter(taskUuid => taskUuid === "task-1")).toHaveLength(1);
+    expect(reconciledTaskUuids).toEqual(expect.arrayContaining(["task-1", "task-2", "task-3"]));
+    const storedTaskUuids = storedRecords(app, DATE)[0].proposedTasks.map(task => task.taskUuid);
+    expect(storedTaskUuids.filter(taskUuid => taskUuid === "task-1")).toHaveLength(1);
+  });
+
   // A reload after one suggestion went stale must not wait on a ranking and a provider call when a reserve can stand in.
   it("replaces a completed suggestion from the stored reserves, in its slot, without generating again", async () => {
     const app = buildGenerationApp(TWO_CALL_SCHEDULES);
@@ -626,6 +745,9 @@ const THREE_TASK_SCHEDULE = () => [
 
 // [Claude claude-opus-4-8 (1M context)] Generated tests for: previous-week proposal log + recency de-duplication
 describe("recentProposedTaskHistory (previous-week proposal log)", () => {
+  beforeEach(() => useClockAt(new Date(2026, 5, 30, 12)));
+  afterEach(() => jest.useRealTimers());
+
   it("maps each prior task to the distinct days it was proposed, excluding the target day itself", async () => {
     const app = buildNoteApp();
     await seedProposalsOn(app, new Date(2026, 5, 27), ["task-1"]);       // yesterday
@@ -663,6 +785,10 @@ describe("recentProposedTaskHistory (previous-week proposal log)", () => {
 
 // [Claude claude-opus-4-8 (1M context)] Generated tests for: recency rules gate the candidate pool sent to the LLM
 describe("generateProposedAgenda recency de-duplication", () => {
+  // The evening before the target day, so the agenda is still planned as a future day.
+  beforeEach(() => useClockAt(new Date(2026, 5, 27, 20)));
+  afterEach(() => jest.useRealTimers());
+
   it("does not re-propose a task suggested the immediately preceding day (no two days in a row)", async () => {
     const app = buildGenerationApp(THREE_TASK_SCHEDULE);
     await seedProposalsOn(app, new Date(2026, 5, 27), ["task-1"]); // proposed yesterday
