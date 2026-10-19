@@ -211,6 +211,27 @@ describe("suggestScheduledTasksFromDashboard", () => {
     expect(app.context.setScheduledTasks).toHaveBeenCalled();
   });
 
+  // ----------------------------------------------------------------------------------------------
+  // @desc With logging enabled, every hand-off to the calendar logs each suggestion beside the day it was planned for,
+  //   so a suggestion the calendar shows on another day can be traced to the plugin or to the host.
+  it("logs each suggestion handed to the calendar with the day it was planned for", async () => {
+    const { setLoggingEnabled } = await import("util/log");
+    setLoggingEnabled(true);
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    const { app } = buildApp();
+    const startAt = midnightSeconds(new Date()) + 8 * 60 * SECONDS_PER_MINUTE;
+    const suggestions = await suggestScheduledTasksFromDashboard(app, { endAt: startAt + SECONDS_PER_DAY,
+      scheduledTasks: [], startAt });
+    const handOffCalls = consoleSpy.mock.calls.filter(([label]) => String(label).includes("suggestions by day (returned to host)"));
+    consoleSpy.mockRestore();
+    setLoggingEnabled(false);
+    const [[, handOff]] = handOffCalls;
+    expect(handOff.count).toBe(suggestions.length);
+    expect(handOff.offDayCount).toBe(0);
+    expect(handOff.rows.map(row => row.startAt)).toEqual(suggestions.map(suggestion => suggestion.startAt));
+    expect(handOff.rows[0]).toMatchObject({ landsOnPlannedDay: true, title: expect.any(String) });
+  });
+
   // A multi-day window draws from one queue: a task offered on the first day is not offered again on a later day,
   // even though the model proposes it for every day. The pass then records when and for which days it ran.
   it("offers each task on only one day of the window, and records the pass", async () => {
