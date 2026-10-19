@@ -494,7 +494,7 @@ async function main() {
       handleAcceptanceMetrics(req, res);
       return;
     }
-    if (requestPath === "/" || requestPath === "/index.html") {
+    if (requestPath === "/" || requestPath === "/index.html" || requestPath === "/calendar-suggestions") {
       if (handleDevShell(res)) return;
     }
 

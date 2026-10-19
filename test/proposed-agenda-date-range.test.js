@@ -24,6 +24,7 @@ const { activityKey, mergedAgendaRows } = await import("dashboard/proposed-agend
 const { proposedTaskKey } = await import("dashboard/proposed-agenda/proposed-agenda-archive");
 const { agendaRowsGroupedByDay, proposedAgendaDaysInRange } = await import("dashboard/proposed-agenda/proposed-agenda-range");
 const { calendarSuggestionFromActivity, suggestScheduledTasksFromDashboard } = await import("dashboard/proposed-agenda/proposed-agenda-suggest-action");
+const { readRerolledDays, recordRerolledDays } = await import("dashboard/suggestions/suggestion-reroll-store");
 
 // ----------------------------------------------------------------------------------------------
 // @desc Build a plugin-side Amplenote app stub: fixture tasks, a quarterly plan note, and the note-writing
@@ -346,6 +347,32 @@ describe("suggestScheduledTasksFromDashboard", () => {
     app.context = {};
     const suggestions = await suggestScheduledTasksFromDashboard(app, { ...windowFromToday(1), scheduledTasks: [] });
     expect(suggestions.length).toBeGreaterThan(0);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A day the user re-rolled earlier today is shown again with the re-roll's suggestions, not planned afresh.
+  it("shows a day re-rolled earlier today again instead of planning it", async () => {
+    const { app } = buildApp();
+    const notes = new Map();
+    app.createNote = jest.fn(async name => { notes.set(`note-${ notes.size }`, { content: "", name }); return `note-${ notes.size - 1 }`; });
+    app.findNote = jest.fn(async ({ name }) => {
+      const found = [...notes.entries()].find(([, note]) => note.name === name);
+      return found ? { name, uuid: found[0] } : null;
+    });
+    app.getNoteContent = jest.fn(async ({ uuid }) => notes.get(uuid)?.content ?? "");
+    app.replaceNoteContent = jest.fn(async ({ uuid }, content) => { if (notes.has(uuid)) notes.get(uuid).content = content; return true; });
+    const today = new Date();
+    const day = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const activity = { durationMinutes: 30, ideaId: "idea-9", noteUuid: PLAN_NOTE_UUID, startMinutes: 23 * 60, taskUuid: null,
+      title: "Replayed idea" };
+    await recordRerolledDays(app, { days: [{ activities: [activity], day, excludedKeys: new Set(["idea:idea-9"]) }],
+      domainUuid: "dom-work", focusKey: "layups", now: today, projectUuids: [] });
+    const suggestions = await suggestScheduledTasksFromDashboard(app, { ...windowFromToday(1), scheduledTasks: [],
+      taskDomain: { name: "Work", uuid: "dom-work" } });
+    expect(suggestions.map(suggestion => suggestion.task?.content)).toEqual(["Replayed idea"]);
+    expect(llmMock).not.toHaveBeenCalled();
+    const rerolledDay = (await readRerolledDays(app, { domainUuid: "dom-work", now: today })).get(day.toDateString());
+    expect(rerolledDay.forceRegenerate).toBe(true);
   });
 
   // [OpenAI GPT-5.6] Task: keep suggestions inside the calendar window supplied by Amplenote

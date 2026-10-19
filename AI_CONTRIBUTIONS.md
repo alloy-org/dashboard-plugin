@@ -5,6 +5,43 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-19 — Keep the re-roll's focus, and choose where its suggestions come from
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/suggestion-reroll-embed.js` — a "Suggestions come from" row (New + existing, Existing tasks, New tasks); every choice carries the prompt's token and source; the page no longer sends its opening arguments on load; `rememberSuggestionRerollChoice` / `rememberedSuggestionRerollChoice` keep the last choice per prompt.
+- `lib/plugin.js` — `suggestionRerollChoice` remembers the choice before storing the embed's arguments; `renderEmbed` re-renders a re-roll prompt with the remembered choice.
+- `lib/dashboard/suggestions/suggestion-reroll-prompt.js` — opens the prompt with a token and the default source, reads the remembered choice ahead of the prompt result, returns `source`, and logs where the choice came from.
+- `lib/dashboard/suggestions/suggestion-reroll-store.js` — `REROLL_SOURCE_OPTIONS`, `DEFAULT_REROLL_SOURCE_KEY`, `rerollSourceFromKey`; records store `sourceKey`.
+- `lib/dashboard/suggestions/day-project-candidates.js` — `sourceFilteredGroups`.
+- `lib/dashboard/suggestions/ranked-task-suggestions.js` — `rerolledDayRanking` takes `candidateSource` and filters the groups before ranking.
+- `lib/dashboard/suggestions/suggestion-reroll-range.js`, `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` — pass the source through and log it.
+- `lib/dashboard/suggestions/calendar-generation-report.js` — the re-roll section names the source.
+- `test/suggestion-reroll.test.js` — remembered choice, stale token, source filtering, embed and report.
+
+**Validation:** Full Jest suite (1532 tests), `npm run build`, production bundle smoke test.
+**Task:** A re-roll chosen as Moonshots ran as Quarter plan; make the chosen focus reach the ranker, and add a new/existing source choice.
+
+---
+
+## 2026-10-19 — Dev-only Calendar Suggestions page
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/calendar-suggestions-dev-session.js` (created) — `calendarSuggestionWindow`, `calendarSuggestionRequest` (schedulable vs. in-window scheduled tasks), `suggestionDaysFromPublication` (groups published suggestions by local date, marking dates the action does not plan), and `runCalendarSuggestionPass`, which runs `suggestScheduledTasksFromDashboard` against the browser dev app with `context.setScheduledTasks` routed to a callback.
+- `lib/dashboard/calendar-suggestions-dev-page.jsx` (created) — Task Domain picker, One day / 3 day / One week toggle, Suggest button, and per-date lists of each suggestion's time, title, new/existing task, and explanation, updated on every publish.
+- `lib/dashboard/styles/calendar-suggestions-dev-page.scss` (created) — page styles under `.calendar-suggestions-dev-page`.
+- `lib/dashboard/dashboard-load.jsx` — renders the page at `/calendar-suggestions` in development builds, via a dynamic import the production build drops.
+- `lib/dashboard/dashboard.jsx` — development-only "📅 Suggestions (dev)" toolbar button.
+- `dev/dev-server.js` — serves the dev shell at `/calendar-suggestions`.
+- `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` — exports `MAX_SUGGESTION_DAYS`.
+- `test/calendar-suggestions-dev-session.test.js` (created).
+
+**Validation:** Full Jest suite (1529 tests), `npm run build`, production bundle smoke test, a production-define client build confirming the page, its CSS, and the button are absent, and a one-week Suggest run in the dev server.
+**Task:** Let the dev environment request calendar suggestions and show each date's suggestions and rationale.
+
+---
+
 ## 2026-10-18 — Re-roll calendar suggestions from a second Suggest click
 
 **Model:** Claude Opus 5.5

@@ -48,13 +48,17 @@ The prompt is the design's "Pick your loadout" popup. It has these parts:
   - it finished within `REROLL_WINDOW_SECONDS` (3 minutes);
   - it covered every day now requested.
 - **Prompt** (`suggestion-reroll-prompt.js`, `lib/suggestion-reroll-embed.js`). The prompt is an `app.prompt` with an
-  embed input. It shows radio cards for Quarter plan, Layups (easy), and Moonshots (high ROI), plus up to three boosted
-  project chips. Each change calls `suggestionRerollChoice`, which stores the choice with `updateEmbedArgs`. Keep
-  current, or closing the prompt, runs the ordinary pass.
+  embed input. It shows radio cards for Quarter plan, Layups (easy), and Moonshots (high ROI), up to three boosted
+  project chips, and a "Suggestions come from" row: New + existing (default), Existing tasks, or New tasks. Each change
+  calls `suggestionRerollChoice`, which remembers the choice under the prompt's token and stores it with
+  `updateEmbedArgs`. The prompt reads the remembered choice first, since a prompt that resolved with its opening
+  arguments once turned a Moonshots choice into Quarter plan. Keep current, or closing the prompt, runs the ordinary
+  pass.
 - **Ranking** (`ranked-task-suggestions.js#rerolledDayRanking`):
   - With projects boosted, only their candidates compete, whatever their cadence (`priorityProjectGroups`). They take
     turns up to `SALIENCE_POOL_LIMIT`.
   - With none boosted, the usual project and weekday groups and meeting groups compete, narrowed by salience.
+  - Existing Tasks or New Tasks leaves the other kind of candidate out before ranking (`sourceFilteredGroups`).
   - Every Jev question, and the generative fallback prompt, carry the focus instruction.
   - The ranking is never stored in the day ranking store.
 - **Exclusions** (`suggestion-reroll-range.js`). The re-roll leaves out:
@@ -62,10 +66,13 @@ The prompt is the design's "Pick your loadout" popup. It has these parts:
   - what earlier re-rolls of the day set aside;
   - tasks already on the calendar;
   - what an earlier day of the range took.
-- **Not persisted as the agenda.** The day's archived note "Dashboard Suggestion Re-rolls" records every key the
-  re-roll discarded or offered, with `forceRegenerate: true`.
-  - The next ordinary pass plans that day afresh without those keys (`generateProposedAgendaRange`'s `rerolledDays`),
-    then clears `forceRegenerate`.
+- **Not persisted as the agenda.** The day's archived note "Dashboard Suggestion Re-rolls" records the suggestions the
+  re-roll offered and every key it discarded or offered, with `forceRegenerate: true`.
+  - For the rest of the date the re-roll was chosen on, ordinary passes show its suggestions again
+    (`replayRerolledRange`), less those since scheduled, accepted, completed or claimed by an earlier day; one a new
+    obligation covers moves to the next free hour. A new re-roll replaces the record.
+  - The first ordinary pass after that date plans the day afresh without those keys (`generateProposedAgendaRange`'s
+    `rerolledDays`), then clears `forceRegenerate`.
   - Later passes that day keep excluding the keys.
   - Records are pared once their day has passed.
 - **Report.** With the Debug Console in the layout, the pass writes "Calendar <domain> Re-roll: …". It opens with the
@@ -91,8 +98,8 @@ The prompt is the design's "Pick your loadout" popup. It has these parts:
 
 ## Phase 4: where ideas come from
 
-- Add Existing + new, Only new ideas, and Only existing. Filter the candidate groups by `isExisting` before ranking.
-  "Only new" may warrant asking the idea generator for fresh ideas when the pool is thin. That is costly, so gate it on
+- Built: New + existing, Existing tasks, and New tasks filter the candidate groups by `isExisting` before ranking.
+- Still open: "New tasks" draws only on ideas already stored. It may warrant asking the idea generator for fresh ideas when the pool is thin. That is costly, so gate it on
   the day's idea-generation allowance.
 
 ## Phase 5: incoming suggestions preview

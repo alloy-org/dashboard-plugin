@@ -835,6 +835,15 @@ export default function DashboardApp({ app, initPromise }) {
           />
           <div className="dashboard-toolbar-actions">
             <DashboardUpdateIndicator app={app} />
+            {/* NODE_ENV is tested directly so the production build drops this button; see dashboard-load.jsx. */}
+            {process.env.NODE_ENV === "development" ? (
+              <button
+                className="dashboard-configure-button"
+                type="button"
+                onClick={() => window.location.assign('/calendar-suggestions')}
+                title="Dev only: run the calendar's Suggest action and see each date's suggestions and rationale"
+              >📅 Suggestions (dev)</button>
+            ) : null}
             <button
               className="dashboard-configure-button"
               type="button"

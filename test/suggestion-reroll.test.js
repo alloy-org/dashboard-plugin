@@ -4,13 +4,14 @@
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
 import { calendarGenerationReportMarkdown, calendarGenerationReportName } from "dashboard/suggestions/calendar-generation-report";
-import { priorityProjectGroups } from "dashboard/suggestions/day-project-candidates";
+import { priorityProjectGroups, sourceFilteredGroups } from "dashboard/suggestions/day-project-candidates";
 import { promptedRerollChoice } from "dashboard/suggestions/suggestion-reroll-prompt";
-import { discardedKeysByDay, markFreshlyPlannedDays, readRerolledDays, recordRerolledDays, REROLL_WINDOW_SECONDS,
-  rerollablePreviousPass } from "dashboard/suggestions/suggestion-reroll-store";
+import { replayRerolledRange } from "dashboard/suggestions/suggestion-reroll-range";
+import { discardedKeysByDay, markFreshlyPlannedDays, readRerolledDays, recordRerolledDays, replayableRerolledDay,
+  REROLL_WINDOW_SECONDS, rerollablePreviousPass } from "dashboard/suggestions/suggestion-reroll-store";
 import { generativeRankPrompt, suggestionQuestions } from "dashboard/suggestions/suggestion-task-rank";
 import QuarterProject from "quarter-project";
-import { buildSuggestionRerollHTML, SUGGESTION_REROLL_VIEW, suggestionRerollValue } from "suggestion-reroll-embed";
+import { buildSuggestionRerollHTML, rememberSuggestionRerollChoice, SUGGESTION_REROLL_VIEW, suggestionRerollValue } from "suggestion-reroll-embed";
 
 const TUESDAY = new Date(2026, 9, 6, 15, 0, 0);
 const WEDNESDAY = new Date(2026, 9, 7);
@@ -67,6 +68,30 @@ describe("promptedRerollChoice", () => {
     expect(promptOptions.inputs[0]).toMatchObject({ type: "embed", value: { focusKey: "quarterPlan", view: SUGGESTION_REROLL_VIEW } });
     expect(choice.focus.key).toBe("layups");
     expect(choice.projectUuids).toEqual([]);
+    expect(choice.source.key).toBe("newAndExisting");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc The choice the embed last sent for this prompt wins over a prompt result that still carries the opening
+  //   arguments, so a focus picked before boosting projects is not lost.
+  it("reads the choice the embed last sent when the prompt resolves with its opening arguments", async () => {
+    const app = { prompt: jest.fn(async (message, { inputs }) => {
+      const openingValue = inputs[0].value;
+      rememberSuggestionRerollChoice({ ...openingValue, focusKey: "moonshots", sourceKey: "new" });
+      return [openingValue, -1];
+    }), settings: {} };
+    const choice = await promptedRerollChoice(app, { days: [TUESDAY], domainName: null, domainUuid: null });
+    expect(choice.focus.key).toBe("moonshots");
+    expect(choice.source.key).toBe("new");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A choice sent for an earlier prompt is not read by a later one.
+  it("ignores a choice remembered for another prompt", async () => {
+    rememberSuggestionRerollChoice({ focusKey: "moonshots", promptToken: "earlier-prompt", view: SUGGESTION_REROLL_VIEW });
+    const app = { prompt: jest.fn(async (message, { inputs }) => [inputs[0].value, -1]), settings: {} };
+    const choice = await promptedRerollChoice(app, { days: [TUESDAY], domainName: null, domainUuid: null });
+    expect(choice.focus.key).toBe("quarterPlan");
   });
 
   // ----------------------------------------------------------------------------------------------
@@ -88,12 +113,26 @@ describe("suggestion re-roll embed", () => {
     const html = buildSuggestionRerollHTML({ value });
     expect(html).not.toContain("</script><b>");
     expect(html).toContain("Moonshots");
+    expect(html).toContain("New + existing");
+    expect(html).toContain("Existing tasks");
     expect(suggestionRerollValue([JSON.stringify(value)])).toEqual(value);
     expect(suggestionRerollValue([{ view: "ideaRunProgress" }])).toBeNull();
   });
 });
 
 describe("re-roll ranking inputs", () => {
+  // ----------------------------------------------------------------------------------------------
+  // @desc Asking for only existing tasks or only new ideas leaves the other kind out, dropping a group left empty.
+  it("keeps only the candidates from the chosen source", () => {
+    const groups = [{ taskCandidates: [{ candidateId: "task:a", isExisting: true }, { candidateId: "idea:b", isExisting: false }] },
+      { taskCandidates: [{ candidateId: "idea:c", isExisting: false }] }];
+    const existingGroups = sourceFilteredGroups(groups, { existingTasks: true, newIdeas: false });
+    expect(existingGroups.map(group => group.taskCandidates.map(candidate => candidate.candidateId))).toEqual([["task:a"]]);
+    const newGroups = sourceFilteredGroups(groups, { existingTasks: false, newIdeas: true });
+    expect(newGroups.map(group => group.taskCandidates.map(candidate => candidate.candidateId))).toEqual([["idea:b"], ["idea:c"]]);
+    expect(sourceFilteredGroups(groups, { existingTasks: true, newIdeas: true })).toBe(groups);
+  });
+
   // ----------------------------------------------------------------------------------------------
   // @desc A chosen project offers its candidates even on a day its own cadence leaves it out.
   it("groups a chosen project that does not qualify today", () => {
@@ -146,6 +185,49 @@ describe("re-rolled day records", () => {
   });
 });
 
+describe("showing a re-roll again", () => {
+  // ----------------------------------------------------------------------------------------------
+  // @desc A re-rolled day's suggestions are shown again only on the date the re-roll was chosen.
+  it("replays a re-roll only on the date it was chosen", async () => {
+    const app = appWithNotes();
+    const activities = [{ startMinutes: 600, taskUuid: "task-2", title: "Draft the post" }];
+    await recordRerolledDays(app, { days: [{ activities, day: WEDNESDAY, excludedKeys: new Set(["task:task-2"]) }],
+      domainUuid: "domain-1", focusKey: "layups", now: TUESDAY, projectUuids: [] });
+    const rerolledDay = (await readRerolledDays(app, { domainUuid: "domain-1", now: TUESDAY })).get(DAY_KEYS[1]);
+    expect(rerolledDay.activities).toEqual(activities);
+    expect(replayableRerolledDay(rerolledDay, { now: new Date(2026, 9, 6, 22, 0) })).toBe(true);
+    expect(replayableRerolledDay(rerolledDay, { now: WEDNESDAY })).toBe(false);
+    expect(replayableRerolledDay({ ...rerolledDay, activities: [] }, { now: TUESDAY })).toBe(false);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Suggestions the user scheduled, accepted as a new task, or closed are left out, and one a new event covers moves.
+  it("shows the re-rolled suggestions that still stand", async () => {
+    const activities = [
+      { durationMinutes: 60, startMinutes: 540, taskUuid: "task-scheduled", title: "Scheduled since" },
+      { durationMinutes: 60, ideaId: "idea-1", noteUuid: "note-1", startMinutes: 660, taskUuid: null, title: "Pitch the idea" },
+      { durationMinutes: 60, startMinutes: 780, taskUuid: "task-closed", title: "Completed since" },
+      { durationMinutes: 60, startMinutes: 900, taskUuid: "task-moved", title: "Covered by a meeting" },
+      { durationMinutes: 60, startMinutes: 1020, taskUuid: "task-kept", title: "Still open" },
+    ];
+    const rerolledDays = new Map([[DAY_KEYS[1], { activities, focusKey: "layups", rerolledAt: TUESDAY.toISOString() }]]);
+    const obligations = [{ durationMinutes: 30, source: "task", startMinutes: 600, taskUuid: "task-scheduled", title: "Scheduled since" },
+      { durationMinutes: 60, source: "task", startMinutes: 660, taskUuid: "task-new", title: "Pitch the idea" },
+      { durationMinutes: 60, source: "event", startMinutes: 900, title: "Meeting" }];
+    const openTasks = ["task-scheduled", "task-moved", "task-kept", "task-new"].map(uuid => ({ uuid }));
+    const app = { getTaskDomainTasks: jest.fn(async () => openTasks) };
+    const onDayComplete = jest.fn();
+    const [dayResult] = await replayRerolledRange(app, { claimedSuggestionKeys: new Set(), days: [WEDNESDAY], domainName: "Work",
+      domainUuid: "domain-1", obligationsForDay: async () => obligations, onDayComplete, rerolledDays, traceSelection: true });
+    const shownTitles = dayResult.activities.map(activity => activity.title);
+    expect(shownTitles).toEqual(["Covered by a meeting", "Still open"]);
+    expect(dayResult.activities[0].startMinutes).not.toBe(900);
+    expect(dayResult.selectionTrace).toMatchObject({ focusLabel: "Layups", movedCount: 1, shownCount: 2, source: "rerollReplay",
+      storedCount: 5 });
+    expect(onDayComplete).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("re-roll generation report", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc The report of a re-roll is named as one and opens with what the user chose.
@@ -155,10 +237,11 @@ describe("re-roll generation report", () => {
     const dayResult = { activities: [], day: TUESDAY, obligations: [], selectionTrace: { discardedCount: 3, generator: "ranking",
       rankerEm: "jev", source: "reroll" } };
     const markdown = calendarGenerationReportMarkdown([{ dayOutcome: null, dayResult }],
-      { reroll: { focusLabel: "Layups", projectNames: ["Launch"] } });
+      { reroll: { focusLabel: "Layups", projectNames: ["Launch"], sourceLabel: "Existing tasks" } });
     expect(markdown).toContain("# Re-roll requested");
     expect(markdown).toContain("- Focus: Layups");
     expect(markdown).toContain("- Boosted projects: Launch");
+    expect(markdown).toContain("- Suggestions from: Existing tasks");
     expect(markdown).toContain("Source: re-roll ranked by jev; 3 earlier suggestions left out");
   });
 });

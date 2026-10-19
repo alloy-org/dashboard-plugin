@@ -1,0 +1,139 @@
+// Styles for the dev-only Calendar Suggestions page, which lists each date's published suggestions and rationale.
+@use 'theme-tokens' as *;
+
+.calendar-suggestions-dev-page {
+  background-color: $color-bg-page;
+  color: $color-text;
+  margin: 0 auto;
+  max-width: 900px;
+  min-height: 100vh;
+  padding: $sp-lg;
+
+  .calendar-suggestions-back-link {
+    color: $color-link;
+    font-size: $smaller-font-size;
+  }
+
+  .calendar-suggestions-title {
+    font-size: $large-font-size;
+    margin: $sp-md 0;
+  }
+
+  .calendar-suggestions-controls {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-md;
+  }
+
+  .calendar-suggestions-domain,
+  .calendar-suggestions-range-button,
+  .calendar-suggestions-suggest-button {
+    background-color: $color-bg-card;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    color: $color-text;
+    font-size: $smaller-font-size;
+    padding: $sp-xs $sp-md;
+  }
+
+  .calendar-suggestions-range {
+    display: flex;
+    gap: $sp-xs;
+  }
+
+  .calendar-suggestions-range-button {
+    cursor: pointer;
+
+    &.is-selected {
+      background-color: $color-accent;
+      border-color: $color-accent;
+      color: $color-text-on-accent;
+    }
+  }
+
+  .calendar-suggestions-suggest-button {
+    border-color: $color-accent;
+    cursor: pointer;
+    font-weight: 600;
+
+    &:disabled {
+      cursor: progress;
+      opacity: 0.6;
+    }
+  }
+
+  .calendar-suggestions-status {
+    color: $color-text-secondary;
+    font-size: $smaller-font-size;
+    margin: $sp-md 0;
+
+    &.is-error {
+      color: $color-danger;
+    }
+  }
+
+  .suggestion-day-section {
+    background-color: $color-bg-card;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    margin-bottom: $sp-md;
+    padding: $sp-md;
+  }
+
+  .suggestion-day-heading {
+    font-size: $small-heading-font-size;
+    margin: 0 0 $sp-sm;
+  }
+
+  .suggestion-day-empty {
+    color: $color-text-muted;
+    font-size: $smaller-font-size;
+    margin: 0;
+  }
+
+  .suggestion-day-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .suggestion-row-item {
+    border-top: 1px solid $color-border;
+    padding: $sp-sm 0;
+
+    &:first-child {
+      border-top: none;
+    }
+  }
+
+  .suggestion-row-header {
+    align-items: baseline;
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-sm;
+  }
+
+  .suggestion-row-time {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+  }
+
+  .suggestion-row-title {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .suggestion-row-badge,
+  .suggestion-row-duration {
+    color: $color-text-muted;
+    font-size: $smaller-font-size;
+  }
+
+  .suggestion-row-rationale {
+    color: $color-text-secondary;
+    font-size: $smaller-font-size;
+    margin: $sp-xs 0 0;
+    white-space: pre-wrap;
+  }
+}
