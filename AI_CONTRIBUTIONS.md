@@ -5,6 +5,30 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-18 — Re-roll calendar suggestions from a second Suggest click
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/suggestions/suggestion-reroll-store.js` (created) — focus options (Quarter plan, Layups, Moonshots), the three-minute re-roll window (`rerollablePreviousPass`), and the archived "Dashboard Suggestion Re-rolls" JSON note recording each re-rolled day's excluded suggestion keys until the day passes (`recordRerolledPass`, `readRerolledDays`, `markFreshlyPlannedDays`, `discardedKeysByDay`, `rerollTaskDomain`).
+- `lib/dashboard/suggestions/suggestion-reroll-prompt.js` (created) — `promptedRerollChoice` opens `app.prompt` with the re-roll embed and reads back the focus and up to three boosted projects.
+- `lib/suggestion-reroll-embed.js` (created) — the prompt embed's self-contained page (focus radio cards, wrapping project chips) and `suggestionRerollValue`.
+- `lib/dashboard/suggestions/suggestion-reroll-range.js` (created) — `generateRerolledRange` ranks and slots each day under the chosen focus/projects, excluding the discarded set, scheduled tasks, and earlier days' picks, without storing an agenda.
+- `lib/dashboard/suggestions/ranked-task-suggestions.js` — `rerolledDayRanking` (unstored, focus-weighted ranking; boosted projects alternate up to the salience pool limit); `_dayGroups` accepts `priorityProjectUuids`.
+- `lib/dashboard/suggestions/day-project-candidates.js` — `priorityProjectGroups`.
+- `lib/dashboard/suggestions/suggestion-task-rank.js` — `focusInstruction` reaches every Jev question and the generative prompt.
+- `lib/dashboard/suggestions/suggestion-staleness.js` — the generation record keeps `finishedAtSeconds`, `suggestionCount`, and `offeredKeysByDay`; `previousSuggestionGeneration` exported.
+- `lib/dashboard/proposed-agenda/proposed-agenda-range.js` — `rerolledDays` forces a re-rolled day fresh and excludes its keys.
+- `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` — prompts on a re-roll, runs the re-roll or ordinary pass through `_runSuggestionPass`, and records the outcome.
+- `lib/dashboard/suggestions/calendar-generation-report.js` — re-roll note name, opening "Re-roll requested" section, Source bullet, and outcome wording.
+- `lib/plugin.js` — renders the re-roll embed and stores its choice via `updateEmbedArgs` (`suggestionRerollChoice`).
+- `doc/plan-suggestion-reroll.md` (created) — phased plan toward the full "Pick your loadout" design.
+- `test/suggestion-reroll.test.js`, `test/proposed-agenda-rerolled-range.test.js` (created), `test/suggestion-staleness.test.js`.
+
+**Validation:** Full Jest suite (1520 tests), `npm run build`, production bundle smoke test.
+**Task:** Let a second Suggest click within three minutes re-roll suggestions by focus and boosted projects, excluding prior sets and memorializing the pass.
+
+---
+
 ## 2026-10-18 — Calendar generation report: scores, notes, projects, and cadence for cached-agenda days
 
 **Model:** Claude Opus 5.5

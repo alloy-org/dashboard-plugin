@@ -2,7 +2,7 @@
 // already accepted from the calendar drop out, and a pass soon after another checks only the notes changed since.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
-import { changedNoteUuidsSinceLastGeneration, recordSuggestionGeneration, RECENT_GENERATION_WINDOW_SECONDS,
+import { changedNoteUuidsSinceLastGeneration, previousSuggestionGeneration, recordSuggestionGeneration, RECENT_GENERATION_WINDOW_SECONDS,
   staleSuggestionReview, suggestionIdentityKey } from "dashboard/suggestions/suggestion-staleness";
 
 const NOW_SECONDS = 1_790_000_000;
@@ -132,7 +132,20 @@ describe("recordSuggestionGeneration", () => {
     const app = buildApp();
     await recordSuggestionGeneration(app, { dayKeys: DAY_KEYS, generatedAtSeconds: NOW_SECONDS });
     expect(app.setSetting).toHaveBeenCalledWith(SETTING_KEYS.CALENDAR_SUGGESTIONS_GENERATED,
-      JSON.stringify({ dayKeys: DAY_KEYS, generatedAtSeconds: NOW_SECONDS }));
+      JSON.stringify({ dayKeys: DAY_KEYS, finishedAtSeconds: null, generatedAtSeconds: NOW_SECONDS, offeredKeysByDay: {},
+        suggestionCount: null }));
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc The finish time and suggestion count round-trip, so the next Suggest click can tell it follows closely.
+  it("reads back when the pass finished and which suggestions it offered", async () => {
+    const app = buildApp();
+    const offeredKeysByDay = { [DAY_KEYS[0]]: ["task:task-1", "idea:idea-1"] };
+    await recordSuggestionGeneration(app, { dayKeys: DAY_KEYS, finishedAtSeconds: NOW_SECONDS + 40,
+      generatedAtSeconds: NOW_SECONDS, offeredKeysByDay, suggestionCount: 6 });
+    app.settings[SETTING_KEYS.CALENDAR_SUGGESTIONS_GENERATED] = app.setSetting.mock.calls[0][1];
+    expect(previousSuggestionGeneration(app)).toEqual({ dayKeys: DAY_KEYS, finishedAtSeconds: NOW_SECONDS + 40,
+      generatedAtSeconds: NOW_SECONDS, offeredKeysByDay, suggestionCount: 6 });
   });
 });
 
