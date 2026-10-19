@@ -136,4 +136,88 @@
     margin: $sp-xs 0 0;
     white-space: pre-wrap;
   }
+
+  .calendar-report-section {
+    background-color: $color-bg-card;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    margin-top: $sp-lg;
+    padding: $sp-md;
+  }
+
+  .calendar-report-heading {
+    font-size: $small-heading-font-size;
+    margin: 0 0 $sp-xs;
+  }
+
+  .calendar-report-name {
+    font-weight: 600;
+    margin: 0 0 $sp-md;
+  }
+
+  .calendar-report-uuid,
+  .calendar-report-empty {
+    color: $color-text-muted;
+    font-size: $smaller-font-size;
+    font-weight: normal;
+  }
+
+  .calendar-report-empty {
+    margin: 0;
+  }
+
+  .calendar-report-content {
+    border-top: 1px solid $color-border;
+    font-size: $smaller-font-size;
+    overflow-wrap: anywhere;
+    padding-top: $sp-sm;
+
+    h1, h2, h3, h4 {
+      font-size: $small-heading-font-size;
+      margin: $sp-md 0 $sp-xs;
+    }
+
+    ul, ol {
+      margin: $sp-xs 0;
+      padding-left: $sp-lg;
+    }
+
+    p {
+      margin: $sp-xs 0;
+    }
+
+    a {
+      color: $color-link;
+    }
+
+    table {
+      border-collapse: collapse;
+      margin: $sp-sm 0;
+    }
+
+    th, td {
+      border: 1px solid $color-border;
+      padding: $sp-xs $sp-sm;
+      text-align: left;
+    }
+  }
+
+  .calendar-report-markdown {
+    margin-top: $sp-md;
+  }
+
+  .calendar-report-markdown-toggle {
+    color: $color-text-secondary;
+    cursor: pointer;
+    font-size: $smaller-font-size;
+  }
+
+  .calendar-report-markdown-text {
+    background-color: $color-bg-page;
+    border-radius: $radius-sm;
+    font-size: $smaller-font-size;
+    overflow-x: auto;
+    padding: $sp-sm;
+    white-space: pre-wrap;
+  }
 }

@@ -85,5 +85,21 @@ describe("runCalendarSuggestionPass", () => {
     expect(onPublish).toHaveBeenCalledWith([publishedSuggestion], expect.objectContaining({ request }));
     expect(onPublish.mock.calls[0][1].taskByUuid.get("task-1")).toBe(tasks[0]);
     expect(result.suggestions).toEqual([publishedSuggestion]);
+    expect(result.reportNote).toBeNull();
+  });
+
+  it("reads back the report note the pass creates, ignoring other notes it creates", async () => {
+    suggestScheduledTasksFromDashboard.mockImplementationOnce(async app => {
+      await app.createNote("Dashboard widget state", ["plugins/dashboard"], { archive: true });
+      await app.createNote("Calendar Work Generate: 1 day at 09:30", ["plugins/dashboard"], { archive: true });
+      return [];
+    });
+    const createNote = jest.fn(async name => name.startsWith("Calendar") ? "report-uuid" : "state-uuid");
+    const devApp = { context: {}, createNote, getNoteContent: jest.fn(async () => "# Report"),
+      getTaskDomainTasks: jest.fn(async () => []) };
+    const result = await runCalendarSuggestionPass(devApp, { dayCount: 1, onPublish: jest.fn(), taskDomain: null });
+    expect(createNote).toHaveBeenCalledTimes(2);
+    expect(devApp.getNoteContent).toHaveBeenCalledWith({ uuid: "report-uuid" });
+    expect(result.reportNote).toEqual({ content: "# Report", name: "Calendar Work Generate: 1 day at 09:30", uuid: "report-uuid" });
   });
 });
