@@ -1,0 +1,77 @@
+/* Shared SVG chart styles following the host app's Task Stats graph (completed-tasks-stats-graph.scss): grid lines in
+ * the border color at 40% opacity, low-contrast labels, uppercase x-axis labels, and a hovered column marked by a
+ * 4px highlight line in the medium-contrast element color and a value pill. No glows or drop shadows. */
+
+@use 'theme-tokens' as *;
+
+$stats-chart-label-font-size: 12px;
+
+.stats-chart {
+  display: block;
+  overflow: visible;
+  width: 100%;
+
+  .stats-chart-grid-line {
+    opacity: 0.4;
+    stroke: $color-border-primary;
+    stroke-width: 1px;
+  }
+
+  .stats-chart-grid-label {
+    fill: $color-text-low-contrast;
+    font-size: $stats-chart-label-font-size;
+    font-variant-numeric: tabular-nums;
+    text-anchor: end;
+  }
+
+  .stats-chart-x-axis-label {
+    fill: $color-text-low-contrast;
+    font-size: $stats-chart-label-font-size;
+    letter-spacing: 0.04em;
+    text-anchor: middle;
+    text-transform: uppercase;
+  }
+
+  .stats-chart-x-axis-sublabel {
+    fill: $color-text-lower-contrast;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    text-anchor: middle;
+  }
+
+  .stats-chart-highlight-line {
+    stroke: $color-background-element-medium-contrast;
+    stroke-linecap: round;
+    stroke-width: 4px;
+  }
+
+  .stats-chart-hit-area {
+    cursor: pointer;
+    fill: transparent;
+    pointer-events: all;
+  }
+
+  .stats-chart-value-pill {
+    pointer-events: none;
+
+    rect {
+      fill: $victory-value-color-2-text;
+    }
+
+    text {
+      dominant-baseline: central;
+      fill: $color-text-button;
+      font-size: $stats-chart-label-font-size;
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+      text-anchor: middle;
+    }
+  }
+
+  /* Pills in the victory value scale, lowest to highest, as Task Stats colors its victory value indicator. */
+  @for $bucket from 0 through 4 {
+    .stats-chart-value-pill--bucket-#{ $bucket } rect {
+      fill: var(--dashboard-victory-value-color-#{ $bucket }-text);
+    }
+  }
+}

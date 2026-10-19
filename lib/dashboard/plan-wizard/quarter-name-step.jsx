@@ -2,6 +2,7 @@
 // ideas are drafted from Focus projects (then other live work, then static fallbacks); the user picks one or
 // writes their own. A timeline stores each project's exact date range along with its month placement buckets.
 
+import { EmptyState, PlainButton } from "dashboard/controls";
 import ProjectFocusWindow from "dashboard/plan-wizard/project-focus-window";
 import { answerTextFromRecord, hasUnsavedAnswer, quarterAnswerFromDraft } from "dashboard/plan-wizard/quarter-answer-fields";
 import { CUSTOM_QUARTER_NAME, TIMELINE_HEADING, TIMELINE_SUMMARY,
@@ -10,6 +11,7 @@ import { CUSTOM_QUARTER_NAME, TIMELINE_HEADING, TIMELINE_SUMMARY,
 import { useRegisteredNavigate } from "dashboard/plan-wizard/step-navigation";
 import { wizardStepFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { MdEdit } from "react-icons/md";
 
 const QUARTER_NAME_STEP_COPY = wizardStepFromKey("quarter-name");
 
@@ -122,14 +124,14 @@ export default function QuarterNameStep({ isSaving, onNavigate, onRegisterNaviga
       <p className="plan-summary">{ QUARTER_NAME_STEP_COPY.summary }</p>
       <div className="quarter-name-ideas">
         { ideas.map(idea => (
-          <button aria-pressed={ selectedName === idea }
+          <PlainButton aria-pressed={ selectedName === idea }
             className={ `quarter-name-idea${ selectedName === idea ? " quarter-name-idea--selected" : "" }` }
-            disabled={ isSaving } key={ idea } onClick={ () => handleSelectIdea(idea) } type="button">
+            disabled={ isSaving } key={ idea } onClick={ () => handleSelectIdea(idea) }>
             { idea }
-          </button>
+          </PlainButton>
         )) }
         <label className={ `quarter-name-custom${ selectedName === CUSTOM_QUARTER_NAME ? " quarter-name-custom--selected" : "" }` }>
-          <span aria-hidden="true" className="quarter-name-custom-mark">✎</span>
+          <MdEdit className="quarter-name-custom-mark" />
           <input className="quarter-name-custom-input" disabled={ isSaving }
             onChange={ event => handleChangeCustom(event.target.value) } onFocus={ handleSelectCustom }
             placeholder="Write my own" type="text" value={ customText } />
@@ -151,9 +153,9 @@ export default function QuarterNameStep({ isSaving, onNavigate, onRegisterNaviga
           )) }
         </div>
       ) : (
-        <p className="plan-empty" role="note">
+        <EmptyState className="plan-empty" role="note">
           Choose a cadence for an incomplete project on the Project cadence step to place it on the timeline.
-        </p>
+        </EmptyState>
       ) }
     </div>
   );

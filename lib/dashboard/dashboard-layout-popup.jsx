@@ -4,11 +4,26 @@
  * Task: Dashboard layout popup with tabbed Components/Sizing interface
  * Prompt summary: "rename dashboard-config-popup to dashboard-layout-popup; add sizing tab for width and vertical tile count per component"
  */
+import { ConfigPopupHeader } from "config-popup";
+import { Button, EmptyState, IconButton, Select, UnderlineTabs } from "dashboard/controls";
+import { WIDGET_REGISTRY } from "dashboard/layout-profiles";
 import { LAYOUT_PROFILES, getProfileById, sizingFromProfile } from "layout-profiles";
 import { useState, useRef } from "react";
-import { WIDGET_REGISTRY } from "dashboard/layout-profiles";
+import { MdArrowDownward, MdArrowUpward, MdDragIndicator, MdVisibility,
+  MdVisibilityOff } from "react-icons/md";
 import { snapDashboardAction } from "util/plausible";
+import { WidgetIcon } from "widget-icons";
 import "styles/dashboard-layout-popup.scss"
+
+const DRAG_HANDLE_ICON_SIZE = 20;
+const LAYOUT_TABS = [
+  { className: "dashboard-layout-popup-tab", id: "components", label: "Components" },
+  { className: "dashboard-layout-popup-tab", id: "sizing", label: "Sizing" },
+];
+const PROFILE_OPTIONS = [ { label: "Custom (no preset)", value: "" },
+  ...LAYOUT_PROFILES.map(profile => ({ label: profile.name, value: profile.id })) ];
+const SECTION_ICON_SIZE = 18;
+const WIDGET_ICON_SIZE = 20;
 
 // ── Pure data helpers ─────────────────────────────────────────────────────────────────
 
@@ -22,6 +37,14 @@ import "styles/dashboard-layout-popup.scss"
 function _snapComponentMembershipChange(widgetId, wasRendered, nowRendered) {
   if (wasRendered === nowRendered) return;
   snapDashboardAction(nowRendered ? "addDashboardComponent" : "removeDashboardComponent", { widgetId });
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Options for a tile-count dropdown: 1 through the widget's maximum.
+// @param {number} maxCount - The largest tile count the widget allows.
+// @returns {Array<Object>} [{ label, value }] for Select.
+function _tileCountOptions(maxCount) {
+  return Array.from({ length: maxCount }, (_, index) => ({ label: `${ index + 1 }`, value: index + 1 }));
 }
 
 function getWidget(widgetId) {
@@ -115,35 +138,29 @@ function LayoutItem({ widgetId, ctx }) {
       onDragOver={(e) => ctx.onDragOverItem(e, widgetId)}
       onDrop={(e) => ctx.onDropOnItem(e, widgetId)}
     >
-      <span className="dashboard-layout-popup-item-handle" aria-hidden="true">⠿</span>
-      <span className="dashboard-layout-popup-item-icon" aria-hidden="true">{widget.icon}</span>
+      <span className="dashboard-layout-popup-item-handle" aria-hidden="true">
+        <MdDragIndicator size={ DRAG_HANDLE_ICON_SIZE } />
+      </span>
+      <span className="dashboard-layout-popup-item-icon" aria-hidden="true">
+        <WidgetIcon size={ WIDGET_ICON_SIZE } widgetId={ widget.widgetId } />
+      </span>
       <div className="dashboard-layout-popup-item-info">
         <span className="dashboard-layout-popup-item-name">{widget.name}</span>
         {widget.description && <span className="dashboard-layout-popup-item-description">{widget.description}</span>}
       </div>
       <div className="dashboard-layout-popup-item-actions">
-        <button
-          className="dashboard-layout-popup-arrow-button"
-          type="button"
-          disabled={idx === 0}
-          title="Move up"
-          aria-label={`Move ${widget.name} up`}
-          onClick={(e) => { e.stopPropagation(); ctx.onMove(widgetId, 'up'); }}
-        >↑</button>
-        <button
-          className="dashboard-layout-popup-arrow-button"
-          type="button"
-          disabled={idx === combined.length - 1}
-          title="Move down"
-          aria-label={`Move ${widget.name} down`}
-          onClick={(e) => { e.stopPropagation(); ctx.onMove(widgetId, 'down'); }}
-        >↓</button>
+        <IconButton className="dashboard-layout-popup-arrow-button" disabled={ idx === 0 }
+          Icon={ MdArrowUpward } label={ `Move ${ widget.name } up` } tooltip="Move up"
+          onClick={ (e) => { e.stopPropagation(); ctx.onMove(widgetId, 'up'); } } />
+        <IconButton className="dashboard-layout-popup-arrow-button" disabled={ idx === combined.length - 1 }
+          Icon={ MdArrowDownward } label={ `Move ${ widget.name } down` } tooltip="Move down"
+          onClick={ (e) => { e.stopPropagation(); ctx.onMove(widgetId, 'down'); } } />
       </div>
     </div>
   );
 }
 
-function LayoutSection({ sectionId, label, icon, items, ctx }) {
+function LayoutSection({ sectionId, label, Icon, items, ctx }) {
   const className = [
     'dashboard-layout-popup-section',
     ctx.dragOverSection === sectionId ? 'dashboard-layout-popup-section--drag-over' : '',
@@ -156,15 +173,17 @@ function LayoutSection({ sectionId, label, icon, items, ctx }) {
       onDrop={(e) => ctx.onDropOnSection(e, sectionId)}
     >
       <div className="dashboard-layout-popup-section-header">
-        <span className="dashboard-layout-popup-section-icon" aria-hidden="true">{icon}</span>
+        <span className="dashboard-layout-popup-section-icon" aria-hidden="true">
+          <Icon size={ SECTION_ICON_SIZE } />
+        </span>
         <h4 className="dashboard-layout-popup-section-title">{label}</h4>
       </div>
       {items.length === 0 ? (
-        <div className="dashboard-layout-popup-empty">
+        <EmptyState className="dashboard-layout-popup-empty">
           {sectionId === 'rendered'
             ? 'Drag components here to show them on the dashboard'
             : 'All components are currently shown'}
-        </div>
+        </EmptyState>
       ) : (
         <div className="dashboard-layout-popup-list">
           {items.map(id => <LayoutItem key={id} widgetId={id} ctx={ctx} />)}
@@ -190,34 +209,18 @@ function SizingItem({ widgetId, sizing, onSizingChange }) {
   return (
     <div className="dashboard-layout-popup-sizing-item">
       <div className="dashboard-layout-popup-sizing-item-header">
-        <span className="dashboard-layout-popup-item-icon" aria-hidden="true">{widget.icon}</span>
+        <span className="dashboard-layout-popup-item-icon" aria-hidden="true">
+          <WidgetIcon size={ WIDGET_ICON_SIZE } widgetId={ widget.widgetId } />
+        </span>
         <span className="dashboard-layout-popup-item-name">{widget.name}</span>
       </div>
       <div className="dashboard-layout-popup-sizing-item-controls">
-        <div className="dashboard-layout-popup-sizing-field">
-          <label className="dashboard-layout-popup-sizing-label">Width</label>
-          <select
-            className="dashboard-layout-popup-sizing-select"
-            value={currentWidth}
-            onChange={e => onSizingChange(widgetId, 'gridWidthSize', Number(e.target.value))}
-          >
-            {Array.from({ length: maxWidth }, (_, i) => (
-              <option key={i + 1} value={i + 1}>{`${i + 1}`}</option>
-            ))}
-          </select>
-        </div>
-        <div className="dashboard-layout-popup-sizing-field">
-          <label className="dashboard-layout-popup-sizing-label">Vertical tiles</label>
-          <select
-            className="dashboard-layout-popup-sizing-select"
-            value={currentHeight}
-            onChange={e => onSizingChange(widgetId, 'gridHeightSize', Number(e.target.value))}
-          >
-            {Array.from({ length: maxHeight }, (_, i) => (
-              <option key={i + 1} value={i + 1}>{`${i + 1}`}</option>
-            ))}
-          </select>
-        </div>
+        <Select className="dashboard-layout-popup-sizing-field" label="Width"
+          onChange={ value => onSizingChange(widgetId, 'gridWidthSize', Number(value)) }
+          options={ _tileCountOptions(maxWidth) } value={ currentWidth } />
+        <Select className="dashboard-layout-popup-sizing-field" label="Vertical tiles"
+          onChange={ value => onSizingChange(widgetId, 'gridHeightSize', Number(value)) }
+          options={ _tileCountOptions(maxHeight) } value={ currentHeight } />
       </div>
     </div>
   );
@@ -350,14 +353,14 @@ export default function DashboardLayoutPopup({ currentLayout, excludeWidgetIds, 
 
   const bodyContent = activeTab === 'components' ? (
     <>
-      <LayoutSection sectionId="rendered" label="Rendered Dashboard Elements" icon="👁" items={renderedIds} ctx={ctx} />
-      <LayoutSection sectionId="hidden" label="Hidden Dashboard Elements" icon="🚫" items={hiddenIds} ctx={ctx} />
+      <LayoutSection sectionId="rendered" label="Rendered Dashboard Elements" Icon={ MdVisibility } items={renderedIds} ctx={ctx} />
+      <LayoutSection sectionId="hidden" label="Hidden Dashboard Elements" Icon={ MdVisibilityOff } items={hiddenIds} ctx={ctx} />
     </>
   ) : (
     renderedIds.length === 0 ? (
-      <div className="dashboard-layout-popup-empty">
+      <EmptyState className="dashboard-layout-popup-empty">
         No rendered components. Add components in the Components tab.
-      </div>
+      </EmptyState>
     ) : (
       <div className="dashboard-layout-popup-sizing">
         {renderedIds.map(id => (
@@ -370,47 +373,26 @@ export default function DashboardLayoutPopup({ currentLayout, excludeWidgetIds, 
   return (
     <div className="config-popup-overlay" onClick={(e) => e.target === e.currentTarget && onCancel()}>
       <div className="config-popup-container dashboard-layout-popup">
-        <div className="config-popup-header">
-          <h3 className="config-popup-title">⚙️ Dashboard Layout</h3>
+        <ConfigPopupHeader onClose={ onCancel } title="Dashboard Layout" />
+        <div className="dashboard-layout-popup-intro">
           <div className="explanation-paragraph">{`Customize the order of your widgets by dragging or sizing them in this menu. You can also reorder widgets outside this menu by clicking on their header for 2 seconds to engage drag reordering.`}</div>
-          <div className="explanation-paragraph">
-            <label className="dashboard-layout-popup-profile-label">Default layout</label>
-            <select
-              className="dashboard-layout-popup-profile-select"
-              value={selectedProfileId || ''}
-              onChange={e => setSelectedProfileId(e.target.value || null)}
-            >
-              <option value="">Custom (no preset)</option>
-              {LAYOUT_PROFILES.map(profile => (
-                <option key={profile.id} value={profile.id}>{profile.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="dashboard-layout-popup-tabs">
-            <button
-              className={'dashboard-layout-popup-tab' + (activeTab === 'components' ? ' active' : '')}
-              type="button"
-              onClick={() => setActiveTab('components')}
-            >Components</button>
-            <button
-              className={'dashboard-layout-popup-tab' + (activeTab === 'sizing' ? ' active' : '')}
-              type="button"
-              onClick={() => setActiveTab('sizing')}
-            >Sizing</button>
-          </div>
+          <Select className="explanation-paragraph dashboard-layout-popup-profile-row" label="Default layout"
+            onChange={ value => setSelectedProfileId(value || null) } options={ PROFILE_OPTIONS }
+            value={ selectedProfileId || '' } />
+          <UnderlineTabs ariaLabel="Layout view" className="dashboard-layout-popup-tabs"
+            onChange={ setActiveTab } tabs={ LAYOUT_TABS } value={ activeTab } />
         </div>
         <div className="config-popup-body dashboard-layout-popup-body">{bodyContent}</div>
         <div className="config-popup-actions">
-          <button className="config-popup-link" type="button" onClick={() => onReset(selectedProfileId)}>Reset to defaults</button>
-          <button className="config-popup-btn config-popup-btn--cancel" type="button" onClick={onCancel}>Cancel</button>
-          <button
-            className="config-popup-btn config-popup-btn--submit"
-            type="button"
-            onClick={() => {
+          <Button className="config-popup-link" onClick={ () => onReset(selectedProfileId) }>
+            Reset to defaults
+          </Button>
+          <Button className="config-popup-btn config-popup-btn--cancel" onClick={ onCancel }>Cancel</Button>
+          <Button className="config-popup-btn config-popup-btn--submit" variant="raised"
+            onClick={ () => {
               snapDashboardAction("saveDashboardLayout", { widgetCount: renderedIds.length });
               onSave(renderedIds, hasReset, sizing, selectedProfileId);
-            }}
-          >Save Layout</button>
+            } }>Save Layout</Button>
         </div>
       </div>
     </div>

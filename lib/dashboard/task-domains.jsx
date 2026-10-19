@@ -5,32 +5,24 @@
  * Prompt summary: "allow user to choose which Task Domain their dashboard focuses on"
  */
 import { useState } from "react";
+import { IconButton, UnderlineTabs } from "dashboard/controls";
+import { MdExpandLess, MdExpandMore, MdRefresh } from "react-icons/md";
 import { refreshTaskDomains, switchTaskDomain } from "task-domain-service";
 import { logIfEnabled } from "util/log";
 import "styles/task-domains.scss"
 
 // ----------------------------------------------------------------------------------------------
-// @desc Refresh control shared by the populated and empty domain bars. Renders a worded label on
-//   wide viewports and a bare glyph on mobile, where the bar only has room for the selected domain
-//   plus two icons. Both spans always render; `task-domains.scss` picks one per breakpoint.
-// @param {string} label - Wide-viewport text, e.g. "Refresh Task Domains"
+// @desc Refresh control shared by the populated and empty domain bars: an icon button whose label lives in its
+//   tooltip and aria-label, spinning while a refresh is in flight.
 // @param {boolean} refreshing - True while a refresh request is in flight
 // [Claude claude-opus-5] Task: extract the refresh button so mobile can show it as an icon
 // Prompt: "an icon to refresh task domains (the least promiment/used of the three)"
 // Date: 2026-08-07 | Model: claude-opus-5
-function RefreshDomainsButton({ label, onRefresh, refreshing }) {
+function RefreshDomainsButton({ onRefresh, refreshing }) {
+  const label = refreshing ? 'Refreshing task domains...' : 'Refresh task domains';
   return (
-    <button
-      aria-label="Refresh task domains"
-      className="task-domains-refresh"
-      disabled={refreshing}
-      onClick={onRefresh}
-      title="Refresh task domains"
-      type="button"
-    >
-      <span className="task-domains-refresh-label">{refreshing ? 'Refreshing...' : label}</span>
-      <span className="task-domains-refresh-icon" aria-hidden="true">{'↻'}</span>
-    </button>
+    <IconButton className={ `task-domains-refresh${ refreshing ? ' task-domains-refresh--refreshing' : '' }` }
+      disabled={ refreshing } Icon={ MdRefresh } label={ label } onClick={ onRefresh } />
   );
 }
 
@@ -81,7 +73,7 @@ export default function TaskDomains({ activeTaskDomain, app, domains, onDomainCh
           </div>
         </div>
         <div className="task-domains-empty task-domain-entry">{`Task Domains in "Settings"`}</div>
-        <RefreshDomainsButton label={'\u21BB Refresh'} onRefresh={handleRefresh} refreshing={refreshing} />
+        <RefreshDomainsButton onRefresh={handleRefresh} refreshing={refreshing} />
       </div>
     );
   }
@@ -91,33 +83,21 @@ export default function TaskDomains({ activeTaskDomain, app, domains, onDomainCh
   const activeDomain = domains.find(domain => domain.uuid === activeTaskDomain);
   const mobileVisibleUuid = (activeDomain || domains[0]).uuid;
   const containerClassName = 'task-domains' + (expanded ? ' task-domains--expanded' : '');
+  const domainTabs = domains.map(domain => {
+    const itemClassName = 'task-domain-item' + (domain.uuid === activeTaskDomain ? ' active' : '')
+      + (domain.uuid === mobileVisibleUuid ? ' task-domain-item--mobile-visible' : '');
+    return { className: itemClassName, id: domain.uuid, label: <span className="task-domain-name">{ domain.name }</span> };
+  });
 
   return (
     <div className={containerClassName}>
-      <div className="task-domains-list">
-        {domains.map(domain => {
-          const itemClassName = 'task-domain-item' + (domain.uuid === activeTaskDomain ? ' active' : '')
-            + (domain.uuid === mobileVisibleUuid ? ' task-domain-item--mobile-visible' : '');
-          return (
-            <div key={domain.uuid} className={itemClassName} onClick={() => handleSelect(domain.uuid)}>
-              <span className="task-domain-name">{domain.name}</span>
-            </div>
-          );
-        })}
-      </div>
+      <UnderlineTabs ariaLabel="Task domain" className="task-domains-list" onChange={ handleSelect } tabs={ domainTabs }
+        value={ activeTaskDomain } />
       {domains.length > 1 ? (
-        <button
-          aria-expanded={expanded}
-          aria-label={expanded ? 'Hide other task domains' : 'Show other task domains'}
-          className="task-domains-expand"
-          onClick={() => setExpanded(!expanded)}
-          title={expanded ? 'Hide other task domains' : 'Show other task domains'}
-          type="button"
-        >
-          <span aria-hidden="true">{expanded ? '\u25B2' : '\u25BC'}</span>
-        </button>
+        <IconButton aria-expanded={ expanded } className="task-domains-expand" Icon={ expanded ? MdExpandLess : MdExpandMore }
+          label={ expanded ? 'Hide other task domains' : 'Show other task domains' } onClick={ () => setExpanded(!expanded) } />
       ) : null}
-      <RefreshDomainsButton label={'\u21BB Refresh Task Domains'} onRefresh={handleRefresh} refreshing={refreshing} />
+      <RefreshDomainsButton onRefresh={handleRefresh} refreshing={refreshing} />
     </div>
   );
 }

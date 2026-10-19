@@ -8,9 +8,11 @@
 // It borrows the intent reading page's layout classes, since the two pages are the same kind of explanation for
 // different steps and should read alike.
 
+import { Badge, Button, PlainButton } from "dashboard/controls";
 import { IntentReadingProgressBar, ReadItemIcon, useStaggeredReveal } from "dashboard/plan-wizard/intent-reading-page";
 import { hasThinSources, projectTaskItems, sourceProjectRows } from "dashboard/plan-wizard/project-sources-page-fields";
 import { useEffect, useState } from "react";
+import { MdCheck, MdChevronRight, MdTrackChanges } from "react-icons/md";
 
 const INTENT_REVEAL_MS = 120;
 const NOTE_REVEAL_MS = 90;
@@ -123,24 +125,21 @@ function ProjectSourcesProject({ projectRow, projectSources }) {
   const hasTasks = projectRow.servedTaskCount > 0;
   const rowContent = (
     <>
-      <svg aria-hidden="true" className="intent-reading-direction-icon" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="8" />
-        <circle cx="12" cy="12" r="4" />
-        <circle className="intent-reading-direction-icon-center" cx="12" cy="12" r="1.5" />
-      </svg>
+      <MdTrackChanges className="intent-reading-direction-icon" />
       <span className="project-sources-project-name">{ projectRow.summary }</span>
       { projectRow.userCategoryEm === "personal" ? <span className="project-sources-project-category">Personal</span> : null }
       { isRatified ? (
-        <span className="project-sources-ratified-badge" title="You chose this project's cadence">
-          <svg aria-hidden="true" viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7" /></svg>
+        <Badge className="project-sources-ratified-badge" title="You chose this project's cadence"
+          tone="action">
+          <MdCheck size={ 14 } />
           { projectRow.paceLabel }
-        </span>
+        </Badge>
       ) : null }
       <span className="project-sources-project-count">
         { projectTaskCountLabel(projectRow) }
       </span>
       { hasTasks ? (
-        <svg aria-hidden="true" className="project-sources-project-chevron" viewBox="0 0 16 16"><path d="M6 4l4 4-4 4" /></svg>
+        <MdChevronRight className="project-sources-project-chevron" />
       ) : null }
     </>
   );
@@ -149,10 +148,10 @@ function ProjectSourcesProject({ projectRow, projectSources }) {
   return (
     <li className={ projectClass }>
       { hasTasks ? (
-        <button aria-expanded={ isOpen } className="project-sources-project-row" onClick={ () => setIsOpen(open => !open) }
-          type="button">
+        <PlainButton aria-expanded={ isOpen } className="project-sources-project-row"
+          onClick={ () => setIsOpen(open => !open) }>
           { rowContent }
-        </button>
+        </PlainButton>
       ) : <div className="project-sources-project-row">{ rowContent }</div> }
       { isOpen ? <ProjectSourcesTaskList projectRow={ projectRow } projectSources={ projectSources } /> : null }
     </li>
@@ -198,7 +197,7 @@ export default function ProjectSourcesPage({ isDiscovering, isLoadingSources, on
     <section aria-label="Project evidence sources" className="plan-step-container intent-reading-page project-sources-page">
       <header className="intent-reading-header">
         <h2 className="plan-heading intent-reading-title">Project evidence sources</h2>
-        <button className="intent-reading-return" onClick={ onReturn } type="button">Return to projects</button>
+        <Button className="intent-reading-return" onClick={ onReturn }>Return to projects</Button>
       </header>
       { isDiscovering ? <IntentReadingProgressBar fraction={ progressFraction } /> : null }
       <p className="intent-reading-status" role="status">{ sourcesStatusText({ isDiscovering, isLoadingSources }) }</p>

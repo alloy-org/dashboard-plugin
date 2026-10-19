@@ -1,6 +1,8 @@
 // Navigate agenda days and choose dates from an anchored month calendar.
+import { Button, IconButton, PlainButton, TextField } from "dashboard/controls";
 import ProposedAgendaPopover from "dashboard/proposed-agenda/proposed-agenda-popover";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { MdChevronLeft, MdChevronRight, MdExpandMore } from "react-icons/md";
 import { calendarEventDateFromValue } from "util/calendar-utility";
 import { dateFromDateInput, dateKeyFromDateInput, monthGridCellsFromDateInput } from "util/date-utility";
 
@@ -33,28 +35,28 @@ function AgendaCalendar({ calendarEvents, dateValue, onSelectDate, savedDates })
   return <>
     <div className="agenda-calendar-shortcuts">
       { [["Today", today], ["Tomorrow", tomorrow], ["Monday", monday]].map(([label, date]) =>
-        <button key={ label } onClick={ () => onSelectDate(dateKeyFromDateInput(date)) } type="button">{ label }</button>) }
+        <Button dense key={ label } onClick={ () => onSelectDate(dateKeyFromDateInput(date)) } variant="outlined">{ label }</Button>) }
     </div>
     <div className="agenda-calendar-heading">
       <strong aria-live="polite">{ month.toLocaleDateString([], { month: "long", year: "numeric" }) }</strong>
-      <button aria-label="Previous month" className="agenda-calendar-month-arrow"
-        onClick={ () => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1)) } type="button">‹</button>
-      <button aria-label="Next month" className="agenda-calendar-month-arrow"
-        onClick={ () => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1)) } type="button">›</button>
+      <IconButton className="agenda-calendar-month-arrow" Icon={ MdChevronLeft } label="Previous month"
+        onClick={ () => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1)) } size="small" />
+      <IconButton className="agenda-calendar-month-arrow" Icon={ MdChevronRight } label="Next month"
+        onClick={ () => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1)) } size="small" />
     </div>
     <div className="agenda-calendar-grid">
       { ["S", "M", "T", "W", "T", "F", "S"].map((day, index) => <span className="agenda-calendar-weekday" key={ index }>{ day }</span>) }
       { monthGridCellsFromDateInput(month).map((date, index) => {
         if (!date) return <span key={ `blank-${ index }` } />;
         const key = dateKeyFromDateInput(date);
-        return <button aria-current={ key === todayKey ? "date" : undefined }
+        return <PlainButton aria-current={ key === todayKey ? "date" : undefined }
           aria-label={ date.toLocaleDateString([], { day: "numeric", month: "long", weekday: "long", year: "numeric" }) }
-          aria-pressed={ key === dateValue } className="agenda-calendar-day" key={ key } onClick={ () => onSelectDate(key) } type="button">
+          aria-pressed={ key === dateValue } className="agenda-calendar-day" key={ key } onClick={ () => onSelectDate(key) }>
           { date.getDate() }<span className="agenda-calendar-markers">
             { savedDates.includes(key) ? <i className="agenda-calendar-saved" /> : null }
             { eventCounts[key] >= 3 ? <i className="agenda-calendar-busy" /> : null }
           </span>
-        </button>;
+        </PlainButton>;
       }) }
     </div>
     <div className="agenda-calendar-legend"><span><i className="agenda-calendar-saved" />agenda saved</span>
@@ -63,8 +65,11 @@ function AgendaCalendar({ calendarEvents, dateValue, onSelectDate, savedDates })
       <strong>{ selected.toLocaleDateString([], { day: "numeric", month: "long", weekday: "long" }) }</strong>
       <p>{ meetings ? `${ meetings } ${ meetings === 1 ? "meeting" : "meetings" } already booked. Suggestions will fit around them.`
         : "Choose a day to plan your agenda." }</p>
-      <form onSubmit={ onSubmit }><label>Jump to date <input onChange={ event => setDraftDate(event.target.value) }
-        required type="date" value={ draftDate } /></label><button type="submit">Open agenda</button></form>
+      <form onSubmit={ onSubmit }>
+        <TextField className="agenda-calendar-jump" label="Jump to date" onChange={ setDraftDate } required type="date"
+          value={ draftDate } />
+        <Button dense type="submit" variant="outlined">Open agenda</Button>
+      </form>
     </div>
   </>;
 }
@@ -133,20 +138,38 @@ export default function ProposedAgendaDateControl({ calendarEvents = [], dateLab
   // ------------------------------------------------------------------------------------------
   // @desc Move by local calendar days, preserving midnight across daylight-saving transitions.
   const shiftDate = amount => selectDate(dateKeyFromDateInput(new Date(date.getFullYear(), date.getMonth(), date.getDate() + amount)));
-  return <>
-    <div className="proposed-agenda-date-control" ref={ controlRef }>
-      <div className="proposed-agenda-day-stepper">
-        <button aria-label="Previous agenda day" className="proposed-agenda-day-arrow" onClick={ () => shiftDate(-1) } type="button">‹</button>
-        <button aria-expanded={ editing } aria-haspopup="dialog" aria-label="Change agenda date" className="proposed-agenda-date-edit"
-          onClick={ () => setEditing(value => !value) } ref={ anchorRef } title={ candidateLabels[0] } type="button">
-          <span className="proposed-agenda-date-text" ref={ labelTextRef }>{ label }</span>
-          <span aria-hidden="true" className="proposed-agenda-date-caret">⌄</span></button>
-        <button aria-label="Next agenda day" className="proposed-agenda-day-arrow" onClick={ () => shiftDate(1) } type="button">›</button>
+  return (
+    <>
+      <div className="proposed-agenda-date-control" ref={ controlRef }>
+        <div className="proposed-agenda-day-stepper">
+          <IconButton className="proposed-agenda-day-arrow" Icon={ MdChevronLeft } label="Previous agenda day"
+            onClick={ () => shiftDate(-1) } />
+          <PlainButton aria-expanded={ editing } aria-haspopup="dialog" aria-label="Change agenda date"
+            className="proposed-agenda-date-edit" onClick={ () => setEditing(value => !value) } ref={ anchorRef }
+            title={ candidateLabels[0] }>
+            <span className="proposed-agenda-date-text" ref={ labelTextRef }>{ label }</span>
+            <MdExpandMore aria-hidden="true" className="proposed-agenda-date-caret" />
+          </PlainButton>
+          <IconButton className="proposed-agenda-day-arrow" Icon={ MdChevronRight } label="Next agenda day"
+            onClick={ () => shiftDate(1) } />
+        </div>
+        <span className="proposed-agenda-relative-date">{ relativeLabel }</span>
+        {
+          editing ? (
+            <ProposedAgendaPopover anchorRef={ anchorRef } label="Choose agenda date" onClose={ close }>
+              <AgendaCalendar calendarEvents={ calendarEvents } dateValue={ dateValue } onSelectDate={ selectDate }
+                savedDates={ savedDates } />
+            </ProposedAgendaPopover>
+          ) : null
+        }
       </div>
-      <span className="proposed-agenda-relative-date">{ relativeLabel }</span>
-      { editing ? <ProposedAgendaPopover anchorRef={ anchorRef } label="Choose agenda date" onClose={ close }>
-        <AgendaCalendar calendarEvents={ calendarEvents } dateValue={ dateValue } onSelectDate={ selectDate } savedDates={ savedDates } />
-      </ProposedAgendaPopover> : null }
-    </div>
-  </>;
+      {
+        offset !== 0 ? (
+          <Button className="proposed-agenda-today" dense onClick={ () => selectDate(dateKeyFromDateInput(today)) }>
+            Back to today
+          </Button>
+        ) : null
+      }
+    </>
+  );
 }

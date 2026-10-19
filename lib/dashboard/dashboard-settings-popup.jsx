@@ -1,16 +1,30 @@
 /**
  * [Claude-authored file]
  * Created: 2026-03-01 | Model: claude-sonnet-4-6
- * Task: Dashboard global settings popup — LLM provider selection, API key input, and background image upload
+ * Task: Dashboard global settings popup — LLM provider selection, API key input, and time/date formats
  * Prompt summary: "create a dashboard settings popup with LLM provider dropdown, API key input, and background image upload with display mode selector"
  */
 import ConfigPopup from 'config-popup';
 import { PROVIDER_API_KEY_RETRIEVE_URL } from 'constants/llm-providers';
-import { apiKeySettingFromKeyProvider, BACKGROUND_MODE_OPTIONS, BUILD_DATE, JEV_KEY_PROVIDER, SETTING_KEYS } from 'constants/settings';
-import useBackgroundUploadFields from 'hooks/use-background-upload-fields';
+import { apiKeySettingFromKeyProvider, BUILD_DATE, JEV_KEY_PROVIDER, SETTING_KEYS } from 'constants/settings';
+import { BANNER_IMAGE_NAMES, bannerImageURLFromBannerImageName, DEFAULT_BANNER_IMAGE_NAME, NO_BANNER_IMAGE_NAME }
+  from "dashboard/banner-image";
+import { Button, ConfigField, ConfigSection, IconButton, PlainButton, RadioGroup, Select, TextField }
+  from "dashboard/controls";
 import { useState } from 'react';
+import { MdOpenInNew, MdVisibility, MdVisibilityOff } from "react-icons/md";
 import { logIfEnabled } from "util/log";
 import "styles/dashboard-settings-popup.scss"
+
+const API_KEY_LINK_ICON_SIZE = 14;
+const TIME_FORMAT_OPTIONS = [
+  { label: "Use meridian (am/pm) times", value: "meridian" },
+  { label: "24 hour time", value: "24h" },
+];
+const WEEK_FORMAT_OPTIONS = [
+  { label: "Week begins on Sunday", value: "sunday" },
+  { label: "Week begins on Monday", value: "monday" },
+];
 
 // An option marked keyOnly edits a key without becoming the LLM Provider setting: Jev rates tasks against projects
 // but cannot write text, so choosing it leaves the generative provider chosen before it in place. keyLinkName names
@@ -85,127 +99,63 @@ function _jevKeyHint(generativeProvider) {
 function AiProviderSection({ apiKey, apiKeyVisible, keyOnlyHint, linkParenthetical, note, onApiKeyChange, onProviderChange,
     onToggleKeyVisibility, providerApiKeyUrl, providerName, selectedProvider }) {
   return (
-    <div className="dashboard-settings-section section">
-      <div className="dashboard-settings-section-header">
-        <h4 className="dashboard-settings-section-title">AI Provider</h4>
-        <p className="dashboard-settings-section-desc">Enable analysis of quarterly plan & suggested tasks.</p>
+    <ConfigSection description="Enable analysis of quarterly plan & suggested tasks." title="AI Provider">
+      <div>
+        <Select className="dashboard-settings-select" label="LLM Provider" onChange={ onProviderChange }
+          options={ LLM_OPTIONS } value={ selectedProvider } />
+        {keyOnlyHint ? <p className="dashboard-settings-api-key-hint">{keyOnlyHint}</p> : null}
       </div>
-      <div className="config-field">
-        <div className="config-line">
-          <div className="config-field-label">LLM Provider</div>
-          <select
-            className="dashboard-settings-select"
-            id="llm-provider-select"
-            value={selectedProvider}
-            onChange={e => onProviderChange(e.target.value)}
-          >
-            {LLM_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-          {keyOnlyHint ? <p className="dashboard-settings-api-key-hint">{keyOnlyHint}</p> : null}
+      <ConfigField hint={ note } label="API Key">
+        <a
+          className="dashboard-settings-api-key-link"
+          href={providerApiKeyUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {`Retrieve your ${ providerName } API key (${ linkParenthetical })`}
+          <MdOpenInNew size={ API_KEY_LINK_ICON_SIZE } />
+        </a>
+        <div className="dashboard-settings-api-key-input-row">
+          <TextField autoComplete="off" className="dashboard-settings-api-key-input" hideLabel
+            label="API Key" onChange={ onApiKeyChange } placeholder="Paste your API key here"
+            spellCheck={ false }
+            type={ apiKeyVisible ? 'text' : 'password' } value={ apiKey } />
+          <IconButton className="dashboard-settings-api-key-toggle"
+            Icon={ apiKeyVisible ? MdVisibilityOff : MdVisibility }
+            label={ apiKeyVisible ? 'Hide API key' : 'Show API key' } onClick={ onToggleKeyVisibility }
+            size="large" />
         </div>
-        <div className="config-line">
-          <div className="config-field-label">API Key</div>
-          <p className="dashboard-settings-api-key-hint">{note}</p>
-          <a
-            className="dashboard-settings-api-key-link"
-            href={providerApiKeyUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >{`Retrieve your ${ providerName } API key (${ linkParenthetical }) \u2192`}</a>
-          <div className="dashboard-settings-api-key-input-row">
-            <input
-              className="dashboard-settings-api-key-input"
-              type={apiKeyVisible ? 'text' : 'password'}
-              value={apiKey}
-              onChange={e => onApiKeyChange(e.target.value)}
-              placeholder="Paste your API key here"
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <button
-              className="dashboard-settings-api-key-toggle"
-              type="button"
-              onClick={onToggleKeyVisibility}
-              title={apiKeyVisible ? 'Hide API key' : 'Show API key'}
-              aria-label={apiKeyVisible ? 'Hide API key' : 'Show API key'}
-            >{apiKeyVisible ? '🙈' : '👁️'}</button>
-          </div>
-        </div>
-      </div>
-    </div>
+      </ConfigField>
+    </ConfigSection>
   );
 }
 
 // ------------------------------------------------------------------------------------------
-// @desc Renders the Background Image section: dropzone, preview, remove link, and display mode.
-// [Claude claude-4.6-opus-high-thinking] Task: extract background image section into local render function
-// Prompt: "break the settings popup render into local functions per section"
-function BackgroundSection({ backgroundImageUrl, backgroundMode, dragOver, fileInputRef, onBackgroundModeChange,
-    onDragLeave, onDragOver, onDrop, onFileInputChange, onRemoveImage, uploading }) {
-  const dropzoneClassName = `dashboard-settings-dropzone${ dragOver ? ' dashboard-settings-dropzone--active' : '' }${ uploading ? ' dashboard-settings-dropzone--uploading' : '' }`;
+// @desc Renders the Banner Image section: a "No banner" choice, then a thumbnail of each preset banner ample-web
+//   offers for notes, in ample-web's order. Thumbnails load lazily, since each is the full 2000x500 banner file.
+// @param {Function} onBannerImageChange - Called with the chosen name from BANNER_IMAGE_NAMES or NO_BANNER_IMAGE_NAME.
+// @param {string} selectedBannerImageName - The name currently chosen.
+function BannerImageSection({ onBannerImageChange, selectedBannerImageName }) {
   return (
-    <div className="dashboard-settings-section section">
-      <div className="dashboard-settings-section-header">
-        <h4 className="dashboard-settings-section-title">Background Image</h4>
-        <p className="dashboard-settings-section-desc">Upload an image to use as your dashboard background.</p>
+    <ConfigSection description="Choose the image shown across the top of the dashboard." title="Banner Image">
+      <div className="dashboard-settings-banner-options">
+        <PlainButton aria-pressed={ selectedBannerImageName === NO_BANNER_IMAGE_NAME }
+          className="dashboard-settings-banner-option dashboard-settings-banner-option--none"
+          onClick={ () => onBannerImageChange(NO_BANNER_IMAGE_NAME) }>
+          No banner
+        </PlainButton>
+        {
+          BANNER_IMAGE_NAMES.map(bannerImageName => (
+            <PlainButton aria-pressed={ selectedBannerImageName === bannerImageName }
+              className="dashboard-settings-banner-option" key={ bannerImageName }
+              onClick={ () => onBannerImageChange(bannerImageName) } title={ bannerImageName.replace("-", " ") }>
+              <img alt={ `${ bannerImageName } banner image` } loading="lazy"
+                src={ bannerImageURLFromBannerImageName(bannerImageName) } />
+            </PlainButton>
+          ))
+        }
       </div>
-      <div className="config-field">
-        <div
-          className={dropzoneClassName}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
-          onDragLeave={onDragLeave}
-          onClick={() => !uploading && fileInputRef.current?.click()}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="dashboard-settings-dropzone-input"
-            onChange={onFileInputChange}
-          />
-          {uploading ? (
-            <span className="dashboard-settings-dropzone-text">Uploading...</span>
-          ) : backgroundImageUrl ? (
-            <div className="dashboard-settings-dropzone-preview">
-              <img
-                src={backgroundImageUrl}
-                alt="Background preview"
-                className="dashboard-settings-dropzone-preview-img"
-                onLoad={() => logIfEnabled('[settings-popup] background preview image loaded OK:', backgroundImageUrl)}
-                onError={(e) => logIfEnabled('[settings-popup] background preview image FAILED to load:', backgroundImageUrl, e.type)}
-              />
-              <span className="dashboard-settings-dropzone-text">Drop a new image or click to replace</span>
-            </div>
-          ) : (
-            <span className="dashboard-settings-dropzone-text">Drag & drop an image here, or click to upload</span>
-          )}
-        </div>
-        {backgroundImageUrl && (
-          <a
-            className="dashboard-settings-remove-image"
-            href="#"
-            onClick={(e) => { e.preventDefault(); onRemoveImage(); }}
-          >Remove image</a>
-        )}
-      </div>
-      {backgroundImageUrl && (
-        <div className="config-field">
-          <div className="config-field-label">Display Mode</div>
-          <select
-            className="dashboard-settings-select"
-            value={backgroundMode}
-            onChange={e => onBackgroundModeChange(e.target.value)}
-          >
-            {BACKGROUND_MODE_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        </div>
-      )}
-    </div>
+    </ConfigSection>
   );
 }
 
@@ -215,15 +165,13 @@ function BackgroundSection({ backgroundImageUrl, backgroundMode, dragOver, fileI
 // @param {function(): void} onOpenMemoryMeasurement - Opens the widget memory measurement panel.
 function DebugToolsSection({ onOpenMemoryMeasurement }) {
   return (
-    <div className="dashboard-settings-section section">
-      <div className="dashboard-settings-section-header">
-        <h4 className="dashboard-settings-section-title">Debug Tools</h4>
-        <p className="dashboard-settings-section-desc">Measure a widget's approximate incremental JavaScript heap footprint.</p>
-      </div>
-      <button className="dashboard-settings-debug-button" type="button" onClick={onOpenMemoryMeasurement}>
+    <ConfigSection description="Measure a widget's approximate incremental JavaScript heap footprint."
+      title="Debug Tools">
+      <Button className="dashboard-settings-debug-button" dense onClick={ onOpenMemoryMeasurement }
+        variant="outlined">
         Open widget memory measurement
-      </button>
-    </div>
+      </Button>
+    </ConfigSection>
   );
 }
 
@@ -233,36 +181,13 @@ function DebugToolsSection({ onOpenMemoryMeasurement }) {
 // Prompt: "break the settings popup render into local functions per section"
 function TimeDateSection({ onTimeFormatChange, onWeekFormatChange, timeFormat, weekFormat }) {
   return (
-    <div className="dashboard-settings-section section">
-      <div className="dashboard-settings-section-header">
-        <h4 className="dashboard-settings-section-title">Time & Date Format</h4>
-        <p className="dashboard-settings-section-desc">Choose how times and weeks are displayed across the dashboard.</p>
-      </div>
-      <div className="config-field">
-        <div className="config-line">
-          <div className="config-field-label">Time Format</div>
-          <label>
-            <input type="radio" name="time-format" value="meridian" checked={timeFormat === 'meridian'} onChange={() => onTimeFormatChange('meridian')} />
-            Use meridian (am/pm) times
-          </label>
-          <label>
-            <input type="radio" name="time-format" value="24h" checked={timeFormat === '24h'} onChange={() => onTimeFormatChange('24h')} />
-            24 hour time
-          </label>
-        </div>
-        <div className="config-line">
-          <div className="config-field-label">Week Format</div>
-          <label>
-            <input type="radio" name="week-format" value="sunday" checked={weekFormat === 'sunday'} onChange={() => onWeekFormatChange('sunday')} />
-            Week begins on Sunday
-          </label>
-          <label>
-            <input type="radio" name="week-format" value="monday" checked={weekFormat === 'monday'} onChange={() => onWeekFormatChange('monday')} />
-            Week begins on Monday
-          </label>
-        </div>
-      </div>
-    </div>
+    <ConfigSection description="Choose how times and weeks are displayed across the dashboard."
+      title="Time & Date Format">
+      <RadioGroup label="Time Format" onChange={ onTimeFormatChange } options={ TIME_FORMAT_OPTIONS }
+        value={ timeFormat } />
+      <RadioGroup label="Week Format" onChange={ onWeekFormatChange } options={ WEEK_FORMAT_OPTIONS }
+        value={ weekFormat } />
+    </ConfigSection>
   );
 }
 
@@ -288,7 +213,7 @@ function _storedKeyForProvider(configParams, apiKeyProvider) {
 }
 
 // ------------------------------------------------------------------------------------------
-// @desc Root settings popup component. Composes background, AI provider, and time/date sections.
+// @desc Root settings popup component. Composes AI provider and time/date sections.
 // [Claude] Task: render dashboard settings — reads from configParams prop (React state) not app.settings
 // Prompt: "rename settings state to configParams; popup reads configParams props not app.settings"
 // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
@@ -296,37 +221,24 @@ function _storedKeyForProvider(configParams, apiKeyProvider) {
 // Prompt: "create local render functions per section to clarify the settings popup structure"
 // [Claude claude-4.7-opus] Task: migrate DashboardSettingsPopup from createElement to JSX
 // Prompt: "translate this project to render components with JSX instead"
-export default function DashboardSettingsPopup({ app, configParams, onCancel, onOpenMemoryMeasurement, onSave, pluginNoteUUID,
-    timeFormat: initialTimeFormat, weekFormat: initialWeekFormat }) {
+export default function DashboardSettingsPopup({ bannerImageName: initialBannerImageName, configParams, onCancel,
+    onOpenMemoryMeasurement, onSave, timeFormat: initialTimeFormat, weekFormat: initialWeekFormat }) {
   const [scrollTop] = useState(() => {
     if (typeof window === 'undefined') return 0;
     return window.scrollY ?? document.documentElement.scrollTop ?? 0;
   });
   const currentLlmProvider = configParams?.[SETTING_KEYS.LLM_PROVIDER_MODEL];
-  const currentBackgroundImageUrl = configParams?.[SETTING_KEYS.BACKGROUND_IMAGE_URL];
-  const currentBackgroundMode = configParams?.[SETTING_KEYS.BACKGROUND_IMAGE_MODE];
 
   const initialOption = LLM_OPTIONS.find(o => o.value === currentLlmProvider) || LLM_OPTIONS[0];
   const [apiKey, setApiKey] = useState(_storedKeyForProvider(configParams, initialOption.apiKeyProvider));
   const [apiKeyVisible, setApiKeyVisible] = useState(false);
+  const [bannerImageNameLocal, setBannerImageNameLocal] = useState(initialBannerImageName || DEFAULT_BANNER_IMAGE_NAME);
   const [selectedProvider, setSelectedProvider] = useState(currentLlmProvider || 'openai');
   // The provider saved as LLM Provider: the last selected option that is not key-only
   const [generativeProvider, setGenerativeProvider] = useState(currentLlmProvider || 'openai');
   const [timeFormatLocal, setTimeFormatLocal] = useState(initialTimeFormat || 'meridian');
   const [weekFormatLocal, setWeekFormatLocal] = useState(initialWeekFormat || 'sunday');
 
-  logIfEnabled('[settings-popup] rendering DashboardSettingsPopup, currentBackgroundImageUrl:', currentBackgroundImageUrl);
-
-  const {
-    backgroundImageUrl, backgroundMode, setBackgroundMode,
-    uploading, dragOver, fileInputRef,
-    handleDrop, handleDragOver, handleDragLeave, handleFileInputChange, handleRemoveImage,
-  } = useBackgroundUploadFields({
-    app,
-    pluginNoteUUID,
-    initialImageUrl: currentBackgroundImageUrl,
-    initialMode: currentBackgroundMode,
-  });
 
   const providerOption = LLM_OPTIONS.find(o => o.value === selectedProvider) || LLM_OPTIONS[0];
   const apiKeyUrl = PROVIDER_API_KEY_RETRIEVE_URL[providerOption.apiKeyProvider];
@@ -348,14 +260,13 @@ export default function DashboardSettingsPopup({ app, configParams, onCancel, on
 
   return (
     <ConfigPopup
-      title="⚙️ Dashboard Settings"
+      title="Dashboard Settings"
       footerLeft={<BuildVersionFooter />}
       scrollTop={scrollTop}
       onSubmit={() => onSave({
         apiKey,
         apiKeyProvider: providerOption.apiKeyProvider,
-        backgroundImageUrl,
-        backgroundMode,
+        bannerImageName: bannerImageNameLocal,
         llmProvider: generativeProvider,
         timeFormat: timeFormatLocal,
         weekFormat: weekFormatLocal,
@@ -364,19 +275,6 @@ export default function DashboardSettingsPopup({ app, configParams, onCancel, on
       submitLabel="Save Settings"
     >
       <div className="dashboard-settings-container">
-        <BackgroundSection
-          backgroundImageUrl={backgroundImageUrl}
-          backgroundMode={backgroundMode}
-          dragOver={dragOver}
-          fileInputRef={fileInputRef}
-          onBackgroundModeChange={setBackgroundMode}
-          onDragLeave={handleDragLeave}
-          onDragOver={handleDragOver}
-          onDrop={handleDrop}
-          onFileInputChange={handleFileInputChange}
-          onRemoveImage={handleRemoveImage}
-          uploading={uploading}
-        />
         <AiProviderSection
           apiKey={apiKey}
           apiKeyVisible={apiKeyVisible}
@@ -389,6 +287,10 @@ export default function DashboardSettingsPopup({ app, configParams, onCancel, on
           providerApiKeyUrl={apiKeyUrl}
           providerName={providerName}
           selectedProvider={selectedProvider}
+        />
+        <BannerImageSection
+          onBannerImageChange={setBannerImageNameLocal}
+          selectedBannerImageName={bannerImageNameLocal}
         />
         <TimeDateSection
           onTimeFormatChange={setTimeFormatLocal}

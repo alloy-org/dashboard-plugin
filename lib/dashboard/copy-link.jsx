@@ -2,6 +2,8 @@
 // Prompt summary: "extract CopyPluginLink into a standalone reusable component for copying URLs in sandboxed iframes"
 
 import { useState } from "react";
+import { Button } from "dashboard/controls";
+import { MdCheck } from "react-icons/md";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Anchor that copies its href to the clipboard on click instead of navigating.
@@ -31,13 +33,9 @@ export default function CopyLink({ url, children, className, confirmationMs = 25
   };
 
   return (
-    <a
-      href={url}
-      className={className}
-      onClick={handleClick}
-      title={copied ? 'Copied to clipboard!' : `Click to copy: ${ url }`}
-    >
-      {copied ? '\u2713 Link copied!' : children}
-    </a>
+    <Button className={ className } dense href={ url } Icon={ copied ? MdCheck : null }
+      onClick={ handleClick } title={ copied ? 'Copied to clipboard!' : `Click to copy: ${ url }` }>
+      { copied ? 'Link copied!' : children }
+    </Button>
   );
 }

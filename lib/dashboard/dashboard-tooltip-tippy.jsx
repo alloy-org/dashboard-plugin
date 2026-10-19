@@ -6,10 +6,11 @@
  */
 import tippy from 'tippy.js';
 import { useEffect, useRef } from 'react';
+import { HINT_TOOLTIP_THEME, RICH_TOOLTIP_OPTIONS } from "dashboard/tooltip-themes";
 import "styles/dashboard-tippy.scss"
 
 const TIPPY_DEFAULTS = {
-  theme: 'dashboard',
+  theme: HINT_TOOLTIP_THEME,
   duration: [120, 80],
   arrow: true,
   offset: [0, 8],
@@ -20,7 +21,12 @@ const TIPPY_DEFAULTS = {
 // Date: 2026-03-09 | Model: claude-4.6-opus-high-thinking
 // [Claude claude-4.7-opus] Task: migrate DashboardTippy from createElement to JSX
 // Prompt: "translate this project to render components with JSX instead"
-export default function DashboardTippy({ content, placement, interactive, children, ...rest }) {
+// ----------------------------------------------------------------------------------------------
+// @desc Attach a tooltip to the children. A hint by default (short plain text); pass `rich` for structured content,
+//   built with richTooltipHtml from tooltip-themes.js, which then shows in the Task Stats look.
+// @param {Object} props - { children, content, interactive, placement, rich, ...tippyOptions }.
+// @returns {JSX.Element} The children in an inline wrapper.
+export default function DashboardTippy({ content, placement, interactive, children, rich, ...rest }) {
   const ref = useRef(null);
   const instanceRef = useRef(null);
 
@@ -28,6 +34,7 @@ export default function DashboardTippy({ content, placement, interactive, childr
     if (!ref.current) return;
     instanceRef.current = tippy(ref.current, {
       ...TIPPY_DEFAULTS,
+      ...(rich ? RICH_TOOLTIP_OPTIONS : {}),
       content: content || '',
       placement: placement || 'top',
       interactive: interactive || false,

@@ -8,15 +8,18 @@ import { Component, memo, useEffect, useState, useCallback, useRef, useMemo } fr
 import PlanningWidget from 'planning';
 import AgendaWidget from 'agenda';
 import CalendarWidget from 'calendar';
+import { bannerImageNameFromSetting, bannerImageURLFromBannerImageName } from "dashboard/banner-image";
 import { quarterFromDate } from 'constants/quarters';
 import { apiKeyBucketFromLlmProvider, apiKeyFromProvider, apiKeySettingFromKeyProvider, DASHBOARD_FOCUS, DEFAULT_DASHBOARD_COMPONENTS, SETTING_KEYS } from 'constants/settings';
 import { reportPriorCrashIfAny, stampBreadcrumbSettled, writeRenderBreadcrumb } from "crash-breadcrumb";
 import { dashboardAdminToolsAvailability } from 'dashboard-admin-tools';
 import { DashboardLoadContext, useDashboardLoadTracker, useReportWidgetLoaded, useWidgetLoadedEvent } from 'dashboard-load-tracking';
+import DashboardBannerImage from "dashboard-banner-image";
 import DashboardLayoutPopup from 'dashboard-layout-popup';
 import DashboardSettingNote from "dashboard-setting-note";
 import DashboardSettingsPopup from 'dashboard-settings-popup';
 import DashboardUpdateIndicator from 'dashboard-update-indicator';
+import { ErrorState, IconButton, LoadingState, PlainButton } from "dashboard/controls";
 import DaySketchWidget from 'day-sketch';
 import DebugConsoleWidget from 'debug-console';
 import { useDashboardDrag } from 'draggable-heading';
@@ -24,7 +27,6 @@ import DreamTaskWidget from 'dream-task';
 import EnergyPerHabitWidget from 'energy-per-habit';
 import { gridCellFocusProps, useDashboardWidgetFocus, widgetConfigForFocus } from 'focus-widget';
 import GraveyardWidget from 'graveyard';
-import useBackgroundSwap, { BACKGROUND_FADE_ANIMATION_NAME, BACKGROUND_FADE_DURATION_MS } from 'hooks/use-background-swap';
 import useCompletedTasks from 'hooks/use-completed-tasks';
 import useDashboardLayout from 'hooks/use-dashboard-layout';
 import useDashboardTaskUpdates from 'hooks/use-dashboard-task-updates';
@@ -42,10 +44,10 @@ import ProposedAgendaWidget from 'dashboard/proposed-agenda/proposed-agenda';
 import { setPluginData, updatePluginSetting } from "plugin-data";
 import QuotesWidget from 'quotes';
 import QuickActionsWidget from 'quick-actions';
+import { MdSettings, MdWebAsset } from "react-icons/md";
 import RecentNotesWidget from 'recent-notes';
 import SharedNotesWidget from 'shared-notes';
 import TaskDomains from 'task-domains';
-import { backgroundSplashUrl } from 'util/background-splash-images';
 import { dateKeyFromDateInput, localMidnightFromDateInput, weekStartFromDateInput } from 'util/date-utility';
 import { logIfEnabled, setLoggingEnabled } from "util/log";
 import { snapDashboardAction } from "util/plausible";
@@ -64,21 +66,6 @@ import "styles/dashboard.scss"
 // How long init may run before we report that it has stalled. Generous on purpose: a memory-constrained phone with a
 // large account can legitimately still be fetching, and this reports a warning without touching what the user sees.
 const INIT_WATCHDOG_MILLISECONDS = 30000;
-
-// ------------------------------------------------------------------------------------------
-// @desc Build the inline background properties for one background layer. Shared by the dashboard's
-//   base background and by the overlay that cross-fades in a swapped background, so both layers crop,
-//   tile, and anchor identically and the fade reads as one image dissolving into another.
-// @param {string} url - Image URL to paint; an empty value means this layer paints nothing
-// @param {string} backgroundMode - A BACKGROUND_MODE_OPTIONS value: 'cover', 'contain', or a 'repeat*' variant
-// @returns {Object|undefined} React style object for the layer, or undefined when there is no image
-function backgroundLayerStyle(url, backgroundMode) {
-  if (!url) return undefined;
-  const isTiling = backgroundMode.startsWith('repeat');
-
-  return { backgroundAttachment: 'fixed', backgroundImage: `url(${ url })`, backgroundPosition: 'center',
-    backgroundRepeat: isTiling ? backgroundMode : 'no-repeat', backgroundSize: isTiling ? 'auto' : backgroundMode };
-}
 
 // ----------------------------------------------------------------------------------------------
 function gridCellClassName(config) {
@@ -125,14 +112,10 @@ class WidgetErrorBoundary extends Component {
     if (this.state.hasError) {
       return (
         <div className="widget-error-fallback">
-          <p className="widget-error-fallback-title">{`⚠ ${ this.props.widgetId }`}</p>
-          <p className="widget-error-fallback-message">
-            {this.state.error?.message || 'An unexpected error occurred'}
-          </p>
-          <button
-            className="widget-error-fallback-retry"
-            onClick={() => this.setState({ hasError: false, error: null })}
-          >Retry</button>
+          <ErrorState onRetry={ () => this.setState({ hasError: false, error: null }) }
+            title={ this.props.widgetId }>
+            { this.state.error?.message || 'An unexpected error occurred' }
+          </ErrorState>
         </div>
       );
     }
@@ -229,7 +212,7 @@ const ProposedAgendaCell = createWidgetCell('proposed-agenda', ProposedAgendaWid
 const PlanningCell = createWidgetCell('planning', PlanningWidget, ({ app, config, onOpenSettings, quarterlyPlans, taskDomainName, taskDomainUUID }) => ({
   app, gridHeightSize: Number(config?.gridHeightSize) || 1, onOpenSettings, quarterlyPlans, taskDomainName, taskDomainUUID,
 }));
-const QuickActionsCell = createWidgetCell('quick-actions', QuickActionsWidget, pickProps('app', 'onSwapBackground'));
+const QuickActionsCell = createWidgetCell('quick-actions', QuickActionsWidget, pickProps('app'));
 const QuotesCell = createWidgetCell('quotes', QuotesWidget, ({ app, config }) => ({
   app, gridHeightSize: Number(config?.gridHeightSize) || 1, planContent: null, quotes: null,
 }));
@@ -298,12 +281,10 @@ function intendedWidgetIds(settingsSnapshot) {
 //   - {Array} dailyVictoryValues - Per-day victory values
 //   - {number} weeklyVictoryValue - Aggregate victory value for the week
 //   - {string} currentDate - The reference "today" for the dashboard
-//   - {string} [pluginNoteUUID] - UUID of the plugin's backing note, when available
 // @param {Object} setters - React state setters and refs used to apply the payload
 // [Claude claude-opus-4-8] Task: document and rename the applyDashboardData payload parameter
 function applyDashboardData(initialPayload, { initializeDomainTasks, setConfigParams,
-    setCurrentDate, setDailyVictoryValues, setMoodRatings, setPluginNoteUUID,
-    setQuarterlyPlans, setWeeklyVictoryValue }) {
+    setCurrentDate, setDailyVictoryValues, setMoodRatings, setQuarterlyPlans, setWeeklyVictoryValue }) {
   setLoggingEnabled(initialPayload.settings?.[SETTING_KEYS.CONSOLE_LOGGING]);
   logSentryStatus();
   logIfEnabled(`[dashboard] applyDashboardData — tasks:${ initialPayload.tasks?.length ?? 0 } moodRatings: ${ initialPayload.moodRatings?.length ?? 0 }`);
@@ -316,7 +297,6 @@ function applyDashboardData(initialPayload, { initializeDomainTasks, setConfigPa
   setDailyVictoryValues(initialPayload.dailyVictoryValues);
   setWeeklyVictoryValue(initialPayload.weeklyVictoryValue);
   setCurrentDate(initialPayload.currentDate);
-  if (initialPayload.pluginNoteUUID) setPluginNoteUUID(initialPayload.pluginNoteUUID);
 }
 
 // ------------------------------------------------------------------------------------------
@@ -390,30 +370,26 @@ async function saveLayout(app, currentConfigParams, setConfigParams, newRendered
 //   dashboard's own state, and close the popup. The snapshot write is what lets code reading pluginSettings()
 //   synchronously — the plan wizard's provider lookup among it — see a key the moment it is saved.
 // @param {object} app - Amplenote embed app proxy.
-// @param {object} dashboardSettingNoteRef - Ref holding the DashboardSettingNote, for the note-stored formats.
+// @param {object} dashboardSettingNoteRef - Ref holding the DashboardSettingNote, for the note-stored settings.
 // @param {Function} setConfigParams - Setter for the dashboard's settings state.
 // @param {Function} onSettingsClosed - Closes the popup and runs whatever was waiting on it being closed.
-// @param {Function} setTimeFormat - Setter for the clock format.
-// @param {Function} setWeekFormat - Setter for the week-start format.
-// @param {object} params - The popup's submitted fields: { apiKey, apiKeyProvider, backgroundImageUrl,
-//   backgroundMode, llmProvider, timeFormat, weekFormat }.
+// @param {object} noteSettingSetters - Setters for the note-stored settings: { setBannerImageName, setTimeFormat,
+//   setWeekFormat }.
+// @param {object} params - The popup's submitted fields: { apiKey, apiKeyProvider, bannerImageName, llmProvider,
+//   timeFormat, weekFormat }.
 // @returns {Promise<void>} Resolves once the writes have settled and the popup has closed.
-async function saveSettings(app, dashboardSettingNoteRef, setConfigParams, onSettingsClosed, setTimeFormat, setWeekFormat,
-    { apiKey, apiKeyProvider, backgroundImageUrl, backgroundMode, llmProvider, timeFormat, weekFormat }) {
-  logIfEnabled('[dashboard] handleSettingsSave called with:', { llmProvider, apiKeyProvider, backgroundMode, backgroundImageUrl: backgroundImageUrl != null ? '(set)' : '(unchanged)', timeFormat, weekFormat });
+async function saveSettings(app, dashboardSettingNoteRef, setConfigParams, onSettingsClosed,
+    { setBannerImageName, setTimeFormat, setWeekFormat }, { apiKey, apiKeyProvider, bannerImageName, llmProvider, timeFormat,
+      weekFormat }) {
+  logIfEnabled('[dashboard] handleSettingsSave called with:', { apiKeyProvider, bannerImageName, llmProvider, timeFormat,
+    weekFormat });
   const providerSettingKey = apiKeySettingFromKeyProvider(apiKeyProvider || llmProvider);
-  const saves = [
-    app.setSetting(SETTING_KEYS.LLM_PROVIDER_MODEL, llmProvider),
-    app.setSetting(SETTING_KEYS.BACKGROUND_IMAGE_URL, backgroundImageUrl || ''),
-  ];
+  const saves = [app.setSetting(SETTING_KEYS.LLM_PROVIDER_MODEL, llmProvider)];
   if (providerSettingKey && apiKey) {
     saves.push(app.setSetting(providerSettingKey, apiKey));
   }
-  if (backgroundImageUrl && backgroundMode) {
-    saves.push(app.setSetting(SETTING_KEYS.BACKGROUND_IMAGE_MODE, backgroundMode));
-  }
-  if (dashboardSettingNoteRef.current && (timeFormat || weekFormat)) {
-    saves.push(dashboardSettingNoteRef.current.save({ timeFormat, weekFormat }));
+  if (dashboardSettingNoteRef.current && (bannerImageName || timeFormat || weekFormat)) {
+    saves.push(dashboardSettingNoteRef.current.save({ bannerImage: bannerImageName, timeFormat, weekFormat }));
   }
   try {
     await Promise.all(saves);
@@ -423,13 +399,10 @@ async function saveSettings(app, dashboardSettingNoteRef, setConfigParams, onSet
   }
   updatePluginSetting(SETTING_KEYS.LLM_PROVIDER_MODEL, llmProvider);
   if (providerSettingKey) updatePluginSetting(providerSettingKey, apiKey);
-  const configUpdate = {
-    [SETTING_KEYS.LLM_PROVIDER_MODEL]: llmProvider,
-    [SETTING_KEYS.BACKGROUND_IMAGE_URL]: backgroundImageUrl || '',
-    [SETTING_KEYS.BACKGROUND_IMAGE_MODE]: backgroundImageUrl ? (backgroundMode || 'cover') : '',
-  };
+  const configUpdate = { [SETTING_KEYS.LLM_PROVIDER_MODEL]: llmProvider };
   if (providerSettingKey) configUpdate[providerSettingKey] = apiKey;
   setConfigParams(prev => ({ ...prev, ...configUpdate }));
+  if (bannerImageName) setBannerImageName(bannerImageName);
   if (timeFormat) setTimeFormat(timeFormat);
   if (weekFormat) setWeekFormat(weekFormat);
   onSettingsClosed();
@@ -450,13 +423,14 @@ export default function DashboardApp({ app, initPromise }) {
   const { completedTasksByDate, completedTasksLoaded, fetchCompletedTasks } = useCompletedTasks(app);
 
   const { calendarEvents, calendarEventsLoaded } = useExternalCalendarEvents(app, activeTaskDomain);
+  // Null until the dashboard setting note loads, so a dashboard whose banner is off never flashes the default one
+  const [bannerImageName, setBannerImageName] = useState(null);
   const [configParams, setConfigParams] = useState(null);
   const [currentDate, setCurrentDate] = useState(null);
   const [dailyVictoryValues, setDailyVictoryValues] = useState(null);
   const [error, setError] = useState(null);
   const [focusState, setFocusState] = useState(DASHBOARD_FOCUS.DEFAULT);
   const [moodRatings, setMoodRatings] = useState(null);
-  const [pluginNoteUUID, setPluginNoteUUID] = useState(null);
   const [quarterlyPlans, setQuarterlyPlans] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
   const [timeFormat, setTimeFormat] = useState('meridian');
@@ -529,13 +503,14 @@ export default function DashboardApp({ app, initPromise }) {
       }
       applyDashboardData(data, {
         initializeDomainTasks, setConfigParams,
-        setCurrentDate, setDailyVictoryValues, setMoodRatings, setPluginNoteUUID,
-        setQuarterlyPlans, setWeeklyVictoryValue });
+        setCurrentDate, setDailyVictoryValues, setMoodRatings, setQuarterlyPlans, setWeeklyVictoryValue });
       dashboardSettingNoteRef.current = new DashboardSettingNote(app);
       const t1 = Date.now();
       logIfEnabled('[dashboard] loading DashboardSettingNote');
-      const { timeFormat: loadedTime, weekFormat: loadedWeek } = await dashboardSettingNoteRef.current.load();
+      const { bannerImage: loadedBannerImage, timeFormat: loadedTime, weekFormat: loadedWeek } =
+        await dashboardSettingNoteRef.current.load();
       logIfEnabled(`[dashboard] DashboardSettingNote loaded in ${ Date.now() - t1 }ms`);
+      setBannerImageName(bannerImageNameFromSetting(loadedBannerImage));
       if (loadedTime) setTimeFormat(loadedTime);
       if (loadedWeek) setWeekFormat(loadedWeek);
     }).catch(err => {
@@ -626,7 +601,8 @@ export default function DashboardApp({ app, initPromise }) {
   }, []);
 
   const handleSettingsSave = useCallback(
-    (params) => saveSettings(app, dashboardSettingNoteRef, setConfigParams, handleSettingsClosed, setTimeFormat, setWeekFormat, params),
+    (params) => saveSettings(app, dashboardSettingNoteRef, setConfigParams, handleSettingsClosed,
+      { setBannerImageName, setTimeFormat, setWeekFormat }, params),
     [app, handleSettingsClosed]
   );
 
@@ -669,7 +645,6 @@ export default function DashboardApp({ app, initPromise }) {
   const { draggingWidgetId, displayedComponents } = useDashboardDrag(activeComponents, handleLayoutPersist);
   const { clearFocusedWidget, expandedWidgetId, focusedWidgetId, focusedWidgetSurfaceStyle, isWidgetFocusMode,
     widgetFocusTransforms } = useDashboardWidgetFocus(draggingWidgetId, focusState);
-  const { incomingBackgroundUrl, swapBackground, swappedBackgroundUrl } = useBackgroundSwap();
 
   // ------------------------------------------------------------------------------------------
   // @desc Resolve parent-fed widget readiness for the one-shot widget-loaded CustomEvent. Widgets
@@ -750,50 +725,30 @@ export default function DashboardApp({ app, initPromise }) {
 
   if (error) {
     return (
-      <div className="dashboard-error">
-        <h2>Dashboard Error</h2>
-        <p>{error}</p>
-      </div>
+      <ErrorState className="dashboard-error" title="Dashboard Error">{ error }</ErrorState>
     );
   }
 
   if (!configParams) {
     return (
       <div className="dashboard-outer-container">
-        <div className="dashboard-loading">
-          <div className="spinner" />
-          <p>Loading dashboard...</p>
-        </div>
+        <LoadingState className="dashboard-loading">Loading dashboard...</LoadingState>
       </div>
     );
   }
-
-  const backgroundUrl = configParams?.[SETTING_KEYS.BACKGROUND_IMAGE_URL];
-  const backgroundMode = configParams?.[SETTING_KEYS.BACKGROUND_IMAGE_MODE] || 'cover';
-  const configuredBackgroundUrl = backgroundUrl || backgroundSplashUrl('large', dateKeyFromDateInput(currentDate || new Date()));
-  if (backgroundUrl) {
-    logIfEnabled('[dashboard] background image URL from settings:', backgroundUrl, 'mode:', backgroundMode);
-  }
-  // A swapped background wins for the rest of the session; it is never persisted, so reloading the dashboard returns to the configured (or date-seeded) image.
-  const backgroundStyle = backgroundLayerStyle(swappedBackgroundUrl || configuredBackgroundUrl, backgroundMode);
-  // The animation shorthand is inline so the fade length has exactly one definition (the hook's BACKGROUND_FADE_DURATION_MS), which the commit timer reuses; only the keyframes live in SCSS.
-  const backgroundFadeStyle = incomingBackgroundUrl
-    ? { ...backgroundLayerStyle(incomingBackgroundUrl, backgroundMode),
-        animation: `${ BACKGROUND_FADE_ANIMATION_NAME } ${ BACKGROUND_FADE_DURATION_MS }ms ease-in-out forwards` }
-    : null;
 
   const adminTools = dashboardAdminToolsAvailability(configParams);
   const debugConsoleEnabled = adminTools.enabled;
   const memoryMeasurementEnabled = debugConsoleEnabled;
   const layoutPopupExcludeWidgetIds = debugConsoleEnabled ? [] : ['debug-console'];
 
+  const bannerImageURL = bannerImageURLFromBannerImageName(bannerImageName);
   const currentLayoutArray = Array.isArray(configParams?.[SETTING_KEYS.DASHBOARD_COMPONENTS])
     ? configParams[SETTING_KEYS.DASHBOARD_COMPONENTS]
     : DEFAULT_DASHBOARD_COMPONENTS;
 
   return (
-    <div className="dashboard-outer-container" style={backgroundStyle}>
-      {backgroundFadeStyle ? <div className="dashboard-background-fade" style={backgroundFadeStyle} /> : null}
+    <div className="dashboard-outer-container">
       {focusState === DASHBOARD_FOCUS.LAYOUT_CONFIG ? (
         <DashboardLayoutPopup
           currentLayout={currentLayoutArray}
@@ -804,15 +759,14 @@ export default function DashboardApp({ app, initPromise }) {
         />
       ) : null}
       {focusState === DASHBOARD_FOCUS.SETTINGS_CONFIG ? (() => {
-        logIfEnabled('[dashboard] rendering DashboardSettingsPopup, bgUrl:', configParams?.[SETTING_KEYS.BACKGROUND_IMAGE_URL]);
+        logIfEnabled('[dashboard] rendering DashboardSettingsPopup');
         return (
           <DashboardSettingsPopup
-            app={app}
+            bannerImageName={bannerImageName}
             configParams={configParams}
             onCancel={handleSettingsClosed}
             onOpenMemoryMeasurement={memoryMeasurementEnabled ? () => setFocusState(DASHBOARD_FOCUS.MEMORY_MEASUREMENT) : null}
             onSave={handleSettingsSave}
-            pluginNoteUUID={pluginNoteUUID}
             timeFormat={timeFormat}
             weekFormat={weekFormat}
           />
@@ -823,6 +777,9 @@ export default function DashboardApp({ app, initPromise }) {
           onClose={() => setFocusState(DASHBOARD_FOCUS.SETTINGS_CONFIG)}
           renderWidget={renderMemoryMeasurementWidget}
         />
+      ) : null}
+      {focusState !== DASHBOARD_FOCUS.MEMORY_MEASUREMENT && bannerImageURL ? (
+        <DashboardBannerImage imageURL={bannerImageURL} />
       ) : null}
       {focusState !== DASHBOARD_FOCUS.MEMORY_MEASUREMENT ? (
       <div className={`dashboard-content${isWidgetFocusMode ? ' dashboard-content--widget-focused' : ''}`}>
@@ -835,29 +792,19 @@ export default function DashboardApp({ app, initPromise }) {
           />
           <div className="dashboard-toolbar-actions">
             <DashboardUpdateIndicator app={app} />
-            <button
-              className="dashboard-configure-button"
-              type="button"
-              onClick={() => { logIfEnabled('[dashboard] opening Settings popup'); handleOpenSettings(); }}
-              title="Configure LLM provider and API key for AI-powered features"
-            >⚙️ Settings</button>
-            <button
-              className="dashboard-configure-button"
-              type="button"
-              onClick={() => setFocusState(DASHBOARD_FOCUS.LAYOUT_CONFIG)}
-              title="Configure which widgets are shown and in what order"
-            >☰ Layout</button>
+            <IconButton className="dashboard-configure-button" Icon={ MdWebAsset } label="Layout"
+              onClick={ () => setFocusState(DASHBOARD_FOCUS.LAYOUT_CONFIG) } size="large"
+              tooltip="Layout: configure which widgets are shown and in what order" />
+            <IconButton className="dashboard-configure-button" Icon={ MdSettings } label="Settings"
+              onClick={ () => { logIfEnabled('[dashboard] opening Settings popup'); handleOpenSettings(); } }
+              size="large" tooltip="Settings: configure LLM provider and API key for AI-powered features" />
           </div>
         </div>
         <div className={`dashboard-grid-shell${isWidgetFocusMode ? ' dashboard-grid-shell--focused' : ''}`}>
           {isWidgetFocusMode ? (
-            <button
-              className="dashboard-grid-focus-backdrop"
-              type="button"
-              title="Return all widgets to the dashboard grid"
-              aria-label="Return all widgets to the dashboard grid"
-              onClick={clearFocusedWidget}
-            />
+            <PlainButton aria-label="Return all widgets to the dashboard grid"
+              className="dashboard-grid-focus-backdrop" onClick={ clearFocusedWidget }
+              title="Return all widgets to the dashboard grid" />
           ) : null}
           <DashboardLoadContext.Provider value={loadTracker}>
           <DashboardWorkProvider value={work}>
@@ -899,7 +846,6 @@ export default function DashboardApp({ app, initPromise }) {
                   onMoodRecorded={handleMoodRecorded}
                   onOpenSettings={handleOpenSettings}
                   onReferenceDateChange={setSelectedDate}
-                  onSwapBackground={swapBackground}
                   openTasks={openTasks}
                   providerApiKey={providerApiKey}
                   providerEm={providerEmForWidgets}

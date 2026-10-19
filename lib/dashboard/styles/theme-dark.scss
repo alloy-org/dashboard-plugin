@@ -1,67 +1,45 @@
-/* [Claude-authored file]
- * Created: 2026-02-21 | Model: claude-sonnet-4-6
- * Task: Dark theme color token definitions for dashboard styles
- * Prompt summary: "Create separate _theme-light.scss and _theme-dark.scss files for colors"
- */
-
-/* [Claude] Task: define dark-theme color tokens as CSS custom properties */
-/* Prompt: "Create separate _theme-light.scss and _theme-dark.scss files for colors" */
-/* Date: 2026-02-21 | Model: claude-sonnet-4-6 */
+/* Dark color tokens: the same names as theme-light.scss, with the host's Classic dark values as fallbacks, applied in
+ * explicit host dark mode and, when the host gives no mode, under the system preference. */
 :root {
-  // Keep explicit host mode and standalone system mode on the same fallback palette.
   @mixin dark-colors {
-    --dashboard-color-accent: var(--color-background-action-high-contrast, #ffb36b);
-    --dashboard-color-background-accent: var(--color-background-action-high-contrast, #ffb36b);
-    --dashboard-color-agenda-priority-critical: #ff7a7a;
-    --dashboard-color-agenda-priority-important: #ffb36b;
-    --dashboard-color-agenda-priority-normal: #a3b0c4;
-    --dashboard-color-agenda-priority-urgent: #8fb2ff;
-    --dashboard-color-bg-card: var(--color-background-primary, #1f2937);
-    --dashboard-color-bg-page: var(--color-background-secondary, #111827);
-    --dashboard-color-bg-page-hover: var(--color-background-tertiary, #1a2436);
-    --dashboard-color-bg-primary: var(--color-background-primary, #000000);
-    --dashboard-color-bg-secondary: var(--color-background-tertiary, #1a1a1a);
-    --dashboard-color-bg-warning: var(--color-background-error-medium-contrast, #6c3333);
-    --dashboard-color-blue: var(--color-background-action-high-contrast, #8fb2ff);
-    --dashboard-color-blue-light: var(--color-background-action-medium-contrast, #253553);
-    --dashboard-color-border: var(--color-border-primary, #374151);
-    --dashboard-color-danger: var(--color-text-error-high-contrast, #ff7a7a);
-    --dashboard-color-info: var(--color-text-link, #8fb2ff);
-    --dashboard-color-intent-personal: #b4a5e0;
-    --dashboard-color-intent-work: #73d4a3;
-    --dashboard-color-link: var(--color-text-link, #60a5fa);
-    --dashboard-color-navy: var(--color-text-high-contrast, #c5d8ff);
-    --dashboard-color-overlay-backdrop: var(--color-background-scrim, rgba(0, 0, 0, 0.5));
-    --dashboard-color-overlay-shadow: rgba(0, 0, 0, 0.4);
-    --dashboard-color-success: var(--color-text-status, #73d4a3);
-    --dashboard-color-text: var(--color-text-high-contrast, #e5ecf5);
-    --dashboard-color-text-muted: var(--color-text-low-contrast, #95a3b8);
-    --dashboard-color-text-on-accent: var(--color-text-button, #ffffff);
-    --dashboard-color-text-on-accent-muted: color-mix(in srgb, var(--dashboard-color-text-on-accent) 65%, transparent);
-    --dashboard-color-text-secondary: var(--color-text-medium-contrast, #b6c0cf);
-    --dashboard-color-tooltip-accent: var(--color-text-reversed-link, #a5b4fc);
-    --dashboard-color-tooltip-bg: var(--color-background-popup-small, #1f2937);
-    --dashboard-color-tooltip-border: rgba(255, 255, 255, 0.15);
-    --dashboard-color-tooltip-shadow: rgba(0, 0, 0, 0.5);
-    --dashboard-color-tooltip-text: var(--color-text-reversed, #f9fafb);
-    --dashboard-color-tooltip-text-muted: rgba(255, 255, 255, 0.5);
-    --dashboard-color-warning: #ffb36b;
+    --dashboard-color-background-primary: var(--color-background-primary, #192025);
+    --dashboard-color-background-secondary: var(--color-background-secondary, #21282e);
+    --dashboard-color-background-tertiary: var(--color-background-tertiary, #272f35);
+    --dashboard-color-background-element-low-contrast: var(--color-background-element-low-contrast, #272f35);
+    --dashboard-color-background-element-medium-contrast: var(--color-background-element-medium-contrast, #3d4751);
+    --dashboard-color-background-popup: var(--color-background-popup, #272f35);
+    --dashboard-color-background-dialog: var(--color-background-dialog, #2c3b47);
+    --dashboard-color-background-scrim: var(--color-background-scrim, rgba(0, 0, 0, 0.64));
+    --dashboard-color-background-action-high-contrast: var(--color-background-action-high-contrast, #3e92cc);
+    --dashboard-color-background-action-medium-contrast: var(--color-background-action-medium-contrast, #2f4858);
+    --dashboard-color-background-action-low-contrast: var(--color-background-action-low-contrast, #2c3b47);
+    --dashboard-color-background-error-medium-contrast: var(--color-background-error-medium-contrast, #452d2c);
+    --dashboard-color-border-primary: var(--color-border-primary, #2f3740);
+    --dashboard-color-text-high-contrast: var(--color-text-high-contrast, #f9fbfc);
+    --dashboard-color-text-medium-contrast: var(--color-text-medium-contrast, #b4bfcc);
+    --dashboard-color-text-low-contrast: var(--color-text-low-contrast, #8593a3);
+    --dashboard-color-text-lower-contrast: var(--color-text-lower-contrast, #626d7a);
+    --dashboard-color-text-button: var(--color-text-button, #ffffff);
+    --dashboard-color-text-link: var(--color-text-link, #afd8f4);
+    --dashboard-color-text-status: var(--color-text-status, #0bbf7d);
+    --dashboard-color-text-error-high-contrast: var(--color-text-error-high-contrast, #f5624c);
+    --dashboard-color-text-error-low-contrast: var(--color-text-error-low-contrast, #ffb238);
+    --dashboard-color-text-nav-high-contrast: var(--color-text-nav-high-contrast, #edf1f5);
+    --dashboard-color-text-nav-low-contrast: var(--color-text-nav-low-contrast, #b4bfcc);
+    --dashboard-victory-value-color-0: var(--victory-value-color-0, #626d7a);
+    --dashboard-victory-value-color-0-text: var(--victory-value-color-0-text, #8593a3);
+    --dashboard-victory-value-color-1: var(--victory-value-color-1, #5a8faa);
+    --dashboard-victory-value-color-1-text: var(--victory-value-color-1-text, #51a0c8);
+    --dashboard-victory-value-color-2: var(--victory-value-color-2, #42969e);
+    --dashboard-victory-value-color-2-text: var(--victory-value-color-2-text, #44b6c1);
+    --dashboard-victory-value-color-3: var(--victory-value-color-3, #2caa95);
+    --dashboard-victory-value-color-3-text: var(--victory-value-color-3-text, #27b9a1);
+    --dashboard-victory-value-color-4: var(--victory-value-color-4, #0bbf7d);
+    --dashboard-victory-value-color-4-text: var(--victory-value-color-4-text, #0bbf7d);
     --dashboard-color-plan-created-bg: rgba(115, 212, 163, 0.10);
     --dashboard-color-plan-created-border: #73d4a3;
     --dashboard-color-project-complete: #2f6f4a;
     --dashboard-color-project-complete-bg: #151d19;
-    --dashboard-color-project-window-canary: #e3bd3e;
-    --dashboard-color-project-window-orange: #ef934d;
-    --dashboard-color-project-window-purple: #9b7bd3;
-    --dashboard-color-project-window-red: #e36b6b;
-    --dashboard-color-project-window-teal: #45aaa4;
-    --dashboard-color-category-1: #5b8fd6;
-    --dashboard-color-category-2: #3f9e68;
-    --dashboard-color-category-3: #9d72cc;
-    --dashboard-color-category-4: #d3517b;
-    --dashboard-color-category-5: #1f97a8;
-    --dashboard-color-category-6: #94796b;
-    --dashboard-color-text-on-category: #ffffff;
   }
   &[data-theme="dark"] { @include dark-colors; }
   @media (prefers-color-scheme: dark) {

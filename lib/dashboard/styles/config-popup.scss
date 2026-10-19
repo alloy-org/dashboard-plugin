@@ -8,8 +8,6 @@
 
 $config-popup-max-width: 90%;
 $config-popup-min-width: 320px;
-$config-popup-shadow-blur: 32px;
-$config-popup-shadow-y: 8px;
 $config-popup-z-index: 1000;
 
 /* [Claude] Task: modal overlay and popup card styles with submit/cancel actions */
@@ -23,7 +21,7 @@ $config-popup-z-index: 1000;
  * visible left edge. */
 .config-popup-overlay {
   align-items: center;
-  background: $color-overlay-backdrop;
+  background: $color-background-scrim;
   bottom: 0;
   display: flex;
   justify-content: center;
@@ -34,89 +32,66 @@ $config-popup-z-index: 1000;
   z-index: $config-popup-z-index;
 
   /* Everything the popup contains is scoped to the overlay so no other card in the dashboard can pick these
-   * rules up, but scoped through `:where()` so the scoping costs no specificity. Four stylesheets extend the
-   * popup by class — dashboard-layout-popup, dashboard-settings-popup, llm-provider-selector, and
-   * widget-memory-measurement-popup — and their overrides are balanced against the weight these selectors
+   * rules up, but scoped through `:where()` so the scoping costs no specificity. Three stylesheets extend the
+   * popup by class — dashboard-layout-popup, dashboard-settings-popup, and widget-memory-measurement-popup — and their overrides are balanced against the weight these selectors
    * had when they sat at the top level. A plain nested `.config-popup-overlay` would outweigh all of them. */
   :where(&) {
     .config-popup-container {
-      background: var(--color-background-popup, #{$color-bg-card});
-      border: 1px solid $color-border;
-      border-radius: $radius-lg;
-      box-shadow: 0 $config-popup-shadow-y $config-popup-shadow-blur $color-overlay-shadow;
+      background: $color-background-primary;
+      border-radius: $radius-sm;
+      box-shadow: $shadow-elevation-24;
+      color: $color-text-high-contrast;
+      font-size: 14px;
       max-width: $config-popup-max-width;
       min-width: $config-popup-min-width;
+      overflow: hidden;
       width: 650px;
 
       .explanation-paragraph {
-        font-size: $default-font-size;
-        margin: 12px 0 20px;
+        color: $color-text-medium-contrast;
+        font-size: 14px;
+        margin: 0 0 $sp-lg;
       }
 
+      // The host's MDC dialog title bar: dark in every theme, with high-contrast title text and a low-contrast close icon.
       .config-popup-header {
-        border-bottom: 1px solid $color-border;
-        padding: $sp-lg;
+        align-items: center;
+        background: $color-background-dialog;
+        display: flex;
+        gap: $sp-sm;
+        padding: $sp-md $sp-md $sp-md $sp-xl;
       }
 
       .config-popup-title {
-        color: $color-navy;
-        font-size: $small-heading-font-size;
-        font-weight: 700;
+        color: $color-text-nav-high-contrast;
+        flex: 1;
+        font-size: 20px;
+        font-weight: 500;
+        letter-spacing: 0.0125em;
+        line-height: 1.4;
         margin: 0;
+        min-width: 0;
+      }
+
+      // The IconButton sits on the dark title bar, so it takes the bar's nav ink instead of the default icon ink.
+      .config-popup-close-button {
+        color: $color-text-nav-low-contrast;
+
+        &:hover:not(:disabled) {
+          background: rgba(255, 255, 255, 0.08);
+          color: $color-text-nav-high-contrast;
+        }
       }
 
       .config-popup-body {
-        padding: $sp-lg;
-
-        label {
-          align-items: center;
-          color: $color-text;
-          cursor: pointer;
-          display: flex;
-          font-size: $default-font-size;
-          gap: $sp-sm;
-          padding: $sp-xs 0;
-        }
-
-        input[type="radio"],
-        input[type="checkbox"] {
-          accent-color: $color-accent;
-        }
-
-        .config-field {
-          margin-bottom: $sp-md;
-
-          .config-line {
-            margin-bottom: 10px;
-            margin-top: 10px;
-          }
-
-          &:last-child {
-            margin-bottom: 0;
-          }
-        }
-
-        .config-field-label {
-          color: $color-text-secondary;
-          font-size: $smaller-font-size;
-          font-weight: 600;
-          letter-spacing: 0.03em;
-          margin-bottom: $sp-xs;
-          text-transform: uppercase;
-        }
+        padding: $sp-xl;
       }
 
       .config-popup-actions {
         align-items: center;
-        border-top: 1px solid $color-border;
         display: flex;
         gap: $sp-sm;
-        padding: $sp-md $sp-lg;
-
-        > button {
-          padding-left: 8px;
-          padding-right: 8px;
-        }
+        padding: $sp-sm $sp-sm $sp-sm $sp-xl;
 
         // The buttons stay against the right edge whether or not a caller supplied footerLeft, so the gap is taken
         // by the first button rather than by justify-content, which would have to change with the slot's presence.
@@ -128,40 +103,12 @@ $config-popup-z-index: 1000;
       // The slot's own content is styled here rather than by the caller: it renders inside the actions row, which
       // this file owns, so a caller's stylesheet has no wrapper it could legally reach it through.
       .config-popup-footer-left {
-        color: $color-text-secondary;
-        font-size: $smaller-font-size;
+        color: $color-text-low-contrast;
+        font-size: 12px;
         min-width: 0;
 
         .config-popup-footer-monospace {
           font-family: monospace;
-        }
-      }
-
-      .config-popup-btn {
-        border: 1px solid $color-border;
-        border-radius: $radius-sm;
-        cursor: pointer;
-        font-size: $smaller-font-size;
-        font-weight: 600;
-        padding: $sp-sm $sp-lg;
-      }
-
-      .config-popup-btn--cancel {
-        background: transparent;
-        color: $color-text-secondary;
-
-        &:hover {
-          background: $color-bg-page-hover;
-        }
-      }
-
-      .config-popup-btn--submit {
-        background: $color-background-accent;
-        border-color: $color-background-accent;
-        color: $color-text-on-accent;
-
-        &:hover {
-          opacity: 0.9;
         }
       }
     }

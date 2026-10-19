@@ -1,6 +1,7 @@
 // One project's optional focus window on the Name the quarter timeline: click an empty month to place it, drag
 // near either edge to resize it, or drag its middle to move the whole range.
 
+import { IconButton } from "dashboard/controls";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
 import { FOCUS_WINDOW_EDGE_HIT_PIXELS, dayOffsetFromPointer, monthIndexFromPointer, movedWindowDraft,
   pointerOperationFromPosition, projectTooltipHtmlFromDraft, removedWindowDraft,
@@ -8,6 +9,7 @@ import { FOCUS_WINDOW_EDGE_HIT_PIXELS, dayOffsetFromPointer, monthIndexFromPoint
 import { dayOffsetFromDateKey, deadlineNoteFromDraft,
   updatedWindowDraft } from "dashboard/plan-wizard/quarter-name-step-fields";
 import { memo, useRef, useState } from "react";
+import { MdChevronLeft, MdChevronRight, MdClose } from "react-icons/md";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Render one project's bar on the shared month axis, converting thumb movement into a clamped window.
@@ -101,7 +103,7 @@ function ProjectFocusWindow({ draft, isDisabled, onChangeWindow, quarterEndOn, q
   return (
     <div className="quarter-name-window">
       <div className="quarter-name-window-label-cell">
-        <DashboardTippy content={ tooltipHtml } delay={ 0 } placement="right">
+        <DashboardTippy content={ tooltipHtml } delay={ 0 } placement="right" rich>
           <span className="quarter-name-window-label" tabIndex={ 0 }>{ draft.summary }</span>
         </DashboardTippy>
       </div>
@@ -113,8 +115,8 @@ function ProjectFocusWindow({ draft, isDisabled, onChangeWindow, quarterEndOn, q
           <>
             <div className={ `quarter-name-bar quarter-name-bar--${ draft.colorIndex }${ pulseVersion
               ? " quarter-name-bar--pulse" : "" }` } key={ pulseVersion } style={ barStyle }>
-              <span aria-hidden="true" className="quarter-name-bar-handle">‹</span>
-              <span aria-hidden="true" className="quarter-name-bar-handle">›</span>
+              <MdChevronLeft className="quarter-name-bar-handle" size={ 16 } />
+              <MdChevronRight className="quarter-name-bar-handle" size={ 16 } />
               <span aria-hidden="true" className="quarter-name-bar-end-hit" />
             </div>
             <input aria-label={ `Start of ${ draft.summary }` } className="quarter-name-window-start"
@@ -129,9 +131,9 @@ function ProjectFocusWindow({ draft, isDisabled, onChangeWindow, quarterEndOn, q
         ) : null }
       </div>
       { hasWindow ? (
-        <button aria-label={ `Remove focus window for ${ draft.summary }` } className="quarter-name-window-remove"
-          disabled={ isDisabled } onClick={ () => onChangeWindow(removedWindowDraft(draft)) }
-          title="Remove this date range" type="button">×</button>
+        <IconButton className="quarter-name-window-remove" disabled={ isDisabled } Icon={ MdClose }
+          label={ `Remove focus window for ${ draft.summary }` }
+          onClick={ () => onChangeWindow(removedWindowDraft(draft)) } size="small" />
       ) : <span aria-hidden="true" className="quarter-name-window-remove-spacer" /> }
       { deadlineNote ? <p className="quarter-name-deadline-note">{ deadlineNote }</p> : null }
     </div>

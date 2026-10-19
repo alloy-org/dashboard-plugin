@@ -11,42 +11,30 @@
 // forward past an unanswered step would land them on a page whose inputs depend on answers that do not exist
 // yet, so the rail only offers the moves that lead somewhere usable.
 
+import { PlainButton } from "dashboard/controls";
 import PaceBreakdownPie from "dashboard/plan-wizard/pace-breakdown-pie";
 import { memo } from "react";
+import { MdCheckCircle, MdDescription, MdRadioButtonUnchecked } from "react-icons/md";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Draw the filled check that marks a step the user has stored an answer for.
-// @returns {JSX.Element} An inline check icon.
+// @returns {JSX.Element} The check_circle Material icon.
 function StepCheckIcon() {
-  return (
-    <svg aria-hidden="true" className="progress-step-icon" viewBox="0 0 24 24">
-      <circle className="progress-step-icon-disc" cx="12" cy="12" r="11" />
-      <path className="progress-step-icon-check" d="M7 12.5l3.2 3.2L17 9" />
-    </svg>
-  );
+  return <MdCheckCircle className="progress-step-icon" />;
 }
 
 // ----------------------------------------------------------------------------------------------
 // @desc Draw the hollow ring that marks a step with nothing stored against it yet.
-// @returns {JSX.Element} An inline ring icon.
+// @returns {JSX.Element} The radio_button_unchecked Material icon.
 function StepPendingIcon() {
-  return (
-    <svg aria-hidden="true" className="progress-step-icon progress-step-icon--pending" viewBox="0 0 24 24">
-      <circle className="progress-step-icon-ring" cx="12" cy="12" r="11" />
-    </svg>
-  );
+  return <MdRadioButtonUnchecked className="progress-step-icon progress-step-icon--pending" />;
 }
 
 // ----------------------------------------------------------------------------------------------
 // @desc Draw the page glyph beside the link out to the quarter's plan note.
-// @returns {JSX.Element} An inline document icon.
+// @returns {JSX.Element} The description Material icon.
 function PlanNoteIcon() {
-  return (
-    <svg aria-hidden="true" className="plan-note-icon" viewBox="0 0 24 24">
-      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
-      <path d="M14 3v5h5" />
-    </svg>
-  );
+  return <MdDescription className="plan-note-icon" />;
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -84,9 +72,9 @@ function WizardProgressSidebar({ headingText = "Quarterly plan", isOpeningPlanNo
           return (
             <li className={ rowClassNames.join(" ") } key={ row.key }>
               { row.isComplete && !row.isCurrent ? (
-                <button className="progress-step-button" onClick={ () => onSelectStep(row.key) } type="button">
+                <PlainButton className="progress-step-button" onClick={ () => onSelectStep(row.key) }>
                   { rowContent }
-                </button>
+                </PlainButton>
               ) : (
                 <span aria-current={ row.isCurrent ? "step" : undefined } className="progress-step-static">
                   { rowContent }
@@ -96,14 +84,14 @@ function WizardProgressSidebar({ headingText = "Quarterly plan", isOpeningPlanNo
           );
         }) }
       </ol>
-      <button className="progress-plan-note-link" disabled={ isOpeningPlanNote } onClick={ onOpenPlanNote }
-        type="button">
+      <PlainButton className="progress-plan-note-link" disabled={ isOpeningPlanNote }
+        onClick={ onOpenPlanNote }>
         <PlanNoteIcon />
         <span className="plan-note-text">
           <span className="plan-note-label">{ `Open ${ quarterLabel.replace("-", " ") } Planning Note` }</span>
           { isOpeningPlanNote ? <span className="plan-note-hint">Opening…</span> : null }
         </span>
-      </button>
+      </PlainButton>
     </aside>
   );
 }

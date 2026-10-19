@@ -5,6 +5,7 @@
  */
 
 @use 'theme-tokens' as *;
+@use 'controls' as *;
 
 /* [Claude] Task: Peak Hours widget layout, metrics grid, chart, tooltip, and legend */
 /* Prompt: "rewrite peak-hours into a project-native widget with standalone stylesheet" */
@@ -21,30 +22,6 @@
     white-space: nowrap;
   }
 
-  .peak-hours-month-nav-arrow {
-    align-items: center;
-    background: transparent;
-    border: none;
-    border-radius: $radius-sm;
-    color: inherit;
-    cursor: pointer;
-    display: inline-flex;
-    font-size: $large-font-size;
-    justify-content: center;
-    line-height: 1;
-    padding: $sp-xs $sp-sm;
-
-    &:hover:not(:disabled) {
-      background: $color-bg-page-hover;
-      color: $color-navy;
-    }
-
-    &:disabled {
-      cursor: default;
-      opacity: 0.3;
-    }
-  }
-
   .peak-hours-metrics-grid {
     display: grid;
     gap: $sp-md;
@@ -53,25 +30,25 @@
   }
 
   .peak-hours-metric-card {
-    background: $color-bg-page;
-    border-radius: $radius-md;
+    border: 1px solid $color-border-primary;
+    border-radius: $radius-sm;
     padding: $sp-md $sp-lg;
   }
 
   .peak-hours-metric-label {
-    color: $color-text-secondary;
-    font-size: $smaller-font-size;
+    @include overline-label;
     margin-bottom: $sp-xs;
   }
 
   .peak-hours-metric-value {
-    color: $color-navy;
+    color: $color-text-high-contrast;
     font-size: $medium-heading-font-size;
-    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
   }
 
   .peak-hours-legend {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     display: flex;
     flex-wrap: wrap;
     font-size: $smaller-font-size;
@@ -86,67 +63,29 @@
   }
 
   .peak-hours-legend-swatch {
-    border-radius: 2px;
+    border-radius: $radius-mark;
     display: inline-block;
     height: 10px;
     width: 10px;
   }
 
-  .peak-hours-legend-swatch--created {
-    background: $color-blue;
+  /* Created and completed take two ends of the host's victory value scale, blue and green. */
+  .peak-hours-legend-swatch--created,
+  .peak-hours-bar--created {
+    background: $victory-value-color-1-text;
+    fill: $victory-value-color-1-text;
   }
 
-  .peak-hours-legend-swatch--completed {
-    background: $color-accent;
+  .peak-hours-legend-swatch--completed,
+  .peak-hours-bar--completed {
+    background: $victory-value-color-4;
+    fill: $victory-value-color-4;
   }
 
   .peak-hours-chart-container {
     height: 220px;
     position: relative;
     width: 100%;
-  }
-
-  .peak-hours-canvas {
-    display: block;
-    height: 100%;
-    width: 100%;
-  }
-
-  .peak-hours-tooltip {
-    background: $color-tooltip-bg;
-    border: 1px solid $color-tooltip-border;
-    border-radius: $radius-sm;
-    box-shadow: 0 2px 8px $color-tooltip-shadow;
-    color: $color-tooltip-text;
-    font-size: $smaller-font-size;
-    padding: $sp-sm $sp-md;
-    pointer-events: none;
-    position: absolute;
-    white-space: nowrap;
-    z-index: 10;
-  }
-
-  .peak-hours-tooltip-header {
-    font-weight: 600;
-    margin-bottom: $sp-xs;
-  }
-  .peak-hours-tooltip-label--created {
-    color: $color-tooltip-accent;
-  }
-
-  .peak-hours-tooltip-label--completed {
-    color: $color-accent;
-  }
-
-  .peak-hours-empty {
-    padding: $sp-xl;
-    text-align: center;
-
-    p {
-      color: $color-text-secondary;
-      font-size: $default-font-size;
-      margin: 0;
-    }
   }
 
   .vertical-1-cell & {

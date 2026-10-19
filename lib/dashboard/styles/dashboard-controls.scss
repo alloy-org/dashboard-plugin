@@ -1,0 +1,460 @@
+/* The classes behind the shared controls in lib/dashboard/controls/ (Button, IconButton, PlainButton,
+ * Spinner, EmptyState / LoadingState / ErrorState, Select / TextField, UnderlineTabs, Badge). Emitted once
+ * and global, because controls also render outside the dashboard tree (tooltips, popups). Widgets never
+ * restyle these classes; they add their own class for layout only. The look itself comes from the mixins in
+ * controls.scss. */
+
+@use 'theme-tokens' as *;
+@use 'controls' as *;
+
+$empty-state-icon-size: 32px;
+$focus-ring-width: 2px;
+$icon-button-sizes: (dialog: 40px, large: 36px, medium: 32px, small: 28px);
+$spinner-border-width: 3px;
+$spinner-duration: 0.8s;
+$spinner-sizes: (large: 32px, medium: 24px, small: 16px);
+
+%dashboard-focus-ring {
+  &:focus-visible {
+    outline: $focus-ring-width solid $color-background-action-high-contrast;
+    outline-offset: 2px;
+  }
+}
+
+// ── Buttons ──
+
+.dashboard-button {
+  @extend %dashboard-focus-ring;
+
+  &.dashboard-button--text { @include text-button($button-height); }
+  &.dashboard-button--outlined { @include outlined-button($button-height); }
+  &.dashboard-button--raised { @include raised-button($button-height); }
+
+  &.dashboard-button--dense {
+    font-size: 12px;
+    height: $dense-button-height;
+  }
+
+  // An action inside a sentence: link text in the sentence's own size and casing
+  &.dashboard-button--link {
+    background: none;
+    border: none;
+    color: $color-text-link;
+    cursor: pointer;
+    display: inline;
+    font: inherit;
+    letter-spacing: inherit;
+    padding: 0;
+    text-decoration: underline;
+    text-transform: none;
+
+    &:hover:not(:disabled) {
+      text-decoration-thickness: 2px;
+    }
+  }
+
+  &.dashboard-button--danger {
+    color: $color-text-error-high-contrast;
+
+    &.dashboard-button--outlined {
+      border-color: color-mix(in srgb, $color-text-error-high-contrast 40%, transparent);
+    }
+
+    &.dashboard-button--raised {
+      background: $color-text-error-high-contrast;
+      color: $color-text-button;
+    }
+
+    &:hover:not(:disabled) {
+      background: color-mix(in srgb, $color-text-error-high-contrast 8%, transparent);
+    }
+
+    &.dashboard-button--raised:hover:not(:disabled) {
+      background: $color-text-error-high-contrast;
+      box-shadow: $shadow-elevation-3;
+    }
+  }
+
+  &[aria-disabled="true"] {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+}
+
+.dashboard-icon-button {
+  @extend %dashboard-focus-ring;
+  @include icon-button;
+
+  @each $size-name, $size in $icon-button-sizes {
+    &.dashboard-icon-button--#{ $size-name } {
+      height: $size;
+      width: $size;
+    }
+  }
+
+  &[aria-pressed="true"] {
+    color: $color-background-action-high-contrast;
+  }
+
+  &.dashboard-icon-button--danger:hover:not(:disabled) {
+    color: $color-text-error-high-contrast;
+  }
+}
+
+.dashboard-plain-button {
+  @extend %dashboard-focus-ring;
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  margin: 0;
+  padding: 0;
+  text-align: inherit;
+
+  &:disabled {
+    cursor: default;
+  }
+}
+
+// ── Spinner ──
+
+.dashboard-spinner {
+  animation: dashboard-spinner-rotation $spinner-duration linear infinite;
+  border: $spinner-border-width solid $color-border-primary;
+  border-radius: 50%;
+  border-top-color: $color-background-action-high-contrast;
+  display: inline-block;
+  flex-shrink: 0;
+
+  @each $size-name, $size in $spinner-sizes {
+    &.dashboard-spinner--#{ $size-name } {
+      height: $size;
+      width: $size;
+    }
+  }
+
+  &.dashboard-spinner--small {
+    border-width: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    animation-duration: 2.4s;
+  }
+}
+
+@keyframes dashboard-spinner-rotation {
+  to { transform: rotate(360deg); }
+}
+
+// ── Empty, loading, and error states ──
+
+.dashboard-empty-state {
+  @include empty-state;
+
+  .dashboard-empty-state-icon {
+    color: $color-text-lower-contrast;
+    height: $empty-state-icon-size;
+    width: $empty-state-icon-size;
+  }
+
+  .dashboard-empty-state-title {
+    color: $color-text-high-contrast;
+    font-size: $default-font-size;
+    font-weight: 500;
+  }
+
+  .dashboard-empty-state-message {
+    color: $color-text-medium-contrast;
+    font-size: $smaller-font-size;
+    line-height: 1.45;
+    max-width: 42ch;
+  }
+
+  .dashboard-empty-state-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-sm;
+    justify-content: center;
+    margin-top: $sp-xs;
+  }
+}
+
+.dashboard-empty-state.dashboard-empty-state--compact {
+  align-items: baseline;
+  flex: none;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: $sp-xs $sp-sm;
+  justify-content: flex-start;
+  padding: $sp-xs 0;
+  text-align: left;
+
+  .dashboard-empty-state-title,
+  .dashboard-empty-state-message {
+    color: $color-text-low-contrast;
+    font-size: $smaller-font-size;
+    font-weight: 400;
+    max-width: none;
+  }
+
+  .dashboard-empty-state-actions {
+    margin-top: 0;
+  }
+}
+
+.dashboard-error-state .dashboard-empty-state-icon {
+  color: $color-text-error-high-contrast;
+}
+
+.dashboard-loading-state {
+  align-items: center;
+  color: $color-text-medium-contrast;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: $sp-md;
+  justify-content: center;
+  padding: $sp-xl $sp-sm;
+  text-align: center;
+
+  .dashboard-loading-state-message {
+    font-size: $smaller-font-size;
+  }
+}
+
+// ── Fields ──
+
+.dashboard-field {
+  display: flex;
+  flex-direction: column;
+  gap: $sp-xs;
+
+  .dashboard-field-label {
+    color: $color-text-low-contrast;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  .dashboard-field-label--hidden {
+    clip: rect(0 0 0 0);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+
+  .dashboard-select {
+    @include select-field;
+  }
+
+  .dashboard-text-field {
+    @include text-field;
+  }
+
+  &.dashboard-field--dense {
+    .dashboard-select,
+    .dashboard-text-field:not(.dashboard-text-field--multiline) {
+      font-size: $smaller-font-size;
+      height: $dense-button-height;
+    }
+  }
+
+  .dashboard-text-field--multiline {
+    height: auto;
+    line-height: 1.4;
+    min-height: 72px;
+    padding: $sp-sm 10px;
+    resize: vertical;
+  }
+}
+
+// ── Underline tabs ──
+
+.dashboard-underline-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 $sp-xl;
+
+  .dashboard-underline-tab {
+    @extend %dashboard-focus-ring;
+    @include underline-tab;
+    font-weight: 400;
+    padding: $sp-sm 0;
+  }
+}
+
+// ── Badges ──
+
+.dashboard-badge {
+  align-items: center;
+  border-radius: $radius-pill;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 500;
+  gap: 2px;
+  letter-spacing: 0.04em;
+  line-height: 16px;
+  padding: 1px $sp-sm;
+  text-transform: uppercase;
+  white-space: nowrap;
+
+  &.dashboard-badge--keep-case {
+    letter-spacing: normal;
+    text-transform: none;
+  }
+
+  &.dashboard-badge--neutral {
+    background: $color-background-element-low-contrast;
+    color: $color-text-medium-contrast;
+  }
+  &.dashboard-badge--action { background: $color-background-action-low-contrast; color: $color-text-link; }
+  &.dashboard-badge--status {
+    background: color-mix(in srgb, $color-text-status 14%, transparent);
+    color: $color-text-status;
+  }
+  &.dashboard-badge--warning {
+    background: color-mix(in srgb, $color-text-error-low-contrast 18%, transparent);
+    color: $color-text-high-contrast;
+  }
+  &.dashboard-badge--danger {
+    background: color-mix(in srgb, $color-text-error-high-contrast 12%, transparent);
+    color: $color-text-error-high-contrast;
+  }
+}
+
+// ── Settings: sections, fields, radio groups, checkboxes ──
+
+.dashboard-config-section {
+  display: flex;
+  flex-direction: column;
+  gap: $sp-md;
+
+  & + .dashboard-config-section {
+    border-top: 1px solid $color-border-primary;
+    margin-top: $sp-xl;
+    padding-top: $sp-xl;
+  }
+
+  .dashboard-config-section-header {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+  }
+
+  .dashboard-config-section-title {
+    @include overline-label;
+    margin: 0;
+  }
+
+  .dashboard-config-section-description {
+    color: $color-text-medium-contrast;
+    font-size: $default-font-size;
+    line-height: 1.5;
+    margin: 0;
+  }
+}
+
+.dashboard-config-field {
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 $sp-md;
+  min-width: 0;
+  padding: 0;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  .dashboard-config-field-label {
+    color: $color-text-low-contrast;
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: $sp-xs;
+    padding: 0;
+  }
+
+  .dashboard-config-field-label--hidden {
+    clip: rect(0 0 0 0);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+
+  .dashboard-config-field-hint {
+    color: $color-text-low-contrast;
+    font-size: 12px;
+    line-height: 1.4;
+    margin: 0 0 $sp-xs;
+  }
+}
+
+.dashboard-option-row {
+  align-items: center;
+  color: $color-text-high-contrast;
+  cursor: pointer;
+  display: flex;
+  font-size: $default-font-size;
+  gap: $sp-sm;
+  padding: $sp-xs 0;
+
+  input {
+    cursor: pointer;
+    flex-shrink: 0;
+    margin: 0;
+  }
+
+  // Two-line options (label over description): top-aligned, padded, with a hover fill
+  &.dashboard-option-row--described {
+    align-items: flex-start;
+    border-radius: $radius-sm;
+    gap: $sp-md;
+    padding: $sp-sm;
+    transition: background-color 0.15s ease;
+
+    &:hover {
+      background: $color-background-element-low-contrast;
+    }
+
+    input {
+      margin-top: 3px;
+    }
+  }
+
+  &.dashboard-option-row--compact {
+    color: inherit;
+    display: inline-flex;
+    font-size: $smaller-font-size;
+    gap: $sp-xs;
+    padding: 0;
+  }
+
+  .dashboard-option-row-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .dashboard-option-row-text .dashboard-option-row-label {
+    font-weight: 500;
+  }
+
+  .dashboard-option-row-description {
+    color: $color-text-low-contrast;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+}
+
+// ── Checkboxes and radios ──
+// Native inputs, tinted with the host's action color.
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: $color-background-action-high-contrast;
+}

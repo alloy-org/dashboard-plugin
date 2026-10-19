@@ -2,9 +2,11 @@
 // saved in Plan Builder. The splash is import when there are fewer than 25 tasks, connect AI when there
 // are enough tasks but no working model, and a video invitation once both are in place.
 import { daysUntilQuarterStart, quarterMonthNames, quarterStartDate } from "constants/quarters";
+import { Badge, Button, LoadingState, PlainButton } from "dashboard/controls";
 import { resolveQuarterlyPlanEntry } from "quarterly-plan-service";
 import { useEffect, useState } from "react";
 
+import { MdAutoAwesome, MdPlayArrow } from "react-icons/md";
 import "styles/quarterly-plan-entry.scss";
 
 const READY_BENEFITS = [
@@ -149,18 +151,17 @@ function ImportTasksEntry({ entry, onBuildPlan, onNavigate, planTitle }) {
       <p className="plan-entry-kicker">Import tasks from</p>
       <div className="plan-entry-sources">
         { entry.importSources.map(source => (
-          <button className="plan-entry-source" key={ source.id } type="button"
-            onClick={ () => openImportSource(source.url) }>
+          <Button className="plan-entry-source" key={ source.id } onClick={ () => openImportSource(source.url) }
+            variant="outlined">
             <ImportSourceIcon sourceId={ source.id } />
             { source.label }
-          </button>
+          </Button>
         )) }
       </div>
       { importLinkCopied ? <p className="plan-entry-import-copied">{ IMPORT_LINK_COPIED_MESSAGE }</p> : null }
       <p className="plan-entry-divider">or</p>
-      <button className="plan-entry-scratch" onClick={ onBuildPlan } title={ planTitle } type="button">
-        ✦ Build my plan from scratch
-      </button>
+      <Button className="plan-entry-scratch" Icon={ MdAutoAwesome } onClick={ onBuildPlan } title={ planTitle }
+        variant="raised">Build my plan from scratch</Button>
       <p className="plan-entry-footnote">Answer a few guided questions instead. You can import tasks later.</p>
     </div>
   );
@@ -190,19 +191,19 @@ function NeedsAiEntry({ entry, onNavigate, onOpenSettings, plan }) {
       </div>
       <div className="plan-entry-choices">
         <div className="plan-entry-choice plan-entry-choice--recommended">
-          <p className="plan-entry-choice-badge">Recommended</p>
+          <Badge className="plan-entry-choice-badge" tone="action">Recommended</Badge>
           <h4 className="plan-entry-choice-title">Ample Agent Pro</h4>
           <p className="plan-entry-choice-copy">Hosted AI with nothing to configure. Works the moment you subscribe.</p>
           <p className="plan-entry-choice-price">{ entry.agentProPriceLabel }/month</p>
-          <button className="plan-entry-choice-button plan-entry-choice-button--primary"
-            onClick={ () => onNavigate(entry.agentProUrl) } type="button">Subscribe to Agent Pro</button>
+          <Button className="plan-entry-choice-button plan-entry-choice-button--primary"
+            onClick={ () => onNavigate(entry.agentProUrl) } variant="raised">Subscribe to Agent Pro</Button>
         </div>
         <div className="plan-entry-choice">
           <h4 className="plan-entry-choice-title">Use your own key</h4>
           <p className="plan-entry-choice-copy">Connect an API key from a supported LLM provider. Usage is billed by
             your provider.</p>
           <p className="plan-entry-choice-price">Pay as you go</p>
-          <button className="plan-entry-choice-button" onClick={ onOpenSettings } type="button">Add LLM key</button>
+          <Button className="plan-entry-choice-button" onClick={ onOpenSettings } variant="outlined">Add LLM key</Button>
         </div>
       </div>
     </div>
@@ -227,11 +228,10 @@ function PlanEntryVideo({ embedUrl, thumbnailUrl }) {
           allowFullScreen className="plan-entry-video-frame" src={ autoplayUrl }
           title="How quarterly planning works in Amplenote" />
       ) : (
-        <button aria-label="Play: How quarterly planning works in Amplenote" className="plan-entry-video-play"
-          onClick={ () => setPlaying(true) } style={ thumbnailUrl ? { backgroundImage: `url(${ thumbnailUrl })` } : null }
-          type="button">
-          <span aria-hidden="true" className="plan-entry-video-play-icon">▶</span>
-        </button>
+        <PlainButton aria-label="Play: How quarterly planning works in Amplenote" className="plan-entry-video-play"
+          onClick={ () => setPlaying(true) } style={ thumbnailUrl ? { backgroundImage: `url(${ thumbnailUrl })` } : null }>
+          <span aria-hidden="true" className="plan-entry-video-play-icon"><MdPlayArrow size={ 32 } /></span>
+        </PlainButton>
       ) }
       <p className="plan-entry-video-caption"><span>Watch</span> How quarterly planning works in Amplenote</p>
     </div>
@@ -250,7 +250,7 @@ function ReadyPlanEntry({ entry, onBuildPlan, plan }) {
       { startsPhrase ? <p className="plan-entry-starts">{ startsPhrase }</p> : null }
       <div className="plan-entry-heading-row">
         <h3 className="plan-entry-title">{ readyHeadline(plan) }</h3>
-        <button className="plan-entry-begin" onClick={ onBuildPlan } type="button">Begin Quarterly Plan</button>
+        <Button className="plan-entry-begin" dense onClick={ onBuildPlan } variant="raised">Begin Quarterly Plan</Button>
       </div>
       <p className="plan-entry-copy">You have { entry.applicableTaskCount } tasks to build from. The Plan Builder turns
         them into a handful of quarterly goals, then keeps your daily agenda pointed at them.</p>
@@ -266,7 +266,9 @@ function ReadyPlanEntry({ entry, onBuildPlan, plan }) {
           </li>
         )) }
       </ul>
-      <button className="plan-entry-build" onClick={ onBuildPlan } type="button">✦ Build my { plan.label } plan</button>
+      <Button className="plan-entry-build" Icon={ MdAutoAwesome } onClick={ onBuildPlan } variant="raised">
+        Build my { plan.label } plan
+      </Button>
       <p className="plan-entry-footnote">Uses your connected AI model</p>
     </div>
   );
@@ -302,7 +304,7 @@ export default function QuarterlyPlanEntry({ app, domainUuid, onBuildPlan, onOpe
 
   const openSettings = () => { if (onOpenSettings) onOpenSettings(() => setRefreshCount(count => count + 1)); };
   const navigate = url => { app.navigate(url); };
-  if (!entryState) return <p className="quarterly-plan-entry quarterly-plan-entry--loading">Checking your notes…</p>;
+  if (!entryState) return <LoadingState className="quarterly-plan-entry--loading">Checking your notes…</LoadingState>;
   if (entryState.kind === "needs-ai") {
     return <NeedsAiEntry entry={ entryState } onNavigate={ navigate } onOpenSettings={ openSettings } plan={ plan } />;
   }

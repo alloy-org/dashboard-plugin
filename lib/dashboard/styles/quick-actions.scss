@@ -11,37 +11,35 @@ $qa-transition-duration: 0.15s;
 /* [Claude] Task: quick-action 2x2 button grid with icon and label */
 /* Prompt: "styles for quick-action shortcut button grid" */
 /* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
+/* Rows of a host app menu: low-contrast icon, label, full-width hover fill reaching the card edges. */
 .widget-quick-actions {
   .qa-grid {
-    display: grid;
-    gap: $sp-sm;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-direction: column;
+    margin: 0 (-$sp-lg);
   }
 
   .qa-button {
     align-items: center;
-    background: $color-bg-page;
-    border: 1px solid $color-border;
-    border-radius: $radius-md;
-    cursor: pointer;
+    color: $color-text-high-contrast;
     display: flex;
-    flex-direction: column;
-    gap: $sp-sm;
-    padding: $sp-lg $sp-sm;
+    gap: $sp-lg;
+    min-height: 40px;
+    padding: 0 $sp-lg;
+    text-align: left;
     transition: background $qa-transition-duration;
 
     &:hover {
-      background: $color-bg-page-hover;
+      background: $color-background-element-low-contrast;
     }
 
     .qa-icon {
-      font-size: $large-heading-font-size;
+      color: $color-text-low-contrast;
+      flex-shrink: 0;
     }
 
     .qa-label {
-      color: $color-text;
-      font-size: $smaller-font-size;
-      font-weight: 500;
+      font-size: $default-font-size;
     }
   }
 }

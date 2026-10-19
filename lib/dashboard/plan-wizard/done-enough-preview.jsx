@@ -6,6 +6,7 @@
 // must not imply that something does.
 
 import { doneEnoughPreviewFromDraft } from "dashboard/plan-wizard/done-enough-fields";
+import { MdCheck } from "react-icons/md";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Render the read-back of the currently selected condition and release activities.
@@ -32,7 +33,7 @@ export default function DoneEnoughPreview({ draft }) {
           { signals.map(signal => (
             <li className={ `done-enough-signal done-enough-signal--${ signal.isCredited ? "credited" : "excluded" }` }
               key={ signal.text }>
-              { signal.isCredited ? <span aria-hidden="true" className="done-enough-signal-mark">✓</span> : null }
+              { signal.isCredited ? <MdCheck className="done-enough-signal-mark" size={ 14 } /> : null }
               { signal.text }
             </li>
           )) }

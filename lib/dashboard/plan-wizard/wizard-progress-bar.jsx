@@ -10,18 +10,16 @@
 // The panel closes when a step is chosen. Jumping is the only reason it opens, so leaving it open over the page
 // the user just asked for would cover the answer they came to give.
 
+import { PlainButton } from "dashboard/controls";
 import WizardProgressSidebar from "dashboard/plan-wizard/wizard-progress-sidebar";
 import { useEffect, useRef, useState } from "react";
+import { MdExpandMore } from "react-icons/md";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Draw the chevron that turns to point up while the step panel is open.
-// @returns {JSX.Element} An inline chevron icon.
+// @returns {JSX.Element} The expand_more Material icon.
 function DisclosureChevronIcon() {
-  return (
-    <svg aria-hidden="true" className="progress-bar-chevron" viewBox="0 0 24 24">
-      <path d="M6 9.5l6 6 6-6" />
-    </svg>
-  );
+  return <MdExpandMore className="progress-bar-chevron" />;
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -57,8 +55,8 @@ export default function WizardProgressBar({ isOpeningPlanNote, onOpenPlanNote, o
 
   return (
     <div className={ `plan-wizard-progress-bar${ isPanelOpen ? " plan-wizard-progress-bar--open" : "" }` }>
-      <button aria-controls={ panelIdRef.current } aria-expanded={ isPanelOpen } className="progress-bar-summary"
-        onClick={ () => setIsPanelOpen(previous => !previous) } type="button">
+      <PlainButton aria-controls={ panelIdRef.current } aria-expanded={ isPanelOpen }
+        className="progress-bar-summary" onClick={ () => setIsPanelOpen(previous => !previous) }>
         <span aria-hidden="true" className="progress-bar-track">
           { progressRows.map(row => (
             <span className={ `progress-bar-dot${ row.isCurrent ? " progress-bar-dot--current" : "" }` }
@@ -69,7 +67,7 @@ export default function WizardProgressBar({ isOpeningPlanNote, onOpenPlanNote, o
         <span className="progress-bar-step-title">{ stepTitle }</span>
         <span className="progress-bar-disclosure">{ isPanelOpen ? "Done" : "All steps" }</span>
         <DisclosureChevronIcon />
-      </button>
+      </PlainButton>
       { isPanelOpen ? (
         <div className="progress-bar-panel" id={ panelIdRef.current }>
           <WizardProgressSidebar { ...{ isOpeningPlanNote, progressRows, quarterLabel } }

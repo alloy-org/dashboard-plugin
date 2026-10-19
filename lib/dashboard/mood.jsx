@@ -7,7 +7,10 @@
 import { useThemeRevision } from "hooks/use-theme-revision";
 import { useEffect, useRef, useState } from "react";
 import ConfigPopup from "config-popup";
+import { Button, PlainButton, RadioGroup, TextField } from "dashboard/controls";
 import { useCanvasTippy } from "dashboard/dashboard-tooltip-tippy";
+import { RICH_TOOLTIP_OPTIONS, richTooltipHtml } from "dashboard/tooltip-themes";
+import { MdSettings } from "react-icons/md";
 import WidgetWrapper from "widget-wrapper";
 import { parseWidgetConfig, widgetConfigKey } from "constants/settings";
 import { pluginSettings } from "plugin-data";
@@ -55,10 +58,11 @@ const WAVE_PADDING_BOTTOM   = 44;
 const WAVE_AXIS_LABEL_X_GAP = 5;
 const WAVE_BEZIER_FRACTION  = 1 / 3;
 const WAVE_ANIM_SCALE       = 1.3;
+// The wave's fill fades from the best mood at the top to the worst at the bottom: [stop, mood rating, hex alpha]
 const WAVE_FILL_GRADIENT    = [
-  [0,   '#27AE6050'],
-  [0.5, '#F2C94C20'],
-  [1,   '#E8453C08'],
+  [0,   2,  '50'],
+  [0.5, 0,  '20'],
+  [1,   -2, '08'],
 ];
 const WAVE_LINE_WIDTH        = 2;
 const WAVE_DOT_OUTER_RADIUS  = 3.5;
@@ -88,6 +92,9 @@ const RING_ANIM_DURATION_MS  = 1200;
 const WAVE_ANIM_DURATION_MS  = 1000;
 const ANIM_EASE_EXPONENT     = 3;
 
+// The visualization's display styles, chosen in its configure popup
+const VISUALIZATION_MODE_OPTIONS = [ { label: "Ring", value: "ring" }, { label: "Wave", value: "wave" } ];
+
 const MOODS = [
   { value: -2, emoji: '😵‍💫', label: 'Awful' },
   { value: -1, emoji: '🫤', label: 'Bad' },
@@ -96,48 +103,51 @@ const MOODS = [
   { value: 2, emoji: '🤩', label: 'Great' },
 ];
 
-const VISUALIZATION_MOOD_COLORS = {
-  '-2': '#E8453C',
-  '-1': '#F2994A',
-  '0': '#F2C94C',
-  '1': '#6FCF97',
-  '2': '#27AE60',
+// The host's mood rating scale by rating, as data color custom properties from data-colors.scss, so a mood has the
+// same color here as in Victory Value and the host's Task Stats. The canvas needs real colors, so
+// visualizationMoodColor reads them when drawing, which follows theme changes.
+const VISUALIZATION_MOOD_COLOR_PROPERTIES = {
+  '-2': '--dashboard-color-mood-rating-ugh',
+  '-1': '--dashboard-color-mood-rating-meh',
+  '0': '--dashboard-color-mood-rating-ok',
+  '1': '--dashboard-color-mood-rating-good',
+  '2': '--dashboard-color-mood-rating-fantastic',
 };
+const VISUALIZATION_MOOD_FALLBACK_PROPERTY = '--dashboard-color-text-lower-contrast';
 
 const VISUALIZATION_MOOD_EMOJIS = Object.fromEntries(
   MOODS.map((mood) => [mood.value, mood.emoji])
 );
 
+// ----------------------------------------------------------------------------------------------
+// @desc The canvas color for a mood rating, read from its data color custom property.
+// @param {number} vizValue - Mood rating from -2 to 2; averages are rounded.
+// @returns {string} The resolved color.
 function visualizationMoodColor(vizValue) {
-  return VISUALIZATION_MOOD_COLORS[Math.round(vizValue)] || '#ccc';
+  const property = VISUALIZATION_MOOD_COLOR_PROPERTIES[Math.round(vizValue)] || VISUALIZATION_MOOD_FALLBACK_PROPERTY;
+  return getComputedStyle(document.documentElement).getPropertyValue(property).trim();
 }
 
 function visualizationMoodEmoji(vizValue) {
-  return VISUALIZATION_MOOD_EMOJIS[Math.round(vizValue)] || '❓';
+  return VISUALIZATION_MOOD_EMOJIS[Math.round(vizValue)] || '';
 }
 
-function pluginMoodLabel(pluginValue) {
-  const mood = MOODS.find(m => m.value === pluginValue);
-  return mood ? mood.label : '';
-}
-
+// ----------------------------------------------------------------------------------------------
+// @desc Rich tooltip for a hovered day: the date as title, then one row per mood entry with its time on the right
+//   and any note as a muted line.
+// @param {Object} data - { entries, fullDate }.
+// @returns {string} Tooltip HTML.
 function buildMoodTooltipHTML(data) {
   if (!data) return '';
   const { fullDate, entries } = data;
-  const parts = [`<div class="mood-viz-tooltip-date">${fullDate}</div>`];
-  for (const entry of entries) {
-    const emoji = MOODS.find(m => m.value === entry.rating)?.emoji || '❓';
-    const label = pluginMoodLabel(entry.rating);
-    let html = `<div class="mood-viz-tooltip-entry">` +
-      `<span class="mood-viz-tooltip-time">${entry.time}</span>` +
-      `<span class="mood-viz-tooltip-mood">${emoji} <span class="mood-viz-label">${label} (${entry.rating > 0 ? `+${entry.rating}` : entry.rating})</span></span>`;
-    if (entry.notes) {
-      html += `<div class="mood-viz-tooltip-note">${entry.notes}</div>`;
-    }
-    html += '</div>';
-    parts.push(html);
-  }
-  return parts.join('');
+  const rows = entries.map(entry => {
+    // Averaged days carry fractional ratings, so show the nearest mood
+    const mood = MOODS.reduce((nearest, candidate) => (Math.abs(candidate.value - entry.rating)
+      < Math.abs(nearest.value - entry.rating) ? candidate : nearest));
+    const rating = entry.rating > 0 ? `+${ entry.rating }` : entry.rating;
+    return { secondaryText: entry.notes, text: `${ mood.emoji } ${ mood.label } (${ rating })`, trailing: entry.time };
+  });
+  return richTooltipHtml({ rows, title: fullDate });
 }
 
 function handleMoodClick(mood, submitting, submitted, setSelectedMood) {
@@ -187,11 +197,11 @@ function readThemeColors() {
   const style = getComputedStyle(document.documentElement);
   const get = (v) => style.getPropertyValue(v).trim();
   return {
-    bgCard:        get('--dashboard-color-bg-card'),
-    bgPage:        get('--dashboard-color-bg-page'),
-    border:        get('--dashboard-color-border'),
-    textSecondary: get('--dashboard-color-text-secondary'),
-    textMuted:     get('--dashboard-color-text-muted'),
+    bgCard:        get('--dashboard-color-background-primary'),
+    bgPage:        get('--dashboard-color-background-secondary'),
+    border:        get('--dashboard-color-border-primary'),
+    textSecondary: get('--dashboard-color-text-medium-contrast'),
+    textMuted:     get('--dashboard-color-text-low-contrast'),
   };
 }
 
@@ -212,7 +222,7 @@ function RadialRing({ moodData }) {
   const canvasRef = useRef(null);
   const geometryRef = useRef(null);
   const [progress, setProgress] = useState(0);
-  const tip = useCanvasTippy();
+  const tip = useCanvasTippy(RICH_TOOLTIP_OPTIONS);
   const moodDataJson = JSON.stringify(moodData);
 
   useEffect(() => {
@@ -402,7 +412,7 @@ function WaveGraph({ moodData }) {
   const canvasRef = useRef(null);
   const pointsRef = useRef([]);
   const [progress, setProgress] = useState(0);
-  const tip = useCanvasTippy();
+  const tip = useCanvasTippy(RICH_TOOLTIP_OPTIONS);
   const moodDataJson = JSON.stringify(moodData);
 
   useEffect(() => {
@@ -505,8 +515,8 @@ function WaveGraph({ moodData }) {
 
     if (animatedPoints.length >= 2) {
       const fillGradient = ctx.createLinearGradient(0, paddingTop, 0, graphBottom);
-      for (const [stop, color] of WAVE_FILL_GRADIENT) {
-        fillGradient.addColorStop(stop, color);
+      for (const [stop, rating, hexAlpha] of WAVE_FILL_GRADIENT) {
+        fillGradient.addColorStop(stop, colorWithAlpha(visualizationMoodColor(rating), hexAlpha));
       }
       drawSmoothCurve(animatedPoints, true);
       ctx.fillStyle = fillGradient;
@@ -701,7 +711,9 @@ function Sparkline({ moodRatings, averageMood, visualizationMode, visualizationK
   return (
     <div className="mood-viz-section">
       <div className="mood-viz-canvas-wrap">{visualization}</div>
-      <button className="mood-viz-configure-link" onClick={onConfigure}>⚙ Configure</button>
+      <Button className="mood-viz-configure-link" dense Icon={ MdSettings } onClick={ onConfigure }>
+        Configure
+      </Button>
     </div>
   );
 }
@@ -772,21 +784,8 @@ export default function MoodWidget({ app, moodRatings, onMoodRecorded }) {
       onCancel={handleConfigureCancel}
       submitLabel="Apply"
     >
-      <div className="config-field">
-        <div className="config-field-label">Display style</div>
-        {[['ring', 'Ring'], ['wave', 'Wave']].map(([value, label]) => (
-          <label key={value} className="mood-viz-config-option">
-            <input
-              type="radio"
-              name="mood-viz-mode"
-              value={value}
-              checked={pendingVisualizationMode === value}
-              onChange={() => setPendingVisualizationMode(value)}
-            />
-            {label}
-          </label>
-        ))}
-      </div>
+      <RadioGroup label="Display style" onChange={ setPendingVisualizationMode } options={ VISUALIZATION_MODE_OPTIONS }
+        value={ pendingVisualizationMode } />
     </ConfigPopup>
   ) : null;
 
@@ -808,41 +807,29 @@ export default function MoodWidget({ app, moodRatings, onMoodRecorded }) {
       {configurationPopup}
       <div className="mood-selector">
         {MOODS.map(mood => (
-          <button
-            key={mood.value}
-            className={'mood-btn' + (selectedMood?.value === mood.value ? ' mood-btn--selected' : '')}
-            title={mood.label}
-            onClick={() => handleMoodClick(mood, submitting, submitted, setSelectedMood)}
-          >
+          <PlainButton
+            className={ 'mood-btn' + (selectedMood?.value === mood.value ? ' mood-btn--selected' : '') }
+            key={ mood.value } onClick={ () => handleMoodClick(mood, submitting, submitted, setSelectedMood) }
+            title={ mood.label }>
             <span className="mood-emoji">{mood.emoji}</span>
-          </button>
+          </PlainButton>
         ))}
       </div>
       {selectedMood !== null && (
-        <div className="mood-details">
-          <label className="mood-details-label">More details (optional)</label>
-          <textarea
-            className="mood-details-textarea"
-            value={notes}
-            onChange={event => setNotes(event.target.value)}
-            onKeyDown={event => handleTextareaKeyDown(app, event, selectedMood, notes, setSubmitting, setSubmitted, onMoodRecorded)}
-            placeholder="What's on your mind?"
-            rows={MOOD_TEXTAREA_ROWS}
-          />
-        </div>
+        <TextField className="mood-details" label="More details (optional)" multiline onChange={ setNotes }
+          onKeyDown={ event => handleTextareaKeyDown(app, event, selectedMood, notes, setSubmitting,
+            setSubmitted, onMoodRecorded) }
+          placeholder="What's on your mind?" rows={ MOOD_TEXTAREA_ROWS } value={ notes } />
       )}
       {selectedMood !== null && (
         <div className="mood-submit-row">
-          <button
-            className="mood-cancel-btn"
-            onClick={handleCancelMood}
-            disabled={submitting}
-          >Cancel</button>
-          <button
-            className="mood-submit-btn"
-            onClick={() => handleSubmit(app, selectedMood, notes, setSubmitting, setSubmitted, onMoodRecorded)}
-            disabled={submitting}
-          >{submitting ? 'Recording...' : 'Submit'}</button>
+          <Button className="mood-cancel-btn" disabled={ submitting } onClick={ handleCancelMood }>
+            Cancel
+          </Button>
+          <Button className="mood-submit-btn" disabled={ submitting }
+            onClick={ () => handleSubmit(app, selectedMood, notes, setSubmitting, setSubmitted,
+              onMoodRecorded) }
+            variant="raised">{submitting ? 'Recording...' : 'Submit'}</Button>
         </div>
       )}
       {selectedMood === null && sparkline}

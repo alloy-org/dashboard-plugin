@@ -1,8 +1,10 @@
 // [Claude claude-opus-4-8-authored file]
 // Prompt summary: "new dashboard widget showing which notes have been recently updated by
 // collaborators, with a checkbox to limit results to notes that have tasks"
+import { CheckboxField, EmptyState, IconButton, LoadingState, PlainButton, Select } from "dashboard/controls";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { useCallback, useEffect, useState } from "react";
+import { MdChevronLeft, MdChevronRight, MdPushPin } from "react-icons/md";
 import { loadPinnedNoteUuids, storePinnedNoteUuids } from "shared-notes-archive";
 import { avatarTextFromName, findCollaboratorUpdatedNotes,
   lastUpdatedLabelFromMs, orderNotesPinnedFirst } from "shared-notes-service";
@@ -115,20 +117,15 @@ function paginateSharedNotes({ notes, page, pageSize, pinnedUuids, selectedShare
 
 // ----------------------------------------------------------------------------------------------
 // @desc The "Has tasks" checkbox toggling the "taskLists" filterNotes group.
-// @param {Object} props - { inHeader, onChange, onlyWithTasks }. `inHeader` applies header-action
-//   spacing (for the widget header) instead of the inline filter-row layout.
+// @param {Object} props - { inHeader, onChange, onlyWithTasks }. `inHeader` applies the header layout
+//   (for the widget header) instead of the inline filter-row layout.
 // @returns {JSX.Element} The checkbox label.
 // [Claude claude-opus-4-8] Task: render the has-tasks toggle in either the header or the filter row
 // Prompt: "When we show the user filter, show the 'Has tasks' checkbox on the right side of the same line"
 function TasksToggle({ inHeader, onChange, onlyWithTasks }) {
   return (
-    <label
-      className={`shared-notes-toggle${ inHeader ? " widget-header-action" : "" }`}
-      title="Only show shared notes that have tasks"
-    >
-      <input type="checkbox" checked={onlyWithTasks} onChange={event => onChange(event.target.checked)} />
-      Has tasks
-    </label>
+    <CheckboxField checked={ onlyWithTasks } className={ `shared-notes-toggle${ inHeader ? " shared-notes-toggle--header" : "" }` }
+      compact label="Has tasks" onChange={ onChange } title="Only show shared notes that have tasks" />
   );
 }
 
@@ -144,14 +141,11 @@ function TasksToggle({ inHeader, onChange, onlyWithTasks }) {
 function SharerFilter({ onSelectSharer, selectedSharer, sharerNames, tasksToggle }) {
   return (
     <div className="shared-notes-filter">
-      <select
-        className="shared-notes-sharer-select"
-        value={selectedSharer}
-        onChange={event => onSelectSharer(event.target.value)}
-      >
+      <Select className="shared-notes-sharer-select" hideLabel label="Collaborator" onChange={ onSelectSharer }
+        value={ selectedSharer }>
         <option value={ALL_SHARERS}>All collaborators</option>
         { sharerNames.map(name => (<option key={name} value={name}>{name}</option>)) }
-      </select>
+      </Select>
       {tasksToggle(false)}
     </div>
   );
@@ -168,19 +162,11 @@ function SharedNotesPagination({ currentPage, onPageChange, totalPages }) {
   if (totalPages <= 1) return null;
   return (
     <div className="shared-notes-pagination">
-      <button
-        className="shared-notes-page-arrow"
-        type="button"
-        onClick={() => onPageChange(p => Math.max(0, p - 1))}
-        disabled={currentPage === 0}
-      >{'◀'}</button>
+      <IconButton className="shared-notes-page-arrow" disabled={ currentPage === 0 } Icon={ MdChevronLeft }
+        label="Previous page" onClick={ () => onPageChange(p => Math.max(0, p - 1)) } size="small" />
       <span className="shared-notes-page-indicator">{`${ currentPage + 1 } / ${ totalPages }`}</span>
-      <button
-        className="shared-notes-page-arrow"
-        type="button"
-        onClick={() => onPageChange(p => Math.min(totalPages - 1, p + 1))}
-        disabled={currentPage >= totalPages - 1}
-      >{'▶'}</button>
+      <IconButton className="shared-notes-page-arrow" disabled={ currentPage >= totalPages - 1 } Icon={ MdChevronRight }
+        label="Next page" onClick={ () => onPageChange(p => Math.min(totalPages - 1, p + 1)) } size="small" />
     </div>
   );
 }
@@ -199,16 +185,11 @@ function SharedNoteRow({ isPinned, note, nowMs, onNavigate, onTogglePin }) {
   const { activeMs, collaborators, name, openedAt, updatedMs, uuid } = note;
   return (
     <li className="shared-note-item">
-      <button
-        className={`shared-note-pin${ isPinned ? " shared-note-pin-active" : "" }`}
-        type="button"
-        onClick={() => onTogglePin(uuid)}
-        title={isPinned ? "Unpin this note" : "Pin this note to the top"}
-        aria-pressed={isPinned}
-      >📌</button>
-      <button
+      <IconButton className={`shared-note-pin${ isPinned ? " shared-note-pin-active" : "" }`} Icon={ MdPushPin }
+        label={ isPinned ? "Unpin this note" : "Pin this note to the top" } onClick={ () => onTogglePin(uuid) }
+        pressed={ isPinned } size="small" />
+      <PlainButton
         className="shared-note-link"
-        type="button"
         onClick={() => onNavigate(uuid)}
         title={`Open "${ name || "Untitled" }"`}
       >
@@ -237,7 +218,7 @@ function SharedNoteRow({ isPinned, note, nowMs, onNavigate, onTogglePin }) {
             title={ `You last opened this note ${ openedAt }` }
           >You last opened {lastUpdatedLabelFromMs(activeMs, nowMs) || "—"}</span>
         </div>
-      </button>
+      </PlainButton>
     </li>
   );
 }
@@ -253,10 +234,10 @@ function SharedNoteRow({ isPinned, note, nowMs, onNavigate, onTogglePin }) {
 function SharedNotesBody({ currentPage, onNavigate, onPageChange, onTogglePin, pinnedUuids, sharerFilter,
     totalPages, visibleNotes }) {
   if (visibleNotes === null) {
-    return (<>{sharerFilter}<p className="note-loading">Loading…</p></>);
+    return (<>{sharerFilter}<LoadingState className="note-loading">Loading…</LoadingState></>);
   }
   if (visibleNotes.length === 0) {
-    return (<>{sharerFilter}<p className="note-empty">No notes recently updated by collaborators.</p></>);
+    return (<>{sharerFilter}<EmptyState className="note-empty" title="No notes recently updated by collaborators." /></>);
   }
   const nowMs = Date.now();
   return (

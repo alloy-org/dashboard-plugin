@@ -4,6 +4,7 @@
  */
 
 @use 'theme-tokens' as *;
+@use 'controls' as *;
 
 /* [Claude claude-opus-4-8] Task: lay out a scrollable list of collaborator-updated shared notes */
 /* Prompt: "show which notes have been recently updated by collaborators" */
@@ -14,13 +15,10 @@
     overflow: hidden;
   }
 
-  /* Checkbox toggle in the header reuses widget-header-action spacing but lays out inline. */
-  .shared-notes-toggle {
-    align-items: center;
-    cursor: pointer;
-    display: inline-flex;
-    font-size: $smaller-font-size;
-    gap: $sp-xs;
+  /* Checkbox toggle, laid out inline either in the header or on the filter row. */
+  .shared-notes-toggle--header {
+    color: $color-text-medium-contrast;
+    white-space: nowrap;
   }
 
   /* [Claude claude-opus-4-8] First-line person filter: select on the left, has-tasks toggle right. */
@@ -40,13 +38,7 @@
   }
 
   .shared-notes-sharer-select {
-    background-color: $color-bg-page;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    color: $color-text;
-    font-size: $smaller-font-size;
     min-width: 0;
-    padding: 2px $sp-xs;
   }
 
   .shared-note-list {
@@ -70,22 +62,8 @@
     padding: $sp-xs 0 0;
   }
 
-  .shared-notes-page-arrow {
-    background: none;
-    border: none;
-    color: $color-text-secondary;
-    cursor: pointer;
-    font-size: $smaller-font-size;
-    padding: 0 $sp-xs;
-
-    &:disabled {
-      cursor: default;
-      opacity: 0.35;
-    }
-  }
-
   .shared-notes-page-indicator {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: $smaller-font-size;
   }
 
@@ -94,39 +72,25 @@
     display: flex;
 
     &:hover {
-      background-color: $color-bg-page;
+      background-color: $color-background-secondary;
     }
   }
 
   /* [Claude claude-opus-4-8 (1M context)] Pin toggle at the left of each row; muted until pinned. */
   /* Prompt: "Add a pin icon to the left side of each note row... click the pin to persist that note" */
+  /* Unpinned pins sit in the lowest-contrast ink until hovered; a pinned note's pin takes the action color. */
   .shared-note-pin {
-    background: none;
-    border: none;
-    cursor: pointer;
-    filter: grayscale(1);
-    flex-shrink: 0;
-    font-size: $default-font-size;
-    line-height: 1;
-    opacity: 0.4;
-    padding: $sp-sm 0 $sp-sm $sp-md;
-
-    &:hover {
-      opacity: 0.75;
-    }
+    align-self: center;
+    color: $color-text-lower-contrast;
+    margin-left: $sp-xs;
 
     &.shared-note-pin-active {
-      filter: none;
-      opacity: 1;
+      color: $color-background-action-high-contrast;
     }
   }
 
   .shared-note-link {
-    background: none;
-    border: none;
     border-radius: $radius-sm;
-    color: inherit;
-    cursor: pointer;
     display: flex;
     flex: 1;
     flex-direction: column;
@@ -138,7 +102,7 @@
 
   /* Title abbreviated to a single line when it would otherwise consume more than one. */
   .shared-note-title {
-    color: $color-text;
+    color: $color-text-high-contrast;
     font-size: $smaller-font-size;
     font-weight: 500;
     overflow: hidden;
@@ -148,7 +112,7 @@
 
   .shared-note-meta {
     align-items: center;
-    color: $color-text;
+    color: $color-text-high-contrast;
     display: flex;
     font-size: $smaller-font-size;
     gap: $sp-sm;
@@ -164,13 +128,13 @@
 
     .collaborator-avatar {
       align-items: center;
-      background-color: $color-bg-page;
-      border: 1px solid $color-bg-card;
+      background-color: $color-background-secondary;
+      border: 1px solid $color-background-primary;
       border-radius: 50%;
       box-sizing: border-box;
       display: inline-flex;
       font-size: $smaller-font-size;
-      font-weight: 600;
+      font-weight: 500;
       height: 1.25rem;
       justify-content: center;
       line-height: 1;
@@ -185,7 +149,7 @@
     }
 
     .collaborator-avatar-text {
-      color: $color-text-secondary;
+      color: $color-text-medium-contrast;
     }
   }
 
@@ -201,7 +165,7 @@
   /* [Claude claude-opus-4-8 (1M context)] Task: move the datestamps onto a line below the sharer names */
   /* Prompt: "cleaner to list the dates on a line below the list of sharer names" */
   .shared-note-dates {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     display: flex;
     flex-wrap: wrap;
     font-size: $smaller-font-size;
@@ -211,20 +175,7 @@
 
   /* Middot separator between the two stamps when they share a line. */
   .shared-note-updated::before {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     content: "·";
-  }
-
-  .note-loading,
-  .note-empty,
-  .note-error {
-    color: $color-text-secondary;
-    font-size: $default-font-size;
-    padding: $sp-md 0;
-    text-align: center;
-  }
-
-  .note-error {
-    color: $color-danger;
   }
 }

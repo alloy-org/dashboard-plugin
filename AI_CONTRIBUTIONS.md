@@ -5,6 +5,230 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-19 — Open the Plan Builder in development without an API key
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/util/dev-sample-provider.js` (created) — Returns a sample AI provider installed on `globalThis`, only when `NODE_ENV` is "development"; production builds drop it (checked: no trace in `build/compiled.js`).
+- `lib/plan-wizard/wizard-prompt-runner.js`, `lib/hooks/use-llm-provider-access.js` — Use the sample provider when one is installed: prompts are answered by it, and the missing-provider gate lets the Plan Builder open.
+- `dev/styleguide/sample-plan-provider.js`, `sample-plan-app.js`, `styleguide-plan-builder.jsx` (created), `styleguide-app.jsx`, `styleguide.scss` — A "Plan Builder" style guide section that opens the real Plan Builder with sample intents, themes, and projects on an in-memory app, or with no provider to show the gate.
+- `dev/dev-server.js` — The style guide bundle defines the dev LLM tokens and Sentry DSN as empty, so no key reaches it.
+- `doc/design-system.md` — How to open it.
+
+**Validation:** Jest: 1392 passed, 1 failed (`test/dream-task-actions.test.js`, failing before these changes). In the dev server, the Plan Builder opened, showed sample suggestions on step 1, and proposed three projects on step 2; the no-provider button showed the gate.
+**Task:** Add a dev-only way to open the Plan Builder.
+**Prompt summary:** "Plan builder now. Add a dev only way to open it so I can check"
+
+---
+
+## 2026-10-14 — Design guardrails and the dev style guide
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `test/design-rules.test.js` (created) — Fails on emoji and Unicode glyphs as UI (content files listed with reasons), icon imports other than `react-icons/md`, font weights above 500, corner radii other than the radius tokens, and shadows other than the elevation tokens.
+- `lib/dashboard/styles/theme-tokens.scss` — `$radius-mark` (2px) and `$radius-pill` added; `$color-overlay-shadow` removed with its theme entries.
+- 19 component stylesheets — Weights above 500 lowered to 500; literal radii replaced by radius tokens (pills, popovers, data marks); the agenda popover and footnote popup shadows replaced by `$shadow-elevation-3`.
+- `lib/dashboard/icon-markup.js` (created), `lib/util/amplenote-markdown-render.js` — Footnote indicators draw Material icons (serialized from `react-icons/md`) instead of emoji.
+- `lib/dashboard/mood.jsx` — No question-mark glyph for a missing mood.
+- `dev/styleguide/` (created: `styleguide-app.jsx`, `styleguide-tokens.jsx`, `styleguide-controls.jsx`, `styleguide-showcase.jsx`, `styleguide.scss`), `dev/styleguide.html` (created), `dev/dev-server.js` — A `/styleguide` page with every color token (read live from the stylesheets), the type, spacing, corner, and shadow scales, every icon, control variant, state, settings control, both tooltip looks, both charts, widget frames, and a configure dialog; a theme bar switches Classic or Plum, light or dark. Built as its own watched bundle.
+- `dev/dev-theme-api.js`, `dev/themes/_theme-plum-light.scss`, `_theme-plum-dark.scss` (created) — The dev theme API serves Plum as well as Classic.
+- `doc/design-system.md`, `CLAUDE.md`, `README.md` — Guardrails table, radius tokens, and the style guide.
+- `build/compiled.js` — Rebuilt (804,692 bytes).
+
+**Validation:** Jest: 1392 passed, 1 failed (`test/dream-task-actions.test.js`, failing before these changes); each new rule was checked to fail on a planted violation. The style guide checked in Classic light and Plum dark, including chart hover, both tooltips, and the dialog. The footnote indicator icons were not checked in a browser.
+**Task:** Add guardrails for the design rules and a dev style guide page.
+**Prompt summary:** "What about guardrails such as style lint rules or prohibiting emojis? ... a /styleguide page on the dev server showing every token, control, icon, chart and dialog in light and dark, with a theme switcher"
+
+---
+
+## 2026-10-14 — Generic column chart
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/charts/column-chart.jsx` (created) — `ColumnChart`: measured plot box, grid, column centers, side-by-side series or stacked segments with top-rounded bars, thinned axis labels, hover highlight and hit areas, value pill, and Task Stats tooltip anchoring; widgets supply `columns`, `series`, `renderTooltip`, and optional definitions, overlay, and value pill.
+- `lib/dashboard/charts/peak-hours-chart.jsx` — Now a ColumnChart configuration (two series, hour label steps).
+- `lib/dashboard/charts/victory-value-chart.jsx` — Now a ColumnChart configuration (stacked project segments, victory value gradient, value pill, mood line overlay); its own layout, hover, and bar drawing removed.
+- `test/column-chart.test.js` (created) — Side-by-side series, stacked fills, thinned labels, hover pill and tooltip.
+- `doc/design-system.md` — Charts row points at ColumnChart.
+- `build/compiled.js` — Rebuilt (804,776 bytes).
+
+**Validation:** Jest: 1387 passed, 1 failed (`test/dream-task-actions.test.js`, failing before these changes); the existing Victory Value chart tests pass unchanged. Both charts and their hover tooltips checked in the dev server.
+**Task:** Generalize the Victory Value and Peak Hours charts into one configurable column chart.
+**Prompt summary:** "A generic <ColumnChart columns series renderTooltip> would turn the next chart into configuration rather than a copy."
+
+---
+
+## 2026-10-14 — Shared settings controls
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/controls/settings-fields.jsx` (created) — `ConfigSection` (overline title, description, hairline between sections), `ConfigField` (labeled group with hint), `RadioGroup` (fieldset and legend; two-line options with descriptions), `CheckboxField` (with description and compact variants). Values, not events, reach `onChange`.
+- `lib/dashboard/controls.js`, `styles/dashboard-controls.scss` — Export and style them; the option-row, field-label, and section rules moved here from four stylesheets.
+- `lib/dashboard/victory-value.jsx`, `mood.jsx`, `dashboard-settings-popup.jsx`, `llm-provider-selector.jsx` — Configure popups built from the settings controls instead of their own option rows and section markup.
+- `lib/dashboard/shared-notes.jsx`, `styles/shared-notes.scss` — "Has tasks" is a compact CheckboxField.
+- `lib/dashboard/config-popup.jsx`, `styles/config-popup.scss` — Widget popups render at the page level (portal), so other widget cards no longer cover them; the generic label, input, and field rules removed.
+- `lib/dashboard/styles/llm-provider-selector.scss` (deleted), `styles/dashboard-settings-popup.scss`, `styles/mood.scss` — Their option-row and section rules removed.
+- `lib/dashboard/planning.jsx` — Class on the quarter card's checkbox, so the guard can list it as an exception.
+- `test/controls.test.js`, `test/controls-usage.test.js` — Settings controls tested; raw checkboxes and radios now fail the guard outside two listed option cards.
+- `doc/design-system.md`, `CLAUDE.md` — Settings controls in the controls table and the UI rules.
+- `build/compiled.js` — Rebuilt (804,499 bytes).
+
+**Validation:** Jest: 1384 passed, 1 failed (`test/dream-task-actions.test.js`, failing before these changes). Dashboard Settings and Victory Value configure popups checked in the dev server, including choosing an option.
+**Task:** Share the configure popup's fields so every widget's settings look the same.
+**Prompt summary:** "Shared <ConfigField label> / <RadioGroup> / <CheckboxField> components would make every widget's settings look the same."
+
+---
+
+## 2026-10-14 — Data colors named in one place
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/styles/data-colors.scss` (created) — Every fixed data color as a named `--dashboard-color-*` property with light and dark values: agenda priorities, project categories, intents, the host's mood rating scale, pace slices, project windows, calendar task counts.
+- `lib/dashboard/styles/theme-light.scss`, `theme-dark.scss`, `theme.scss` — Data colors moved out; the theme files hold host colors and a few dashboard-only surface colors.
+- `lib/dashboard/styles/theme-tokens.scss` — Data color section regrouped; pace slice variables added.
+- `lib/dashboard/styles/plan-wizard.scss` — Pace ring uses the pace tokens instead of local hex variables.
+- `lib/dashboard/calendar.jsx` — Day dots use task-count tokens, with named thresholds.
+- `lib/dashboard/charts/victory-value-chart.jsx` — Mood line and dots use the mood rating tokens (through `style`, so SVG resolves them).
+- `lib/dashboard/mood.jsx` — Week ring and wave use the host's mood rating scale (the one Victory Value and Task Stats use) instead of their own red-to-green scale, read from the tokens when drawing; the wave fill is built from them.
+- `lib/dashboard/quotes.jsx`, `styles/quotes.scss` — The photo's dark overlay moved from an inline style into the stylesheet.
+- `test/design-tokens.test.js` — Knows data-colors.scss; pace colors no longer allowed in plan-wizard.scss; fails on color literals in scripts.
+- `doc/design-system.md`, `CLAUDE.md` — Where data colors live and how scripts use them.
+- `build/compiled.js` — Rebuilt (804,447 bytes).
+
+**Validation:** Jest: 1383 passed, 1 failed (`test/dream-task-actions.test.js`, failing before these changes); the script color guard was checked to fail on a planted hex literal. Calendar dots, mood ring, Victory Value mood line, agenda priorities, and quote overlays checked in the dev server.
+**Task:** Move widget-specific hard-coded data colors into named tokens in one place.
+**Prompt summary:** "They're intentional data colors, but they should live as named tokens in one place (for example a data-colors.scss section), not scattered through files."
+
+---
+
+## 2026-10-14 — Two tooltip looks: hint and rich
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/tooltip-themes.js` (created) — `HINT_TOOLTIP_THEME` / `RICH_TOOLTIP_THEME`, shared `RICH_TOOLTIP_OPTIONS`, and `richTooltipHtml`, which builds the Task Stats tooltip markup as HTML for element and canvas tooltips.
+- `lib/dashboard/dashboard-tooltip-tippy.jsx` — Hint by default; `rich` prop switches to the Task Stats look.
+- `lib/dashboard/charts/stats-chart-tooltip.jsx`, `proposed-agenda.jsx` — Use the theme constants.
+- `lib/dashboard/mood.jsx` — Mood day tooltip is a rich tooltip (date title, one row per entry, time on the right, note as a muted line); fractional averaged ratings show the nearest mood instead of a question-mark glyph.
+- `lib/dashboard/graveyard.jsx`, `styles/graveyard.scss` — Task preview is a rich tooltip (note title, rendered task, created date, tone-colored score); its own tooltip look rules removed.
+- `lib/dashboard/plan-wizard/project-focus-window.jsx`, `project-focus-window-fields.js` — Focus window summary is a rich tooltip with a "Why this project" group.
+- `lib/dashboard/styles/dashboard-tippy.scss` — Themes renamed `dashboard-hint` and `dashboard-rich`; the hint theme holds no content rules; rich theme gains secondary, section, and detail rows.
+- `test/controls-usage.test.js` — Fails on any tooltip theme other than hint, rich, and the host's footnote popup.
+- `doc/design-system.md`, `CLAUDE.md` — "Tooltips" section: which look applies when, and how to build each.
+- `build/compiled.js` — Rebuilt (804,099 bytes).
+
+**Validation:** Jest: 1382 passed, 1 failed (`test/dream-task-actions.test.js`, failing before these changes); the theme guard was checked to fail on a planted unknown theme. Task Retirement Center and mood tooltips checked in the dev server.
+**Task:** Decide when each tooltip look applies, document it, and use the Task Stats look for all rich content.
+**Prompt summary:** "Decide when each applies, write it down, and use the light Task Stats one for rich content everywhere."
+
+---
+
+## 2026-10-14 — Shared controls and full migration onto them
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/controls/` (created) — `Button` (text/outlined/raised/link, dense, href, submit, danger tone, leading and trailing icons), `IconButton` (required label, separate tooltip, pressed, sizes small to dialog, danger tone), `PlainButton`, `Spinner`, `EmptyState` (with compact variant) / `LoadingState` / `ErrorState` (alert role, extra actions), `Select` and `TextField` (labeled, dense, value-based onChange), `UnderlineTabs` (keyboard, deselectable), `Badge` (tones, keep-case), and `class-names.js`. All forward refs and pass attributes through.
+- `lib/dashboard/controls.js` (created) — Single import point, `"dashboard/controls"`.
+- `lib/dashboard/styles/dashboard-controls.scss` (created) — The only place control classes are styled, built from the `controls.scss` mixins; native checkbox/radio tint.
+- Every widget, the dashboard frame, all popups and dev tools, and the Plan Builder — Hand-made buttons, `href="#"` links, selects, text fields, spinners, empty/loading/error markup, tabs, and pills replaced with the shared controls; their look rules deleted from the widget stylesheets, layout rules kept; `.widget-header-action` and the hand-made spin keyframes removed. Wording and behavior unchanged.
+- `test/controls.test.js` (created) — Control behavior: button types, labels and tooltips, refs, variants, states, fields, tabs, badges.
+- `test/controls-usage.test.js` (created) — Fails on raw buttons, selects, text inputs, and textareas outside the controls (with a short, self-shrinking allowlist), `href="#"` links, spinner classes or spin keyframes, and widget stylesheets that style control classes.
+- `test/app.test.js`, `test/task-domains-mobile.test.js`, `test/plan-wizard-provider-gate.test.js`, `test/plan-wizard-ui.test.js`, `test/graveyard-widget.test.js` — Selectors follow the new markup.
+- `doc/design-system.md` (created) — Rules, tokens, icons, the controls table, and how to make a widget.
+- `CLAUDE.md`, `README.md` — Point all UI work at the design system and the guard tests.
+- `build/compiled.js` — Rebuilt (804,427 bytes).
+
+**Validation:** Jest: 1381 passed, 1 failed (`test/dream-task-actions.test.js`, failing before these changes); the usage guard was checked to fail on a planted raw button, text input, `href="#"`, spinner class, and control restyle. Light and dark mode, the Settings dialog, and narrow width checked in the dev server; the Plan Builder was not opened in a browser (it needs an AI key).
+**Task:** Build shared controls, migrate every widget, popup, and the Plan Builder onto them, and document the way so future widgets reuse them.
+**Prompt summary:** "OK, let's implement the plan and make sure future robots will know how to use this new way to create widgets with the right style and always reuse our components/css"
+
+---
+
+## 2026-10-14 — Host-named color tokens
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/styles/theme-light.scss`, `theme-dark.scss` — Rewritten from one list: every host color the dashboard uses under the host's own name (`--dashboard-color-text-low-contrast` from `--color-text-low-contrast`), with the host's Classic light/dark values as fallbacks; the victory value scale; fixed data colors. Legacy aliases, unused tokens, and all tooltip tokens removed.
+- `lib/dashboard/styles/theme-tokens.scss` — Color section grouped by role with host names (`$color-background-primary`, `$color-text-medium-contrast`, `$victory-value-color-2`, …); shared `$shadow-elevation-2/3/24`; `contrasting-color` documented as for fixed data colors only.
+- Every component stylesheet — Renamed to the host-named tokens; direct `var(--color-*)` reads replaced by tokens; duplicate MDC shadows replaced by the shared ones; Goal Coach badge tints, Task Retirement Center hover fill, and chart pill ink moved onto tokens; the Proposed Agenda popover's link-colored fills now use the action color with its button ink.
+- `lib/dashboard/styles/dashboard-tippy.scss`, `graveyard.scss` — The remaining dark tooltips take the light popup look of the chart tooltips (popup surface, elevation 3); the `$color-tooltip-*` tokens are gone.
+- `lib/dashboard/styles/widget.scss` — Uses the tokens module.
+- `lib/dashboard/projects/completed-task-project-colors.js`, `mood.jsx`, `util/browser-dev-app.js`, `test/victory-value-chart.test.js` — Renamed CSS variable references.
+- `test/design-tokens.test.js` (created) — Fails on removed token names, direct host variable reads, unknown `--dashboard-*` color names, and raw colors outside the theme files and a documented list of fixed colors.
+- `doc/plan-app-design-restyle.md` — Token table by role.
+- `build/compiled.js` — Rebuilt (806,857 bytes).
+
+**Validation:** Jest: 1367 passed, 1 failed (`test/dream-task-actions.test.js`, failing before these changes); the guard test was checked to fail on a planted legacy name, raw color, and host variable read. Tokens, card and header colors, and a former dark tooltip checked in the dev server.
+**Task:** Remove legacy color tokens and name the remaining ones after the host's variables.
+**Prompt summary:** "make the decision that makes color-tooltip-* disappear completely. And use option B for naming. Go"
+
+---
+
+## 2026-10-14 — Use react-icons for Material icons
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `package.json`, `package-lock.json` — Added `react-icons` 5.7.0 (MIT); its `md` set is Google's Material icons, the set the host app's icon font uses.
+- `lib/dashboard/icon-defaults.js` (created), `lib/dashboard/dashboard-load.jsx` — `IconContext` defaults for every icon: 18px, the `material-icon` class, `aria-hidden`.
+- `lib/dashboard/widget-icons.jsx` (created) — Icon per widget and layout profile, and a `WidgetIcon` component, kept out of the host-readable registry. The Layout icon is `web_asset` (`MdWebAsset`), the closest Google icon to the former community `application-edit-outline`.
+- `lib/dashboard/layout-profiles.js`, `lib/constants/settings.js`, `widget-wrapper.jsx`, `draggable-heading.jsx` — Removed the registry's emoji `icon` and `iconName` fields and their lookups; the header icon comes from `WIDGET_ICON_BY_ID`.
+- `lib/dashboard/charts/stats-chart-tooltip.jsx` (replaces `stats-chart-tooltip.js`) — Chart tooltips as React content (`StatsChartTooltipContent`, `StatsChartTooltipRow`, `useStatsChartTooltip`) instead of HTML strings with inlined SVG paths.
+- Every component that drew `MaterialIcon` (widgets, popups, Plan Builder) — Imports its icons from `react-icons/md`; lists that pick an icon per item hold the component.
+- Deleted `lib/dashboard/material-icon.jsx` and `lib/constants/material-icon-paths.js`.
+- `test/widget-wrapper-defaults.test.js`, `test/victory-value-chart.test.js`, `test/completed-task-project-colors.test.js` — Updated for the icon map and React tooltip content.
+- `doc/plan-app-design-restyle.md` — Icon usage.
+- `build/compiled.js` — Rebuilt (807,090 bytes).
+
+**Validation:** Jest: 1363 passed, 1 failed (`test/dream-task-actions.test.js`, failing before these changes). Header icons, icon defaults, and the Victory Value tooltip checked in the dev server with no console errors.
+**Task:** Replace the generated icon path file with an icon package.
+**Prompt summary:** "Use view-dashboard-edit if its in there, if not use web_asset. Otherwise, go and do the icon change please"
+
+---
+
+## 2026-10-14 — Task Stats style charts, settings dialogs, and Plan Builder restyle
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/charts/stats-chart.jsx` (created) — Shared SVG chart pieces following the host's Task Stats graph: grid lines and labels, x-axis labels, hovered-column highlight line, value pill, hit areas, nice maximum, and an element size hook.
+- `lib/dashboard/charts/stats-chart-tooltip.js` (created) — Task Stats style tooltip HTML (title row, stat rows with Material icons) and shared tooltip options.
+- `lib/dashboard/charts/victory-value-chart.jsx` (created) — Victory Value bars as SVG, filled with the host's victory value scale (project segments keep legend colors), with a faint mood line and hover details; replaces the canvas drawing in `victory-value.jsx`.
+- `lib/dashboard/charts/peak-hours-chart.jsx` (created) — Peak Hours created/completed hourly bars as SVG; replaces the canvas drawing and inline tooltip in `peak-hours.jsx`.
+- `lib/dashboard/victory-value.jsx`, `peak-hours.jsx`, `energy-per-habit.jsx` — Use the new charts and Task Stats style tooltips; Energy Delta rows highlight on hover and show their mood averages in a chart tooltip; bar and streak colors come from the host's victory value scale and error color.
+- `lib/dashboard/styles/stats-chart.scss` (created), `dashboard-tippy.scss`, `victory-value.scss`, `peak-hours.scss`, `energy-per-habit.scss`, `theme-light.scss`, `theme-dark.scss`, `theme-tokens.scss` — Chart and `dashboard-chart` tooltip styles (popup surface, elevation 3, no glow); tokens for the host's popup background, medium-contrast element fill, and `--victory-value-color-*` scale.
+- `lib/dashboard/layout-profiles.js`, `dashboard.jsx`, `lib/constants/material-icon-paths.js` — The Layout icon is now `application-edit-outline` from the community Material Design Icons (`mdi_` prefix, Apache 2.0); icon set regenerated, unused icons dropped.
+- `lib/dashboard/config-popup.jsx` and the settings, layout, memory measurement, and LLM provider popups with their stylesheets; `styles/controls.scss` — Host MDC dialog style: dark title bar with a close button, card surface, field, select, and underline-tab mixins, Material icons in place of emoji.
+- `lib/dashboard/plan-wizard/*.jsx`, `styles/plan-wizard.scss`, `styles/provider-key-gate.scss` — Plan Builder in the host dialog style: title bar, step progress bar, flat bordered cards, pill chips, shared buttons, Material icons in place of glyphs.
+- `test/victory-value-chart.test.js` (created), `test/app.test.js` — Chart rendering and hover coverage.
+- `doc/plan-app-design-restyle.md` — Shared building blocks, dialog rules, and the charts / settings / Plan Builder passes.
+- `build/compiled.js` — Rebuilt (807,096 bytes).
+
+**Validation:** Jest: 1363 passed, 1 failed (`test/dream-task-actions.test.js`, failing before these changes). Charts, Settings, and Layout checked in the dev server; the Plan Builder was not opened in a browser (it needs an AI key).
+**Task:** Restyle charts after the host's Task Stats page, the Layout icon, settings menus, and the Plan Builder.
+**Prompt summary:** "For the victory value widget we will reuse as much styling as possible from the task stats page ... restyle all settings menus too. restyle plan builder too."
+
+---
+
+## 2026-10-14 — Restyle the dashboard's default view to match the Amplenote app
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `doc/plan-app-design-restyle.md` (created) — The restyle plan: style only, host theme colors, Material icons instead of emoji, background image removed.
+- `lib/constants/material-icon-paths.js` (created) — SVG path data for the Material Icons the dashboard draws (Google Material Icons, Apache 2.0), since the embed cannot load the icon web font.
+- `lib/dashboard/material-icon.jsx` (created) — `MaterialIcon` component drawing one of those icons in the current text color.
+- `lib/dashboard/styles/controls.scss` (created) — Mixins for the host's MDC-style icon buttons, text / outlined / raised buttons, overline labels, and empty states.
+- `lib/dashboard/styles/theme-tokens.scss`, `theme-light.scss`, `theme-dark.scss` — 4px / 8px radii; widget headers on the card surface in medium-contrast text; new tokens for the host's lowest-contrast text, low-contrast element fill, and low-contrast action fill.
+- `lib/dashboard/styles/dashboard.scss`, `widget.scss`, `draggable-heading.jsx`, `widget-wrapper.jsx`, `layout-profiles.js`, `constants/settings.js` — Cards with a 1px border and no translucency; headers with a Material icon (new registry `iconName`), small uppercase title, and icon-button actions; the toolbar becomes a header bar with underline task-domain tabs and icon buttons.
+- `lib/dashboard/host-theme.js`, `test/host-theme.test.js` — Also re-reads the host theme, throttled, when the pointer re-enters the dashboard, so theme changes made elsewhere in the app apply on return.
+- `lib/dashboard/dashboard.jsx`, `dashboard-settings-popup.jsx`, `quick-actions.jsx`, `dashboard-init-service.js`, `constants/settings.js`, `styles/dashboard-settings-popup.scss`; deleted `lib/hooks/use-background-swap.js` and `lib/hooks/use-background-upload-fields.js` — Removed the background image, its two settings, the settings popup section, and the Swap Background quick action. Quote tiles keep their photos.
+- Widget components and stylesheets in the default layout (layout picker, planning and quarterly plan entry, victory value, goal coach and the no-config upsell, day sketcher, agenda, proposed agenda and its controls, quotes, task retirement center, revisit candidate, shared notes, note peek, mood, calendar, quick actions, peak hours, energy per habit, task domains, update indicator, copy link, note editor) — Emoji and symbol glyphs replaced by Material icons with unchanged wording; buttons, labels, tabs, and empty states moved onto the shared controls. The mood faces and emoji in users' own habit names are kept.
+- `test/app.test.js`, `test/graveyard-widget.test.js`, `test/planning-plan-begun.test.js`, `test/planning-quarter-pager.test.js`, `test/task-domains-mobile.test.js`, `test/widget-wrapper-defaults.test.js` — Updated for icon-only controls and labels without emoji; added coverage that every registered widget names an icon with path data and that no background swap is offered.
+- `build/compiled.js` — Rebuilt (792,014 → 802,979 bytes).
+
+**Validation:** Jest: 1360 passed, 1 failed (`test/dream-task-actions.test.js`, failing before this change). Checked in the dev server at desktop and phone widths, light and dark Classic, and with Plum dark host colors injected.
+**Task:** Restyle the default dashboard view in the host app's design language.
+**Prompt summary:** "Let's implement this redesign now in dashboard-plugin."
+
+---
+
 ## 2026-10-18 — Re-roll calendar suggestions from a second Suggest click
 
 **Model:** Claude Opus 5.5

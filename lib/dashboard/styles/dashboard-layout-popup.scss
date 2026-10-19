@@ -3,7 +3,10 @@
 /* Task: Styles for the dashboard layout popup with tabbed Components/Sizing interface */
 /* Prompt summary: "rename dashboard-config-popup to dashboard-layout-popup; add sizing tab styles" */
 
+@use 'controls' as *;
 @use 'theme-tokens' as *;
+
+$list-row-min-height: 48px;
 
 // Override base config-popup-container sizing for the larger dashboard layout popup.
 // On desktop/tablet: constrained to 800×800px. On mobile: fills available space minus margin.
@@ -19,35 +22,30 @@
   min-width: 0;
   width: 100%;
 
-  // ── Tab bar ─────────────────────────────────────────────────────────────────────────────
+  // ── Intro: explanation, default layout picker, and tab bar between the title bar and the scrolling body ──
 
-  .dashboard-layout-popup-tabs {
-    display: flex;
-    gap: $sp-xs;
-    margin-top: $sp-md;
+  .dashboard-layout-popup-intro {
+    border-bottom: 1px solid $color-border-primary;
+    flex-shrink: 0;
+    padding: $sp-lg $sp-xl 0;
+
+    .explanation-paragraph {
+      margin-bottom: $sp-md;
+    }
   }
 
-  .dashboard-layout-popup-tab {
-    background: none;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    color: $color-text-secondary;
-    cursor: pointer;
-    flex: 1;
-    font-size: $smaller-font-size;
-    padding: $sp-sm $sp-md;
-    transition: background 0.15s ease, color 0.15s ease;
+  // The Select wrapper: label beside the dropdown rather than above it.
+  .dashboard-layout-popup-profile-row {
+    align-items: center;
+    flex-direction: row;
+    gap: $sp-sm;
+  }
 
-    &:hover {
-      background: var(--dashboard-color-blue-light);
-    }
+  // ── Tab bar ─────────────────────────────────────────────────────────────────────────────
 
-    &.active {
-      background: $color-background-accent;
-      border-color: $color-background-accent;
-      color: $color-text-on-accent;
-      font-weight: 600;
-    }
+  // The UnderlineTabs list: its active rule overlaps the intro's bottom border.
+  .dashboard-layout-popup-tabs {
+    margin-bottom: -1px;
   }
 
   // Scrollable body area that fills remaining height inside the popup
@@ -57,7 +55,7 @@
     flex-direction: column;
     gap: $sp-lg;
     overflow-y: auto;
-    padding: $sp-lg;
+    padding: $sp-lg $sp-xl;
   }
 
   // ── Sections (rendered / hidden) ──────────────────────────────────────────────────────
@@ -70,53 +68,58 @@
   }
 
   .dashboard-layout-popup-section--drag-over {
-    background: var(--dashboard-color-blue-light);
-    border-color: $color-accent;
+    background: $color-background-action-low-contrast;
+    border-color: $color-background-action-high-contrast;
   }
 
   .dashboard-layout-popup-section-header {
     align-items: center;
-    border-bottom: 1px solid $color-border;
     display: flex;
     gap: $sp-sm;
     margin-bottom: $sp-sm;
-    padding-bottom: $sp-sm;
+    padding: $sp-xs 0;
   }
 
   .dashboard-layout-popup-section-icon {
+    color: $color-text-lower-contrast;
+    display: inline-flex;
     flex-shrink: 0;
-    font-size: $default-font-size;
-    line-height: 1;
   }
 
   .dashboard-layout-popup-section-title {
-    color: $color-text-secondary;
-    font-size: $smaller-font-size;
-    font-weight: 700;
-    letter-spacing: 0.05em;
+    @include overline-label;
     margin: 0;
-    text-transform: uppercase;
   }
 
   // ── Item list ─────────────────────────────────────────────────────────────────────────
 
   .dashboard-layout-popup-list {
+    border: 1px solid $color-border-primary;
+    border-radius: $radius-sm;
     display: flex;
     flex-direction: column;
-    gap: $sp-xs;
+    overflow: hidden;
   }
 
   .dashboard-layout-popup-item {
     align-items: center;
-    background: $color-bg-page;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
+    background: $color-background-primary;
+    border-bottom: 1px solid $color-border-primary;
     cursor: grab;
     display: flex;
-    gap: $sp-sm;
-    padding: $sp-sm $sp-md;
+    gap: $sp-md;
+    min-height: $list-row-min-height;
+    padding: $sp-xs $sp-sm $sp-xs $sp-xs;
     transition: opacity 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
     user-select: none;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: $color-background-element-low-contrast;
+    }
 
     &:active {
       cursor: grabbing;
@@ -128,16 +131,14 @@
   }
 
   .dashboard-layout-popup-item--drag-over {
-    background: $color-bg-card;
-    box-shadow: 0 -2px 0 $color-accent;
+    box-shadow: inset 0 2px 0 $color-background-action-high-contrast;
   }
 
   .dashboard-layout-popup-item-handle {
-    color: $color-text-muted;
+    color: $color-text-lower-contrast;
     cursor: grab;
+    display: inline-flex;
     flex-shrink: 0;
-    font-size: $large-font-size;
-    line-height: 1;
 
     &:active {
       cursor: grabbing;
@@ -145,9 +146,9 @@
   }
 
   .dashboard-layout-popup-item-icon {
+    color: $color-text-low-contrast;
+    display: inline-flex;
     flex-shrink: 0;
-    font-size: $large-font-size;
-    line-height: 1;
   }
 
   .dashboard-layout-popup-item-info {
@@ -160,8 +161,8 @@
   }
 
   .dashboard-layout-popup-item-name {
-    color: $color-text;
-    font-size: $default-font-size;
+    color: $color-text-high-contrast;
+    font-size: 14px;
     font-weight: 500;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -169,8 +170,8 @@
   }
 
   .dashboard-layout-popup-item-description {
-    color: $color-text-secondary;
-    font-size: $smaller-font-size;
+    color: $color-text-low-contrast;
+    font-size: 12px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -184,61 +185,42 @@
     gap: 2px;
   }
 
-  .dashboard-layout-popup-arrow-button {
-    background: none;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    color: $color-text-secondary;
-    cursor: pointer;
-    font-size: $smaller-font-size;
-    line-height: 1;
-    padding: 3px 7px;
-    transition: background 0.1s ease, color 0.1s ease;
-
-    &:hover:not(:disabled) {
-      background: $color-bg-card;
-      color: $color-text;
-    }
-
-    &:disabled {
-      cursor: not-allowed;
-      opacity: 0.3;
-    }
-  }
-
   // ── Empty state ───────────────────────────────────────────────────────────────────────
 
+  // The EmptyState inside a drop zone: a dashed outline marks where a dragged component can land.
   .dashboard-layout-popup-empty {
-    color: $color-text-muted;
-    font-size: $smaller-font-size;
-    font-style: italic;
-    padding: $sp-md $sp-sm;
-    text-align: center;
+    border: 1px dashed $color-border-primary;
+    border-radius: $radius-sm;
   }
 
   // ── Sizing tab ────────────────────────────────────────────────────────────────────────
 
   .dashboard-layout-popup-sizing {
+    border: 1px solid $color-border-primary;
+    border-radius: $radius-sm;
     display: flex;
     flex-direction: column;
-    gap: $sp-sm;
+    overflow: hidden;
   }
 
   .dashboard-layout-popup-sizing-item {
-    background: $color-bg-page;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    display: flex;
     align-items: center;
+    background: $color-background-primary;
+    border-bottom: 1px solid $color-border-primary;
+    display: flex;
     gap: $sp-md;
     padding: $sp-sm $sp-md;
+
+    &:last-child {
+      border-bottom: none;
+    }
   }
 
   .dashboard-layout-popup-sizing-item-header {
     align-items: center;
     display: flex;
-    gap: $sp-sm;
     flex: 1;
+    gap: $sp-md;
     min-width: 0;
   }
 
@@ -248,52 +230,23 @@
     gap: $sp-lg;
   }
 
-  .dashboard-layout-popup-profile-select {
-    margin-left: 8px;
-    padding: 3px 6px;
-  }
-
+  // The Select wrapper: label beside the dropdown on one line.
   .dashboard-layout-popup-sizing-field {
     align-items: center;
-    display: flex;
-    gap: $sp-xs;
-  }
-
-  .dashboard-layout-popup-sizing-label {
-    color: $color-text-secondary;
-    font-size: $smaller-font-size;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
+    flex-direction: row;
+    gap: $sp-sm;
     white-space: nowrap;
-  }
-
-  .dashboard-layout-popup-sizing-select {
-    background: $color-bg-card;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    color: $color-text;
-    cursor: pointer;
-    font-size: $smaller-font-size;
-    padding: $sp-xs $sp-sm;
   }
 
   // ── Actions footer: "reset" pinned to the left edge; "cancel" and "save" on the right ──
 
   .config-popup-actions {
-    .config-popup-link {
-      background: none;
-      border: none;
-      color: $color-text-secondary;
-      cursor: pointer;
-      font-size: $smaller-font-size;
-      margin-right: auto;
-      padding: 0;
-      text-decoration: underline;
+    border-top: 1px solid $color-border-primary;
+    flex-shrink: 0;
+    padding-left: $sp-md;
 
-      &:hover {
-        color: $color-text;
-      }
+    .config-popup-link {
+      margin-right: auto;
     }
   }
 }

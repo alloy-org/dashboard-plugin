@@ -5,7 +5,6 @@
 @use 'theme-tokens' as *;
 
 $note-editor-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-$note-editor-transition-duration: 0.15s;
 
 .note-editor {
   display: flex;
@@ -14,51 +13,14 @@ $note-editor-transition-duration: 0.15s;
   height: 100%;
   min-height: 70vh;
 
-  .note-editor-loading {
-    color: $color-text-muted;
-    font-size: $smaller-font-size;
-    font-style: italic;
-    padding: $sp-md;
-  }
-
   .note-editor-toolbar {
     display: flex;
     gap: $sp-sm;
   }
 
-  .note-editor-btn {
-    background: none;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    cursor: pointer;
-    font-size: $smaller-font-size;
-    padding: $sp-xs $sp-md;
-    transition: background $note-editor-transition-duration;
-
-    &:hover {
-      background: $color-blue-light;
-    }
-  }
-
-  .note-editor-btn--save {
-    background: $color-background-accent;
-    border-color: $color-background-accent;
-    color: $color-text-on-accent;
-    font-weight: 600;
-
-    &:hover {
-      filter: brightness(0.92);
-    }
-
-    &:disabled {
-      cursor: default;
-      opacity: 0.6;
-    }
-  }
-
   .note-editor-content {
-    background: $color-bg-primary;
-    border: 1px solid $color-border;
+    background: $color-background-primary;
+    border: 1px solid $color-border-primary;
     border-radius: $radius-sm;
     flex: 1;
     font-family: $note-editor-mono;

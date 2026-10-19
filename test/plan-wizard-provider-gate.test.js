@@ -72,7 +72,7 @@ async function clickAndSettle(element) {
 // @desc Open Plan Builder through the widget's header action.
 // @param {HTMLElement} container - The widget's mount point.
 async function openPlanBuilder(container) {
-  const buildButton = container.querySelector(".widget-header-action") || container.querySelector(".plan-entry-scratch");
+  const buildButton = container.querySelector(".planning-build-plan") || container.querySelector(".plan-entry-scratch");
   await clickAndSettle(buildButton);
 }
 

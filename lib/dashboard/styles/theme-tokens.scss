@@ -6,57 +6,81 @@
 
 @forward 'breakpoints';
 
-$color-bg-page: var(--dashboard-color-bg-page);
-$color-bg-page-hover: var(--dashboard-color-bg-page-hover);
-$color-bg-card: var(--dashboard-color-bg-card);
-$color-bg-primary: var(--dashboard-color-bg-primary);
-$color-bg-secondary: var(--dashboard-color-bg-secondary);
-$color-bg-warning: var(--dashboard-color-bg-warning);
-$color-border: var(--dashboard-color-border);
-$color-header-bg: var(--dashboard-color-header-bg);
-$color-header-text: var(--dashboard-color-header-text);
-$color-overlay-backdrop: var(--dashboard-color-overlay-backdrop);
-$color-overlay-shadow: var(--dashboard-color-overlay-shadow);
-$color-background-accent: var(--dashboard-color-background-accent);
-$color-text-on-accent: var(--dashboard-color-text-on-accent);
-$color-text-on-accent-muted: var(--dashboard-color-text-on-accent-muted);
-$color-tooltip-accent: var(--dashboard-color-tooltip-accent);
-$color-tooltip-bg: var(--dashboard-color-tooltip-bg);
-$color-tooltip-border: var(--dashboard-color-tooltip-border);
-$color-tooltip-text: var(--dashboard-color-tooltip-text);
-$color-tooltip-shadow: var(--dashboard-color-tooltip-shadow);
-$color-tooltip-text-muted: var(--dashboard-color-tooltip-text-muted);
+// ── Colors ──────────────────────────────────────────────────────────────────────────────────────────────────────
+// Use only these. Each host color carries the host app's own name (ample-web's --color-* custom properties), so
+// $color-text-low-contrast here is --color-text-low-contrast in the app, in whatever theme and mode the user picked.
+// Values and fallbacks live in theme-light.scss / theme-dark.scss, data colors in data-colors.scss. Pairings to keep:
+//   - Fill $color-background-action-high-contrast takes ink $color-text-button.
+//   - Text on a fixed data color takes the contrasting-color mixin below.
 
-$color-navy: var(--dashboard-color-navy);
-$color-accent: var(--dashboard-color-accent);
-$color-blue: var(--dashboard-color-blue);
-$color-blue-light: var(--dashboard-color-blue-light);
-$color-link: var(--dashboard-color-link);
+// Host colors
+$color-background-primary: var(--dashboard-color-background-primary);
+$color-background-secondary: var(--dashboard-color-background-secondary);
+$color-background-tertiary: var(--dashboard-color-background-tertiary);
+$color-background-element-low-contrast: var(--dashboard-color-background-element-low-contrast);
+$color-background-element-medium-contrast: var(--dashboard-color-background-element-medium-contrast);
+$color-background-popup: var(--dashboard-color-background-popup);
+$color-background-dialog: var(--dashboard-color-background-dialog);
+$color-background-scrim: var(--dashboard-color-background-scrim);
+$color-background-action-high-contrast: var(--dashboard-color-background-action-high-contrast);
+$color-background-action-medium-contrast: var(--dashboard-color-background-action-medium-contrast);
+$color-background-action-low-contrast: var(--dashboard-color-background-action-low-contrast);
+$color-background-error-medium-contrast: var(--dashboard-color-background-error-medium-contrast);
+$color-border-primary: var(--dashboard-color-border-primary);
+$color-text-high-contrast: var(--dashboard-color-text-high-contrast);
+$color-text-medium-contrast: var(--dashboard-color-text-medium-contrast);
+$color-text-low-contrast: var(--dashboard-color-text-low-contrast);
+$color-text-lower-contrast: var(--dashboard-color-text-lower-contrast);
+$color-text-button: var(--dashboard-color-text-button);
+$color-text-link: var(--dashboard-color-text-link);
+$color-text-status: var(--dashboard-color-text-status);
+$color-text-error-high-contrast: var(--dashboard-color-text-error-high-contrast);
+$color-text-error-low-contrast: var(--dashboard-color-text-error-low-contrast);
+$color-text-nav-high-contrast: var(--dashboard-color-text-nav-high-contrast);
+$color-text-nav-low-contrast: var(--dashboard-color-text-nav-low-contrast);
 
-$color-text: var(--dashboard-color-text);
-$color-text-secondary: var(--dashboard-color-text-secondary);
-$color-text-muted: var(--dashboard-color-text-muted);
+// The host's victory value scale, low to high
+$victory-value-color-0: var(--dashboard-victory-value-color-0);
+$victory-value-color-0-text: var(--dashboard-victory-value-color-0-text);
+$victory-value-color-1: var(--dashboard-victory-value-color-1);
+$victory-value-color-1-text: var(--dashboard-victory-value-color-1-text);
+$victory-value-color-2: var(--dashboard-victory-value-color-2);
+$victory-value-color-2-text: var(--dashboard-victory-value-color-2-text);
+$victory-value-color-3: var(--dashboard-victory-value-color-3);
+$victory-value-color-3-text: var(--dashboard-victory-value-color-3-text);
+$victory-value-color-4: var(--dashboard-victory-value-color-4);
+$victory-value-color-4-text: var(--dashboard-victory-value-color-4-text);
 
-$color-danger: var(--dashboard-color-danger);
-$color-warning: var(--dashboard-color-warning);
-$color-success: var(--dashboard-color-success);
-$color-info: var(--dashboard-color-info);
-$color-intent-personal: var(--dashboard-color-intent-personal);
-$color-intent-work: var(--dashboard-color-intent-work);
+// Dashboard-only surface colors with no host equivalent
 $color-plan-created-bg: var(--dashboard-color-plan-created-bg);
 $color-plan-created-border: var(--dashboard-color-plan-created-border);
 $color-project-complete: var(--dashboard-color-project-complete);
 $color-project-complete-bg: var(--dashboard-color-project-complete-bg);
+
+// Fixed data colors (data-colors.scss): what a mark means, never UI chrome. Category, mood, and task-count colors are
+// read by scripts through their custom properties.
+$color-agenda-priority-critical: var(--dashboard-color-agenda-priority-critical);
+$color-agenda-priority-important: var(--dashboard-color-agenda-priority-important);
+$color-agenda-priority-normal: var(--dashboard-color-agenda-priority-normal);
+$color-agenda-priority-urgent: var(--dashboard-color-agenda-priority-urgent);
+$color-intent-personal: var(--dashboard-color-intent-personal);
+$color-intent-work: var(--dashboard-color-intent-work);
+$color-pace-deadline-sprint: var(--dashboard-color-pace-deadline-sprint);
+$color-pace-maintenance-only: var(--dashboard-color-pace-maintenance-only);
+$color-pace-one-substantial-block: var(--dashboard-color-pace-one-substantial-block);
+$color-pace-small-move-most-days: var(--dashboard-color-pace-small-move-most-days);
+$color-pace-two-focused-blocks: var(--dashboard-color-pace-two-focused-blocks);
 $color-project-window-canary: var(--dashboard-color-project-window-canary);
 $color-project-window-orange: var(--dashboard-color-project-window-orange);
 $color-project-window-purple: var(--dashboard-color-project-window-purple);
 $color-project-window-red: var(--dashboard-color-project-window-red);
 $color-project-window-teal: var(--dashboard-color-project-window-teal);
 
-$color-agenda-priority-critical: var(--dashboard-color-agenda-priority-critical);
-$color-agenda-priority-important: var(--dashboard-color-agenda-priority-important);
-$color-agenda-priority-urgent: var(--dashboard-color-agenda-priority-urgent);
-$color-agenda-priority-normal: var(--dashboard-color-agenda-priority-normal);
+// Shadows: the host's MDC elevations, for surfaces that float above the page
+$shadow-elevation-2: 0 3px 1px -2px rgba(0, 0, 0, 0.2), 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12);
+$shadow-elevation-3: 0 3px 3px -2px rgba(0, 0, 0, 0.2), 0 3px 4px 0 rgba(0, 0, 0, 0.14), 0 1px 8px 0 rgba(0, 0, 0, 0.12);
+$shadow-elevation-24: 0 11px 15px -7px rgba(0, 0, 0, 0.2), 0 24px 38px 3px rgba(0, 0, 0, 0.14),
+  0 9px 46px 8px rgba(0, 0, 0, 0.12);
 
 // Spacing
 $sp-xs: 4px;
@@ -65,10 +89,13 @@ $sp-md: 12px;
 $sp-lg: 16px;
 $sp-xl: 24px;
 
-// Radii
-$radius-sm: 6px;
-$radius-md: 10px;
-$radius-lg: 14px;
+// Radii, matching the host app: 4px for buttons, inputs, and tiles inside a card; 8px for cards, menus, and popovers;
+// 2px for small data marks (swatches, bar segments); a full pill for chips and badges. Use only these.
+$radius-mark: 2px;
+$radius-sm: 4px;
+$radius-md: 4px;
+$radius-lg: 8px;
+$radius-pill: 999px;
 
 // Fonts
 // Roboto is loaded on the dashboard page (see lib/embed-html.js); the system stack remains as a fallback
@@ -95,13 +122,13 @@ $display-heading-font-size: var(--dashboard-display-heading-font-size);
 
 // Mixins
 @mixin card {
-  background: $color-bg-card;
-  border: 1px solid $color-border;
+  background: $color-background-primary;
+  border: 1px solid $color-border-primary;
   border-radius: $radius-lg;
 }
 
 // Black or white against a fill, split at the header bar's CIELAB L* 65.1. Fills of
-// --color-background-action-high-contrast already have $color-text-on-accent; use this for the others.
+// --color-background-action-high-contrast already have $color-text-button; use this for the others.
 @mixin contrasting-color($property, $background) {
   #{$property}: #ffffff;
 

@@ -7,7 +7,7 @@
  * replacement for tippy.css. The elements it names are built by the library and appended to the body, not
  * rendered by any component of ours, so there is no component class to scope them under — and scoping
  * `.tippy-box` would change the weight the rich-footnote theme in amplenote-markdown-render.scss overrides it
- * at. Rules specific to our own tooltips live under `.tippy-box[data-theme~='dashboard']` below.
+ * at. Our own tooltips are the 'dashboard-hint' and 'dashboard-rich' themes below.
  */
 
 @use 'theme-tokens' as *;
@@ -17,10 +17,6 @@
 $tippy-arrow-size: 8px;
 $tippy-arrow-offset: -$tippy-arrow-size + 1;
 $tooltip-max-width: 260px;
-$tooltip-min-width: 180px;
-$tooltip-shadow-blur: 12px;
-$tooltip-shadow-y: 4px;
-$tooltip-row-padding-y: 2px;
 
 [data-tippy-root] {
   max-width: calc(100vw - 10px);
@@ -49,7 +45,7 @@ $tooltip-row-padding-y: 2px;
 // ── Arrow positioning per placement ──
 
 .tippy-arrow {
-  color: $color-tooltip-bg;
+  color: $color-background-popup;
   height: $tippy-arrow-size * 2;
   width: $tippy-arrow-size * 2;
 
@@ -107,56 +103,92 @@ $tooltip-row-padding-y: 2px;
   }
 }
 
-// ── Dashboard theme ──
+// ── Hint tooltips (theme 'dashboard-hint') ──
+// One or two plain sentences about a control or a truncated line: popup surface, arrow, compact. Anything with
+// structure (a title, rows, rendered task text) uses the rich theme below; see "Tooltips" in doc/design-system.md.
 
-.tippy-box[data-theme~='dashboard'] {
-  background: $color-tooltip-bg;
-  box-shadow: 0 $tooltip-shadow-y $tooltip-shadow-blur $color-tooltip-shadow;
-  color: $color-tooltip-text;
+.tippy-box[data-theme~='dashboard-hint'] {
+  background: $color-background-popup;
+  box-shadow: $shadow-elevation-3;
+  color: $color-text-medium-contrast;
   max-width: $tooltip-max-width;
-  min-width: $tooltip-min-width;
 
   > .tippy-arrow {
-    color: $color-tooltip-bg;
+    color: $color-background-popup;
+  }
+}
+
+// ── Rich tooltips (theme 'dashboard-rich'), styled like the host's Task Stats tooltip ──
+// For every tooltip with structure: charts, task previews, summaries. Popup surface, 4px corners, MDC elevation 3,
+// no arrow. Content comes from StatsChartTooltipContent (React) or richTooltipHtml (tooltip-themes.js).
+
+.tippy-box[data-theme~='dashboard-rich'] {
+  background: $color-background-popup;
+  border-radius: $radius-sm;
+  box-shadow: $shadow-elevation-3;
+  color: $color-text-medium-contrast;
+  max-width: 320px;
+  min-width: 200px;
+
+  .tippy-content {
+    padding: 12px 16px 8px;
   }
 
-  // [Claude] Task: constrain tooltip height when placed below chart to avoid viewport overflow
-  // Prompt: "evaluate whether to pop tooltip above or below the date bar"
-  // Date: 2026-03-09 | Model: claude-4.6-opus-high-thinking
-
-  &.below-chart > .tippy-content {
-    max-height: 40vh;
+  .stats-chart-tooltip-content {
+    max-height: 280px;
+    overflow-x: hidden;
     overflow-y: auto;
   }
 
-  // ── Victory-value tooltip content ──
-
-  .dashboard-tooltip-header {
-    border-bottom: 1px solid $color-tooltip-border;
-    font-weight: 600;
-    margin-bottom: $sp-xs;
-    padding-bottom: $sp-xs;
-  }
-
-  .dashboard-tooltip-section {
-    border-bottom: 1px solid $color-tooltip-border;
-    margin-bottom: $sp-xs;
-    padding-bottom: $sp-xs;
-  }
-
-  .dashboard-tooltip-row {
-    align-items: baseline;
+  .stats-chart-tooltip-title {
+    align-items: center;
+    color: $color-text-high-contrast;
     display: flex;
-    gap: $sp-sm;
-    justify-content: space-between;
-    padding: $tooltip-row-padding-y 0;
+    gap: 6px;
+    margin-bottom: 8px;
+
+    .stats-chart-tooltip-icon {
+      color: $color-text-low-contrast;
+      height: 18px;
+      width: 18px;
+    }
   }
 
-  .dashboard-tooltip-row-label {
+  .stats-chart-tooltip-title-text {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 20px;
+  }
+
+  .stats-chart-tooltip-stat {
+    align-items: flex-start;
+    color: $color-text-medium-contrast;
+    display: flex;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  .stats-chart-tooltip-icon {
+    color: $color-text-low-contrast;
+    flex-shrink: 0;
+    margin-top: 3px;
+  }
+
+  .stats-chart-tooltip-icon-wrap {
+    display: inline-flex;
+    flex-shrink: 0;
+
+    .stats-chart-tooltip-icon {
+      color: inherit;
+    }
+  }
+
+  .stats-chart-tooltip-text {
     flex: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: 13px;
+    line-height: 20px;
+    min-width: 0;
+    overflow-wrap: anywhere;
 
     p {
       display: inline;
@@ -164,76 +196,111 @@ $tooltip-row-padding-y: 2px;
     }
   }
 
-  .dashboard-tooltip-row-value {
-    color: $color-tooltip-accent;
-    flex-shrink: 0;
-    font-weight: 600;
+  .stats-chart-tooltip-secondary {
+    color: $color-text-low-contrast;
+    display: block;
+    font-size: 12px;
+    font-style: italic;
+    line-height: 16px;
   }
 
-  // The project a Victory Value task advanced, between its text and its points.
+  // A small heading row that starts a group of detail rows, e.g. "Why this project"
+  .stats-chart-tooltip-stat--section {
+    border-top: 1px solid $color-border-primary;
+    color: $color-text-low-contrast;
+    font-size: 12px;
+    font-weight: 500;
+    margin-top: $sp-xs;
+    padding-top: $sp-xs;
+  }
+
+  .stats-chart-tooltip-stat--detail .stats-chart-tooltip-text {
+    color: $color-text-medium-contrast;
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  .stats-chart-tooltip-trailing {
+    color: $color-text-medium-contrast;
+    flex-shrink: 0;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    line-height: 20px;
+    margin-left: auto;
+  }
+
+  .peak-hours-tooltip-stat--created .stats-chart-tooltip-icon {
+    color: $victory-value-color-1-text;
+  }
+
+  .peak-hours-tooltip-stat--completed .stats-chart-tooltip-icon {
+    color: $victory-value-color-4;
+  }
+
+  .habit-tooltip-stat--positive .stats-chart-tooltip-icon {
+    color: $victory-value-color-4;
+  }
+
+  .habit-tooltip-stat--negative .stats-chart-tooltip-icon {
+    color: $color-text-error-high-contrast;
+  }
+
+  .stats-chart-tooltip-stat--victory-value .stats-chart-tooltip-icon {
+    color: $victory-value-color-2-text;
+  }
+
+  .stats-chart-tooltip-stat--no-data {
+    .stats-chart-tooltip-icon {
+      color: $color-text-lower-contrast;
+    }
+
+    .stats-chart-tooltip-text {
+      color: $color-text-low-contrast;
+      font-style: italic;
+    }
+  }
+
+  .stats-chart-tooltip-stat--task {
+    border-top: 1px solid $color-border-primary;
+    margin: 0 -16px;
+    padding: 4px 16px 0;
+
+    & + .stats-chart-tooltip-stat--task {
+      border-top: none;
+      padding-top: 0;
+    }
+  }
+
+  .stats-chart-tooltip-swatch {
+    border-radius: $radius-mark;
+    display: inline-block;
+    height: 8px;
+    margin-right: 4px;
+    width: 8px;
+  }
+
   .dashboard-tooltip-row-project {
     align-items: center;
-    color: $color-tooltip-text-muted;
-    display: inline-flex;
-    flex-shrink: 1;
-    font-size: $smaller-font-size;
+    color: $color-text-low-contrast;
+    display: flex;
+    font-size: 12px;
     gap: 4px;
-    max-width: 40%;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 16px;
   }
 
   .dashboard-tooltip-row-swatch {
-    border-radius: 2px;
+    border-radius: $radius-mark;
+    display: inline-block;
     flex-shrink: 0;
     height: 8px;
     width: 8px;
   }
 
-  .dashboard-tooltip-empty {
-    color: $color-tooltip-text-muted;
-    font-style: italic;
-  }
-
-  // ── Mood viz tooltip content ──
-
-  .mood-viz-tooltip-date {
-    border-bottom: 1px solid $color-tooltip-border;
-    font-weight: 600;
-    margin-bottom: 4px;
-    padding-bottom: 4px;
-  }
-
-  .mood-viz-tooltip-entry {
-    align-items: baseline;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px 6px;
-    padding: 2px 0;
-  }
-
-  .mood-viz-tooltip-time {
-    color: $color-tooltip-text-muted;
-    font-size: $smaller-font-size;
-    min-width: 52px;
-  }
-
-  .mood-viz-tooltip-mood {
-    .mood-viz-label {
-      color: $color-tooltip-text-muted;
-    }
-  }
-
-  .mood-viz-tooltip-note {
-    color: $color-tooltip-text;
-    flex-basis: 100%;
-    font-size: $smaller-font-size;
-    font-style: italic;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: normal;
-    word-break: break-word;
+  .stats-chart-tooltip-project {
+    color: $color-text-low-contrast;
+    display: block;
+    font-size: 12px;
+    line-height: 16px;
   }
 }

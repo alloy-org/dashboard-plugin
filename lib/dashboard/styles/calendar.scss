@@ -5,6 +5,7 @@
  */
 
 @use 'theme-tokens' as *;
+@use 'controls' as *;
 
 $cal-cell-gap: 2px;
 $cal-date-dot-gap: 6px;
@@ -19,10 +20,6 @@ $cal-transition-duration: 0.12s;
 /* Date: 2026-02-21 | Model: claude-sonnet-4-5-20250929 */
 .widget-calendar {
   &.vertical-2-cell {
-    .cal-arrow {
-      font-size: $default-font-size;
-    }
-
     .cal-month {
       font-size: $small-heading-font-size;
     }
@@ -68,7 +65,7 @@ $cal-transition-duration: 0.12s;
 
     .cal-cell {
       aspect-ratio: auto;
-      border-radius: $sp-md;
+      border-radius: $radius-sm;
     }
   }
 
@@ -79,23 +76,10 @@ $cal-transition-duration: 0.12s;
     margin-bottom: $sp-md;
   }
 
-  .cal-arrow {
-    background: none;
-    border: none;
-    color: $color-text-secondary;
-    cursor: pointer;
-    font-size: $smaller-font-size;
-    padding: $sp-xs;
-
-    &:hover {
-      color: $color-navy;
-    }
-  }
-
   .cal-month {
-    color: $color-navy;
+    color: $color-text-high-contrast;
     font-size: $default-font-size;
-    font-weight: 700;
+    font-weight: 500;
   }
 
   .cal-grid {
@@ -106,9 +90,9 @@ $cal-transition-duration: 0.12s;
   }
 
   .cal-header {
-    color: $color-text-muted;
-    font-size: $smaller-font-size;
-    font-weight: 600;
+    color: $color-text-low-contrast;
+    font-size: 12px;
+    font-weight: 500;
     padding: $sp-xs 0;
   }
 
@@ -128,7 +112,7 @@ $cal-transition-duration: 0.12s;
     transition: background-color $cal-transition-duration ease;
 
     &:not(.empty):hover {
-      background: $color-blue-light;
+      background: $color-background-element-low-contrast;
     }
 
     &.empty {
@@ -137,32 +121,31 @@ $cal-transition-duration: 0.12s;
     }
 
     &.today {
-      background: $color-background-accent;
+      background: $color-background-action-high-contrast;
 
       .cal-day {
-        color: $color-text-on-accent;
-        font-weight: 700;
+        color: $color-text-button;
+        font-weight: 500;
       }
 
       &:hover {
-        background: $color-navy;
-
-        .cal-day { color: $color-bg-card; }
+        background: color-mix(in srgb, $color-background-action-high-contrast 88%, #000000);
       }
     }
 
     &.selected {
-      outline: $cal-outline-width solid $color-accent;
+      outline: $cal-outline-width solid $color-background-action-high-contrast;
       outline-offset: 0;
     }
 
     &.today.selected {
-      outline-color: $color-accent;
+      outline-color: $color-background-action-high-contrast;
     }
 
     .cal-day {
-      color: $color-text;
+      color: $color-text-high-contrast;
       font-size: $smaller-font-size;
+      font-variant-numeric: tabular-nums;
       position: relative;
       top: $cal-day-offset;
     }

@@ -5,6 +5,8 @@
  */
 
 @use 'theme' as *;
+// Host-app button, icon-button, label, and empty-state mixins.
+@use 'controls' as *;
 // Document-wide box-sizing reset and body typography; the only rules here that no component class can scope.
 @use 'global-reset';
 // Inlined Roboto @font-face — must ship in-bundle because the embed's data: URL origin blocks Google Fonts.
@@ -14,9 +16,6 @@
 
 // Layout & component constants
 $dashboard-maximum-width: 1200px;
-$spinner-size: 32px;
-$spinner-border-width: 3px;
-$spinner-duration: 0.8s;
 $error-padding: 40px;
 
 /* [Claude] Task: split dashboard into full-width background wrapper and max-width content area */
@@ -31,22 +30,6 @@ $error-padding: 40px;
   overflow-x: hidden;
   position: relative;
   width: 100%;
-
-  .dashboard-background-fade {
-    inset: 0;
-    opacity: 0;
-    pointer-events: none;
-    position: absolute;
-    z-index: 0;
-  }
-
-  /* Suppressing the animation leaves the overlay transparent, so the swap lands as an instant cut when
-   * the commit timer promotes the image instead of dissolving into place. */
-  @media (prefers-reduced-motion: reduce) {
-    .dashboard-background-fade {
-      animation: none !important;
-    }
-  }
 
   // Constrained content area
   .dashboard-content {
@@ -69,8 +52,7 @@ $error-padding: 40px;
     /* [OpenAI gpt-5.4] Task: backdrop button that exits focused-widget mode on click */
     /* Prompt: "If the user clicks on the background in this state, the other components transition back into view" */
     .dashboard-grid-focus-backdrop {
-      background: color-mix(in srgb, $color-bg-page 18%, transparent);
-      border: none;
+      background: color-mix(in srgb, $color-background-secondary 18%, transparent);
       cursor: zoom-out;
       inset: 0;
       position: fixed;
@@ -80,43 +62,27 @@ $error-padding: 40px;
     /* The toolbar holds the task-domain selector on the left and the Settings / Layout buttons on the
      * right; those two blocks are styled by their own components, so what lives here is the row that
      * carries them. */
+    /* The toolbar is the dashboard's header, styled like the host's Task Stats header: task-domain tabs on the
+     * left, icon buttons on the right, on a card-colored bar. */
     .dashboard-toolbar {
-      align-items: stretch;
+      align-items: center;
+      background-color: $color-background-primary;
+      border: 1px solid $color-border-primary;
+      border-radius: $radius-lg;
       display: flex;
       flex-wrap: wrap;
-      gap: $sp-md;
+      gap: $sp-sm $sp-md;
       justify-content: space-between;
       margin-bottom: $sp-lg;
+      min-height: 50px;
+      padding: 0 $sp-sm 0 $sp-xl;
       transition: opacity 0.32s ease, transform 0.32s ease;
 
       .dashboard-toolbar-actions {
         align-items: center;
-        background-color: $color-bg-card;
-        border: 1px solid $color-border;
-        border-radius: $radius-sm;
-        color: $color-text-secondary;
         display: flex;
         flex-shrink: 0;
-        padding: 5px 8px;
-      }
-
-      .dashboard-configure-button {
-        background-color: $color-bg-card;
-        border: 1px solid transparent;
-        border-radius: $radius-sm;
-        color: $color-text;
-        cursor: pointer;
-        font-size: $smaller-font-size;
-        font-weight: 500;
-        padding: $sp-xs $sp-md;
-        transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-        white-space: nowrap;
-
-        &:hover {
-          background: $color-bg-page;
-          border-color: $color-accent;
-          color: $color-text;
-        }
+        gap: $sp-xs;
       }
     }
   }
@@ -148,7 +114,7 @@ $error-padding: 40px;
       --focus-scale-y: 1;
       --focus-x: 0px;
       --focus-y: 0px;
-      --grid-cell-base-opacity: 0.95;
+      --grid-cell-base-opacity: 1;
       filter: blur(var(--focus-blur));
       min-width: 0;
       opacity: calc(var(--grid-cell-base-opacity) * var(--focus-opacity));
@@ -157,10 +123,6 @@ $error-padding: 40px;
         scale(var(--drag-scale)) scale(var(--focus-scale-x), var(--focus-scale-y));
       transition: filter 0.32s ease, opacity 0.32s ease, transform 0.32s ease;
       will-change: transform;
-
-      &:hover {
-        --grid-cell-base-opacity: 1;
-      }
 
       @include widget-cell-size-classes;
 
@@ -225,6 +187,10 @@ $error-padding: 40px;
     @media (max-width: $breakpoint-tablet) {
       padding: $sp-md;
 
+      .dashboard-toolbar {
+        padding-left: $sp-lg;
+      }
+
       .dashboard-grid {
         grid-template-columns: 1fr;
       }
@@ -243,14 +209,16 @@ $error-padding: 40px;
     max-width: 100%;
     overflow: hidden;
 
-    /* The host's action color fills the header bar; every control in it takes the paired header text color. */
+    /* The header sits on the card surface like a host section heading: low-contrast icon, small uppercase title,
+     * and actions on the right as icon buttons or text buttons. */
     .widget-header {
       align-items: center;
-      background: $color-header-bg;
-      color: $color-header-text;
+      background: $color-background-primary;
+      color: $color-text-medium-contrast;
       display: flex;
       gap: $sp-sm;
-      padding: $sp-md $sp-lg;
+      min-height: 44px;
+      padding: $sp-sm $sp-sm $sp-xs $sp-lg;
     }
 
     .widget-heading-bar {
@@ -262,35 +230,30 @@ $error-padding: 40px;
     }
 
     .widget-icon {
+      align-items: center;
+      color: $color-text-low-contrast;
+      display: inline-flex;
+      flex-shrink: 0;
       font-size: $large-font-size;
+      justify-content: center;
     }
 
     /* [OpenAI gpt-5.4] Task: style the widget icon as a desktop focus-mode button */
     /* Prompt: "when the user clicks on the icon for a particular component" */
     .widget-icon-button {
-      background: color-mix(in srgb, $color-header-text 10%, transparent);
-      border: 1px solid transparent;
-      border-radius: 999px;
-      cursor: pointer;
-      line-height: 1;
-      padding: 8px;
-      transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
-
-      &:hover {
-        background: color-mix(in srgb, $color-header-text 25%, transparent);
-        border-color: color-mix(in srgb, $color-header-text 40%, transparent);
-      }
+      margin-left: -5px;
     }
 
     .widget-title {
-      color: $color-header-text;
+      color: $color-text-medium-contrast;
       display: flex;
       flex: 1;
-      font-size: $default-font-size;
-      font-weight: 700;
+      font-size: 12px;
+      font-weight: 500;
       gap: $sp-sm;
-      letter-spacing: 0.03em;
+      letter-spacing: 0.04em;
       margin: 0;
+      min-width: 0;
       text-transform: uppercase;
 
       /* [Claude] Task: subtitle string displayed to the right of the widget title with lighter color */
@@ -300,64 +263,38 @@ $error-padding: 40px;
     }
 
     .widget-title__subtitle {
-      color: $color-header-text;
-      font-size: $smaller-font-size;
+      color: $color-text-low-contrast;
+      font-size: 12px;
       font-weight: 400;
-      letter-spacing: 0.01em;
+      letter-spacing: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
       text-transform: none;
-    }
+      white-space: nowrap;
 
-    .widget-configure,
-    .widget-header-action {
-      background: none;
-      border: none;
-      color: $color-header-text;
-      cursor: pointer;
-      font-size: $smaller-font-size;
-      padding: $sp-xs $sp-sm;
-
-      &:hover {
-        text-decoration: underline;
+      &::before {
+        color: $color-text-lower-contrast;
+        content: "·";
+        margin-right: $sp-sm;
       }
     }
 
     .widget-body {
       flex: 1;
-      padding: $sp-lg;
+      padding: $sp-xs $sp-lg $sp-lg;
     }
   }
 
-  // Loading state
+  // Loading state: the shared LoadingState, centered in the viewport
   .dashboard-loading {
-    align-items: center;
-    color: $color-text-secondary;
-    display: flex;
-    flex-direction: column;
-    gap: $sp-lg;
+    box-sizing: border-box;
     height: 100vh;
-    justify-content: center;
     width: 100%;
-
-    .spinner {
-      animation: spin $spinner-duration linear infinite;
-      border: $spinner-border-width solid $color-border;
-      border-radius: 50%;
-      border-top-color: $color-blue;
-      height: $spinner-size;
-      width: $spinner-size;
-    }
   }
 
-  // Error state
+  // Error state: the shared ErrorState, with room around it
   .dashboard-error {
-    color: $color-danger;
     padding: $error-padding;
-    text-align: center;
-
-    p {
-      color: $color-text-secondary;
-      margin-top: $sp-sm;
-    }
   }
 
   /* [Claude] Task: error fallback UI for individual widget crashes */
@@ -365,46 +302,15 @@ $error-padding: 40px;
   /* Date: 2026-03-21 | Model: claude-4.6-opus-high-thinking */
   .widget-error-fallback {
     align-items: center;
-    background: $color-bg-card;
-    border: 1px dashed $color-danger;
-    border-radius: $radius-md;
+    background: $color-background-primary;
+    border: 1px solid $color-border-primary;
+    border-radius: $radius-lg;
     display: flex;
     flex-direction: column;
-    gap: $sp-sm;
     height: 100%;
     justify-content: center;
     padding: $sp-xl;
-    text-align: center;
-  }
-
-  .widget-error-fallback-title {
-    color: $color-danger;
-    font-size: $default-font-size;
-    font-weight: 700;
-  }
-
-  .widget-error-fallback-message {
-    color: $color-text-muted;
-    font-size: $smaller-font-size;
-    max-width: 280px;
     word-break: break-word;
-  }
-
-  .widget-error-fallback-retry {
-    background: none;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    color: $color-text-secondary;
-    cursor: pointer;
-    font-size: $smaller-font-size;
-    margin-top: $sp-xs;
-    padding: $sp-xs $sp-md;
-    transition: color 0.15s ease, border-color 0.15s ease;
-
-    &:hover {
-      border-color: $color-navy;
-      color: $color-navy;
-    }
   }
 
   /* The min-height matters most on mobile: grid cells drop their min-height there (see the */
@@ -412,37 +318,18 @@ $error-padding: 40px;
   /* zero height, put every widget in the viewport at once, and mount them all — defeating deferral. */
   .lazy-widget-placeholder {
     align-items: center;
-    background: $color-bg-card;
-    border-radius: $radius-md;
+    background: $color-background-primary;
+    border: 1px solid $color-border-primary;
+    border-radius: $radius-lg;
     display: flex;
     height: 100%;
     justify-content: center;
     min-height: 240px;
-    opacity: 0.6;
     width: 100%;
-
-    .lazy-widget-placeholder-spinner {
-      animation: spin $spinner-duration linear infinite;
-      border: $spinner-border-width solid $color-border;
-      border-radius: 50%;
-      border-top-color: $color-blue;
-      height: $spinner-size;
-      opacity: 0.7;
-      width: $spinner-size;
-    }
   }
 
-  /* Animation names are document-global whatever they are nested in; these live inside the wrapper only
-   * so this file reads as one scoped block. Sass lifts them back to the top level of the output. */
-  @keyframes dashboard-background-fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
+  /* Animation names are document-global whatever they are nested in; this lives inside the wrapper only
+   * so this file reads as one scoped block. Sass lifts it back to the top level of the output. */
   @keyframes widget-wobble {
     from { transform: rotate(-1.5deg); }
     to { transform: rotate(1.5deg); }

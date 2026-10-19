@@ -4,8 +4,10 @@
 // Pinning or dismissing a theme is stored in the Vision Guide and steers the next reading, which is how the user
 // shapes what Plan Builder sends to the model without editing that data note by hand.
 
+import { Button, IconButton, PlainButton } from "dashboard/controls";
 import { themeKey } from "plan-wizard/intent-reading";
 import { useEffect, useRef, useState } from "react";
+import { MdCheckBox, MdClose, MdDescription, MdPushPin, MdTrackChanges } from "react-icons/md";
 
 const READ_ITEM_REVEAL_MS = 90;
 const THEME_REVEAL_MS = 220;
@@ -66,22 +68,10 @@ export function IntentReadingProgressBar({ fraction }) {
 // @desc Draw the icon beside a read item: a page for a note, a ticked box for a task.
 // @param {object} params - An object with the following properties:
 //   - {string} kind - note or task.
-// @returns {JSX.Element} Inline SVG.
+// @returns {JSX.Element} The Material icon.
 export function ReadItemIcon({ kind }) {
-  if (kind === "task") {
-    return (
-      <svg aria-hidden="true" className="intent-reading-item-icon" viewBox="0 0 16 16">
-        <rect height="11" rx="2" width="11" x="2.5" y="2.5" />
-        <path d="M5.5 8.2l1.8 1.8 3.4-3.6" />
-      </svg>
-    );
-  }
-  return (
-    <svg aria-hidden="true" className="intent-reading-item-icon" viewBox="0 0 16 16">
-      <path d="M4 1.5h5.5l3 3v10H4z" />
-      <path d="M6 7.5h4.5M6 10h4.5" />
-    </svg>
-  );
+  const KindIcon = kind === "task" ? MdCheckBox : MdDescription;
+  return <KindIcon className="intent-reading-item-icon" size={ 16 } />;
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -101,19 +91,16 @@ function IntentReadingTheme({ isSaving, judgement, onJudge, theme }) {
     <li className={ themeClass }>
       <span className="intent-reading-theme-label">{ theme.label }</span>
       { theme.taskCount ? <span className="intent-reading-theme-count">{ theme.taskCount }</span> : null }
-      <button aria-label={ `${ isPinned ? "Unpin" : "Pin" } ${ theme.label }` } aria-pressed={ isPinned }
-        className="intent-reading-theme-button" disabled={ isSaving } onClick={ () => onJudge(isPinned ? null : "pinned") }
-        title={ isPinned ? "Pinned: favored in the next reading" : "Pin: this matters" } type="button">
-        <svg aria-hidden="true" viewBox="0 0 16 16">
-          <path d="M6 2h4l-.6 4 2.6 2.5v1H4v-1L6.6 6z" />
-          <path d="M8 9.5V14" />
-        </svg>
-      </button>
-      <button aria-label={ `${ isDismissed ? "Restore" : "Dismiss" } ${ theme.label }` } aria-pressed={ isDismissed }
-        className="intent-reading-theme-button" disabled={ isSaving } onClick={ () => onJudge(isDismissed ? null : "dismissed") }
-        title={ isDismissed ? "Dismissed: left out of the next reading" : "Dismiss: this doesn't matter" } type="button">
-        ×
-      </button>
+      <IconButton className="intent-reading-theme-button" disabled={ isSaving } Icon={ MdPushPin }
+        label={ `${ isPinned ? "Unpin" : "Pin" } ${ theme.label }` }
+        onClick={ () => onJudge(isPinned ? null : "pinned") } pressed={ isPinned } size="small"
+        tooltip={ isPinned ? "Pinned: favored in the next reading" : "Pin: this matters" } />
+      <IconButton className="intent-reading-theme-button" disabled={ isSaving } Icon={ MdClose }
+        label={ `${ isDismissed ? "Restore" : "Dismiss" } ${ theme.label }` }
+        onClick={ () => onJudge(isDismissed ? null : "dismissed") } pressed={ isDismissed } size="small"
+        tooltip={ isDismissed
+          ? "Dismissed: left out of the next reading"
+          : "Dismiss: this doesn't matter" } />
     </li>
   );
 }
@@ -178,16 +165,17 @@ export default function IntentReadingPage({ directions, intentReading, isRefresh
     <section aria-label="How your notes were read" className="plan-step-container intent-reading-page">
       <header className="intent-reading-header">
         <h2 className="plan-heading intent-reading-title">Reading your last quarter</h2>
-        <button className="intent-reading-return" onClick={ onReturn } type="button">Return to Plan Builder</button>
+        <Button className="intent-reading-return" onClick={ onReturn }>Return to Plan Builder</Button>
       </header>
       <IntentReadingProgressBar fraction={ isReady ? 1 : progressFraction } />
       <p className="intent-reading-status" role="status">
         { !isRefreshing && !hasStoredReading ? "No sources are stored for these suggestions yet." : statusText }
       </p>
       { !isRefreshing && !hasStoredReading ? (
-        <button className="plan-button plan-button--dashed intent-reading-reread" onClick={ onReread } type="button">
+        <Button className="plan-button plan-button--dashed intent-reading-reread" onClick={ onReread }
+          variant="outlined">
           Read my notes now
-        </button>
+        </Button>
       ) : null }
       <div className="intent-reading-columns">
         <section className="intent-reading-column">
@@ -226,9 +214,10 @@ export default function IntentReadingPage({ directions, intentReading, isRefresh
             </p>
           ) : null }
           { isReady && hasChangedJudgements ? (
-            <button className="plan-button plan-button--dashed intent-reading-reread" onClick={ onReread } type="button">
+            <Button className="plan-button plan-button--dashed intent-reading-reread" onClick={ onReread }
+              variant="outlined">
               Read again with these themes
-            </button>
+            </Button>
           ) : null }
         </section>
       </div>
@@ -240,15 +229,11 @@ export default function IntentReadingPage({ directions, intentReading, isRefresh
           <ul className="intent-reading-direction-list">
             { visibleDirections.map(direction => (
               <li key={ direction.uuid }>
-                <button className="intent-reading-direction" onClick={ () => onApplyDirection(direction) }
-                  title={ direction.substantiation } type="button">
-                  <svg aria-hidden="true" className="intent-reading-direction-icon" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="8" />
-                    <circle cx="12" cy="12" r="4" />
-                    <circle className="intent-reading-direction-icon-center" cx="12" cy="12" r="1.5" />
-                  </svg>
+                <PlainButton className="intent-reading-direction"
+                  onClick={ () => onApplyDirection(direction) } title={ direction.substantiation }>
+                  <MdTrackChanges className="intent-reading-direction-icon" />
                   <span>{ direction.intent }</span>
-                </button>
+                </PlainButton>
               </li>
             )) }
           </ul>

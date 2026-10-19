@@ -1,0 +1,30 @@
+// The dashboard's banner image, with the geometry of ample-web's full-width note banner
+// (ample-web-app/components/note-pane/note-banner-image.scss, `.full-width:not(.no-background-color)`): the banner
+// reserves 180px at the top of the page, while its image is positioned against the whole dashboard, at least 280px
+// tall, and masked to fade out between 180px and 280px, so the toolbar and first widgets sit over the fade. The
+// dashboard content follows it in the document and is positioned, so it paints over the image.
+
+// Height the banner reserves in the page, where the image is fully opaque
+$banner-height: 180px;
+// Height at which the image has faded out completely
+$banner-faded-height: 280px;
+
+.dashboard-banner-image {
+  display: flex;
+  height: $banner-height;
+  justify-content: center;
+  min-height: $banner-height;
+  overflow: hidden;
+
+  .dashboard-banner-image-img {
+    -webkit-mask-image: linear-gradient(rgb(0 0 0 / 100%) $banner-height, transparent $banner-faded-height);
+    mask-image: linear-gradient(rgb(0 0 0 / 100%) $banner-height, transparent $banner-faded-height);
+    // The dashboard has no app header above it, so the image may take the whole viewport height
+    max-height: 100vh;
+    min-height: $banner-faded-height;
+    object-fit: cover;
+    object-position: center center;
+    position: absolute;
+    width: 100%;
+  }
+}

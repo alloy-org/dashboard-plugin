@@ -4,6 +4,7 @@
 // text a user has begun typing. A link below the fields opens the reading page, which shows how those suggestions
 // were drawn from the user's notes.
 
+import { Button, PlainButton, Spinner } from "dashboard/controls";
 import ExpandingTextarea from "dashboard/plan-wizard/expanding-textarea";
 import { IntentReadingProgressBar } from "dashboard/plan-wizard/intent-reading-page";
 import { CATEGORY_LABELS, PRIMARY_GOAL_RANK, draftFieldsFromGoals, goalRecordsFromDraftFields,
@@ -11,6 +12,7 @@ import { CATEGORY_LABELS, PRIMARY_GOAL_RANK, draftFieldsFromGoals, goalRecordsFr
 import { useRegisteredNavigate } from "dashboard/plan-wizard/step-navigation";
 import { wizardStepFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useEffect, useRef, useState } from "react";
+import { MdArrowForward } from "react-icons/md";
 
 const INTENT_STEP_COPY = wizardStepFromKey("intent");
 
@@ -68,27 +70,30 @@ function IntentStepCategory({ fields, isDisabled, isRefreshing, onAddSecondary, 
       )) }
       { isRefreshing ? (
         <div className="intent-step-suggestion-pending">
-          <span className="intent-step-pending-spinner" />
+          <Spinner className="intent-step-pending-spinner" label="Retrieving intent directions"
+            size="small" />
           <span className="intent-step-pending-label">Retrieving intent directions…</span>
         </div>
       ) : null }
       { possibilities.length ? (
         <div className="intent-step-suggestion-list">
           { possibilities.map(possibility => (
-            <button className={ `intent-step-suggestion intent-step-suggestion--${ possibility.sourceKind }` }
+            <PlainButton
+              className={ `intent-step-suggestion intent-step-suggestion--${ possibility.sourceKind }` }
               disabled={ isDisabled } key={ possibility.uuid } onClick={ () => onApplySuggestion(possibility) }
-              tabIndex={ -1 } title={ possibility.substantiation } type="button">
+              tabIndex={ -1 } title={ possibility.substantiation }>
               { possibility.intent }
-            </button>
+            </PlainButton>
           )) }
         </div>
       ) : null }
       { hasDefaultSuggestions ? (
         <p className="intent-step-suggestion-note">Starting points, not conclusions drawn from your notes.</p>
       ) : null }
-      <button className="plan-button plan-button--dashed" disabled={ isDisabled } onClick={ onAddSecondary } type="button">
+      <Button className="plan-button plan-button--dashed" disabled={ isDisabled } onClick={ onAddSecondary }
+        variant="outlined">
         Add a secondary or more granular goal
-      </button>
+      </Button>
     </section>
   );
 }
@@ -104,9 +109,10 @@ function IntentStepCategory({ fields, isDisabled, isRefreshing, onAddSecondary, 
 function IntentReadingLink({ isRefreshing, onOpenReading, progressFraction }) {
   return (
     <div className={ `intent-step-reading${ isRefreshing ? " intent-step-reading--running" : "" }` }>
-      <button className="intent-step-reading-link" onClick={ onOpenReading } type="button">
-        { isRefreshing ? "Watch Plan Builder read your notes →" : "View sources →" }
-      </button>
+      <Button className="intent-step-reading-link" onClick={ onOpenReading }>
+        { isRefreshing ? "Watch Plan Builder read your notes" : "View sources" }
+        <MdArrowForward size={ 16 } />
+      </Button>
       { isRefreshing ? <IntentReadingProgressBar fraction={ progressFraction } /> : null }
     </div>
   );

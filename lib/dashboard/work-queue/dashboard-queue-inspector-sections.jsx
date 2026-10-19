@@ -1,6 +1,7 @@
 // The sections of the admin Queue inspector: an overview of the runtime and its admission conditions, the active and
 // pending jobs with their filters, urgent widget renders, resource permits, recent outcomes, and timings by job type.
 // Each section only displays the view it is given; none of them changes the queue.
+import { EmptyState, Select, TextField } from "dashboard/controls";
 import { formattedAge, formattedDuration, jobFilterOptions } from "dashboard/work-queue/dashboard-queue-inspector-model";
 
 // ------------------------------------------------------------------------------------------
@@ -8,13 +9,10 @@ import { formattedAge, formattedDuration, jobFilterOptions } from "dashboard/wor
 // @param {object} props - { label, onChange, options, value }.
 function JobFilterSelect({ label, onChange, options, value }) {
   return (
-    <label className="queue-inspector-filter">
-      <span>{label}</span>
-      <select value={value} onChange={event => onChange(event.target.value)}>
-        <option value="">All</option>
-        {options.map(option => <option key={option} value={option}>{option}</option>)}
-      </select>
-    </label>
+    <Select className="queue-inspector-filter" dense label={ label } onChange={ onChange } value={ value }>
+      <option value="">All</option>
+      {options.map(option => <option key={option} value={option}>{option}</option>)}
+    </Select>
   );
 }
 
@@ -37,12 +35,10 @@ export function QueueJobSection({ allJobs, filters, jobs, now, onFiltersChange }
         <JobFilterSelect label="Status" onChange={setFilter("status")} options={options.statuses} value={filters.status} />
         <JobFilterSelect label="Type" onChange={setFilter("type")} options={options.types} value={filters.type} />
         <JobFilterSelect label="Scope" onChange={setFilter("scopeKey")} options={options.scopeKeys} value={filters.scopeKey} />
-        <label className="queue-inspector-filter">
-          <span>Key or project</span>
-          <input type="search" value={filters.keyText} onChange={event => setFilter("keyText")(event.target.value)} />
-        </label>
+        <TextField className="queue-inspector-filter" dense label="Key or project" onChange={ setFilter("keyText") } type="search"
+          value={ filters.keyText } />
       </div>
-      {jobs.length === 0 ? <p className="queue-inspector-empty">No jobs match.</p> : (
+      {jobs.length === 0 ? <EmptyState compact>No jobs match.</EmptyState> : (
         <table className="queue-inspector-table">
           <thead>
             <tr>
@@ -79,7 +75,7 @@ export function QueueOutcomeSection({ now, outcomes }) {
   return (
     <section className="queue-inspector-section">
       <h4>Recent outcomes</h4>
-      {outcomes.length === 0 ? <p className="queue-inspector-empty">No job has finished yet.</p> : (
+      {outcomes.length === 0 ? <EmptyState compact>No job has finished yet.</EmptyState> : (
         <table className="queue-inspector-table">
           <thead><tr><th>When</th><th>Outcome</th><th>Job</th><th>Ran for</th><th>Detail</th></tr></thead>
           <tbody>
@@ -165,7 +161,7 @@ export function QueueTimingSection({ timings }) {
   return (
     <section className="queue-inspector-section">
       <h4>Timings by job type</h4>
-      {timingEntries.length === 0 ? <p className="queue-inspector-empty">No timings yet.</p> : (
+      {timingEntries.length === 0 ? <EmptyState compact>No timings yet.</EmptyState> : (
         <table className="queue-inspector-table">
           <thead><tr><th>Type</th><th>Runs</th><th>Average run</th><th>Longest run</th><th>Average wait</th></tr></thead>
           <tbody>
@@ -193,7 +189,7 @@ export function UrgentRenderSection({ now, rows }) {
   return (
     <section className="queue-inspector-section">
       <h4>Urgent renders</h4>
-      {rows.length === 0 ? <p className="queue-inspector-empty">No widget is registered for scheduled mounting.</p> : (
+      {rows.length === 0 ? <EmptyState compact>No widget is registered for scheduled mounting.</EmptyState> : (
         <table className="queue-inspector-table">
           <thead>
             <tr>

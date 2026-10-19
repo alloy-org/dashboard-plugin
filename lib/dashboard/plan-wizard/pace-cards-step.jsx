@@ -1,6 +1,7 @@
 // The wizard page after projects: choose a realistic pace for each named project. The chosen rhythm is stored as
 // paceEm, the days it occupies as preferredWeekdays (preferredDows), and a sprint's landing date as deadlineOn.
 
+import { EmptyState } from "dashboard/controls";
 import { draftFromPaceSelection, draftPacesFromProspects, paceRecordsFromDrafts,
   toggledWeekdaysFromSelection } from "dashboard/plan-wizard/pace-cards-step-fields";
 import ProjectPace from "dashboard/plan-wizard/project-pace";
@@ -113,10 +114,10 @@ export default function PaceCardsStep({ isSaving, onNavigate, onRegisterNavigate
           )) }
         </div>
       ) : (
-        <p className="plan-empty" role="note">
+        <EmptyState className="plan-empty" role="note">
           Name a project on the previous step first — a pace is a rhythm for particular work, so there is nothing
           to protect yet.
-        </p>
+        </EmptyState>
       ) }
     </div>
   );

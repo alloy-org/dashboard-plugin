@@ -31,17 +31,13 @@
 
   .note-item {
     &:hover {
-      background-color: $color-bg-page;
+      background-color: $color-background-secondary;
     }
   }
 
   .note-link {
     align-items: center;
-    background: none;
-    border: none;
     border-radius: $radius-sm;
-    color: inherit;
-    cursor: pointer;
     display: flex;
     gap: $sp-sm;
     justify-content: space-between;
@@ -51,7 +47,7 @@
   }
 
   .note-name {
-    color: $color-text;
+    color: $color-text-high-contrast;
     flex: 1;
     font-size: $smaller-font-size;
     font-weight: 500;
@@ -62,22 +58,9 @@
 
   .note-count,
   .note-metadata {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     flex-shrink: 0;
     font-size: $smaller-font-size;
     white-space: nowrap;
-  }
-
-  .note-loading,
-  .note-empty,
-  .note-error {
-    color: $color-text-secondary;
-    font-size: $default-font-size;
-    padding: $sp-md 0;
-    text-align: center;
-  }
-
-  .note-error {
-    color: $color-danger;
   }
 }

@@ -2,25 +2,25 @@
  * The wizard is a full-screen task rather than a widget view, so it is styled as a dialog over the dashboard
  * instead of inheriting the widget card's cramped column. */
 
+@use 'controls' as *;
 @use 'theme-tokens' as *;
 
+$plan-wizard-body-padding: $sp-xl;
+$plan-wizard-body-padding-phone: $sp-lg;
 $plan-wizard-edge-inset-horizontal: 10%;
 $plan-wizard-edge-inset-horizontal-phone: 10px;
 $plan-wizard-edge-inset-vertical: $sp-xl;
-$plan-wizard-input-min-height: 38px;
-$plan-wizard-pending-spinner-size: 14px;
+$plan-wizard-input-min-height: 36px;
+$plan-wizard-pending-row-height: 16px;
 $plan-wizard-sidebar-width: 220px;
-$plan-wizard-shadow-blur: 40px;
-$plan-wizard-shadow-y: 12px;
+$plan-wizard-step-bar-height: 4px;
 $plan-wizard-z-index: 1100;
 
-// Categorical slice colors for the rail's pace ring, one fixed hue per rhythm in the pace page's option order so a
-// rhythm keeps its color whichever others are present. Mid-tone steps that read on both the light and dark rail.
-$pace-slice-small-move-color: #2a78d6;
-$pace-slice-two-blocks-color: #eb6834;
-$pace-slice-one-block-color: #1baf7a;
-$pace-slice-deadline-color: #eda100;
-$pace-slice-other-color: #e87ba4;
+// The host's MDC dialog: elevation 24 surface under a title bar in the host's dialog color, which is dark in every
+// theme, so the title ink is the navigation's high-contrast text rather than the page's.
+$plan-wizard-title-bar-background: $color-background-dialog;
+$plan-wizard-title-bar-text: $color-text-nav-high-contrast;
+$plan-wizard-title-bar-text-low: $color-text-nav-low-contrast;
 
 /* The overlay is anchored in the document rather than pinned to the viewport: plan-wizard.jsx sets `top` inline
  * to the scroll offset the wizard opened at, so the dialog appears at the top of what the user was looking at
@@ -38,7 +38,7 @@ $pace-slice-other-color: #e87ba4;
  * dialog can use the rest of the width. */
 .plan-wizard-overlay {
   align-items: flex-start;
-  background: $color-overlay-backdrop;
+  background: $color-background-scrim;
   display: flex;
   justify-content: center;
   left: 0;
@@ -54,7 +54,7 @@ $pace-slice-other-color: #e87ba4;
   }
 
   .plan-wizard-backdrop {
-    background: $color-overlay-backdrop;
+    background: $color-background-scrim;
     bottom: 0;
     left: 0;
     position: fixed;
@@ -65,44 +65,42 @@ $pace-slice-other-color: #e87ba4;
 
   /* The dialog fills the width the overlay's inset leaves it and takes exactly the height its page asks for.
    * `align-items: flex-start` on the overlay is what keeps that height: as a flex item the dialog would otherwise
-   * stretch to the overlay's full height, which is what spread a five-field page over an entire tall screen. */
+   * stretch to the overlay's full height, which is what spread a five-field page over an entire tall screen.
+   * The surface itself carries no padding: the title bar runs edge to edge, and each band below it pads itself. */
   .plan-wizard-page {
-    @include card;
-
     /* The dialog is the container the progress rail's width query measures, so the query has to be declared on an
      * ancestor of the rail rather than on the body it styles: an element cannot answer its own container query. */
     container-type: inline-size;
 
-    background: $color-bg-secondary;
-    box-shadow: 0 $plan-wizard-shadow-y $plan-wizard-shadow-blur $color-overlay-shadow;
-    color: $color-text;
+    background: $color-background-primary;
+    border-radius: $radius-sm;
+    box-shadow: $shadow-elevation-24;
+    color: $color-text-high-contrast;
     display: flex;
     flex-direction: column;
     font-family: $font-sans;
-    padding: $sp-xl;
+    font-size: $default-font-size;
     position: relative;
     width: 100%;
     z-index: 1;
 
-    @include breakpoint($breakpoint-large-phone) {
-      padding: $sp-lg;
-    }
-
     h1,
     h2,
-    h3 {
-      color: $color-navy;
+    h3,
+    h4 {
+      color: $color-text-high-contrast;
     }
 
-    /* Every page's inputs share one look, so a question added later needs no new field styling. */
-    input[type="text"],
-    input[type="date"],
+    /* The fields TextField cannot express (the write-in inputs inside option cards and the auto-growing
+     * textareas) share the outlined field look; every other field is a TextField. */
+    input.done-enough-custom-input,
+    input.quarter-name-custom-input,
     textarea.intent-step-input,
     textarea.project-row-name {
-      background: $color-bg-primary;
-      border: 1px solid $color-border;
+      background: $color-background-primary;
+      border: 1px solid $color-border-primary;
       border-radius: $radius-sm;
-      color: $color-text;
+      color: $color-text-high-contrast;
       font-family: inherit;
       font-size: $default-font-size;
       min-height: $plan-wizard-input-min-height;
@@ -110,12 +108,12 @@ $pace-slice-other-color: #e87ba4;
       width: 100%;
 
       &:focus {
-        border-color: $color-accent;
+        border-color: $color-background-action-high-contrast;
         outline: none;
       }
 
       &::placeholder {
-        color: $color-text-muted;
+        color: $color-text-low-contrast;
       }
     }
 
@@ -129,67 +127,70 @@ $pace-slice-other-color: #e87ba4;
       overflow-wrap: anywhere;
       resize: none;
     }
+  }
 
-    /* Buttons default to the quiet secondary treatment; each page promotes its own primary action below. */
-    button {
-      background: transparent;
-      border: 1px solid $color-border;
-      border-radius: $radius-sm;
-      color: $color-text-secondary;
-      cursor: pointer;
-      font-family: inherit;
-      font-size: $smaller-font-size;
-      font-weight: 600;
-      padding: $sp-sm $sp-md;
+  /* The wizard's chips, choice tiles, and rail rows (PlainButtons) share a quiet bordered shape. The list is one
+   * class deep under the wrapper, so it outranks PlainButton's reset while every named rule below, which comes
+   * later at the same or greater weight, still overrides it. Labeled actions are Button and IconButton. */
+  .plan-wizard-page :is(.done-enough-release-choice, .intent-reading-direction, .intent-step-suggestion,
+      .progress-bar-summary, .progress-plan-note-link, .progress-step-button,
+      .project-pace-choice, .project-pace-day, .project-row-priority-button, .project-row-status-button,
+      .project-sources-project-row, .quarter-name-idea) {
+    align-items: center;
+    background: transparent;
+    border: 1px solid $color-border-primary;
+    border-radius: $radius-sm;
+    color: $color-text-medium-contrast;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: $smaller-font-size;
+    font-weight: 500;
+    gap: $sp-xs;
+    padding: $sp-sm $sp-md;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 
-      &:hover:not(:disabled) {
-        background: $color-bg-page-hover;
-      }
+    &:hover:not(:disabled) {
+      background: $color-background-element-low-contrast;
+    }
 
-      &:disabled {
-        cursor: default;
-        opacity: 0.5;
-      }
+    &:disabled {
+      opacity: 0.5;
     }
   }
 
   // ── Wizard chrome ────────────────────────────────────────────────────────────────────────
 
+  /* The title bar of the host's MDC dialog: the dialog color edge to edge and a 20px medium title. The quarter and
+   * the existing-note link sit after the title in the bar's low-contrast ink. The wizard deliberately has no close
+   * icon: Cancel, Escape, and the backdrop are its ways out. */
   .plan-wizard-header {
     align-items: center;
-    border-bottom: 1px solid $color-border;
+    background: $plan-wizard-title-bar-background;
+    border-radius: $radius-sm $radius-sm 0 0;
+    color: $plan-wizard-title-bar-text;
     display: flex;
     gap: $sp-md;
-    padding-bottom: $sp-lg;
+    padding: $sp-lg $plan-wizard-body-padding;
+
+    @include breakpoint($breakpoint-large-phone) {
+      padding: $sp-md $plan-wizard-body-padding-phone;
+    }
   }
 
   .plan-wizard-title-group {
-    align-items: center;
+    align-items: baseline;
     display: flex;
     flex: 1 1 auto;
     flex-wrap: wrap;
-    gap: $sp-sm;
+    gap: $sp-xs $sp-md;
     min-width: 0;
   }
 
-  .plan-wizard-title-icon {
-    color: $color-success;
-    fill: none;
-    flex: 0 0 20px;
-    height: 20px;
-    stroke: currentColor;
-    stroke-width: 2;
-    width: 20px;
-  }
-
-  .plan-wizard-title-icon-center {
-    fill: currentColor;
-    stroke: none;
-  }
-
-  .plan-wizard-title {
-    font-size: $default-font-size;
-    font-weight: 700;
+  .plan-wizard-page .plan-wizard-title {
+    color: $plan-wizard-title-bar-text;
+    font-size: $medium-heading-font-size;
+    font-weight: 500;
+    line-height: 1.3;
     margin: 0;
     white-space: nowrap;
   }
@@ -197,95 +198,80 @@ $pace-slice-other-color: #e87ba4;
   /* The quarter the wizard is writing to, stated beside the title so the page a user lands on says which plan
    * they are editing rather than leaving it to the widget button they arrived through. */
   .plan-wizard-title-quarter {
-    color: $color-text-muted;
-    font-size: $smaller-font-size;
-    font-weight: 600;
+    color: $plan-wizard-title-bar-text-low;
+    font-size: $default-font-size;
+    font-weight: 500;
     white-space: nowrap;
   }
 
-  /* A quarter the user already wrote in, outside Plan Builder, links to that note from the header rather than
-   * waiting until the last page. Nested under `.plan-wizard-page` to beat that block's button border. */
-  .plan-wizard-page .plan-wizard-existing-note-link {
-    background: none;
-    border: none;
-    color: $color-text-muted;
+  /* A quarter the user already wrote in, outside Plan Builder, links to that note from the title bar rather than
+   * waiting until the last page. */
+  .plan-wizard-existing-note-link {
+    color: $plan-wizard-title-bar-text-low;
     flex: 0 0 auto;
     font-size: $smaller-font-size;
-    padding: 0;
     text-decoration: underline;
     white-space: nowrap;
 
     &:hover:not(:disabled) {
-      background: none;
-      color: $color-text-secondary;
+      color: $plan-wizard-title-bar-text;
     }
   }
 
-  .plan-wizard-step-track {
-    align-items: center;
+  /* Position in the sequence: an overline "Step 2 of 5" over a segmented 4px bar. Every segment up to and
+   * including the current step takes the action color, the rest the light action track. */
+  .plan-wizard-step-strip {
     display: flex;
-    gap: 5px;
+    flex-direction: column;
+    gap: $sp-sm;
+    padding: $sp-lg $plan-wizard-body-padding 0;
+
+    @include breakpoint($breakpoint-large-phone) {
+      padding: $sp-md $plan-wizard-body-padding-phone 0;
+    }
+  }
+
+  .plan-wizard-step-position {
+    @include overline-label;
+  }
+
+  .plan-wizard-step-track {
+    display: flex;
+    gap: 2px;
   }
 
   .plan-wizard-step-dot {
-    background: $color-text-muted;
-    border-radius: 999px;
-    height: 7px;
-    opacity: 0.7;
-    width: 7px;
+    background: $color-background-action-medium-contrast;
+    flex: 1 1 0;
+    height: $plan-wizard-step-bar-height;
+
+    &:first-child {
+      border-radius: $radius-mark 0 0 $radius-mark;
+    }
+
+    &:last-child {
+      border-radius: 0 $radius-mark $radius-mark 0;
+    }
   }
 
-  .plan-wizard-step-dot--current {
-    background: $color-success;
-    opacity: 1;
-    width: 24px;
-  }
-
-  .plan-wizard-progress {
-    color: $color-text-muted;
-    font-size: $smaller-font-size;
-    font-weight: 600;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-
-  .plan-wizard-status {
-    color: $color-text-secondary;
-    font-size: $default-font-size;
-    padding: $sp-xl 0;
-    text-align: center;
-  }
-
-  .plan-wizard-error {
-    background: $color-bg-warning;
-    border: 1px solid $color-border;
-    border-radius: $radius-md;
-    margin-top: $sp-lg;
-    padding: $sp-md;
+  .plan-wizard-step-dot--current,
+  .plan-wizard-step-dot:has(~ .plan-wizard-step-dot--current) {
+    background: $color-background-action-high-contrast;
   }
 
   .plan-wizard-error-message {
-    color: $color-danger;
-    font-size: $default-font-size;
-    margin: 0 0 $sp-sm;
-  }
-
-  .plan-wizard-error-title {
-    color: $color-danger;
-    font-size: $default-font-size;
-    font-weight: 700;
     margin: 0 0 $sp-xs;
   }
 
   .plan-wizard-error-guidance {
-    color: $color-text-secondary;
-    font-size: $smaller-font-size;
-    margin: 0 0 $sp-sm;
+    margin: 0;
   }
 
+  /* The dialog's action footer: Back or Cancel on the left as a text button, the advancing actions on the right
+   * with the raised primary last, as the host's dialogs place them. */
   .plan-wizard-navigation {
-    border-top: 1px solid $color-border;
+    align-items: center;
+    border-top: 1px solid $color-border-primary;
     display: flex;
     gap: $sp-sm;
     justify-content: space-between;
@@ -298,47 +284,14 @@ $pace-slice-other-color: #e87ba4;
   .plan-wizard-advance-group {
     align-items: center;
     display: flex;
-    gap: 22px;
+    gap: $sp-sm;
     margin-left: auto;
   }
 
-  /* Reading the plan is a way out of the sequence rather than a step in it, so it reads as a link beside Done the
-   * same way Cancel does beside Next. The gap above sets its distance from Done; no margin here, or the two add up. */
-  .plan-wizard-page .plan-wizard-view-plan {
-    background: none;
-    border: none;
-    color: $color-text-muted;
-    padding-left: 0;
-    padding-right: 0;
-    text-decoration: underline;
-    white-space: nowrap;
-
-    &:hover:not(:disabled) {
-      background: none;
-      color: $color-text-secondary;
-    }
-  }
-
   .plan-wizard-plan-note-error {
-    color: $color-danger;
+    color: $color-text-error-high-contrast;
     font-size: $default-font-size;
     margin: 0;
-  }
-
-  /* Cancel is a way out, not a step in the sequence, so it reads as a link rather than as a peer of Back and
-   * Next. Nested under `.plan-wizard-page` to beat that block's `button { border: 1px solid }` default, the same
-   * way the primary action is promoted below. */
-  .plan-wizard-page .plan-wizard-cancel {
-    background: none;
-    border: none;
-    color: $color-text-muted;
-    padding-left: 0;
-    text-decoration: underline;
-
-    &:hover:not(:disabled) {
-      background: none;
-      color: $color-text-secondary;
-    }
   }
 
   // ── Shared step layout ───────────────────────────────────────────────────────────────────
@@ -354,24 +307,22 @@ $pace-slice-other-color: #e87ba4;
   }
 
   .plan-heading {
-    font-size: $small-heading-font-size;
-    font-weight: 700;
+    font-size: $large-font-size;
+    font-weight: 500;
+    line-height: 1.35;
     margin: 0;
   }
 
   .plan-summary {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: $default-font-size;
     line-height: 1.5;
     margin: 0;
   }
 
   .plan-category-heading {
-    font-size: $smaller-font-size;
-    font-weight: 700;
-    letter-spacing: 0.03em;
+    @include overline-label;
     margin: 0;
-    text-transform: uppercase;
   }
 
   .plan-actions {
@@ -381,54 +332,41 @@ $pace-slice-other-color: #e87ba4;
     gap: $sp-md;
   }
 
-  /* Nested under `.plan-wizard-page` so these beat that block's `button { border: 1px solid }` default. */
-  .plan-wizard-page .plan-button--primary,
-  .plan-wizard-page .note-editor-btn--save {
-    background: $color-background-accent;
-    border-color: $color-background-accent;
-    color: $color-text-on-accent;
-
-    &:hover:not(:disabled) {
-      background: $color-background-accent;
-      opacity: 0.9;
-    }
-  }
-
-  .plan-wizard-page .plan-button--dashed {
-    border-style: dashed;
+  /* Secondary actions on a page (add a field, suggest, combine, read again) are outlined Buttons. */
+  .plan-button--dashed {
     flex-shrink: 0;
   }
 
   .plan-error {
-    color: $color-danger;
+    color: $color-text-error-high-contrast;
     font-size: $smaller-font-size;
     margin: 0;
   }
 
   .plan-error-note-link {
     color: inherit;
-    font-weight: 700;
+    font-weight: 500;
     text-decoration: underline;
 
     &:hover {
-      color: $color-navy;
+      color: $color-text-high-contrast;
     }
   }
 
   .plan-saved {
-    color: $color-success;
+    color: $color-text-status;
     font-size: $smaller-font-size;
     margin: 0;
   }
 
   .plan-optional {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: $smaller-font-size;
     margin: 0;
   }
 
   .plan-empty {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: $smaller-font-size;
     line-height: 1.5;
     margin: 0;
@@ -454,12 +392,11 @@ $pace-slice-other-color: #e87ba4;
     }
 
     /* Each category is a card of its own, so the two parallel questions read as two places to answer rather than
-     * as one undifferentiated form. The fill is primary against the form's secondary ground; the category color is
-     * a thick top stripe, as in the original layout, with a quiet grey edge on the remaining sides. */
+     * as one undifferentiated form: a 1px bordered tile on the dialog surface, as the host draws cards. */
     .intent-step-category {
-      background: $color-bg-primary;
-      border: 1px solid $color-border;
-      border-radius: $radius-md;
+      background: $color-background-primary;
+      border: 1px solid $color-border-primary;
+      border-radius: $radius-sm;
       display: flex;
       flex-direction: column;
       gap: $sp-sm;
@@ -468,26 +405,7 @@ $pace-slice-other-color: #e87ba4;
 
       .plan-button--dashed {
         align-self: flex-start;
-        font-size: $smaller-font-size;
         margin-top: auto;
-      }
-    }
-
-    .intent-step-category--work {
-      border-top: 4px solid $color-intent-work;
-
-      .plan-button--dashed {
-        border-color: $color-intent-work;
-        color: $color-intent-work;
-      }
-    }
-
-    .intent-step-category--personal {
-      border-top: 4px solid $color-intent-personal;
-
-      .plan-button--dashed {
-        border-color: $color-intent-personal;
-        color: $color-intent-personal;
       }
     }
 
@@ -496,34 +414,12 @@ $pace-slice-other-color: #e87ba4;
      * clickable below it. */
     .intent-step-suggestion-pending {
       align-items: center;
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       display: flex;
       font-size: $smaller-font-size;
       font-style: italic;
       gap: $sp-sm;
-      min-height: $plan-wizard-pending-spinner-size;
-    }
-
-    .intent-step-pending-spinner {
-      animation: intent-step-pending-spin 0.8s linear infinite;
-      border: 2px solid $color-border;
-      border-radius: 50%;
-      border-top-color: $color-link;
-      box-sizing: border-box;
-      flex-shrink: 0;
-      height: $plan-wizard-pending-spinner-size;
-      width: $plan-wizard-pending-spinner-size;
-    }
-
-    /* Without the animation a static ring reads as a broken control, so the wait is carried by the label alone. */
-    @media (prefers-reduced-motion: reduce) {
-      .intent-step-pending-spinner {
-        display: none;
-      }
-    }
-
-    @keyframes intent-step-pending-spin {
-      to { transform: rotate(360deg); }
+      min-height: $plan-wizard-pending-row-height;
     }
 
     .intent-step-suggestion-list {
@@ -532,22 +428,27 @@ $pace-slice-other-color: #e87ba4;
       gap: $sp-xs;
     }
 
-    /* Suggested intents are starting points, not chosen answers. They sit on the secondary fill with
-     * medium-contrast text so they read as chips on the primary card, inferred and default alike. */
+    /* Suggested intents are starting points, not chosen answers. They are element-filled pills with
+     * medium-contrast text, inferred and default alike. */
     .intent-step-suggestion {
-      background: $color-bg-secondary;
-      color: $color-text-secondary;
-      font-size: $smaller-font-size;
+      background: $color-background-element-low-contrast;
+      border: none;
+      border-radius: $radius-pill;
+      color: $color-text-medium-contrast;
+      font-size: 12px;
       font-weight: 500;
+      line-height: 1.35;
+      padding: $sp-xs 10px;
       text-align: left;
 
       &:hover:not(:disabled) {
-        background: $color-bg-page-hover;
+        background: $color-background-action-low-contrast;
+        color: $color-text-high-contrast;
       }
     }
 
     .intent-step-suggestion-note {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       font-size: $smaller-font-size;
       font-style: italic;
       margin: 0;
@@ -559,13 +460,12 @@ $pace-slice-other-color: #e87ba4;
   /* The bar under the reading link and under the reading page's title. Its width is set inline from the elapsing
    * progress the wizard shell measures, so the fill carries on unbroken as the user moves between the two. */
   .intent-reading-progress-track {
-    background: $color-border;
-    border-radius: $radius-sm;
-    height: 4px;
+    background: $color-background-action-medium-contrast;
+    height: $plan-wizard-step-bar-height;
     overflow: hidden;
 
     .intent-reading-progress-fill {
-      background: $color-success;
+      background: $color-background-action-high-contrast;
       height: 100%;
     }
   }
@@ -579,16 +479,6 @@ $pace-slice-other-color: #e87ba4;
 
     .intent-step-reading-link {
       align-self: flex-start;
-      border: 0;
-      color: $color-link;
-      font-size: $smaller-font-size;
-      font-weight: 600;
-      padding: 0;
-
-      &:hover:not(:disabled) {
-        background: transparent;
-        text-decoration: underline;
-      }
     }
   }
 
@@ -605,25 +495,15 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .intent-reading-title {
-      font-family: $font-serif;
       font-size: $medium-heading-font-size;
     }
 
     .intent-reading-return {
-      border: 0;
-      color: $color-link;
       flex-shrink: 0;
-      font-weight: 500;
-      padding: 0;
-
-      &:hover:not(:disabled) {
-        background: transparent;
-        text-decoration: underline;
-      }
     }
 
     .intent-reading-status {
-      color: $color-text-secondary;
+      color: $color-text-medium-contrast;
       font-size: $default-font-size;
       margin: 0;
     }
@@ -642,20 +522,20 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .intent-reading-section-heading {
-      color: $color-text-secondary;
-      font-size: $smaller-font-size;
-      font-weight: 600;
+      @include overline-label;
       margin: 0;
     }
 
     .intent-reading-section-count,
     .intent-reading-section-hint {
-      color: $color-text-muted;
+      color: $color-text-lower-contrast;
       font-weight: 400;
+      letter-spacing: normal;
+      text-transform: none;
     }
 
     .intent-reading-placeholder {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       font-size: $smaller-font-size;
       font-style: italic;
       margin: 0;
@@ -688,15 +568,8 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .intent-reading-item-icon {
-      fill: none;
+      color: $color-text-lower-contrast;
       flex-shrink: 0;
-      height: 1rem;
-      margin-top: 1px;
-      stroke: $color-text-muted;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      stroke-width: 1.3;
-      width: 1rem;
     }
 
     .intent-reading-theme-list { gap: $sp-xs; }
@@ -704,8 +577,8 @@ $pace-slice-other-color: #e87ba4;
     .intent-reading-theme {
       align-items: center;
       animation: intent-reading-arrive 0.3s ease-out;
-      background: $color-bg-primary;
-      border: 1px solid $color-border;
+      background: $color-background-primary;
+      border: 1px solid $color-border-primary;
       border-radius: $radius-sm;
       display: flex;
       font-size: $default-font-size;
@@ -714,12 +587,13 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .intent-reading-theme--pinned {
-      border-color: $color-success;
+      background: $color-background-action-low-contrast;
+      border-color: $color-background-action-high-contrast;
     }
 
     .intent-reading-theme--dismissed .intent-reading-theme-label,
     .intent-reading-theme--dismissed .intent-reading-theme-count {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       text-decoration: line-through;
     }
 
@@ -730,54 +604,21 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .intent-reading-theme-count {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       font-size: $smaller-font-size;
       font-variant-numeric: tabular-nums;
     }
 
-    .intent-reading-theme-button {
-      align-items: center;
-      display: inline-flex;
-      font-size: $large-font-size;
-      font-weight: 400;
-      height: 1.9rem;
-      justify-content: center;
-      line-height: 1;
-      padding: 0;
-      width: 2.1rem;
-
-      &:first-of-type { margin-left: auto; }
-
-      &[aria-pressed="true"] {
-        background: $color-bg-secondary;
-        border-color: $color-text-muted;
-        color: $color-text;
-      }
-
-      svg {
-        fill: none;
-        height: 0.9rem;
-        stroke: currentColor;
-        stroke-linejoin: round;
-        stroke-width: 1.4;
-        width: 0.9rem;
-      }
-    }
-
-    .intent-reading-theme--pinned .intent-reading-theme-button[aria-pressed="true"] {
-      border-color: $color-success;
-      color: $color-success;
-
-      svg { fill: currentColor; }
+    .intent-reading-theme-button:first-of-type {
+      margin-left: auto;
     }
 
     .intent-reading-reread {
       align-self: flex-start;
-      font-size: $smaller-font-size;
     }
 
     .intent-reading-directions {
-      border-top: 1px solid $color-border;
+      border-top: 1px solid $color-border-primary;
       display: flex;
       flex-direction: column;
       gap: $sp-sm;
@@ -786,37 +627,28 @@ $pace-slice-other-color: #e87ba4;
 
     .intent-reading-direction-list { gap: $sp-sm; }
 
+    /* Directions are selectable cards: a bordered row that takes the action fill on hover. */
     .intent-reading-direction {
-      align-items: center;
       animation: intent-reading-arrive 0.35s ease-out;
-      background: $color-bg-primary;
-      color: $color-text;
+      background: $color-background-primary;
+      color: $color-text-high-contrast;
       display: flex;
       font-size: $default-font-size;
-      font-weight: 600;
+      font-weight: 500;
       gap: $sp-sm;
       padding: $sp-sm $sp-md;
       text-align: left;
       width: 100%;
 
       &:hover:not(:disabled) {
-        background: $color-bg-primary;
-        border-color: $color-success;
+        background: $color-background-action-low-contrast;
+        border-color: $color-background-action-high-contrast;
       }
     }
 
     .intent-reading-direction-icon {
-      fill: none;
+      color: $color-text-lower-contrast;
       flex-shrink: 0;
-      height: 1.1rem;
-      stroke: $color-success;
-      stroke-width: 2;
-      width: 1.1rem;
-    }
-
-    .intent-reading-direction-icon-center {
-      fill: $color-success;
-      stroke: none;
     }
 
     @container (max-width: 560px) {
@@ -841,7 +673,7 @@ $pace-slice-other-color: #e87ba4;
    * reading page does not: the considered count, the thin-evidence warning, and project rows with their task counts. */
   .project-sources-page {
     .project-sources-considered {
-      color: $color-text;
+      color: $color-text-high-contrast;
       font-size: $large-font-size;
       margin: 0;
 
@@ -849,10 +681,10 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-sources-thin-warning {
-      background: $color-bg-warning;
-      border: 1px solid $color-warning;
+      background: $color-background-error-medium-contrast;
+      border: 1px solid $color-text-error-low-contrast;
       border-radius: $radius-sm;
-      color: $color-text;
+      color: $color-text-high-contrast;
       font-size: $default-font-size;
       line-height: 1.4;
       margin: 0;
@@ -871,15 +703,15 @@ $pace-slice-other-color: #e87ba4;
     .project-sources-intent-dot--personal { background: $color-intent-personal; }
 
     .project-sources-note-detail {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       font-size: $smaller-font-size;
       white-space: nowrap;
     }
 
     .project-sources-project {
       animation: intent-reading-arrive 0.35s ease-out;
-      background: $color-bg-primary;
-      border: 1px solid $color-border;
+      background: $color-background-primary;
+      border: 1px solid $color-border-primary;
       border-radius: $radius-sm;
       font-size: $default-font-size;
       overflow: hidden;
@@ -902,25 +734,19 @@ $pace-slice-other-color: #e87ba4;
     button.project-sources-project-row {
       cursor: pointer;
 
-      &:hover { background: $color-bg-secondary; }
+      &:hover { background: $color-background-action-low-contrast; }
     }
 
     .project-sources-project-chevron {
-      fill: none;
+      color: $color-text-lower-contrast;
       flex-shrink: 0;
-      height: 0.9rem;
-      stroke: $color-text-muted;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-      stroke-width: 1.8;
       transition: transform 0.15s ease;
-      width: 0.9rem;
     }
 
     .project-sources-project--open .project-sources-project-chevron { transform: rotate(90deg); }
 
     .project-sources-task-panel {
-      border-top: 1px solid $color-border;
+      border-top: 1px solid $color-border-primary;
       display: flex;
       flex-direction: column;
       gap: $sp-xs;
@@ -953,51 +779,29 @@ $pace-slice-other-color: #e87ba4;
       overflow-wrap: anywhere;
     }
 
-    .project-sources-task--finished .project-sources-task-text { color: $color-text-muted; }
+    .project-sources-task--finished .project-sources-task-text { color: $color-text-low-contrast; }
 
     .project-sources-task-detail,
     .project-sources-task-placeholder {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       font-size: $smaller-font-size;
       margin: 0;
     }
 
-    .project-sources-project--ratified { border-color: $color-success; }
+    .project-sources-project--ratified { border-color: $color-background-action-high-contrast; }
 
     .project-sources-project-name {
       flex: 1 1 12rem;
-      font-weight: 600;
+      font-weight: 500;
       min-width: 0;
       overflow-wrap: anywhere;
     }
 
     .project-sources-project-category,
     .project-sources-project-count {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       font-size: $smaller-font-size;
       font-variant-numeric: tabular-nums;
-    }
-
-    .project-sources-ratified-badge {
-      align-items: center;
-      border: 1px solid $color-success;
-      border-radius: $radius-sm;
-      color: $color-success;
-      display: inline-flex;
-      font-size: $smaller-font-size;
-      font-weight: 600;
-      gap: 3px;
-      padding: 1px 6px;
-
-      svg {
-        fill: none;
-        height: 0.8rem;
-        stroke: currentColor;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        stroke-width: 2;
-        width: 0.8rem;
-      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -1016,11 +820,6 @@ $pace-slice-other-color: #e87ba4;
       margin: $sp-sm 0 0;
     }
 
-    .projects-step-discover,
-    .projects-step-combine {
-      font-size: $smaller-font-size;
-    }
-
     .projects-step-sources {
       display: flex;
       flex-direction: column;
@@ -1029,21 +828,11 @@ $pace-slice-other-color: #e87ba4;
 
       .projects-step-sources-link {
         align-self: flex-start;
-        border: 0;
-        color: $color-link;
-        font-size: $smaller-font-size;
-        font-weight: 600;
-        padding: 0;
-
-        &:hover:not(:disabled) {
-          background: transparent;
-          text-decoration: underline;
-        }
       }
     }
 
     .projects-step-discovery-notice {
-      color: $color-text-secondary;
+      color: $color-text-medium-contrast;
       flex: 1;
       font-size: $smaller-font-size;
       margin: 0;
@@ -1054,15 +843,14 @@ $pace-slice-other-color: #e87ba4;
      * rate changes partway through. A CSS transition on width would fight that: it would restart on each tick
      * rather than smoothing between them, so the easing stays out of the stylesheet deliberately. */
     .projects-step-discovery-progress {
-      background: $color-border;
-      border-radius: $radius-sm;
+      background: $color-background-action-medium-contrast;
       flex-basis: 100%;
-      height: 4px;
+      height: $plan-wizard-step-bar-height;
       margin-top: $sp-xs;
       overflow: hidden;
 
       .discovery-progress-fill {
-        background: $color-accent;
+        background: $color-background-action-high-contrast;
         height: 100%;
       }
     }
@@ -1086,9 +874,9 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-row {
-      background: $color-bg-primary;
-      border: 1px solid $color-border;
-      border-radius: $radius-md;
+      background: $color-background-primary;
+      border: 1px solid $color-border-primary;
+      border-radius: $radius-sm;
       display: flex;
       flex-direction: column;
       gap: $sp-sm;
@@ -1099,7 +887,6 @@ $pace-slice-other-color: #e87ba4;
     /* A discovered project the user has not yet judged is visually provisional, so an inference is never mistaken
      * for a decision the user made. */
     .project-row--proposed {
-      background: $color-bg-primary;
       border-style: dashed;
     }
 
@@ -1110,9 +897,9 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-row-provenance {
-      color: $color-text-muted;
-      font-size: $default-font-size;
-      font-style: italic;
+      color: $color-text-medium-contrast;
+      font-size: $smaller-font-size;
+      line-height: 1.45;
       margin: 0;
 
       p {
@@ -1124,28 +911,28 @@ $pace-slice-other-color: #e87ba4;
      * open task carries a live dot; a finished one is checked off and quieter. */
     .project-row-task-chip {
       align-items: center;
-      background: $color-bg-secondary;
-      border: 1px solid $color-border;
-      border-radius: $radius-sm;
-      color: $color-text;
+      background: $color-background-element-low-contrast;
+      border-radius: $radius-pill;
+      color: $color-text-high-contrast;
       cursor: default;
       display: inline-flex;
-      font-size: $smaller-font-size;
+      font-size: 12px;
       font-style: normal;
+      font-weight: 500;
       gap: $sp-xs;
       line-height: 1.4;
-      padding: 0 $sp-xs;
+      padding: 0 $sp-sm;
       vertical-align: baseline;
       white-space: nowrap;
 
       &:focus-visible {
-        outline: 2px solid $color-accent;
+        outline: 2px solid $color-background-action-high-contrast;
         outline-offset: 1px;
       }
     }
 
     .project-row-task-chip--active .project-row-task-chip-marker {
-      background: $color-success;
+      background: $color-background-action-high-contrast;
       border-radius: 50%;
       flex-shrink: 0;
       height: 6px;
@@ -1153,23 +940,19 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-row-task-chip--finished {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
 
       .project-row-task-chip-marker {
-        color: $color-success;
+        color: $color-text-status;
       }
     }
 
     .project-row-task-chip--pending {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       opacity: 0.7;
     }
 
     .project-row-reject {
-      color: $color-danger;
-      flex-shrink: 0;
-      font-size: $smaller-font-size;
-
       @include breakpoint($breakpoint-tablet) {
         display: none;
       }
@@ -1194,7 +977,7 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-row-status {
-      border-left: 1px solid $color-border;
+      border-left: 1px solid $color-border-primary;
       padding-left: $sp-md;
 
       .project-row-emphasis-label {
@@ -1212,11 +995,8 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-row-status-button {
-      background: transparent;
-      border: 1px dashed $color-border;
       color: $color-project-complete;
-      font-size: $smaller-font-size;
-      padding: $sp-sm $sp-md;
+      display: inline-flex;
       white-space: nowrap;
 
       &:hover:not(:disabled) {
@@ -1226,9 +1006,8 @@ $pace-slice-other-color: #e87ba4;
 
     .project-row-status-button--done {
       background: $color-project-complete;
-      border: 1px solid $color-project-complete;
+      border-color: $color-project-complete;
       @include contrasting-color(color, $color-project-complete);
-      font-weight: 600;
 
       &:hover:not(:disabled) {
         background: $color-project-complete;
@@ -1237,9 +1016,9 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-row-emphasis-label {
-      color: $color-text-secondary;
-      font-size: $smaller-font-size;
-      font-weight: 600;
+      color: $color-text-low-contrast;
+      font-size: 12px;
+      font-weight: 500;
       margin: $sp-sm 0;
     }
 
@@ -1250,25 +1029,23 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-row-priority-button {
-      font-size: $smaller-font-size;
+      justify-content: center;
       padding: $sp-sm $sp-xs;
       text-align: center;
 
       &:disabled {
-        background: $color-bg-page;
-        color: $color-text-muted;
+        background: $color-background-element-low-contrast;
+        color: $color-text-low-contrast;
       }
 
-      /* The fill is --color-text-high-contrast. The page background is the host color already paired with
-       * that text, which is what the task-domain chip uses on the same fill. */
+      /* A chosen emphasis is a selected tile: the action edge over the action's low-contrast fill. */
       &[aria-pressed="true"] {
-        background: $color-navy;
-        border-color: $color-navy;
-        color: $color-bg-card;
+        background: $color-background-action-low-contrast;
+        border-color: $color-background-action-high-contrast;
+        color: $color-text-high-contrast;
 
         &:hover:not(:disabled) {
-          background: $color-navy;
-          opacity: 0.9;
+          background: $color-background-action-low-contrast;
         }
       }
     }
@@ -1284,9 +1061,9 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-pace {
-      background: $color-bg-primary;
-      border: 1px solid $color-border;
-      border-radius: $radius-md;
+      background: $color-background-primary;
+      border: 1px solid $color-border-primary;
+      border-radius: $radius-sm;
       display: flex;
       flex-direction: column;
       gap: $sp-md;
@@ -1294,8 +1071,8 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-pace-title {
-      font-size: $small-heading-font-size;
-      font-weight: 700;
+      font-size: $large-font-size;
+      font-weight: 500;
       margin: 0;
     }
 
@@ -1310,31 +1087,24 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-pace-choice {
-      font-size: $smaller-font-size;
+      justify-content: center;
       line-height: 1.3;
       min-height: 52px;
       padding: $sp-sm;
       text-align: center;
+
+      &:hover:not(:disabled) {
+        background: $color-background-action-low-contrast;
+      }
     }
 
     .project-pace-choice--selected {
-      border-color: $color-blue;
-      box-shadow: 0 0 0 1px $color-blue;
-      color: $color-navy;
+      background: $color-background-action-low-contrast;
+      border-color: $color-background-action-high-contrast;
+      color: $color-text-high-contrast;
     }
 
     .project-pace-deadline {
-      align-items: center;
-      color: $color-text-secondary;
-      display: flex;
-      flex-wrap: wrap;
-      font-size: $smaller-font-size;
-      font-weight: 600;
-      gap: $sp-sm;
-    }
-
-    .project-pace-deadline-input {
-      flex: 1;
       min-width: 10rem;
     }
 
@@ -1346,28 +1116,30 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .project-pace-days-label {
-      color: $color-text-secondary;
-      font-size: $smaller-font-size;
-      font-weight: 600;
+      color: $color-text-low-contrast;
+      font-size: 12px;
+      font-weight: 500;
       margin-right: $sp-sm;
     }
 
-    /* Beat the overlay's transparent button default the same way priority chips do, so a chosen day stays a
-       filled success chip rather than a quiet outlined control. */
+    /* Weekdays are pill chips: element-filled when off, the action's low-contrast fill and edge when chosen. */
     .project-pace-day {
-      font-size: $smaller-font-size;
+      background: $color-background-element-low-contrast;
+      border-color: transparent;
+      border-radius: $radius-pill;
+      font-size: 12px;
+      justify-content: center;
       min-width: 44px;
       padding: $sp-xs $sp-sm;
       text-align: center;
 
       &[aria-pressed="true"] {
-        background: $color-success;
-        border-color: $color-success;
-        @include contrasting-color(color, $color-success);
+        background: $color-background-action-low-contrast;
+        border-color: $color-background-action-high-contrast;
+        color: $color-text-high-contrast;
 
         &:hover:not(:disabled) {
-          background: $color-success;
-          opacity: 0.9;
+          background: $color-background-action-low-contrast;
         }
       }
     }
@@ -1387,20 +1159,11 @@ $pace-slice-other-color: #e87ba4;
       gap: $sp-sm;
     }
 
-    /* Optional is a promise rather than a warning — the page is skippable — so it is set in the personal-intent
-     * violet rather than in the danger or warning colors. */
-    .done-enough-optional-badge {
-      color: $color-intent-personal;
-      font-size: $smaller-font-size;
-      font-weight: 700;
-      letter-spacing: 0.03em;
-      text-transform: uppercase;
-    }
-
     /* This question is two clauses long, so it is given more room to breathe than the one-line headings the
      * earlier pages ask, and a measure that keeps it from running the full width of a wide dialog. */
     .done-enough-heading {
       font-size: $medium-heading-font-size;
+      font-weight: 500;
       line-height: 1.35;
       max-width: 42rem;
     }
@@ -1423,9 +1186,9 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .done-enough-conditions {
-      background: $color-bg-primary;
-      border: 1px solid $color-border;
-      border-radius: $radius-md;
+      background: $color-background-primary;
+      border: 1px solid $color-border-primary;
+      border-radius: $radius-sm;
       display: flex;
       flex-direction: column;
       gap: 2px;
@@ -1435,15 +1198,13 @@ $pace-slice-other-color: #e87ba4;
     /* The page asks two sub-questions — the condition, and what a met condition releases the user toward — and
      * they are set alike so neither reads as a subordinate part of the other. */
     .done-enough-conditions-legend {
-      font-size: $default-font-size;
-      font-weight: 700;
+      @include overline-label;
       margin: 0 0 $sp-sm;
     }
 
     .done-enough-release-heading {
-      font-size: $default-font-size;
-      font-weight: 700;
-      margin: $sp-xs 0 0;
+      @include overline-label;
+      margin: $sp-sm 0 0;
     }
 
     /* A selected condition takes the same light blue fill and accent edge a chosen quarter-name idea does, so
@@ -1459,21 +1220,21 @@ $pace-slice-other-color: #e87ba4;
       padding: $sp-sm;
 
       &:hover {
-        background: $color-bg-page-hover;
+        background: $color-background-action-low-contrast;
       }
     }
 
     .done-enough-condition--selected {
-      background: $color-blue-light;
-      border-color: $color-blue;
+      background: $color-background-action-low-contrast;
+      border-color: $color-background-action-high-contrast;
 
       &:hover {
-        background: $color-blue-light;
+        background: $color-background-action-low-contrast;
       }
     }
 
     .done-enough-condition-radio {
-      accent-color: $color-blue;
+      accent-color: $color-background-action-high-contrast;
       cursor: pointer;
       flex: 0 0 auto;
       margin: 2px 0 0;
@@ -1491,11 +1252,11 @@ $pace-slice-other-color: #e87ba4;
 
     .done-enough-condition-label {
       font-size: $default-font-size;
-      font-weight: 600;
+      font-weight: 500;
     }
 
     .done-enough-condition-description {
-      color: $color-text-secondary;
+      color: $color-text-medium-contrast;
       font-size: $smaller-font-size;
       line-height: 1.4;
     }
@@ -1514,16 +1275,16 @@ $pace-slice-other-color: #e87ba4;
      * outlined in the success green the weekday chips use, kept as an outline because what someone would rather
      * be doing is an aside to the condition above it, not the page's decision. */
     .done-enough-release-choice {
-      background: $color-bg-primary;
-      border-radius: 999px;
-      font-size: $smaller-font-size;
-      font-weight: 500;
+      background: $color-background-element-low-contrast;
+      border-color: transparent;
+      border-radius: $radius-pill;
+      font-size: 12px;
       padding: $sp-xs $sp-md;
 
       &[aria-pressed="true"] {
-        border-color: $color-success;
-        color: $color-success;
-        font-weight: 700;
+        background: $color-background-action-low-contrast;
+        border-color: $color-background-action-high-contrast;
+        color: $color-text-high-contrast;
       }
     }
 
@@ -1532,9 +1293,9 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .done-enough-preview {
-      background: $color-bg-primary;
-      border: 1px solid $color-border;
-      border-radius: $radius-md;
+      background: $color-background-primary;
+      border: 1px solid $color-border-primary;
+      border-radius: $radius-sm;
       display: flex;
       flex-direction: column;
       gap: $sp-sm;
@@ -1545,24 +1306,24 @@ $pace-slice-other-color: #e87ba4;
     /* The scene is drawn from the success color at low opacity rather than from fixed greens, so it follows the
      * theme instead of glowing against a dark dialog. */
     .done-enough-scene {
-      border-radius: $radius-md;
+      border-radius: $radius-sm;
       display: block;
       height: auto;
       width: 100%;
     }
 
     .done-enough-scene-sky {
-      fill: $color-success;
+      fill: $color-text-status;
       opacity: 0.1;
     }
 
     .done-enough-scene-sun {
-      fill: $color-warning;
+      fill: $color-text-error-low-contrast;
       opacity: 0.35;
     }
 
     .done-enough-scene-hill {
-      fill: $color-success;
+      fill: $color-text-status;
     }
 
     .done-enough-scene-hill--far {
@@ -1574,9 +1335,8 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .done-enough-preview-title {
-      color: $color-navy;
-      font-size: $small-heading-font-size;
-      font-weight: 700;
+      font-size: $large-font-size;
+      font-weight: 500;
       margin: 0;
     }
 
@@ -1593,13 +1353,19 @@ $pace-slice-other-color: #e87ba4;
      * excluded one is italic and unmarked so the distinction survives without color alone carrying it. */
     .done-enough-signal {
       align-items: center;
-      border: 1px solid $color-border;
-      border-radius: 999px;
-      color: $color-text-secondary;
+      background: $color-background-element-low-contrast;
+      border-radius: $radius-pill;
+      color: $color-text-medium-contrast;
       display: inline-flex;
-      font-size: $smaller-font-size;
-      gap: $sp-xs;
+      font-size: 12px;
+      font-weight: 500;
+      gap: 2px;
       padding: 2px $sp-sm;
+    }
+
+    .done-enough-signal--credited {
+      background: $color-background-action-low-contrast;
+      color: $color-text-high-contrast;
     }
 
     .done-enough-signal--excluded {
@@ -1607,14 +1373,13 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .done-enough-signal-mark {
-      color: $color-success;
-      font-weight: 700;
+      color: $color-background-action-high-contrast;
     }
 
     /* Pushed to the bottom of the stretched panel, where a caption belongs, and stating that the wording is all
      * this page produces so far: nothing yet reads the stored condition at the end of a day. */
     .done-enough-preview-note {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       font-size: $smaller-font-size;
       font-style: italic;
       margin: auto 0 0;
@@ -1631,23 +1396,27 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .quarter-name-idea {
-      background: $color-bg-primary;
-      font-weight: 500;
+      background: $color-background-primary;
+      color: $color-text-high-contrast;
+      font-size: $default-font-size;
+      font-weight: 400;
       line-height: 1.45;
       text-align: left;
+
+      &:hover:not(:disabled) {
+        background: $color-background-action-low-contrast;
+      }
     }
 
     .quarter-name-idea--selected {
-      background: $color-blue-light;
-      border-color: $color-accent;
-      border-width: 2px;
-      color: $color-navy;
+      background: $color-background-action-low-contrast;
+      border-color: $color-background-action-high-contrast;
     }
 
     .quarter-name-custom {
       align-items: center;
-      background: $color-bg-primary;
-      border: 1px dashed $color-border;
+      background: $color-background-primary;
+      border: 1px dashed $color-border-primary;
       border-radius: $radius-sm;
       display: flex;
       gap: $sp-sm;
@@ -1656,9 +1425,9 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .quarter-name-custom--selected {
-      border-color: $color-accent;
+      background: $color-background-action-low-contrast;
+      border-color: $color-background-action-high-contrast;
       border-style: solid;
-      border-width: 2px;
     }
 
     .quarter-name-custom {
@@ -1677,7 +1446,7 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .quarter-name-custom-mark {
-      color: $color-text-muted;
+      color: $color-text-lower-contrast;
       flex: 0 0 auto;
     }
 
@@ -1701,9 +1470,7 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .quarter-name-month {
-      color: $color-text-secondary;
-      font-size: $smaller-font-size;
-      font-weight: 600;
+      @include overline-label;
       text-align: center;
     }
 
@@ -1723,21 +1490,21 @@ $pace-slice-other-color: #e87ba4;
       cursor: help;
       display: block;
       font-size: $smaller-font-size;
-      font-weight: 600;
+      font-weight: 500;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
 
     .quarter-name-window-track {
-      background-color: $color-bg-page;
-      background-image: linear-gradient(to right, transparent 0 33.333%, $color-border 33.333% 66.666%,
-        transparent 66.666%), linear-gradient($color-text-muted, $color-text-muted),
-        linear-gradient($color-text-muted, $color-text-muted);
+      background-color: $color-background-element-low-contrast;
+      background-image: linear-gradient(to right, transparent 0 33.333%, $color-border-primary 33.333% 66.666%,
+        transparent 66.666%), linear-gradient($color-text-low-contrast, $color-text-low-contrast),
+        linear-gradient($color-text-low-contrast, $color-text-low-contrast);
       background-position: 0, 33.333%, 66.666%;
       background-repeat: no-repeat;
       background-size: 100% 100%, 1px 100%, 1px 100%;
-      border-radius: 999px;
+      border-radius: $radius-pill;
       cursor: grab;
       height: 28px;
       position: relative;
@@ -1755,11 +1522,11 @@ $pace-slice-other-color: #e87ba4;
 
     .quarter-name-bar {
       align-items: center;
-      border-radius: 999px;
+      border-radius: $radius-pill;
       bottom: 4px;
       display: flex;
       justify-content: space-between;
-      padding: 0 6px;
+      padding: 0 2px;
       pointer-events: none;
       position: absolute;
       top: 4px;
@@ -1800,8 +1567,7 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .quarter-name-bar-handle {
-      font-size: $default-font-size;
-      line-height: 1;
+      flex-shrink: 0;
     }
 
     .quarter-name-bar-end-hit {
@@ -1844,24 +1610,10 @@ $pace-slice-other-color: #e87ba4;
 
     .quarter-name-window-remove {
       align-self: center;
-      background: transparent;
-      border: 0;
-      color: $color-text-muted;
-      cursor: pointer;
-      font-size: $medium-heading-font-size;
-      height: 28px;
-      line-height: 1;
-      padding: 0;
-      width: 28px;
-
-      &:hover:not(:disabled),
-      &:focus-visible {
-        color: $color-danger;
-      }
     }
 
     .quarter-name-deadline-note {
-      color: $color-text-muted;
+      color: $color-text-low-contrast;
       font-size: $smaller-font-size;
       grid-column: 1 / -1;
       margin: 0;
@@ -1895,13 +1647,18 @@ $pace-slice-other-color: #e87ba4;
    *
    * The container is `.plan-wizard-page`, and an `inline-size` container query resolves against that element's
    * content box, so 900px here is 900px of space inside the dialog's padding — about 948px of dialog at the
-   * $sp-xl gutter. That is the width at which the two columns can coexist: the rail plus the room the intent
+   * body's $sp-xl gutter. That is the width at which the two columns can coexist: the rail plus the room the intent
    * page's two goal columns need before they start wrapping their cards. Below it the body falls back to one
    * column, the rail is not rendered, and the step bar below takes over the same navigation. */
   .plan-wizard-body {
     display: flex;
     flex-direction: column;
     min-width: 0;
+    padding: 0 $plan-wizard-body-padding $plan-wizard-body-padding;
+
+    @include breakpoint($breakpoint-large-phone) {
+      padding: 0 $plan-wizard-body-padding-phone $plan-wizard-body-padding-phone;
+    }
   }
 
   .plan-wizard-body-main {
@@ -1923,7 +1680,7 @@ $pace-slice-other-color: #e87ba4;
     }
 
     .plan-wizard-body--with-sidebar .plan-wizard-progress-sidebar {
-      border-right: 1px solid $color-border;
+      border-right: 1px solid $color-border-primary;
       display: flex;
       flex-direction: column;
       gap: $sp-lg;
@@ -1938,37 +1695,34 @@ $pace-slice-other-color: #e87ba4;
    * show the bar at every width, rail included. Only the property the query needs to flip lives in the query;
    * the bar's layout below is shared by both states and stays out of it. */
   .plan-wizard-progress-bar {
-    border-bottom: 1px solid $color-border;
+    border-bottom: 1px solid $color-border-primary;
     display: none;
     flex-direction: column;
-    margin: 0 (-$sp-xl);
-    padding: 0 $sp-xl;
+    padding: 0 $plan-wizard-body-padding;
 
     @include breakpoint($breakpoint-large-phone) {
-      margin: 0 (-$sp-lg);
-      padding: 0 $sp-lg;
+      padding: 0 $plan-wizard-body-padding-phone;
     }
   }
 
+  /* The bar repeats the step strip's position, so where the bar is shown the strip above it steps aside. */
   @container (max-width: 899.98px) {
     .plan-wizard-progress-bar {
       display: flex;
     }
 
-    .plan-wizard-header .plan-wizard-step-track,
-    .plan-wizard-header .plan-wizard-progress {
+    .plan-wizard-step-strip:has(+ .plan-wizard-progress-bar) {
       display: none;
     }
   }
 
   /* The summary row is the bar's control, so the whole row is the button rather than a row with a button in it:
-   * the step name and the position are as much "open this" as the words All steps are. Nested under
-   * `.plan-wizard-page` to beat that block's `button { border: 1px solid }` default. */
-  .plan-wizard-page .progress-bar-summary {
+   * the step name and the position are as much "open this" as the words All steps are. */
+  .progress-bar-summary {
     align-items: center;
     background: none;
     border: 1px solid transparent;
-    border-radius: $radius-md;
+    border-radius: $radius-sm;
     cursor: pointer;
     display: flex;
     gap: $sp-sm;
@@ -1977,7 +1731,7 @@ $pace-slice-other-color: #e87ba4;
     width: 100%;
 
     &:focus-visible {
-      border-color: $color-accent;
+      border-color: $color-background-action-high-contrast;
       outline: none;
     }
   }
@@ -1985,46 +1739,45 @@ $pace-slice-other-color: #e87ba4;
   /* Open, the summary row reads as the lid of the panel below it, so it takes the panel's background and the
    * accent border the mockup gives it rather than staying a quiet strip of the page. */
   .plan-wizard-progress-bar--open {
-    background: $color-bg-primary;
+    background: $color-background-primary;
   }
 
   .plan-wizard-progress-bar--open .progress-bar-summary {
-    border-color: $color-accent;
+    border-color: $color-background-action-high-contrast;
   }
 
+  /* The bar's track is the step strip's segmented 4px bar in miniature: every step is already answered once the
+   * bar appears, so each segment carries the action color and the current one the high-contrast ink. */
   .progress-bar-track {
     align-items: center;
     display: flex;
     flex: 0 0 auto;
-    gap: 5px;
+    gap: 2px;
   }
 
   .progress-bar-dot {
-    background: $color-success;
-    border-radius: 999px;
-    height: 7px;
-    width: 24px;
+    background: $color-background-action-high-contrast;
+    height: $plan-wizard-step-bar-height;
+    width: 16px;
   }
 
   .progress-bar-dot--current {
-    background: $color-navy;
+    background: $color-text-high-contrast;
   }
 
   .progress-bar-position {
-    color: $color-text-muted;
+    @include overline-label;
     flex: 0 0 auto;
-    font-size: $smaller-font-size;
-    font-weight: 600;
     white-space: nowrap;
   }
 
   /* The step name is the one part of the row allowed to shrink: the dots, the position, and the disclosure are
    * all fixed-width, so a long step name truncates rather than pushing All steps off the edge. */
   .progress-bar-step-title {
-    color: $color-navy;
+    color: $color-text-high-contrast;
     flex: 1 1 auto;
     font-size: $default-font-size;
-    font-weight: 700;
+    font-weight: 500;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2032,23 +1785,18 @@ $pace-slice-other-color: #e87ba4;
   }
 
   .progress-bar-disclosure {
-    color: $color-success;
+    color: $color-text-link;
     flex: 0 0 auto;
-    font-size: $default-font-size;
-    font-weight: 600;
+    font-size: $smaller-font-size;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     white-space: nowrap;
   }
 
   .progress-bar-chevron {
-    color: $color-text-muted;
-    fill: none;
-    flex: 0 0 18px;
-    height: 18px;
-    stroke: currentColor;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    stroke-width: 2;
-    width: 18px;
+    color: $color-text-low-contrast;
+    flex: 0 0 auto;
   }
 
   .plan-wizard-progress-bar--open .progress-bar-chevron {
@@ -2068,13 +1816,9 @@ $pace-slice-other-color: #e87ba4;
     gap: $sp-md;
   }
 
-  .progress-sidebar-heading {
-    color: $color-text-muted;
-    font-size: $smaller-font-size;
-    font-weight: 600;
-    letter-spacing: 0.08em;
+  .plan-wizard-page .progress-sidebar-heading {
+    @include overline-label;
     margin: 0;
-    text-transform: uppercase;
   }
 
   .progress-step-list {
@@ -2087,14 +1831,13 @@ $pace-slice-other-color: #e87ba4;
   }
 
   /* The button and the static span carry the same padded row layout, so a step that becomes clickable does not
-   * shift where its text sits. Nested under `.plan-wizard-page` to beat that block's `button { border: 1px solid }`
-   * default, exactly as the Cancel and primary buttons above do. */
-  .plan-wizard-page .progress-step-button,
+   * shift where its text sits. */
+  .progress-step-button,
   .progress-step-static {
     align-items: flex-start;
     background: none;
     border: 1px solid transparent;
-    border-radius: $radius-md;
+    border-radius: $radius-sm;
     display: flex;
     gap: $sp-sm;
     padding: $sp-sm;
@@ -2102,53 +1845,33 @@ $pace-slice-other-color: #e87ba4;
     width: 100%;
   }
 
-  .plan-wizard-page .progress-step-button {
+  .progress-step-button {
     cursor: pointer;
 
     &:hover {
-      background: $color-bg-primary;
+      background: $color-background-element-low-contrast;
     }
 
     &:focus-visible {
-      border-color: $color-accent;
+      border-color: $color-background-action-high-contrast;
       outline: none;
     }
   }
 
-  /* The step being read is the one row drawn as a card, so the rail always answers "where am I" before it
-   * answers "what have I done". */
+  /* The step being read is the one row drawn as a selected tile, so the rail always answers "where am I" before
+   * it answers "what have I done". */
   .progress-step-row--current .progress-step-static {
-    background: $color-bg-primary;
-    border-color: $color-border;
+    background: $color-background-action-low-contrast;
+    border-color: $color-background-action-high-contrast;
   }
 
   .progress-step-icon {
-    fill: none;
-    flex: 0 0 18px;
-    height: 18px;
-    margin-top: 1px;
-    stroke: currentColor;
-    stroke-width: 2;
-    width: 18px;
-  }
-
-  .progress-step-icon-disc {
-    fill: $color-success;
-    stroke: none;
-  }
-
-  .progress-step-icon-check {
-    stroke: $color-bg-secondary;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    color: $color-background-action-high-contrast;
+    flex: 0 0 auto;
   }
 
   .progress-step-icon--pending {
-    color: $color-border;
-  }
-
-  .progress-step-icon-ring {
-    stroke-width: 1.5;
+    color: $color-text-lower-contrast;
   }
 
   .progress-step-text {
@@ -2159,14 +1882,14 @@ $pace-slice-other-color: #e87ba4;
   }
 
   .progress-step-label {
-    color: $color-navy;
+    color: $color-text-high-contrast;
     font-size: $default-font-size;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.3;
   }
 
   .progress-step-summary {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: $smaller-font-size;
     line-height: 1.35;
   }
@@ -2192,29 +1915,29 @@ $pace-slice-other-color: #e87ba4;
     transition: opacity 120ms ease, stroke-width 120ms ease;
   }
 
-  .pace-breakdown-slice--smallMoveMostDays { stroke: $pace-slice-small-move-color; }
-  .pace-breakdown-slice--twoFocusedBlocks { stroke: $pace-slice-two-blocks-color; }
-  .pace-breakdown-slice--oneSubstantialBlock { stroke: $pace-slice-one-block-color; }
-  .pace-breakdown-slice--deadlineSprint { stroke: $pace-slice-deadline-color; }
-  .pace-breakdown-slice--maintenanceOnly { stroke: $pace-slice-other-color; }
+  .pace-breakdown-slice--smallMoveMostDays { stroke: $color-pace-small-move-most-days; }
+  .pace-breakdown-slice--twoFocusedBlocks { stroke: $color-pace-two-focused-blocks; }
+  .pace-breakdown-slice--oneSubstantialBlock { stroke: $color-pace-one-substantial-block; }
+  .pace-breakdown-slice--deadlineSprint { stroke: $color-pace-deadline-sprint; }
+  .pace-breakdown-slice--maintenanceOnly { stroke: $color-pace-maintenance-only; }
 
   .pace-breakdown-slice--hovered { stroke-width: 11; }
   .pace-breakdown-slice--dimmed { opacity: 0.35; }
 
   .pace-breakdown-caption {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: $smaller-font-size;
     line-height: 1.35;
   }
 
   /* The rail's last row leaves the wizard entirely, so it is separated from the steps above it by a rule and
    * styled as a link rather than as another step. */
-  .plan-wizard-page .progress-plan-note-link {
+  .progress-plan-note-link {
     align-items: flex-start;
     background: none;
     border: 1px solid transparent;
-    border-radius: $radius-md;
-    border-top: 1px solid $color-border;
+    border-radius: $radius-sm;
+    border-top: 1px solid $color-border-primary;
     cursor: pointer;
     display: flex;
     gap: $sp-sm;
@@ -2224,11 +1947,11 @@ $pace-slice-other-color: #e87ba4;
     width: 100%;
 
     &:hover:not(:disabled) {
-      background: $color-bg-primary;
+      background: $color-background-element-low-contrast;
     }
 
     &:focus-visible {
-      border-color: $color-accent;
+      border-color: $color-background-action-high-contrast;
       outline: none;
     }
 
@@ -2239,15 +1962,8 @@ $pace-slice-other-color: #e87ba4;
   }
 
   .plan-note-icon {
-    fill: none;
-    flex: 0 0 18px;
-    height: 18px;
-    margin-top: 1px;
-    stroke: $color-text-muted;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    stroke-width: 1.8;
-    width: 18px;
+    color: $color-text-lower-contrast;
+    flex: 0 0 auto;
   }
 
   .plan-note-text {
@@ -2258,14 +1974,14 @@ $pace-slice-other-color: #e87ba4;
   }
 
   .plan-note-label {
-    color: $color-navy;
+    color: $color-text-link;
     font-size: $default-font-size;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.3;
   }
 
   .plan-note-hint {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: $smaller-font-size;
   }
 }

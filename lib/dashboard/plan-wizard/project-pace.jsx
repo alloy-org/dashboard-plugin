@@ -1,6 +1,7 @@
 // One project's pace card: which rhythm to protect, which weekdays that rhythm occupies, and a deadline when
 // the chosen rhythm is a sprint.
 
+import { PlainButton, TextField } from "dashboard/controls";
 import { PACE_OPTIONS, PACE_WORKDAYS, weekdayLabel } from "dashboard/plan-wizard/pace-cards-step-fields";
 import { memo } from "react";
 
@@ -21,31 +22,29 @@ function ProjectPace({ draft, isDisabled, onChangeDeadline, onSelectPace, onTogg
       <h3 className="project-pace-title">{ draft.summary }</h3>
       <div aria-label={ `Pace for ${ draft.summary }` } className="project-pace-options">
         { PACE_OPTIONS.map(option => (
-          <button aria-pressed={ draft.paceEm === option.value }
+          <PlainButton aria-pressed={ draft.paceEm === option.value }
             className={ `project-pace-choice${ draft.paceEm === option.value ? " project-pace-choice--selected" : "" }` }
-            disabled={ isDisabled } key={ option.value } onClick={ () => onSelectPace(draft.uuid, option.value) }
-            type="button">
+            disabled={ isDisabled } key={ option.value }
+            onClick={ () => onSelectPace(draft.uuid, option.value) }>
             { option.label }
-          </button>
+          </PlainButton>
         )) }
       </div>
       { draft.paceEm === "deadlineSprint" ? (
-        <label className="project-pace-deadline">
-          Deadline
-          <input className="project-pace-deadline-input" disabled={ isDisabled }
-            onChange={ event => onChangeDeadline(draft.uuid, event.target.value || null) } type="date"
-            value={ draft.deadlineOn ?? "" } />
-        </label>
+        <TextField className="project-pace-deadline" disabled={ isDisabled }
+          inputClassName="project-pace-deadline-input" label="Deadline"
+          onChange={ text => onChangeDeadline(draft.uuid, text || null) } type="date"
+          value={ draft.deadlineOn ?? "" } />
       ) : null }
       <div aria-label={ `${ PREFERRED_DAYS_LABEL } for ${ draft.summary }` } className="project-pace-days">
         <span className="project-pace-days-label">{ PREFERRED_DAYS_LABEL }</span>
         { PACE_WORKDAYS.map(weekday => {
           const isSelected = draft.preferredWeekdays.includes(weekday);
           return (
-            <button aria-pressed={ isSelected } className="project-pace-day" disabled={ isDisabled } key={ weekday }
-              onClick={ () => onToggleWeekday(draft.uuid, weekday) } type="button">
+            <PlainButton aria-pressed={ isSelected } className="project-pace-day" disabled={ isDisabled }
+              key={ weekday } onClick={ () => onToggleWeekday(draft.uuid, weekday) }>
               { weekdayLabel(weekday).slice(0, 3) }
-            </button>
+            </PlainButton>
           );
         }) }
       </div>

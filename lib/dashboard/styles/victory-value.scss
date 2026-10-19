@@ -5,6 +5,7 @@
  */
 
 @use 'theme-tokens' as *;
+@use 'controls' as *;
 @use 'widget-sizings' as *;
 
 $chart-share-of-widget-height: 0.55;
@@ -22,13 +23,15 @@ $chart-share-of-widget-height: 0.55;
     margin-bottom: $sp-sm;
 
     .vv-total {
-      color: $color-navy;
+      color: $color-text-high-contrast;
       font-size: $display-heading-font-size;
-      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      font-weight: 500;
+      line-height: 1.2;
     }
 
     .vv-label {
-      color: $color-text-secondary;
+      color: $color-text-medium-contrast;
       font-size: $smaller-font-size;
     }
   }
@@ -43,7 +46,7 @@ $chart-share-of-widget-height: 0.55;
 
   .vv-project-legend-item {
     align-items: center;
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     display: inline-flex;
     font-size: $smaller-font-size;
     gap: $sp-xs;
@@ -51,14 +54,14 @@ $chart-share-of-widget-height: 0.55;
   }
 
   .vv-project-legend-swatch {
-    border-radius: 2px;
+    border-radius: $radius-mark;
     flex-shrink: 0;
     height: 8px;
     width: 8px;
   }
 
   .vv-date-range {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: $smaller-font-size;
     font-weight: normal;
   }
@@ -79,32 +82,24 @@ $chart-share-of-widget-height: 0.55;
   }
 
   .vv-chart {
-    border-radius: $radius-sm;
     display: block;
     width: 100%;
   }
 
-  .vv-nav-arrow {
-    background: none;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    color: $color-text-secondary;
-    cursor: pointer;
-    flex-shrink: 0;
-    font-size: $medium-heading-font-size;
-    line-height: 1;
-    padding: $sp-xs $sp-sm;
-    transition: background 0.15s, color 0.15s;
+  /* The mood line is drawn faintly, as the Task Stats graph draws its mood line, so the bars stay the subject. */
+  .victory-value-chart-mood-line {
+    opacity: 0.6;
+    stroke-linecap: round;
+    stroke-width: 3px;
+  }
 
-    &:hover:not(:disabled) {
-      background: $color-bg-page-hover;
-      color: $color-navy;
-    }
+  .victory-value-chart-mood-line--gap {
+    stroke-dasharray: 3 5;
+  }
 
-    &:disabled {
-      cursor: not-allowed;
-      opacity: 0.3;
-    }
+  .victory-value-chart-mood-indicator {
+    stroke: $color-background-primary;
+    stroke-width: 2px;
   }
 
   // 55% of the shortest height the widget can have at its vertical size, leaving the header and legend the rest.

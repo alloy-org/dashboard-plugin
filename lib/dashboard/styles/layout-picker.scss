@@ -7,15 +7,19 @@
 $layout-picker-transition: 0.15s ease;
 
 .widget-layout-picker {
+  /* A quiet inline notice rather than a colored box: warning icon, secondary text. */
   .layout-picker-warning {
-    background: color-mix(in srgb, $color-warning 15%, transparent);
-    border: 1px solid color-mix(in srgb, $color-warning 40%, transparent);
-    border-radius: $radius-sm;
-    color: $color-text;
+    align-items: center;
+    color: $color-text-medium-contrast;
+    display: flex;
     font-size: $smaller-font-size;
-    font-weight: 600;
+    gap: $sp-sm;
     margin-bottom: $sp-md;
-    padding: $sp-sm $sp-md;
+  }
+
+  .layout-picker-warning-icon {
+    color: $color-text-error-low-contrast;
+    flex-shrink: 0;
   }
 
   .layout-picker-profiles {
@@ -24,20 +28,19 @@ $layout-picker-transition: 0.15s ease;
     gap: $sp-sm;
   }
 
+  /* Each profile is an outlined option row, highlighted in the host's low-contrast action fill on hover. */
   .layout-picker-profile-button {
-    background: $color-bg-page;
-    border: 1px solid $color-border;
-    border-radius: $radius-md;
-    color: $color-text;
-    cursor: pointer;
+    border: 1px solid $color-border-primary;
+    border-radius: $radius-sm;
+    color: $color-text-high-contrast;
     padding: $sp-md;
     text-align: left;
     transition: background $layout-picker-transition, border-color $layout-picker-transition;
     width: 100%;
 
     &:hover:not(:disabled) {
-      background: $color-bg-page-hover;
-      border-color: $color-accent;
+      background: $color-background-action-low-contrast;
+      border-color: $color-background-action-high-contrast;
     }
 
     &:disabled {
@@ -47,48 +50,55 @@ $layout-picker-transition: 0.15s ease;
   }
 
   .layout-picker-profile-button--applying {
-    border-color: $color-accent;
+    border-color: $color-background-action-high-contrast;
   }
 
   .layout-picker-profile-button--current {
-    border-color: color-mix(in srgb, $color-accent 50%, transparent);
+    border-color: color-mix(in srgb, $color-background-action-high-contrast 50%, transparent);
   }
 
   .layout-picker-profile-header {
-    align-items: baseline;
+    align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: $sp-xs $sp-sm;
-    margin-bottom: $sp-sm;
+    gap: $sp-xs $sp-md;
+    margin-bottom: $sp-xs;
   }
 
   .layout-picker-profile-icon {
+    color: $color-background-action-high-contrast;
     flex-shrink: 0;
-    font-size: $small-heading-font-size;
-    line-height: 1;
   }
 
+  /* The name keeps a readable minimum width; when the card is narrow, the action wraps below it. */
   .layout-picker-profile-name {
-    flex: 1;
-    font-size: $large-font-size;
-    font-weight: 700;
+    flex: 1 1 160px;
+    font-size: $default-font-size;
+    font-weight: 500;
     min-width: 0;
   }
 
   .layout-picker-profile-action {
-    color: $color-accent;
-    font-size: $smaller-font-size;
-    font-weight: 600;
+    align-items: center;
+    color: $color-text-link;
+    display: inline-flex;
+    margin-left: auto;
+    font-size: 12px;
+    font-weight: 500;
+    gap: 2px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
   .layout-picker-profile-action--current {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
   }
 
+  /* Indented to line up with the profile name past its icon. */
   .layout-picker-profile-description {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: $smaller-font-size;
     line-height: 1.45;
-    margin: 0;
+    margin: 0 0 0 32px;
   }
 }

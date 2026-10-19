@@ -5,6 +5,7 @@
  */
 
 @use 'theme-tokens' as *;
+@use 'controls' as *;
 
 /* [Claude claude-sonnet-4-6] Task: Graveyard widget — scrollable task list with action links */
 /* Prompt: "add a new graveyard.js component..." */
@@ -55,8 +56,8 @@
   /* [Claude claude-sonnet-4-6] Task: task item fade — solid background covers meadow, fades out on dismiss */
   /* Prompt: "leave the other tasks in place around them when one task is removed" */
   .graveyard-task-item {
-    background: $color-bg-card;
-    border-bottom: 1px solid $color-border;
+    background: $color-background-primary;
+    border-bottom: 1px solid $color-border-primary;
     display: flex;
     flex-direction: column;
     gap: $sp-xs;
@@ -89,7 +90,7 @@
   }
 
   .graveyard-task-title {
-    color: $color-text;
+    color: $color-text-high-contrast;
     display: block;
     font-size: $smaller-font-size;
     overflow: hidden;
@@ -97,7 +98,7 @@
     white-space: nowrap;
 
     &:focus {
-      outline: 1px solid $color-link;
+      outline: 1px solid $color-text-link;
       outline-offset: 2px;
     }
   }
@@ -107,76 +108,32 @@
     text-decoration: underline dotted;
   }
 
-  .graveyard-task-tooltip {
-    display: flex;
-    flex-direction: column;
-    gap: $sp-sm;
-    max-height: 280px;
-    overflow-y: auto;
-    padding: $sp-md;
+  // The task tooltip uses the rich tooltip look (dashboard-tippy.scss); these only cover the rendered task and
+  // tint the score by tone.
+  .graveyard-task-tooltip-content code {
+    background: $color-background-element-low-contrast;
+    border-radius: $radius-sm;
+    padding: 1px 4px;
   }
 
-  .graveyard-task-tooltip-meta {
-    align-items: baseline;
-    display: flex;
-    flex-wrap: wrap;
-    gap: $sp-xs $sp-md;
-    justify-content: space-between;
+  .graveyard-task-tooltip .graveyard-task-score--muted .stats-chart-tooltip-trailing {
+    color: $color-text-low-contrast;
   }
 
-  .graveyard-task-tooltip-note {
-    color: $color-tooltip-accent;
-    font-size: $smaller-font-size;
-    font-weight: 600;
+  .graveyard-task-tooltip .graveyard-task-score--cool .stats-chart-tooltip-trailing {
+    color: $color-background-action-medium-contrast;
   }
 
-  .graveyard-task-tooltip-created {
-    color: $color-tooltip-text-muted;
-    font-size: $smaller-font-size;
+  .graveyard-task-tooltip .graveyard-task-score--warm .stats-chart-tooltip-trailing {
+    color: $color-text-error-low-contrast;
   }
 
-  .graveyard-task-tooltip-content {
-    color: $color-tooltip-text;
-    font-size: $smaller-font-size;
-    line-height: 1.4;
-
-    code {
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 4px;
-      padding: 1px 4px;
-    }
-  }
-
-  .graveyard-task-tooltip-footer {
-    border-top: 1px solid $color-tooltip-border;
-    padding-top: $sp-sm;
-  }
-  .graveyard-task-score--muted {
-    color: $color-tooltip-text-muted;
-  }
-
-  .graveyard-task-score--cool {
-    color: $color-blue-light;
-  }
-
-  .graveyard-task-score--warm {
-    color: $color-warning;
-  }
-
-  .graveyard-task-score--hot {
-    color: $color-danger;
-  }
-
-  .graveyard-task-score-dot {
-    background: currentColor;
-    border-radius: 999px;
-    display: inline-block;
-    height: 9px;
-    width: 9px;
+  .graveyard-task-tooltip .graveyard-task-score--hot .stats-chart-tooltip-trailing {
+    color: $color-text-error-high-contrast;
   }
 
   .graveyard-task-age {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     flex-shrink: 0;
     font-size: $smaller-font-size;
     white-space: nowrap;
@@ -184,41 +141,25 @@
 
   .graveyard-task-actions {
     display: flex;
-    gap: $sp-md;
+    gap: 0 $sp-xs;
+    margin-left: -$sp-sm;
 
-    > a {
+    > .graveyard-task-action {
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
   }
 
-  .graveyard-task-action {
-    color: $color-text-secondary;
-    font-size: $smaller-font-size;
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-
+  /* Retiring a task reads in the danger color on hover. */
   .graveyard-task-action--send:hover {
-    color: $color-danger;
-  }
-
-  .graveyard-task-action--keep:hover {
-    color: $color-link;
-  }
-
-  .graveyard-task-action--note:hover {
-    color: $color-blue;
+    color: $color-text-error-high-contrast;
   }
 
   /* [OpenAI gpt-5.4] Task: tighten graveyard tooltip width and date text for compact 1-column cards */
   /* Prompt: "When the component is only 1-wide, do not show the word Created..." */
   &.vertical-1-cell {
-    .graveyard-task-tooltip {
+    .graveyard-task-tooltip.stats-chart-tooltip-content {
       max-height: 220px;
     }
   }
@@ -230,43 +171,6 @@
 
     .graveyard-task-age {
       font-size: $smaller-font-size;
-    }
-  }
-
-  .graveyard-loading,
-  .graveyard-empty {
-    color: $color-text-secondary;
-    font-size: $default-font-size;
-    padding: $sp-md 0;
-    text-align: center;
-  }
-
-  .graveyard-error {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: $sp-sm;
-    padding: $sp-md 0;
-
-    p {
-      color: $color-danger;
-      font-size: $default-font-size;
-      text-align: center;
-    }
-  }
-
-  .graveyard-retry {
-    background: none;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    color: $color-text-secondary;
-    cursor: pointer;
-    font-size: $smaller-font-size;
-    padding: $sp-xs $sp-sm;
-
-    &:hover {
-      border-color: $color-border;
-      color: $color-text;
     }
   }
 }

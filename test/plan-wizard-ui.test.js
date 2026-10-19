@@ -650,7 +650,7 @@ describe("PlanWizard quarterly plan link", () => {
     expect(planLink.disabled).toBe(false);
     // The link sits to the left of the button that closes the wizard, not after it, and the two travel together
     // against the right edge rather than each finding their own place in the bar.
-    expect(planLink.nextElementSibling.className).toBe("plan-wizard-next");
+    expect(planLink.nextElementSibling.classList.contains("plan-wizard-next")).toBe(true);
     expect(planLink.parentElement.className).toBe("plan-wizard-advance-group");
     await cleanup();
   });
@@ -664,7 +664,7 @@ describe("PlanWizard quarterly plan link", () => {
 
     const quarterDate = container.querySelector(".plan-wizard-title-quarter");
     const noteLink = quarterDate.nextElementSibling;
-    expect(noteLink.className).toBe("plan-wizard-existing-note-link");
+    expect(noteLink.classList.contains("plan-wizard-existing-note-link")).toBe(true);
     expect(noteLink.textContent).toBe("View quarterly plan note");
     expect(noteLink.parentElement.className).toBe("plan-wizard-title-group");
     const contentBefore = app.notes.find(note => note.uuid === "plan-note").content;
