@@ -232,6 +232,21 @@ describe("calendar generation report", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
+  // @desc Requests made for a day are listed under it, those for the whole pass in a section before the days, and a day
+  //   that made none says so; their characters do not count against the day's own budget.
+  it("lists the DecisionsEndpoint requests for each day and for the whole pass", () => {
+    const request = { kind: "Ranking", questionCount: 3, rubricText: "1; 2", sampleInstructions: "Rate task_1",
+      sampleName: "task_1", stateText: "x".repeat(5000) };
+    const days = [{ ...rankedDay(), decisionRequests: [request] }, { ...cachedDay(), decisionRequests: [] }];
+    const markdown = calendarGenerationReportMarkdown(days, { passDecisionRequests: [{ ...request, kind: "Salience" }] });
+    expect(markdown).toMatch(/^# Every day\n- DecisionsEndpoint requests made for the whole pass \(1\):\n  - Salience, 3 questions/);
+    expect(markdown).toContain("- DecisionsEndpoint requests (1):\n  - Ranking, 3 questions, 5,015 characters without its tasks:"
+      + "\n    - Each task asked, as task_1: `Rate task_1`");
+    expect(markdown).toContain("- DecisionsEndpoint requests: none sent for this day");
+    expect(markdown).not.toContain("report truncated");
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc Many long days shed ranking rows first and are cut off with a notice if that is not enough.
   it("stays under 3k characters per day", () => {
     const longTitle = "A very long task title that keeps going well past the shortening limit for report rows";

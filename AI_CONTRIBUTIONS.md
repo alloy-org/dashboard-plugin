@@ -5,6 +5,21 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-19 — List each day's DecisionsEndpoint requests in the calendar generation report
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/providers/decisions-endpoint.js` — `observeDecisionRequests` lets a caller watch every request as it is made; `_notifyRequestObservers` ignores a failing observer.
+- `lib/dashboard/suggestions/calendar-report-decision-requests.js` (new) — `PassDecisionRequests` files a pass's requests under the day being planned, or the whole pass; `abbreviatedDecisionRequest` keeps the first question, rubric, and state with each task list replaced by "[Array of N tasks]"; `decisionRequestLines` renders them as nested bullets with their size.
+- `lib/dashboard/suggestions/calendar-generation-report.js` — each day lists its requests, an "Every day" section lists the pass's, and their characters are added to the report's limit.
+- `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` — collects requests while the report is enabled, filing them as each day completes and ending the observing in a `finally`.
+- `test/calendar-report-decision-requests.test.js` (new), `test/calendar-generation-report.test.js` — abbreviation, filing, and report sections.
+
+**Validation:** Full Jest suite (1538 tests), `npm run build`, production bundle smoke test; a dev re-roll pass showed each day's ranking and duration requests.
+**Task:** Show the prompts sent to the DecisionsEndpoint in the calendar suggestion note, per date, with task lists abbreviated.
+
+---
+
 ## 2026-10-19 — Keep the re-roll's focus, and choose where its suggestions come from
 
 **Model:** Claude Opus 5.5
