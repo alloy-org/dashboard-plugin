@@ -5,6 +5,22 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-19 — Open the Plan Builder in development without an API key
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/util/dev-sample-provider.js` (created) — Returns a sample AI provider installed on `globalThis`, only when `NODE_ENV` is "development"; production builds drop it (checked: no trace in `build/compiled.js`).
+- `lib/plan-wizard/wizard-prompt-runner.js`, `lib/hooks/use-llm-provider-access.js` — Use the sample provider when one is installed: prompts are answered by it, and the missing-provider gate lets the Plan Builder open.
+- `dev/styleguide/sample-plan-provider.js`, `sample-plan-app.js`, `styleguide-plan-builder.jsx` (created), `styleguide-app.jsx`, `styleguide.scss` — A "Plan Builder" style guide section that opens the real Plan Builder with sample intents, themes, and projects on an in-memory app, or with no provider to show the gate.
+- `dev/dev-server.js` — The style guide bundle defines the dev LLM tokens and Sentry DSN as empty, so no key reaches it.
+- `doc/design-system.md` — How to open it.
+
+**Validation:** Jest: 1392 passed, 1 failed (`test/dream-task-actions.test.js`, failing before these changes). In the dev server, the Plan Builder opened, showed sample suggestions on step 1, and proposed three projects on step 2; the no-provider button showed the gate.
+**Task:** Add a dev-only way to open the Plan Builder.
+**Prompt summary:** "Plan builder now. Add a dev only way to open it so I can check"
+
+---
+
 ## 2026-10-14 — Design guardrails and the dev style guide
 
 **Model:** Claude Opus 5.5

@@ -8,6 +8,7 @@ import { IconContext } from "react-icons";
 // The dashboard's stylesheet: document reset, inlined Roboto, and the widget card styles the widget frames use
 import "dashboard/styles/dashboard.scss";
 import { ControlsSection, SettingsSection, StatesSection } from "./styleguide-controls";
+import { PlanBuilderSection } from "./styleguide-plan-builder";
 import { ChartsSection, DialogSection, TooltipsSection, WidgetFrameSection } from "./styleguide-showcase";
 import { ColorsSection, FoundationsSection, IconsSection } from "./styleguide-tokens";
 import "./styleguide.scss";
@@ -24,6 +25,7 @@ const SECTIONS = [
   { Component: ChartsSection, id: "charts", title: "Charts" },
   { Component: WidgetFrameSection, id: "widget-frame", title: "Widget frame" },
   { Component: DialogSection, id: "dialog", title: "Dialog" },
+  { Component: PlanBuilderSection, id: "plan-builder", title: "Plan Builder" },
 ];
 const THEME_OPTIONS = [ { label: "Classic", value: "classic" }, { label: "Plum", value: "plum" } ];
 const THEME_STORAGE_KEY = "dashboard-styleguide-theme";

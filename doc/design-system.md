@@ -47,7 +47,10 @@ token as it resolves, the type, spacing, corner, and shadow scales, every widget
 variant, the empty/loading/error states, the settings controls, both tooltip looks, both charts with sample data, two
 widget frames, and a configure dialog. The bar at the top switches between the host's Classic and Plum themes and
 light and dark mode, fetched from the dev server the way the dashboard fetches the host theme. Check it after any
-change to tokens or controls; add a sample there when you add a control or a variant. The page lives in
+change to tokens or controls; add a sample there when you add a control or a variant. Its **Plan Builder** section opens the
+real Plan Builder with no API key: a sample AI provider (`dev/styleguide/sample-plan-provider.js`) answers its prompts
+and an in-memory app holds its notes, so nothing is saved; a second button opens it with no provider to show the gate.
+The hook (`lib/util/dev-sample-provider.js`) only exists in development builds. The page lives in
 `dev/styleguide/` and is never part of the plugin build.
 
 ## Tokens

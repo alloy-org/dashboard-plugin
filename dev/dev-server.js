@@ -446,8 +446,11 @@ function handleDevShell(res) {
 async function createStyleguideContext() {
   return esbuild.context({
     bundle: true,
-    define: { "process.env.BUILD_DATE": JSON.stringify(new Date().toISOString().slice(0, 10)),
-      "process.env.NODE_ENV": '"development"' },
+    // No dev LLM tokens: the style guide's Plan Builder answers from a sample provider, and its no-provider view
+    // must really have no provider
+    define: { ...Object.fromEntries(DEV_LLM_TOKEN_VAR_NAMES.map(varName => [ `process.env.${ varName }`, '""' ])),
+      "process.env.BUILD_DATE": JSON.stringify(new Date().toISOString().slice(0, 10)),
+      "process.env.NODE_ENV": '"development"', "process.env.SENTRY_DSN": '""' },
     entryNames: "styleguide",
     entryPoints: [ path.join(devDir, "styleguide", "styleguide-app.jsx") ],
     format: "iife",

@@ -250,6 +250,11 @@ $styleguide-tile-size: 72px;
     min-height: 220px;
   }
 
+  .styleguide-note {
+    color: $color-text-low-contrast;
+    font-size: 12px;
+  }
+
   .styleguide-hover-target {
     border-bottom: 1px dotted $color-text-low-contrast;
     color: $color-text-high-contrast;
