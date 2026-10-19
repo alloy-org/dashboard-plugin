@@ -7,7 +7,10 @@
 import ConfigPopup from 'config-popup';
 import { PROVIDER_API_KEY_RETRIEVE_URL } from 'constants/llm-providers';
 import { apiKeySettingFromKeyProvider, BUILD_DATE, JEV_KEY_PROVIDER, SETTING_KEYS } from 'constants/settings';
-import { Button, ConfigField, ConfigSection, IconButton, RadioGroup, Select, TextField } from "dashboard/controls";
+import { BANNER_IMAGE_NAMES, bannerImageURLFromBannerImageName, DEFAULT_BANNER_IMAGE_NAME, NO_BANNER_IMAGE_NAME }
+  from "dashboard/banner-image";
+import { Button, ConfigField, ConfigSection, IconButton, PlainButton, RadioGroup, Select, TextField }
+  from "dashboard/controls";
 import { useState } from 'react';
 import { MdOpenInNew, MdVisibility, MdVisibilityOff } from "react-icons/md";
 import { logIfEnabled } from "util/log";
@@ -128,6 +131,35 @@ function AiProviderSection({ apiKey, apiKeyVisible, keyOnlyHint, linkParenthetic
 }
 
 // ------------------------------------------------------------------------------------------
+// @desc Renders the Banner Image section: a "No banner" choice, then a thumbnail of each preset banner ample-web
+//   offers for notes, in ample-web's order. Thumbnails load lazily, since each is the full 2000x500 banner file.
+// @param {Function} onBannerImageChange - Called with the chosen name from BANNER_IMAGE_NAMES or NO_BANNER_IMAGE_NAME.
+// @param {string} selectedBannerImageName - The name currently chosen.
+function BannerImageSection({ onBannerImageChange, selectedBannerImageName }) {
+  return (
+    <ConfigSection description="Choose the image shown across the top of the dashboard." title="Banner Image">
+      <div className="dashboard-settings-banner-options">
+        <PlainButton aria-pressed={ selectedBannerImageName === NO_BANNER_IMAGE_NAME }
+          className="dashboard-settings-banner-option dashboard-settings-banner-option--none"
+          onClick={ () => onBannerImageChange(NO_BANNER_IMAGE_NAME) }>
+          No banner
+        </PlainButton>
+        {
+          BANNER_IMAGE_NAMES.map(bannerImageName => (
+            <PlainButton aria-pressed={ selectedBannerImageName === bannerImageName }
+              className="dashboard-settings-banner-option" key={ bannerImageName }
+              onClick={ () => onBannerImageChange(bannerImageName) } title={ bannerImageName.replace("-", " ") }>
+              <img alt={ `${ bannerImageName } banner image` } loading="lazy"
+                src={ bannerImageURLFromBannerImageName(bannerImageName) } />
+            </PlainButton>
+          ))
+        }
+      </div>
+    </ConfigSection>
+  );
+}
+
+// ------------------------------------------------------------------------------------------
 // @desc Render administrator-only diagnostics actions. The parent only supplies this section when
 //   the persisted DEBUG_CONSOLE setting is enabled, so regular users never see measurement tools.
 // @param {function(): void} onOpenMemoryMeasurement - Opens the widget memory measurement panel.
@@ -189,8 +221,8 @@ function _storedKeyForProvider(configParams, apiKeyProvider) {
 // Prompt: "create local render functions per section to clarify the settings popup structure"
 // [Claude claude-4.7-opus] Task: migrate DashboardSettingsPopup from createElement to JSX
 // Prompt: "translate this project to render components with JSX instead"
-export default function DashboardSettingsPopup({ configParams, onCancel, onOpenMemoryMeasurement, onSave,
-    timeFormat: initialTimeFormat, weekFormat: initialWeekFormat }) {
+export default function DashboardSettingsPopup({ bannerImageName: initialBannerImageName, configParams, onCancel,
+    onOpenMemoryMeasurement, onSave, timeFormat: initialTimeFormat, weekFormat: initialWeekFormat }) {
   const [scrollTop] = useState(() => {
     if (typeof window === 'undefined') return 0;
     return window.scrollY ?? document.documentElement.scrollTop ?? 0;
@@ -200,6 +232,7 @@ export default function DashboardSettingsPopup({ configParams, onCancel, onOpenM
   const initialOption = LLM_OPTIONS.find(o => o.value === currentLlmProvider) || LLM_OPTIONS[0];
   const [apiKey, setApiKey] = useState(_storedKeyForProvider(configParams, initialOption.apiKeyProvider));
   const [apiKeyVisible, setApiKeyVisible] = useState(false);
+  const [bannerImageNameLocal, setBannerImageNameLocal] = useState(initialBannerImageName || DEFAULT_BANNER_IMAGE_NAME);
   const [selectedProvider, setSelectedProvider] = useState(currentLlmProvider || 'openai');
   // The provider saved as LLM Provider: the last selected option that is not key-only
   const [generativeProvider, setGenerativeProvider] = useState(currentLlmProvider || 'openai');
@@ -233,6 +266,7 @@ export default function DashboardSettingsPopup({ configParams, onCancel, onOpenM
       onSubmit={() => onSave({
         apiKey,
         apiKeyProvider: providerOption.apiKeyProvider,
+        bannerImageName: bannerImageNameLocal,
         llmProvider: generativeProvider,
         timeFormat: timeFormatLocal,
         weekFormat: weekFormatLocal,
@@ -253,6 +287,10 @@ export default function DashboardSettingsPopup({ configParams, onCancel, onOpenM
           providerApiKeyUrl={apiKeyUrl}
           providerName={providerName}
           selectedProvider={selectedProvider}
+        />
+        <BannerImageSection
+          onBannerImageChange={setBannerImageNameLocal}
+          selectedBannerImageName={bannerImageNameLocal}
         />
         <TimeDateSection
           onTimeFormatChange={setTimeFormatLocal}

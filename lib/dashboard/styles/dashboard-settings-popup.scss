@@ -44,6 +44,52 @@
     min-width: 0;
   }
 
+  // ── Banner image picker ──────────────────────────────────────────────────────────────
+  // Thumbnails keep the banners' 4:1 shape, as ample-web's note style menu shows them, and scroll past 300px.
+
+  .dashboard-settings-banner-options {
+    display: grid;
+    gap: $sp-sm;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    max-height: 300px;
+    overflow-y: auto;
+    padding: $sp-xs;
+  }
+
+  .dashboard-settings-banner-option {
+    aspect-ratio: 4 / 1;
+    border-radius: $radius-sm;
+    max-width: 100%;
+    overflow: hidden;
+    position: relative;
+
+    img {
+      display: block;
+      height: 100%;
+      object-fit: cover;
+      width: 100%;
+    }
+
+    // Drawn over the image as an inset line, so it stays distinct from the outer keyboard focus ring
+    &[aria-pressed="true"]::after {
+      border-radius: inherit;
+      box-shadow: inset 0 0 0 3px $color-background-action-high-contrast;
+      content: "";
+      inset: 0;
+      pointer-events: none;
+      position: absolute;
+    }
+  }
+
+  .dashboard-settings-banner-option--none {
+    align-items: center;
+    border: 1px dashed $color-border-primary;
+    color: $color-text-low-contrast;
+    display: flex;
+    font-size: 13px;
+    justify-content: center;
+  }
+
   .dashboard-settings-debug-button {
     align-self: flex-start;
     margin-top: $sp-md;

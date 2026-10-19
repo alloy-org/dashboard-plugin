@@ -8,11 +8,13 @@ import { Component, memo, useEffect, useState, useCallback, useRef, useMemo } fr
 import PlanningWidget from 'planning';
 import AgendaWidget from 'agenda';
 import CalendarWidget from 'calendar';
+import { bannerImageNameFromSetting, bannerImageURLFromBannerImageName } from "dashboard/banner-image";
 import { quarterFromDate } from 'constants/quarters';
 import { apiKeyBucketFromLlmProvider, apiKeyFromProvider, apiKeySettingFromKeyProvider, DASHBOARD_FOCUS, DEFAULT_DASHBOARD_COMPONENTS, SETTING_KEYS } from 'constants/settings';
 import { reportPriorCrashIfAny, stampBreadcrumbSettled, writeRenderBreadcrumb } from "crash-breadcrumb";
 import { dashboardAdminToolsAvailability } from 'dashboard-admin-tools';
 import { DashboardLoadContext, useDashboardLoadTracker, useReportWidgetLoaded, useWidgetLoadedEvent } from 'dashboard-load-tracking';
+import DashboardBannerImage from "dashboard-banner-image";
 import DashboardLayoutPopup from 'dashboard-layout-popup';
 import DashboardSettingNote from "dashboard-setting-note";
 import DashboardSettingsPopup from 'dashboard-settings-popup';
@@ -370,24 +372,26 @@ async function saveLayout(app, currentConfigParams, setConfigParams, newRendered
 //   dashboard's own state, and close the popup. The snapshot write is what lets code reading pluginSettings()
 //   synchronously — the plan wizard's provider lookup among it — see a key the moment it is saved.
 // @param {object} app - Amplenote embed app proxy.
-// @param {object} dashboardSettingNoteRef - Ref holding the DashboardSettingNote, for the note-stored formats.
+// @param {object} dashboardSettingNoteRef - Ref holding the DashboardSettingNote, for the note-stored settings.
 // @param {Function} setConfigParams - Setter for the dashboard's settings state.
 // @param {Function} onSettingsClosed - Closes the popup and runs whatever was waiting on it being closed.
-// @param {Function} setTimeFormat - Setter for the clock format.
-// @param {Function} setWeekFormat - Setter for the week-start format.
-// @param {object} params - The popup's submitted fields: { apiKey, apiKeyProvider, llmProvider, timeFormat,
-//   weekFormat }.
+// @param {object} noteSettingSetters - Setters for the note-stored settings: { setBannerImageName, setTimeFormat,
+//   setWeekFormat }.
+// @param {object} params - The popup's submitted fields: { apiKey, apiKeyProvider, bannerImageName, llmProvider,
+//   timeFormat, weekFormat }.
 // @returns {Promise<void>} Resolves once the writes have settled and the popup has closed.
-async function saveSettings(app, dashboardSettingNoteRef, setConfigParams, onSettingsClosed, setTimeFormat, setWeekFormat,
-    { apiKey, apiKeyProvider, llmProvider, timeFormat, weekFormat }) {
-  logIfEnabled('[dashboard] handleSettingsSave called with:', { llmProvider, apiKeyProvider, timeFormat, weekFormat });
+async function saveSettings(app, dashboardSettingNoteRef, setConfigParams, onSettingsClosed,
+    { setBannerImageName, setTimeFormat, setWeekFormat }, { apiKey, apiKeyProvider, bannerImageName, llmProvider, timeFormat,
+      weekFormat }) {
+  logIfEnabled('[dashboard] handleSettingsSave called with:', { apiKeyProvider, bannerImageName, llmProvider, timeFormat,
+    weekFormat });
   const providerSettingKey = apiKeySettingFromKeyProvider(apiKeyProvider || llmProvider);
   const saves = [app.setSetting(SETTING_KEYS.LLM_PROVIDER_MODEL, llmProvider)];
   if (providerSettingKey && apiKey) {
     saves.push(app.setSetting(providerSettingKey, apiKey));
   }
-  if (dashboardSettingNoteRef.current && (timeFormat || weekFormat)) {
-    saves.push(dashboardSettingNoteRef.current.save({ timeFormat, weekFormat }));
+  if (dashboardSettingNoteRef.current && (bannerImageName || timeFormat || weekFormat)) {
+    saves.push(dashboardSettingNoteRef.current.save({ bannerImage: bannerImageName, timeFormat, weekFormat }));
   }
   try {
     await Promise.all(saves);
@@ -400,6 +404,7 @@ async function saveSettings(app, dashboardSettingNoteRef, setConfigParams, onSet
   const configUpdate = { [SETTING_KEYS.LLM_PROVIDER_MODEL]: llmProvider };
   if (providerSettingKey) configUpdate[providerSettingKey] = apiKey;
   setConfigParams(prev => ({ ...prev, ...configUpdate }));
+  if (bannerImageName) setBannerImageName(bannerImageName);
   if (timeFormat) setTimeFormat(timeFormat);
   if (weekFormat) setWeekFormat(weekFormat);
   onSettingsClosed();
@@ -420,6 +425,8 @@ export default function DashboardApp({ app, initPromise }) {
   const { completedTasksByDate, completedTasksLoaded, fetchCompletedTasks } = useCompletedTasks(app);
 
   const { calendarEvents, calendarEventsLoaded } = useExternalCalendarEvents(app, activeTaskDomain);
+  // Null until the dashboard setting note loads, so a dashboard whose banner is off never flashes the default one
+  const [bannerImageName, setBannerImageName] = useState(null);
   const [configParams, setConfigParams] = useState(null);
   const [currentDate, setCurrentDate] = useState(null);
   const [dailyVictoryValues, setDailyVictoryValues] = useState(null);
@@ -502,8 +509,10 @@ export default function DashboardApp({ app, initPromise }) {
       dashboardSettingNoteRef.current = new DashboardSettingNote(app);
       const t1 = Date.now();
       logIfEnabled('[dashboard] loading DashboardSettingNote');
-      const { timeFormat: loadedTime, weekFormat: loadedWeek } = await dashboardSettingNoteRef.current.load();
+      const { bannerImage: loadedBannerImage, timeFormat: loadedTime, weekFormat: loadedWeek } =
+        await dashboardSettingNoteRef.current.load();
       logIfEnabled(`[dashboard] DashboardSettingNote loaded in ${ Date.now() - t1 }ms`);
+      setBannerImageName(bannerImageNameFromSetting(loadedBannerImage));
       if (loadedTime) setTimeFormat(loadedTime);
       if (loadedWeek) setWeekFormat(loadedWeek);
     }).catch(err => {
@@ -592,7 +601,8 @@ export default function DashboardApp({ app, initPromise }) {
   }, []);
 
   const handleSettingsSave = useCallback(
-    (params) => saveSettings(app, dashboardSettingNoteRef, setConfigParams, handleSettingsClosed, setTimeFormat, setWeekFormat, params),
+    (params) => saveSettings(app, dashboardSettingNoteRef, setConfigParams, handleSettingsClosed,
+      { setBannerImageName, setTimeFormat, setWeekFormat }, params),
     [app, handleSettingsClosed]
   );
 
@@ -737,6 +747,7 @@ export default function DashboardApp({ app, initPromise }) {
   }
   const layoutPopupExcludeWidgetIds = debugConsoleEnabled ? [] : ['debug-console'];
 
+  const bannerImageURL = bannerImageURLFromBannerImageName(bannerImageName);
   const currentLayoutArray = Array.isArray(configParams?.[SETTING_KEYS.DASHBOARD_COMPONENTS])
     ? configParams[SETTING_KEYS.DASHBOARD_COMPONENTS]
     : DEFAULT_DASHBOARD_COMPONENTS;
@@ -756,6 +767,7 @@ export default function DashboardApp({ app, initPromise }) {
         logIfEnabled('[dashboard] rendering DashboardSettingsPopup');
         return (
           <DashboardSettingsPopup
+            bannerImageName={bannerImageName}
             configParams={configParams}
             onCancel={handleSettingsClosed}
             onOpenMemoryMeasurement={memoryMeasurementEnabled ? () => setFocusState(DASHBOARD_FOCUS.MEMORY_MEASUREMENT) : null}
@@ -770,6 +782,9 @@ export default function DashboardApp({ app, initPromise }) {
           onClose={() => setFocusState(DASHBOARD_FOCUS.SETTINGS_CONFIG)}
           renderWidget={renderMemoryMeasurementWidget}
         />
+      ) : null}
+      {focusState !== DASHBOARD_FOCUS.MEMORY_MEASUREMENT && bannerImageURL ? (
+        <DashboardBannerImage imageURL={bannerImageURL} />
       ) : null}
       {focusState !== DASHBOARD_FOCUS.MEMORY_MEASUREMENT ? (
       <div className={`dashboard-content${isWidgetFocusMode ? ' dashboard-content--widget-focused' : ''}`}>

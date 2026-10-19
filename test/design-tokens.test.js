@@ -25,6 +25,8 @@ const ALLOWED_RAW_COLORS = {
   // Darkening the action color on hover, as MDC does
   "calendar.scss": [ "#000000" ],
   "controls.scss": [ "#000000" ],
+  // The banner's fade mask, where only the alpha matters, as in ample-web's note banner
+  "dashboard-banner-image.scss": [ "rgb(0 0 0 / 100%)" ],
   // Hover fill on the dialog title bar, which is dark in every theme
   "config-popup.scss": [ "rgba(255, 255, 255, 0.08)" ],
   // The quarterly plan video frame and the play button drawn over its thumbnail
