@@ -25,7 +25,7 @@ const SECONDS_PER_DAY = 24 * 60 * 60;
 let lastPromptSent = null;
 const llmMock = jest.fn();
 
-await mockFetchAiProvider({ llmPromptWithPluginFallback: (...args) => llmMock(...args) });
+await mockFetchAiProvider({ llmPromptWithAmplenoteFallback: (...args) => llmMock(...args) });
 
 const { generateProposedAgenda, resolveProposedAgendaDate, scheduleProposedActivity } =
   await import("dashboard/proposed-agenda/proposed-agenda-service");
@@ -54,7 +54,6 @@ function buildApp() {
   const updateTask = jest.fn().mockResolvedValue(true);
   const app = {
     alert: jest.fn(),
-    callPlugin: jest.fn().mockResolvedValue(undefined),
     filterNotes: jest.fn().mockResolvedValue([{ name: planName, uuid: PLAN_NOTE_UUID }]),
     findNote: jest.fn().mockResolvedValue(null),
     getNoteContent: jest.fn().mockResolvedValue("# Plan\n- Ship things"),

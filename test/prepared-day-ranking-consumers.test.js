@@ -9,7 +9,7 @@ import { SAMPLE_TASKS } from "./fixtures/tasks.js";
 import { mockFetchAiProvider } from "./mock-fetch-ai-provider.js";
 
 const llmMock = jest.fn();
-await mockFetchAiProvider({ llmPromptWithPluginFallback: (...args) => llmMock(...args) });
+await mockFetchAiProvider({ llmPromptWithAmplenoteFallback: (...args) => llmMock(...args) });
 const { analyzeDreamTasks } = await import("dream-task-service");
 const { generateProposedAgenda } = await import("dashboard/proposed-agenda/proposed-agenda-service");
 
@@ -25,7 +25,6 @@ function coldApp() {
   const openTasks = SAMPLE_TASKS.filter(task => !task.completedAt && !task.dismissedAt);
   return {
     alert: jest.fn(),
-    callPlugin: jest.fn(async () => undefined),
     createNote: jest.fn(async () => "dream-note-uuid"),
     filterNotes: jest.fn(async ({ query } = {}) => query?.includes("Plan") ? [{ name: query, uuid: "plan-note-uuid" }] : []),
     findNote: jest.fn(async ({ name } = {}) => name?.startsWith("Dashboard proposed tasks") ? { name, uuid: "dream-note-uuid" } : null),

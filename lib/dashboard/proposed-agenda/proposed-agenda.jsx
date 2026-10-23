@@ -19,7 +19,7 @@ import ProposedAgendaPriorityControl from "dashboard/proposed-agenda/proposed-ag
 import { agendaRowsGroupedByDay } from "dashboard/proposed-agenda/proposed-agenda-range";
 import { resolveProposedAgendaDate } from "dashboard/proposed-agenda/proposed-agenda-service";
 import { taskDomainCalendarSettingsUrl, taskDomainHasConnectedCalendar } from "dashboard/proposed-agenda/task-domain-calendar-connection";
-import { isAmpleAgentProInstalled } from "providers/ai-provider-settings";
+import { isAmplenoteLlmAvailable } from "providers/amplenote-llm";
 import { refillAndRecordSuggestion } from "dashboard/suggestions/ranked-task-suggestions";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { logIfEnabled } from "util/log";
@@ -36,11 +36,11 @@ const WIDGET_ID = "proposed-agenda";
 // How long the first generation waits for the Dashboard's calendar events before planning the day without them.
 const CALENDAR_EVENTS_WAIT_MILLISECONDS = 5000;
 
-// Error codes that mean generation failed for want of a reachable LLM (no API key + no working Ample Agent Pro).
-// When there is also no configured key, the Ample Agent Pro upsell shows if Agent Pro is not installed, and
-// AGENT_PRO_FAILED_MESSAGE with a retry shows if it is, matching how DreamTask degrades.
+// Error codes that mean generation failed for want of a reachable LLM (no API key + no working plugin LLM license).
+// When there is also no configured key, the Ample Agent Pro upsell shows if the account has no license, and
+// AMPLENOTE_LLM_FAILED_MESSAGE with a retry shows if it has one, matching how DreamTask degrades.
 const NO_CONFIG_ERROR_CODES = new Set(["invalid_api_key", "llm_error", "no_provider_configured", "parse_error"]);
-const AGENT_PRO_FAILED_MESSAGE = "Ample Agent Pro didn't return a schedule. Please try again in a moment.";
+const AMPLENOTE_LLM_FAILED_MESSAGE = "The AI model didn't return a schedule. Please try again in a moment.";
 
 const NO_CONFIG_FEATURES = [
   { icon: "🗓️", label: "Auto-draft your day" },
@@ -228,8 +228,8 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
   }, [calendarEvents, calendarPending]);
 
   const [approving, setApproving] = useState(false);
-  // Null until the Agent Pro lookup answers, so the upsell never shows to a subscriber while it is in flight
-  const [ampleAgentProAvailable, setAmpleAgentProAvailable] = useState(null);
+  // Null until the plugin LLM license's quota check answers, so the upsell never shows to a subscriber while it is in flight
+  const [amplenoteLlmAvailable, setAmplenoteLlmAvailable] = useState(null);
   const [attribution, setAttribution] = useState(null);
   const [dateLabel, setDateLabel] = useState(null);
   const [dismissedKeys, setDismissedKeys] = useState(() => new Set());
@@ -386,12 +386,12 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
     if (providerEm && providerEm !== modelProviderEm) setModelProviderEm(providerEm);
   }, [providerEm, persistedProviderEm]);
 
-  // Detect whether the Ample Agent Pro plugin is installed. When it is, the provider chooser may offer providers
-  // the user has no local key for, because the chosen provider is passed to Agent Pro as an argument. It also decides
-  // whether a keyless failure is a missing provider (the upsell) or an Agent Pro request that failed (a retry).
+  // Check whether the account has a plugin LLM license. When it does, the provider chooser may offer providers the
+  // user has no local key for, because app.callLLM serves the chosen model on the license. It also decides whether a
+  // keyless failure is a missing provider (the upsell) or a callLLM request that failed (a retry).
   useEffect(() => {
     let cancelled = false;
-    isAmpleAgentProInstalled(app).then(installed => { if (!cancelled) setAmpleAgentProAvailable(installed); });
+    isAmplenoteLlmAvailable(app).then(isAvailable => { if (!cancelled) setAmplenoteLlmAvailable(isAvailable); });
     return () => { cancelled = true; };
   }, [app]);
 
@@ -418,16 +418,16 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
     const envApiKey = (typeof process !== "undefined" && process.env?.OPEN_AI_ACCESS_TOKEN) || "";
     const hasLlmConfig = !!(envApiKey || providerApiKey);
     const isKeylessFailure = !hasLlmConfig && NO_CONFIG_ERROR_CODES.has(error.errorCode);
-    if (isKeylessFailure && ampleAgentProAvailable === null) return <LoadingState dateControl={ dateControl } />;
-    // Only a confirmed absence of Agent Pro shows the upsell. With it installed, a keyless failure means Agent Pro
+    if (isKeylessFailure && amplenoteLlmAvailable === null) return <LoadingState dateControl={ dateControl } />;
+    // Only a confirmed absence of a plugin LLM license shows the upsell. With one, a keyless failure means callLLM
     // did not answer, which a retry may fix.
-    if (isKeylessFailure && ampleAgentProAvailable === false) {
+    if (isKeylessFailure && amplenoteLlmAvailable === false) {
       return (
         <NoConfigUpsell app={ app } features={ NO_CONFIG_FEATURES }
           moreFeaturesLabel="+ 15 more features included" widgetId={ WIDGET_ID } />
       );
     }
-    const message = isKeylessFailure ? AGENT_PRO_FAILED_MESSAGE : error.error;
+    const message = isKeylessFailure ? AMPLENOTE_LLM_FAILED_MESSAGE : error.error;
     return <ProposedAgendaMessage app={ app } dateControl={ dateControl } message={ message } noteUuid={ error.noteUuid }
       onRetry={ () => runGeneration() } />;
   }
@@ -510,7 +510,7 @@ export default function ProposedAgendaWidget({ app, calendarEvents, currentDate,
         </div>
       </WidgetWrapper>
       { providerPopupOpen
-        ? <LlmProviderSelector allowKeylessProviders={ ampleAgentProAvailable === true }
+        ? <LlmProviderSelector allowKeylessProviders={ amplenoteLlmAvailable === true }
             configuredProviderEms={ configuredProviderEms(pluginSettings()) } currentProviderEm={ modelProviderEm }
             onCancel={ () => setProviderPopupOpen(false) } onSelect={ onSelectProvider } submitLabel="Submit"
             title="Generate the agenda with which AI provider?" />

@@ -11,7 +11,7 @@ import { mockFetchAiProvider } from "./mock-fetch-ai-provider.js";
 
 const llmMock = jest.fn();
 
-await mockFetchAiProvider({ llmPromptWithPluginFallback: (...args) => llmMock(...args) });
+await mockFetchAiProvider({ llmPromptWithAmplenoteFallback: (...args) => llmMock(...args) });
 
 const { default: ProposedAgendaWidget } = await import("dashboard/proposed-agenda/proposed-agenda");
 const { setPluginData } = await import("plugin-data");

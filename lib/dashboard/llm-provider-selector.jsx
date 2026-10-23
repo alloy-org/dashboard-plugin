@@ -16,7 +16,7 @@ import "styles/llm-provider-selector.scss";
 // @param {object} props - { allowKeylessProviders, configuredProviderEms, currentProviderEm, onCancel,
 //   onSelect, submitLabel, title }.
 //   - {boolean} [allowKeylessProviders=false] - When true, every provider is offered (the chosen provider can
-//       be passed to the Ample Agent Pro fallback even without a local key); otherwise only providers with a
+//       be served by app.callLLM on the plugin LLM license without a local key); otherwise only providers with a
 //       configured key (plus the current one) are shown.
 //   - {Array<string>} [configuredProviderEms=[]] - Provider enums the user has given an API key for.
 //   - {string|null} currentProviderEm - Provider pre-selected when the popup opens (always kept visible).

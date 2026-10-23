@@ -70,7 +70,7 @@ function _jevKeyHint(generativeProvider) {
   const generativeSentence = !generativeOption || generativeOption.value === 'none' ? 'other AI features stay disabled.'
     : `other AI features keep using ${ generativeOption.label }.`;
   const rankingSentence = 'Jev rates your tasks against each quarterly project, accepting a TypeSafe or OpenRouter key. '
-    + 'Without one, ranking falls back to your LLM provider or Ample Agent Pro.';
+    + 'Without one, ranking uses your Amplenote AI quota, or falls back to your LLM provider.';
   return `${ rankingSentence } Jev does not write text, so ${ generativeSentence }`;
 }
 

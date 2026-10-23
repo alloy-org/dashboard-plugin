@@ -10,7 +10,7 @@ import { mockFetchAiProvider } from "./mock-fetch-ai-provider.js";
 let lastPromptSent = null;
 const llmMock = jest.fn();
 
-await mockFetchAiProvider({ llmPromptWithPluginFallback: (...args) => llmMock(...args) });
+await mockFetchAiProvider({ llmPromptWithAmplenoteFallback: (...args) => llmMock(...args) });
 
 const { analyzeDreamTasks } = await import("dream-task-service");
 

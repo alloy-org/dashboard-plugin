@@ -1,4 +1,4 @@
-// The Planning splash is chosen from how many tasks are counted, and whether Agent Pro or a key that can
+// The Planning splash is chosen from how many tasks are counted, and whether a plugin LLM license or a key that can
 // actually answer is available. A saved key is probed with a one-word status check. With no Task Domain, the
 // All Notes scan skips notes tagged starter-notes from the tags on each note handle.
 
@@ -11,7 +11,7 @@ const llmPrompt = jest.fn();
 await mockFetchAiProvider({ llmPrompt: (...args) => llmPrompt(...args) });
 
 const { resolveQuarterlyPlanEntry } = await import("quarterly-plan-service");
-const { AMPLE_AGENT_PRO_NOTE_NAME, AMPLE_AGENT_PRO_URL } = await import("providers/ai-provider-settings");
+const { AMPLE_AGENT_PRO_URL } = await import("providers/ai-provider-settings");
 
 const DOMAIN_UUID = "domain-work";
 
@@ -26,11 +26,14 @@ function tasksOnNote(count, noteUUID) {
 
 // ----------------------------------------------------------------------------------------------
 // @desc An app whose domain tasks are under the test's control.
-// @param {Object} params - { agentPro, tasks }
+// @param {Object} params - { hasLlmLicense, tasks }: hasLlmLicense makes callLLM's quota check report quota remaining
 // @returns {Object} The app stub
-function entryApp({ agentPro = false, tasks = [] } = {}) {
+function entryApp({ hasLlmLicense = false, tasks = [] } = {}) {
   return {
-    findNote: jest.fn(async ({ name } = {}) => (agentPro && name === AMPLE_AGENT_PRO_NOTE_NAME ? { name, uuid: "agent-pro" } : null)),
+    callLLM: jest.fn(async () => {
+      if (!hasLlmLicense) throw new Error("No plugin LLM license");
+      return 5;
+    }),
     getTaskDomainTasks: jest.fn(async () => tasks),
   };
 }
@@ -41,8 +44,8 @@ function entryApp({ agentPro = false, tasks = [] } = {}) {
 // @returns {Object} The app stub
 function allNotesApp(notes) {
   return {
+    callLLM: jest.fn(async () => 5),
     filterNotes: jest.fn(async () => notes),
-    findNote: jest.fn(async () => null),
     getNoteTasks: jest.fn(async handle => notes.find(note => note.uuid === handle.uuid)?.tasks || []),
   };
 }
@@ -70,7 +73,7 @@ describe("resolveQuarterlyPlanEntry", () => {
     expect(app.getNoteTasks).toHaveBeenCalledTimes(1);
     expect(app.getNoteTasks).toHaveBeenCalledWith({ uuid: "real-note" }, { includeDone: false });
     expect(app.filterNotes).toHaveBeenCalledTimes(1);
-    expect(app.findNote).not.toHaveBeenCalled();
+    expect(app.callLLM).not.toHaveBeenCalled();
     expect(llmPrompt).not.toHaveBeenCalled();
   });
 
@@ -84,8 +87,8 @@ describe("resolveQuarterlyPlanEntry", () => {
     expect(entry.agentProUrl).toBe(AMPLE_AGENT_PRO_URL);
   });
 
-  it("invites a plan when Ample Agent Pro is installed and no key is saved", async () => {
-    const app = entryApp({ agentPro: true, tasks: tasksOnNote(30, "real-note") });
+  it("invites a plan when the plugin LLM license has quota and no key is saved", async () => {
+    const app = entryApp({ hasLlmLicense: true, tasks: tasksOnNote(30, "real-note") });
 
     const entry = await resolveQuarterlyPlanEntry(app, { domainUuid: DOMAIN_UUID });
 
@@ -111,7 +114,7 @@ describe("resolveQuarterlyPlanEntry", () => {
     expect(timeoutSeconds).toBe(10);
   });
 
-  it("stays on the AI splash when the saved key fails to answer and Agent Pro is absent", async () => {
+  it("stays on the AI splash when the saved key fails to answer and there is no plugin LLM license", async () => {
     setPluginData({ settings: { [SETTING_KEYS.LLM_API_KEY_OPENAI]: "sk-test-key", [SETTING_KEYS.LLM_PROVIDER_MODEL]: "openai" } });
     llmPrompt.mockRejectedValue(new Error("invalid key"));
     const app = entryApp({ tasks: tasksOnNote(30, "real-note") });
@@ -121,10 +124,10 @@ describe("resolveQuarterlyPlanEntry", () => {
     expect(entry.kind).toBe("needs-ai");
   });
 
-  it("still invites a plan when the key fails but Ample Agent Pro is installed", async () => {
+  it("still invites a plan when the key fails but the plugin LLM license has quota", async () => {
     setPluginData({ settings: { [SETTING_KEYS.LLM_API_KEY_OPENAI]: "sk-test-key" } });
     llmPrompt.mockResolvedValue("  ");
-    const app = entryApp({ agentPro: true, tasks: tasksOnNote(30, "real-note") });
+    const app = entryApp({ hasLlmLicense: true, tasks: tasksOnNote(30, "real-note") });
 
     const entry = await resolveQuarterlyPlanEntry(app, { domainUuid: DOMAIN_UUID });
 

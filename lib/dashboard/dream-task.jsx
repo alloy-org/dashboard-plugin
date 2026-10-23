@@ -11,7 +11,8 @@ import LlmProviderSelector from "llm-provider-selector";
 import NoConfigUpsell from "no-config-upsell";
 import { pluginSettings } from "plugin-data";
 import { IDEA_STATUSES } from "dashboard/project-tasks/project-idea-records";
-import { isAmpleAgentProInstalled, providerNameFromProviderEm } from "providers/ai-provider-settings";
+import { providerNameFromProviderEm } from "providers/ai-provider-settings";
+import { isAmplenoteLlmAvailable } from "providers/amplenote-llm";
 import { recordShownTaskSuggestions } from "dashboard/suggestions/ranked-task-suggestions";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
@@ -33,7 +34,7 @@ const NO_CONFIG_ERROR_CODES = new Set(['llm_error', 'no_provider_configured', 'p
 
 // ----------------------------------------------------------------------------------------------
 // @desc Build a single diagnostic object capturing every input that influences whether the widget
-//   can reach paths 1 (cached note), 2 (Ample Agent Pro callPlugin), or 3 (direct llmPrompt).
+//   can reach paths 1 (cached note), 2 (app.callLLM on the plugin LLM license), or 3 (direct llmPrompt).
 // [Claude claude-opus-4-8 (1M context)] Task: report any-provider dev token presence instead of OpenAI-only env key
 function _describeDreamTaskConfigSnapshot(app, providerEm, providerApiKey, hasDevToken) {
   const settings = app?.settings || {};
@@ -60,7 +61,6 @@ function _describeDreamTaskConfigSnapshot(app, providerEm, providerApiKey, hasDe
     settingsKeyLengthForProp: settingsKeyLength(providerSettingKey),
     apiKeyLengthByProvider,
     configuredProviderBuckets,
-    hasCallPlugin: typeof app?.callPlugin === 'function',
   };
 }
 
@@ -486,8 +486,8 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   const [llmAttributionFooter, setLlmAttributionFooter] = useState(null);
   const [providerPopupOpen, setProviderPopupOpen] = useState(false);
   const [reserveTasks, setReserveTasks] = useState([]);
-  // Null until the Agent Pro lookup answers, so the upsell never shows to a subscriber while it is in flight
-  const [ampleAgentProAvailable, setAmpleAgentProAvailable] = useState(null);
+  // Null until the plugin LLM license's quota check answers, so the upsell never shows to a subscriber while it is in flight
+  const [amplenoteLlmAvailable, setAmplenoteLlmAvailable] = useState(null);
   const [, setSeenUuidsMap] = useState(() => _loadSeenUuidsMap());
   const analysisRunIdRef = useRef(0);
   const listRef = useRef(null);
@@ -579,12 +579,12 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
     });
   }, [hasLlmConfig, providerEm, providerApiKey, hasDevToken, providerName]);
 
-  // [Claude claude-opus-4-8 (1M context)] Task: detect Ample Agent Pro so the reseed chooser may offer keyless providers
-  // Prompt: "LLMs with no keys should only be visible if we are prompting prior to calling the external Agent Pro plugin"
-  // The same answer decides whether a keyless failure is a missing provider (the upsell) or Agent Pro not answering.
+  // Check the plugin LLM license so the reseed chooser may offer providers the user has no key for, since app.callLLM
+  // serves them on the license. The same answer decides whether a keyless failure is a missing provider (the upsell)
+  // or a callLLM request that did not answer.
   useEffect(() => {
     let cancelled = false;
-    isAmpleAgentProInstalled(app).then(installed => { if (!cancelled) setAmpleAgentProAvailable(installed); });
+    isAmplenoteLlmAvailable(app).then(isAvailable => { if (!cancelled) setAmplenoteLlmAvailable(isAvailable); });
     return () => { cancelled = true; };
   }, [app]);
 
@@ -632,10 +632,10 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   const isLlmFallbackFailure = !!error && NO_CONFIG_ERROR_CODES.has(error.errorCode);
   const isKeylessWithoutTasks = !hasLlmConfig && !loading && (!tasks || tasks.length === 0)
     && (isInitialPreFetch || isLlmFallbackFailure);
-  // Only a confirmed absence of Agent Pro shows the upsell; with it installed, a failure shows its error and a retry
-  const shouldRenderNoConfig = isKeylessWithoutTasks && ampleAgentProAvailable === false;
-  const isCheckingAgentPro = isKeylessWithoutTasks && ampleAgentProAvailable === null;
-  useWidgetLoadedEvent(WIDGET_ID, !loading && !isCheckingAgentPro && (shouldRenderNoConfig || !!tasks || !!error), !!error);
+  // Only a confirmed absence of a plugin LLM license shows the upsell; with one, a failure shows its error and a retry
+  const shouldRenderNoConfig = isKeylessWithoutTasks && amplenoteLlmAvailable === false;
+  const isCheckingAmplenoteLlm = isKeylessWithoutTasks && amplenoteLlmAvailable === null;
+  useWidgetLoadedEvent(WIDGET_ID, !loading && !isCheckingAmplenoteLlm && (shouldRenderNoConfig || !!tasks || !!error), !!error);
 
   if (shouldRenderNoConfig) {
     logIfEnabled('[DreamTask] rendering no-config state', { providerName, hasError: !!error,
@@ -652,7 +652,7 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
         error={error}
         headerActions={headerActions}
         listRef={listRef}
-        loading={loading || isCheckingAgentPro}
+        loading={loading || isCheckingAmplenoteLlm}
         llmAttributionFooter={llmAttributionFooter}
         maxTasks={maxTasks}
         noteLink={noteLink}
@@ -673,7 +673,7 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
       {
         providerPopupOpen
         ? <LlmProviderSelector
-            allowKeylessProviders={ampleAgentProAvailable === true}
+            allowKeylessProviders={amplenoteLlmAvailable === true}
             configuredProviderEms={configuredProviderEms(pluginSettings())}
             currentProviderEm={providerEm}
             onCancel={() => setProviderPopupOpen(false)}

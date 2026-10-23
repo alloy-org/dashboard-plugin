@@ -385,10 +385,11 @@ describe("proposed-agenda-archive", () => {
 });
 
 // ----------------------------------------------------------------------------------------------
-// @desc Build an app that serves fixture tasks + a deterministic schedule through the Ample-Agent-Pro
-//   callPlugin path (so no network), counting LLM invocations.
+// @desc Build an app that serves fixture tasks + a deterministic schedule through the app.callLLM path (so no
+//   network), counting LLM invocations. A quota check reports no license, so ranking takes the same routes it would
+//   for an account without one, and is not counted as an invocation.
 // @param {function(number): Array<object>} [activitiesFromCall] - Optional deterministic LLM response builder.
-// @returns {object} App stub; read `app.callPlugin.mock.calls.length` for the LLM call count.
+// @returns {object} App stub; read llmPromptCallCount(app) for the LLM call count.
 // [Claude claude-opus-4-8 (1M context)] Task: stub the generation surface with a deterministic LLM
 // [OpenAI GPT-5.5] Task: allow tests to inject generated activities with specific task UUIDs
 function buildGenerationApp(activitiesFromCall = null) {
@@ -407,18 +408,28 @@ function buildGenerationApp(activitiesFromCall = null) {
     getTaskDomains: jest.fn(async () => [{ name: "Work", uuid: "dom-work" }]),
     getTaskDomainTasks: jest.fn(async () => [...taskState.values()].filter(task => !task.completedAt && !task.dismissedAt)),
     getTask: jest.fn(async uuid => taskState.get(uuid) || null),
-    callPlugin: jest.fn(async () => {
+    callLLM: jest.fn(async ({ checkQuota } = {}) => {
+      if (checkQuota) throw new Error("No plugin LLM license");
       llmCalls += 1;
       const activities = activitiesFromCall ? activitiesFromCall(llmCalls) : [
         { durationMinutes: 60, reason: "focus", startTime: "09:00", taskUuid: "task-1", title: `Gen ${ llmCalls } morning` },
         { durationMinutes: 30, reason: "focus", startTime: "11:00", taskUuid: "task-2", title: `Gen ${ llmCalls } midday` },
       ];
-      return { activities };
+      return { textOutput: JSON.stringify({ activities }) };
     }),
   });
   app._completeTask = uuid => { const task = taskState.get(uuid); if (task) task.completedAt = now; };
   app._deleteTask = uuid => taskState.delete(uuid);
   return app;
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Count the prompts an app stub's callLLM answered, leaving out quota checks.
+// @param {object} app - App stub from buildGenerationApp.
+// @returns {number} The number of callLLM calls that were not quota checks.
+function llmPromptCallCount(app) {
+  const promptCalls = app.callLLM.mock.calls.filter(([options]) => !options?.checkQuota);
+  return promptCalls.length;
 }
 
 // [Claude claude-opus-4-8 (1M context)] Generated tests for: cache-served vs. regenerated proposed agendas
@@ -432,20 +443,20 @@ describe("generateProposedAgenda caching + regeneration", () => {
     expect(first.fromCache).toBe(false);
     expect(first.providerEm).toBe(PROVIDER);
     expect(first.activities.map(a => a.title)).toEqual(["Gen 1 morning", "Gen 1 midday"]);
-    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+    expect(llmPromptCallCount(app)).toBe(1);
     expect(storedRecords(app, new Date())).toHaveLength(1);
 
     // Identical date+priority+LLM request — served from the note, no second LLM call.
     const cached = await generateProposedAgenda(app, { priorityKey: PRIORITY });
     expect(cached.fromCache).toBe(true);
     expect(cached.activities.map(a => a.title)).toEqual(["Gen 1 morning", "Gen 1 midday"]);
-    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+    expect(llmPromptCallCount(app)).toBe(1);
 
     // Reseed with the same LLM — forces regeneration and replaces the single stored record.
     const reseeded = await generateProposedAgenda(app, { forceRegenerate: true, priorityKey: PRIORITY });
     expect(reseeded.fromCache).toBe(false);
     expect(reseeded.activities.map(a => a.title)).toEqual(["Gen 2 morning", "Gen 2 midday"]);
-    expect(app.callPlugin).toHaveBeenCalledTimes(2);
+    expect(llmPromptCallCount(app)).toBe(2);
     expect(storedRecords(app, new Date())).toHaveLength(1);
 
     const afterReseed = await generateProposedAgenda(app, { priorityKey: PRIORITY });
@@ -461,7 +472,7 @@ describe("generateProposedAgenda caching + regeneration", () => {
     expect(result.errorCode).toBe("no_tasks");
     expect(result.error).toBe("No tasks found available to schedule in Task Domain.");
     expect(result.activities).toEqual([]);
-    expect(app.callPlugin).not.toHaveBeenCalled();
+    expect(llmPromptCallCount(app)).toBe(0);
   });
 
   it("degrades gracefully (no thrown 'find is not a function') when getTaskDomains returns a non-array", async () => {
@@ -538,12 +549,12 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
   it("serves the cached agenda without a second LLM call while every suggestion's task is still open", async () => {
     const app = buildGenerationApp();
     await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
-    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+    expect(llmPromptCallCount(app)).toBe(1);
 
     const cached = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
     expect(cached.fromCache).toBe(true);
     expect(cached.activities.map(a => a.title)).toEqual(["Gen 1 morning", "Gen 1 midday"]);
-    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+    expect(llmPromptCallCount(app)).toBe(1);
     expect(app.getTask).toHaveBeenCalledWith("task-1");
     expect(app.getTask).toHaveBeenCalledWith("task-2");
   });
@@ -559,7 +570,7 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
     expect(selectionTrace.source).toBe("cache");
     expect(selectionTrace.eligibleCount).toBeUndefined();
     expect(selectionTrace.projectCadence).toEqual(expect.objectContaining({ cadenceCount: 0, weekdayProjectNames: [] }));
-    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+    expect(llmPromptCallCount(app)).toBe(1);
   });
 
   it("moves a cached suggestion off an event scheduled after the agenda was generated", async () => {
@@ -570,7 +581,7 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
     const cached = await generateProposedAgenda(app, { obligations: [meeting], priorityKey: PRIORITY, targetDate: DATE });
 
     expect(cached.fromCache).toBe(true);
-    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+    expect(llmPromptCallCount(app)).toBe(1);
     const morning = cached.activities.find(activity => activity.title === "Gen 1 morning");
     expect(morning.startMinutes).toBeGreaterThanOrEqual(meeting.startMinutes + meeting.durationMinutes);
     expect(morning.startTime).toBe(`${ String(morning.startMinutes / 60).padStart(2, "0") }:00`);
@@ -585,7 +596,7 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
     app._completeTask("task-1"); // the user finished the 09:00 suggestion since it was proposed
 
     const reconciled = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
-    expect(app.callPlugin).toHaveBeenCalledTimes(2);
+    expect(llmPromptCallCount(app)).toBe(2);
     expect(reconciled.activities.map(a => a.taskUuid)).toEqual(["task-3", "task-2"]);
     expect(reconciled.activities.map(a => a.title)).toEqual(["Replacement draft", "Midday follow"]);
     // The replacement inherits the vacated 09:00 slot; the completed task-1 is gone from the note.
@@ -600,7 +611,7 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
     app._deleteTask("task-1"); // task was deleted entirely; getTask now resolves null
 
     const reconciled = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
-    expect(app.callPlugin).toHaveBeenCalledTimes(2);
+    expect(llmPromptCallCount(app)).toBe(2);
     expect(reconciled.activities.map(a => a.taskUuid)).toEqual(["task-3", "task-2"]);
   });
 
@@ -627,7 +638,7 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
     app._completeTask("task-1"); // scheduled-then-completed: it should remain, greyed, not be re-queried
 
     const reconciled = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
-    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+    expect(llmPromptCallCount(app)).toBe(1);
     expect(reconciled.fromCache).toBe(true);
     expect(reconciled.activities.map(a => a.taskUuid)).toEqual(["task-1", "task-2"]);
     expect(reconciled.scheduledKeys).toEqual([scheduledKey]);
@@ -657,7 +668,7 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
 
     const reconciled = await generateProposedAgenda(app, { excludedSuggestionKeys: new Set(["task:task-1"]),
       priorityKey: PRIORITY, targetDate: DATE });
-    expect(app.callPlugin).toHaveBeenCalledTimes(2);
+    expect(llmPromptCallCount(app)).toBe(2);
     expect(reconciled.activities.map(a => a.taskUuid)).toEqual(["task-3", "task-2"]);
     expect(storedRecords(app, DATE)[0].proposedTasks.map(t => t.taskUuid)).toEqual(["task-3", "task-2"]);
   });
@@ -673,7 +684,7 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
 
     const reconciled = await generateProposedAgenda(app, { obligations: [accepted], priorityKey: PRIORITY, targetDate: DATE });
 
-    expect(app.callPlugin).toHaveBeenCalledTimes(2);
+    expect(llmPromptCallCount(app)).toBe(2);
     expect(reconciled.fromCache).toBe(true);
     const pendingActivities = reconciled.activities.filter(activity => !reconciled.scheduledKeys.includes(proposedTaskKey(activity)));
     expect(pendingActivities.map(activity => activity.taskUuid)).toEqual(["task-2"]);
@@ -689,7 +700,7 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
 
     const reconciled = await generateProposedAgenda(app, { obligations: [accepted], priorityKey: PRIORITY, targetDate: DATE });
 
-    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+    expect(llmPromptCallCount(app)).toBe(1);
     expect(reconciled.activities.map(activity => activity.taskUuid)).toEqual(["task-1", "task-2", "task-3"]);
     const stored = storedRecords(app, DATE)[0];
     expect(stored.proposedTasks.map(task => task.taskUuid)).toEqual(["task-1", "task-2", "task-3"]);
@@ -708,7 +719,7 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
 
     const reconciled = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
 
-    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+    expect(llmPromptCallCount(app)).toBe(1);
     const reconciledTaskUuids = reconciled.activities.map(activity => activity.taskUuid);
     expect(reconciledTaskUuids.filter(taskUuid => taskUuid === "task-1")).toHaveLength(1);
     expect(reconciledTaskUuids).toEqual(expect.arrayContaining(["task-1", "task-2", "task-3"]));
@@ -726,7 +737,7 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
 
     const reconciled = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
 
-    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+    expect(llmPromptCallCount(app)).toBe(1);
     expect(reconciled.activities.map(activity => activity.taskUuid)).toEqual(["task-3", "task-2"]);
     expect(reconciled.activities[0]).toMatchObject({ startMinutes: 540, title: "Draft the proposal" });
     const stored = storedRecords(app, DATE)[0];
@@ -754,12 +765,12 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
     const [first, second] = await Promise.all([generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE }),
       generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE })]);
 
-    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+    expect(llmPromptCallCount(app)).toBe(1);
     expect(second).toBe(first);
     const regenerated = await Promise.all([generateProposedAgenda(app, { forceRegenerate: true, priorityKey: PRIORITY,
       targetDate: DATE }), generateProposedAgenda(app, { forceRegenerate: true, priorityKey: PRIORITY, targetDate: DATE })]);
     expect(regenerated).toHaveLength(2);
-    expect(app.callPlugin).toHaveBeenCalledTimes(3);
+    expect(llmPromptCallCount(app)).toBe(3);
   });
 
   it("skips a reserve whose task was completed since it was ranked", async () => {
@@ -772,7 +783,7 @@ describe("generateProposedAgenda cached-suggestion revalidation", () => {
     const reconciled = await generateProposedAgenda(app, { priorityKey: PRIORITY, targetDate: DATE });
 
     expect(reconciled.activities.map(activity => activity.taskUuid)).toEqual(["task-1", "task-2"]);
-    expect(app.callPlugin).toHaveBeenCalledTimes(1);
+    expect(llmPromptCallCount(app)).toBe(1);
   });
 });
 

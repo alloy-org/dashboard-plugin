@@ -1,6 +1,6 @@
-// DecisionsEndpoint asks Jev, OpenAI's Decisions API, Ample Agent Pro, or the fast model through ordered routes, falls
-// back when a route fails, keeps a failed Jev out of the routes for an hour, and returns every reply as one
-// DecisionsResponse; decisionsEndpointForApp chooses those routes from the user's keys and Agent Pro.
+// DecisionsEndpoint asks Jev, OpenAI's Decisions API, app.callDecisionModel, or the fast model through ordered routes,
+// falls back when a route fails, keeps a failed Jev out of the routes for an hour, and returns every reply as one
+// DecisionsResponse; decisionsEndpointForApp chooses those routes from the user's keys and plugin LLM license.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
 import { setPluginData } from "plugin-data";
@@ -24,11 +24,11 @@ function jsonResponse(body, status = 200) {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc An app whose Ample Agent Pro note exists, answering every callPlugin with the given reply.
-// @param {function} callPlugin - The callPlugin mock.
+// @desc An app whose plugin LLM license has quota, answering decision requests with the given callDecisionModel.
+// @param {object} options - { callDecisionModel }: the callDecisionModel mock.
 // @returns {object} The app.
-function agentProApp(callPlugin) {
-  return { callPlugin, findNote: async () => ({ name: "Ample Agent Pro", uuid: "agent-pro" }) };
+function licensedApp({ callDecisionModel }) {
+  return { callDecisionModel, callLLM: jest.fn(async ({ checkQuota } = {}) => (checkQuota ? 5 : null)) };
 }
 
 beforeEach(() => {
@@ -186,44 +186,50 @@ describe("decisionsEndpointForApp", () => {
     expect(endpoint.scorerEm).toBe("jev");
   });
 
-  it("asks Agent Pro for Jev, and for OpenAI Decisions once Jev through it has failed", async () => {
-    const callPlugin = jest.fn()
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ answers: [{ name: "task_1", score: 6, type: "score" }], model: OPENAI_DECISIONS_MODEL });
-    const app = agentProApp(callPlugin);
-    const endpoint = await decisionsEndpointForApp(app);
-    expect(endpoint.routes.map(route => route.providerEm)).toEqual([DECISIONS_PROVIDER_JEV, DECISIONS_PROVIDER_OPENAI]);
-    const response = await endpoint.rankedResponses({ questions: SCORE_QUESTIONS, state: { project: "Diff Digest" } });
-    expect(response).toMatchObject({ model: OPENAI_DECISIONS_MODEL, providerEm: DECISIONS_PROVIDER_OPENAI });
-    expect(response.ratingFor("task_1")).toBe(7);
-    expect(callPlugin.mock.calls[0][3]).toBe("jev-latest");
-    const [, , openAiPrompt, openAiModel, openAiEndpoint] = callPlugin.mock.calls[1];
-    expect(openAiModel).toBe(OPENAI_DECISIONS_MODEL);
-    expect(openAiEndpoint).toBe(OPENAI_DECISIONS_ENDPOINT);
-    expect(JSON.parse(openAiPrompt).questions[0]).toMatchObject({ name: "task_1", type: "score" });
-    expect(jevFailedRecently()).toBe(true);
+  it("asks app.callDecisionModel for Jev on the plugin LLM license, and OpenAI with a key once it has failed", async () => {
+    setPluginData({ settings: { [SETTING_KEYS.LLM_API_KEY_OPENAI]: "openai-key" } });
+    const callDecisionModel = jest.fn().mockRejectedValueOnce(Object.assign(new Error("quota exhausted"), { status: 402 }));
+    const originalFetch = globalThis.fetch;
+    const fetchMock = jest.fn().mockResolvedValue(jsonResponse({
+      answers: [{ name: "task_1", score: 6, type: "score" }], model: OPENAI_DECISIONS_MODEL }));
+    globalThis.fetch = fetchMock;
+    try {
+      const endpoint = await decisionsEndpointForApp(licensedApp({ callDecisionModel }));
+      expect(endpoint.routes.map(route => route.providerEm)).toEqual([DECISIONS_PROVIDER_JEV, DECISIONS_PROVIDER_OPENAI]);
+      const response = await endpoint.rankedResponses({ questions: SCORE_QUESTIONS, state: { project: "Diff Digest" } });
+      expect(response).toMatchObject({ model: OPENAI_DECISIONS_MODEL, providerEm: DECISIONS_PROVIDER_OPENAI });
+      expect(response.ratingFor("task_1")).toBe(7);
+      expect(callDecisionModel).toHaveBeenCalledWith(expect.objectContaining({ model: "jev-latest", questions: SCORE_QUESTIONS,
+        source: "task-rating", state: { project: "Diff Digest" } }));
+      expect(fetchMock.mock.calls[0][0]).toBe(OPENAI_DECISIONS_ENDPOINT);
+      expect(jevFailedRecently()).toBe(true);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Agent Pro has answered with bare maps of question name to rating or choice, at the top level and under
-  //   `answers`; each value is read by its question's type, and a value outside the question is left unanswered.
-  it("reads Agent Pro's bare rating and choice maps by question type", async () => {
-    const tenLevels = Array.from({ length: 10 }, (_unused, index) => `level ${ index + 1 }`);
+  // @desc callDecisionModel answers in Jev's shape for score and choice questions and names a predicate "noul";
+  //   the route asks a predicate as "noul" and reads its answer back as a predicate.
+  it("reads callDecisionModel's answers, including a noul answer, as Jev answers", async () => {
     const questions = { duration_1: choiceQuestion("How many minutes?", { 30: "30 minutes", 60: "60 minutes" }),
-      duration_2: choiceQuestion("How many minutes?", { 30: "30 minutes", 60: "60 minutes" }),
-      idea_1_relevance: scoreQuestion("How relevant?", tenLevels), idea_2_relevance: scoreQuestion("How relevant?", tenLevels) };
-    const callPlugin = jest.fn()
-      .mockResolvedValueOnce('{"idea_1_relevance":8,"idea_2_relevance":11,"duration_1":"60","duration_2":45}')
-      .mockResolvedValueOnce({ answers: { duration_1: 30, idea_1_relevance: "3" } });
-    const endpoint = await decisionsEndpointForApp(agentProApp(callPlugin));
-    const flatResponse = await endpoint.rankedResponses({ questions, state: {} });
-    expect(flatResponse.ratingFor("idea_1_relevance")).toBe(8);
-    expect(flatResponse.answerFor("idea_2_relevance")).toBeNull();
-    expect(flatResponse.answerFor("duration_1")).toMatchObject({ choice: "60", type: "choice" });
-    expect(flatResponse.answerFor("duration_2")).toBeNull();
-    const wrappedResponse = await endpoint.rankedResponses({ questions, state: {} });
-    expect(wrappedResponse.answerFor("duration_1")).toMatchObject({ choice: "30", type: "choice" });
-    expect(wrappedResponse.ratingFor("idea_1_relevance")).toBe(3);
+      is_meeting: { instructions: "Is this a meeting?", type: "predicate" }, task_1: SCORE_QUESTIONS.task_1 };
+    const callDecisionModel = jest.fn().mockResolvedValue({ answers: { duration_1: { choice: "60", type: "choice" },
+      is_meeting: { noul: 0.92, type: "noul" }, task_1: { score: 0.4, type: "score" } }, resolvedModel: "jev-1.13.0" });
+    const endpoint = await decisionsEndpointForApp(licensedApp({ callDecisionModel }));
+    const response = await endpoint.rankedResponses({ questions, state: {} });
+    expect(callDecisionModel.mock.calls[0][0].questions.is_meeting.type).toBe("noul");
+    expect(response.model).toBe("jev-1.13.0");
+    expect(response.answerFor("duration_1")).toMatchObject({ choice: "60", type: "choice" });
+    expect(response.answerFor("is_meeting")).toEqual({ probability: 0.92, type: "predicate" });
+    expect(response.ratingFor("task_1")).toBe(1.4);
+  });
+
+  it("does not ask callDecisionModel when the plugin LLM license has no quota", async () => {
+    const callDecisionModel = jest.fn();
+    const app = { callDecisionModel, callLLM: jest.fn().mockRejectedValue(new Error("app.callLLM has no quota remaining")) };
+    expect(await decisionsEndpointForApp(app, { includeFastScore: false })).toBeNull();
+    expect(callDecisionModel).not.toHaveBeenCalled();
   });
 
   it("falls to the fast model only when no decision model can be asked, and to null without one", async () => {

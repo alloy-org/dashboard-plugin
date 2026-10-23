@@ -5,6 +5,26 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-23 — Replace Ample Agent Pro callPlugin requests with app.callLLM and app.callDecisionModel
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/providers/amplenote-llm.js` (new) — `amplenoteLlmPrompt` asks `app.callLLM` and resolves null on any failure, including the embed bridge's `{ embedCallFailed }` envelope; `amplenoteDecisionRequester` is a DecisionsEndpoint route over `app.callDecisionModel`, mapping Jev's "predicate" to and from "noul"; `isAmplenoteLlmAvailable` checks quota once per app interface with `checkQuota` and keeps only a positive answer, relying on that check (which throws without a license or quota) rather than testing whether `app.callLLM` exists, since it always does; `amplenoteLlmModel` keeps a model callLLM can route and otherwise asks the default.
+- `lib/util/dev-amplenote-llm.js` (new), `lib/util/browser-dev-app.js` — dev stand-ins for `callLLM` (through the first `.env` provider token) and `callDecisionModel` (through `JEV_ACCESS_TOKEN`, else the OpenAI Decisions API), throwing like an unlicensed account when no token is set.
+- `lib/providers/fetch-ai-provider.js` — `agentProPrompt` removed; `llmPromptWithPluginFallback` renamed `llmPromptWithAmplenoteFallback`, asking callLLM before the configured provider.
+- `lib/providers/ai-provider-settings.js` — Agent Pro note lookup, install check, and responded record removed; `AMPLE_AGENT_PRO_URL` kept for the upsell.
+- `lib/providers/decisions-endpoint-for-app.js` — the keyless Jev route uses callDecisionModel; the Agent Pro OpenAI Decisions route is gone.
+- `lib/plan-wizard/stack-rank/agent-pro-jev-requester.js` (deleted).
+- `lib/plan-wizard/wizard-prompt-runner.js` — the race's first leg is callLLM, which now also receives the reasoning budget and a `source`.
+- `lib/constants/llm-providers.js` — callLLM default model, supported prefixes, and reasoning budgets.
+- Availability checks in `dream-task-service.js`, `dream-task.jsx`, `proposed-agenda.jsx`, `proposed-agenda-service.js`, `quarterly-plan-service.js`, `use-llm-provider-access.js`, `meeting-preparation-ideas.js`, `project-job-inputs.js`, `suggestion-task-rank.js`; comment and copy updates elsewhere.
+- Tests: `test/amplenote-llm.test.js`, `test/amplenote-llm-fallback.test.js` (new, replacing `ample-agent-pro-note.test.js` and `call-plugin-fallback.test.js`); callPlugin stubs replaced with callLLM / callDecisionModel stubs across the agenda, dream task, decisions, stack-rank, wizard race, provider gate, and quarterly plan suites.
+
+**Validation:** Full Jest suite (1544 tests), `npm run build`, production bundle smoke test, dev bundle build.
+**Task:** Use the new callLLM and callDecisionModel plugin APIs instead of calling the Agent Pro plugin, with dev environment mocks.
+
+---
+
 ## 2026-10-22 — Plan every weekday of a week view when suggesting calendar tasks
 
 **Model:** Claude Opus 5.5

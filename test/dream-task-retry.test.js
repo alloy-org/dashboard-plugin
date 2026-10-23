@@ -12,7 +12,6 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import DreamTaskWidget from "dream-task";
 import { DASHBOARD_NOTE_TAG, SETTING_KEYS } from "constants/settings";
-import { AMPLE_AGENT_PRO_NOTE_NAME } from "providers/ai-provider-settings";
 import { setPluginData, updatePluginSetting } from "plugin-data";
 import { SAMPLE_TASKS } from "./fixtures/tasks.js";
 
@@ -49,9 +48,8 @@ function buildMockApp(initialSettings = {}) {
 
   const app = {
     alert: jest.fn(),
-    // Ample Agent Pro is not installed, so a keyless widget shows the upsell
-    findNote: jest.fn().mockImplementation(({ name }) => Promise.resolve(name === AMPLE_AGENT_PRO_NOTE_NAME
-      ? null : { uuid: "dream-note-uuid" })),
+    // No app.callLLM, so the account has no plugin LLM license and a keyless widget shows the upsell
+    findNote: jest.fn().mockResolvedValue({ uuid: "dream-note-uuid" }),
     createNote: jest.fn().mockResolvedValue("new-note-uuid"),
     getNoteContent: jest.fn().mockImplementation(({ uuid }) => {
       if (uuid === "plan-note-uuid") return Promise.resolve(MOCK_QUARTERLY_PLAN);
@@ -110,20 +108,18 @@ describe("DreamTaskWidget API key retry", () => {
     container.remove();
   });
 
-  it("shows an error with a retry, not the upsell, when Ample Agent Pro is installed but does not answer", async () => {
+  it("shows an error with a retry, not the upsell, when the plugin LLM license is available but does not answer", async () => {
     const app = buildMockApp({
       [SETTING_KEYS.TASK_DOMAINS]: JSON.stringify({ selectedDomainUuid: "dom-work" }),
     });
-    app.findNote.mockImplementation(({ name }) => Promise.resolve(name === AMPLE_AGENT_PRO_NOTE_NAME
-      ? { name, uuid: "agent-pro-note-uuid" } : { uuid: "dream-note-uuid" }));
-    app.callPlugin = jest.fn().mockResolvedValue(null);
+    app.callLLM = jest.fn(async ({ checkQuota } = {}) => (checkQuota ? 5 : null));
 
     await act(async () => {
       root.render(createElement(DreamTaskWidget, { app, gridHeightSize: 1, gridWidthSize: 1, onOpenSettings: jest.fn() }));
     });
     await waitForSelector(container, ".dream-task-error", 5_000);
 
-    expect(app.callPlugin).toHaveBeenCalled();
+    expect(app.callLLM).toHaveBeenCalledWith(expect.objectContaining({ source: "dream-task" }));
     expect(container.querySelector(".no-config-upsell")).toBeFalsy();
   });
 

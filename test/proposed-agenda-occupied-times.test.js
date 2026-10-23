@@ -10,7 +10,7 @@ const PLAN_NOTE_UUID = "plan-note-uuid";
 let lastPromptSent = null;
 const llmMock = jest.fn();
 
-await mockFetchAiProvider({ llmPromptWithPluginFallback: (...args) => llmMock(...args) });
+await mockFetchAiProvider({ llmPromptWithAmplenoteFallback: (...args) => llmMock(...args) });
 
 const { generateProposedAgenda, scheduleProposedActivity } = await import("dashboard/proposed-agenda/proposed-agenda-service");
 
@@ -34,7 +34,6 @@ function buildApp() {
   const openTasks = SAMPLE_TASKS.filter(task => !task.completedAt && !task.dismissedAt);
   return {
     alert: jest.fn(),
-    callPlugin: jest.fn().mockResolvedValue(undefined),
     createNote: jest.fn().mockResolvedValue("travel-note-uuid"),
     filterNotes: jest.fn().mockResolvedValue([{ name: planName, uuid: PLAN_NOTE_UUID }]),
     findNote: jest.fn().mockResolvedValue(null),

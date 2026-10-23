@@ -21,7 +21,6 @@ import { dictionaryEntriesFromContent, examinedProjectSummaries, mergedDictionar
   openUserTermsDictionary } from "plan-wizard/stack-rank/user-terms-dictionary";
 import { pluginSettings, setPluginData } from "plugin-data";
 import { initialProjectTaskStoreMarkdown, projectSectionHeadingText } from "dashboard/project-tasks/project-task-store-markdown";
-import { AMPLE_AGENT_PRO_UUID } from "providers/ai-provider-settings";
 import { DecisionsEndpoint, forgetJevFailure, jevKeyRoute } from "providers/decisions-endpoint";
 import QuarterProject from "quarter-project";
 import { jevRouteFromAccessToken } from "providers/jev-client";
@@ -304,24 +303,26 @@ describe("prepareProjectTaskRanker", () => {
     expect(ratedTexts).not.toContain("Task number 49\"");
   });
 
-  it("asks Ample Agent Pro to call Jev when no Jev key is set", async () => {
+  it("asks app.callDecisionModel for Jev when no Jev key is set", async () => {
     const tasks = [{ content: "Diff Digest landing copy", noteUUID: "note-1", updatedAt: 2, uuid: "open-1" }];
-    const notes = { "Ample Agent Pro": { content: "", uuid: "agent-pro" },
-      GitClear: { content: "- [ ] Diff Digest landing copy\n", uuid: "note-1" } };
-    const callPlugin = jest.fn(async () => ({ model: "jev-latest", scores: { task_1: 9, task_2: 20 } }));
-    const app = { ...notesApp(notes, tasks), callPlugin };
+    const notes = { GitClear: { content: "- [ ] Diff Digest landing copy\n", uuid: "note-1" } };
+    const callLLM = jest.fn(async () => 5);
+    const callDecisionModel = jest.fn(async ({ questions }) => {
+      const answerEntries = Object.keys(questions).map(questionName => [questionName, { score: 8, type: "score" }]);
+      return { answers: Object.fromEntries(answerEntries), resolvedModel: "jev-1.13.0", usage: null };
+    });
+    const app = { ...notesApp(notes, tasks), callDecisionModel, callLLM };
     const ranker = await prepareProjectTaskRanker(app, { domainName: "Work", domainUuid: "work-domain",
       now: new Date(2026, 9, 1), projects: [DIFF_DIGEST_PROJECT], refineDictionary: false, tasks });
     expect(ranker.scorerEm).toBe("jev");
     const ranking = await ranker.rankProject(DIFF_DIGEST_PROJECT, []);
     expect(ranking.failureReason).toBeNull();
     expect(ranking.acceptedTasks).toEqual([{ matchScore: 9, taskText: "Diff Digest landing copy", taskUuid: "open-1" }]);
-    const [noteHandle, instructions, prompt, model, endpoint] = callPlugin.mock.calls[0];
-    expect(noteHandle).toEqual({ source: AMPLE_AGENT_PRO_UUID });
-    expect(instructions).toBe("");
-    expect(JSON.parse(prompt).model).toBe("jev-latest");
-    expect(model).toBe("jev-latest");
-    expect(endpoint).toBe("https://api.typesafe.ai/v1/systemone");
+    expect(callLLM).toHaveBeenCalledWith({ checkQuota: true });
+    const [decisionOptions] = callDecisionModel.mock.calls[0];
+    expect(decisionOptions.model).toBe("jev-latest");
+    expect(decisionOptions.source).toBe("task-rating");
+    expect(Object.keys(decisionOptions.questions).length).toBeGreaterThan(0);
   });
 
   it("grows the dictionary, rates the unassociated pool, and saves the project's minimum match score", async () => {

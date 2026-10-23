@@ -18,7 +18,7 @@ const SECONDS_PER_MINUTE = 60;
 let promptsSent = [];
 const llmMock = jest.fn();
 
-await mockFetchAiProvider({ llmPromptWithPluginFallback: (...args) => llmMock(...args) });
+await mockFetchAiProvider({ llmPromptWithAmplenoteFallback: (...args) => llmMock(...args) });
 
 const { activityKey, mergedAgendaRows } = await import("dashboard/proposed-agenda/proposed-agenda-llm-generator");
 const { proposedTaskKey } = await import("dashboard/proposed-agenda/proposed-agenda-archive");
