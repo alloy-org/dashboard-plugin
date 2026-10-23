@@ -5,6 +5,16 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-22 — Plan every weekday of a week view when suggesting calendar tasks
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` — `MAX_SUGGESTION_DAYS` raised from 3 to 5 so a week view gets five weekdays of suggestions; `MAX_DIGEST_ROWS` raised from 30 to 50 to keep the hand-off digest proportional.
+
+**Task:** Generate five days of tasks, not three, when the user has a week selected in the calendar.
+
+---
+
 ## 2026-10-19 — List each day's DecisionsEndpoint requests in the calendar generation report
 
 **Model:** Claude Opus 5.5
