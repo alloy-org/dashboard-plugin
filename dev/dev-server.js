@@ -52,13 +52,6 @@ function devTokenDefines() {
 // Date: 2026-03-01 | Model: claude-opus-4-6
 const sseClients = new Set();
 
-function sendSSE(data) {
-  const payload = `data: ${JSON.stringify(data)}\n\n`;
-  for (const client of sseClients) {
-    client.write(payload);
-  }
-}
-
 // [Claude] Task: use shared esbuild SCSS plugin so widgets load their own styles
 // Prompt: "refactor so widgets load their own scss instead of dashboard.scss importing everything"
 // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
@@ -70,7 +63,6 @@ const liveReloadPlugin = {
   setup(build) {
     build.onEnd((result) => {
       if (result.errors.length > 0) return;
-      // sendSSE({ type: "reload" });
       console.trace("[reload] full reload sent");
     });
   },

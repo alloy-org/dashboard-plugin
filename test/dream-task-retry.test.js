@@ -32,13 +32,6 @@ const MOCK_QUARTERLY_PLAN = `# Q2 2026 Plan
 - Focus: Dashboard polish and API key onboarding
 - Key move: Improve DreamTask retry behavior`;
 
-// [Claude] Task: derive today's note name identically to the DreamTask component
-// Date: 2026-04-04 | Model: claude-4.6-opus-high-thinking
-function todayNoteName() {
-  const label = new Date().toLocaleString([], { year: "numeric", month: "long", day: "numeric" });
-  return `Dashboard proposed tasks for ${label}`;
-}
-
 // [Claude] Task: build mock app with mutable settings for simulating API key addition
 // Prompt: "test that DreamTask retries when a new API key is added"
 // Date: 2026-04-04 | Model: claude-4.6-opus-high-thinking

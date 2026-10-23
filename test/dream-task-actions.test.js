@@ -78,7 +78,6 @@ function buildMockAppWithNote(initialContent) {
     insertTask: jest.fn().mockResolvedValue("created-task-uuid"),
     alert: jest.fn(),
     updateTask: jest.fn().mockResolvedValue(true),
-    currentNoteContent: () => noteContent,
   };
 
   return app;

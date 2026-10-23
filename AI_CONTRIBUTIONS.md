@@ -5,11 +5,34 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-23 — Remove unused functions, constants, and modules
+
+**Model:** Grok 4.7
+**Files created/modified:**
+- Removed modules nothing imported: `lib/constants/prompt-strings.js`, `lib/dashboard/copy-link.jsx`, `lib/prompt-api-params.js`, `lib/providers/openai-functions.js`.
+- `lib/providers/fetch-ai-provider.js` — removed `callRemoteAI` and the retry/stream parsers only it called (`requestWithRetry`, `parseAnthropicStream`, `parseGeminiStream`, `parseOpenAICompatibleStream`, `streamAccumulate`). `llmPrompt` and `makeRequest` stay.
+- `lib/providers/fetch-json.js` — removed `shouldStream`, `streamPrefaceString`, `jsonFromMessages`, `fetchJson`, `jsonResponseFromStreamChunk`, and `extendUrlWithParameters`, which only that path used.
+- `lib/providers/ai-provider-settings.js` — removed `defaultProviderModel`, which only `callRemoteAI` called.
+- `lib/app-util.js` — removed the unused answer-cleanup helpers (`arrayFromJumbleResponse`, `arrayFromResponseString`, `cleanTextFromAnswer`, `debugData`, `optionWithoutPrefix`, `trimNoteContentFromAnswer`, `truncate`).
+- `lib/constants/llm-providers.js` — removed unused provider constants, including `PERPLEXITY_TOKEN_LIMITS`.
+- `lib/util/date-utility.js` — removed `weekEndFromDateInput`, `weekStartDayFromFormat`, and `isCurrentWeekEarly`.
+- `lib/hooks/use-plan-wizard.js` — removed `newGoalUuid`.
+- `lib/recommendation-context/day-recommendation-context.js` — removed `allDayEventsForTargetDate`.
+- `lib/shared-notes-service.js` — removed `peopleNoteUuidSummary`.
+- `lib/plan-wizard/prospect-discovery.js` — removed the unread `MAX_LLM_PROCESSING_SECONDS`.
+- `dev/dev-server.js` — removed `sendSSE`; the SSE client set and live-reload plugin stay.
+- `test/test-helpers.js` — kept `mockPlugin`, the only helper tests import, and removed the unused mock builders.
+- `test/dream-task-actions.test.js`, `test/dream-task-retry.test.js` — removed an unread mock field and an unread helper.
+
+**Task:** Remove unused methods, functions, classes, and constants.
+
+---
+
 ## 2026-10-23 — Replace Ample Agent Pro callPlugin requests with app.callLLM and app.callDecisionModel
 
 **Model:** Claude Opus 5.5
 **Files created/modified:**
-- `lib/providers/amplenote-llm.js` (new) — `amplenoteLlmPrompt` asks `app.callLLM` and resolves null on any failure, including the embed bridge's `{ embedCallFailed }` envelope; `amplenoteDecisionRequester` is a DecisionsEndpoint route over `app.callDecisionModel`, mapping Jev's "predicate" to and from "noul"; `isAmplenoteLlmAvailable` checks quota once per app interface with `checkQuota` and keeps only a positive answer, relying on that check (which throws without a license or quota) rather than testing whether `app.callLLM` exists, since it always does; `amplenoteLlmModel` keeps a model callLLM can route and otherwise asks the default. `lib/providers/amplenote-llm-response.js` (new) copies the host's getter-backed callLLM/callDecisionModel replies into plain objects, and `onEmbedCall` applies it, because the embed bridge kept only the instances' `_textOutput`/`_json` fields. When a reply can't be read, the debug console logs its type, keys and opening JSON; `llmPromptWithAmplenoteFallback` reports callLLM's failure, not a missing provider, when the user has no provider of their own.
+- `lib/providers/amplenote-llm.js` (new) — `amplenoteLlmPrompt` asks `app.callLLM` and resolves null on any failure, including the embed bridge's `{ embedCallFailed }` envelope; `amplenoteDecisionRequester` is a DecisionsEndpoint route over `app.callDecisionModel`, mapping Jev's "predicate" to and from "noul"; `isAmplenoteLlmAvailable` checks quota once per app interface with `checkQuota` and keeps only a positive answer, relying on that check (which throws without a license or quota) rather than testing whether `app.callLLM` exists, since it always does; `amplenoteLlmModel` keeps a model callLLM can route and otherwise asks the default. Removed the unused `isMobilePlatform` copy from `fetch-ai-provider.js` (it only existed to skip `callPlugin` on mobile; `util/device-profile` keeps the live one), and `proposed-agenda-integration.test.js` now stubs an unlicensed `callLLM` in place of `callPlugin`. `lib/providers/amplenote-llm-response.js` (new) copies the host's getter-backed callLLM/callDecisionModel replies into plain objects, and `onEmbedCall` applies it, because the embed bridge kept only the instances' `_textOutput`/`_json` fields. When a reply can't be read, the debug console logs its type, keys and opening JSON; `llmPromptWithAmplenoteFallback` reports callLLM's failure, not a missing provider, when the user has no provider of their own.
 - `lib/util/dev-amplenote-llm.js` (new), `lib/util/browser-dev-app.js` — dev stand-ins for `callLLM` (through the first `.env` provider token) and `callDecisionModel` (through `JEV_ACCESS_TOKEN`, else the OpenAI Decisions API), throwing like an unlicensed account when no token is set.
 - `lib/providers/fetch-ai-provider.js` — `agentProPrompt` removed; `llmPromptWithPluginFallback` renamed `llmPromptWithAmplenoteFallback`, asking callLLM before the configured provider.
 - `lib/providers/ai-provider-settings.js` — Agent Pro note lookup, install check, and responded record removed; `AMPLE_AGENT_PRO_URL` kept for the upsell.
