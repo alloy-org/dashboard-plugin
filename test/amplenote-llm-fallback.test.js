@@ -117,15 +117,15 @@ describe("llmPromptWithAmplenoteFallback", () => {
     expect(requestBody.messages[0].content).toBe(longPrompt);
   });
 
-  it("throws an actionable error when callLLM produces nothing and no provider is configured", async () => {
-    // Regression: Goal Coach crashed with the cryptic "Model undefined not found in any provider" when the first
-    //   leg returned nothing and no direct LLM provider was configured.
+  it("blames callLLM, not provider settings, when callLLM produces nothing and no provider is configured", async () => {
+    // Regression: Goal Coach told a subscriber with quota to choose a provider in Dashboard Settings when callLLM's
+    //   reply could not be read.
     setPluginData({ settings: { [SETTING_KEYS.LLM_PROVIDER_MODEL]: "none" }, context: {} });
     const app = { alert: jest.fn(), callLLM: jest.fn().mockResolvedValue(null) };
     global.fetch = jest.fn();
 
     await expect(llmPromptWithAmplenoteFallback(app, "prompt", { jsonResponse: true }))
-      .rejects.toThrow(/No AI provider is configured/);
+      .rejects.toThrow(/Amplenote's AI didn't return a response/);
     expect(global.fetch).not.toHaveBeenCalled();
   });
 });
