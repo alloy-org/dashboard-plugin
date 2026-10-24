@@ -16,7 +16,7 @@ import QuarterProject from "dashboard/quarter-project";
 import QuarterProjectRepository from "dashboard/quarter-project-repository";
 import { existingTaskForAcceptedIdea, recordSuggestedIdeaDecisions } from "dashboard/suggestions/ranked-task-suggestions";
 import { rankedTasksFromResponse, suggestionQuestions } from "dashboard/suggestions/suggestion-task-rank";
-import { slotRankedTasks } from "dashboard/suggestions/suggestion-task-slots";
+import { EVENING_DAY_END_MINUTES, slotRankedTasks } from "dashboard/suggestions/suggestion-task-slots";
 import { createGenerateProjectIdeasHandler } from "dashboard/work-queue/jobs/generate-project-ideas";
 import { createRateProjectIdeasHandler } from "dashboard/work-queue/jobs/rate-project-ideas";
 import { ideasRefreshDue, ideasRequestIfDue } from "dashboard/work-queue/quarter-project-work-planner";
@@ -339,6 +339,16 @@ describe("ideas as recommendation candidates", () => {
     expect(activities).toEqual([expect.objectContaining({ candidateId: "idea:idea-1", ideaId: "idea-1", isExisting: false,
       taskUuid: null, title: "First idea" })]);
     expect(reserveTasks.map(reserve => reserve.candidateId)).toEqual(["idea:idea-2", "task:task-1"]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A day that offers evenings keeps placing tasks past 18:00, up to EVENING_DAY_END_MINUTES.
+  it("slots tasks into the evening when the day ends later", () => {
+    const tasks = ["task-1", "task-2", "task-3"].map(taskUuid => ({ candidateId: `task:${ taskUuid }`, rationale: "Why",
+      taskText: taskUuid, taskUuid }));
+    const { activities, reserveTasks } = slotRankedTasks(tasks, { dayEndMinutes: EVENING_DAY_END_MINUTES, nowMinutes: 17 * 60 });
+    expect(activities.map(activity => activity.startTime)).toEqual(["17:00", "18:00", "19:00"]);
+    expect(reserveTasks).toEqual([]);
   });
 });
 

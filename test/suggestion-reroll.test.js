@@ -95,6 +95,19 @@ describe("promptedRerollChoice", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
+  // @desc Evenings are read as chosen, and weekends only when the calendar's window holds weekend days to add.
+  it("reads the weekend and evening choices", async () => {
+    const promptResult = [{ focusKey: "layups", includeEvenings: true, includeWeekends: true, view: SUGGESTION_REROLL_VIEW }, -1];
+    const app = { prompt: jest.fn(async () => promptResult), settings: {} };
+    const choice = await promptedRerollChoice(app, { days: [TUESDAY], domainName: null, domainUuid: null, offersWeekends: true });
+    expect(app.prompt.mock.calls[0][1].inputs[0].value).toMatchObject({ includeEvenings: false, includeWeekends: false,
+      offersWeekends: true });
+    expect(choice).toMatchObject({ includeEvenings: true, includeWeekends: true });
+    const weekdayChoice = await promptedRerollChoice(app, { days: [TUESDAY], domainName: null, domainUuid: null });
+    expect(weekdayChoice).toMatchObject({ includeEvenings: true, includeWeekends: false });
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc Keeping the current suggestions, or closing the prompt, is no re-roll.
   it("returns null when the user keeps the current suggestions", async () => {
     const keepApp = { prompt: jest.fn(async () => [{ focusKey: "layups", view: SUGGESTION_REROLL_VIEW }, "keepCurrent"]), settings: {} };
@@ -115,6 +128,7 @@ describe("suggestion re-roll embed", () => {
     expect(html).toContain("Moonshots");
     expect(html).toContain("New + existing");
     expect(html).toContain("Existing tasks");
+    expect(html).toContain("includeEvenings");
     expect(suggestionRerollValue([JSON.stringify(value)])).toEqual(value);
     expect(suggestionRerollValue([{ view: "ideaRunProgress" }])).toBeNull();
   });

@@ -139,6 +139,17 @@ describe("proposedAgendaDaysInRange", () => {
     expect(days.map(day => day.getDate())).toEqual([11, 14, 15]);
   });
 
+  // A re-roll that asks for weekends keeps the window's Saturday and Sunday without letting them push a weekday out.
+  it("adds the window's weekend days when asked, outside the day cap", () => {
+    const friday = new Date(2026, 8, 11, 9, 0, 0);
+    const range = { endAt: Math.floor(new Date(2026, 8, 16, 17, 0, 0).getTime() / 1000),
+      startAt: Math.floor(friday.getTime() / 1000) };
+    const days = proposedAgendaDaysInRange(range, { includeWeekends: true, maxDays: 5, now: friday });
+    expect(days.map(day => day.getDate())).toEqual([11, 12, 13, 14, 15, 16]);
+    const cappedDays = proposedAgendaDaysInRange(range, { includeWeekends: true, maxDays: 1, now: friday });
+    expect(cappedDays.map(day => day.getDate())).toEqual([11]);
+  });
+
   // An absent or inverted range is how callers say "no range supplied"; the widget then plans its single
   // auto-resolved day instead.
   it("returns no days for an absent, partial, or inverted range", () => {

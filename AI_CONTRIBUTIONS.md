@@ -32,6 +32,23 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-24 — Re-roll prompt: weekend and evening checkboxes
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/suggestion-reroll-embed.js` — "Also suggest for" panel with Weekends (shown only when the calendar window holds weekend days) and Evenings checkboxes; both reach the plugin with the rest of the choice and the summary line.
+- `lib/dashboard/suggestions/suggestion-reroll-prompt.js` — `promptedRerollChoice` takes `offersWeekends` and returns `includeEvenings`/`includeWeekends`.
+- `lib/dashboard/proposed-agenda/proposed-agenda-range.js` — `proposedAgendaDaysInRange` `includeWeekends` option keeps the window's weekend days outside the day cap.
+- `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` — `_passOptionsWithWeekendDays` adds weekend days to a re-roll that asked for them, and to ordinary passes replaying a same-date weekend re-roll.
+- `lib/dashboard/suggestions/suggestion-task-slots.js` — `EVENING_DAY_END_MINUTES` (22:00) and a `dayEndMinutes` option on `slotRankedTasks`/`activitiesClearOfObligations`.
+- `lib/dashboard/suggestions/suggestion-reroll-range.js`, `suggestion-reroll-store.js` — thread `includeEvenings` through re-roll slotting, the stored record, and replay.
+- `lib/dashboard/suggestions/calendar-generation-report.js` — report notes which hours a re-roll offered.
+- Tests in `test/suggestion-reroll.test.js`, `test/proposed-agenda-date-range.test.js`, `test/project-task-idea-ratings.test.js`.
+
+**Task:** Let the Suggest re-roll prompt opt into weekend days and evening hours.
+
+---
+
 ## 2026-10-23 — Remove unused functions, constants, and modules
 
 **Model:** Grok 4.7
