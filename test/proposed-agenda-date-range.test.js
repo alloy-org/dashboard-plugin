@@ -150,15 +150,16 @@ describe("proposedAgendaDaysInRange", () => {
     expect(cappedDays.map(day => day.getDate())).toEqual([11]);
   });
 
-  // One-day and three-day views opened on a Saturday or Sunday were opened to see the weekend; a longer view, or
+  // Views of one to four days opened on a Saturday or Sunday were opened to see the weekend; a longer view, or
   // one opening on a weekday, keeps the weekday preference.
-  it("recognizes a one-day or three-day view that opens on a weekend day", () => {
+  it("recognizes a view of four days or fewer that opens on a weekend day", () => {
     const saturdayStart = Math.floor(new Date(2026, 8, 12, 0, 0, 0).getTime() / 1000);
     const sundayStart = Math.floor(new Date(2026, 8, 13, 0, 0, 0).getTime() / 1000);
     const fridayStart = Math.floor(new Date(2026, 8, 11, 0, 0, 0).getTime() / 1000);
     expect(shortViewStartsOnWeekend({ endAt: saturdayStart + SECONDS_PER_DAY - 1, startAt: saturdayStart })).toBe(true);
     expect(shortViewStartsOnWeekend({ endAt: sundayStart + 3 * SECONDS_PER_DAY, startAt: sundayStart })).toBe(true);
-    expect(shortViewStartsOnWeekend({ endAt: saturdayStart + 7 * SECONDS_PER_DAY - 1, startAt: saturdayStart })).toBe(false);
+    expect(shortViewStartsOnWeekend({ endAt: saturdayStart + 4 * SECONDS_PER_DAY - 1, startAt: saturdayStart })).toBe(true);
+    expect(shortViewStartsOnWeekend({ endAt: saturdayStart + 5 * SECONDS_PER_DAY - 1, startAt: saturdayStart })).toBe(false);
     expect(shortViewStartsOnWeekend({ endAt: fridayStart + 3 * SECONDS_PER_DAY - 1, startAt: fridayStart })).toBe(false);
     expect(shortViewStartsOnWeekend(null)).toBe(false);
   });
