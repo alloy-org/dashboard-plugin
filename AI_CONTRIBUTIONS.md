@@ -32,6 +32,16 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-24 — Weekend suggestions for short views opening on a weekend
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda/proposed-agenda-range.js` — `shortViewStartsOnWeekend` recognizes a one-day or three-day calendar view whose first date is a Saturday or Sunday.
+- `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` — `_suggestionPassOptions` plans such a view's weekend days on every pass.
+- Tests in `test/proposed-agenda-date-range.test.js`.
+
+---
+
 ## 2026-10-24 — Re-roll prompt: weekend and evening checkboxes
 
 **Model:** Claude Opus 5.5

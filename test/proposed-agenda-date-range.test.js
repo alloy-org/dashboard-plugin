@@ -22,7 +22,7 @@ await mockFetchAiProvider({ llmPromptWithAmplenoteFallback: (...args) => llmMock
 
 const { activityKey, mergedAgendaRows } = await import("dashboard/proposed-agenda/proposed-agenda-llm-generator");
 const { proposedTaskKey } = await import("dashboard/proposed-agenda/proposed-agenda-archive");
-const { agendaRowsGroupedByDay, proposedAgendaDaysInRange } = await import("dashboard/proposed-agenda/proposed-agenda-range");
+const { agendaRowsGroupedByDay, proposedAgendaDaysInRange, shortViewStartsOnWeekend } = await import("dashboard/proposed-agenda/proposed-agenda-range");
 const { calendarSuggestionFromActivity, suggestScheduledTasksFromDashboard } = await import("dashboard/proposed-agenda/proposed-agenda-suggest-action");
 const { readRerolledDays, recordRerolledDays } = await import("dashboard/suggestions/suggestion-reroll-store");
 
@@ -150,6 +150,19 @@ describe("proposedAgendaDaysInRange", () => {
     expect(cappedDays.map(day => day.getDate())).toEqual([11]);
   });
 
+  // One-day and three-day views opened on a Saturday or Sunday were opened to see the weekend; a longer view, or
+  // one opening on a weekday, keeps the weekday preference.
+  it("recognizes a one-day or three-day view that opens on a weekend day", () => {
+    const saturdayStart = Math.floor(new Date(2026, 8, 12, 0, 0, 0).getTime() / 1000);
+    const sundayStart = Math.floor(new Date(2026, 8, 13, 0, 0, 0).getTime() / 1000);
+    const fridayStart = Math.floor(new Date(2026, 8, 11, 0, 0, 0).getTime() / 1000);
+    expect(shortViewStartsOnWeekend({ endAt: saturdayStart + SECONDS_PER_DAY - 1, startAt: saturdayStart })).toBe(true);
+    expect(shortViewStartsOnWeekend({ endAt: sundayStart + 3 * SECONDS_PER_DAY, startAt: sundayStart })).toBe(true);
+    expect(shortViewStartsOnWeekend({ endAt: saturdayStart + 7 * SECONDS_PER_DAY - 1, startAt: saturdayStart })).toBe(false);
+    expect(shortViewStartsOnWeekend({ endAt: fridayStart + 3 * SECONDS_PER_DAY - 1, startAt: fridayStart })).toBe(false);
+    expect(shortViewStartsOnWeekend(null)).toBe(false);
+  });
+
   // An absent or inverted range is how callers say "no range supplied"; the widget then plans its single
   // auto-resolved day instead.
   it("returns no days for an absent, partial, or inverted range", () => {
@@ -259,6 +272,22 @@ describe("suggestScheduledTasksFromDashboard", () => {
     const [settingKey, settingValue] = app.setSetting.mock.calls.at(-1);
     expect(settingKey).toBe(SETTING_KEYS.CALENDAR_SUGGESTIONS_GENERATED);
     expect(JSON.parse(settingValue).dayKeys.length).toBeGreaterThan(0);
+  });
+
+  // A three-day view opening on a future Saturday plans the Saturday and Sunday as well as the Monday, where a
+  // longer view would have planned only the weekdays.
+  it("plans the weekend days of a three-day view that opens on a Saturday", async () => {
+    const { app } = buildApp();
+    app.setSetting = jest.fn().mockResolvedValue(undefined);
+    const saturday = new Date();
+    saturday.setDate(saturday.getDate() + ((6 - saturday.getDay() + 7) % 7 || 7));
+    const startAt = midnightSeconds(saturday);
+    await suggestScheduledTasksFromDashboard(app, { endAt: startAt + 3 * SECONDS_PER_DAY - 1, scheduledTasks: [], startAt });
+
+    const generationCalls = app.setSetting.mock.calls.filter(([key]) => key === SETTING_KEYS.CALENDAR_SUGGESTIONS_GENERATED);
+    const recordedDayKeys = JSON.parse(generationCalls.at(-1)[1]).dayKeys;
+    const recordedWeekdays = recordedDayKeys.map(dayKey => new Date(dayKey).getDay());
+    expect(recordedWeekdays).toEqual([6, 0, 1]);
   });
 
   // The calendar's already-scheduled tasks are the immovable obligations the plan is built around, and they
