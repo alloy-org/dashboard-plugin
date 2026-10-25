@@ -2,14 +2,16 @@
 // recorded without a model and the rest asked in batches, tasks the ledger holds are never asked again, a week spanning
 // two quarters writes both ledgers, a user with no decision model still gets linked tasks recorded, and a failed batch
 // keeps what earlier batches recorded for the retry to build on. A quarter holding project tasks not yet rated for
-// potential is handed to the potential scoring job.
+// potential is handed to the potential scoring job. Each stored project's Completed tasks bullet links to the ledger's
+// latest day holding one of its completions.
 import { jest } from "@jest/globals";
 import { readCompletedTaskLedger } from "dashboard/projects/completed-task-project-ledger";
 import { NO_PROJECT_CHOICE } from "dashboard/projects/completed-task-project-classification";
 import { createClassifyCompletedTasksHandler } from "dashboard/work-queue/jobs/classify-completed-tasks";
 import { completedTaskClassificationRequest, completedTaskPotentialRequest } from "dashboard/work-queue/jobs/project-job-requests";
 import { DecisionsEndpoint } from "providers/decisions-endpoint";
-import { jobContext, maintenanceApp, QUARTERLY_CONTENT, SCOPE_INPUT } from "./project-maintenance-test-app";
+import { projectTaskStoreNoteName } from "dashboard/project-tasks/project-task-store";
+import { jobContext, maintenanceApp, QUARTERLY_CONTENT, SCOPE_INPUT, storedProjectUuid } from "./project-maintenance-test-app";
 
 const LAUNCH_CHOICE = "1. Launch dashboard";
 const SEPTEMBER_NOW = new Date(2026, 8, 19, 12, 0);
@@ -119,6 +121,25 @@ describe("classify completed tasks job", () => {
     expect(await runClassification(handler, app)).toEqual({ classifiedCount: 0, followUps: [potentialRequest], linkedCount: 0,
       outcomeDetail: "Classified 0 of 3 completed tasks (0 by model, 0 by link)", outcomeSubject: "Completed Tasks by Project Q3 2026 Work", waitingCount: 0 });
     expect(requestAnswers).toHaveBeenCalledTimes(1);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A stored project's Completed tasks bullet links to the ledger's latest day holding one of its completions,
+  //   and a run that changes no project's latest day leaves the store as it was.
+  it("links each stored project's completed tasks bullet to its latest ledger day", async () => {
+    const app = completionApp([completedTask("linked", "Launch dashboard polish", new Date(2026, 8, 17, 9, 0)),
+      completedTask("widget", "Tune widget spacing", new Date(2026, 8, 18, 15, 0))]);
+    await storedProjectUuid(app);
+    const storeName = projectTaskStoreNoteName(SCOPE_INPUT);
+    expect(app.noteContent(storeName)).toContain("- Completed tasks: none recorded yet\n");
+    const handler = classificationHandler(choiceRequest());
+    await runClassification(handler, app);
+    const ledgerNote = await app.findNote({ name: "Completed Tasks by Project Q3 2026 Work" });
+    expect(app.noteContent(storeName)).toContain("- Completed tasks: [Completed Tasks by Project Q3 2026 Work, latest on 2026-09-18]"
+      + `(https://www.amplenote.com/notes/${ ledgerNote.uuid }#2026-09-18)\n`);
+    const linkedContent = app.noteContent(storeName);
+    await runClassification(handler, app);
+    expect(app.noteContent(storeName)).toBe(linkedContent);
   });
 
   // ----------------------------------------------------------------------------------------------

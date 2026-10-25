@@ -42,7 +42,7 @@ describe("idea records", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc The store keeps decided ideas and the project's intents in its payload but lists only open ideas, and lists
   //   a completion by its text when it has one.
-  it("round-trips decided ideas, linked intents, and completion text through the store section", () => {
+  it("round-trips decided ideas and linked intents through the store section, leaving completions to the ledger", () => {
     const stored = project({ completedTasks: [{ completedAt: "2026-09-10T12:00:00.000Z", taskText: "Ship the picker",
       taskUuid: "done-1" }, { completedAt: "2026-09-11T12:00:00.000Z", taskUuid: "done-2" }], linkedGoalUuids: ["goal-1"],
       suggestedTasks: [{ taskText: "Audit widget memory" }, { decidedAt: "2026-09-12T12:00:00.000Z",
@@ -50,12 +50,12 @@ describe("idea records", () => {
     const section = stored.toStoreSection();
     expect(section).toContain("  - Audit widget memory\n");
     expect(section).not.toContain("  - Rewrite the dashboard\n");
-    expect(section).toContain("  - Ship the picker — completed 2026-09-10");
-    expect(section).toContain("  - done-2 — completed 2026-09-11");
+    expect(section).toContain("- Completed tasks: none recorded yet\n");
+    expect(section).not.toContain("Ship the picker");
     const reread = QuarterProject.fromStoreSection(section);
     expect(reread.suggestedTasks).toEqual(stored.suggestedTasks);
     expect(reread.linkedGoalUuids).toEqual(["goal-1"]);
-    expect(reread.completedTasks[0].taskText).toBe("Ship the picker");
+    expect(reread.completedTasks).toEqual([]);
     expect(stored.toProgressRecord().linkedGoalUuids).toEqual(["goal-1"]);
   });
 

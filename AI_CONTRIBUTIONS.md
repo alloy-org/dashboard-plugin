@@ -32,6 +32,22 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-25 — Completed task ledger is the source of truth for a project's weekly completions
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/projects/project-week-completions.js` (new) — reads the week's "Completed Tasks by Project" ledger entries and completed tasks, and reconciles a project's completions with them: the ledger decides the completions it records, the project's link and similarity matching decides the rest.
+- `lib/dashboard/suggestions/ranked-task-suggestions.js` — `_dayGroups` reconciles each project's completions before `setProgressEvidence`, so the "finished N tasks this week" rationale counts what the ledger credits.
+- `lib/dashboard/project-progress-service.js` — the progress note's completions are reconciled with the week's ledger entries.
+- `lib/dashboard/quarter-project-serialization.js`, `project-tasks/project-collection-steps.js`, `quarter-project.js`, `quarter-project-refresh-state.js` — the Project Tasks store no longer writes the "Completed tasks" bullet or `completedTasks` payload; the ranking job, which reads only open tasks, no longer records completions.
+- `lib/hooks/use-completed-task-projects.js` — reuses the shared quarter and ledger helpers.
+- Completed tasks bullet restored as a link: `QuarterProject.completedTasksLink` (store-owned, kept in the payload) renders as a link to the ledger's latest day heading holding one of the project's completions (`noteHeadingUrlFromUUID` in `lib/app-util.js` mirrors Amplenote's heading anchors). `classify-completed-tasks.js` updates each stored project's link after recording; `readCompletedTaskLedger` now returns the ledger's `noteUuid`, and `latestCompletionDateKeysByProject` is new.
+- Tests: `test/project-week-completions.test.js` (new); store, maintenance, and classification tests updated.
+
+**Task:** Fix the always-empty "Completed tasks" list and make Plan Builder's weekly progress rationale agree with the projects Victory Value credits.
+
+---
+
 ## 2026-10-25 — First Plan Builder Done generates ideas; two-minute idea run estimate
 
 **Model:** Claude Opus 5.5

@@ -32,8 +32,8 @@ describe("project maintenance jobs", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Discovery, a ranking spread over two turns, and ideas persist local and similar tasks, completion text,
-  //   generated ideas, and operation-specific successful refresh revisions.
+  // @desc Discovery, a ranking spread over two turns, and ideas persist local and similar tasks, generated ideas, and
+  //   operation-specific successful refresh revisions. Completions are left to the completed task ledger.
   it("stores project evidence with ranking and ideas as separate jobs", async () => {
     const ideaGenerator = jest.fn().mockResolvedValue({ failureReason: null, foundTasks: [], suggestedTasks: [GENERATED_IDEA] });
     const discoveryRunner = jest.fn().mockResolvedValue(DISCOVERED_TERMS);
@@ -51,7 +51,7 @@ describe("project maintenance jobs", () => {
     expect(queueApp.noteContent("User terms dictionary 2026")).toContain("dashboard");
     const [stored] = await readCollectedProjectTasks(queueApp, { ...SCOPE_INPUT, quarterKey: "2026-Q3" });
     expect(stored.relatedTaskRecords.map(record => record.taskUuid)).toEqual(["open-task", "errand-7", "errand-37", "errand-67", "errand-97"]);
-    expect(stored.completedTasks).toEqual([expect.objectContaining({ taskText: "Launch dashboard polish", taskUuid: "finished-task" })]);
+    expect(stored.completedTasks).toEqual([]);
     expect(stored.suggestedTasks[0].taskText).toBe(GENERATED_IDEA.taskText);
     expect(stored.lastAttemptedAt).toBe(NOW.toISOString());
     expect(stored.lastRankedAt).toBe(NOW.toISOString());
