@@ -131,7 +131,9 @@ first time gets its heading inside the body of the project's last log heading. T
 instead when the project has no log heading yet, or when a heading to rewrite also appears under another project.
 
 The sources page leaves out cited tasks rated below 6, both from the project's task count and from the list it
-opens to. Tasks not yet rated are still shown.
+opens to. Tasks not yet rated are still shown. It also counts and lists every task in the project's "Existing tasks
+eligible for suggestion" list, by the text stored there, so a project's tasks show even when discovery read too few
+recent tasks to find them.
 
 # Search depth
 

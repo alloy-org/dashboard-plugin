@@ -100,7 +100,7 @@ function ProjectSourcesTaskList({ projectRow, projectSources }) {
 
 // ----------------------------------------------------------------------------------------------
 // @desc Describe how many tasks a project row serves: its count, that every cited task rated as dissimilar, or that
-//   the user named it without citing any.
+//   the user named it and no task has been found for it.
 // @param {object} projectRow - Row from sourceProjectRows.
 // @returns {string} The count label.
 function projectTaskCountLabel(projectRow) {
@@ -176,7 +176,8 @@ export default function ProjectSourcesPage({ isDiscovering, isLoadingSources, on
     progressFraction, projectSources }) {
   const intents = planningContext.goals;
   const sourceNotes = projectSources?.notes ?? [];
-  const projectRows = sourceProjectRows(planningContext.prospects, projectSources?.matchScoresByProjectUuid ?? null);
+  const projectRows = sourceProjectRows(planningContext.prospects, projectSources?.matchScoresByProjectUuid ?? null,
+    projectSources?.eligibleTasksByProjectUuid ?? null);
   const revealedIntentCount = useStaggeredReveal(intents.length, true, INTENT_REVEAL_MS);
   const hasRevealedIntents = revealedIntentCount >= intents.length;
   const revealedNoteCount = useStaggeredReveal(sourceNotes.length, hasRevealedIntents && Boolean(projectSources),

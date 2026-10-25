@@ -32,6 +32,17 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-25 — Project evidence sources lists the Project Tasks note's eligible tasks
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/plan-wizard/plan-wizard-service.js` — `readStoredProjectTaskFields` (replaces `readProjectMatchScores`) returns each stored project's tasks eligible for suggestion beside its similarity scores; `eligibleTasksByProject` builds them.
+- `lib/dashboard/plan-wizard/project-sources-page-fields.js` — `sourceProjectRows` serves the stored eligible tasks after the cited ones; `projectTaskItems` names tasks not read this session by their stored text and orders by similarity within each standing.
+- `lib/dashboard/plan-wizard/project-sources-page.jsx`, `lib/hooks/use-plan-wizard.js` — pass and reload the stored eligible tasks.
+- Tests in `test/plan-wizard-project-sources.test.js`.
+
+---
+
 ## 2026-10-24 — Weekend suggestions for short views opening on a weekend
 
 **Model:** Claude Opus 5.5

@@ -109,6 +109,18 @@ describe("sourceProjectRows", () => {
       "task-similar": { text: "Similar" }, "task-unrated": { text: "Unrated" } } });
     expect(tasks).toHaveLength(row.servedTaskCount);
   });
+
+  it("serves the project task store's eligible tasks beside the cited ones, best rated first", () => {
+    const prospects = [prospect({ evidence: [{ taskUuid: "task-cited" }], uuid: "prospect-stored" })];
+    const eligibleTasksByProjectUuid = { "prospect-stored": [
+      { matchScore: 6.7, taskText: "Lower", taskUuid: "task-lower" }, { matchScore: 9, taskText: "Cited", taskUuid: "task-cited" },
+      { matchScore: 8.9, taskText: "Higher", taskUuid: "task-higher" }] };
+
+    const [row] = sourceProjectRows(prospects, null, eligibleTasksByProjectUuid);
+
+    expect(row).toMatchObject({ citedTaskCount: 1, servedTaskCount: 3,
+      servedTaskUuids: ["task-cited", "task-higher", "task-lower"] });
+  });
 });
 
 describe("projectTaskItems", () => {
@@ -134,6 +146,17 @@ describe("projectTaskItems", () => {
     const { tasks } = projectTaskItems(projectRow, { matchScoresByProjectUuid, taskByUuid });
 
     expect(tasks.map(task => [task.uuid, task.matchScore])).toEqual([["task-rated", 7.7], ["task-unrated", null]]);
+  });
+  it("names served tasks not read this session by their stored text, most similar first", () => {
+    const eligibleTasksByProjectUuid = { "prospect-1": [{ matchScore: 6.7, taskText: "Stored lower", taskUuid: "task-lower" },
+      { matchScore: 8.9, taskText: "Stored higher", taskUuid: "task-higher" }] };
+    const [projectRow] = sourceProjectRows([prospect({ evidence: [{ taskUuid: "task-lower" }, { taskUuid: "task-gone" }] })],
+      null, eligibleTasksByProjectUuid);
+
+    const { tasks, unreadTaskCount } = projectTaskItems(projectRow, { eligibleTasksByProjectUuid, taskByUuid: {} });
+
+    expect(tasks.map(task => [task.text, task.matchScore])).toEqual([["Stored higher", 8.9], ["Stored lower", 6.7]]);
+    expect(unreadTaskCount).toBe(1);
   });
 });
 
