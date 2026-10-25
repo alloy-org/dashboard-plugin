@@ -32,6 +32,19 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-25 — Goal Coach fills both cards when most ranked candidates were recently suggested
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/suggestions/suggestion-task-slots.js` — new `goalCoachTaskPool`: fresh candidates first, then, only when they cannot fill every card, recently suggested ones least recent first.
+- `lib/dashboard/suggestions/ranked-task-suggestions.js` — `dreamSuggestionsFromProjects` draws cards and reserves from `goalCoachTaskPool` instead of the fresh list alone.
+- `lib/goal-coach-service.js` — cards removed from today's Goal Coach note join the generation exclusions, so a refill cannot bring one back.
+- `test/ranked-task-suggestions.test.js` — covers the pool's ordering.
+
+**Task:** Reseed showed one card: the ranked pool held four project candidates, three of which the agenda had shown within three days.
+
+---
+
 ## 2026-10-25 — Rename DreamTask to Goal Coach; source note badge links to its note
 
 **Model:** Claude Opus 5.5

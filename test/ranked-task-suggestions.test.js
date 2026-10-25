@@ -5,8 +5,8 @@ import QuarterProject from "quarter-project";
 import DecisionsResponse from "providers/decisions-response";
 import { generativeRankPrompt, rankedTasksFromCandidateIds, rankedTasksFromRatings, rankedTasksFromResponse,
   suggestionQuestions } from "dashboard/suggestions/suggestion-task-rank";
-import { activitiesClearOfObligations, refillRejectedSuggestion, slotRankedTasks, suggestionHourAvailability,
-  tasksNotRecentlySuggested } from "dashboard/suggestions/suggestion-task-slots";
+import { activitiesClearOfObligations, goalCoachTaskPool, refillRejectedSuggestion, slotRankedTasks,
+  suggestionHourAvailability, tasksNotRecentlySuggested } from "dashboard/suggestions/suggestion-task-slots";
 
 const TUESDAY = new Date(2026, 9, 6, 15, 0, 0);
 
@@ -159,6 +159,17 @@ describe("suggestion ranking", () => {
     const recent = { minutesSinceRecommended: 60, taskUuid: "recent" };
     const old = { minutesSinceRecommended: 3 * 24 * 60, taskUuid: "old" };
     expect(tasksNotRecentlySuggested([fresh, recent, old]).map(task => task.taskUuid)).toEqual(["new", "old"]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc When too few candidates are fresh to fill Goal Coach's cards, the least recently suggested fill in after them.
+  it("fills Goal Coach's cards with the least recently suggested tasks when too few are fresh", () => {
+    const fresh = { minutesSinceRecommended: null, taskUuid: "new" };
+    const hourAgo = { minutesSinceRecommended: 60, taskUuid: "hour-ago" };
+    const dayAgo = { minutesSinceRecommended: 24 * 60, taskUuid: "day-ago" };
+    expect(goalCoachTaskPool([hourAgo, fresh, dayAgo]).map(task => task.taskUuid)).toEqual(["new", "day-ago", "hour-ago"]);
+    const secondFresh = { minutesSinceRecommended: null, taskUuid: "also-new" };
+    expect(goalCoachTaskPool([hourAgo, fresh, secondFresh]).map(task => task.taskUuid)).toEqual(["new", "also-new"]);
   });
 });
 
