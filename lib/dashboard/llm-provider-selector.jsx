@@ -1,7 +1,7 @@
 // [Claude claude-opus-4-8 (1M context)-authored file]
 // Prompt summary: "modern (not default-styled) AI-provider chooser — a ConfigPopup-based modal that lists every
 //   offered provider with what it excels at, plus Submit / Cancel, replacing the native app.prompt radio dialog.
-//   Shared by the proposed-agenda and dream-task widgets."
+//   Shared by the proposed-agenda and goal-coach widgets."
 import ConfigPopup from "config-popup";
 import { defaultSelectedProviderEm, selectableProviderOptions } from "llm-provider";
 import { useState } from "react";

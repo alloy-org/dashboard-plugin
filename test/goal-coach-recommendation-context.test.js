@@ -12,13 +12,13 @@ const llmMock = jest.fn();
 
 await mockFetchAiProvider({ llmPromptWithAmplenoteFallback: (...args) => llmMock(...args) });
 
-const { analyzeDreamTasks } = await import("dream-task-service");
+const { analyzeGoalCoachTasks } = await import("goal-coach-service");
 
 // ----------------------------------------------------------------------------------------------
-// @desc Build an app stub that reaches DreamTask's fresh LLM path with shared recommendation context available.
+// @desc Build an app stub that reaches Goal Coach's fresh LLM path with shared recommendation context available.
 // @returns {object} Amplenote-app-shaped stub.
-// [OpenAI GPT-5.5] Task: stub DreamTask context surfaces for prompt assertions
-function buildDreamTaskContextApp() {
+// [OpenAI GPT-5.5] Task: stub Goal Coach context surfaces for prompt assertions
+function buildGoalCoachContextApp() {
   setPluginData({
     context: {},
     settings: { [SETTING_KEYS.LLM_API_KEY_OPENAI]: "test-key",
@@ -62,11 +62,11 @@ beforeEach(() => {
   });
 });
 
-// [OpenAI GPT-5.5] Generated tests for: DreamTask shared recommendation context prompt
-describe("DreamTask recommendation context prompt", () => {
+// [OpenAI GPT-5.5] Generated tests for: Goal Coach shared recommendation context prompt
+describe("Goal Coach recommendation context prompt", () => {
   it("passes same-weekday source-note completions and all-day travel overrides to the LLM", async () => {
-    const app = buildDreamTaskContextApp();
-    const result = await analyzeDreamTasks(app, { minimumTaskCount: 1,
+    const app = buildGoalCoachContextApp();
+    const result = await analyzeGoalCoachTasks(app, { minimumTaskCount: 1,
       noteName: `Dashboard proposed tasks for ${ new Date().toLocaleString([], { year: "numeric", month: "long",
         day: "numeric" }) }` });
 

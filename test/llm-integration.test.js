@@ -51,7 +51,7 @@ const TEST_MONTHLY_CONTENT = `- Focus:
     1. Launch Task Agent Pro
 - Key move: Check off the "Reached out to an influencer" task every day`;
 
-function buildDreamTaskPrompt(tasks, quarterlyContent, monthlyContent) {
+function buildGoalCoachPrompt(tasks, quarterlyContent, monthlyContent) {
   const now = new Date();
   const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
@@ -105,7 +105,7 @@ Return ONLY valid JSON in this exact format (no markdown fences):
 describe("llmPrompt integration (requires OPEN_AI_ACCESS_TOKEN)", () => {
   itIfKey("returns a parsed JSON response with goalsSummary and tasks", async () => {
     const app = buildLlmApp();
-    const prompt = buildDreamTaskPrompt(SAMPLE_TASKS, TEST_QUARTERLY_CONTENT, TEST_MONTHLY_CONTENT);
+    const prompt = buildGoalCoachPrompt(SAMPLE_TASKS, TEST_QUARTERLY_CONTENT, TEST_MONTHLY_CONTENT);
 
     const aiModel = "gpt-4o-mini";
     const apiKey = OPEN_AI_KEY;
@@ -136,7 +136,7 @@ describe("llmPrompt integration (requires OPEN_AI_ACCESS_TOKEN)", () => {
 
   itIfKey("returns tasks with valid ratings between 1 and 10", async () => {
     const app = buildLlmApp();
-    const prompt = buildDreamTaskPrompt(SAMPLE_TASKS, TEST_QUARTERLY_CONTENT, TEST_MONTHLY_CONTENT);
+    const prompt = buildGoalCoachPrompt(SAMPLE_TASKS, TEST_QUARTERLY_CONTENT, TEST_MONTHLY_CONTENT);
 
     const aiModel = "gpt-4o-mini";
     const apiKey = OPEN_AI_KEY;

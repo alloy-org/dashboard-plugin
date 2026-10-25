@@ -153,7 +153,7 @@ describe("suggestion ranking", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Dream task will not repeat a suggestion from the past three days.
+  // @desc Goal Coach will not repeat a suggestion from the past three days.
   it("drops tasks suggested within the past three days", () => {
     const fresh = { minutesSinceRecommended: null, taskUuid: "new" };
     const recent = { minutesSinceRecommended: 60, taskUuid: "recent" };

@@ -12,7 +12,7 @@ tests pass, `npm run build` succeeds, and the production bundle smoke test passe
 
 Two full-suite failures are **pre-existing on clean `main`** and unrelated to this work — verified by stashing:
 
-- `test/dream-task-service.test.js:185` — expects `/Q\d \d{4} Plan/`, receives `"Q3 2026 Work Plan"`.
+- `test/goal-coach-service.test.js:185` — expects `/Q\d \d{4} Plan/`, receives `"Q3 2026 Work Plan"`.
 - `test/proposed-agenda-widget-range.test.js`.
 
 Decide separately whether to fix these; do not let them block the wizard work, and do not assume a green full

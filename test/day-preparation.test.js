@@ -70,7 +70,7 @@ function manualTimers() {
 
 describe("dayRankingSurfaces", () => {
   // ----------------------------------------------------------------------------------------------
-  // @desc Dream Task plans only today; the agenda plans later days, and today until it moves on in the afternoon.
+  // @desc Goal Coach plans only today; the agenda plans later days, and today until it moves on in the afternoon.
   it("names the surfaces that will plan each day", () => {
     expect(dayRankingSurfaces("2026-09-17", THURSDAY_MORNING)).toEqual(["dreamTask", "agenda"]);
     expect(dayRankingSurfaces("2026-09-18", THURSDAY_MORNING)).toEqual(["agenda"]);
@@ -98,7 +98,7 @@ describe("prepareDayRanking job surfaces", () => {
   const context = (app, now) => ({ ...jobContext(app), clock: () => now.getTime() });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Today's preparation asks Dream Task's question, from the quarter's guide, and the agenda's, from its progress
+  // @desc Today's preparation asks Goal Coach's question, from the quarter's guide, and the agenda's, from its progress
   //   projects. They name the same project with the same candidates, so the ranker is asked once.
   it("prepares each planning surface's question, asking the ranker once when they agree", async () => {
     const app = { ...maintenanceApp({ tasks: TASKS }), getCompletedTasks: async () => [] };
@@ -107,9 +107,9 @@ describe("prepareDayRanking job surfaces", () => {
     const handler = createPrepareDayRankingHandler({ requestAnswers });
     const result = await handler.run({ context: context(app, THURSDAY_MORNING), job: job("2026-09-17"), signal: null });
     expect(result.outcomes).toEqual({ agenda: "stored", dreamTask: "ranked" });
-    const [dreamTaskRevision, agendaRevision] = result.revision.split(" ");
-    expect(dreamTaskRevision).toMatch(/^dreamTask=jev:/);
-    expect(agendaRevision).toBe(dreamTaskRevision.replace("dreamTask=", "agenda="));
+    const [goalCoachRevision, agendaRevision] = result.revision.split(" ");
+    expect(goalCoachRevision).toMatch(/^dreamTask=jev:/);
+    expect(agendaRevision).toBe(goalCoachRevision.replace("dreamTask=", "agenda="));
     expect(requestAnswers).toHaveBeenCalledTimes(1);
   });
 

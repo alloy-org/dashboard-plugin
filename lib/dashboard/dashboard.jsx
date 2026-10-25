@@ -20,7 +20,7 @@ import DashboardUpdateIndicator from 'dashboard-update-indicator';
 import DaySketchWidget from 'day-sketch';
 import DebugConsoleWidget from 'debug-console';
 import { useDashboardDrag } from 'draggable-heading';
-import DreamTaskWidget from 'dream-task';
+import GoalCoachWidget from 'goal-coach';
 import EnergyPerHabitWidget from 'energy-per-habit';
 import { gridCellFocusProps, useDashboardWidgetFocus, widgetConfigForFocus } from 'focus-widget';
 import GraveyardWidget from 'graveyard';
@@ -212,7 +212,7 @@ const CalendarCell = createWidgetCell('calendar', CalendarWidget, ({ app, comple
 }));
 const DebugConsoleCell = createWidgetCell('debug-console', DebugConsoleWidget, pickProps('adminToolsEnabled', 'app'));
 const EnergyPerHabitCell = createWidgetCell('energy-per-habit', EnergyPerHabitWidget, pickProps('app'));
-const DreamTaskCell = createWidgetCell('dream-task', DreamTaskWidget, ({ app, config, onOpenSettings, providerApiKey,
+const GoalCoachCell = createWidgetCell('dream-task', GoalCoachWidget, ({ app, config, onOpenSettings, providerApiKey,
     providerEm, taskDomainName, taskDomainUUID }) => ({
   app, gridHeightSize: Number(config?.gridHeightSize) || 1, gridWidthSize: Number(config?.gridWidthSize) || 2,
   onOpenSettings, providerApiKey, providerEm, taskDomainName, taskDomainUUID,
@@ -253,7 +253,7 @@ const CELL_COMPONENTS = {
   calendar: CalendarCell,
   'day-sketch': DaySketchCell,
   'debug-console': DebugConsoleCell,
-  'dream-task': DreamTaskCell,
+  'dream-task': GoalCoachCell,
   'energy-per-habit': EnergyPerHabitCell,
   graveyard: GraveyardCell,
   'layout-picker': LayoutPickerCell,

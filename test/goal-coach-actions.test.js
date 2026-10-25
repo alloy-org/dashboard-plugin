@@ -1,15 +1,15 @@
 // [Claude-authored file]
 // Created: 2026-04-05 | Model: claude-4.6-opus-high-thinking
-// Task: Test DreamTask action links (preserve/complete/remove) and subsequent load interpretation
+// Task: Test Goal Coach action links (preserve/complete/remove) and subsequent load interpretation
 // Prompt summary: "test that clicking 3 action links modifies note content; verify subsequent load interprets designations"
 import { jest } from "@jest/globals";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
-import DreamTaskWidget from "dream-task";
-import { updateDreamTaskTaskMetadata } from "dashboard/dream-task-internals";
-import { resolveDreamTaskScheduleSelection, scheduledDreamTaskResultFromStartAt,
-  startAtSecondsFromDateAndMinutes } from "dashboard/dream-task-schedule";
-import { analyzeDreamTasks } from "dream-task-service";
+import GoalCoachWidget from "goal-coach";
+import { updateGoalCoachTaskMetadata } from "dashboard/goal-coach-internals";
+import { resolveGoalCoachScheduleSelection, scheduledGoalCoachResultFromStartAt,
+  startAtSecondsFromDateAndMinutes } from "dashboard/goal-coach-schedule";
+import { analyzeGoalCoachTasks } from "goal-coach-service";
 import { SETTING_KEYS } from "constants/settings";
 import { setPluginData } from "plugin-data";
 import { replaceSectionContent } from "util/replace-note-section-content";
@@ -84,32 +84,32 @@ function buildMockAppWithNote(initialContent) {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Wait for DreamTask cards to render in jsdom component tests.
+// @desc Wait for Goal Coach cards to render in jsdom component tests.
 // @param {Element} container - Rendered test container.
 // @returns {Promise<NodeList>} Rendered cards.
-// [OpenAI GPT-5.5] Task: verify native Amplenote scheduled tasks hide DreamTask Schedule links
+// [OpenAI GPT-5.5] Task: verify native Amplenote scheduled tasks hide Goal Coach Schedule links
 // Prompt: "ensure DreamTask render can tell whether the native Amplenote task already has startAt"
-async function waitForDreamTaskCards(container) {
+async function waitForGoalCoachCards(container) {
   for (let attempt = 0; attempt < 10; attempt += 1) {
     await act(async () => { await new Promise(resolve => setTimeout(resolve, 20)); });
-    const cards = container.querySelectorAll(".dream-task-card");
+    const cards = container.querySelectorAll(".goal-coach-card");
     if (cards.length > 0) return cards;
   }
-  throw new Error("Timed out waiting for DreamTask cards");
+  throw new Error("Timed out waiting for Goal Coach cards");
 }
 
-// [Claude claude-4.6-opus-high-thinking] Generated tests for: DreamTask action links and subsequent load
-describe("DreamTask action links", () => {
+// [Claude claude-4.6-opus-high-thinking] Generated tests for: Goal Coach action links and subsequent load
+describe("Goal Coach action links", () => {
   afterEach(() => {
     jest.useRealTimers();
   });
 
-  describe("clicking action links modifies the dream task content note", () => {
+  describe("clicking action links modifies the goal coach content note", () => {
     it("preserve action inserts dream-preserve:through-tomorrow comment into the note", async () => {
       const app = buildMockAppWithNote(MOCK_NOTE_CONTENT);
       const task = { suggestionId: "sug-100", title: "Message one luminary or press", uuid: "task-2", rating: 9 };
 
-      const result = await updateDreamTaskTaskMetadata(app, MOCK_NOTE_UUID, task, { preserveThroughTomorrow: true });
+      const result = await updateGoalCoachTaskMetadata(app, MOCK_NOTE_UUID, task, { preserveThroughTomorrow: true });
 
       expect(result).toBe(true);
       expect(app.replaceNoteContent).toHaveBeenCalledTimes(1);
@@ -124,7 +124,7 @@ describe("DreamTask action links", () => {
       const task = { suggestionId: "sug-101", title: "Update budget", uuid: "task-7", rating: 7 };
       const completedAt = "2026-04-05T14:30:00.000Z";
 
-      const result = await updateDreamTaskTaskMetadata(app, MOCK_NOTE_UUID, task, { completedAt, removedAt: null });
+      const result = await updateGoalCoachTaskMetadata(app, MOCK_NOTE_UUID, task, { completedAt, removedAt: null });
 
       expect(result).toBe(true);
       expect(app.replaceNoteContent).toHaveBeenCalledTimes(1);
@@ -138,7 +138,7 @@ describe("DreamTask action links", () => {
       const task = { suggestionId: "sug-102", title: "Build a landing page for Task Agent Pro", rating: 8 };
       const removedAt = "2026-04-05T15:00:00.000Z";
 
-      const result = await updateDreamTaskTaskMetadata(app, MOCK_NOTE_UUID, task, { completedAt: null, removedAt });
+      const result = await updateGoalCoachTaskMetadata(app, MOCK_NOTE_UUID, task, { completedAt: null, removedAt });
 
       expect(result).toBe(true);
       expect(app.replaceNoteContent).toHaveBeenCalledTimes(1);
@@ -155,7 +155,7 @@ describe("DreamTask action links", () => {
       const app = buildMockAppWithNote(preservedContent);
       const task = { suggestionId: "sug-100", title: "Message one luminary or press", uuid: "task-2", rating: 9 };
 
-      const result = await updateDreamTaskTaskMetadata(app, MOCK_NOTE_UUID, task, { preserveThroughTomorrow: false });
+      const result = await updateGoalCoachTaskMetadata(app, MOCK_NOTE_UUID, task, { preserveThroughTomorrow: false });
 
       expect(result).toBe(true);
       const updatedBody = app.replaceNoteContent.mock.calls[0][1];
@@ -163,14 +163,14 @@ describe("DreamTask action links", () => {
     });
   });
 
-  describe("completing DreamTask suggestions updates Amplenote tasks", () => {
+  describe("completing Goal Coach suggestions updates Amplenote tasks", () => {
     it("shared completion helper calls app.updateTask for an existing task", async () => {
       jest.useFakeTimers().setSystemTime(new Date("2026-04-29T22:30:00Z"));
       const app = buildMockAppWithNote(MOCK_NOTE_CONTENT);
       const task = { isExisting: true, suggestionId: "sug-101", title: "Update budget", uuid: "task-7", rating: 7 };
 
       const completedAt = await markTaskComplete(app, null, task);
-      const result = await updateDreamTaskTaskMetadata(app, MOCK_NOTE_UUID, task, { completedAt, removedAt: null });
+      const result = await updateGoalCoachTaskMetadata(app, MOCK_NOTE_UUID, task, { completedAt, removedAt: null });
 
       expect(result).toBe(true);
       expect(app.updateTask).toHaveBeenCalledWith("task-7", { completedAt: 1777501800 });
@@ -193,7 +193,7 @@ describe("DreamTask action links", () => {
 
       const completedNoteUUID = await dailyJotNoteUuidFromToday(app);
       const completedAt = await markTaskComplete(app, completedNoteUUID, task);
-      const result = await updateDreamTaskTaskMetadata(app, MOCK_NOTE_UUID, task, { completedAt, removedAt: null });
+      const result = await updateGoalCoachTaskMetadata(app, MOCK_NOTE_UUID, task, { completedAt, removedAt: null });
 
       expect(result).toBe(true);
       expect(app.findNote).toHaveBeenCalledWith({ name: "April 29th, 2026", tags: ["daily-jots"] });
@@ -209,8 +209,8 @@ describe("DreamTask action links", () => {
     });
   });
 
-  // [OpenAI GPT-5.5] Generated tests for: DreamTask scheduling date formatting and task creation
-  describe("scheduling DreamTask suggestions updates Amplenote startAt", () => {
+  // [OpenAI GPT-5.5] Generated tests for: Goal Coach scheduling date formatting and task creation
+  describe("scheduling Goal Coach suggestions updates Amplenote startAt", () => {
     it("combines picker date and selected time as unix seconds", () => {
       const localMidnightSeconds = Math.floor(new Date(2026, 3, 29, 0, 0, 0).getTime() / 1000);
       const expectedStartAt = Math.floor(new Date(2026, 3, 29, 9, 30, 0).getTime() / 1000);
@@ -225,7 +225,7 @@ describe("DreamTask action links", () => {
       const task = { isExisting: false, suggestionId: "sug-102", title: "Build a landing page for Task Agent Pro", rating: 8 };
       const startAt = Math.floor(new Date(2026, 3, 29, 9, 30, 0).getTime() / 1000);
 
-      const result = await scheduledDreamTaskResultFromStartAt(app, "daily-jot-uuid", startAt, task);
+      const result = await scheduledGoalCoachResultFromStartAt(app, "daily-jot-uuid", startAt, task);
 
       expect(result).toEqual({ noteUUID: "daily-jot-uuid", startAt, taskUuid: "created-task-uuid" });
       expect(app.insertTask).toHaveBeenCalledWith(
@@ -241,7 +241,7 @@ describe("DreamTask action links", () => {
         title: "Build a landing page for Task Agent Pro", rating: 8 };
       const startAt = Math.floor(new Date(2026, 3, 29, 9, 30, 0).getTime() / 1000);
 
-      const result = await scheduledDreamTaskResultFromStartAt(app, "daily-jot-uuid", startAt, task);
+      const result = await scheduledGoalCoachResultFromStartAt(app, "daily-jot-uuid", startAt, task);
 
       expect(result).toEqual({ noteUUID: "chosen-note", startAt, taskUuid: "created-task-uuid" });
       expect(app.insertTask).toHaveBeenCalledWith(
@@ -260,7 +260,7 @@ describe("DreamTask action links", () => {
       const task = { isExisting: false, title: "Build a landing page for Task Agent Pro" };
       const localMidnightSeconds = Math.floor(new Date(2026, 3, 29, 0, 0, 0).getTime() / 1000);
 
-      const selection = await resolveDreamTaskScheduleSelection(app, {
+      const selection = await resolveGoalCoachScheduleSelection(app, {
         defaultNoteUUID: "daily-jot-uuid", now, task, todaySlots,
       });
 
@@ -280,7 +280,7 @@ describe("DreamTask action links", () => {
       const now = new Date(2026, 3, 29, 8, 0, 0);
       const task = { isExisting: true, noteUUID: "existing-note", title: "Update budget", uuid: "task-7" };
 
-      const selection = await resolveDreamTaskScheduleSelection(app, {
+      const selection = await resolveGoalCoachScheduleSelection(app, {
         defaultNoteUUID: "daily-jot-uuid", now, task, todaySlots,
       });
 
@@ -296,18 +296,18 @@ describe("DreamTask action links", () => {
       const task = { isExisting: true, suggestionId: "sug-101", title: "Update budget", uuid: "task-7", rating: 7 };
       const startAt = Math.floor(new Date(2026, 3, 29, 10, 0, 0).getTime() / 1000);
 
-      const result = await scheduledDreamTaskResultFromStartAt(app, "daily-jot-uuid", startAt, task);
+      const result = await scheduledGoalCoachResultFromStartAt(app, "daily-jot-uuid", startAt, task);
 
       expect(result).toEqual({ noteUUID: null, startAt, taskUuid: "task-7" });
       expect(app.updateTask).toHaveBeenCalledWith("task-7", { startAt });
       expect(app.insertTask).not.toHaveBeenCalled();
     });
 
-    it("persists the created task UUID onto the cached DreamTask suggestion", async () => {
+    it("persists the created task UUID onto the cached Goal Coach suggestion", async () => {
       const app = buildMockAppWithNote(MOCK_NOTE_CONTENT);
       const task = { isExisting: false, suggestionId: "sug-102", title: "Build a landing page for Task Agent Pro", rating: 8 };
 
-      const result = await updateDreamTaskTaskMetadata(app, MOCK_NOTE_UUID, task, { taskUuid: "created-task-uuid" });
+      const result = await updateGoalCoachTaskMetadata(app, MOCK_NOTE_UUID, task, { taskUuid: "created-task-uuid" });
 
       expect(result).toBe(true);
       const updatedBody = app.replaceNoteContent.mock.calls[0][1];
@@ -315,18 +315,18 @@ describe("DreamTask action links", () => {
       expect(updatedBody).toContain("<!-- suggestion:sug-102 -->");
     });
 
-    it("attaches native Amplenote task data when loading cached DreamTask suggestions", async () => {
+    it("attaches native Amplenote task data when loading cached Goal Coach suggestions", async () => {
       const app = buildMockAppWithNote(MOCK_NOTE_CONTENT);
       const todayLabel = new Date().toLocaleString([], { year: "numeric", month: "long", day: "numeric" });
       const noteName = `Dashboard proposed tasks for ${ todayLabel }`;
 
-      const result = await analyzeDreamTasks(app, { noteName, minimumTaskCount: 1 });
+      const result = await analyzeGoalCoachTasks(app, { noteName, minimumTaskCount: 1 });
 
-      const scheduledDreamTask = result.tasks.find(dreamTask => dreamTask.uuid === "task-7");
-      expect(scheduledDreamTask.nativeTask).toBeTruthy();
-      expect(scheduledDreamTask.nativeTask.uuid).toBe("task-7");
-      expect(scheduledDreamTask.nativeTask.startAt).toBeTruthy();
-      expect(scheduledDreamTask.startAt).toBeUndefined();
+      const scheduledGoalCoachTask = result.tasks.find(goalCoachTask => goalCoachTask.uuid === "task-7");
+      expect(scheduledGoalCoachTask.nativeTask).toBeTruthy();
+      expect(scheduledGoalCoachTask.nativeTask.uuid).toBe("task-7");
+      expect(scheduledGoalCoachTask.nativeTask.startAt).toBeTruthy();
+      expect(scheduledGoalCoachTask.startAt).toBeUndefined();
     });
 
     it("hides Schedule for existing native tasks that already have startAt", async () => {
@@ -337,12 +337,12 @@ describe("DreamTask action links", () => {
 
       try {
         await act(async () => {
-          root.render(createElement(DreamTaskWidget, {
+          root.render(createElement(GoalCoachWidget, {
             app, gridHeightSize: 1, gridWidthSize: 2, onOpenSettings: jest.fn(), providerApiKey: "test-key",
             taskDomainName: "Work", taskDomainUUID: "dom-work",
           }));
         });
-        const cards = await waitForDreamTaskCards(container);
+        const cards = await waitForGoalCoachCards(container);
 
         const todayLabel = new Date().toLocaleString([], { day: "numeric", month: "long", year: "numeric" });
         expect(app.findNote).toHaveBeenCalledWith({ name: `Dashboard proposed tasks for Work on ${ todayLabel }`,
@@ -352,6 +352,37 @@ describe("DreamTask action links", () => {
         expect(cards[0].textContent).not.toContain("Schedule");
         expect(cards[1].textContent).toContain("Build a landing page for Task Agent Pro");
         expect(cards[1].textContent).toContain("Schedule");
+      } finally {
+        await act(async () => { root.unmount(); });
+        container.remove();
+      }
+    });
+
+    it("links an existing task's source note name to that note", async () => {
+      const app = buildMockAppWithNote(MOCK_NOTE_CONTENT);
+      const sourceNoteUuid = "d499b3d8-534d-11ef-95c7-0663d8339c46";
+      const findCachedNote = app.findNote.getMockImplementation();
+      app.findNote.mockImplementation(query => (query.uuid === sourceNoteUuid
+        ? Promise.resolve({ name: "Outreach plan", uuid: sourceNoteUuid }) : findCachedNote(query)));
+      app.navigate = jest.fn().mockResolvedValue(true);
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      const root = createRoot(container);
+
+      try {
+        await act(async () => {
+          root.render(createElement(GoalCoachWidget, {
+            app, gridHeightSize: 1, gridWidthSize: 2, onOpenSettings: jest.fn(), providerApiKey: "test-key",
+            taskDomainName: "Work", taskDomainUUID: "dom-work",
+          }));
+        });
+        const cards = await waitForGoalCoachCards(container);
+        const noteLink = cards[0].querySelector("a.goal-coach-source-note-badge");
+        expect(noteLink.textContent).toBe("Outreach plan");
+
+        await act(async () => { noteLink.click(); });
+
+        expect(app.navigate).toHaveBeenCalledWith(`https://www.amplenote.com/notes/${ sourceNoteUuid }`);
       } finally {
         await act(async () => { root.unmount(); });
         container.remove();
@@ -377,14 +408,14 @@ describe("DreamTask action links", () => {
 
       try {
         await act(async () => {
-          root.render(createElement(DreamTaskWidget, {
+          root.render(createElement(GoalCoachWidget, {
             app, gridHeightSize: 1, gridWidthSize: 2, onOpenSettings: jest.fn(), providerApiKey: "test-key",
             taskDomainName: "Work", taskDomainUUID: "dom-work",
           }));
         });
-        const cards = await waitForDreamTaskCards(container);
+        const cards = await waitForGoalCoachCards(container);
         const inventedCard = [...cards].find(card => card.textContent.includes("Build a landing page"));
-        const scheduleLink = [...inventedCard.querySelectorAll(".dream-task-card-action")]
+        const scheduleLink = [...inventedCard.querySelectorAll(".goal-coach-card-action")]
           .find(link => link.textContent.includes("Schedule"));
         await act(async () => { scheduleLink.click(); });
         for (let attempt = 0; attempt < 10 && app.prompt.mock.calls.length === 0; attempt += 1) {
@@ -415,15 +446,15 @@ describe("DreamTask action links", () => {
       const completeTask = { suggestionId: "sug-101", title: "Update budget", uuid: "task-7", rating: 7 };
       const removeTask = { suggestionId: "sug-102", title: "Build a landing page for Task Agent Pro", rating: 8 };
 
-      await updateDreamTaskTaskMetadata(app, MOCK_NOTE_UUID, preserveTask, { preserveThroughTomorrow: true });
-      await updateDreamTaskTaskMetadata(app, MOCK_NOTE_UUID, completeTask,
+      await updateGoalCoachTaskMetadata(app, MOCK_NOTE_UUID, preserveTask, { preserveThroughTomorrow: true });
+      await updateGoalCoachTaskMetadata(app, MOCK_NOTE_UUID, completeTask,
         { completedAt: "2026-04-05T14:30:00.000Z", removedAt: null });
-      await updateDreamTaskTaskMetadata(app, MOCK_NOTE_UUID, removeTask,
+      await updateGoalCoachTaskMetadata(app, MOCK_NOTE_UUID, removeTask,
         { completedAt: null, removedAt: "2026-04-05T15:00:00.000Z" });
 
       const todayLabel = new Date().toLocaleString([], { year: "numeric", month: "long", day: "numeric" });
       const noteName = `Dashboard proposed tasks for ${ todayLabel }`;
-      const result = await analyzeDreamTasks(app, { noteName, minimumTaskCount: 1 });
+      const result = await analyzeGoalCoachTasks(app, { noteName, minimumTaskCount: 1 });
 
       expect(result.cached).toBe(true);
       expect(result.tasks.length).toBe(1);
@@ -439,7 +470,7 @@ describe("DreamTask action links", () => {
       const app = buildMockAppWithNote(MOCK_NOTE_CONTENT);
       const todayLabel = new Date().toLocaleString([], { year: "numeric", month: "long", day: "numeric" });
       const noteName = `Dashboard proposed tasks for ${ todayLabel }`;
-      const result = await analyzeDreamTasks(app, { noteName, minimumTaskCount: 1 });
+      const result = await analyzeGoalCoachTasks(app, { noteName, minimumTaskCount: 1 });
 
       expect(result.cached).toBe(true);
       expect(result.tasks.length).toBe(3);

@@ -32,29 +32,29 @@ function exampleFunction(arg1, arg2, arg3) {
 }
 
 // Bad - note that the hanging second line ("providerEm") matches indent level of body:
-export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, onOpenSettings, providerApiKey,
+export default function GoalCoachWidget({ app, gridHeightSize, gridWidthSize, onOpenSettings, providerApiKey,
   providerEm }) {
   // component body
 }
 
 // Good (note that the hanging second line is indented two spaces FURTHER than the body of the component/function):
-export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, onOpenSettings, providerApiKey,
+export default function GoalCoachWidget({ app, gridHeightSize, gridWidthSize, onOpenSettings, providerApiKey,
     providerEm }) {
   // component body
 }
 
 // Bad
 import {
-  applyDreamTaskAnalysisResult,
-  buildDreamTaskHeaderActions,
-  fetchDreamTaskSuggestions,
-} from "dream-task-internals";
+  applyGoalCoachAnalysisResult,
+  buildGoalCoachHeaderActions,
+  fetchGoalCoachSuggestions,
+} from "goal-coach-internals";
 
-// Good (non-render orchestration lives in dream-task-internals; render stays in dream-task.js)
-import { applyDreamTaskAnalysisResult, fetchDreamTaskSuggestions, handleOpenSettings, handleTaskClick,
-  requestDreamTaskRefreshExcludingRecent, shouldFetchMoreTasksAfterGridGrowth, _loadSeenUuidsMap,
+// Good (non-render orchestration lives in goal-coach-internals; render stays in goal-coach.js)
+import { applyGoalCoachAnalysisResult, fetchGoalCoachSuggestions, handleOpenSettings, handleTaskClick,
+  requestGoalCoachRefreshExcludingRecent, shouldFetchMoreTasksAfterGridGrowth, _loadSeenUuidsMap,
   _maxTasksFromGrid, _recordSeenUuids, _todayProposedTasksNoteName,
-} from "dream-task-internals";
+} from "goal-coach-internals";
 
 // Bad
 const {

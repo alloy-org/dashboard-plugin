@@ -1,7 +1,7 @@
 /**
  * [Claude-authored file]
  * Created: 2026-04-04 | Model: claude-4.6-opus-high-thinking
- * Task: DreamTask retry-on-API-key-addition integration test
+ * Task: Goal Coach retry-on-API-key-addition integration test
  * Prompt summary: "test that DreamTask retries when a new API key is added, using a real Anthropic call"
  */
 import { jest } from "@jest/globals";
@@ -10,7 +10,7 @@ import fetch from "isomorphic-fetch";
 import { createElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import DreamTaskWidget from "dream-task";
+import GoalCoachWidget from "goal-coach";
 import { DASHBOARD_NOTE_TAG, SETTING_KEYS } from "constants/settings";
 import { setPluginData, updatePluginSetting } from "plugin-data";
 import { SAMPLE_TASKS } from "./fixtures/tasks.js";
@@ -30,7 +30,7 @@ const MOCK_QUARTERLY_PLAN = `# Q2 2026 Plan
 
 ### April
 - Focus: Dashboard polish and API key onboarding
-- Key move: Improve DreamTask retry behavior`;
+- Key move: Improve Goal Coach retry behavior`;
 
 // [Claude] Task: build mock app with mutable settings for simulating API key addition
 // Prompt: "test that DreamTask retries when a new API key is added"
@@ -77,9 +77,9 @@ async function waitForSelector(container, selector, timeoutMs = 90_000) {
   throw new Error(`Timed out after ${timeoutMs}ms waiting for "${selector}"`);
 }
 
-// [Claude] Generated tests for: DreamTask retry-on-API-key-addition behavior
+// [Claude] Generated tests for: Goal Coach retry-on-API-key-addition behavior
 // Date: 2026-04-04 | Model: claude-4.6-opus-high-thinking
-describe("DreamTaskWidget API key retry", () => {
+describe("GoalCoachWidget API key retry", () => {
   let container;
   let root;
   let savedOpenAiKey;
@@ -108,9 +108,9 @@ describe("DreamTaskWidget API key retry", () => {
     app.callLLM = jest.fn(async ({ checkQuota } = {}) => (checkQuota ? 5 : null));
 
     await act(async () => {
-      root.render(createElement(DreamTaskWidget, { app, gridHeightSize: 1, gridWidthSize: 1, onOpenSettings: jest.fn() }));
+      root.render(createElement(GoalCoachWidget, { app, gridHeightSize: 1, gridWidthSize: 1, onOpenSettings: jest.fn() }));
     });
-    await waitForSelector(container, ".dream-task-error", 5_000);
+    await waitForSelector(container, ".goal-coach-error", 5_000);
 
     expect(app.callLLM).toHaveBeenCalledWith(expect.objectContaining({ source: "dream-task" }));
     expect(container.querySelector(".no-config-upsell")).toBeFalsy();
@@ -123,7 +123,7 @@ describe("DreamTaskWidget API key retry", () => {
     const onOpenSettings = jest.fn();
 
     await act(async () => {
-      root.render(createElement(DreamTaskWidget, {
+      root.render(createElement(GoalCoachWidget, {
         app,
         gridHeightSize: 1,
         gridWidthSize: 1,
@@ -133,13 +133,13 @@ describe("DreamTaskWidget API key retry", () => {
     await act(async () => { await new Promise(r => setTimeout(r, 50)); });
 
     expect(container.querySelector(".no-config-upsell")).toBeTruthy();
-    expect(container.querySelector(".dream-task-card")).toBeFalsy();
+    expect(container.querySelector(".goal-coach-card")).toBeFalsy();
 
     updatePluginSetting(SETTING_KEYS.LLM_PROVIDER_MODEL, "anthropic");
     updatePluginSetting(SETTING_KEYS.LLM_API_KEY_ANTHROPIC, ANTHROPIC_KEY);
 
     await act(async () => {
-      root.render(createElement(DreamTaskWidget, {
+      root.render(createElement(GoalCoachWidget, {
         app,
         gridHeightSize: 1,
         gridWidthSize: 1,
@@ -151,17 +151,17 @@ describe("DreamTaskWidget API key retry", () => {
 
     expect(container.querySelector(".no-config-upsell")).toBeFalsy();
 
-    await waitForSelector(container, ".dream-task-card", 90_000);
+    await waitForSelector(container, ".goal-coach-card", 90_000);
 
-    const cards = container.querySelectorAll(".dream-task-card");
+    const cards = container.querySelectorAll(".goal-coach-card");
     expect(cards.length).toBeGreaterThanOrEqual(1);
 
-    const titles = Array.from(container.querySelectorAll(".dream-task-card-title"));
+    const titles = Array.from(container.querySelectorAll(".goal-coach-card-title"));
     for (const title of titles) {
       expect(title.textContent.trim().length).toBeGreaterThan(0);
     }
 
-    const ratings = Array.from(container.querySelectorAll(".dream-task-rating"));
+    const ratings = Array.from(container.querySelectorAll(".goal-coach-rating"));
     for (const rating of ratings) {
       expect(rating.textContent).toMatch(/\d+\/10/);
     }

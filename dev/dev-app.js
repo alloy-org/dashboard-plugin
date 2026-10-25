@@ -745,7 +745,7 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       return tasks.filter(task => task.noteUUID === uuid && (includeDone || (task.completedAt == null && task.dismissedAt == null)));
     },
 
-    // [Claude claude-sonnet-4-6] Task: stub getTask for graveyard/dream-task UUID lookups
+    // [Claude claude-sonnet-4-6] Task: stub getTask for graveyard/goal-coach UUID lookups
     // Prompt: "app2.getTask is not a function in dev environment"
     // ----------------------------------------------------------------------------------------------
     // @desc Read a task identity from fixture or persisted notebook tasks.

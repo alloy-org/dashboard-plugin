@@ -9,7 +9,7 @@ import { mockFetchAiProvider } from "./mock-fetch-ai-provider.js";
 
 const llmMock = jest.fn();
 await mockFetchAiProvider({ llmPromptWithAmplenoteFallback: (...args) => llmMock(...args) });
-const { analyzeDreamTasks } = await import("dream-task-service");
+const { analyzeGoalCoachTasks } = await import("goal-coach-service");
 
 const TODAY_NOTE = `Dashboard proposed tasks for ${ new Date().toLocaleString([], {
   year: "numeric", month: "long", day: "numeric",
@@ -74,7 +74,7 @@ beforeEach(() => {
 describe("Goal Coach completed-task filtering", () => {
   it("skips a cached suggestion when its Amplenote task is already completed and regenerates", async () => {
     const app = buildCachedCompletedApp();
-    const result = await analyzeDreamTasks(app, { minimumTaskCount: 1, noteName: TODAY_NOTE });
+    const result = await analyzeGoalCoachTasks(app, { minimumTaskCount: 1, noteName: TODAY_NOTE });
 
     expect(result.error).toBeUndefined();
     const suggestedUuids = (result.tasks || []).map(task => task.uuid).filter(Boolean);
@@ -89,7 +89,7 @@ describe("Goal Coach completed-task filtering", () => {
     app.getTask.mockImplementation(async uuid => uuid === "task-1"
       ? { content: "Draft launch email", noteUUID: "project-note", uuid: "task-1" }
       : null);
-    const result = await analyzeDreamTasks(app, { minimumTaskCount: 1, noteName: TODAY_NOTE });
+    const result = await analyzeGoalCoachTasks(app, { minimumTaskCount: 1, noteName: TODAY_NOTE });
 
     expect(result.cached).toBe(true);
     expect(result.tasks.map(task => task.uuid)).toContain("task-1");
@@ -128,7 +128,7 @@ Earlier explanation.
       ],
     });
 
-    const result = await analyzeDreamTasks(app, { minimumTaskCount: 2, noteName: TODAY_NOTE });
+    const result = await analyzeGoalCoachTasks(app, { minimumTaskCount: 2, noteName: TODAY_NOTE });
     const followUpCards = (result.tasks || []).filter(task => task.uuid === "task-2"
       || (task.title || "").toLowerCase() === "write follow-up");
     expect(followUpCards).toHaveLength(1);

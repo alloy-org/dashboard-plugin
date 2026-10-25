@@ -32,6 +32,19 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-25 — Rename DreamTask to Goal Coach; source note badge links to its note
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/goal-coach-service.js`, `lib/dashboard/goal-coach.jsx`, `goal-coach-internals.js`, `goal-coach-schedule.js`, `styles/goal-coach.scss` (renamed from `dream-task*`) — `DreamTask`/`dreamTask` identifiers become `GoalCoach`/`goalCoach` (`analyzeGoalCoachTasks`, `GoalCoachWidget`, `useGoalCoachActions`, ...), and `dream-task-*` CSS classes become `goal-coach-*`.
+- `test/goal-coach-*.test.js` (renamed from `test/dream-task-*.test.js`), plus importers and comments in `lib/`, `test/`, `dev/`, `doc/` and `CLAUDE.md`.
+- Persisted or external names are unchanged: the `dream-task` widget ID (and its `.widget-dream-task` root class), the `dashboard_dream-task_seen_uuids` setting, the `"dreamTask"` day-ranking surface and its revision prefix, the `source: "dream-task"` LLM tag, and the `approveDreamTask`/`generateDreamTasks` analytics events.
+- `lib/dashboard/goal-coach.jsx` — `GoalCoachKindBadge` renders the source note name as a link; `onOpenTaskNote` opens the task's note with `navigateToNote`. Test in `test/goal-coach-actions.test.js`.
+
+**Task:** Rename the DreamTask suite to Goal Coach, and make the note name beside a suggested task navigate to that note.
+
+---
+
 ## 2026-10-25 — Completed task ledger is the source of truth for a project's weekly completions
 
 **Model:** Claude Opus 5.5

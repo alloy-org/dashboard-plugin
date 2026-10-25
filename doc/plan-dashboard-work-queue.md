@@ -20,7 +20,7 @@ phases define independent human-reviewed commit boundaries.
 | Discover and refine notebook terms | An annual dictionary, protected user definitions, term discovery from project and task text, relevant definitions supplied to ranking | Revisit changed task evidence; search notebook content for richer definitions; record evidence and refinement freshness independently of discovery |
 | Refresh project similarity | Jev, Agent Pro delegation, and generative fallback; checksum cache; incremental task pools; limited deeper search for empty projects | Reliable new and edited task triggers; context-aware cache invalidation; per-visit coverage target; resumable batches and global request limits |
 | Generate and rate novel tasks | Up to three ideas per generation, stored per project, with refinement of prior ideas | Explicit Intent context and completed task text; stable idea identity; independent actionability ratings; inclusion in the main daily ranking path |
-| Refresh Dream Task from projects | Cached daily note, project-based ranking, reserves, completion checks, generative fallback | Prepare suggestions in the background; invalidate by source revisions; support rated ideas; separate preparation from recording exposure |
+| Refresh Goal Coach from projects | Cached daily note, project-based ranking, reserves, completion checks, generative fallback | Prepare suggestions in the background; invalidate by source revisions; support rated ideas; separate preparation from recording exposure |
 | Refresh Proposed Agenda from projects | Persistent agenda cache, project ranking, free-time placement, reserves, reconciliation, Calendar reuse | Background preparation and shared freshness rules; rated ideas in the primary ranking path; preserve decisions during refresh |
 
 The key implementation points are:
@@ -59,7 +59,7 @@ The key implementation points are:
 - [`project-task-ideas.js`](../lib/dashboard/project-tasks/project-task-ideas.js) receives open tasks and plan prose, but its prompt
   does not include completed task text. Completion records currently preserve UUID and date, rather than text.
 - [`day-project-candidates.js`](../lib/dashboard/suggestions/day-project-candidates.js) draws from existing task records;
-  [`ranked-task-suggestions.js`](../lib/dashboard/suggestions/ranked-task-suggestions.js) makes Dream Task cards with
+  [`ranked-task-suggestions.js`](../lib/dashboard/suggestions/ranked-task-suggestions.js) makes Goal Coach cards with
   `isExisting: true`. Stored ideas can reach fallback agenda generation, but cannot compete in this primary path.
 - [`wizard-prompt-runner.js`](../lib/plan-wizard/wizard-prompt-runner.js) races Agent Pro and the direct provider,
   leaving the losing request running. Reusing that runner for every maintenance job can spend two requests per job.
@@ -215,7 +215,7 @@ handlers read isolated `QuarterProject` instances and commit result patches thro
 | `generateProjectIdeas` | `dashboard/work-queue/jobs/generate-project-ideas.js` | Extend `dashboard/project-task-ideas.js`; validate/merge ideas and commit with `setSuggestedTasks` |
 | `rateProjectIdeas` | `dashboard/work-queue/jobs/rate-project-ideas.js` | New `dashboard/project-task-idea-ratings.js`; validate IDs/text revisions and set updated ideas without restamping generation |
 | `prepareDayRanking` | `dashboard/work-queue/jobs/prepare-day-ranking.js` | Existing day groups/ranker with mixed candidates; persist one context-specific ranked list |
-| `prepareDreamTasks` | `dashboard/work-queue/jobs/prepare-dream-tasks.js` | Existing Dream Task selection/reserves and daily note format, without recording exposure |
+| `prepareGoalCoachTasks` | `dashboard/work-queue/jobs/prepare-goal-coach.js` | Existing Goal Coach selection/reserves and daily note format, without recording exposure |
 | `prepareProposedAgenda` | `dashboard/work-queue/jobs/prepare-proposed-agenda.js` | Existing slotting, obligations, agenda cache, and decision reconciliation |
 
 Add `dashboard/day-ranking-store.js` for the shared ranked-list cache and `dashboard/project-task-idea-records.js`
@@ -258,7 +258,7 @@ The dependency sequence is:
 2. Schedule similarity refresh and dictionary work independently against the latest usable dictionary.
 3. Schedule idea generation when project evidence is ready, with persisted older evidence permitted if still valid.
 4. Schedule actionability rating for newly generated or changed ideas.
-5. Invalidate the affected day's candidate ranking and prepare Dream Task and agenda results.
+5. Invalidate the affected day's candidate ranking and prepare Goal Coach and agenda results.
 
 Dictionary improvements may make an affected project's scores stale; enqueue one replacement rating job. Debounce and
 coalesce invalidations so one burst of updates produces one preparation run. Do not require all projects, terms, or
@@ -457,7 +457,7 @@ does not imply an actionability 9. Normalize provider scale handling in one adap
 
 Use a candidate identity such as `task:<uuid>` or `idea:<ideaId>` through daily ranking, reserves, history, dismissal,
 and selection. Never present an idea ID as an Amplenote task UUID. Extend the current UUID-only response parsing and
-Dream Task's `isExisting` mapping to carry this distinction. Calendar already supports a new-task suggestion shape.
+Goal Coach's `isExisting` mapping to carry this distinction. Calendar already supports a new-task suggestion shape.
 
 Start with an explicit, tunable eligibility threshold, for example actionability at least 7/10 plus sufficient
 project relevance. Let eligible ideas compete in the daily ranking; prefer an existing task on otherwise comparable
@@ -465,15 +465,15 @@ scores. Explain why a novel action is useful. Materialize it as a real task only
 task UUID, and reconcile duplicate acceptance/retry paths before inserting again. A dismissed idea should not reappear
 under a trivial rewording.
 
-## Prepared Dream Task and Proposed Agenda
+## Prepared Goal Coach and Proposed Agenda
 
 Refactor the existing generators into three operations: prepare candidates/results, read valid prepared results, and
 record an actual presentation or decision. Preparation must not append the “suggested” history: today some ranking
 helpers record exposure as part of building their return value. Prefetching through those helpers would wrongly make
 unseen tasks look recently recommended.
 
-Share the expensive per-day candidate ranking between Dream Task, Proposed Agenda, and Calendar when scope and
-recommendation context match. Keep separate presentation rules: Dream Task chooses its cards and reserves; the agenda
+Share the expensive per-day candidate ranking between Goal Coach, Proposed Agenda, and Calendar when scope and
+recommendation context match. Keep separate presentation rules: Goal Coach chooses its cards and reserves; the agenda
 places tasks into available hours; Calendar uses the agenda path. Reuse existing caches and their reconciliation logic.
 
 Cache keys must include stable domain identity, enabled plan quarters, local target date/timezone, project/task/idea
@@ -557,7 +557,7 @@ remain unimplemented. The current mutable class and serialization extraction are
 | 6 | Resumable project maintenance and coverage | 3 and 5 | Queue can replace both legacy passes without losing existing discovery or idea generation |
 | 7 | Evidence-based dictionary refinement | 6 | Better definitions are independent of idea rating and prepared suggestions |
 | 8 | Generated idea ratings and mixed candidates | 6; 7 recommended | Existing daily consumers can recommend rated ideas without requiring background preparation |
-| 9 | Shared daily preparation and cache consumers | 8 | Dream Task, Proposed Agenda and Calendar consume prepared output |
+| 9 | Shared daily preparation and cache consumers | 8 | Goal Coach, Proposed Agenda and Calendar consume prepared output |
 | 10 | Default rollout and legacy cleanup | 7, 8 and 9 | Verified queue behavior becomes the default; obsolete orchestration is removed |
 
 ### Phase 1 Project repository and mutable instance ownership
@@ -831,18 +831,18 @@ for relevance, never one restating an open or completed task, each with a `task:
 `candidateId`; an idea's `uuid` is null. The ranker states the candidate's kind and an idea's actionability, accepts a
 `rankedCandidateIds` reply (a bare task UUID still names its task), takes 0.5 from an idea's rating so a comparable
 existing task wins, and adds a sentence explaining the new action to its rationale. Slots, agenda reserves, Calendar's
-refill, and Dream Task's daily note (`<!-- idea:<ideaId> project:<projectUuid> -->`) and reserves carry the idea
+refill, and Goal Coach's daily note (`<!-- idea:<ideaId> project:<projectUuid> -->`) and reserves carry the idea
 identity. Showing an idea logs `{ ideaId, suggestedAt }` in the project's suggestion log, which does not advance
 `projectRevision`. Accepting an idea records `accepted` with the task it became through
-`QuarterProjectRepository#decideIdeas`: Dream Task's click, schedule, and complete (complete makes no task UUID, so the
+`QuarterProjectRepository#decideIdeas`: Goal Coach's click, schedule, and complete (complete makes no task UUID, so the
 idea is accepted without one), and agenda scheduling, which becomes a dated project step. Before creating a task, both
 surfaces ask `existingTaskForAcceptedIdea` and reuse the task an idea already became, and a retried acceptance keeps
-the first task. Removing a Dream Task idea card or dismissing an agenda idea row dismisses the idea. Calendar reports no
+the first task. Removing a Goal Coach idea card or dismissing an agenda idea row dismisses the idea. Calendar reports no
 decisions, so an idea accepted there is recognized later by `ideasAcceptedByTasks` when its task is associated.
 
 ### Phase 9 Prepared daily output
 
-Add `day-ranking-store.js` and day-ranking, Dream Task, and Proposed Agenda preparation handlers. Refactor existing
+Add `day-ranking-store.js` and day-ranking, Goal Coach, and Proposed Agenda preparation handlers. Refactor existing
 recommendation facades to separate preparation from exposure. Update widget consumers and Calendar's bounded host
 runtime, preserving current caches, live-task checks, decisions and fallback behavior.
 
@@ -862,41 +862,41 @@ candidates as currently listed, so durations, notes, and recency are current. Th
 day, four days, and sixty candidates, never days before today, and never overwrites a note a newer schema wrote.
 `prepareDayRanking` in `ranked-task-suggestions.js` builds the groups, reuses a stored ranking at their revision, or
 asks the ranker and stores the answer. It reports `noCandidates`, `noRanker`, `unanswered`, `ranked`, or `stored`.
-Dream Task, the agenda, and Calendar all go through it, so a foreground cache hit makes no provider request. Two of
-these surfaces share a ranking only when they would ask the same question. Dream Task's request and the agenda's
+Goal Coach, the agenda, and Calendar all go through it, so a foreground cache hit makes no provider request. Two of
+these surfaces share a ranking only when they would ask the same question. Goal Coach's request and the agenda's
 qualify only when their projects agree. The agenda draws its projects from the progress notes of every enabled
-quarter, and Dream Task's exclusion of cards already on screen changes the question. Preparation records nothing:
+quarter, and Goal Coach's exclusion of cards already on screen changes the question. Preparation records nothing:
 `agendaSuggestionsFromProjects` no longer logs exposure. `generateProposedAgenda` records the ranked activities it
 presents, and on reconciliation only the replacements it slots. Before, every freshly slotted activity was recorded,
-including those not shown. Replacements now keep their project UUID. Dream Task already recorded at presentation.
+including those not shown. Replacements now keep their project UUID. Goal Coach already recorded at presentation.
 `rankDayTasks` accepts a `providerDispatch`, so the job's Jev or generative request takes a permit. The job takes
-`{ dateKey, domainName, domainUuid }`, builds candidates as Dream Task does (the quarter's projects with its guide and
+`{ dateKey, domainName, domainUuid }`, builds candidates as Goal Coach does (the quarter's projects with its guide and
 the domain's open tasks), and needs no `appliedRevision`: a current stored ranking completes it without a request. It
 retires when no project offers a candidate and waits for configuration when nothing can rank. It is registered but not
-yet submitted. The Dream Task and agenda preparation jobs, the "not yet shown" markers that cached daily notes and agenda
+yet submitted. The Goal Coach and agenda preparation jobs, the "not yet shown" markers that cached daily notes and agenda
 records will need once something prepares them unseen, and a read-only path for the Calendar host all arrive with 9b.
 
 As built, 9b activates the `prepareDayRanking` job and routes cold widgets through it. It writes nothing to Dream
 Task's daily note or the agenda's records, so neither needs a "not yet shown" marker. The provider ranking is the only
 expensive step and the store already shares it. Choosing cards and placing activities stays in the widget, because it
 depends on grid size, the time of day, the calendar, and the chosen priority. `dayRankingRequest` keys a preparation by
-domain and day. The job derives which questions to ask from the day (`dayRankingSurfaces`): Dream Task's on the current
+domain and day. The job derives which questions to ask from the day (`dayRankingSurfaces`): Goal Coach's on the current
 day, and the agenda's on any later day and on the current day until the agenda moves on in the late afternoon. The
 agenda's question uses `agendaRankingProjects`, the enabled quarters' progress projects read exactly as a fresh
 schedule reads them. The revision digests project names, rationales, and candidates, not UUIDs, so when the two
-questions agree the agenda finds Dream Task's ranking stored and no second request is sent. The job reports each
+questions agree the agenda finds Goal Coach's ranking stored and no second request is sent. The job reports each
 question's outcome, and its output revision names each question's ranking revision, which the history keeps.
 `DayPreparationTrigger`, run by `useProjectMaintenanceQueue`, submits the preparation at maintenance priority once no
 project job of the visit is in flight and 30 seconds pass without one finishing. It covers today and, once the agenda
 has moved on, the agenda's day. A reconciliation that changed nothing prepares again only if the days have changed.
-On a cache miss, Dream Task (excluding nothing) and the agenda call `preparedDayRankingAwaiter`, which submits that
+On a cache miss, Goal Coach (excluding nothing) and the agenda call `preparedDayRankingAwaiter`, which submits that
 day's preparation as `foregroundData`. It therefore runs before the load gate, its requests go ahead of maintenance, it
 coalesces with a background preparation for the same day, and it pauses new maintenance. The widget then ranks as
 before and reads the stored ranking. The wait never fails the widget: it ends when the job completes or fails, when the
 queue does not run it (`notQueued`, for example because another session holds it), when it cannot be submitted, or
-after 45 seconds. In each case the widget ranks inline as in 9a. A Dream Task generation that excludes cards asks a
+after 45 seconds. In each case the widget ranks inline as in 9a. A Goal Coach generation that excludes cards asks a
 different question, so it ranks inline. Calendar host invocations get no preparer: they read the agenda cache and the
-ranking store, and rank inline on a miss within their existing three-day bound. The Dream Task and agenda preparation
+ranking store, and rank inline on a miss within their existing three-day bound. The Goal Coach and agenda preparation
 handlers this phase first listed are not built, and settle timing is unchanged: a cold widget still holds its own
 loading state until its ranking returns, but foreground data never waits for the load gate.
 
@@ -912,7 +912,7 @@ Run the relevant regression suites, production build and host smoke test. This p
 cleanup, not a prerequisite for reviewing or committing phases 1–9. Each earlier stop point remains buildable.
 
 As measured so far, maintenance generative requests (idea generation, definition refinement) take 15–25 seconds each.
-With one generative permit shared by all priorities, a foreground request, such as a cold Dream Task or agenda ranked
+With one generative permit shared by all priorities, a foreground request, such as a cold Goal Coach or agenda ranked
 by the generative model when Jev is unavailable, waited behind one already in flight, since priority cannot preempt it.
 The generative limit is now two, and `MAINTENANCE_RESOURCE_LIMITS` holds maintenance to one of them at all times, so
 background work still makes one generative request at a time while a foreground request is admitted at once. The
@@ -967,7 +967,7 @@ OPEN_AI_ACCESS_TOKEN='' ANTHROPIC_AI_ACCESS_TOKEN='' GEMINI_AI_ACCESS_TOKEN='' G
 To finish acceptance, compare fresh copies of the same seeded notebook and cache state with mounting and maintenance
 independently enabled/disabled, on desktop and a mobile browser. Capture the Queue inspector overview, resources,
 urgent renders and exported diagnostics together with browser performance traces. Exercise fast scrolling, overlay
-open/close, layout changes, cold Dream Task/agenda, a pending provider request, and reopen after interrupted work.
+open/close, layout changes, cold Goal Coach/agenda, a pending provider request, and reopen after interrupted work.
 Record first usable load, visibility-to-admission/commit, actual React commit duration and long tasks, provider wait,
 background request counts, distinct project coverage per visit, and preparation output revisions. Existing job history
 does not supply all these measurements. Compare enabled/disabled results before accepting the latency criterion above.
@@ -1192,7 +1192,7 @@ Concrete integration changes:
 - `lib/dashboard/suggestions/day-project-candidates.js` qualifies projects for the day and asks each hydrated project's
   `taskCandidates` for its candidate records. `suggestion-task-rank.js` and `suggestion-task-slots.js` carry the
   shared `task:`/`idea:` identity through ranking, reserve promotion, and deduplication.
-- `lib/dashboard/dream-task.jsx` and `lib/dashboard/proposed-agenda/proposed-agenda.jsx` subscribe to narrow result revisions, promote
+- `lib/dashboard/goal-coach.jsx` and `lib/dashboard/proposed-agenda/proposed-agenda.jsx` subscribe to narrow result revisions, promote
   jobs for missing visible data, and keep stable cached UI. An accepted result updates the relevant surface, not the
   whole Dashboard tree on every queue transition.
 - `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` reads prepared output through a bounded host runtime. Neither
@@ -1229,7 +1229,7 @@ dictionary changes invalidating scores, user-owned definition protection, full R
 migration, rejected ideas, acceptance retries, and a project with completions but no open tasks. Ensure preparation never
 records exposure, foreground cache hits make no generative request, cold caches do not deadlock settling, and refreshed
 agendas preserve decisions and avoid new conflicts. Extend the existing stack-rank, project-task-store, ranked-task-
-suggestions, Dream Task, and Proposed Agenda suites where those behaviors already belong.
+suggestions, Goal Coach, and Proposed Agenda suites where those behaviors already belong.
 
 Instrument time to first usable Dashboard, widget cache-hit latency, foreground provider wait, background request
 counts/durations, distinct project coverage, successful refresh age, queue age by job type, retry counts, and request

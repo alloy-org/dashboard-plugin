@@ -5,7 +5,7 @@
 // an acceptance retried from another surface that reuses the task the idea already became.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
-import { handleTaskClick } from "dashboard/dream-task-internals";
+import { handleTaskClick } from "dashboard/goal-coach-internals";
 import { decidedIdeaRecords, IDEA_STATUSES, ideaIdFor, normalizedIdeaRecords } from "dashboard/project-tasks/project-idea-records";
 import { minutesSinceIdeaRecommended } from "dashboard/project-tasks/project-suggestion-log";
 import { readCollectedProjectTasks } from "dashboard/project-tasks/project-task-store";
@@ -403,7 +403,7 @@ describe("decisions on shown ideas", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc Clicking an open idea card inserts its task and accepts the idea; clicking a card for that idea again, as a
   //   cached card or another surface would, opens the accepted task instead of inserting a second one.
-  it("accepts an idea once from Dream Task and reuses its task on a retry", async () => {
+  it("accepts an idea once from Goal Coach and reuses its task on a retry", async () => {
     jest.useFakeTimers({ doNotFake: ["nextTick", "queueMicrotask", "setImmediate", "setInterval", "setTimeout"], now: NOW });
     const app = maintenanceApp({ tasks: [] });
     const idea = ratedIdea("Benchmark the picker");

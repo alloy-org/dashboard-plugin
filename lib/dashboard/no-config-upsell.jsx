@@ -1,7 +1,7 @@
 // [Claude claude-opus-4-8 (1M context)-authored file]
 // Prompt summary: "When a widget has no available LLM key, print a NoConfig upsell equivalent to the one Goal
-//   Coach (DreamTask) shows, but highlighting different features. Extract the upsell into a standalone component
-//   called by both DreamTask and Proposed Agenda, parameterized by the features it highlights."
+//   Coach (Goal Coach) shows, but highlighting different features. Extract the upsell into a standalone component
+//   called by both Goal Coach and Proposed Agenda, parameterized by the features it highlights."
 import { AMPLE_AGENT_PRO_URL } from "providers/ai-provider-settings";
 import WidgetWrapper from "widget-wrapper";
 

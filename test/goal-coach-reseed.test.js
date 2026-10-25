@@ -1,4 +1,4 @@
-// Verify that Reseed replaces the cards on today's Dream Task note with a new batch, even when the note already holds
+// Verify that Reseed replaces the cards on today's Goal Coach note with a new batch, even when the note already holds
 // enough cards to be served from cache, keeping only cards the user asked to preserve.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
@@ -7,7 +7,7 @@ import { mockFetchAiProvider } from "./mock-fetch-ai-provider.js";
 
 const llmMock = jest.fn();
 await mockFetchAiProvider({ llmPromptWithAmplenoteFallback: (...args) => llmMock(...args) });
-const { analyzeDreamTasks } = await import("dream-task-service");
+const { analyzeGoalCoachTasks } = await import("goal-coach-service");
 
 const TODAY_NOTE = `Dashboard proposed tasks for ${ new Date().toLocaleString([], { day: "numeric", month: "long", year: "numeric" }) }`;
 const OPEN_TASKS = [
@@ -20,7 +20,7 @@ const OPEN_TASKS = [
 // @desc A cached note holding two open cards, the second marked to be preserved through tomorrow.
 // @returns {string} Note markdown.
 function cachedNote() {
-  return "## DreamTask suggestions generated 09:00:00\n\n### 1. Draft launch email (Rating: 8/10)\n<!-- task:task-1 -->\n" +
+  return "## Goal Coach suggestions generated 09:00:00\n\n### 1. Draft launch email (Rating: 8/10)\n<!-- task:task-1 -->\n" +
     "<!-- suggestion:sug-1 -->\nMatches the plan.\n\n### 2. Book venue (Rating: 7/10)\n<!-- task:task-2 -->\n<!-- suggestion:sug-2 -->\n" +
     "<!-- dream-preserve:through-tomorrow -->\nNeeded soon.\n\n---\n";
 }
@@ -52,11 +52,11 @@ beforeEach(() => {
 
 afterEach(() => setPluginData({ context: {}, settings: {} }));
 
-describe("Dream Task reseed", () => {
+describe("Goal Coach reseed", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc Without a forced refresh, a note holding enough cards is served as it is.
   it("serves the cached note when it holds enough cards", async () => {
-    const result = await analyzeDreamTasks(cachedApp(), { minimumTaskCount: 2, noteName: TODAY_NOTE });
+    const result = await analyzeGoalCoachTasks(cachedApp(), { minimumTaskCount: 2, noteName: TODAY_NOTE });
     expect(result.cached).toBe(true);
     expect(result.tasks.map(task => task.uuid)).toEqual(["task-1", "task-2"]);
   });
@@ -65,7 +65,7 @@ describe("Dream Task reseed", () => {
   // @desc A forced refresh generates a new batch excluding the cards on the note, and keeps only the preserved card.
   it("replaces unpreserved cards with a new batch when forced", async () => {
     const app = cachedApp();
-    const result = await analyzeDreamTasks(app, { forceRefresh: true, minimumTaskCount: 2, noteName: TODAY_NOTE });
+    const result = await analyzeGoalCoachTasks(app, { forceRefresh: true, minimumTaskCount: 2, noteName: TODAY_NOTE });
     expect(result.cached).toBe(false);
     expect(result.tasks.map(task => task.uuid)).toEqual(["task-3", "task-2"]);
     const prompt = llmMock.mock.calls[0][1];

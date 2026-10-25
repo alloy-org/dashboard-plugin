@@ -195,7 +195,7 @@ NODE_OPTIONS=--experimental-vm-modules npx jest --no-coverage
 To run a specific test file or pattern:
 
 ```bash
-NODE_OPTIONS=--experimental-vm-modules npx jest --testPathPattern='dream-task' --no-coverage
+NODE_OPTIONS=--experimental-vm-modules npx jest --testPathPattern='goal-coach' --no-coverage
 ```
 
 ## 6. Keep React out of the host plugin

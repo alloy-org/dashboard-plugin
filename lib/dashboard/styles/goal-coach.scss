@@ -1,24 +1,24 @@
 /* [Claude-authored file]
  * Created: 2026-03-14 | Model: claude-4.6-opus-high-thinking
- * Task: DreamTask widget styles — task suggestion cards with rating badges
+ * Task: Goal Coach widget styles — task suggestion cards with rating badges
  * Prompt summary: "styles for DreamTask widget showing AI-suggested tasks with ratings"
  */
 
 @use 'theme-tokens' as *;
 
-/* [Claude] Task: DreamTask widget layout, cards, rating badges, and state styles */
+/* [Claude] Task: Goal Coach widget layout, cards, rating badges, and state styles */
 /* Prompt: "Create a DreamTask widget that uses an agentic loop to suggest goal-aligned tasks" */
 /* Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking */
 .widget-dream-task {
   /* [Claude] Task: flex row for multiple header action links (reseed + note) */
   /* Prompt: "add a link to the top of Dream Task module to reseed the tasks" */
   /* Date: 2026-03-14 | Model: claude-4.6-sonnet-medium-thinking */
-  .dream-task-header-actions {
+  .goal-coach-header-actions {
     align-items: center;
     display: flex;
     gap: $sp-sm;
   }
-  .dream-task-list {
+  .goal-coach-list {
     display: flex;
     flex-direction: column;
     gap: $sp-md;
@@ -26,7 +26,7 @@
 
   /* [Claude claude-opus-4-6] Task: attribution line under suggestion cards */
   /* Prompt: "print which LLM provider generated the suggestions at the bottom of the widget" */
-  .dream-task-llm-attribution {
+  .goal-coach-llm-attribution {
     color: $color-text-secondary;
     padding-top: $sp-sm;
   }
@@ -45,19 +45,19 @@
   /* [Claude] Task: goals summary styling above task cards */
   /* Prompt: "begin the date's content by summarizing quarter/month/week goals before the task list" */
   /* Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking */
-  .dream-task-goals-summary {
+  .goal-coach-goals-summary {
     border-bottom: 1px solid $color-border;
     margin-bottom: $sp-sm;
     padding-bottom: $sp-md;
   }
 
-  .dream-task-goals-text {
+  .goal-coach-goals-text {
     color: $color-text-secondary;
     font-style: italic;
     margin: 0;
   }
 
-  .dream-task-card {
+  .goal-coach-card {
     border: 1px solid $color-border;
     border-radius: $radius-md;
     opacity: 1;
@@ -71,13 +71,13 @@
 
   /* [Claude gpt-5.3-codex] Task: fade and collapse cards on complete/remove */
   /* Prompt: "Mark complete/remove should fade out and be replaced by the next generated task" */
-  .dream-task-card--dismissing {
+  .goal-coach-card--dismissing {
     opacity: 0;
     pointer-events: none;
     transform: translateY(6px) scale(0.98);
   }
 
-  .dream-task-card-header {
+  .goal-coach-card-header {
     align-items: flex-start;
     display: flex;
     gap: $sp-sm;
@@ -85,12 +85,12 @@
     margin-bottom: $sp-sm;
   }
 
-  .dream-task-card-title {
+  .goal-coach-card-title {
     color: $color-navy;
     font-weight: 500;
   }
 
-  .dream-task-card-title--clickable {
+  .goal-coach-card-title--clickable {
     cursor: pointer;
 
     &:hover {
@@ -99,22 +99,22 @@
     }
   }
 
-  .dream-task-rating {
+  .goal-coach-rating {
     border-radius: $radius-sm;
     flex-shrink: 0;
   }
 
-  .dream-task-rating--high {
+  .goal-coach-rating--high {
     background: rgba(34, 197, 94, 0.12);
     color: $color-success;
   }
 
-  .dream-task-rating--medium {
+  .goal-coach-rating--medium {
     background: rgba(234, 179, 8, 0.12);
     color: $color-warning;
   }
 
-  .dream-task-rating--low {
+  .goal-coach-rating--low {
     background: rgba(239, 68, 68, 0.12);
     color: $color-danger;
   }
@@ -122,11 +122,11 @@
   /* [Claude] Task: visual distinction for invented (non-existing) task cards */
   /* Prompt: "at least 50% of suggested tasks should be existing tasks; clicking invented tasks creates them" */
   /* Date: 2026-03-16 | Model: claude-4.6-opus-high-thinking */
-  .dream-task-card--invented {
+  .goal-coach-card--invented {
     border-left: 2px solid $color-blue-light;
   }
 
-  .dream-task-new-badge {
+  .goal-coach-new-badge {
     background: rgba(74, 158, 255, 0.12);
     border-radius: $radius-sm;
     color: $color-blue;
@@ -135,7 +135,7 @@
 
   /* [Claude claude-opus-4-6] Task: compact label showing source note title for existing suggestions */
   /* Prompt: "first 15 characters of the note; similar to +new, different background" */
-  .dream-task-source-note-badge {
+  .goal-coach-source-note-badge {
     background: rgba(124, 58, 237, 0.1);
     border-radius: $radius-sm;
     color: $color-navy;
@@ -145,13 +145,18 @@
     max-width: 11rem;
     overflow: hidden;
     padding: 2px $sp-xs;
+    text-decoration: none;
     text-overflow: ellipsis;
     text-transform: none;
     white-space: nowrap;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 
-  .dream-task-new-badge,
-  .dream-task-rating {
+  .goal-coach-new-badge,
+  .goal-coach-rating {
     font-size: $smaller-font-size;
     font-weight: 700;
     padding: 2px $sp-xs;
@@ -159,28 +164,28 @@
     white-space: nowrap;
   }
 
-  /* [GPT-5.5] Task: stack task text above source note on compact DreamTask cards */
+  /* [GPT-5.5] Task: stack task text above source note on compact Goal Coach cards */
   /* Prompt: "apply only below the large iPhone breakpoint" */
   @include breakpoint($breakpoint-large-phone) {
-    .dream-task-card-header {
+    .goal-coach-card-header {
       gap: $sp-xs;
       justify-content: flex-start;
     }
 
-    .dream-task-card-title {
+    .goal-coach-card-title {
       flex: 1 0 100%;
       min-width: 0;
       order: 1;
     }
 
-    .dream-task-new-badge,
-    .dream-task-source-note-badge,
-    .dream-task-rating {
+    .goal-coach-new-badge,
+    .goal-coach-source-note-badge,
+    .goal-coach-rating {
       display: none;
     }
   }
 
-  .dream-task-card-explanation {
+  .goal-coach-card-explanation {
     color: $color-text-secondary;
     cursor: pointer;
     display: -webkit-box;
@@ -194,7 +199,7 @@
 
   /* [Claude gpt-5.3-codex] Task: expanded explanation state removes the 3-line clamp */
   /* Prompt: "click explanation to expand unlimited length, click again to collapse to 3 lines" */
-  .dream-task-card-explanation--expanded {
+  .goal-coach-card-explanation--expanded {
     display: block;
     overflow: visible;
     text-overflow: clip;
@@ -205,7 +210,7 @@
 
   /* [Claude gpt-5.3-codex] Task: action row links below task explanation */
   /* Prompt: "After each dream-task-card-explanation, add links for preserve through tomorrow, mark complete, and remove" */
-  .dream-task-card-actions {
+  .goal-coach-card-actions {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
@@ -213,7 +218,7 @@
     margin-top: $sp-sm;
   }
 
-  .dream-task-card-action {
+  .goal-coach-card-action {
     color: $color-link;
     cursor: pointer;
     font-size: $smaller-font-size;
@@ -226,9 +231,9 @@
   }
 
   /* The no-config Ample Agent Pro promo card now lives in the shared styles/no-config-upsell.scss, rendered by
-     the standalone NoConfigUpsell component (used by both DreamTask and Proposed Agenda). */
+     the standalone NoConfigUpsell component (used by both Goal Coach and Proposed Agenda). */
 
-  .dream-task-settings-link {
+  .goal-coach-settings-link {
     color: $color-link;
     font-weight: 600;
     text-decoration: none;
@@ -238,7 +243,7 @@
     }
   }
 
-  .dream-task-loading {
+  .goal-coach-loading {
     align-items: center;
     display: flex;
     flex-direction: column;
@@ -253,7 +258,7 @@
     }
   }
 
-  .dream-task-spinner {
+  .goal-coach-spinner {
     animation: spin 0.8s linear infinite;
     border: 3px solid $color-border;
     border-radius: 50%;
@@ -262,7 +267,7 @@
     width: 24px;
   }
 
-  .dream-task-error {
+  .goal-coach-error {
     padding: $sp-lg;
     text-align: center;
 
@@ -273,7 +278,7 @@
     }
   }
 
-  .dream-task-empty {
+  .goal-coach-empty {
     padding: $sp-lg;
     text-align: center;
 
@@ -284,7 +289,7 @@
     }
   }
 
-  .dream-task-retry {
+  .goal-coach-retry {
     background: none;
     border: 1px solid $color-border;
     border-radius: $radius-sm;

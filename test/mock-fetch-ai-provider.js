@@ -1,4 +1,4 @@
-// Shared stand-in for providers/fetch-ai-provider. Dream task and the proposed agenda load the generative prompt as
+// Shared stand-in for providers/fetch-ai-provider. Goal Coach and the proposed agenda load the generative prompt as
 // soon as the module evaluates, so a mock that only replaces the fallback call is missing that export. The inert
 // default lets a ranking attempt fall through to the suite's own mock.
 import { jest } from "@jest/globals";

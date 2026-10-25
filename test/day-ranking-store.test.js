@@ -1,6 +1,6 @@
 // Verify the shared day ranking: its revision covers what the ranker reads but not how recently a candidate was shown,
 // the store keeps a bounded set of rankings and never overwrites a note a newer version wrote, a prepared ranking is
-// reused across Dream Task's and the agenda's requests without another provider request, preparing records nothing
+// reused across Goal Coach's and the agenda's requests without another provider request, preparing records nothing
 // as shown, and the queued preparation stores a ranking that a later request reuses.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
@@ -166,7 +166,7 @@ describe("prepareDayRanking", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc The agenda slots a ranking Dream Task's request prepared, with no provider request and no exposure recorded.
+  // @desc The agenda slots a ranking Goal Coach's request prepared, with no provider request and no exposure recorded.
   it("lets the agenda reuse a prepared ranking without recording exposure", async () => {
     const app = maintenanceApp({ tasks: TASKS });
     await storeQualifyingProject(app);

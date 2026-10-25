@@ -101,7 +101,7 @@ async function handleCreateWeekPlan(app, plan, weekLabel, setWeekLoading, setWee
 
 // ----------------------------------------------------------------------------------------------
 // @desc One quarter's card. A card whose quarter has a plan note shows a checkbox, in the slot the plan's status
-//   emoji once held, deciding whether the plan feeds Dream Task, Proposed Agenda, and calendar suggestions. Whether
+//   emoji once held, deciding whether the plan feeds Goal Coach, Proposed Agenda, and calendar suggestions. Whether
 //   all three months are planned, which that emoji showed, now lives in the checkbox's tooltip. Clicks on the
 //   checkbox do not reach the card's own handler.
 // @param {object} props - An object with the following properties:

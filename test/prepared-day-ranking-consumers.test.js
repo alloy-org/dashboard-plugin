@@ -1,5 +1,5 @@
-// Verify that Dream Task and the Proposed Agenda let the Dashboard's work queue prepare the day's shared ranking before
-// ranking a day on a cold cache, and that a Dream Task generation excluding cards, which asks a different question
+// Verify that Goal Coach and the Proposed Agenda let the Dashboard's work queue prepare the day's shared ranking before
+// ranking a day on a cold cache, and that a Goal Coach generation excluding cards, which asks a different question
 // than the queue prepares, ranks the day itself. While the Dashboard's calendar events are pending, the agenda plans
 // the day without asking the host for them.
 import { jest } from "@jest/globals";
@@ -10,13 +10,13 @@ import { mockFetchAiProvider } from "./mock-fetch-ai-provider.js";
 
 const llmMock = jest.fn();
 await mockFetchAiProvider({ llmPromptWithAmplenoteFallback: (...args) => llmMock(...args) });
-const { analyzeDreamTasks } = await import("dream-task-service");
+const { analyzeGoalCoachTasks } = await import("goal-coach-service");
 const { generateProposedAgenda } = await import("dashboard/proposed-agenda/proposed-agenda-service");
 
 const TODAY_NOTE = `Dashboard proposed tasks for ${ new Date().toLocaleString([], { day: "numeric", month: "long", year: "numeric" }) }`;
 
 // ----------------------------------------------------------------------------------------------
-// @desc A notebook with a quarterly plan, open tasks, and an empty Dream Task note, under the Work domain with an
+// @desc A notebook with a quarterly plan, open tasks, and an empty Goal Coach note, under the Work domain with an
 //   OpenAI key and no Jev, so ranking falls back to the mocked generative model.
 // @returns {object} App stub.
 function coldApp() {
@@ -47,12 +47,12 @@ beforeEach(() => {
 
 afterEach(() => setPluginData({ context: {}, settings: {} }));
 
-describe("Dream Task's ranking preparation", () => {
+describe("Goal Coach's ranking preparation", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc A cold note excluding nothing asks the queue to prepare today before ranking it.
   it("asks the queue to prepare today's ranking before a cold generation", async () => {
     const rankingPreparer = jest.fn(async () => ({ status: "completed" }));
-    const result = await analyzeDreamTasks(coldApp(), { minimumTaskCount: 1, noteName: TODAY_NOTE, rankingPreparer });
+    const result = await analyzeGoalCoachTasks(coldApp(), { minimumTaskCount: 1, noteName: TODAY_NOTE, rankingPreparer });
     expect(rankingPreparer).toHaveBeenCalledTimes(1);
     expect(rankingPreparer).toHaveBeenCalledWith({ domainName: "Work", domainUuid: "dom-work", targetDate: expect.any(Date) });
     expect(result.tasks.length).toBeGreaterThan(0);
@@ -62,7 +62,7 @@ describe("Dream Task's ranking preparation", () => {
   // @desc A reseed excluding recently seen cards asks a question the queue does not prepare.
   it("ranks the day itself when the generation excludes cards", async () => {
     const rankingPreparer = jest.fn(async () => ({ status: "completed" }));
-    await analyzeDreamTasks(coldApp(), { excludeUuids: new Set(["task-3"]), minimumTaskCount: 1, noteName: TODAY_NOTE, rankingPreparer });
+    await analyzeGoalCoachTasks(coldApp(), { excludeUuids: new Set(["task-3"]), minimumTaskCount: 1, noteName: TODAY_NOTE, rankingPreparer });
     expect(rankingPreparer).not.toHaveBeenCalled();
   });
 });

@@ -1,12 +1,12 @@
 import confetti from "canvas-confetti";
 import { apiKeyFromProvider, configuredProviderEms, devTokenPresent, SETTING_KEYS } from "constants/settings";
 import { _loadSeenUuidsMap, _maxTasksFromGrid, _recordSeenUuids, _taskGenerateCount, acceptedIdeaCard,
-  applyDreamTaskAnalysisResult, fetchDreamTaskSuggestions, handleOpenSettings, handleTaskClick, recordDreamIdeaDecision,
-  requestDreamTaskRefreshExcludingRecent, shouldFetchMoreTasksAfterGridGrowth, updateDreamTaskTaskMetadata,
-} from "dream-task-internals";
-import { buildAvailableTimeSlots, fetchSchedulingOccupancy, resolveDreamTaskScheduleSelection,
-  scheduledDreamTaskResultFromStartAt } from "dream-task-schedule";
-import { promoteDreamTaskReserve } from "dream-task-service";
+  applyGoalCoachAnalysisResult, fetchGoalCoachSuggestions, handleOpenSettings, handleTaskClick, recordDreamIdeaDecision,
+  requestGoalCoachRefreshExcludingRecent, shouldFetchMoreTasksAfterGridGrowth, updateGoalCoachTaskMetadata,
+} from "goal-coach-internals";
+import { buildAvailableTimeSlots, fetchSchedulingOccupancy, resolveGoalCoachScheduleSelection,
+  scheduledGoalCoachResultFromStartAt } from "goal-coach-schedule";
+import { promoteGoalCoachReserve } from "goal-coach-service";
 import LlmProviderSelector from "llm-provider-selector";
 import NoConfigUpsell from "no-config-upsell";
 import { pluginSettings } from "plugin-data";
@@ -22,10 +22,11 @@ import { DASHBOARD_TASKS_UPDATED_EVENT } from "hooks/use-dashboard-task-updates"
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import { logIfEnabled } from "util/log";
 import { snapDashboardAction } from "util/plausible";
+import { navigateToNote } from "util/goal-notes";
 import { dailyJotNoteUuidFromToday, markTaskComplete } from "util/task-util";
 import WidgetWrapper from "widget-wrapper";
 
-import "styles/dream-task.scss";
+import "styles/goal-coach.scss";
 
 const MIN_TEXT_OVERFLOW_SIZE = 230;
 const WIDGET_ID = 'dream-task';
@@ -36,7 +37,7 @@ const NO_CONFIG_ERROR_CODES = new Set(['llm_error', 'no_provider_configured', 'p
 // @desc Build a single diagnostic object capturing every input that influences whether the widget
 //   can reach paths 1 (cached note), 2 (app.callLLM on the plugin LLM license), or 3 (direct llmPrompt).
 // [Claude claude-opus-4-8 (1M context)] Task: report any-provider dev token presence instead of OpenAI-only env key
-function _describeDreamTaskConfigSnapshot(app, providerEm, providerApiKey, hasDevToken) {
+function _describeGoalCoachConfigSnapshot(app, providerEm, providerApiKey, hasDevToken) {
   const settings = app?.settings || {};
   const rawLlmProvider = settings[SETTING_KEYS.LLM_PROVIDER_MODEL] ?? null;
   const providerSettingKey = providerEm ? apiKeyFromProvider(providerEm) : null;
@@ -85,17 +86,26 @@ function _taskKey(task) {
 
 // [Claude claude-4.7-opus] Task: convert kind badge render fn to JSX component
 // Prompt: "translate this project to render components with JSX instead"
-function DreamTaskKindBadge({ isClickable, task }) {
+// ------------------------------------------------------------------------------------------
+// @desc Badge beside a suggestion's title: the name of the note holding an existing task, rendered as a link that opens
+//   that note, or a "+new" marker for a suggestion that would create a task when clicked.
+// @param {boolean} isClickable - Whether the suggestion's title can be clicked to open or create the task.
+// @param {Function} onOpenTaskNote - Called with (event, task) when the note name is clicked.
+// @param {object} task - Goal Coach suggestion, with isExisting, noteUUID and sourceNoteName.
+// @returns {JSX.Element|null} The badge, or null when the suggestion has neither a source note nor a create action.
+function GoalCoachKindBadge({ isClickable, onOpenTaskNote, task }) {
   if (task.isExisting && task.sourceNoteName) {
     return (
-      <span
-        className="dream-task-source-note-badge"
-        title={task.sourceNoteName ? `Task in note: ${ task.sourceNoteName }` : 'Open this task'}
-      >{task.sourceNoteName}</span>
+      <a
+        href="#"
+        className="goal-coach-source-note-badge"
+        onClick={(event) => onOpenTaskNote(event, task)}
+        title={`Open note: ${ task.sourceNoteName }`}
+      >{task.sourceNoteName}</a>
     );
   }
   if (!task.isExisting && isClickable) {
-    return <span className="dream-task-new-badge" title="New task — click to create">+new</span>;
+    return <span className="goal-coach-new-badge" title="New task — click to create">+new</span>;
   }
   return null;
 }
@@ -126,8 +136,8 @@ function ReseedLink({ onReseed }) {
 function LoadingState() {
   return (
     <WidgetWrapper widgetId={WIDGET_ID}>
-      <div className="dream-task-loading">
-        <div className="dream-task-spinner" />
+      <div className="goal-coach-loading">
+        <div className="goal-coach-spinner" />
         <p>Analyzing the finest tasks …</p>
       </div>
     </WidgetWrapper>
@@ -156,7 +166,7 @@ function ErrorState({ errorInfo, noteLink, onRetry, onSettingsClick }) {
           <p>{`The API key for ${ providerName || 'your AI provider' } appears to be invalid or unauthorized.`}</p>
           <p>
             {'Please check your API key in '}
-            <a href="#" className="dream-task-settings-link" onClick={onSettingsClick}>AI settings</a>
+            <a href="#" className="goal-coach-settings-link" onClick={onSettingsClick}>AI settings</a>
             .
           </p>
         </>
@@ -165,7 +175,7 @@ function ErrorState({ errorInfo, noteLink, onRetry, onSettingsClick }) {
     case 'no_planning_data':
       content = (
         <>
-          <p>DreamTask needs planning context to generate suggestions.</p>
+          <p>Goal Coach needs planning context to generate suggestions.</p>
           <p>Populate your quarterly and/or monthly plan to receive AI-suggested tasks.</p>
         </>
       );
@@ -174,7 +184,7 @@ function ErrorState({ errorInfo, noteLink, onRetry, onSettingsClick }) {
       content = (
         <>
           <p>Unable to successfully process the AI provider's response.</p>
-          <p className="dream-task-error-detail">
+          <p className="goal-coach-error-detail">
             {'If this persists, please contact support@amplenote.com'}
             {errorDetail ? ` with this detail: ${ errorDetail }` : ''}
           </p>
@@ -186,9 +196,9 @@ function ErrorState({ errorInfo, noteLink, onRetry, onSettingsClick }) {
   }
   return (
     <WidgetWrapper widgetId={WIDGET_ID} headerActions={noteLink}>
-      <div className="dream-task-error">
+      <div className="goal-coach-error">
         {content}
-        <button className="dream-task-retry" onClick={onRetry}>Retry</button>
+        <button className="goal-coach-retry" onClick={onRetry}>Retry</button>
       </div>
     </WidgetWrapper>
   );
@@ -197,9 +207,9 @@ function ErrorState({ errorInfo, noteLink, onRetry, onSettingsClick }) {
 function EmptyState({ noteLink, onRetry }) {
   return (
     <WidgetWrapper widgetId={WIDGET_ID} headerActions={noteLink}>
-      <div className="dream-task-empty">
+      <div className="goal-coach-empty">
         <p>No task suggestions available.</p>
-        <button className="dream-task-retry" onClick={onRetry}>Refresh</button>
+        <button className="goal-coach-retry" onClick={onRetry}>Refresh</button>
       </div>
     </WidgetWrapper>
   );
@@ -207,81 +217,81 @@ function EmptyState({ noteLink, onRetry }) {
 
 // [Claude claude-4.7-opus] Task: convert renderTaskList to JSX TaskList component
 // Prompt: "translate this project to render components with JSX instead"
-function TaskList({ dreamTasks, maxTasks, headerActions, onTaskClick, listRef, llmAttributionFooter, actionHandlers }) {
-  const displayDreamTasks = _selectDisplayTasks(dreamTasks, maxTasks);
+function TaskList({ goalCoachTasks, maxTasks, headerActions, onTaskClick, listRef, llmAttributionFooter, actionHandlers }) {
+  const displayGoalCoachTasks = _selectDisplayTasks(goalCoachTasks, maxTasks);
 
   const {
-    dismissingTaskKeys, expandedExplanationKeys, onComplete, onPreserve, onRemove, onSchedule, onToggleExplanation,
-  } = actionHandlers;
+    dismissingTaskKeys, expandedExplanationKeys, onComplete, onOpenTaskNote, onPreserve, onRemove, onSchedule,
+    onToggleExplanation } = actionHandlers;
 
   return (
     <WidgetWrapper headerActions={headerActions} widgetId={WIDGET_ID}>
-      <div className="dream-task-list" ref={listRef}>
-        {displayDreamTasks.map((dreamTask, i) => {
+      <div className="goal-coach-list" ref={listRef}>
+        {displayGoalCoachTasks.map((goalCoachTask, i) => {
           const isClickable = !!onTaskClick;
-          const task = dreamTask.nativeTask || null;
-          const isScheduled = task?.startAt != null || dreamTask.startAt != null;
-          const taskKey = _taskKey(dreamTask);
+          const task = goalCoachTask.nativeTask || null;
+          const isScheduled = task?.startAt != null || goalCoachTask.startAt != null;
+          const taskKey = _taskKey(goalCoachTask);
           const isDismissing = dismissingTaskKeys.has(taskKey);
-          const titleHtml = amplenoteMarkdownRender(dreamTask.title) || dreamTask.title;
-          const explanationHtml = amplenoteMarkdownRender(dreamTask.explanation) || '';
-          const cardClassName = `dream-task-card${ dreamTask.isExisting ? '' : ' dream-task-card--invented' }${ isDismissing ? ' dream-task-card--dismissing' : '' }`;
-          const titleClassName = `dream-task-card-title${ isClickable ? ' dream-task-card-title--clickable' : '' }`;
-          const explanationClassName = `dream-task-card-explanation${ expandedExplanationKeys.has(taskKey) ? ' dream-task-card-explanation--expanded' : '' }`;
+          const titleHtml = amplenoteMarkdownRender(goalCoachTask.title) || goalCoachTask.title;
+          const explanationHtml = amplenoteMarkdownRender(goalCoachTask.explanation) || '';
+          const cardClassName = `goal-coach-card${ goalCoachTask.isExisting ? '' : ' goal-coach-card--invented' }${ isDismissing ? ' goal-coach-card--dismissing' : '' }`;
+          const titleClassName = `goal-coach-card-title${ isClickable ? ' goal-coach-card-title--clickable' : '' }`;
+          const explanationClassName = `goal-coach-card-explanation${ expandedExplanationKeys.has(taskKey) ? ' goal-coach-card-explanation--expanded' : '' }`;
 
           return (
             <div key={taskKey || i} className={cardClassName}>
-              <div className="dream-task-card-header">
+              <div className="goal-coach-card-header">
                 <span
                   className={titleClassName}
-                  onClick={isClickable ? () => onTaskClick(dreamTask) : undefined}
+                  onClick={isClickable ? () => onTaskClick(goalCoachTask) : undefined}
                   role={isClickable ? 'button' : undefined}
                   tabIndex={isClickable ? 0 : undefined}
                   onKeyDown={isClickable
-                    ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTaskClick(dreamTask); } }
+                    ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTaskClick(goalCoachTask); } }
                     : undefined}
-                  title={dreamTask.isExisting ? 'Open this task' : 'Click to create this task'}
+                  title={goalCoachTask.isExisting ? 'Open this task' : 'Click to create this task'}
                   dangerouslySetInnerHTML={{ __html: titleHtml }}
                 />
-                <DreamTaskKindBadge isClickable={isClickable} task={dreamTask} />
+                <GoalCoachKindBadge isClickable={isClickable} onOpenTaskNote={onOpenTaskNote} task={goalCoachTask} />
                 <span
-                  className={`dream-task-rating dream-task-rating--${ _ratingTier(dreamTask.rating) }`}
-                  title={`Relevance: ${ dreamTask.rating }/10`}
-                >{`${ dreamTask.rating }/10`}</span>
+                  className={`goal-coach-rating goal-coach-rating--${ _ratingTier(goalCoachTask.rating) }`}
+                  title={`Relevance: ${ goalCoachTask.rating }/10`}
+                >{`${ goalCoachTask.rating }/10`}</span>
               </div>
               <p
                 className={explanationClassName}
-                title={dreamTask.explanation?.length > MIN_TEXT_OVERFLOW_SIZE ? dreamTask.explanation : null}
-                onClick={() => onToggleExplanation(dreamTask)}
+                title={goalCoachTask.explanation?.length > MIN_TEXT_OVERFLOW_SIZE ? goalCoachTask.explanation : null}
+                onClick={() => onToggleExplanation(goalCoachTask)}
                 dangerouslySetInnerHTML={{ __html: explanationHtml }}
               />
-              <div className="dream-task-card-actions">
+              <div className="goal-coach-card-actions">
                 <a
                   href="#"
-                  className="dream-task-card-action"
-                  onClick={(event) => onPreserve(event, dreamTask)}
-                  title={dreamTask.preserveThroughTomorrow
+                  className="goal-coach-card-action"
+                  onClick={(event) => onPreserve(event, goalCoachTask)}
+                  title={goalCoachTask.preserveThroughTomorrow
                     ? 'Clicking this will remove preserve status so the task can reseed normally'
-                    : 'Clicking this will ensure that the task remains present in your Dream Task list through tomorrow (normally tasks reseed daily)'}
-                >{dreamTask.preserveThroughTomorrow ? '🚫 Remove preserve' : '📎 Preserve'}</a>
+                    : 'Clicking this will ensure that the task remains present in your Goal Coach list through tomorrow (normally tasks reseed daily)'}
+                >{goalCoachTask.preserveThroughTomorrow ? '🚫 Remove preserve' : '📎 Preserve'}</a>
                 <a
                   href="#"
-                  className="dream-task-card-action"
-                  onClick={(event) => onComplete(event, dreamTask)}
+                  className="goal-coach-card-action"
+                  onClick={(event) => onComplete(event, goalCoachTask)}
                   title="Mark this task complete and replace it with another suggestion when available"
                 >✅ Completed</a>
                 {isScheduled ? null : (
                   <a
                     href="#"
-                    className="dream-task-card-action"
-                    onClick={(event) => onSchedule(event, dreamTask)}
+                    className="goal-coach-card-action"
+                    onClick={(event) => onSchedule(event, goalCoachTask)}
                     title="Schedule this task for a specific date and time"
                   >📅 Schedule</a>
                 )}
                 <a
                   href="#"
-                  className="dream-task-card-action"
-                  onClick={(event) => onRemove(event, dreamTask)}
+                  className="goal-coach-card-action"
+                  onClick={(event) => onRemove(event, goalCoachTask)}
                   title="Remove this task and replace it with another suggestion when available"
                 >❌ Remove</a>
               </div>
@@ -289,7 +299,7 @@ function TaskList({ dreamTasks, maxTasks, headerActions, onTaskClick, listRef, l
           );
         })}
         {llmAttributionFooter
-          ? <p className="dream-task-llm-attribution">{llmAttributionFooter}</p>
+          ? <p className="goal-coach-llm-attribution">{llmAttributionFooter}</p>
           : null}
       </div>
     </WidgetWrapper>
@@ -307,7 +317,7 @@ function ConfiguredBody({ loading, error, tasks, maxTasks, noteLink, headerActio
   }
   return (
     <TaskList
-      dreamTasks={tasks}
+      goalCoachTasks={tasks}
       maxTasks={maxTasks}
       headerActions={headerActions}
       onTaskClick={onTaskClick}
@@ -318,9 +328,9 @@ function ConfiguredBody({ loading, error, tasks, maxTasks, noteLink, headerActio
   );
 }
 
-function DreamTaskHeaderActions({ noteUUID, onOpenNote, onReseed }) {
+function GoalCoachHeaderActions({ noteUUID, onOpenNote, onReseed }) {
   return (
-    <span className="dream-task-header-actions">
+    <span className="goal-coach-header-actions">
       <ReseedLink onReseed={onReseed} />
       <NoteLink noteUUID={noteUUID} onOpenNote={onOpenNote} />
     </span>
@@ -328,10 +338,10 @@ function DreamTaskHeaderActions({ noteUUID, onOpenNote, onReseed }) {
 }
 
 // =============================================================================
-// DreamTask widget — custom hooks, state, effects, and composition
+// Goal Coach widget — custom hooks, state, effects, and composition
 // =============================================================================
 
-function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks, { reserveTasks, setReserveTasks, taskDomainName,
+function useGoalCoachActions(app, defaultNoteUUID, noteUUID, setTasks, { reserveTasks, setReserveTasks, taskDomainName,
     taskDomainUUID }) {
   const [dismissingTaskKeys, setDismissingTaskKeys] = useState(() => new Set());
   const [expandedExplanationKeys, setExpandedExplanationKeys] = useState(() => new Set());
@@ -341,12 +351,12 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks, { reserve
     setExpandedExplanationKeys(new Set());
   }, []);
 
-  const patchTaskMetadata = useCallback(async (dreamTask, metadataPatch) => {
-    await updateDreamTaskTaskMetadata(app, noteUUID, dreamTask, metadataPatch);
+  const patchTaskMetadata = useCallback(async (goalCoachTask, metadataPatch) => {
+    await updateGoalCoachTaskMetadata(app, noteUUID, goalCoachTask, metadataPatch);
   }, [app, noteUUID]);
 
-  const removeTaskAfterFade = useCallback((dreamTask) => {
-    const key = _taskKey(dreamTask);
+  const removeTaskAfterFade = useCallback((goalCoachTask) => {
+    const key = _taskKey(goalCoachTask);
     setDismissingTaskKeys(previous => { const next = new Set(previous); next.add(key); return next; });
     setTimeout(() => {
       setTasks(previous => (previous || []).filter(candidate => _taskKey(candidate) !== key));
@@ -356,7 +366,7 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks, { reserve
   }, [setTasks]);
 
   const fireConfettiForTask = useCallback((event) => {
-    const cardElement = event.currentTarget?.closest?.(".dream-task-card");
+    const cardElement = event.currentTarget?.closest?.(".goal-coach-card");
     if (!cardElement || typeof window === "undefined") return;
     const rect = cardElement.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
@@ -369,69 +379,69 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks, { reserve
     });
   }, []);
 
-  const onCompleteTask = useCallback(async (event, dreamTask) => {
+  const onCompleteTask = useCallback(async (event, goalCoachTask) => {
     event.preventDefault();
     snapDashboardAction("approveDreamTask", { via: "complete" });
     fireConfettiForTask(event);
-    const completedNoteUUID = dreamTask.uuid ? null : await dailyJotNoteUuidFromToday(app);
-    const completedAt = await markTaskComplete(app, completedNoteUUID, dreamTask);
+    const completedNoteUUID = goalCoachTask.uuid ? null : await dailyJotNoteUuidFromToday(app);
+    const completedAt = await markTaskComplete(app, completedNoteUUID, goalCoachTask);
     if (completedAt) {
-      await patchTaskMetadata(dreamTask, { completedAt, removedAt: null });
-      await recordDreamIdeaDecision(app, dreamTask, { domainName: taskDomainName, domainUuid: taskDomainUUID,
+      await patchTaskMetadata(goalCoachTask, { completedAt, removedAt: null });
+      await recordDreamIdeaDecision(app, goalCoachTask, { domainName: taskDomainName, domainUuid: taskDomainUUID,
         status: IDEA_STATUSES.accepted });
     }
-    removeTaskAfterFade(dreamTask);
+    removeTaskAfterFade(goalCoachTask);
   }, [app, fireConfettiForTask, patchTaskMetadata, removeTaskAfterFade, taskDomainName, taskDomainUUID]);
 
-  const onPreserveTask = useCallback(async (event, dreamTask) => {
+  const onPreserveTask = useCallback(async (event, goalCoachTask) => {
     event.preventDefault();
-    const key = _taskKey(dreamTask);
-    const nextPreserveState = !dreamTask.preserveThroughTomorrow;
+    const key = _taskKey(goalCoachTask);
+    const nextPreserveState = !goalCoachTask.preserveThroughTomorrow;
     setTasks(previous => (previous || []).map(candidate => (
       _taskKey(candidate) === key ? { ...candidate, preserveThroughTomorrow: nextPreserveState } : candidate
     )));
-    await patchTaskMetadata(dreamTask, { preserveThroughTomorrow: nextPreserveState });
+    await patchTaskMetadata(goalCoachTask, { preserveThroughTomorrow: nextPreserveState });
   }, [patchTaskMetadata, setTasks]);
 
-  const onRemoveTask = useCallback(async (event, dreamTask) => {
+  const onRemoveTask = useCallback(async (event, goalCoachTask) => {
     event.preventDefault();
     const removedAt = new Date().toISOString();
-    await patchTaskMetadata(dreamTask, { completedAt: null, removedAt });
-    await recordDreamIdeaDecision(app, dreamTask, { domainName: taskDomainName, domainUuid: taskDomainUUID,
+    await patchTaskMetadata(goalCoachTask, { completedAt: null, removedAt });
+    await recordDreamIdeaDecision(app, goalCoachTask, { domainName: taskDomainName, domainUuid: taskDomainUUID,
       status: IDEA_STATUSES.dismissed });
     const replacement = reserveTasks[0];
     if (replacement) {
       const remaining = reserveTasks.slice(1);
       setReserveTasks(remaining);
       setTasks(previous => [...(previous || []), replacement]);
-      await promoteDreamTaskReserve(app, noteUUID, remaining, replacement);
+      await promoteGoalCoachReserve(app, noteUUID, remaining, replacement);
       await recordShownTaskSuggestions(app, { domainName: taskDomainName, domainUuid: taskDomainUUID,
         suggestions: [replacement], targetDate: new Date() });
     }
-    removeTaskAfterFade(dreamTask);
+    removeTaskAfterFade(goalCoachTask);
   }, [app, noteUUID, patchTaskMetadata, removeTaskAfterFade, reserveTasks, taskDomainName, taskDomainUUID]);
 
-  const onScheduleTask = useCallback(async (event, dreamTask) => {
+  const onScheduleTask = useCallback(async (event, goalCoachTask) => {
     event.preventDefault();
     const { events, tasks: scheduledTasks } = await fetchSchedulingOccupancy(app);
     const now = new Date();
     const todaySlots = buildAvailableTimeSlots(now, events, scheduledTasks);
-    const card = await acceptedIdeaCard(app, dreamTask, { domainName: taskDomainName, domainUuid: taskDomainUUID });
-    const selection = await resolveDreamTaskScheduleSelection(app, { defaultNoteUUID, now, task: card, todaySlots });
+    const card = await acceptedIdeaCard(app, goalCoachTask, { domainName: taskDomainName, domainUuid: taskDomainUUID });
+    const selection = await resolveGoalCoachScheduleSelection(app, { defaultNoteUUID, now, task: card, todaySlots });
     if (!selection) return;
     const taskToSchedule = selection.noteUUID ? { ...card, noteUUID: selection.noteUUID } : card;
-    const result = await scheduledDreamTaskResultFromStartAt(app, defaultNoteUUID, selection.startAt, taskToSchedule);
+    const result = await scheduledGoalCoachResultFromStartAt(app, defaultNoteUUID, selection.startAt, taskToSchedule);
     if (!result.taskUuid) {
-      logIfEnabled('[DreamTask] Schedule failed', result);
+      logIfEnabled('[goal-coach] Schedule failed', result);
       const message = result.reason === 'missing_note' ? 'Could not schedule: no target note is available for this suggestion.' : 'Could not schedule this task. Please try again or schedule it manually.';
       await app.alert(message);
       return;
     }
     snapDashboardAction("approveDreamTask", { via: "schedule" });
-    await patchTaskMetadata(dreamTask, { taskUuid: result.taskUuid });
-    await recordDreamIdeaDecision(app, dreamTask, { acceptedTaskUuid: result.taskUuid, domainName: taskDomainName,
+    await patchTaskMetadata(goalCoachTask, { taskUuid: result.taskUuid });
+    await recordDreamIdeaDecision(app, goalCoachTask, { acceptedTaskUuid: result.taskUuid, domainName: taskDomainName,
       domainUuid: taskDomainUUID, status: IDEA_STATUSES.accepted });
-    const key = _taskKey(dreamTask);
+    const key = _taskKey(goalCoachTask);
     setTasks(previous => (previous || []).map(candidate => (
       _taskKey(candidate) === key
         ? { ...candidate, isExisting: true, noteUUID: result.noteUUID || candidate.noteUUID || defaultNoteUUID,
@@ -441,7 +451,7 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks, { reserve
 
     if (typeof window !== "undefined") {
       const taskUpdateEvent = new CustomEvent(DASHBOARD_TASKS_UPDATED_EVENT, {
-        content: dreamTask.title, noteUUID: result.noteUUID || dreamTask.noteUUID || defaultNoteUUID,
+        content: goalCoachTask.title, noteUUID: result.noteUUID || goalCoachTask.noteUUID || defaultNoteUUID,
         startAt: selection.startAt, taskUuid: result.taskUuid,
       });
       window.dispatchEvent(taskUpdateEvent);
@@ -451,19 +461,31 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks, { reserve
   // ------------------------------------------------------------------------------------------
   // @desc Open a card's task, or create it from an invented or idea card. A card that now points at a task is
   //   recorded on the daily note and becomes an existing-task card, so clicking it again opens that task.
-  // @param {object} dreamTask - The clicked card.
-  const onTaskClick = useCallback(async (dreamTask) => {
-    const accepted = await handleTaskClick(app, dreamTask, defaultNoteUUID, { domainName: taskDomainName,
+  // @param {object} goalCoachTask - The clicked card.
+  const onTaskClick = useCallback(async (goalCoachTask) => {
+    const accepted = await handleTaskClick(app, goalCoachTask, defaultNoteUUID, { domainName: taskDomainName,
       domainUuid: taskDomainUUID });
     if (!accepted) return;
-    await patchTaskMetadata(dreamTask, { taskUuid: accepted.taskUuid });
-    const key = _taskKey(dreamTask);
+    await patchTaskMetadata(goalCoachTask, { taskUuid: accepted.taskUuid });
+    const key = _taskKey(goalCoachTask);
     setTasks(previous => (previous || []).map(candidate => (_taskKey(candidate) === key
       ? { ...candidate, isExisting: true, noteUUID: accepted.noteUUID, uuid: accepted.taskUuid } : candidate)));
   }, [app, defaultNoteUUID, patchTaskMetadata, setTasks, taskDomainName, taskDomainUUID]);
 
-  const onToggleExplanation = useCallback((dreamTask) => {
-    const key = _taskKey(dreamTask);
+  // ------------------------------------------------------------------------------------------
+  // @desc Open the note that contains an existing suggestion's task, without triggering the card's own click handlers.
+  // @param {Event} event - Click event from the source note badge.
+  // @param {object} goalCoachTask - Suggestion whose noteUUID names the note to open.
+  const onOpenTaskNote = useCallback(async (event, goalCoachTask) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!goalCoachTask?.noteUUID) return;
+    snapDashboardAction("openGoalCoachTaskNote");
+    await navigateToNote(app, goalCoachTask.noteUUID);
+  }, [app]);
+
+  const onToggleExplanation = useCallback((goalCoachTask) => {
+    const key = _taskKey(goalCoachTask);
     setExpandedExplanationKeys(previous => {
       const next = new Set(previous);
       if (next.has(key)) { next.delete(key); } else { next.add(key); }
@@ -471,12 +493,12 @@ function useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks, { reserve
     });
   }, []);
 
-  return { dismissingTaskKeys, expandedExplanationKeys, onCompleteTask, onPreserveTask, onRemoveTask,
+  return { dismissingTaskKeys, expandedExplanationKeys, onCompleteTask, onOpenTaskNote, onPreserveTask, onRemoveTask,
     onScheduleTask, onTaskClick, onToggleExplanation, resetActionState };
 }
 
 // ------------------------------------------------------------------------------------------
-export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, onOpenSettings, providerApiKey,
+export default function GoalCoachWidget({ app, gridHeightSize, gridWidthSize, onOpenSettings, providerApiKey,
     providerEm, taskDomainName, taskDomainUUID }) {
   const [loading, setLoading] = useState(false);
   const [tasks, setTasks] = useState(null);
@@ -514,8 +536,8 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   const proposedTasksNoteName = `Dashboard proposed tasks for ${ domainName } on ${ todayLabel }`;
   const previousTaskGenerateCountRef = useRef(taskGenerateCount);
 
-  const { dismissingTaskKeys, expandedExplanationKeys, onCompleteTask, onPreserveTask, onRemoveTask,
-    onScheduleTask, onTaskClick, onToggleExplanation, resetActionState } = useDreamTaskActions(app, defaultNoteUUID, noteUUID, setTasks,
+  const { dismissingTaskKeys, expandedExplanationKeys, onCompleteTask, onOpenTaskNote, onPreserveTask, onRemoveTask,
+    onScheduleTask, onTaskClick, onToggleExplanation, resetActionState } = useGoalCoachActions(app, defaultNoteUUID, noteUUID, setTasks,
     { reserveTasks, setReserveTasks, taskDomainName, taskDomainUUID });
 
   const recordTaskUuids = useCallback(async (shownUuids, currentMap) => {
@@ -532,27 +554,27 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
     const providerNameForRun = options.providerEmOverride
       ? providerNameFromProviderEm(options.providerEmOverride)
       : providerName;
-    logIfEnabled('[DreamTask] runAnalysis entry', { hasLlmConfig, providerName: providerNameForRun,
+    logIfEnabled('[goal-coach] runAnalysis entry', { hasLlmConfig, providerName: providerNameForRun,
       excludeUuidsSize: excludeUuids?.size ?? 0, options, taskGenerateCount, proposedTasksNoteName });
     setLoading(true);
     setError(null);
     setLlmAttributionFooter(null);
     try {
       const fetchStart = performance.now();
-      const result = await fetchDreamTaskSuggestions(app, {
+      const result = await fetchGoalCoachSuggestions(app, {
         excludeUuids, options, proposedTasksNoteName, maxTasks: taskGenerateCount, rankingPreparer: rankingPreparerRef.current
       });
-      logIfEnabled(`[DreamTask] fetchDreamTaskSuggestions took ${(performance.now() - fetchStart).toFixed(1)}ms`,
+      logIfEnabled(`[goal-coach] fetchGoalCoachSuggestions took ${(performance.now() - fetchStart).toFixed(1)}ms`,
         { cached: result?.cached, taskCount: result?.tasks?.length ?? 0, errorCode: result?.errorCode ?? null, noteUUID: result?.noteUUID ?? null });
       if (!result?.cached && !result?.errorCode && result?.tasks?.length) {
         snapDashboardAction("generateDreamTasks", { count: result.tasks.length });
       }
       if (analysisRunId !== analysisRunIdRef.current) return;
-      await applyDreamTaskAnalysisResult(result, { app, providerName: providerNameForRun, recordTaskUuids,
+      await applyGoalCoachAnalysisResult(result, { app, providerName: providerNameForRun, recordTaskUuids,
         setDefaultNoteUUID, setError, setLlmAttributionFooter, setNoteUUID, setReserveTasks, setTasks });
     } catch (err) {
       if (analysisRunId !== analysisRunIdRef.current) return;
-      logIfEnabled('[DreamTask] runAnalysis caught unexpected error', err);
+      logIfEnabled('[goal-coach] runAnalysis caught unexpected error', err);
       setError({ error: err.message || 'Analysis failed', errorCode: 'llm_error', providerName: providerNameForRun });
     } finally {
       if (analysisRunId === analysisRunIdRef.current) setLoading(false);
@@ -573,8 +595,8 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   }, [hasLlmConfig, proposedTasksNoteName, taskDomainUUID]);
 
   useEffect(() => {
-    const snapshot = _describeDreamTaskConfigSnapshot(app, providerEm, providerApiKey, hasDevToken);
-    logIfEnabled('[DreamTask] config snapshot', {
+    const snapshot = _describeGoalCoachConfigSnapshot(app, providerEm, providerApiKey, hasDevToken);
+    logIfEnabled('[goal-coach] config snapshot', {
       hasLlmConfig, providerName, renderCount: renderCountRef.current, ...snapshot,
     });
   }, [hasLlmConfig, providerEm, providerApiKey, hasDevToken, providerName]);
@@ -593,7 +615,7 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
     const previousMaxTasks = previousTaskGenerateCountRef.current;
     previousTaskGenerateCountRef.current = taskGenerateCount;
     if (!shouldFetchMoreTasksAfterGridGrowth({ maxTasks: taskGenerateCount, previousMaxTasks, tasks })) return;
-    requestDreamTaskRefreshExcludingRecent(runAnalysis, taskGenerateCount);
+    requestGoalCoachRefreshExcludingRecent(runAnalysis, taskGenerateCount);
   }, [hasLlmConfig, taskGenerateCount, tasks]);
 
   useEffect(() => {
@@ -625,7 +647,7 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
     setLlmAttributionFooter(null);
     // A reseed always generates a new batch, even when today's note already holds enough cards.
     const reseedOptions = providerEmOverride ? { forceRefresh: true, providerEmOverride } : { forceRefresh: true };
-    requestDreamTaskRefreshExcludingRecent(runAnalysis, taskGenerateCount, reseedOptions);
+    requestGoalCoachRefreshExcludingRecent(runAnalysis, taskGenerateCount, reseedOptions);
   };
 
   const isInitialPreFetch = !loading && !tasks && !error;
@@ -638,13 +660,13 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
   useWidgetLoadedEvent(WIDGET_ID, !loading && !isCheckingAmplenoteLlm && (shouldRenderNoConfig || !!tasks || !!error), !!error);
 
   if (shouldRenderNoConfig) {
-    logIfEnabled('[DreamTask] rendering no-config state', { providerName, hasError: !!error,
+    logIfEnabled('[goal-coach] rendering no-config state', { providerName, hasError: !!error,
       errorCode: error?.errorCode ?? null, taskCount: tasks?.length ?? 0 });
     return <NoConfigUpsell app={ app } features={ NO_CONFIG_FEATURES }
       moreFeaturesLabel="+ 15 more features included" widgetId={ WIDGET_ID } />;
   }
 
-  const headerActions = <DreamTaskHeaderActions noteUUID={noteUUID} onOpenNote={onOpenNote} onReseed={onReseed} />;
+  const headerActions = <GoalCoachHeaderActions noteUUID={noteUUID} onOpenNote={onOpenNote} onReseed={onReseed} />;
   const noteLink = <NoteLink noteUUID={noteUUID} onOpenNote={onOpenNote} />;
   return (
     <>
@@ -664,6 +686,7 @@ export default function DreamTaskWidget({ app, gridHeightSize, gridWidthSize, on
           dismissingTaskKeys,
           expandedExplanationKeys,
           onComplete: onCompleteTask,
+          onOpenTaskNote,
           onPreserve: onPreserveTask,
           onRemove: onRemoveTask,
           onSchedule: onScheduleTask,

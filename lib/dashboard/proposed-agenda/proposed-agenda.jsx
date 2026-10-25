@@ -38,7 +38,7 @@ const CALENDAR_EVENTS_WAIT_MILLISECONDS = 5000;
 
 // Error codes that mean generation failed for want of a reachable LLM (no API key + no working plugin LLM license).
 // When there is also no configured key, the Ample Agent Pro upsell shows if the account has no license, and
-// AMPLENOTE_LLM_FAILED_MESSAGE with a retry shows if it has one, matching how DreamTask degrades.
+// AMPLENOTE_LLM_FAILED_MESSAGE with a retry shows if it has one, matching how Goal Coach degrades.
 const NO_CONFIG_ERROR_CODES = new Set(["invalid_api_key", "llm_error", "no_provider_configured", "parse_error"]);
 const AMPLENOTE_LLM_FAILED_MESSAGE = "The AI model didn't return a schedule. Please try again in a moment.";
 
