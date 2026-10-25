@@ -4,6 +4,7 @@ import { formatWeekLabel, getQuarterMonths, getUpcomingWeekMonday, hasQuarterEnd
 import { IS_DEV_ENVIRONMENT, SETTING_KEYS } from "constants/settings";
 import { buildPlanTargetFromPlans, currentQuarterCardAction } from "dashboard/build-plan-quarter";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
+import { hasStartedFirstPlanIdeaRun, recordFirstPlanIdeaRun } from "dashboard/idea-generation/first-plan-idea-run";
 import IdeaRunProgressPopup from "dashboard/idea-generation/idea-run-progress";
 import MonthFocusPlan, { MonthIntensityMeter } from "dashboard/month-focus-plan";
 import PlanWizard from "dashboard/plan-wizard/plan-wizard";
@@ -479,6 +480,21 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   };
 
   // ----------------------------------------------------------------------------------------------
+  // @desc Treat the first Done on the current quarter's plan as a click on "Generate ideas", so the projects just
+  //   chosen have ideas by the user's first calendar visit. Later Done clicks leave the day's runs to the user. A
+  //   quarter planned ahead is skipped, since a run covers only the current quarter's projects, and so is a Done
+  //   that finds the work queue off, a run under way, or the day's runs spent, leaving the next Done to try again.
+  // @param {object} completedPlan - The wizard's { quarter, year }.
+  const handleWizardDone = completedPlan => {
+    if (!quartersMatch(completedPlan, currentPlan)) return;
+    const quarterScope = { domainUuid: taskDomainUUID, quarter: completedPlan.quarter, year: completedPlan.year };
+    if (hasStartedFirstPlanIdeaRun(quarterScope)) return;
+    if (!ideaRun.available || ideaRun.running || !ideaRun.allowance.allowed) return;
+    recordFirstPlanIdeaRun(app, quarterScope).catch(error => logIfEnabled("[planning] could not record the first plan's idea run", error?.message));
+    Promise.resolve(ideaRun.start()).catch(error => logIfEnabled("[planning] could not start idea generation", error?.message));
+  };
+
+  // ----------------------------------------------------------------------------------------------
   // @desc Send a user whose dashboard has no AI provider to Dashboard Settings, and put Plan Builder back in
   //   front of them once they are done there. The wizard closes first because it portals above the settings
   //   popup's stacking layer and holds a document-level Escape handler, so leaving it open would bury the very
@@ -497,6 +513,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   const planWizardOverlay = wizardPlan ? (
     <PlanWizard app={app} domainName={taskDomainName} domainUuid={taskDomainUUID}
       onClose={ () => { setWizardPlan(null); setPageLoadGeneration(generation => generation + 1); } }
+      onDone={ () => handleWizardDone(wizardPlan) }
       onFinished={wizardPlan.mirrorTarget ? handleWizardFinished : null}
       onOpenSettings={onOpenSettings ? handleOpenProviderSettings : null}
       quarter={wizardPlan.quarter} year={wizardPlan.year} />

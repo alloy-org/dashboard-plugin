@@ -55,13 +55,13 @@ const { readPlanGoals, savePlanGoals, savePlanProspects, savePlanQuarterAnswer }
 //     document.body to escape the planning widget's stacking context, so its markup is not inside the mount
 //     point; the body is therefore the element that contains it.
 //   - {Function} rerender - Re-renders the wizard with a new scope.
-async function renderPlanWizard({ app = createPlanWizardApp(), onClose = () => {}, onFinished = null, scope = SCOPE } = {}) {
+async function renderPlanWizard({ app = createPlanWizardApp(), onClose = () => {}, onDone = null, onFinished = null, scope = SCOPE } = {}) {
   const mountPoint = document.createElement("div");
   document.body.appendChild(mountPoint);
   const root = createRoot(mountPoint);
   const rerender = async nextScope => {
     await act(async () => {
-      root.render(createElement(PlanWizard, { app, onClose, onFinished, ...nextScope }));
+      root.render(createElement(PlanWizard, { app, onClose, onDone, onFinished, ...nextScope }));
     });
     await settle();
   };
@@ -627,10 +627,27 @@ describe("PlanWizard step navigation", () => {
   });
 
   it("leaves a cancelled wizard unfinished", async () => {
+    const onDone = jest.fn();
     const onFinished = jest.fn();
-    const { cleanup, container } = await renderPlanWizard({ onFinished });
+    const { cleanup, container } = await renderPlanWizard({ onDone, onFinished });
     await clickAndSettle(container.querySelector(".plan-wizard-cancel"));
     expect(onFinished).not.toHaveBeenCalled();
+    expect(onDone).not.toHaveBeenCalled();
+    await cleanup();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Done tells the caller once the wizard has closed, which the planning widget uses to start the first run of
+  //   "Generate ideas".
+  it("tells the caller Done was clicked after the wizard closes", async () => {
+    const calls = [];
+    const { cleanup, container } = await renderPlanWizard({ onClose: () => calls.push("close"), onDone: () => calls.push("done") });
+    await typeInto(workFields(container)[0], "Ship the analytics offering");
+    for (let step = 1; step < WIZARD_STEPS.length; step += 1) {
+      await clickAndSettle(container.querySelector(".plan-wizard-next"));
+    }
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+    expect(calls).toEqual(["close", "done"]);
     await cleanup();
   });
 });

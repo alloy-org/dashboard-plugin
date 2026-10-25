@@ -32,6 +32,18 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-25 — First Plan Builder Done generates ideas; two-minute idea run estimate
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/idea-generation/first-plan-idea-run.js` (new) — remembers, in the `FIRST_PLAN_IDEA_RUNS` setting, which domain quarters' first Done started a "Generate ideas" run.
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` — `onDone` prop, called once Done has closed the wizard.
+- `lib/dashboard/planning.jsx` — `handleWizardDone` starts a run on the current quarter's first Done.
+- `lib/dashboard/idea-generation/idea-generation-run.js`, `idea-run-progress-view.js`, `lib/hooks/use-idea-generation-run.js` — step budgets shortened to sum to two minutes; `RUN_ESTIMATE_SECONDS` sets the starting estimate.
+- `lib/constants/settings.js`, `doc/plan-generate-ideas.md`; tests in `test/first-plan-idea-run.test.js`, `test/plan-wizard-ui.test.js`, `test/idea-generation-run.test.js`.
+
+---
+
 ## 2026-10-25 — Project evidence sources lists the Project Tasks note's eligible tasks
 
 **Model:** Claude Opus 5.5

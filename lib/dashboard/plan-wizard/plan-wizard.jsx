@@ -101,12 +101,14 @@ function currentDocumentScrollTop() {
 //   - {Function} onClose - Dismisses the wizard and returns to the planning widget.
 //   - {Function|null} onFinished - Runs after the quarter's plan note has been published, before the wizard
 //     closes or navigates away. Done and View Quarterly Plan call it; Cancel, Escape, and the backdrop do not.
+//   - {Function|null} onDone - Runs once Done has closed the wizard on a finished plan. View Quarterly Plan, which
+//     leaves the Dashboard, and Cancel, Escape, and the backdrop do not call it.
 //   - {Function|null} onOpenSettings - Leaves the wizard for Dashboard Settings, so a user with no AI provider
 //     can add an API key. Null where no caller can open settings, which leaves the gate without its link.
 //   - {number} quarter - Quarter being planned, 1 through 4.
 //   - {number} year - Planning year.
 // @returns {JSX.Element} The wizard.
-export default function PlanWizard({ app, domainName = null, domainUuid = null, onClose, onFinished = null,
+export default function PlanWizard({ app, domainName = null, domainUuid = null, onClose, onDone = null, onFinished = null,
     onOpenSettings = null, quarter, year }) {
   const { consolidateProspects, discoverProspects, discoveryFailureReason, error, intentReading, isConsolidating,
     isDiscovering, isLoading, isLoadingProjectSources, isPublishing, isRefreshing, isSaving, loadProjectSources,
@@ -287,11 +289,12 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   };
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Close the wizard from Done. A finish hook publishes first and can keep the wizard open by throwing,
-  //   so a copy that failed does not look like the plan was completed.
+  // @desc Close the wizard from Done, then tell the caller through onDone. A finish hook publishes first and can keep
+  //   the wizard open by throwing, so a copy that failed does not look like the plan was completed.
   const closeFinishedWizard = async () => {
     if (!onFinished) {
       onClose();
+      onDone?.();
       return;
     }
     setIsOpeningPlanNote(true);
@@ -299,6 +302,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
     try {
       await publishFinishedPlan();
       onClose();
+      onDone?.();
     } catch (finishError) {
       setPlanNoteError(finishError);
     } finally {
