@@ -16,7 +16,7 @@ takeaways note.
 
 Nothing imports these modules yet, so the retrospective is unreachable in the app.
 
-Phases 3 and 4 are committed. Phase 5 (gathering) is built and uncommitted. Phases 6–10 are not started.
+Phases 3–5 are committed. Phase 6 (month digests) is built and uncommitted. Phases 7–10 are not started.
 
 ## Goal
 
@@ -191,23 +191,47 @@ shows ("Reading the notes behind 229 completed tasks…").
 - **Tests:** `quarter-retrospective-gathering.test.js` and the statistics tests. Checked in the dev dashboard:
   regenerating Q3 2026 Data showed the progress labels and the streak slide.
 
-### Phase 6 — Month digests and theme inference (LLM)
+### Phase 6 — Month digests and theme inference (built)
 
-Run three month calls in parallel through `amplenoteLlmPrompt` with `jsonResponse` and `timeoutSeconds: 150`.
+`digestRetrospectiveMonths` (`retrospective-month-digests.js`) runs after gathering, for every style. Prompts go
+through `raceWizardPrompt` (callLLM raced against the user's own provider) with `timeoutSeconds: 150` and source
+`quarter-retrospective`, at most four at a time.
 
-- **Each call sends:**
-  - that month's completed tasks: text, footnote text truncated per task, note name, tags, project, minutes,
-    Victory Value;
-  - that month's calendar events.
-- **Each call returns:**
-  `{ highlights: [{ taskUuids, summary }], themes: [{ name, taskUuids }], notableMoments, mood, imageCandidates: [url] }`.
-- **When no projects were found,** a fourth call merges the three months' themes into 3–7 inferred projects, each
-  with its task UUIDs, and those flow into `## Projects` marked `derivedFrom: "themes"`.
-- **Batching.** If a month is too large for one prompt, split it by week and merge the results locally. The prompt
-  builder caps characters so long quarters stay bounded.
-- **Calendar events are categorized locally first** (recurring 1:1s, team meetings, external, focus blocks, personal)
-  from title keywords and attendee counts. The LLM only names and narrates categories, which keeps the payload small.
-- **Tests:** prompt sizing and splitting, response validation, theme merge mapping each task to one theme.
+- **Each prompt sends** the month's tasks as one JSON line each: a short id (`t12`), day, text, note name, tags,
+  project, minutes (only when set), Victory Value, important, footnote text cut to 240 characters with images
+  removed, and attached images as short ids (`i3`) with alt text. The month's calendar categories go with the first
+  part only.
+- **Each reply** is `{ highlights: [{ summary, taskIds }], themes: [{ name, taskIds }], notableMoments, mood,
+  imageIds, calendarNarrative }`.
+  - Validation keeps only ids the prompt offered. A highlight or theme citing none is dropped; a task stays in the
+    first theme that claims it. A reply with no grounded highlight or theme counts as no reply.
+- **Stored in `## Month N`** as `{ calendar, failedPartCount, generatedBy, highlights, imageUrls, monthName,
+  monthNumber, mood, notableMoments, omittedTaskCount, partCount, taskCount, themes, version }`, with ids mapped back
+  to task UUIDs and image URLs.
+- **Batching.** A month's tasks are packed into prompts of at most 40,000 characters, keeping whole weeks together
+  and splitting a week only when it alone is too large. Parts merge locally: themes of one name join, and highlights,
+  moments, and images keep part order. Over four parts, footnotes are dropped; still over, the most valuable tasks
+  (important first, then Victory Value) are kept and the rest counted in `omittedTaskCount`.
+- **Without an AI**, or when every part fails, a month gets a fallback digest: its three most valuable tasks as
+  highlights and its ledger projects as themes. `generatedBy` says which.
+- **Theme inference.** When the quarter has no projects, one more call merges the months' themes into 3–7 projects,
+  each task in the first project that claims one of its themes. A failed call falls back to themes merged by name.
+  Inferred projects go to `## Projects` as `derivedFrom: "themes"` with their `taskUuids`. Statistics are computed
+  again with them: completions the ledger left without a project are credited to them for the project rankings, and
+  `intentAlignmentPercent` still comes from the ledger alone.
+- **Reuse.** A generation reads the quarter's newest data note in another style and reuses each month digest that
+  the AI wrote from the same task count, with the calendar included the same way. When every month is reused, its
+  inferred projects are reused too. Generating the same style again asks afresh.
+- **Calendar categories** (`retrospective-calendar-categories.js`) replace phase 5's attendee-count categories:
+  Personal (title keywords), Focus blocks (no attendees), External meetings (title keywords such as customer,
+  candidate, demo), 1:1s, Team meetings (2–5), and Large meetings (6+). Each also counts recurring events (a title on
+  three or more days) and keeps its five most frequent titles for the prompt.
+- **Slides.** The Data style gains a month-by-month slide: each month's first highlight beside its task count from
+  the statistics. Project captions say "Projects inferred from your tasks." when they are.
+- **Tests:** `quarter-retrospective-month-digests.test.js`, plus the gathering, statistics, and data note tests.
+  Checked in the dev dashboard: three month calls and the theme merge answered in about 15 seconds, and the story
+  grew to ten slides with the month-by-month slide and inferred project rankings. The dev quarter's tasks are eight
+  repeating habits, so its highlights were generic. A real quarter should be checked for specific highlights.
 
 ### Phase 7 — Story generation per style
 
@@ -318,11 +342,20 @@ These are candidates, not commitments:
 
 ## Still to verify
 
-- Whether `getCompletedTasks` returns task content with Rich Footnote definitions inline. Phase 5 handles both
-  cases, but reading notes for footnotes costs a `getNoteContent` per note when definitions aren't inline.
-- Whether `findNote({ uuid })` returns `tags` on the host (phase 5 reads them for note tags).
 - Whether the embed can play audio from its opaque `data:` origin (phase 8).
 - Whether Amplenote image URLs from footnotes load inside the embed without extra authentication (phase 7).
+
+## Verified on the host
+
+Checked with a plugin query on 2026-10-26, against a domain with 758 completed tasks from Q3 2026:
+
+- `getCompletedTasks` returns each task's Rich Footnote definitions inline in `content`: all 64 tasks that cite a
+  footnote also define it. Phase 5 therefore resolves footnotes from the task alone. Its note-content fallback
+  stays as a safeguard but shouldn't fire.
+- `findNote({ uuid })` returns `tags`, along with `name`, `created`, `updated`, `active`, `published` and `shared`.
+- `getCompletedTasks` also returns dismissed tasks. They carry `dismissedAt` and no `completedAt`, and
+  `isGenuinelyCompleted` already leaves them out. A completed task has the same fields, with `completedAt` in place of
+  `dismissedAt`.
 
 ## Sources
 

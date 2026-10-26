@@ -99,8 +99,8 @@ describe("retrospective data note", () => {
 
 describe("retrospective generation", () => {
   // ----------------------------------------------------------------------------------------------
-  // @desc Generating the Data style records its statistics, projects, media, and story, and saved retrospectives list it
-  //   with its slides.
+  // @desc Generating the Data style records its statistics, projects, month digests, media, and story, and saved
+  //   retrospectives list it with its slides.
   it("records a generated Data retrospective and finds it again", async () => {
     const completedAt = Math.floor(new Date(2026, 7, 12, 15).getTime() / 1000);
     const app = retrospectiveApp([{ completedAt, content: "Ship the dashboard", uuid: "task-1", victoryValue: 5 }]);
@@ -108,7 +108,7 @@ describe("retrospective generation", () => {
     expect(generated.noteUuid).toBeTruthy();
     expect(generated.slides.length).toBeGreaterThan(0);
     const headingTexts = guideHeadingRanges(app.noteContent(DATA_NOTE_NAME)).map(heading => heading.text);
-    expect(headingTexts).toEqual(["Request", "Statistics", "Projects", "Media", "Story"]);
+    expect(headingTexts).toEqual(["Request", "Statistics", "Projects", "Month 1", "Month 2", "Month 3", "Media", "Story"]);
 
     const saved = await savedRetrospectives(app, REQUEST);
     expect(saved.map(retrospective => retrospective.style)).toEqual(["data"]);

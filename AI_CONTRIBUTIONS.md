@@ -5,6 +5,24 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-26 — Quarter Retrospective month digests and theme inference (phase 6)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-month-digests.js` (new) — asks the AI to digest each month (highlights, themes, notable moments, mood, images, calendar narrative) with short task and image identifiers; packs a month's tasks into prompts of at most 40,000 characters by whole weeks, dropping footnotes and then the least valuable tasks when a month needs more than four prompts; validates replies against the ids offered; merges a split month's parts; infers 3–7 projects from the months' themes with each task in one project; builds a plain digest when no AI answers; reuses digests from another style's generation when a month's task count is unchanged.
+- `lib/dashboard/quarter-retrospective/retrospective-calendar-categories.js` (new) — sorts calendar events into Personal, Focus blocks, External meetings, 1:1s, Team meetings, and Large meetings from title keywords and attendee counts, counting recurring titles and sampling frequent ones. Replaces the attendee-count categories in `retrospective-task-evidence.js`.
+- `lib/util/concurrency.js` (new) — `forEachWithConcurrency`, moved out of `retrospective-data.js`.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` — runs the digests through `raceWizardPrompt` with a 150-second timeout, recomputes statistics with inferred projects, and records Month 1–3 and inferred projects.
+- `lib/dashboard/quarter-retrospective/retrospective-statistics.js` — credits completions to inferred projects for the project rankings, leaving intent alignment to the ledger; adds `projectsInferred`.
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js` — month-by-month slide from the digests; project captions note inferred projects.
+- `lib/dashboard/quarter-retrospective/retrospective-data.js` — returns the statistics inputs so statistics can be recomputed.
+- `test/quarter-retrospective-month-digests.test.js` (new); gathering, statistics, and data note tests updated.
+- `doc/plan-quarter-retrospective.md` — phase 6 marked built.
+
+**Task:** Phase 6 of the Quarter Retrospective plan.
+
+---
+
 ## 2026-10-26 — Quarter Retrospective gathering (phase 5)
 
 **Model:** Claude Opus 5.5

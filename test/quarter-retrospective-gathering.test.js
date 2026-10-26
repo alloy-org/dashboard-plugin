@@ -1,11 +1,12 @@
 // Verify how a Quarter Retrospective gathers its quarter: footnote text and images resolved from a task or, failing
 // that, its note; images other than http(s) pictures left out; tasks still open at quarter end counted per project
-// from the tasks open now and those completed since; meeting time divided by attendee count; and the gatherer joining
-// it all, reporting each step and recording the sections in the data note.
+// from the tasks open now and those completed since; meeting time divided by title and attendee count; and the
+// gatherer joining it all, reporting each step and recording the sections in the data note.
 import { jest } from "@jest/globals";
 import { gatherRetrospectiveQuarter } from "dashboard/quarter-retrospective/retrospective-data";
+import { meetingMinutesByCategory } from "dashboard/quarter-retrospective/retrospective-calendar-categories";
 import { generateRetrospective } from "dashboard/quarter-retrospective/retrospective-generation";
-import { markdownImages, meetingMinutesByCategory, openAtQuarterEndByProject, taskFootnoteEvidence,
+import { markdownImages, openAtQuarterEndByProject, taskFootnoteEvidence,
   taskNeedsNoteFootnotes } from "dashboard/quarter-retrospective/retrospective-task-evidence";
 import { guideHeadingRanges } from "plan-wizard/vision-guide-markdown";
 import { maintenanceApp } from "./project-maintenance-test-app";
@@ -62,13 +63,22 @@ describe("retrospective task evidence", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Timed events divide by attendee count; all-day events don't count.
+  // @desc Titles mark personal and external events; the rest divide by attendee count, a title seen on three days
+  //   counts as recurring, and all-day events don't count.
   it("divides meeting time by kind of meeting", () => {
-    const event = (attendeeCount, startHour, endHour, allDay = false) => ({ allDay, attendeeCount,
-      end: `2026-07-30T${ endHour }:00:00.000Z`, start: `2026-07-30T${ startHour }:00:00.000Z` });
-    const days = new Map([["2026-07-30", { events: [event(0, "09", "11"), event(1, "12", "13"), event(3, "14", "15"), event(2, "00", "23", true)] }]]);
-    expect(meetingMinutesByCategory(days)).toEqual([{ category: "Solo blocks", eventCount: 1, minutes: 120 },
-      { category: "1:1s", eventCount: 1, minutes: 60 }, { category: "Small meetings", eventCount: 1, minutes: 60 }]);
+    const event = (dateKey, attendeeCount, title, startHour, endHour, allDay = false) => ({ allDay, attendeeCount, title,
+      end: `${ dateKey }T${ endHour }:00:00.000Z`, start: `${ dateKey }T${ startHour }:00:00.000Z` });
+    const days = new Map([
+      ["2026-07-28", { events: [event("2026-07-28", 1, "Weekly sync", "12", "13")] }],
+      ["2026-07-29", { events: [event("2026-07-29", 1, "Weekly sync", "12", "13"), event("2026-07-29", 0, "Dentist", "15", "16")] }],
+      ["2026-07-30", { events: [event("2026-07-30", 0, "Deep work", "09", "11"), event("2026-07-30", 1, "weekly  sync", "12", "13"),
+        event("2026-07-30", 3, "Customer demo", "14", "15"), event("2026-07-30", 4, "Planning", "16", "17"), event("2026-07-30", 2, "Offsite", "00", "23", true)] }]]);
+    expect(meetingMinutesByCategory(days)).toEqual([
+      { category: "1:1s", eventCount: 3, minutes: 180, recurringEventCount: 3, sampleTitles: ["Weekly sync"] },
+      { category: "Focus blocks", eventCount: 1, minutes: 120, recurringEventCount: 0, sampleTitles: ["Deep work"] },
+      { category: "Personal", eventCount: 1, minutes: 60, recurringEventCount: 0, sampleTitles: ["Dentist"] },
+      { category: "External meetings", eventCount: 1, minutes: 60, recurringEventCount: 0, sampleTitles: ["Customer demo"] },
+      { category: "Team meetings", eventCount: 1, minutes: 60, recurringEventCount: 0, sampleTitles: ["Planning"] }]);
   });
 });
 
@@ -127,6 +137,6 @@ describe("gatherRetrospectiveQuarter", () => {
     const request = { ...SCOPE, options: { includeCalendar: true }, style: "data" };
     await generateRetrospective(app, request);
     const headingTexts = guideHeadingRanges(app.noteContent("Work Q3 2026 Data Retrospective Data")).map(heading => heading.text);
-    expect(headingTexts).toEqual(["Request", "Statistics", "Projects", "Calendar", "Media", "Story"]);
+    expect(headingTexts).toEqual(["Request", "Statistics", "Projects", "Month 1", "Month 2", "Month 3", "Calendar", "Media", "Story"]);
   });
 });

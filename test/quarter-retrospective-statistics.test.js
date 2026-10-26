@@ -68,7 +68,7 @@ describe("retrospectiveStatistics", () => {
     expect(statistics.longestStreak).toEqual({ days: 3, endDateKey: "2026-08-01", startDateKey: "2026-07-30" });
     expect(statistics.firstAndLastCompletion).toEqual({ first: { dateKey: "2026-07-30", text: "Task a" },
       last: { dateKey: "2026-09-09", text: "Task d" } });
-    expect(statistics.meetingMinutesByCategory).toEqual([{ category: "1:1s", eventCount: 2, minutes: 60 },
+    expect(statistics.meetingMinutesByCategory).toMatchObject([{ category: "1:1s", eventCount: 2, minutes: 60 },
       { category: "Large meetings", eventCount: 1, minutes: 30 }]);
     expect(retrospectiveStatistics({ completedTasks, entriesByDate, quarter: 3, year: 2026 }).meetingMinutesByCategory).toBeNull();
   });
