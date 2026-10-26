@@ -5,6 +5,26 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-26 — Quarter Retrospective entry point, data note, and options screen (phase 4)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-data-note.js` (new) — names, reads, and writes the archived `{domain} Q{q} {year} {Style} Retrospective Data` note. Each section holds one compact JSON fence with backticks escaped; a payload too large for one write continues in "(continued N)" sections, appended one write at a time. A single-part section can be replaced in place; "Generate new" starts the style's note over. Finds the quarter's saved styles, newest first.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` (new) — generates the Data style from the quarter's statistics and records Request, Statistics, and Story, still playing the story when the note can't be written; lists playable saved retrospectives; reads the quarter's calendar journal coverage.
+- `lib/dashboard/quarter-retrospective/retrospective-options.jsx` (new) — style cards (Roast and Spotify shown as coming soon) and the calendar toggle when the journal covers any of the quarter.
+- `lib/dashboard/quarter-retrospective/quarter-retrospective.jsx` (new) — the container: plays the newest saved retrospective or shows the options, with header links for Open plan note, the other saved styles, and Generate new.
+- `lib/dashboard/planning.jsx`, `lib/dashboard/styles/planning.scss` — every past quarter's card reads "✨ Retrospective" and opens it, with or without a plan note.
+- `lib/dashboard/quarter-retrospective/retrospective-overlay.jsx` — fixed its stylesheet import, which did not resolve from the subfolder and broke the build once the overlay was first imported.
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js` — adds the Spotify style.
+- `lib/dashboard/quarter-retrospective/calendar-history-journal.js`, `lib/plan-wizard/vision-guide-notes.js` — a newly created note is written through the identifier `findNote` resolves rather than the local one `createNote` returns; `resolvedNoteHandle` is exported for this.
+- `lib/dashboard/styles/quarter-retrospective.scss` — header links, options and status screens, style cards.
+- `test/quarter-retrospective-data-note.test.js`, `test/quarter-retrospective-entry.test.js` (new); `test/planning-quarter-pager.test.js` updated.
+- `doc/plan-quarter-retrospective.md` — phase 4 marked built.
+
+**Task:** Phase 4 of the Quarter Retrospective plan.
+
+---
+
 ## 2026-10-26 — Quarter Retrospective calendar history journal (phase 3)
 
 **Model:** Claude Opus 5.5

@@ -1,5 +1,6 @@
 // Side buttons on Quarterly Planning step one quarter at a time. The clock is frozen on 2 Oct 2026, so the
-// current quarter is Q4 and two steps back is the Q2–Q3 pair in the pager mock.
+// current quarter is Q4 and two steps back is the Q2–Q3 pair in the pager mock. A past quarter's card opens its
+// retrospective whether or not a plan was recorded.
 import { jest } from "@jest/globals";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
@@ -103,7 +104,7 @@ describe("PlanningWidget quarter pager", () => {
     expect(cardTitles(container)).toEqual(["Q3 2026 · Work", "Q4 2026 · Work"]);
     const [pastCard, currentCard] = container.querySelectorAll(".quarter-card");
     expect(pastCard.querySelector(".quarter-past-badge").textContent).toBe("Past");
-    expect(pastCard.querySelector(".quarter-status").textContent).toBe("📝 Open Plan");
+    expect(pastCard.querySelector(".quarter-status").textContent).toBe("✨ Retrospective");
     expect(pastCard.querySelector("input")).toBeNull();
     expect(currentCard.querySelector(".quarter-past-badge")).toBeNull();
     expect(currentCard.querySelector("input")).not.toBeNull();
@@ -111,19 +112,23 @@ describe("PlanningWidget quarter pager", () => {
     await cleanup();
   });
 
-  it("shows an unrecorded past quarter after a second step back, and returns to today", async () => {
+  it("opens an unrecorded past quarter's retrospective after a second step back, and returns to today", async () => {
     const { cleanup, container } = await renderPlanning();
     await clickAndSettle(container.querySelector("[aria-label='Show Q3 2026']"));
     await clickAndSettle(container.querySelector("[aria-label='Show Q2 2026']"));
 
     expect(cardTitles(container)).toEqual(["Q2 2026 · Work", "Q3 2026 · Work"]);
     const [unrecordedCard] = container.querySelectorAll(".quarter-card");
-    expect(unrecordedCard.querySelector(".quarter-status").textContent).toBe("No plan recorded");
+    expect(unrecordedCard.querySelector(".quarter-status").textContent).toBe("✨ Retrospective");
     expect(container.querySelector(".month-tab.active").textContent).toBe("Apr");
     expect(container.querySelector(".month-content-unrecorded").textContent).toBe("No plan was recorded for Q2 2026.");
 
     await clickAndSettle(unrecordedCard);
     expect(document.body.querySelector(".plan-wizard-page")).toBeNull();
+    expect(document.body.querySelector(".retrospective-options-headline").textContent).toBe("How should we tell Q2 2026?");
+    expect(document.body.querySelector(".retrospective-header-link")).toBeNull();
+    await clickAndSettle(document.body.querySelector(".retrospective-overlay-close"));
+    expect(document.body.querySelector(".quarter-retrospective-overlay")).toBeNull();
 
     await clickAndSettle(container.querySelector(".planning-return-quarter"));
     expect(cardTitles(container)).toEqual(["Q4 2026 · Work", "Q1 2027 · Work"]);

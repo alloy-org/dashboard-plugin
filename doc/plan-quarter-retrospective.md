@@ -16,7 +16,7 @@ takeaways note.
 
 Nothing imports these modules yet, so the retrospective is unreachable in the app.
 
-Phase 3 (calendar journal) is built and uncommitted. Phases 4–10 are not started.
+Phase 3 (calendar journal) is committed. Phase 4 (entry point) is built and uncommitted. Phases 5–10 are not started.
 
 ## Goal
 
@@ -133,16 +133,29 @@ they stay host-compatible, following CLAUDE.md §6.
   coverage (`{ coveredDays, totalDays }`) for copy such as "Calendar covers 41 of 92 days".
 - **Tests:** `test/calendar-history-journal.test.js`.
 
-### Phase 4 — Entry point, data notes, options screen
+### Phase 4 — Entry point, data notes, options screen (built)
 
-- `planning.jsx`: route past-quarter clicks to a new `<QuarterRetrospective>` container (`quarter-retrospective.jsx`)
-  rendered inside `RetrospectiveOverlay`. Keep "Open plan note" as a header link.
-- `retrospective-data-note.js`: find, read, and write the data note by section. Reuse `jsonPayloadMarkdown` /
-  `parseJsonPayload` from `vision-guide-markdown.js`, and the cap check from `replaceGuideSection`.
-- `retrospective-options.jsx`: the style cards and toggles.
-- With no LLM yet, choosing **Data** plays part 1's deterministic slides. This gives a working end-to-end path before
-  any LLM work lands.
-- **Tests:** past and unrecorded click routing, data note round-trip, section overflow splitting.
+- **Every past quarter's card** reads "✨ Retrospective" and opens `QuarterRetrospective`
+  (`quarter-retrospective.jsx`) in `RetrospectiveOverlay`, whether or not a plan note was recorded. The header holds
+  "Open plan note" when the quarter has one, "Play {Style}" for each other saved style, and "Generate new".
+- **`retrospective-data-note.js`** reads and writes the data note.
+  - Each section is one compact JSON fence, with backticks escaped as `\u0060` so task text can't close the fence.
+  - A payload larger than half the write limit continues in `## {Section} (continued N)` sections. Each one is
+    appended by its own write, which rewrites only the section before it.
+  - Sections are appended in the order a generation produces them. A single-part section, such as Takeaways, can be
+    replaced in place. "Generate new" starts the style's note over instead of rewriting multi-part sections.
+  - A newly created note is written through the identifier `findNote` resolves, not the local one `createNote`
+    returns. The completed task ledger still writes through the local one; see below.
+- **`retrospective-generation.js`** generates the Data style from part 1's statistics, writing Request, Statistics,
+  and Story. If the note can't be written, the story still plays. Roast and Spotify are refused until phase 7.
+- **`retrospective-options.jsx`** shows the three style cards, Roast and Spotify marked "Coming soon", and the calendar
+  toggle with "your calendar covers N of M days" when the journal covers any of the quarter. The images and music
+  toggles arrive with phases 5 and 8.
+- **Tests:** `quarter-retrospective-data-note.test.js`, `quarter-retrospective-entry.test.js`, and the pager test's
+  past-card routing. Checked in the dev dashboard: generating Data for Q3 2026, then reopening it.
+- **Follow-up:** `openCompletedTaskLedger` writes a new ledger through the identifier `createNote` returned. The plan
+  wizard's fixture models that identifier as one the host stops resolving, which would leave a new ledger empty
+  until the next run reseeds it. Worth confirming in the live app.
 
 ### Phase 5 — Gathering the quarter
 

@@ -117,21 +117,18 @@ $quarter-toggle-size: 26px;
     }
   }
 
-  .quarter-card--past:not(.quarter-card--unrecorded):not(.quarter-card--pending) {
+  .quarter-card--past:not(.quarter-card--pending) {
     background: $color-bg-page;
     border-style: solid;
   }
 
-  .quarter-card--pending,
-  .quarter-card--unrecorded {
+  .quarter-card--pending {
     background: transparent;
     border-style: dashed;
     cursor: default;
 
     &:hover { border-color: $color-border; }
   }
-
-  .quarter-card--unrecorded .quarter-status { color: $color-text-muted; }
 
   .quarter-card {
     .quarter-label-row {

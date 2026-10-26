@@ -3,7 +3,7 @@
 import { useSuspendWidgetMounting } from "hooks/use-widget-mount-suspension";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import "styles/quarter-retrospective.scss";
+import "dashboard/styles/quarter-retrospective.scss";
 
 // ----------------------------------------------------------------------------------------------
 // @desc Render the overlay into document.body, so no widget cell clips or stacks above it.

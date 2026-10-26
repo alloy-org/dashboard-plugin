@@ -10,6 +10,7 @@ import MonthFocusPlan, { MonthIntensityMeter } from "dashboard/month-focus-plan"
 import PlanWizard from "dashboard/plan-wizard/plan-wizard";
 import { quarterPageWindow, quarterPlanForPage, quartersMatch } from "dashboard/quarter-page";
 import QuarterPageButton from "dashboard/quarter-page-button";
+import QuarterRetrospective from "dashboard/quarter-retrospective/quarter-retrospective";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { useIdeaGenerationRun } from "hooks/use-idea-generation-run";
 import useQuarterPlanProgress, { quarterProgressKey } from "hooks/use-quarter-plan-progress";
@@ -103,10 +104,11 @@ async function handleCreateWeekPlan(app, plan, weekLabel, setWeekLoading, setWee
 // @desc One quarter's card. A card whose quarter has a plan note shows a checkbox, in the slot the plan's status
 //   emoji once held, deciding whether the plan feeds Goal Coach, Proposed Agenda, and calendar suggestions. Whether
 //   all three months are planned, which that emoji showed, now lives in the checkbox's tooltip. Clicks on the
-//   checkbox do not reach the card's own handler.
+//   checkbox do not reach the card's own handler. A past quarter's card opens its retrospective, whether or not a
+//   plan was recorded, since the quarter's completed tasks exist either way.
 // @param {object} props - An object with the following properties:
-//   - {boolean} isPast - The quarter has ended. A past card with no note does not offer to create one.
-//   - {Function} onCardClick - Opens the quarter's plan or Plan Builder.
+//   - {boolean} isPast - The quarter has ended. A past card never offers to create a plan.
+//   - {Function} onCardClick - Opens the quarter's retrospective, plan, or Plan Builder.
 //   - {Function} onSuggestionToggle - Receives the checkbox's new checked state.
 //   - {object} plan - The quarter's plan, carrying label, noteUUID, hasAllMonthlyDetails, domainName, and pending.
 //   - {boolean} [planBegun] - Plan Builder holds saved answers for the quarter. Without a plan note yet, the card
@@ -116,17 +118,15 @@ async function handleCreateWeekPlan(app, plan, weekLabel, setWeekLoading, setWee
 function QuarterCard({ isPast, onCardClick, onSuggestionToggle, plan, planBegun = false, usedForSuggestions }) {
   const hasNote = !!plan.noteUUID;
   const isPending = !!plan.pending;
-  const isUnrecorded = isPast && !hasNote && !isPending;
   const isInProgress = planBegun && !hasNote && !isPast && !isPending;
   const cardClassNames = ["quarter-card"];
   if ((hasNote || isInProgress) && !isPast) cardClassNames.push("quarter-card--has-plan");
   if (isPast) cardClassNames.push("quarter-card--past");
   if (isPending) cardClassNames.push("quarter-card--pending");
-  if (isUnrecorded) cardClassNames.push("quarter-card--unrecorded");
   const quarterTitle = plan.domainName ? `${ plan.label } · ${ plan.domainName }` : plan.label;
   let statusText = "+ Create Plan";
   if (isPending) statusText = "Loading…";
-  else if (isUnrecorded) statusText = "No plan recorded";
+  else if (isPast) statusText = "✨ Retrospective";
   else if (hasNote) statusText = "📝 Open Plan";
   else if (isInProgress) statusText = "✏️ Continue Plan";
   const showSuggestionToggle = hasNote && !isPast && !isPending;
@@ -138,7 +138,7 @@ function QuarterCard({ isPast, onCardClick, onSuggestionToggle, plan, planBegun 
     : 'Monthly details are missing for one or more months.';
 
   return (
-    <div className={ cardClassNames.join(" ") } onClick={ isPending || isUnrecorded ? undefined : onCardClick }>
+    <div className={ cardClassNames.join(" ") } onClick={ isPending ? undefined : onCardClick }>
       <div className="quarter-label-row">
         <span className="quarter-label">{ quarterTitle }</span>
         { isPast ? <span className="quarter-past-badge">Past</span> : null }
@@ -276,6 +276,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
     taskDomainName = null, taskDomainUUID = null }) {
   const [activeTab, setActiveTab] = useState(null);
   const [wizardPlan, setWizardPlan] = useState(null);
+  const [retrospectivePlan, setRetrospectivePlan] = useState(null);
   const [monthContent, setMonthContent] = useState(null);
   const [monthLoading, setMonthLoading] = useState(false);
   const [weekContent, setWeekContent] = useState(null);
@@ -573,10 +574,11 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   };
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Handle a click on either quarter card. A card opens that quarter's wizard, except in the last 15 days
-  //   of the quarter when the current quarter has no plan yet: an upcoming plan is copied in as this quarter's
-  //   note, and when neither quarter has a plan the wizard opens on the upcoming quarter and copies its note
-  //   back here once the user finishes. The fallback opens or creates the note when a card has no quarter.
+  // @desc Handle a click on either quarter card. A past quarter's card opens its retrospective. Any other card opens
+  //   that quarter's wizard, except in the last 15 days of the quarter when the current quarter has no plan yet: an
+  //   upcoming plan is copied in as this quarter's note, and when neither quarter has a plan the wizard opens on the
+  //   upcoming quarter and copies its note back here once the user finishes. The fallback opens or creates the note
+  //   when a card has no quarter.
   // @param {Object} plan - A quarterly plan card's plan, with the following properties:
   //   - {number|undefined} quarter - Quarter being planned, 1 through 4.
   //   - {number|undefined} year - Planning year.
@@ -584,7 +586,10 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   // @returns {Promise<void>} Resolves once the wizard has been opened, the plan copied, or the note handled.
   const handleQuarterCardClick = async (plan) => {
     if (plan.pending) return;
-    if (!plan.noteUUID && hasQuarterEnded({ quarter: plan.quarter, year: plan.year })) return;
+    if (plan.quarter && plan.year && hasQuarterEnded({ quarter: plan.quarter, year: plan.year })) {
+      setRetrospectivePlan(plan);
+      return;
+    }
     if (!(plan.quarter && plan.year)) {
       const result = await handleOpenPlan(app, plan);
       handleDevEdit(result);
@@ -680,6 +685,10 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
         />
       ) : null}
       {planWizardOverlay}
+      {retrospectivePlan ? (
+        <QuarterRetrospective app={ app } domainName={ taskDomainName || "All Notes" } domainUuid={ taskDomainUUID }
+          onClose={ () => setRetrospectivePlan(null) } plan={ retrospectivePlan } />
+      ) : null}
       {ideaRun.fallbackOpen && ideaRun.snapshot ? <IdeaRunProgressPopup app={ app } onClose={ ideaRun.closeFallback } snapshot={ ideaRun.snapshot } /> : null}
     </WidgetWrapper>
   );
