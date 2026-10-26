@@ -5,6 +5,33 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-26 — Quarter Retrospective calendar history journal (phase 3)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/calendar-history-journal.js` (new) — records each calendar read into an archived `{domain} Calendar History {year}` note, one `## YYYY-MM-DD` section per day, keeping titles, times, calendar names, and attendee counts but no attendee names. A later observation replaces a day, an empty read never erases recorded events, no journal is created for a calendar with no events, a window across New Year writes to both years, and a session skips re-reading when nothing changed. Also reads a date range back with its day coverage.
+- `lib/dashboard/dated-note-sections.js` (new) — the date-ordered day-section insertion, moved out of the completed task ledger so the journal can share it.
+- `lib/dashboard/projects/completed-task-project-ledger.js` — writes days through the shared module.
+- `lib/hooks/use-calendar-history-journal.js` (new) — records the Dashboard's calendar read for the active domain 20 seconds after it arrives.
+- `lib/hooks/use-external-calendar-events.js` — exports the four-day window length.
+- `lib/dashboard/dashboard.jsx` — mounts the journal hook.
+- `test/calendar-history-journal.test.js` (new).
+- `doc/plan-quarter-retrospective.md` — phase 3 marked built, with how it differs from the plan.
+
+**Task:** Phase 3 of the Quarter Retrospective plan.
+
+---
+
+## 2026-10-26 — Quarter Retrospective plan for the remaining phases
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `doc/plan-quarter-retrospective.md` (created) — phases 3–10 after the two committed parts: calendar journal, entry point and options screen, quarter gathering, month digests and theme inference, story generation per style, Spotify production, project payoff ranking feeding Plan Builder, and the takeaways note.
+
+**Task:** Extrapolate the rest of the Quarter Retrospective plan from Bill's description.
+
+---
+
 ## 2026-10-25 — Quarter Retrospective story player (part 2 of 5)
 
 **Model:** Claude Opus 5.5

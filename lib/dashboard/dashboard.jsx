@@ -25,6 +25,7 @@ import EnergyPerHabitWidget from 'energy-per-habit';
 import { gridCellFocusProps, useDashboardWidgetFocus, widgetConfigForFocus } from 'focus-widget';
 import GraveyardWidget from 'graveyard';
 import useBackgroundSwap, { BACKGROUND_FADE_ANIMATION_NAME, BACKGROUND_FADE_DURATION_MS } from 'hooks/use-background-swap';
+import useCalendarHistoryJournal from 'hooks/use-calendar-history-journal';
 import useCompletedTasks from 'hooks/use-completed-tasks';
 import useDashboardLayout from 'hooks/use-dashboard-layout';
 import useDashboardTaskUpdates from 'hooks/use-dashboard-task-updates';
@@ -450,6 +451,7 @@ export default function DashboardApp({ app, initPromise }) {
   const { completedTasksByDate, completedTasksLoaded, fetchCompletedTasks } = useCompletedTasks(app);
 
   const { calendarEvents, calendarEventsLoaded } = useExternalCalendarEvents(app, activeTaskDomain);
+  useCalendarHistoryJournal(app, { calendarEvents, domainName: activeTaskDomainName, domainUuid: activeTaskDomain });
   const [configParams, setConfigParams] = useState(null);
   const [currentDate, setCurrentDate] = useState(null);
   const [dailyVictoryValues, setDailyVictoryValues] = useState(null);
