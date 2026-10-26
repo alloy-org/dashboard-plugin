@@ -1,10 +1,11 @@
 // Quarter Retrospective statistics and slides: completions joined to the completed task ledger, project rankings,
-// important tasks, intent alignment, done and open tasks per project, the quarter's rhythm and meetings, and the slides
-// built from them.
+// important tasks, intent alignment, done and open tasks per project, the quarter's rhythm and meetings, the change
+// from the quarter before, and the slides built from them.
 import { jest } from "@jest/globals";
 import { gatherRetrospectiveQuarter } from "dashboard/quarter-retrospective/retrospective-data";
+import { quarterBefore } from "constants/quarters";
 import { formattedMinutes, slidesFromStatistics } from "dashboard/quarter-retrospective/retrospective-slides";
-import { retrospectiveStatistics, retrospectiveTaskText, scheduledMinutes } from "dashboard/quarter-retrospective/retrospective-statistics";
+import { quarterTotals, retrospectiveStatistics, retrospectiveTaskText, scheduledMinutes } from "dashboard/quarter-retrospective/retrospective-statistics";
 
 const HOUR_SECONDS = 60 * 60;
 
@@ -156,6 +157,43 @@ describe("slidesFromStatistics", () => {
     expect(slides.find(slide => slide.id === "intent").figure.value).toBe(50);
   });
 
+  // ----------------------------------------------------------------------------------------------
+  // @desc The Q3 statistics for ten tasks worth 40 Victory Value, compared with Q2's totals.
+  function comparedStatistics(previousTaskCount, previousVictoryValue) {
+    const completedTasks = Array.from({ length: 10 }, (unused, index) => completedTask(`t${ index }`, { day: index + 1, victoryValue: 4 }));
+    const previousQuarterTotals = { quarter: 2, totalTaskCount: previousTaskCount, totalVictoryValue: previousVictoryValue, year: 2026 };
+    return retrospectiveStatistics({ completedTasks, entriesByDate: new Map(), previousQuarterTotals, quarter: 3, year: 2026 });
+  }
+  const comparisonSlide = statistics => slidesFromStatistics(statistics).find(slide => slide.id === "previous-quarter") || null;
+
+  it("leads the comparison with the larger growth, right after the Victory Value total", () => {
+    const statistics = comparedStatistics(8, 25);
+    expect(statistics.quarterOverQuarter).toEqual({ previousQuarter: { quarter: 2, year: 2026 }, previousTaskCount: 8, previousVictoryValue: 25,
+      taskCountChangePercent: 25, victoryValueChangePercent: 60 });
+    const slideIds = slidesFromStatistics(statistics).map(slide => slide.id);
+    expect(slideIds.slice(0, 3)).toEqual(["intro", "victory-total", "previous-quarter"]);
+    const slide = comparisonSlide(statistics);
+    expect(slide).toMatchObject({ caption: "Up on Q2 2026 across the board.", figure: { prefix: "+", suffix: "%", value: 60 },
+      headline: "more Victory Value earned than Q2 2026", kicker: "Compared with Q2 2026" });
+    expect(slide.items).toEqual([{ label: "Tasks completed", value: "10 vs. 8" }, { label: "Victory Value", value: "40 vs. 25" }]);
+  });
+
+  it("still celebrates growth when the other total dipped a little", () => {
+    const slide = comparisonSlide(comparedStatistics(8, 42));
+    expect(slide).toMatchObject({ caption: "More checked off, each a lighter lift.", figure: { value: 25 }, headline: "more tasks completed than Q2 2026" });
+  });
+
+  it("frames a dip of ten percent or less as room to breathe", () => {
+    const slide = comparisonSlide(comparedStatistics(11, 44));
+    expect(slide).toMatchObject({ figure: null, headline: "Less intense, more room to breathe" });
+  });
+
+  it("skips the comparison when either total fell by more than ten percent, or the quarter before did nothing", () => {
+    expect(comparisonSlide(comparedStatistics(12, 30))).toBeNull();
+    expect(comparisonSlide(comparedStatistics(8, 50))).toBeNull();
+    expect(comparedStatistics(0, 0).quarterOverQuarter).toBeNull();
+  });
+
   it("gives an empty quarter a single slide", () => {
     const statistics = retrospectiveStatistics({ completedTasks: [], entriesByDate: new Map(), quarter: 3, year: 2026 });
     expect(slidesFromStatistics(statistics).map(slide => slide.id)).toEqual(["empty"]);
@@ -173,6 +211,31 @@ describe("gatherRetrospectiveQuarter", () => {
     expect(new Date(fromSeconds * 1000)).toEqual(new Date(2026, 6, 1));
     expect(toSeconds).toBeLessThanOrEqual(Math.floor(new Date(2026, 9, 1).getTime() / 1000));
     expect(options).toEqual({ taskDomainUUID: "domain-work" });
+  });
+
+  it("reads the quarter before's totals from its own tasks and ledger, and goes on without them", async () => {
+    const julySeconds = Math.floor(new Date(2026, 6, 1).getTime() / 1000);
+    const aprilTasks = [completedTask("q2-a", { month: 4, victoryValue: 1 }), completedTask("q2-b", { month: 5, victoryValue: 3 })];
+    const app = { filterNotes: jest.fn(async () => []), findNote: jest.fn(async () => null),
+      getCompletedTasks: jest.fn(async fromSeconds => (fromSeconds < julySeconds ? aprilTasks : [completedTask("a", { victoryValue: 6 })])) };
+    const { statistics } = await gatherRetrospectiveQuarter(app, { domainName: "Work", domainUuid: "domain-work", quarter: 3, year: 2026 });
+    expect(statistics.quarterOverQuarter).toMatchObject({ previousTaskCount: 2, previousVictoryValue: 4, taskCountChangePercent: -50,
+      victoryValueChangePercent: 50 });
+    expect(app.findNote).toHaveBeenCalledWith({ name: expect.stringContaining("Q2 2026") });
+
+    app.getCompletedTasks = jest.fn(async fromSeconds => {
+      if (fromSeconds < julySeconds) throw new Error("offline");
+      return [completedTask("a", { victoryValue: 6 })];
+    });
+    const withoutPrevious = await gatherRetrospectiveQuarter(app, { domainName: "Work", domainUuid: "domain-work", quarter: 3, year: 2026 });
+    expect(withoutPrevious.statistics.quarterOverQuarter).toBeNull();
+    expect(withoutPrevious.statistics.totalVictoryValue).toBe(6);
+  });
+
+  it("counts a quarter's totals and names the quarter before, across a year", () => {
+    expect(quarterTotals({ completedTasks: [completedTask("a", { victoryValue: 5 })], entriesByDate: new Map(), quarter: 3, year: 2026 }))
+      .toEqual({ quarter: 3, totalTaskCount: 1, totalVictoryValue: 5, year: 2026 });
+    expect(quarterBefore({ quarter: 1, year: 2027 })).toEqual({ label: "Q4 2026", quarter: 4, year: 2026 });
   });
 
   it("throws when completed tasks cannot be read", async () => {

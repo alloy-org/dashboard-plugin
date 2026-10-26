@@ -1,6 +1,7 @@
 // Completed tasks from the quarter before the current one, so the dev dashboard has a Quarter Retrospective to
 // generate. The tasks cluster around three themes, each kept in its own note, so the month digests and theme
-// inference have projects to find. Only the Node dev app imports this file, so it never reaches the production build.
+// inference have projects to find. A lighter version of the same work fills the quarter before that, so the
+// retrospective has a quarter to compare against. Only the Node dev app imports this file, so it never reaches the production build.
 
 // One note per theme. findNote falls back to these, since they have no markdown file in the dev notes directory.
 export const RETROSPECTIVE_NOTE_HANDLES = [
@@ -60,24 +61,42 @@ const RETROSPECTIVE_TASK_ROWS = [
   [MICROSOFT_NOTE, 2, 29, 10, "Deliver the final AI measurement readout", 9, 60, true],
 ];
 
+// Every fifth row is left out of the quarter before, and each kept row is worth one less Victory Value there.
+const EARLIER_QUARTER_SKIPPED_ROW_INTERVAL = 5;
+
 // ----------------------------------------------------------------------------------------------
-// @desc Build the fixture's completed tasks, dated within the quarter before the one containing nowSeconds, so the
-//   fixture always describes "last quarter" whenever the dev server starts. Each task was created a few days before
-//   it was completed, and a task with minutes was scheduled to end the hour it was completed in.
+// @desc Build the fixture's completed tasks: the full set dated within the quarter before the one containing
+//   nowSeconds, so the fixture always describes "last quarter" whenever the dev server starts, and a lighter set in the
+//   quarter before that, for the retrospective to compare with. Each task was created a few days before it was
+//   completed, and a task with minutes was scheduled to end the hour it was completed in.
 // @param {number} nowSeconds - The current time in Unix seconds.
 // @returns {Array<object>} Completed tasks in the shape getCompletedTasks returns.
 export function buildRetrospectiveTasks(nowSeconds) {
   const now = new Date(nowSeconds * 1000);
   const currentQuarterStartMonth = Math.floor(now.getMonth() / 3) * 3;
   const previousQuarterStart = new Date(now.getFullYear(), currentQuarterStartMonth - 3, 1);
-  const tasks = RETROSPECTIVE_TASK_ROWS.map((row, index) => {
-    const [noteUuid, monthOfQuarter, dayOfMonth, hour, content, victoryValue, minutes, important] = row;
-    const completedDate = new Date(previousQuarterStart.getFullYear(), previousQuarterStart.getMonth() + monthOfQuarter, dayOfMonth, hour, 30);
-    const completedAt = Math.floor(completedDate.getTime() / 1000);
-    const endAt = minutes ? completedAt : null;
-    const startAt = minutes ? completedAt - minutes * 60 : null;
-    return { completedAt, content, createdAt: completedAt - (3 + (index % 9)) * 86400, endAt, important,
-      noteUUID: noteUuid, startAt, uuid: `dev-retrospective-${ index + 1 }`, victoryValue };
-  });
-  return tasks;
+  const earlierQuarterStart = new Date(now.getFullYear(), currentQuarterStartMonth - 6, 1);
+  const previousQuarterTasks = RETROSPECTIVE_TASK_ROWS.map((row, index) => _fixtureTask(row, index, { quarterStart: previousQuarterStart,
+    uuidPrefix: "dev-retrospective", victoryValueOffset: 0 }));
+  const earlierRows = RETROSPECTIVE_TASK_ROWS.filter((row, index) => index % EARLIER_QUARTER_SKIPPED_ROW_INTERVAL !== 0);
+  const earlierQuarterTasks = earlierRows.map((row, index) => _fixtureTask(row, index, { quarterStart: earlierQuarterStart,
+    uuidPrefix: "dev-retrospective-earlier", victoryValueOffset: -1 }));
+  return [...earlierQuarterTasks, ...previousQuarterTasks];
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc One fixture row as a completed task within the quarter starting at quarterStart.
+// @param {Array} row - A RETROSPECTIVE_TASK_ROWS row.
+// @param {number} index - The row's position, which numbers the task's uuid and staggers its creation.
+// @param {object} options - { quarterStart, uuidPrefix, victoryValueOffset }; the offset is added to the row's Victory
+//   Value, which stays at least 1.
+// @returns {object} A completed task in the shape getCompletedTasks returns.
+function _fixtureTask(row, index, { quarterStart, uuidPrefix, victoryValueOffset }) {
+  const [noteUuid, monthOfQuarter, dayOfMonth, hour, content, victoryValue, minutes, important] = row;
+  const completedDate = new Date(quarterStart.getFullYear(), quarterStart.getMonth() + monthOfQuarter, dayOfMonth, hour, 30);
+  const completedAt = Math.floor(completedDate.getTime() / 1000);
+  const endAt = minutes ? completedAt : null;
+  const startAt = minutes ? completedAt - minutes * 60 : null;
+  return { completedAt, content, createdAt: completedAt - (3 + (index % 9)) * 86400, endAt, important, noteUUID: noteUuid, startAt,
+    uuid: `${ uuidPrefix }-${ index + 1 }`, victoryValue: Math.max(1, victoryValue + victoryValueOffset) };
 }

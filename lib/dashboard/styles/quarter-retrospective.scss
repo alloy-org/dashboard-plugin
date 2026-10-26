@@ -18,6 +18,11 @@ $retrospective-text-on-slide: #ffffff;
 $retrospective-text-on-slide-muted: rgba(255, 255, 255, 0.78);
 $retrospective-slide-rule: rgba(255, 255, 255, 0.22);
 $retrospective-segment-track: rgba(255, 255, 255, 0.32);
+$retrospective-control-height: 36px;
+$retrospective-control-background: rgba(0, 0, 0, 0.42);
+$retrospective-control-background-hover: rgba(0, 0, 0, 0.6);
+$retrospective-control-border: rgba(255, 255, 255, 0.6);
+$retrospective-choice-selected-background: rgba(255, 255, 255, 0.32);
 $retrospective-bar-height: 8px;
 $retrospective-bar-open: rgba(255, 255, 255, 0.32);
 $retrospective-timeline-height: 132px;
@@ -148,27 +153,42 @@ $retrospective-tones: (
     gap: $sp-sm;
   }
 
-  .retrospective-style-cards {
-    display: flex;
-    flex-direction: column;
-    gap: $sp-md;
-    margin-top: auto;
+  .retrospective-options-section-title {
+    color: $retrospective-text-on-slide-muted;
+    font-size: $smaller-font-size;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin: $sp-sm 0 0;
+    text-transform: uppercase;
   }
 
-  .retrospective-style-card {
+  .retrospective-choice-cards {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+  }
+
+  // The vibes are short enough to sit side by side.
+  .retrospective-choice-cards--row {
+    flex-direction: row;
+
+    .retrospective-choice-card { flex: 1; min-width: 0; }
+  }
+
+  .retrospective-choice-card {
     background: $retrospective-slide-rule;
-    border: 1px solid $retrospective-slide-rule;
+    border: 2px solid transparent;
     border-radius: $radius-md;
     color: $retrospective-text-on-slide;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     gap: $sp-xs;
-    padding: $sp-md $sp-lg;
+    padding: $sp-sm $sp-md;
     text-align: left;
-    transition: border-color 160ms, transform 160ms;
+    transition: border-color 160ms, background 160ms, transform 160ms;
 
-    &:hover:not(:disabled), &:focus-visible { border-color: $retrospective-text-on-slide; transform: translateY(-1px); }
+    &:hover:not(:disabled), &:focus-visible { border-color: $retrospective-control-border; transform: translateY(-1px); }
 
     &:disabled {
       cursor: default;
@@ -176,21 +196,46 @@ $retrospective-tones: (
     }
   }
 
-  .retrospective-style-card-title {
+  .retrospective-choice-card--selected {
+    background: $retrospective-choice-selected-background;
+    border-color: $retrospective-text-on-slide;
+
+    &:hover:not(:disabled), &:focus-visible { border-color: $retrospective-text-on-slide; }
+  }
+
+  .retrospective-choice-card-title {
     font-size: $large-font-size;
     font-weight: 700;
   }
 
-  .retrospective-style-card-description,
-  .retrospective-style-card-soon {
+  .retrospective-choice-card-description,
+  .retrospective-choice-card-soon {
     color: $retrospective-text-on-slide-muted;
     font-size: $smaller-font-size;
   }
 
-  .retrospective-style-card-soon {
+  .retrospective-choice-card-soon {
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
+  }
+
+  .retrospective-options-generate {
+    background: $retrospective-text-on-slide;
+    border: 0;
+    border-radius: $retrospective-control-height;
+    color: list.nth(map.get($retrospective-tones, 'intro'), 1);
+    cursor: pointer;
+    flex-shrink: 0;
+    font-size: $large-font-size;
+    font-weight: 700;
+    margin-top: auto;
+    min-height: 44px;
+    padding: $sp-sm $sp-lg;
+    transition: transform 160ms;
+
+    &:hover, &:focus-visible { transform: translateY(-1px); }
+    &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: 3px; }
   }
 
   .retrospective-story {
@@ -253,12 +298,35 @@ $retrospective-tones: (
     z-index: 2;
   }
 
+  // A pill with a solid scrim and an outline, so it reads as a button over any slide's gradient or photo.
   .retrospective-story-control {
-    background: $retrospective-slide-rule;
-    border: 0;
-    border-radius: $radius-sm;
+    background: $retrospective-control-background;
+    border: 1px solid $retrospective-control-border;
+    border-radius: $retrospective-control-height;
     color: $retrospective-text-on-slide;
     cursor: pointer;
+    font-weight: 600;
+    min-height: $retrospective-control-height;
+    padding: $sp-xs $sp-lg;
+
+    &:hover { background: $retrospective-control-background-hover; }
+    &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: 2px; }
+  }
+
+  .retrospective-story-hint {
+    flex: 1;
+    font-size: 0.8em;
+    padding: 0 $sp-sm;
+    text-align: right;
+  }
+
+  // Sits in the footer beside the Play button while the story is paused.
+  .retrospective-story-paused-badge {
+    background: $retrospective-control-background;
+    border-radius: $retrospective-control-height;
+    color: $retrospective-text-on-slide;
+    font-weight: 600;
+    margin: 0 $sp-sm 0 auto;
     padding: $sp-xs $sp-md;
   }
 

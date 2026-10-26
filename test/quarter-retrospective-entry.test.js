@@ -1,4 +1,4 @@
-// Quarter Retrospective container: a quarter with nothing generated shows the options screen, choosing Data generates
+// Quarter Retrospective container: a quarter with nothing generated shows the options screen, choosing Data and a vibe generates
 // and plays the story, reopening plays the saved story straight away, and the header links open the plan note and
 // return to the styles.
 import { jest } from "@jest/globals";
@@ -74,10 +74,24 @@ describe("QuarterRetrospective", () => {
     const app = retrospectiveApp();
     await renderRetrospective(app);
     const cards = [...document.body.querySelectorAll(".retrospective-style-card")];
-    expect(cards.map(card => card.querySelector(".retrospective-style-card-title").textContent)).toEqual(["Data", "Roast", "Spotify"]);
+    const vibeCards = [...document.body.querySelectorAll(".retrospective-vibe-card")];
+    const titles = elements => elements.map(card => card.querySelector(".retrospective-choice-card-title").textContent);
+    const checked = elements => elements.map(card => card.getAttribute("aria-checked"));
+    expect(titles(cards)).toEqual(["Data", "Roast", "Spotify"]);
     expect(cards.map(card => card.disabled)).toEqual([false, false, false]);
+    expect(checked(cards)).toEqual(["false", "false", "true"]);
+    expect(titles(vibeCards)).toEqual(["🌙 Chill", "🌆 Synthwave", "🏆 Anthem"]);
+    expect(checked(vibeCards)).toEqual(["true", "false", "false"]);
 
     await clickAndSettle(cards[0]);
+    await clickAndSettle(vibeCards[2]);
+    expect(checked(cards)).toEqual(["true", "false", "false"]);
+    expect(checked(vibeCards)).toEqual(["false", "false", "true"]);
+    expect(document.body.querySelector(".retrospective-story")).toBeNull();
+    const generateButton = document.body.querySelector(".retrospective-options-generate");
+    expect(generateButton.textContent).toBe("Generate Data retrospective");
+    await clickAndSettle(generateButton);
+    expect(app.noteContent("Work Q3 2026 Data Retrospective Data")).toContain('"soundtrackVibe":"anthem"');
     expect(document.body.querySelector(".retrospective-story")).not.toBeNull();
     expect(app.noteContent("Work Q3 2026 Data Retrospective Data")).toContain("## Story");
     expect(headerLink("Generate new")).toBeDefined();
@@ -87,7 +101,8 @@ describe("QuarterRetrospective", () => {
     mounted = null;
     await renderRetrospective(app);
     expect(document.body.querySelector(".retrospective-story")).not.toBeNull();
-    expect(app.getCompletedTasks).toHaveBeenCalledTimes(1);
+    // One generation reads the quarter and the quarter before it; reopening reads neither again.
+    expect(app.getCompletedTasks).toHaveBeenCalledTimes(2);
 
     await clickAndSettle(headerLink("Generate new"));
     expect(document.body.querySelector(".retrospective-options")).not.toBeNull();

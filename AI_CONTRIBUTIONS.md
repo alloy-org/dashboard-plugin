@@ -5,6 +5,38 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-26 — Plan Builder reconciles projects discovered after its first idle
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/hooks/use-project-task-ranking.js` — the reconciliation request is stamped with a new revision each time the provider returns idle, instead of once per mount, so a reconciliation that completed before discovery no longer makes the post-discovery request a no-op.
+- `test/project-maintenance-queue-hooks.test.js` — a second idle submits the same job key under a new revision.
+
+**Task:** Projects discovered in a fresh Plan Builder session showed no similarity scores on the Project evidence sources page.
+
+---
+
+## 2026-10-26 — Retrospective comparison with the quarter before, story pacing, options screen choices
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/constants/quarters.js` — `quarterBefore`, the counterpart of `quarterAfter`.
+- `lib/dashboard/quarter-retrospective/retrospective-data.js` — gathering also reads the quarter before's completed tasks and ledger, failing soft, and passes its totals to the statistics.
+- `lib/dashboard/quarter-retrospective/retrospective-statistics.js` — `quarterTotals`, and `quarterOverQuarter`: the previous totals and the percent change in tasks and Victory Value.
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js` — the `previous-quarter` slide: the larger growth as "+N%", a dip of 10% or less as "Less intense, more room to breathe", and no slide for a larger drop.
+- `lib/dashboard/quarter-retrospective/retrospective-story-writer.js` — a prompt rule for framing the comparison slide.
+- `lib/dashboard/quarter-retrospective/retrospective-story.jsx` — slides play 7.2 seconds instead of 6; a pause hint on the first slide, a "Paused" badge, and an accessible label on the Pause button.
+- `lib/dashboard/quarter-retrospective/retrospective-options.jsx` — style and soundtrack vibe (Chill, Synthwave, Anthem) as radio card groups with defaults, and a Generate button; the vibe goes in the request's options.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` — `RETROSPECTIVE_SOUNDTRACK_VIBES` and the default style and vibe.
+- `lib/dashboard/styles/quarter-retrospective.scss` — the choice cards, Generate button, Pause pill, hint, and badge.
+- `dev/dev-retrospective-tasks.js` — a lighter quarter before last, for the comparison.
+- `test/quarter-retrospective-statistics.test.js`, `test/quarter-retrospective-entry.test.js`, `test/quarter-retrospective-story.test.js` — comparison, options, and pause tests.
+- `doc/plan-quarter-retrospective.md` — the follow-ups to phase 7, the options screen flow, and the vibe in phase 8.
+
+**Task:** Compare a retrospective with the quarter before, slow the story and make pausing findable, and offer style and soundtrack choices before generating.
+
+---
+
 ## 2026-10-26 — Retrospective dev fixture, shared reduced-motion check, payoff ranking timing
 
 **Model:** Claude Opus 5.5

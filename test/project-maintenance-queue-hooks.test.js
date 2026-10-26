@@ -183,7 +183,8 @@ describe("project maintenance hooks", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Provider activity does not restart a legacy timer; repeated idle signals reuse the durable revision.
+  // @desc Provider activity does not restart a legacy timer. Each return to idle submits the same job under a new
+  //   revision, so projects a discovery pass added are reconciled even after an earlier reconciliation completed.
   //   Switching the selected quarter submits fresh work and releases the former scope.
   it("waits for provider idle and follows quarter changes without a once-per-mount guard", async () => {
     const { work } = fakeWork(SCOPE_KEY);
@@ -201,7 +202,9 @@ describe("project maintenance hooks", () => {
     jest.advanceTimersByTime(5000);
     isAwaitingProvider = false;
     await render();
-    expect(work.runtime.durable.submit.mock.calls[1][0]).toEqual(first);
+    const second = work.runtime.durable.submit.mock.calls[1][0];
+    expect(second.key).toBe(first.key);
+    expect(second.desiredRevision).not.toBe(first.desiredRevision);
     quarter = 2;
     await render();
     expect(work.runtime.scheduler.acceptsScope("work-domain:Q4 2026")).toBe(false);

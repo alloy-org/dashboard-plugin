@@ -1,10 +1,11 @@
 // Play the Quarter Retrospective's slides as a story: a segmented progress bar across the top, each slide advancing
 // on its own after a few seconds, a tap on the left or right side stepping back or ahead, pressing and holding to
-// pause, and the arrow keys and Space doing the same from the keyboard. The story stops on its last slide.
+// pause, and the arrow keys and Space doing the same from the keyboard. A Pause button in the footer, a hint beside it on
+// the first slide, and a badge there while paused make pausing easy to find. The story stops on its last slide.
 import RetrospectiveSlide from "dashboard/quarter-retrospective/retrospective-slide";
 import { useEffect, useRef, useState } from "react";
 
-export const SLIDE_MILLISECONDS = 6000;
+export const SLIDE_MILLISECONDS = 7200;
 export const STORY_TICK_MILLISECONDS = 50;
 // A press held longer than this pauses the story rather than counting as a tap.
 export const HOLD_MILLISECONDS = 250;
@@ -59,6 +60,8 @@ export default function RetrospectiveStory({ label, slides, slideMilliseconds = 
   const currentMilliseconds = slideMilliseconds * (Number(slides[index]?.durationFactor) || 1);
   const finished = index === lastIndex && elapsed >= currentMilliseconds;
   const paused = held || userPaused || finished;
+  const showPausedBadge = (held || userPaused) && !finished;
+  const showPauseHint = index === 0 && !paused;
 
   // @desc Show a slide from the start of its clock.
   const showSlide = nextIndex => {
@@ -125,10 +128,13 @@ export default function RetrospectiveStory({ label, slides, slideMilliseconds = 
         type="button" />
       <div className="retrospective-story-footer">
         <span className="retrospective-story-counter">{ `${ index + 1 } / ${ slides.length }` }</span>
+        { showPauseHint ? <span className="retrospective-story-hint">Hold anywhere or press Space to pause</span> : null }
+        { showPausedBadge ? <span aria-hidden="true" className="retrospective-story-paused-badge">❚❚ Paused</span> : null }
         { finished ? (
           <button className="retrospective-story-control" onClick={ () => goTo(0) } type="button">↺ Replay</button>
         ) : (
-          <button className="retrospective-story-control" onClick={ () => setUserPaused(previous => !previous) } type="button">
+          <button aria-label={ userPaused ? "Play story" : "Pause story" } className="retrospective-story-control"
+            onClick={ () => setUserPaused(previous => !previous) } type="button">
             { userPaused ? "▶ Play" : "❚❚ Pause" }
           </button>
         ) }

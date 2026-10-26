@@ -107,16 +107,22 @@ describe("RetrospectiveStory", () => {
     expect(counterText(container)).toBe("2 / 3");
   });
 
-  it("pauses with Space and the pause button", async () => {
+  it("pauses with Space and the pause button, hinting at it on the first slide and badging the pause", async () => {
     const container = await renderStory();
+    expect(container.querySelector(".retrospective-story-hint")).not.toBeNull();
+    expect(container.querySelector(".retrospective-story-paused-badge")).toBeNull();
     await pressKey(" ");
     await passTime(SLIDE_MILLISECONDS * 3);
     expect(counterText(container)).toBe("1 / 3");
     expect(container.querySelector(".retrospective-story-control").textContent).toBe("▶ Play");
+    expect(container.querySelector(".retrospective-story-paused-badge").textContent).toBe("❚❚ Paused");
+    expect(container.querySelector(".retrospective-story-hint")).toBeNull();
 
     await click(container.querySelector(".retrospective-story-control"));
     await passTime(SLIDE_MILLISECONDS + 100);
     expect(counterText(container)).toBe("2 / 3");
+    expect(container.querySelector(".retrospective-story-paused-badge")).toBeNull();
+    expect(container.querySelector(".retrospective-story-hint")).toBeNull();
   });
 
   it("holds while pressed, and letting go of a hold does not change slides", async () => {

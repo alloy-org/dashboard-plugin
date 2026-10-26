@@ -16,7 +16,7 @@ takeaways note.
 
 Nothing imports these modules yet, so the retrospective is unreachable in the app.
 
-Phases 3–6 are committed. Phase 7 (story generation per style) is built and uncommitted. Phases 8–10 are not started.
+Phases 3–7 are committed. The follow-ups to phase 7 below are built and uncommitted. Phases 8–10 are not started.
 
 ## Goal
 
@@ -63,11 +63,13 @@ These come from the API docs and the existing code. Each one changes a phase bel
    - **None found:** show the options screen.
    - **One or more found:** play the most recently generated (decided). A style switcher lists the others alongside
      "Generate new".
-3. **Options screen.** Three style cards: **Data**, **Roast**, **Spotify**. Below them sit a few toggles, each shown
-   only when it applies:
+3. **Options screen.** Three selectable style cards, **Data**, **Roast**, and **Spotify**, with Spotify chosen by
+   default, and three soundtrack vibe cards, **Chill**, **Synthwave**, and **Anthem**, with Chill chosen by default.
+   Below them sit a few toggles, each shown only when it applies:
    - include calendar events, when the journal covers the quarter;
-   - include images from my notes, when any were found;
-   - play music, for Spotify only.
+   - include images from my notes.
+
+   A **Generate** button starts generation; it is the click music can start from.
 4. **Processing screen,** about three minutes. A progress bar driven by `useElapsingProgress` targets 180 seconds,
    with step labels such as "Reading July's 212 completed tasks…". When projects were found, the payoff ranking
    (phase 9) appears here, so the wait becomes useful input instead of idle time.
@@ -288,6 +290,28 @@ through `raceWizardPrompt` (callLLM raced against the user's own provider) with 
 | **Roast** | The same facts, written as affectionate ribbing ("212 tasks and you still rescheduled 'Update résumé' 9 times"). Offered in every domain. Rules: never mock health, family, grief, money trouble, or other personal hardship, and keep the end card sincere. |
 | **Spotify** | "Your Top Project", plus a personality slide ("Your quarter's genre: Deep-Focus Builder"). Comparisons with other people, such as "top 3% of finishers", are ruled out: nothing is known about anyone else. High production per phase 8. |
 
+### Follow-ups to phase 7 (built)
+
+- **Compared with the quarter before.** Gathering also reads the quarter before's completed tasks and ledger, in the
+  same domain (`_previousQuarterTotals`, failing soft), and counts its tasks and Victory Value with `quarterTotals`.
+  `retrospectiveStatistics` adds `quarterOverQuarter`: the previous totals and each change as a whole percent, or null
+  when the quarter before completed nothing. The `previous-quarter` slide follows the Victory Value total:
+  - either total up: the larger growth leads as "+N%", with both totals listed as "this vs. that";
+  - neither up, neither down more than 10% (`SHOWN_DECLINE_PERCENT_LIMIT`): "Less intense, more room to breathe",
+    with no figure;
+  - either down more than 10%: no slide.
+
+  The Roast and Spotify prompt tells the AI to celebrate growth and to frame a lighter quarter as breathing room,
+  never as falling behind.
+- **Story pacing.** Slides play 7.2 seconds, 20% longer than before. The Pause button is an outlined pill; the first
+  slide shows "Hold anywhere or press Space to pause" beside it, and a "Paused" badge replaces the hint while paused.
+- **Options screen.** Style and soundtrack vibe are choices with defaults, and a Generate button starts the run, as the
+  flow above describes.
+- **Dev fixture.** `dev/dev-retrospective-tasks.js` also fills the quarter before last with a lighter version of the
+  same work, so the dev dashboard's Q3 2026 retrospective shows the comparison slide.
+- **Checked in the dev dashboard:** the options screen with both groups and their defaults; a Data generation of
+  Q3 2026 showing "+19% more Victory Value earned than Q2 2026"; the pause hint, button, and badge.
+
 ### Phase 8 — Spotify production values
 
 - **Backgrounds.**
@@ -303,7 +327,10 @@ through `raceWizardPrompt` (callLLM raced against the user's own provider) with 
     slide timing. It needs no licensing and no asset hosting.
   - **Deferred:** a licensed track. Pixabay's license allows use without attribution but restricts redistributing
     music files on their own, so read each track's license before hosting one.
-  - **Controls.** Playback starts from the style-choice click (a user gesture), with a mute button in the story
+  - **Vibes.** The options screen's soundtrack vibe (`chill`, `synthwave`, or `anthem`, from
+    `RETROSPECTIVE_SOUNDTRACK_VIBES`) is recorded in the Request section's `options.soundtrackVibe`. Each vibe is
+    its own pad, tempo, and beat.
+  - **Controls.** Playback starts from the Generate click (a user gesture), with a mute button in the story
     header. When `matchMedia('(prefers-reduced-motion)')` is set or the user mutes, the choice is remembered in a
     setting.
 - **Motion.** Slide transitions use scale and blur entrances. The kicker and figure come in with stagger, as part 2
