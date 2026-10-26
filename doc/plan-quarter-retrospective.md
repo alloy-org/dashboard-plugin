@@ -16,7 +16,8 @@ takeaways note.
 
 Nothing imports these modules yet, so the retrospective is unreachable in the app.
 
-Phases 3–7 are committed. The follow-ups to phase 7 below are built and uncommitted. Phases 8–10 are not started.
+Phases 3–7 and the follow-ups to phase 7 are committed. Phase 8's audio is built and uncommitted; its backgrounds and
+motion, and phases 9–10, are not started.
 
 ## Goal
 
@@ -324,17 +325,23 @@ through `raceWizardPrompt` (callLLM raced against the user's own provider) with 
     `SPLASH_IMAGE_BASE_URLS` in `lib/util/background-splash-images.js`. Unsplash serves them the way the splash images
     are served today.
   - **The user's own images** from Rich Footnotes appear on `image` slides.
-- **Audio.**
-  - **Decided:** a short, synthesized loop built with the Web Audio API — a pad and a simple beat whose tempo matches
-    slide timing. It needs no licensing and no asset hosting.
+- **Audio (built).**
+  - **Synthesized loop.** `retrospective-soundtrack.js` builds each vibe with the Web Audio API: a chord progression
+    on a detuned pad, a bass line, and a kick, snare and hi-hat made from oscillators and filtered noise. No asset is
+    downloaded or licensed. `RetrospectiveSoundtrack` schedules notes 120 ms ahead of the audio clock on a 25 ms timer.
+  - **Vibes.** `SOUNDTRACK_VIBE_ARRANGEMENTS` sets each vibe's progression, waveforms, patterns and bars per slide.
+    The tempo fits a whole number of bars into `SLIDE_MILLISECONDS`: Chill and Synthwave play 3 bars a slide (100 BPM)
+    and Anthem 4 (133 BPM). Chill and Synthwave share an A-minor progression; Anthem is in C major.
+  - **Starting.** The Play or Generate click on the options screen makes the audio context
+    (`createRetrospectiveAudioContext`), before anything awaits, so the browser counts it as the user's gesture. One
+    context serves the overlay until it closes. Without Web Audio the story plays silently and shows no sound button.
+  - **Following the story.** The loop pauses (suspending the context) when the user pauses the story, but not during
+    a hold. It fades out over 2.5 seconds after the last slide and starts again on Replay.
+  - **Mute.** "🔊 Sound on" / "🔇 Sound off" in the story header. The choice is saved in
+    `SETTING_KEYS.RETROSPECTIVE_SOUNDTRACK_MUTED`; until one is saved, the soundtrack starts muted when the viewer
+    prefers reduced motion.
   - **Deferred:** a licensed track. Pixabay's license allows use without attribution but restricts redistributing
     music files on their own, so read each track's license before hosting one.
-  - **Vibes.** The options screen's soundtrack vibe (`chill`, `synthwave`, or `anthem`, from
-    `RETROSPECTIVE_SOUNDTRACK_VIBES`) is recorded in the Request section's `options.soundtrackVibe`. Each vibe is
-    its own pad, tempo, and beat.
-  - **Controls.** Playback starts from the Generate click (a user gesture), with a mute button in the story
-    header. When `matchMedia('(prefers-reduced-motion)')` is set or the user mutes, the choice is remembered in a
-    setting.
 - **Motion.** Slide transitions use scale and blur entrances. The kicker and figure come in with stagger, as part 2
   already does.
 
@@ -398,7 +405,8 @@ These are candidates, not commitments:
 
 ## Still to verify
 
-- Whether the embed can play audio from its opaque `data:` origin (phase 8).
+- Whether the embed can play audio from its opaque `data:` origin (phase 8). It plays in the dev dashboard, which is
+  served over http; the embed in Amplenote, and the mobile apps' web views, are untried.
 - Whether Amplenote image URLs from footnotes load inside the embed without extra authentication (phase 7).
 
 ## Verified on the host

@@ -1,8 +1,10 @@
 // Play the Quarter Retrospective's slides as a story: a segmented progress bar across the top, each slide advancing
 // on its own after a few seconds, a tap on the left or right side stepping back or ahead, pressing and holding to
 // pause, and the arrow keys and Space doing the same from the keyboard. A Pause button in the footer, a hint beside it on
-// the first slide, and a badge there while paused make pausing easy to find. The story stops on its last slide.
+// the first slide, and a badge there while paused make pausing easy to find. The story stops on its last slide. Given an
+// audio context and a soundtrack vibe, it plays that vibe's loop, pausing with the story and fading out at its end.
 import RetrospectiveSlide from "dashboard/quarter-retrospective/retrospective-slide";
+import { RetrospectiveSoundtrack } from "dashboard/quarter-retrospective/retrospective-soundtrack";
 import { useEffect, useRef, useState } from "react";
 
 export const SLIDE_MILLISECONDS = 7200;
@@ -41,14 +43,54 @@ function useStoryClock({ elapsed, index, paused, setElapsed, showSlide, slideCou
 }
 
 // ----------------------------------------------------------------------------------------------
+// @desc Play the soundtrack for as long as the story is open: it pauses while the user has paused the story, fades out
+//   once the last slide ends, and starts again on Replay. Holding to pause leaves it playing, so a hold doesn't stutter.
+// @param {object} options - An object with the following properties:
+//   - {AudioContext|null} audioContext - Where the loop plays; null plays nothing
+//   - {boolean} finished - Whether the last slide has ended
+//   - {boolean} muted - Whether the loop is silenced
+//   - {number} slideMilliseconds - One slide's length, which sets the tempo
+//   - {string|null} soundtrackVibe - A RETROSPECTIVE_SOUNDTRACK_VIBES value; null plays nothing
+//   - {boolean} userPaused - Whether the user paused the story
+function useStorySoundtrack({ audioContext, finished, muted, slideMilliseconds, soundtrackVibe, userPaused }) {
+  const soundtrackRef = useRef(null);
+
+  useEffect(() => {
+    if (!audioContext || !soundtrackVibe) return undefined;
+    const soundtrack = new RetrospectiveSoundtrack({ audioContext, muted, slideMilliseconds, vibe: soundtrackVibe });
+    soundtrackRef.current = soundtrack;
+    return () => {
+      soundtrack.stop();
+      soundtrackRef.current = null;
+    };
+  }, [audioContext, slideMilliseconds, soundtrackVibe]);
+
+  useEffect(() => {
+    const soundtrack = soundtrackRef.current;
+    if (!soundtrack) return;
+    if (finished) soundtrack.fadeOut();
+    else if (userPaused) soundtrack.pause();
+    else soundtrack.play();
+  }, [audioContext, finished, slideMilliseconds, soundtrackVibe, userPaused]);
+
+  useEffect(() => {
+    soundtrackRef.current?.setMuted(muted);
+  }, [muted]);
+}
+
+// ----------------------------------------------------------------------------------------------
 // @desc The story player.
 // @param {object} props - An object with the following properties:
+//   - {AudioContext|null} [audioContext] - Where the soundtrack plays, made from a user's click; none plays no soundtrack
 //   - {string} label - Accessible name for the story, such as "Q3 2026 retrospective"
+//   - {boolean} [muted=false] - Whether the soundtrack is silenced
 //   - {Array<object>} slides - From slidesFromStatistics
 //   - {number} [slideMilliseconds=SLIDE_MILLISECONDS] - How long each slide shows before advancing, times the slide's
 //     durationFactor when it has one
+//   - {string|null} [soundtrackVibe] - A RETROSPECTIVE_SOUNDTRACK_VIBES value for the soundtrack
 // @returns {JSX.Element} The story.
-export default function RetrospectiveStory({ label, slides, slideMilliseconds = SLIDE_MILLISECONDS }) {
+export default function RetrospectiveStory({ audioContext = null, label, muted = false, slides, slideMilliseconds = SLIDE_MILLISECONDS,
+  soundtrackVibe = null }) {
   const [index, setIndex] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [held, setHeld] = useState(false);
@@ -75,6 +117,7 @@ export default function RetrospectiveStory({ label, slides, slideMilliseconds = 
   };
 
   useStoryClock({ elapsed, index, paused, setElapsed, showSlide, slideCount: slides.length, slideMilliseconds: currentMilliseconds });
+  useStorySoundtrack({ audioContext, finished, muted, slideMilliseconds, soundtrackVibe, userPaused });
 
   useEffect(() => {
     const handleKeyDown = event => {

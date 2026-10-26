@@ -1,7 +1,9 @@
-// Quarter Retrospective story player and overlay: auto-advance, tap and keyboard navigation, pausing, and closing.
+// Quarter Retrospective story player and overlay: auto-advance, tap and keyboard navigation, pausing, the soundtrack
+// following the story, and closing.
 import { jest } from "@jest/globals";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
+import { FakeAudioContext } from "./fake-audio-context";
 
 const { default: RetrospectiveOverlay } = await import("dashboard/quarter-retrospective/retrospective-overlay");
 const { default: RetrospectiveStory, HOLD_MILLISECONDS, STORY_TICK_MILLISECONDS } = await import("dashboard/quarter-retrospective/retrospective-story");
@@ -123,6 +125,32 @@ describe("RetrospectiveStory", () => {
     expect(counterText(container)).toBe("2 / 3");
     expect(container.querySelector(".retrospective-story-paused-badge")).toBeNull();
     expect(container.querySelector(".retrospective-story-hint")).toBeNull();
+  });
+
+  it("plays its soundtrack, suspending it on pause, fading it at the end, and starting it again on Replay", async () => {
+    const audioContext = new FakeAudioContext();
+    const container = await render(createElement(RetrospectiveStory, { audioContext, label: "Q3 2026 retrospective",
+      slideMilliseconds: SLIDE_MILLISECONDS, slides, soundtrackVibe: "synthwave" }));
+    const masterGain = audioContext.nodes.find(audioNode => audioNode.kind === "gain" && audioNode.connections.includes(audioContext.destination));
+    expect(audioContext.state).toBe("running");
+    expect(audioContext.startedSources.length).toBeGreaterThan(0);
+
+    await pressKey(" ");
+    expect(audioContext.state).toBe("suspended");
+    await pressKey(" ");
+    expect(audioContext.state).toBe("running");
+
+    await passTime(SLIDE_MILLISECONDS * slides.length);
+    expect(counterText(container)).toBe("3 / 3");
+    expect(masterGain.gain.value).toBe(0);
+    await passTime(3000);
+    expect(masterGain.disconnected).toBe(true);
+
+    await click(container.querySelector(".retrospective-story-control"));
+    const masterGains = audioContext.nodes.filter(audioNode => audioNode.kind === "gain" && audioNode.connections.includes(audioContext.destination));
+    const replayGain = masterGains[masterGains.length - 1];
+    expect(replayGain).not.toBe(masterGain);
+    expect(replayGain.disconnected).toBe(false);
   });
 
   it("holds while pressed, and letting go of a hold does not change slides", async () => {

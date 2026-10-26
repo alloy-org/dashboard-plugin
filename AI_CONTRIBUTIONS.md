@@ -5,6 +5,22 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-26 — Retrospective soundtrack synthesized per vibe, with a remembered mute
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-soundtrack.js` (new) — `RetrospectiveSoundtrack`, a Web Audio loop per soundtrack vibe (pad, bass, kick, snare, hi-hat) scheduled ahead of the audio clock, with play, pause, fade-out, mute and stop; `createRetrospectiveAudioContext`; `SOUNDTRACK_VIBE_ARRANGEMENTS`, whose tempos fit whole bars into a slide.
+- `lib/dashboard/quarter-retrospective/retrospective-story.jsx` — `useStorySoundtrack` plays the loop for an audio context and vibe, pausing with the user's pause, fading out after the last slide, and restarting on Replay.
+- `lib/dashboard/quarter-retrospective/quarter-retrospective.jsx` — makes the audio context in the Play or Generate click; a "Sound on/off" header button saved to a setting, defaulting to muted under reduced motion; closes the context with the overlay.
+- `lib/constants/settings.js` — `RETROSPECTIVE_SOUNDTRACK_MUTED`.
+- `test/fake-audio-context.js` (new) — an AudioContext stand-in for jsdom that records nodes and source starts.
+- `test/quarter-retrospective-soundtrack.test.js` (new), `test/quarter-retrospective-story.test.js`, `test/quarter-retrospective-entry.test.js` — tempo, scheduling, mute, pause, fade and restart; the story following its pause and end; the header button and its saved setting.
+- `doc/plan-quarter-retrospective.md` — phase 8's audio as built.
+
+**Task:** Phase 8 of the retrospective, audio first.
+
+---
+
 ## 2026-10-26 — Plan Builder reconciles projects discovered after its first idle
 
 **Model:** Claude Opus 5.5

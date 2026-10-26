@@ -1,13 +1,17 @@
 // Quarter Retrospective container: it always opens on the options screen, which offers the AI-written styles only with
 // an AI or a saved story, generates the chosen style with its soundtrack vibe, and plays a saved story without
-// generating again; the header links open the plan note and return to the options.
+// generating again; the header links open the plan note and return to the options. Where Web Audio exists, the story
+// plays its soundtrack from the click that started it, with a header button that mutes it and remembers the choice.
 import { jest } from "@jest/globals";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
+import { FakeAudioContext } from "./fake-audio-context";
 import { maintenanceApp } from "./project-maintenance-test-app";
 
 const { default: QuarterRetrospective } = await import("dashboard/quarter-retrospective/quarter-retrospective");
 const { generateRetrospective } = await import("dashboard/quarter-retrospective/retrospective-generation");
+const { SETTING_KEYS } = await import("constants/settings");
+const { pluginSettings, setPluginData } = await import("plugin-data");
 
 const PLAN = { label: "Q3 2026", noteUUID: "q3-plan-note", quarter: 3, year: 2026 };
 let mounted = null;
@@ -64,6 +68,9 @@ function headerLink(text) {
 }
 
 afterEach(async () => {
+  delete window.AudioContext;
+  FakeAudioContext.instances = [];
+  setPluginData({ settings: {} });
   if (!mounted) return;
   await act(async () => { mounted.root.unmount(); });
   mounted.mountPoint.remove();
@@ -134,6 +141,40 @@ describe("QuarterRetrospective", () => {
     expect(document.body.querySelector(".retrospective-options-secondary")).toBeNull();
     await clickAndSettle(primaryButton());
     expect(document.body.querySelector(".retrospective-story")).not.toBeNull();
+  });
+
+  it("plays the chosen vibe from the click that started the story, and remembers a mute", async () => {
+    window.AudioContext = FakeAudioContext;
+    const app = retrospectiveApp();
+    app.setSetting = jest.fn(async () => true);
+    await renderRetrospective(app);
+    expect(FakeAudioContext.instances).toHaveLength(0);
+    await clickAndSettle(vibeCards()[1]);
+    await clickAndSettle(primaryButton());
+    expect(FakeAudioContext.instances).toHaveLength(1);
+    const audioContext = FakeAudioContext.instances[0];
+    expect(audioContext.state).toBe("running");
+    expect(audioContext.startedSources.length).toBeGreaterThan(0);
+
+    const soundButton = () => document.body.querySelector(".retrospective-header-sound");
+    expect(soundButton().textContent).toBe("🔊 Sound on");
+    await clickAndSettle(soundButton());
+    expect(soundButton().textContent).toBe("🔇 Sound off");
+    expect(app.setSetting).toHaveBeenCalledWith(SETTING_KEYS.RETROSPECTIVE_SOUNDTRACK_MUTED, "true");
+    expect(pluginSettings()[SETTING_KEYS.RETROSPECTIVE_SOUNDTRACK_MUTED]).toBe("true");
+
+    await clickAndSettle(headerLink("Options"));
+    expect(soundButton()).toBeNull();
+    await clickAndSettle(primaryButton());
+    expect(FakeAudioContext.instances).toHaveLength(1);
+    expect(soundButton().textContent).toBe("🔇 Sound off");
+  });
+
+  it("shows no sound button where Web Audio is missing", async () => {
+    await renderRetrospective(retrospectiveApp());
+    await clickAndSettle(primaryButton());
+    expect(document.body.querySelector(".retrospective-story")).not.toBeNull();
+    expect(document.body.querySelector(".retrospective-header-sound")).toBeNull();
   });
 
   it("opens the plan note from the header and closes the retrospective", async () => {
