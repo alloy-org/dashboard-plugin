@@ -78,11 +78,13 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
     return () => { cancelled = true; };
   }, [app, domainName, plan.quarter, plan.year]);
 
-  // @desc Generate a style and play it, replacing any saved retrospective of the same style in the header's list.
+  // @desc Generate a style and play it, replacing any saved retrospective of the same style in the header's list. The
+  //   status screen names each step of the generation as it starts.
   const handleChoose = async (style, options) => {
-    setView({ kind: "generating" });
+    setView({ kind: "generating", message: `Reading ${ plan.label }'s completed tasks…` });
+    const onProgress = message => setView(previous => (previous.kind === "generating" ? { ...previous, message } : previous));
     try {
-      const retrospective = await generateRetrospective(app, { ...scope, domainUuid, options, style });
+      const retrospective = await generateRetrospective(app, { ...scope, domainUuid, options, style }, { onProgress });
       setSaved(previous => [retrospective, ...previous.filter(existing => existing.style !== style)]);
       setView({ kind: "story", retrospective });
     } catch (error) {
@@ -98,7 +100,7 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
 
   let body;
   if (view.kind === "loading") body = <RetrospectiveStatus message={ `Looking for ${ plan.label } retrospectives…` } />;
-  else if (view.kind === "generating") body = <RetrospectiveStatus message={ `Reading ${ plan.label }'s completed tasks…` } />;
+  else if (view.kind === "generating") body = <RetrospectiveStatus message={ view.message } />;
   else if (view.kind === "error") body = <RetrospectiveStatus message={ view.message } onRetry={ showOptions } />;
   else if (view.kind === "options") {
     body = <RetrospectiveOptions calendarCoverage={ calendarCoverage } onChoose={ handleChoose } quarterLabel={ plan.label } />;

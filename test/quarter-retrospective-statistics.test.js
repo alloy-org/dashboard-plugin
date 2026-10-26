@@ -1,7 +1,8 @@
 // Quarter Retrospective statistics and slides: completions joined to the completed task ledger, project rankings,
-// important tasks, intent alignment, and the slides built from them.
+// important tasks, intent alignment, done and open tasks per project, the quarter's rhythm and meetings, and the slides
+// built from them.
 import { jest } from "@jest/globals";
-import { loadRetrospectiveStatistics } from "dashboard/quarter-retrospective/retrospective-data";
+import { gatherRetrospectiveQuarter } from "dashboard/quarter-retrospective/retrospective-data";
 import { formattedMinutes, slidesFromStatistics } from "dashboard/quarter-retrospective/retrospective-slides";
 import { retrospectiveStatistics, retrospectiveTaskText, scheduledMinutes } from "dashboard/quarter-retrospective/retrospective-statistics";
 
@@ -43,8 +44,33 @@ describe("retrospectiveStatistics", () => {
     expect(statistics.totalVictoryValue).toBe(17);
     expect(statistics.leaders.byVictoryValue.map(project => project.name)).toEqual(["Launch the app", "Get fit"]);
     expect(statistics.leaders.byTaskCount.map(project => [project.name, project.taskCount])).toEqual([["Launch the app", 2], ["Get fit", 2]]);
-    expect(statistics.leaders.byMinutes).toEqual([{ minutes: 180, name: "Launch the app", taskCount: 2, victoryValue: 14 }]);
-    expect(statistics.totalMinutes).toBe(180);
+    expect(statistics.leaders.byMinutes).toEqual([{ minutes: 180, name: "Launch the app", taskCount: 2, victoryValue: 14 },
+      { minutes: 120, name: "Get fit", taskCount: 2, victoryValue: 3 }]);
+    expect(statistics.totalMinutes).toBe(300);
+    expect(statistics.defaultedDurationCount).toBe(2);
+  });
+
+  it("counts done and open tasks per project, the quarter's rhythm, and its meetings", () => {
+    const completedTasks = [completedTask("a", { day: 30 }), completedTask("b", { day: 31 }), completedTask("c", { day: 1, month: 8 }),
+      completedTask("d", { day: 9, month: 9 })];
+    const entriesByDate = new Map([["2026-07-30", [ledgerEntry("a", "2026-07-30", launch)]]]);
+    const stalled = { name: "Write the book", uuid: "project-book" };
+    const openCountByProject = new Map([[launch.uuid, 3], [stalled.uuid, 4], [fitness.uuid, 0]]);
+    const meeting = attendeeCount => ({ allDay: false, attendeeCount, end: "2026-07-30T15:00:00.000Z", start: "2026-07-30T14:30:00.000Z",
+      title: "Sync" });
+    const calendarDays = new Map([["2026-07-30", { events: [meeting(1), meeting(1), meeting(8), { ...meeting(3), allDay: true }] }]]);
+    const statistics = retrospectiveStatistics({ calendarDays, completedTasks, entriesByDate, openCountByProject,
+      projects: [launch, stalled, fitness], quarter: 3, year: 2026 });
+
+    expect(statistics.doneAndOpenByProject).toEqual([{ doneCount: 1, name: "Launch the app", openCount: 3, projectUuid: launch.uuid },
+      { doneCount: 0, name: "Write the book", openCount: 4, projectUuid: stalled.uuid }]);
+    expect(statistics.monthlyTaskCounts).toEqual([2, 1, 1]);
+    expect(statistics.longestStreak).toEqual({ days: 3, endDateKey: "2026-08-01", startDateKey: "2026-07-30" });
+    expect(statistics.firstAndLastCompletion).toEqual({ first: { dateKey: "2026-07-30", text: "Task a" },
+      last: { dateKey: "2026-09-09", text: "Task d" } });
+    expect(statistics.meetingMinutesByCategory).toEqual([{ category: "1:1s", eventCount: 2, minutes: 60 },
+      { category: "Large meetings", eventCount: 1, minutes: 30 }]);
+    expect(retrospectiveStatistics({ completedTasks, entriesByDate, quarter: 3, year: 2026 }).meetingMinutesByCategory).toBeNull();
   });
 
   it("counts work outside projects apart from work the ledger never sorted", () => {
@@ -134,11 +160,11 @@ describe("slidesFromStatistics", () => {
   });
 });
 
-describe("loadRetrospectiveStatistics", () => {
+describe("gatherRetrospectiveQuarter", () => {
   it("reads the domain's quarter of completions and survives a missing ledger and guide", async () => {
     const app = { filterNotes: jest.fn(async () => []), findNote: jest.fn(async () => null),
       getCompletedTasks: jest.fn(async () => [completedTask("a", { victoryValue: 2 })]) };
-    const statistics = await loadRetrospectiveStatistics(app, { domainName: "Work", domainUuid: "domain-work", quarter: 3, year: 2026 });
+    const { statistics } = await gatherRetrospectiveQuarter(app, { domainName: "Work", domainUuid: "domain-work", quarter: 3, year: 2026 });
 
     expect(statistics.totalVictoryValue).toBe(2);
     const [fromSeconds, toSeconds, options] = app.getCompletedTasks.mock.calls[0];
@@ -148,6 +174,6 @@ describe("loadRetrospectiveStatistics", () => {
   });
 
   it("throws when completed tasks cannot be read", async () => {
-    await expect(loadRetrospectiveStatistics({}, { domainName: null, domainUuid: null, quarter: 3, year: 2026 })).rejects.toThrow();
+    await expect(gatherRetrospectiveQuarter({}, { domainName: null, domainUuid: null, quarter: 3, year: 2026 })).rejects.toThrow();
   });
 });

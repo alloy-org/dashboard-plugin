@@ -16,7 +16,7 @@ takeaways note.
 
 Nothing imports these modules yet, so the retrospective is unreachable in the app.
 
-Phase 3 (calendar journal) is committed. Phase 4 (entry point) is built and uncommitted. Phases 5–10 are not started.
+Phases 3 and 4 are committed. Phase 5 (gathering) is built and uncommitted. Phases 6–10 are not started.
 
 ## Goal
 
@@ -157,34 +157,39 @@ they stay host-compatible, following CLAUDE.md §6.
   wizard's fixture models that identifier as one the host stops resolving, which would leave a new ledger empty
   until the next run reseeds it. Worth confirming in the live app.
 
-### Phase 5 — Gathering the quarter
+### Phase 5 — Gathering the quarter (built)
 
-Extend `loadRetrospectiveStatistics` into a gatherer that returns everything the LLM steps need:
+`gatherRetrospectiveQuarter` (`retrospective-data.js`) replaces `loadRetrospectiveStatistics`. Only the completed
+tasks are required; every other source fails soft. It reports each step through `onProgress`, which the status screen
+shows ("Reading the notes behind 229 completed tasks…").
 
-- **Completed tasks** from `app.getCompletedTasks`, as today. Each one also records:
-  - the full task content, including resolved Rich Footnotes (`parsedRichFootnotes`);
-  - image URLs found in those footnotes;
-  - its note's name and tags (`findNote({ uuid })`, cached per note).
-- **Duration default.** Duration falls back to **60 minutes** when a task has neither a span nor a duration. Today
-  `scheduledMinutes` returns 0 in that case. Add `defaultedDurationCount` so a slide can say "62 tasks had no length
-  set; we counted them as an hour each".
-- **Projects** from the ledger (`readCompletedTaskLedger`) and the quarter's Vision Guide prospects. When neither
-  yields any project, phase 6 infers themes.
-- **Open at quarter end, per project.** Use the project task store (`Project Tasks Q{q} {year} {domain}`) and
-  `getTaskDomainTasks`. Count tasks that were created before the quarter ended and were not completed by then.
-  - This is only as good as what the store collected, so the slide labels it "tasks we know of".
-  - Ledger entries give the done side.
-- **Calendar events** for the quarter from the journal.
-- Statistics gain:
-  - `doneAndOpenByProject`;
-  - `monthlyTaskCounts`;
-  - `longestStreak` (consecutive days with a completion);
-  - `firstAndLastCompletion`;
-  - `meetingMinutesByCategory`, when calendar data exists.
-- **Tests:** duration default, open-at-quarter-end counting, footnote image extraction from task content.
-
-**Verify early:** check that `getCompletedTasks` returns task content with footnote definitions inline. If it
-returns only the reference, the footnotes have to be read from the task's note.
+- **Completions** carry `{ footnoteText, images, noteName, noteTags, noteUuid, taskUuid }` besides part 1's fields.
+  - Each note is looked up once, six at a time, for its name and tags.
+  - A note's content is read only when one of its tasks cites a footnote the task itself doesn't define. Footnotes
+    resolve from the task first and the note second (`taskFootnoteEvidence` in `retrospective-task-evidence.js`),
+    so this works whether or not `getCompletedTasks` returns definitions inline.
+  - Footnote text is cut to 600 characters per task. Images are http(s) pictures only; videos and relative paths are
+    left out.
+- **Media:** every image once, as `{ alt, footnoteText, taskUuid, url }`, written to `## Media` as
+  `{ candidates, chosen: [] }`. Phase 7 fills `chosen`.
+- **Projects:** the project task store's records, active and retired (`derivedFrom: "plan"`), then any project the
+  ledger credited that the store didn't hold (`derivedFrom: "ledger"`). Written to `## Projects`. Phase 6 adds
+  `derivedFrom: "themes"` when there are none.
+- **Open at quarter end** (`openAtQuarterEndByProject`): a task the store associated with a project counts as open
+  if it was created before the quarter ended and is either open now (`getTaskDomainTasks`) or was completed since
+  (`getCompletedTasks` from the quarter's end to now). The slide says "tasks we know of".
+- **Duration default:** a completion with no span or duration counts as `DEFAULT_TASK_MINUTES` (60).
+  `scheduledMinutes` still returns 0, and each completion records `durationDefaulted`.
+- **Calendar:** when the options screen's toggle is on, the journal's days go to `## Calendar` as
+  `{ coverage, eventsByDate }`.
+- **Statistics gained:** `calendarCoverage`, `defaultedDurationCount`, `doneAndOpenByProject`,
+  `firstAndLastCompletion`, `longestStreak`, `meetingMinutesByCategory`, and `monthlyTaskCounts`.
+  - Meeting categories are counted locally from attendee counts: Solo blocks, 1:1s, Small meetings (2–5), and Large
+    meetings (6+). All-day events don't count. Phase 6 can refine these from titles.
+- **New Data slides:** done vs. still open per project, the longest streak (three days or more), and meeting time by
+  category with calendar coverage. The time slide notes how many tasks counted as an hour.
+- **Tests:** `quarter-retrospective-gathering.test.js` and the statistics tests. Checked in the dev dashboard:
+  regenerating Q3 2026 Data showed the progress labels and the streak slide.
 
 ### Phase 6 — Month digests and theme inference (LLM)
 
@@ -313,7 +318,9 @@ These are candidates, not commitments:
 
 ## Still to verify
 
-- Whether `getCompletedTasks` returns task content with Rich Footnote definitions inline (phase 5).
+- Whether `getCompletedTasks` returns task content with Rich Footnote definitions inline. Phase 5 handles both
+  cases, but reading notes for footnotes costs a `getNoteContent` per note when definitions aren't inline.
+- Whether `findNote({ uuid })` returns `tags` on the host (phase 5 reads them for note tags).
 - Whether the embed can play audio from its opaque `data:` origin (phase 8).
 - Whether Amplenote image URLs from footnotes load inside the embed without extra authentication (phase 7).
 

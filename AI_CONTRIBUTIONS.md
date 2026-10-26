@@ -5,6 +5,23 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-26 — Quarter Retrospective gathering (phase 5)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-task-evidence.js` (new) — resolves a task's Rich Footnotes from the task and then its note, extracts http(s) images, counts each project's tasks still open at quarter end, and totals meeting time by attendee count.
+- `lib/dashboard/quarter-retrospective/retrospective-data.js` — `gatherRetrospectiveQuarter` replaces `loadRetrospectiveStatistics`: completions enriched with footnote text, images, note names, and tags (each note looked up once, six at a time); projects from the task store and ledger; open-at-quarter-end counts; the calendar journal; image candidates; progress reported per step.
+- `lib/dashboard/quarter-retrospective/retrospective-statistics.js` — tasks with no length count as 60 minutes; adds calendar coverage, defaulted duration count, done and open per project, first and last completion, longest streak, meeting minutes by category, and monthly counts.
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js` — done vs. open, streak, and meetings slides; the time slide notes defaulted durations.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` — records Projects, Calendar, and Media sections and passes progress through.
+- `lib/dashboard/quarter-retrospective/quarter-retrospective.jsx` — the status screen shows each generation step.
+- `test/quarter-retrospective-gathering.test.js` (new); `test/quarter-retrospective-statistics.test.js`, `test/quarter-retrospective-data-note.test.js` updated.
+- `doc/plan-quarter-retrospective.md` — phase 5 marked built.
+
+**Task:** Phase 5 of the Quarter Retrospective plan.
+
+---
+
 ## 2026-10-26 — Quarter Retrospective entry point, data note, and options screen (phase 4)
 
 **Model:** Claude Opus 5.5
