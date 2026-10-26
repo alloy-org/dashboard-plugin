@@ -5,6 +5,20 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-25 — Quarter Retrospective story player (part 2 of 5)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-slide.jsx` (new) — one slide: kicker, a figure that counts up (shown at once under reduced motion or without requestAnimationFrame, and given to screen readers as its final value), headline, ranked list, and caption.
+- `lib/dashboard/quarter-retrospective/retrospective-story.jsx` (new) — plays slides with segmented progress, auto-advance, tap zones, arrow keys, Space and a button to pause, press-and-hold to pause without the release changing slides, and a Replay button on the last slide. Changing slides restarts the clock in the same update, so a finished clock never skips the next slide.
+- `lib/dashboard/quarter-retrospective/retrospective-overlay.jsx` (new) — portaled dialog over the dashboard that closes on Escape, its close button, or a backdrop click, and suspends widget mounting while open.
+- `lib/dashboard/styles/quarter-retrospective.scss` (new) — one `.quarter-retrospective-overlay` wrapper: a 9:16 story card (full screen on phones), a saturated gradient per slide tone, staggered entrances, and reduced-motion handling.
+- `test/quarter-retrospective-story.test.js` (new).
+
+**Task:** Second of five parts of the past-quarter retrospective.
+
+---
+
 ## 2026-10-25 — Quarter Retrospective statistics and slide model (part 1 of 5)
 
 **Model:** Claude Opus 5.5

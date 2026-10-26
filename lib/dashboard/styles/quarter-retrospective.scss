@@ -1,0 +1,248 @@
+// Styles for the Quarter Retrospective: the overlay it opens in, the tall story card, the progress segments, and each
+// slide's tone. Slides keep their own saturated gradients in both themes, like a year-in-review story, so every
+// gradient stop is dark enough for white text; the card chrome around them follows the dashboard theme.
+
+@use 'sass:list';
+@use 'theme-tokens' as *;
+
+$retrospective-z-index: 1100;
+$retrospective-card-height: min(88vh, 720px);
+$retrospective-card-aspect: list.slash(9, 16);
+$retrospective-segment-height: 3px;
+$retrospective-entrance-distance: 14px;
+$retrospective-entrance-duration: 520ms;
+$retrospective-entrance-step: 140ms;
+$retrospective-text-on-slide: #ffffff;
+$retrospective-text-on-slide-muted: rgba(255, 255, 255, 0.78);
+$retrospective-slide-rule: rgba(255, 255, 255, 0.22);
+$retrospective-segment-track: rgba(255, 255, 255, 0.32);
+
+// Two stops per tone, each dark enough at its lightest for white body text.
+$retrospective-tones: (
+  'intro': (#1f1147, #6d1d74),
+  'gold': (#5c3b00, #a8460f),
+  'forest': (#0b3d2c, #1d6b48),
+  'violet': (#2e1065, #6331a8),
+  'teal': (#063f47, #0f6e78),
+  'ember': (#5a1010, #9c2a1c),
+  'dusk': (#1e2a4f, #4c2a63),
+  'ocean': (#0a2a5c, #1b5aa0),
+  'sunrise': (#5e1d3c, #a3402a),
+);
+
+.quarter-retrospective-overlay {
+  align-items: center;
+  background: $color-overlay-backdrop;
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: $sp-lg;
+  position: fixed;
+  z-index: $retrospective-z-index;
+
+  .retrospective-overlay-card {
+    aspect-ratio: $retrospective-card-aspect;
+    background: $color-bg-card;
+    border-radius: $radius-lg;
+    box-shadow: 0 12px 40px $color-overlay-shadow;
+    height: $retrospective-card-height;
+    max-width: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .retrospective-overlay-close {
+    background: transparent;
+    border: 0;
+    color: $retrospective-text-on-slide;
+    cursor: pointer;
+    font-size: $large-font-size;
+    padding: $sp-sm;
+    position: absolute;
+    right: $sp-sm;
+    top: $sp-md;
+    z-index: 3;
+  }
+
+  .retrospective-story {
+    height: 100%;
+    position: relative;
+    touch-action: manipulation;
+    user-select: none;
+  }
+
+  .retrospective-story-progress {
+    display: flex;
+    gap: $sp-xs;
+    left: $sp-md;
+    position: absolute;
+    right: $sp-md;
+    top: $sp-md;
+    z-index: 2;
+  }
+
+  .retrospective-story-segment {
+    background: $retrospective-segment-track;
+    border-radius: $retrospective-segment-height;
+    flex: 1;
+    height: $retrospective-segment-height;
+    overflow: hidden;
+  }
+
+  .retrospective-story-segment-fill {
+    background: $retrospective-text-on-slide;
+    display: block;
+    height: 100%;
+    transform-origin: left center;
+  }
+
+  // The tap zones cover the slide beneath the progress bar; the footer sits above them.
+  .retrospective-story-tap {
+    background: transparent;
+    border: 0;
+    bottom: 0;
+    cursor: pointer;
+    position: absolute;
+    top: 0;
+    z-index: 1;
+
+    &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: -4px; }
+  }
+
+  .retrospective-story-tap--previous { left: 0; width: 33%; }
+  .retrospective-story-tap--next { right: 0; width: 67%; }
+
+  .retrospective-story-footer {
+    align-items: center;
+    bottom: $sp-md;
+    color: $retrospective-text-on-slide-muted;
+    display: flex;
+    justify-content: space-between;
+    left: $sp-lg;
+    position: absolute;
+    right: $sp-lg;
+    z-index: 2;
+  }
+
+  .retrospective-story-control {
+    background: $retrospective-slide-rule;
+    border: 0;
+    border-radius: $radius-sm;
+    color: $retrospective-text-on-slide;
+    cursor: pointer;
+    padding: $sp-xs $sp-md;
+  }
+
+  .retrospective-slide {
+    color: $retrospective-text-on-slide;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-md;
+    height: 100%;
+    justify-content: center;
+    padding: 56px $sp-xl 64px;
+
+    > * { animation: retrospective-enter $retrospective-entrance-duration ease-out both; }
+    > :nth-child(2) { animation-delay: $retrospective-entrance-step; }
+    > :nth-child(3) { animation-delay: $retrospective-entrance-step * 2; }
+    > :nth-child(4) { animation-delay: $retrospective-entrance-step * 3; }
+    > :nth-child(5) { animation-delay: $retrospective-entrance-step * 4; }
+  }
+
+  @each $tone, $stops in $retrospective-tones {
+    .retrospective-slide--#{$tone} {
+      background: linear-gradient(160deg, list.nth($stops, 1) 0%, list.nth($stops, 2) 100%);
+    }
+  }
+
+  .retrospective-slide-kicker {
+    color: $retrospective-text-on-slide-muted;
+    font-size: $default-font-size;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin: 0;
+    text-transform: uppercase;
+  }
+
+  .retrospective-slide-figure {
+    font-size: clamp(56px, 18vw, 104px);
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    line-height: 1;
+    margin: 0;
+  }
+
+  .retrospective-slide-headline {
+    font-size: $extra-large-heading-font-size;
+    font-weight: 700;
+    line-height: 1.15;
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .retrospective-slide-items {
+    counter-reset: retrospective-rank;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .retrospective-slide-item {
+    animation: retrospective-enter $retrospective-entrance-duration ease-out both;
+    animation-delay: calc(#{$retrospective-entrance-step * 3} + var(--item-index) * 90ms);
+    border-bottom: 1px solid $retrospective-slide-rule;
+    counter-increment: retrospective-rank;
+    display: flex;
+    gap: $sp-md;
+    justify-content: space-between;
+    padding-bottom: $sp-sm;
+
+    &::before {
+      color: $retrospective-text-on-slide-muted;
+      content: counter(retrospective-rank);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+    }
+  }
+
+  .retrospective-slide-item-label {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .retrospective-slide-item-value {
+    color: $retrospective-text-on-slide-muted;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .retrospective-slide-caption {
+    color: $retrospective-text-on-slide-muted;
+    font-size: $default-font-size;
+    margin: 0;
+  }
+
+  @keyframes retrospective-enter {
+    from { opacity: 0; transform: translateY($retrospective-entrance-distance); }
+    to { opacity: 1; transform: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .retrospective-slide > *, .retrospective-slide-item { animation: none; }
+  }
+
+  @include breakpoint($breakpoint-large-phone) {
+    padding: 0;
+
+    .retrospective-overlay-card {
+      aspect-ratio: auto;
+      border-radius: 0;
+      height: 100%;
+      width: 100%;
+    }
+  }
+}
