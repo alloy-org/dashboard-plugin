@@ -59,17 +59,18 @@ These come from the API docs and the existing code. Each one changes a phase bel
    past quarter without a note. For one with a note, it opens Plan Builder for that past quarter. Both cases change
    so that a past quarter opens the retrospective. The plan note stays reachable from a link in the retrospective's
    header. Past cards with no plan note become clickable too, since completed tasks exist without a plan.
-2. **Look for existing retrospectives.** Find the domain-quarter's data notes, one per style.
-   - **None found:** show the options screen.
-   - **One or more found:** play the most recently generated (decided). A style switcher lists the others alongside
-     "Generate new".
-3. **Options screen.** Three selectable style cards, **Data**, **Roast**, and **Spotify**, with Spotify chosen by
-   default, and three soundtrack vibe cards, **Chill**, **Synthwave**, and **Anthem**, with Chill chosen by default.
-   Below them sit a few toggles, each shown only when it applies:
-   - include calendar events, when the journal covers the quarter;
-   - include images from my notes.
-
-   A **Generate** button starts generation; it is the click music can start from.
+2. **Look for existing retrospectives** (the domain-quarter's data notes, one per style) and whether an AI is
+   available, then always show the options screen, so the soundtrack is chosen before anything plays (decided).
+3. **Options screen.** Three selectable style cards, **Data**, **Roast**, and **Spotify**, and three soundtrack vibe
+   cards, **Chill**, **Synthwave**, and **Anthem**, with Chill chosen by default.
+   - A style with a saved story says "Saved {date}". Roast and Spotify are disabled, noting "Needs an AI provider",
+     when no AI is available and their story wasn't saved.
+   - The style chosen first is the most recently saved one, else Spotify when it can be chosen, else Data.
+   - Below the cards sit a few toggles, each shown only when it applies: include calendar events, when the journal
+     covers the quarter; include images from my notes.
+   - The main button plays the chosen style's saved story ("Play {Style} retrospective") or generates it. A saved
+     style the AI can still write offers "Generate a new {Style} one" beneath. The click is the one music can start
+     from. While a story plays, the header lists the other saved styles and an Options link back to this screen.
 4. **Processing screen,** about three minutes. A progress bar driven by `useElapsingProgress` targets 180 seconds,
    with step labels such as "Reading July's 212 completed tasks…". When projects were found, the payoff ranking
    (phase 9) appears here, so the wait becomes useful input instead of idle time.
@@ -305,8 +306,9 @@ through `raceWizardPrompt` (callLLM raced against the user's own provider) with 
   never as falling behind.
 - **Story pacing.** Slides play 7.2 seconds, 20% longer than before. The Pause button is an outlined pill; the first
   slide shows "Hold anywhere or press Space to pause" beside it, and a "Paused" badge replaces the hint while paused.
-- **Options screen.** Style and soundtrack vibe are choices with defaults, and a Generate button starts the run, as the
-  flow above describes.
+- **Options screen.** It opens every time. Style and soundtrack vibe are choices with defaults; the AI-written styles
+  need an AI or a saved story; and one button plays a saved story or generates, as the flow above describes.
+  `retrospectiveAiAvailable` (`retrospective-generation.js`) checks for a configured key or the plugin LLM license.
 - **Dev fixture.** `dev/dev-retrospective-tasks.js` also fills the quarter before last with a lighter version of the
   same work, so the dev dashboard's Q3 2026 retrospective shows the comparison slide.
 - **Checked in the dev dashboard:** the options screen with both groups and their defaults; a Data generation of

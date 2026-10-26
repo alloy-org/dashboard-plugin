@@ -209,33 +209,55 @@ $retrospective-tones: (
   }
 
   .retrospective-choice-card-description,
-  .retrospective-choice-card-soon {
+  .retrospective-choice-card-note {
     color: $retrospective-text-on-slide-muted;
     font-size: $smaller-font-size;
   }
 
-  .retrospective-choice-card-soon {
+  .retrospective-choice-card-note {
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
   }
 
-  .retrospective-options-generate {
+  // The primary and secondary buttons sit at the foot of the screen.
+  .retrospective-options-actions {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    gap: $sp-sm;
+    margin-top: auto;
+  }
+
+  .retrospective-options-primary {
     background: $retrospective-text-on-slide;
     border: 0;
     border-radius: $retrospective-control-height;
     color: list.nth(map.get($retrospective-tones, 'intro'), 1);
     cursor: pointer;
-    flex-shrink: 0;
     font-size: $large-font-size;
     font-weight: 700;
-    margin-top: auto;
     min-height: 44px;
     padding: $sp-sm $sp-lg;
     transition: transform 160ms;
 
-    &:hover, &:focus-visible { transform: translateY(-1px); }
+    &:hover:not(:disabled), &:focus-visible { transform: translateY(-1px); }
     &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: 3px; }
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.5;
+    }
+  }
+
+  .retrospective-options-secondary {
+    background: transparent;
+    border: 0;
+    color: $retrospective-text-on-slide-muted;
+    cursor: pointer;
+    text-decoration: underline;
+
+    &:hover, &:focus-visible { color: $retrospective-text-on-slide; }
   }
 
   .retrospective-story {

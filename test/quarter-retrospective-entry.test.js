@@ -1,12 +1,13 @@
-// Quarter Retrospective container: a quarter with nothing generated shows the options screen, choosing Data and a vibe generates
-// and plays the story, reopening plays the saved story straight away, and the header links open the plan note and
-// return to the styles.
+// Quarter Retrospective container: it always opens on the options screen, which offers the AI-written styles only with
+// an AI or a saved story, generates the chosen style with its soundtrack vibe, and plays a saved story without
+// generating again; the header links open the plan note and return to the options.
 import { jest } from "@jest/globals";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { maintenanceApp } from "./project-maintenance-test-app";
 
 const { default: QuarterRetrospective } = await import("dashboard/quarter-retrospective/quarter-retrospective");
+const { generateRetrospective } = await import("dashboard/quarter-retrospective/retrospective-generation");
 
 const PLAN = { label: "Q3 2026", noteUUID: "q3-plan-note", quarter: 3, year: 2026 };
 let mounted = null;
@@ -70,42 +71,69 @@ afterEach(async () => {
 });
 
 describe("QuarterRetrospective", () => {
-  it("generates the Data style from the options screen, then plays it on reopening", async () => {
+  const styleCards = () => [...document.body.querySelectorAll(".retrospective-style-card")];
+  const vibeCards = () => [...document.body.querySelectorAll(".retrospective-vibe-card")];
+  const titles = elements => elements.map(card => card.querySelector(".retrospective-choice-card-title").textContent);
+  const notes = elements => elements.map(card => card.querySelector(".retrospective-choice-card-note")?.textContent || null);
+  const checked = elements => elements.map(card => card.getAttribute("aria-checked"));
+  const primaryButton = () => document.body.querySelector(".retrospective-options-primary");
+
+  it("without an AI, offers only Data, generates it with the chosen vibe, and opens on the options again", async () => {
     const app = retrospectiveApp();
     await renderRetrospective(app);
-    const cards = [...document.body.querySelectorAll(".retrospective-style-card")];
-    const vibeCards = [...document.body.querySelectorAll(".retrospective-vibe-card")];
-    const titles = elements => elements.map(card => card.querySelector(".retrospective-choice-card-title").textContent);
-    const checked = elements => elements.map(card => card.getAttribute("aria-checked"));
-    expect(titles(cards)).toEqual(["Data", "Roast", "Spotify"]);
-    expect(cards.map(card => card.disabled)).toEqual([false, false, false]);
-    expect(checked(cards)).toEqual(["false", "false", "true"]);
-    expect(titles(vibeCards)).toEqual(["🌙 Chill", "🌆 Synthwave", "🏆 Anthem"]);
-    expect(checked(vibeCards)).toEqual(["true", "false", "false"]);
+    expect(titles(styleCards())).toEqual(["Data", "Roast", "Spotify"]);
+    expect(styleCards().map(card => card.disabled)).toEqual([false, true, true]);
+    expect(notes(styleCards())).toEqual([null, "Needs an AI provider (Dashboard Settings)", "Needs an AI provider (Dashboard Settings)"]);
+    expect(checked(styleCards())).toEqual(["true", "false", "false"]);
+    expect(titles(vibeCards())).toEqual(["🌙 Chill", "🌆 Synthwave", "🏆 Anthem"]);
+    expect(checked(vibeCards())).toEqual(["true", "false", "false"]);
 
-    await clickAndSettle(cards[0]);
-    await clickAndSettle(vibeCards[2]);
-    expect(checked(cards)).toEqual(["true", "false", "false"]);
-    expect(checked(vibeCards)).toEqual(["false", "false", "true"]);
+    await clickAndSettle(vibeCards()[2]);
+    expect(checked(vibeCards())).toEqual(["false", "false", "true"]);
     expect(document.body.querySelector(".retrospective-story")).toBeNull();
-    const generateButton = document.body.querySelector(".retrospective-options-generate");
-    expect(generateButton.textContent).toBe("Generate Data retrospective");
-    await clickAndSettle(generateButton);
-    expect(app.noteContent("Work Q3 2026 Data Retrospective Data")).toContain('"soundtrackVibe":"anthem"');
+    expect(primaryButton().textContent).toBe("Generate Data retrospective");
+    await clickAndSettle(primaryButton());
     expect(document.body.querySelector(".retrospective-story")).not.toBeNull();
-    expect(app.noteContent("Work Q3 2026 Data Retrospective Data")).toContain("## Story");
-    expect(headerLink("Generate new")).toBeDefined();
+    expect(app.noteContent("Work Q3 2026 Data Retrospective Data")).toContain('"soundtrackVibe":"anthem"');
+    expect(headerLink("Options")).toBeDefined();
 
     await act(async () => { mounted.root.unmount(); });
     mounted.mountPoint.remove();
     mounted = null;
     await renderRetrospective(app);
+    expect(document.body.querySelector(".retrospective-story")).toBeNull();
+    expect(notes(styleCards())[0]).toMatch(/^Saved /);
+    expect(primaryButton().textContent).toBe("Play Data retrospective");
+    expect(document.body.querySelector(".retrospective-options-secondary").textContent).toBe("Generate a new Data one");
+    await clickAndSettle(primaryButton());
     expect(document.body.querySelector(".retrospective-story")).not.toBeNull();
-    // One generation reads the quarter and the quarter before it; reopening reads neither again.
+    // One generation reads the quarter and the quarter before it; playing the saved story reads neither again.
     expect(app.getCompletedTasks).toHaveBeenCalledTimes(2);
 
-    await clickAndSettle(headerLink("Generate new"));
+    await clickAndSettle(headerLink("Options"));
     expect(document.body.querySelector(".retrospective-options")).not.toBeNull();
+  });
+
+  it("chooses Spotify first when an AI is available", async () => {
+    const app = retrospectiveApp();
+    app.callLLM = jest.fn(async () => 25);
+    await renderRetrospective(app);
+    expect(styleCards().map(card => card.disabled)).toEqual([false, false, false]);
+    expect(checked(styleCards())).toEqual(["false", "false", "true"]);
+    expect(primaryButton().textContent).toBe("Generate Spotify retrospective");
+  });
+
+  it("lets a saved Spotify story play without an AI, but not be generated again", async () => {
+    const app = retrospectiveApp();
+    const request = { domainName: "Work", domainUuid: "work-domain", options: {}, quarter: 3, style: "spotify", year: 2026 };
+    await generateRetrospective(app, request, { requestPrompt: async () => null });
+    await renderRetrospective(app);
+    expect(styleCards().map(card => card.disabled)).toEqual([false, true, false]);
+    expect(checked(styleCards())).toEqual(["false", "false", "true"]);
+    expect(primaryButton().textContent).toBe("Play Spotify retrospective");
+    expect(document.body.querySelector(".retrospective-options-secondary")).toBeNull();
+    await clickAndSettle(primaryButton());
+    expect(document.body.querySelector(".retrospective-story")).not.toBeNull();
   });
 
   it("opens the plan note from the header and closes the retrospective", async () => {

@@ -16,6 +16,21 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-26 — Retrospective opens on its options, AI-written styles gated on an AI or a saved story
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/quarter-retrospective.jsx` — always opens on the options screen, so the soundtrack vibe is chosen before anything plays; plays saved stories with the chosen vibe; the header's Options link replaces Generate new, and its Play links show only while a story plays.
+- `lib/dashboard/quarter-retrospective/retrospective-options.jsx` — Roast and Spotify are disabled, noting "Needs an AI provider", when no AI is available and their story wasn't saved; a saved style says "Saved {date}"; the first choice is the most recently saved style, else Spotify when it can be chosen, else Data; one button plays the chosen style's saved story or generates it, with "Generate a new {Style} one" beneath when the AI can write it.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` — `retrospectiveAiAvailable`, which the prompt requester now uses too.
+- `lib/dashboard/styles/quarter-retrospective.scss` — the options screen's primary and secondary buttons.
+- `test/quarter-retrospective-entry.test.js` — options first, gating with and without an AI, and playing a saved Spotify story without one.
+- `doc/plan-quarter-retrospective.md` — the flow's options screen.
+
+**Task:** Disable Spotify without an AI or a saved story, and always show the options screen first.
+
+---
+
 ## 2026-10-26 — Retrospective comparison with the quarter before, story pacing, options screen choices
 
 **Model:** Claude Opus 5.5
