@@ -75,7 +75,7 @@ describe("QuarterRetrospective", () => {
     await renderRetrospective(app);
     const cards = [...document.body.querySelectorAll(".retrospective-style-card")];
     expect(cards.map(card => card.querySelector(".retrospective-style-card-title").textContent)).toEqual(["Data", "Roast", "Spotify"]);
-    expect(cards.map(card => card.disabled)).toEqual([false, true, true]);
+    expect(cards.map(card => card.disabled)).toEqual([false, false, false]);
 
     await clickAndSettle(cards[0]);
     expect(document.body.querySelector(".retrospective-story")).not.toBeNull();

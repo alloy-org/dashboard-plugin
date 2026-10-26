@@ -16,7 +16,7 @@ takeaways note.
 
 Nothing imports these modules yet, so the retrospective is unreachable in the app.
 
-Phases 3–5 are committed. Phase 6 (month digests) is built and uncommitted. Phases 7–10 are not started.
+Phases 3–6 are committed. Phase 7 (story generation per style) is built and uncommitted. Phases 8–10 are not started.
 
 ## Goal
 
@@ -233,22 +233,45 @@ through `raceWizardPrompt` (callLLM raced against the user's own provider) with 
   grew to ten slides with the month-by-month slide and inferred project rankings. The dev quarter's tasks are eight
   repeating habits, so its highlights were generic. A real quarter should be checked for specific highlights.
 
-### Phase 7 — Story generation per style
+### Phase 7 — Story generation per style (built)
 
-- **One story call per generation** turns statistics, month digests, and projects into slides, using a recipe for
-  the chosen style (below).
-- **Response schema:** `{ slides: [{ id, kind, kicker, headline, caption, figure, items, imageUrl, tone }] }`.
-- **Validation.** Merge the response with the deterministic slides. Every figure must come from the statistics
-  object; the LLM writes words, never numbers. Any `imageUrl` outside the collected set is dropped.
-- **Slide renderers.** `RetrospectiveSlide` gains renderers by `kind`:
-  - `figure` — today's slide;
-  - `bars` — done vs. open per project;
-  - `heap` — the progress mountain;
-  - `image` — a background photo from the user's notes, with a darkening scrim;
-  - `timeline` — tasks per month.
-- **The heap.** Every completed task falls as a small block onto a growing pile, colored by project with
-  `completed-task-project-colors.js` and sized by Victory Value. It ends on the total. Draw it with absolutely
-  positioned divs, or a canvas above about 400 tasks. Under reduced motion it shows the finished pile.
+- **Data asks nothing more.** Its slides are the ones `slidesFromStatistics` builds, whose copy is already neutral
+  and precise. The Story section records `generatedBy: "statistics"`.
+- **Roast and Spotify make one story call** (`retrospective-story-writer.js`) after the month digests, through the same
+  `raceWizardPrompt` requester. The prompt carries the style's rules, the quarter's name and intents, each month's
+  highlights, mood, and moments, every slide as one JSON line of its facts and plain words (the heap's blocks left
+  out), and the images the month digests chose, as short ids. Both styles are refused before gathering when no AI is
+  available.
+- **Response schema:** `{ slides: [{ id, kicker, headline, caption }], imageSlides: [{ imageId, afterSlideId, kicker,
+  headline, caption }], genre: { name, caption } }`; genre is asked of Spotify only.
+- **Validation.** The slides built from statistics keep their order, kind, figure, items, bars, columns, and heap; the
+  AI changes only words. A line is put back to the plain one when it is over its limit (kicker 48, headline 80,
+  caption 200) or cites a number that isn't in that slide's facts or words, or among the quarter's totals, number,
+  year, and monthly counts. A photo slide needs an offered image id and a headline, shows each image once, at most
+  three, and goes after the slide it names, or before the summary. The genre slide goes before the summary. A reply
+  that rewrites nothing, or a failed call, keeps the plain words and records `generatedBy: "fallback"`; otherwise
+  `"ai"`. `## Media` records the images shown as `chosen`.
+- **Options.** A toggle, on by default, offers images from the user's notes to the Roast and Spotify stories. It is
+  always shown, since whether any were found isn't known until the quarter is gathered.
+- **Slide kinds** (`SLIDE_KINDS`), each drawn by `RetrospectiveSlide`; a slide saved without a kind is a figure:
+  - `figure` — the part 1 slide;
+  - `bars` — done vs. open per project, all bars on one scale (replaces the done-and-open list);
+  - `heap` — the progress mountain, after the Victory Value slide;
+  - `timeline` — tasks per month as rising columns, each noted with its leading highlight when the AI digested a
+    month (replaces phase 6's month-by-month list, and now always shown);
+  - `image` — a photo slide; an image that fails to load is removed, leaving the tone behind the words.
+- **The heap.** `retrospectiveStatistics` adds `progressHeap`: a `[slot, size]` block per completion, oldest first. The
+  five projects with the most completions take colors 1–5 and the rest share 6 as "Other projects" (or a sixth project
+  keeps it), using the `--dashboard-color-category-N` tokens; size is 1–3 by where the task's Victory Value falls
+  against the quarter's median and 85th percentile. `retrospective-heap-layout.js` drops each block into the column
+  that is lowest once a slope toward the middle is counted, which piles a mountain, deterministically. Up to 400 blocks
+  fall as elements (transform-only animation); above that a canvas draws them. Reduced motion shows the finished pile.
+  The heap slide plays 1.5 times as long, through a per-slide `durationFactor`.
+- **Tests:** `quarter-retrospective-story-writer.test.js`, plus the statistics, data note, entry, and month digest
+  tests. Checked in the dev dashboard: a Roast generation of Q3 2026 took about 14 seconds with its four digest calls
+  and the story call, and played 11 slides with rewritten words whose numbers all came from the facts. The heap piled
+  229 blocks into a five-color mountain, and the timeline showed each month's highlight. The dev quarter has no images
+  or open counts, so photo slides and bars were checked only in tests.
 
 **Recipes.** The facts are shared; each style tells them its own way. Every style covers:
 
@@ -263,7 +286,7 @@ through `raceWizardPrompt` (callLLM raced against the user's own provider) with 
 |-------|-------------------|
 | **Data** | Neutral, precise copy. Part 1's slide order, plus the bars, timeline, and heap slides. Calm gradients. |
 | **Roast** | The same facts, written as affectionate ribbing ("212 tasks and you still rescheduled 'Update résumé' 9 times"). Offered in every domain. Rules: never mock health, family, grief, money trouble, or other personal hardship, and keep the end card sincere. |
-| **Spotify** | "Your Top Project", "You were in the top 3% of finishers on…", plus a personality slide ("Your quarter's genre: Deep-Focus Builder"). High production per phase 8. |
+| **Spotify** | "Your Top Project", plus a personality slide ("Your quarter's genre: Deep-Focus Builder"). Comparisons with other people, such as "top 3% of finishers", are ruled out: nothing is known about anyone else. High production per phase 8. |
 
 ### Phase 8 — Spotify production values
 
@@ -290,6 +313,10 @@ through `raceWizardPrompt` (callLLM raced against the user's own provider) with 
 
 - **Where it appears:** the processing screen, and as a slide before the end card when skipped there. It shows only
   when projects were found or inferred.
+- **When it is asked:** never before generation starts. For a quarter with no retrospective yet, the options screen
+  stays as it is, and the ranking appears on the processing screen as soon as the quarter's projects are known: right
+  after gathering when the project task store holds some, or after theme inference when they are inferred. Ranking
+  occupies the user while the month digests and story are written.
 - **The prompt:** "Now that time has passed, rank projects by: Did my work on this really pay off?"
 - **The list.** A list of draggable project chips built on HTML5 drag and drop, as `dashboard-layout-popup.jsx`
   does, with "Move up"/"Move down" buttons for keyboard and touch.

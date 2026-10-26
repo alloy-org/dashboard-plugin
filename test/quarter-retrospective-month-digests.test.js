@@ -162,8 +162,8 @@ describe("digestRetrospectiveMonths", () => {
 
 describe("generation with month digests", () => {
   // ----------------------------------------------------------------------------------------------
-  // @desc A quarter with no projects gets its projects inferred, so the project slides and the month-by-month slide
-  //   appear, and the inferred projects are recorded.
+  // @desc A quarter with no projects gets its projects inferred, so the project slides appear and the month timeline
+  //   notes each month's highlight, and the inferred projects are recorded.
   it("ranks inferred projects and shows each month's highlight", async () => {
     const app = maintenanceApp({ tasks: [] });
     const completedAt = day => Math.floor(new Date(2026, 6, day, 12).getTime() / 1000);
@@ -179,8 +179,8 @@ describe("generation with month digests", () => {
     const victorySlide = generated.slides.find(slide => slide.id === "project-victory");
     expect(victorySlide).toMatchObject({ caption: "7 Victory Value across 2 tasks. Projects inferred from your tasks.", headline: "Write the book" });
     const monthSlide = generated.slides.find(slide => slide.id === "month-by-month");
-    expect(monthSlide.items).toEqual([{ label: "July: Two chapters drafted", value: "2 tasks" }, { label: "August: A quieter month", value: "0 tasks" },
-      { label: "September: A quieter month", value: "0 tasks" }]);
+    expect(monthSlide).toMatchObject({ columns: [{ label: "July", note: "Two chapters drafted", value: 2 }, { label: "August",
+      note: "A quieter month", value: 0 }, { label: "September", note: "A quieter month", value: 0 }], kind: "timeline" });
     const { payloads } = retrospectiveSectionsFromContent(app.noteContent("Work Q3 2026 Data Retrospective Data"));
     expect(payloads.get("Projects").projects).toEqual([expect.objectContaining({ derivedFrom: "themes", name: "Write the book" })]);
     expect(payloads.get("Month 2")).toMatchObject({ generatedBy: "fallback", taskCount: 0 });

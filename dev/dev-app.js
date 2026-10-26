@@ -6,6 +6,7 @@
  */
 import fs from "fs";
 import crypto from "crypto";
+import { buildRetrospectiveTasks, RETROSPECTIVE_NOTE_HANDLES } from "./dev-retrospective-tasks.js";
 import { readTaskData, writeTaskData } from "./dev-task-data.js";
 import { noteHandleMatchesGroups, SAMPLE_NOTE_HANDLES, SAMPLE_PEOPLE, sampleNoteContentFromUUID,
   withAsyncIterator } from "../lib/util/dev-sample-notes.js";
@@ -250,7 +251,7 @@ function _buildSampleTasks() {
     { uuid: "dev-old-29", content: "Automate database backup verification",          createdAt: nowSec - 260 * day, completedAt: null, dismissedAt: null, noteUUID: "note-old-7mo", victoryValue: 5  },
   ];
 
-  return [...completedTasks, ...newTasks, ...staleTasks, ..._buildHabitTasks(nowSec)].map(task => ({
+  return [...completedTasks, ...newTasks, ...staleTasks, ..._buildHabitTasks(nowSec), ...buildRetrospectiveTasks(nowSec)].map(task => ({
     important: false,
     urgent: false,
     completedAt: null,
@@ -859,6 +860,10 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
       return true;
     },
 
+    // ----------------------------------------------------------------------------------------------
+    // @desc Find a note file by UUID or title, falling back to the retrospective fixture's theme notes.
+    // @param {object} params - { name, uuid }.
+    // @returns {Promise<object|null>} A { name, uuid } handle, or null.
     // [Claude] Task: find a note by looping over files in the /notes directory and matching frontmatter
     // Prompt: "when app.findNote is called, loop over each of the files in the notes directory"
     // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
@@ -872,7 +877,9 @@ export function createDevApp(settingsPath = DEFAULT_SETTINGS_PATH, notesDir = NO
           return { uuid: note.meta.uuid, name: note.meta.title };
         }
       }
-      return null;
+      const retrospectiveNote = RETROSPECTIVE_NOTE_HANDLES.find(handle => (params.uuid && handle.uuid === params.uuid)
+        || (params.name && handle.name === params.name));
+      return retrospectiveNote ? { ...retrospectiveNote } : null;
     },
 
     // ----------------------------------------------------------------------------------------------

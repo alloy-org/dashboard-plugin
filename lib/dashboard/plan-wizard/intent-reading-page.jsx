@@ -6,6 +6,7 @@
 
 import { themeKey } from "plan-wizard/intent-reading";
 import { useEffect, useRef, useState } from "react";
+import { prefersReducedMotion } from "util/browser-utility";
 
 const READ_ITEM_REVEAL_MS = 90;
 const THEME_REVEAL_MS = 220;
@@ -23,15 +24,14 @@ const STATUS_TEXT = { inferring: "Looking for themes and directions…", reading
 // Under reduced motion the whole list is shown at once, since the staggering is decoration rather than information.
 export function useStaggeredReveal(itemCount, isEnabled, intervalMs) {
   const [revealedCount, setRevealedCount] = useState(0);
-  const prefersReducedMotion = typeof window !== "undefined" && typeof window.matchMedia === "function"
-    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reducedMotion = prefersReducedMotion();
 
   useEffect(() => {
     if (!isEnabled) {
       setRevealedCount(0);
       return undefined;
     }
-    if (prefersReducedMotion) {
+    if (reducedMotion) {
       setRevealedCount(itemCount);
       return undefined;
     }
@@ -43,7 +43,7 @@ export function useStaggeredReveal(itemCount, isEnabled, intervalMs) {
       });
     }, intervalMs);
     return () => clearInterval(intervalId);
-  }, [intervalMs, isEnabled, itemCount, prefersReducedMotion]);
+  }, [intervalMs, isEnabled, itemCount, reducedMotion]);
 
   return Math.min(revealedCount, itemCount);
 }

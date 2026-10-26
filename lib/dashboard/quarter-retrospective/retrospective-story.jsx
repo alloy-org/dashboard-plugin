@@ -44,7 +44,8 @@ function useStoryClock({ elapsed, index, paused, setElapsed, showSlide, slideCou
 // @param {object} props - An object with the following properties:
 //   - {string} label - Accessible name for the story, such as "Q3 2026 retrospective"
 //   - {Array<object>} slides - From slidesFromStatistics
-//   - {number} [slideMilliseconds=SLIDE_MILLISECONDS] - How long each slide shows before advancing
+//   - {number} [slideMilliseconds=SLIDE_MILLISECONDS] - How long each slide shows before advancing, times the slide's
+//     durationFactor when it has one
 // @returns {JSX.Element} The story.
 export default function RetrospectiveStory({ label, slides, slideMilliseconds = SLIDE_MILLISECONDS }) {
   const [index, setIndex] = useState(0);
@@ -54,7 +55,9 @@ export default function RetrospectiveStory({ label, slides, slideMilliseconds = 
   const pressStartedAt = useRef(0);
   const suppressNextTap = useRef(false);
   const lastIndex = slides.length - 1;
-  const finished = index === lastIndex && elapsed >= slideMilliseconds;
+  // A slide that needs longer, such as the heap, stretches its own clock.
+  const currentMilliseconds = slideMilliseconds * (Number(slides[index]?.durationFactor) || 1);
+  const finished = index === lastIndex && elapsed >= currentMilliseconds;
   const paused = held || userPaused || finished;
 
   // @desc Show a slide from the start of its clock.
@@ -68,7 +71,7 @@ export default function RetrospectiveStory({ label, slides, slideMilliseconds = 
     showSlide(Math.max(0, nextIndex));
   };
 
-  useStoryClock({ elapsed, index, paused, setElapsed, showSlide, slideCount: slides.length, slideMilliseconds });
+  useStoryClock({ elapsed, index, paused, setElapsed, showSlide, slideCount: slides.length, slideMilliseconds: currentMilliseconds });
 
   useEffect(() => {
     const handleKeyDown = event => {
@@ -106,7 +109,7 @@ export default function RetrospectiveStory({ label, slides, slideMilliseconds = 
   const segmentFill = segmentIndex => {
     if (segmentIndex < index) return 1;
     if (segmentIndex > index) return 0;
-    return Math.min(1, elapsed / slideMilliseconds);
+    return Math.min(1, elapsed / currentMilliseconds);
   };
 
   return (

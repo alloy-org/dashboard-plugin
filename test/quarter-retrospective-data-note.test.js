@@ -116,13 +116,15 @@ describe("retrospective generation", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc A note that can't be written still yields the story, and a style not built yet is refused.
-  it("plays the story when recording fails, and refuses styles not built yet", async () => {
+  // @desc A note that can't be written still yields the story, and a style not built yet, or one the AI writes when no
+  //   AI is available, is refused.
+  it("plays the story when recording fails, and refuses styles it can't write", async () => {
     const app = retrospectiveApp([]);
     app.createNote = async () => { throw new Error("offline"); };
     const generated = await generateRetrospective(app, REQUEST);
     expect(generated.noteUuid).toBeNull();
     expect(generated.slides[0].id).toBe("empty");
-    await expect(generateRetrospective(app, { ...REQUEST, style: "roast" })).rejects.toThrow("isn't available yet");
+    await expect(generateRetrospective(app, { ...REQUEST, style: "mixtape" })).rejects.toThrow("isn't available yet");
+    await expect(generateRetrospective(app, { ...REQUEST, style: "roast" }, { requestPrompt: null })).rejects.toThrow("written by AI");
   });
 });

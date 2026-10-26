@@ -5,6 +5,40 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-26 — Retrospective dev fixture, shared reduced-motion check, payoff ranking timing
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `dev/dev-retrospective-tasks.js` (new) — 45 completed tasks dated in the quarter before the current one, clustered in three theme notes (an Etsy spell shop launch, getting outdoors, measuring AI for Microsoft), so the dev dashboard has a quarter to retrospect. Only the Node dev app imports it.
+- `dev/dev-app.js` — adds the fixture's tasks to the sample tasks, and `findNote` falls back to the fixture's theme notes.
+- `lib/util/browser-utility.js` (new) — a home for browser helpers, starting with `prefersReducedMotion()`, which replaces private copies in `retrospective-slide.jsx`, `retrospective-heap.jsx`, and the inline check in `intent-reading-page.jsx`.
+- `doc/plan-quarter-retrospective.md` — phase 9's payoff ranking is first asked for once generation has started.
+
+**Task:** Dev data for the Quarter Retrospective and small follow-ups to phase 7.
+
+---
+
+## 2026-10-26 — Quarter Retrospective story generation per style (phase 7)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-story-writer.js` (new) — one AI call per Roast or Spotify generation rewrites each slide's kicker, headline, and caption in the style's voice, may add up to three photo slides from images the month digests chose, and names a Spotify quarter's genre. Figures, lists, bars, and the heap stay as the statistics built them; a rewritten line citing a number outside the slide's facts and the quarter's totals, or running past its limit, is put back, and only offered images are shown. A failed call keeps the plain words and records `generatedBy: "fallback"`.
+- `lib/dashboard/quarter-retrospective/retrospective-heap-layout.js` (new) — drops blocks onto a pile shaped into a mountain by a slope toward the middle column, deterministically.
+- `lib/dashboard/quarter-retrospective/retrospective-heap.jsx` (new) — draws the heap as falling elements up to 400 blocks and on a canvas above that, with a project legend; reduced motion shows the finished pile.
+- `lib/dashboard/quarter-retrospective/retrospective-statistics.js` — adds `progressHeap`: a [slot, size] block per completion, colored by project (five busiest, then "Other projects") and sized by Victory Value quantile.
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js` — slide kinds (figure, bars, heap, timeline, image); a heap slide, a month timeline that replaces the month-by-month list, and done-vs-open bars.
+- `lib/dashboard/quarter-retrospective/retrospective-slide.jsx` — renderers per kind, including photo slides that drop an image that fails to load.
+- `lib/dashboard/quarter-retrospective/retrospective-story.jsx` — a slide's `durationFactor` stretches its clock.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` — Roast and Spotify available; refuses them without an AI; records the story's `generatedBy` and the images shown.
+- `lib/dashboard/quarter-retrospective/retrospective-options.jsx` — an images toggle.
+- `lib/dashboard/styles/quarter-retrospective.scss` — bars, timeline, heap, and photo slide styles.
+- `test/quarter-retrospective-story-writer.test.js` (new); statistics, data note, entry, and month digest tests updated.
+- `doc/plan-quarter-retrospective.md` — phase 7 marked built.
+
+**Task:** Phase 7 of the Quarter Retrospective plan.
+
+---
+
 ## 2026-10-26 — Quarter Retrospective month digests and theme inference (phase 6)
 
 **Model:** Claude Opus 5.5

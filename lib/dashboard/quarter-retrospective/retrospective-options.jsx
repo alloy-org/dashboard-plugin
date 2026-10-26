@@ -1,6 +1,6 @@
 // The Quarter Retrospective's options screen: a card per style and, above them, the toggles that apply to this
-// quarter. Choosing a style card starts generating at once, so the click that chose it is the gesture a later phase
-// starts music from.
+// quarter: the calendar, when the journal recorded any of it, and images from the user's notes. Choosing a style card
+// starts generating at once, so the click that chose it is the gesture a later phase starts music from.
 import { AVAILABLE_RETROSPECTIVE_STYLES } from "dashboard/quarter-retrospective/retrospective-generation";
 import { retrospectiveStyleLabel } from "dashboard/quarter-retrospective/retrospective-data-note";
 import { RETROSPECTIVE_STYLES } from "dashboard/quarter-retrospective/retrospective-slides";
@@ -9,7 +9,7 @@ import { useState } from "react";
 const STYLE_DESCRIPTIONS = Object.freeze({
   data: "The numbers, laid out plainly: where your time and Victory Value went.",
   roast: "The same facts, with some affectionate ribbing.",
-  spotify: "Your quarter as a year-in-review story, with music.",
+  spotify: "Your quarter as an upbeat year-in-review story, down to its genre.",
 });
 
 // ----------------------------------------------------------------------------------------------
@@ -32,14 +32,15 @@ function StyleCard({ available, onChoose, style }) {
 // @desc The options screen.
 // @param {object} props - An object with the following properties:
 //   - {object|null} calendarCoverage - { coveredDays, totalDays } from the calendar journal, or null when unknown
-//   - {Function} onChoose - Receives (style, options), options being { includeCalendar }
+//   - {Function} onChoose - Receives (style, options), options being { includeCalendar, includeImages }
 //   - {string} quarterLabel - Such as "Q3 2026"
 // @returns {JSX.Element} The screen.
 export default function RetrospectiveOptions({ calendarCoverage, onChoose, quarterLabel }) {
   const calendarAvailable = !!calendarCoverage?.coveredDays;
   const [includeCalendar, setIncludeCalendar] = useState(true);
+  const [includeImages, setIncludeImages] = useState(true);
   const styles = Object.values(RETROSPECTIVE_STYLES);
-  const chooseStyle = style => () => onChoose(style, { includeCalendar: calendarAvailable && includeCalendar });
+  const chooseStyle = style => () => onChoose(style, { includeCalendar: calendarAvailable && includeCalendar, includeImages });
 
   return (
     <div className="retrospective-options">
@@ -51,6 +52,10 @@ export default function RetrospectiveOptions({ calendarCoverage, onChoose, quart
           <span>{ `Include calendar events (your calendar covers ${ calendarCoverage.coveredDays } of ${ calendarCoverage.totalDays } days)` }</span>
         </label>
       ) : null }
+      <label className="retrospective-options-toggle">
+        <input checked={ includeImages } onChange={ event => setIncludeImages(event.target.checked) } type="checkbox" />
+        <span>Show images from my notes, when any fit (Roast and Spotify)</span>
+      </label>
       <div className="retrospective-style-cards">
         { styles.map(style => (
           <StyleCard available={ AVAILABLE_RETROSPECTIVE_STYLES.includes(style) } key={ style } onChoose={ chooseStyle(style) } style={ style } />

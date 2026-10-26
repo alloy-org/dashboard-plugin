@@ -1,5 +1,6 @@
 // Styles for the Quarter Retrospective: the overlay it opens in, the tall story card, its header links, the options and
-// status screens, the progress segments, and each slide's tone. Slides keep their own saturated gradients in both themes, like a year-in-review story, so every
+// status screens, the progress segments, each slide's tone, and what each kind of slide draws: project bars, the month
+// timeline, the progress heap, and photo slides. Slides keep their own saturated gradients in both themes, like a year-in-review story, so every
 // gradient stop is dark enough for white text; the card chrome around them follows the dashboard theme.
 
 @use 'sass:list';
@@ -17,6 +18,14 @@ $retrospective-text-on-slide: #ffffff;
 $retrospective-text-on-slide-muted: rgba(255, 255, 255, 0.78);
 $retrospective-slide-rule: rgba(255, 255, 255, 0.22);
 $retrospective-segment-track: rgba(255, 255, 255, 0.32);
+$retrospective-bar-height: 8px;
+$retrospective-bar-open: rgba(255, 255, 255, 0.32);
+$retrospective-timeline-height: 132px;
+$retrospective-heap-minimum-height: 140px;
+$retrospective-heap-fall-duration: 600ms;
+$retrospective-heap-no-project: rgba(255, 255, 255, 0.55);
+$retrospective-heap-block-edge: rgba(0, 0, 0, 0.28);
+$retrospective-photo-scrim: linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.45) 45%, rgba(0, 0, 0, 0.12) 100%);
 
 // Two stops per tone, each dark enough at its lightest for white body text.
 $retrospective-tones: (
@@ -267,6 +276,7 @@ $retrospective-tones: (
     > :nth-child(3) { animation-delay: $retrospective-entrance-step * 2; }
     > :nth-child(4) { animation-delay: $retrospective-entrance-step * 3; }
     > :nth-child(5) { animation-delay: $retrospective-entrance-step * 4; }
+    > :nth-child(6) { animation-delay: $retrospective-entrance-step * 5; }
   }
 
   @each $tone, $stops in $retrospective-tones {
@@ -346,13 +356,194 @@ $retrospective-tones: (
     margin: 0;
   }
 
+  .retrospective-slide-bars {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-md;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .retrospective-slide-bar {
+    animation: retrospective-enter $retrospective-entrance-duration ease-out both;
+    animation-delay: calc(#{$retrospective-entrance-step * 3} + var(--item-index) * 90ms);
+    display: grid;
+    gap: $sp-xs $sp-md;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .retrospective-slide-bar-label { overflow-wrap: anywhere; }
+
+  .retrospective-slide-bar-value {
+    color: $retrospective-text-on-slide-muted;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .retrospective-slide-bar-track {
+    border-radius: $retrospective-bar-height;
+    display: flex;
+    grid-column: 1 / -1;
+    height: $retrospective-bar-height;
+    overflow: hidden;
+  }
+
+  .retrospective-slide-bar-done { background: $retrospective-text-on-slide; }
+  .retrospective-slide-bar-open { background: $retrospective-bar-open; }
+
+  .retrospective-slide-timeline {
+    display: flex;
+    gap: $sp-md;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .retrospective-slide-timeline-month {
+    align-items: center;
+    animation: retrospective-enter $retrospective-entrance-duration ease-out both;
+    animation-delay: calc(#{$retrospective-entrance-step * 3} + var(--item-index) * 120ms);
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: $sp-xs;
+    min-width: 0;
+    text-align: center;
+  }
+
+  .retrospective-slide-timeline-value {
+    font-size: $large-font-size;
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+  }
+
+  .retrospective-slide-timeline-track {
+    align-items: flex-end;
+    display: flex;
+    height: $retrospective-timeline-height;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .retrospective-slide-timeline-column {
+    animation: retrospective-rise $retrospective-entrance-duration * 2 ease-out both;
+    animation-delay: calc(#{$retrospective-entrance-step * 4} + var(--item-index) * 120ms);
+    background: $retrospective-text-on-slide;
+    border-radius: $radius-sm $radius-sm 0 0;
+    min-height: 2px;
+    transform-origin: bottom center;
+    width: 60%;
+  }
+
+  .retrospective-slide-timeline-label {
+    font-weight: 700;
+  }
+
+  .retrospective-slide-timeline-note {
+    color: $retrospective-text-on-slide-muted;
+    font-size: $smaller-font-size;
+    overflow-wrap: anywhere;
+  }
+
+  .retrospective-heap {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: $sp-sm;
+    min-height: $retrospective-heap-minimum-height;
+  }
+
+  .retrospective-heap-pile {
+    flex: 1 1 auto;
+    min-height: $retrospective-heap-minimum-height;
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+  }
+
+  .retrospective-heap-canvas { display: block; height: 100%; }
+
+  .retrospective-heap-block {
+    animation: retrospective-heap-fall $retrospective-heap-fall-duration cubic-bezier(0.5, 0, 0.75, 0) both;
+    border-radius: 1px;
+    box-shadow: inset 0 0 0 0.5px $retrospective-heap-block-edge;
+    position: absolute;
+  }
+
+  .retrospective-heap-block--slot-0 { background: $retrospective-heap-no-project; }
+
+  @for $slot from 1 through 6 {
+    .retrospective-heap-block--slot-#{$slot} { background: var(--dashboard-color-category-#{$slot}); }
+  }
+
+  .retrospective-heap-legend {
+    color: $retrospective-text-on-slide-muted;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: $smaller-font-size;
+    gap: $sp-xs $sp-md;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .retrospective-heap-legend-entry {
+    align-items: center;
+    display: flex;
+    gap: $sp-xs;
+  }
+
+  .retrospective-heap-swatch {
+    border-radius: 2px;
+    display: inline-block;
+    height: 10px;
+    width: 10px;
+  }
+
+  // The photo fills the slide and the scrim darkens it from the bottom, where the words sit.
+  .retrospective-slide--image {
+    justify-content: flex-end;
+    overflow: hidden;
+    position: relative;
+
+    > .retrospective-slide-kicker, > .retrospective-slide-headline, > .retrospective-slide-caption { position: relative; }
+  }
+
+  .retrospective-slide-photo {
+    height: 100%;
+    inset: 0;
+    object-fit: cover;
+    position: absolute;
+    width: 100%;
+  }
+
+  .retrospective-slide-scrim {
+    background: $retrospective-photo-scrim;
+    inset: 0;
+    position: absolute;
+  }
+
   @keyframes retrospective-enter {
     from { opacity: 0; transform: translateY($retrospective-entrance-distance); }
     to { opacity: 1; transform: none; }
   }
 
+  @keyframes retrospective-rise {
+    from { transform: scaleY(0); }
+    to { transform: none; }
+  }
+
+  // Each block falls its own height times --heap-fall, which is how many of its heights lie above its resting place.
+  @keyframes retrospective-heap-fall {
+    from { opacity: 0; transform: translateY(calc(var(--heap-fall) * -100%)); }
+    8% { opacity: 1; }
+    to { opacity: 1; transform: none; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .retrospective-slide > *, .retrospective-slide-item { animation: none; }
+    .retrospective-slide > *, .retrospective-slide-item, .retrospective-slide-bar, .retrospective-slide-timeline-month,
+    .retrospective-slide-timeline-column, .retrospective-heap-block { animation: none; }
   }
 
   @include breakpoint($breakpoint-large-phone) {

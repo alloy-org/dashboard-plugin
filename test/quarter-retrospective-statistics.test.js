@@ -137,7 +137,8 @@ describe("slidesFromStatistics", () => {
   it("leaves out project and intent slides for a quarter the ledger never sorted", () => {
     const statistics = retrospectiveStatistics({ completedTasks: [completedTask("a", { victoryValue: 3 })], entriesByDate: new Map(),
       quarter: 3, year: 2026 });
-    expect(slidesFromStatistics(statistics).map(slide => slide.id)).toEqual(["intro", "victory-total", "busiest-day", "summary"]);
+    expect(slidesFromStatistics(statistics).map(slide => slide.id)).toEqual(["intro", "victory-total", "progress-heap", "month-by-month",
+      "busiest-day", "summary"]);
   });
 
   it("plays every slide for a fully sorted quarter", () => {
@@ -148,7 +149,8 @@ describe("slidesFromStatistics", () => {
       year: 2026 });
     const slides = slidesFromStatistics(statistics);
 
-    expect(slides.map(slide => slide.id)).toEqual(["intro", "victory-total", "project-victory", "project-tasks", "project-time",
+    expect(slides.map(slide => slide.id)).toEqual(["intro", "victory-total", "progress-heap", "month-by-month", "project-victory",
+      "project-tasks", "project-time",
       "important-tasks", "outside-projects", "intent", "busiest-day", "summary"]);
     expect(slides[0].headline).toBe("“Liftoff”");
     expect(slides.find(slide => slide.id === "intent").figure.value).toBe(50);
