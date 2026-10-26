@@ -5,6 +5,19 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-25 — Quarter Retrospective statistics and slide model (part 1 of 5)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-statistics.js` (new) — joins a quarter's genuine completions to the completed task ledger, ranks projects by Victory Value, task count, and scheduled minutes, summarizes important tasks with days from created to completed, counts work outside every project apart from work never classified, and computes intent alignment and the busiest day.
+- `lib/dashboard/quarter-retrospective/retrospective-data.js` (new) — reads the quarter's completed tasks, its ledger, and its Vision Guide intents and quarter name, treating the ledger and guide as optional.
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js` (new) — builds the retrospective story's ordered slides from the statistics, leaving out slides whose facts the quarter lacks.
+- `test/quarter-retrospective-statistics.test.js` (new).
+
+**Task:** First of five parts of a Spotify-Wrapped-style retrospective for past quarters in Quarterly Planning.
+
+---
+
 ## 2026-10-23 — Remove unused functions, constants, and modules
 
 **Model:** Grok 4.7
