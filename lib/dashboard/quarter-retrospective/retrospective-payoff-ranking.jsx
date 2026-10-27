@@ -4,7 +4,8 @@
 // Keeping the two apart means only an order the user chose is saved, never the order the projects happened to arrive
 // in. While a chip is dragged, holding it near the top or bottom of the scrolling screen scrolls it, so a long list
 // can still reach the ranked area. It appears on the processing screen while the story is written, and as a slide
-// before the story's summary when the quarter is still unranked. Saving hands the ranked projects to the caller.
+// before the story's summary when the quarter is still unranked. Saving hands the ranked projects to the caller. When
+// the story is ready, the processing screen locks the ranking and says the user's progress was saved before moving on.
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
 import { payoffRankingGroups } from "dashboard/quarter-retrospective/project-payoff-rankings";
 import { useEffect, useRef, useState } from "react";
@@ -15,6 +16,7 @@ export const PAYOFF_RANKING_TOOLTIP = "We'll use this to help build future plans
   + "projects paid off and weigh them when suggesting new ones.";
 export const PAYOFF_SAVE_STATES = Object.freeze({ failed: "failed", saved: "saved", saving: "saving", unsaved: "unsaved" });
 export const PAYOFF_RANKING_ZONES = Object.freeze({ ranked: "ranked", unranked: "unranked" });
+export const PAYOFF_PROGRESS_SAVED_MESSAGE = "Progress saved!";
 // How close to a scrolling screen's top or bottom edge, in pixels, a dragged chip scrolls it, and by how much per
 // dragover event, which browsers repeat every 50ms or so while the pointer is held still.
 const DRAG_SCROLL_EDGE_PIXELS = 56;
@@ -80,23 +82,23 @@ function chipClassNames({ baseClass, dragState, index, zone }) {
 
 // ----------------------------------------------------------------------------------------------
 // @desc One ranked project: its rank, its name, and buttons to move it up or down or back out of the ranking. The chip
-//   can be dragged onto another to take its place, or back to the unranked area.
-// @param {object} props - { dragHandlers, dragState, index, onMove, project, rankedCount }.
+//   can be dragged onto another to take its place, or back to the unranked area, unless the ranking is locked.
+// @param {object} props - { dragHandlers, dragState, index, locked, onMove, project, rankedCount }.
 // @returns {JSX.Element} The chip.
-function RankedPayoffChip({ dragHandlers, dragState, index, onMove, project, rankedCount }) {
+function RankedPayoffChip({ dragHandlers, dragState, index, locked, onMove, project, rankedCount }) {
   const zone = PAYOFF_RANKING_ZONES.ranked;
   const moveTo = (toIndex, toZone = zone) => onMove({ fromIndex: index, fromZone: zone, toIndex, toZone });
   return (
-    <li className={ chipClassNames({ baseClass: "retrospective-payoff-chip--ranked", dragState, index, zone }) } draggable
+    <li className={ chipClassNames({ baseClass: "retrospective-payoff-chip--ranked", dragState, index, zone }) } draggable={ !locked }
       onDragEnd={ dragHandlers.onDragEnd } onDragOver={ event => dragHandlers.onDragOver(event, zone, index) }
       onDragStart={ event => dragHandlers.onDragStart(event, zone, index) } onDrop={ event => dragHandlers.onDrop(event, zone, index) }>
       <span className="retrospective-payoff-chip-rank">{ index + 1 }</span>
       <span className="retrospective-payoff-chip-name">{ project.name }</span>
-      <button aria-label={ `Move ${ project.name } up` } className="retrospective-payoff-chip-move" disabled={ index === 0 }
+      <button aria-label={ `Move ${ project.name } up` } className="retrospective-payoff-chip-move" disabled={ locked || index === 0 }
         onClick={ () => moveTo(index - 1) } title="Move up" type="button">↑</button>
-      <button aria-label={ `Move ${ project.name } down` } className="retrospective-payoff-chip-move" disabled={ index === rankedCount - 1 }
+      <button aria-label={ `Move ${ project.name } down` } className="retrospective-payoff-chip-move" disabled={ locked || index === rankedCount - 1 }
         onClick={ () => moveTo(index + 1) } title="Move down" type="button">↓</button>
-      <button aria-label={ `Unrank ${ project.name }` } className="retrospective-payoff-chip-move"
+      <button aria-label={ `Unrank ${ project.name }` } className="retrospective-payoff-chip-move" disabled={ locked }
         onClick={ () => moveTo(null, PAYOFF_RANKING_ZONES.unranked) } title="Back to unranked" type="button">×</button>
     </li>
   );
@@ -104,17 +106,17 @@ function RankedPayoffChip({ dragHandlers, dragState, index, onMove, project, ran
 
 // ----------------------------------------------------------------------------------------------
 // @desc One project not ranked yet: a pill with its name and a button that ranks it last. The pill can be dragged up
-//   into the ranked list.
-// @param {object} props - { dragHandlers, dragState, index, onMove, project }.
+//   into the ranked list, unless the ranking is locked.
+// @param {object} props - { dragHandlers, dragState, index, locked, onMove, project }.
 // @returns {JSX.Element} The pill.
-function UnrankedPayoffChip({ dragHandlers, dragState, index, onMove, project }) {
+function UnrankedPayoffChip({ dragHandlers, dragState, index, locked, onMove, project }) {
   const zone = PAYOFF_RANKING_ZONES.unranked;
   return (
-    <li className={ chipClassNames({ baseClass: "retrospective-payoff-chip--unranked", dragState, index, zone }) } draggable
+    <li className={ chipClassNames({ baseClass: "retrospective-payoff-chip--unranked", dragState, index, zone }) } draggable={ !locked }
       onDragEnd={ dragHandlers.onDragEnd } onDragOver={ event => dragHandlers.onDragOver(event, zone, index) }
       onDragStart={ event => dragHandlers.onDragStart(event, zone, index) } onDrop={ event => dragHandlers.onDrop(event, zone, index) }>
       <span className="retrospective-payoff-chip-name">{ project.name }</span>
-      <button aria-label={ `Rank ${ project.name }` } className="retrospective-payoff-chip-move"
+      <button aria-label={ `Rank ${ project.name }` } className="retrospective-payoff-chip-move" disabled={ locked }
         onClick={ () => onMove({ fromIndex: index, fromZone: zone, toIndex: null, toZone: PAYOFF_RANKING_ZONES.ranked }) } title="Rank next"
         type="button">↑</button>
     </li>
@@ -184,25 +186,37 @@ function PayoffRankingZone({ children, className, dragHandlers, dragState, label
 // ----------------------------------------------------------------------------------------------
 // @desc The ranking: the prompt with a tooltip on how the ranking is used, the ranked list above the projects not
 //   ranked yet, and the save and skip buttons. Saving needs at least one ranked project and stores only those. Any
-//   change after a save marks the ranking unsaved again.
+//   change after a save marks the ranking unsaved again. A locked ranking takes no more changes and shows that the
+//   user's progress was saved in place of its buttons.
 // @param {object} props - An object with the following properties:
+//   - {boolean} [locked] - Freezes the ranking once the caller has stored it
+//   - {Function|null} [onRankingChange] - Receives the ranked projects after each move the user makes
 //   - {Function} onSave - async (rankedProjects) => void; stores the order, the project that paid off most first
 //   - {Function|null} [onSaved] - Called after a save succeeds, such as to move the story on
 //   - {Function|null} [onSkip] - Leaves without saving; none hides the Skip button
 //   - {Array<object>} projects - { derivedFrom, name, uuid } per project
 //   - {object|null} [savedRanking] - The quarter's stored ranking, whose projects start in the ranked list
 // @returns {JSX.Element} The ranking.
-export default function RetrospectivePayoffRanking({ onSave, onSaved = null, onSkip = null, projects, savedRanking = null }) {
+export default function RetrospectivePayoffRanking({ locked = false, onRankingChange = null, onSave, onSaved = null, onSkip = null, projects,
+  savedRanking = null }) {
   const [groups, setGroups] = useState(() => {
     const { rankedProjects, unrankedProjects } = payoffRankingGroups(projects, savedRanking);
     return { ranked: rankedProjects, unranked: unrankedProjects };
   });
   const [saveState, setSaveState] = useState(PAYOFF_SAVE_STATES.unsaved);
   const [savedHere, setSavedHere] = useState(false);
+  const movedRef = useRef(false);
   const rankedBefore = !!savedRanking || savedHere;
 
-  // @desc Move a project and mark the ranking as changed since the last save.
+  useEffect(() => {
+    if (movedRef.current && onRankingChange) onRankingChange(groups.ranked);
+  }, [groups]);
+
+  // @desc Move a project and mark the ranking as changed since the last save. A locked ranking ignores the move, such
+  //   as a drop from a drag begun before it locked.
   const moveProject = move => {
+    if (locked) return;
+    movedRef.current = true;
     setGroups(previous => movedPayoffProject(previous, move));
     setSaveState(PAYOFF_SAVE_STATES.unsaved);
   };
@@ -220,13 +234,13 @@ export default function RetrospectivePayoffRanking({ onSave, onSaved = null, onS
       setSaveState(PAYOFF_SAVE_STATES.failed);
     }
   };
-  const chipProps = { dragHandlers, dragState, onMove: moveProject };
+  const chipProps = { dragHandlers, dragState, locked, onMove: moveProject };
   const saveBusy = saveState === PAYOFF_SAVE_STATES.saving || saveState === PAYOFF_SAVE_STATES.saved;
   const unrankedLabel = groups.ranked.length ? "Not ranked yet: drag up to rank, or leave out"
     : "Drag each project up, or tap its ↑, in the order it paid off";
 
   return (
-    <div className="retrospective-payoff-ranking">
+    <div aria-disabled={ locked || undefined } className={ `retrospective-payoff-ranking${ locked ? " retrospective-payoff-ranking--locked" : "" }` }>
       <p className="retrospective-payoff-ranking-prompt">
         { PAYOFF_RANKING_PROMPT }{ " " }
         <DashboardTippy content={ PAYOFF_RANKING_TOOLTIP }>
@@ -254,13 +268,17 @@ export default function RetrospectivePayoffRanking({ onSave, onSaved = null, onS
           </ul>
         </PayoffRankingZone>
       ) : null }
-      <div className="retrospective-payoff-ranking-actions">
-        <button className="retrospective-options-primary" disabled={ saveBusy || !groups.ranked.length } onClick={ handleSave } type="button">
-          { saveButtonLabel(saveState, rankedBefore) }
-        </button>
-        { onSkip ? <button className="retrospective-options-secondary" onClick={ onSkip } type="button">Skip</button> : null }
-      </div>
-      { saveState === PAYOFF_SAVE_STATES.failed ? (
+      { locked ? (
+        <p className="retrospective-payoff-ranking-saved" role="status">{ PAYOFF_PROGRESS_SAVED_MESSAGE }</p>
+      ) : (
+        <div className="retrospective-payoff-ranking-actions">
+          <button className="retrospective-options-primary" disabled={ saveBusy || !groups.ranked.length } onClick={ handleSave } type="button">
+            { saveButtonLabel(saveState, rankedBefore) }
+          </button>
+          { onSkip ? <button className="retrospective-options-secondary" onClick={ onSkip } type="button">Skip</button> : null }
+        </div>
+      ) }
+      { !locked && saveState === PAYOFF_SAVE_STATES.failed ? (
         <p className="retrospective-payoff-ranking-error" role="alert">Couldn't save the ranking. Try again.</p>
       ) : null }
     </div>

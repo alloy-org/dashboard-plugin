@@ -294,6 +294,20 @@ $retrospective-backdrop-layouts: (
     gap: $sp-sm;
   }
 
+  // Once the story is ready the ranking is stored and frozen for a moment, its chips dimmed and no longer grabbable.
+  .retrospective-payoff-ranking--locked {
+    .retrospective-payoff-zone { opacity: 0.6; transition: opacity 160ms; }
+    .retrospective-payoff-chip { cursor: default; }
+    .retrospective-payoff-chip:hover { background: $retrospective-chip-background; }
+  }
+
+  .retrospective-payoff-ranking-saved {
+    font-size: $large-font-size;
+    font-weight: 700;
+    margin: 0;
+    text-align: center;
+  }
+
   .retrospective-payoff-ranking-error {
     color: $retrospective-text-on-slide;
     font-weight: 600;

@@ -3,7 +3,9 @@
 // lists the other styles already generated, a mute button for the soundtrack, and a way back to the options; it always
 // offers the quarter's plan note. The click that plays or generates a story is the gesture its soundtrack starts from.
 // Once a generation knows the quarter's projects, the processing screen asks the user to rank them by payoff when there
-// are at least two; a story played while the quarter is still unranked asks the same on a slide before its end card. The end card replays the
+// are at least two; a story played while the quarter is still unranked asks the same on a slide before its end card. When
+// the story is ready, whatever the user ranked there is saved and the locked ranking says so briefly before the story
+// plays, so the user knows the order was kept. The end card replays the
 // story, goes back to the options to generate another, or saves the quarter's takeaways in a note and opens it. The
 // "Aw no you di'nt" slide waits for the user, so its list can be scrolled, and offers each project a note documenting
 // how its hardest tasks were done. Every note the retrospective writes carries the tag chosen on the options screen.
@@ -29,6 +31,9 @@ import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "util/browser-utility";
 import { navigateToNote } from "util/goal-notes";
 import { logIfEnabled } from "util/log";
+
+// How long the processing screen shows the locked ranking with its "Progress saved!" message before the story plays.
+export const RANKING_PROGRESS_SAVED_MILLISECONDS = 1000;
 
 // ----------------------------------------------------------------------------------------------
 // @desc Whether the soundtrack starts muted: as last chosen, or muted when the viewer asked for reduced motion.
@@ -107,6 +112,9 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
   const [tagSuggestions, setTagSuggestions] = useState([]);
   const audioContextRef = useRef(null);
   const payoffRankingRef = useRef(null);
+  // The ranking on the processing screen: the projects ranked since its last save, the save in flight, and whether
+  // any of its saves stored a ranking.
+  const generationRankingRef = useRef({ pendingProjects: null, savePromise: null, saved: false });
   const scope = { domainName, quarter: plan.quarter, year: plan.year };
 
   useEffect(() => {
@@ -162,9 +170,31 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
   // @desc Store the user's payoff ranking of the quarter's projects, replacing any earlier one.
   // @param {Array<object>} rankedProjects - { derivedFrom, name, uuid } per project, the one that paid off most first.
   const savePayoffRanking = async rankedProjects => {
-    const storedRanking = await saveProjectPayoffRanking(app, { ...scope, rankedProjects });
+    const generationRanking = generationRankingRef.current;
+    const savePromise = saveProjectPayoffRanking(app, { ...scope, rankedProjects });
+    generationRanking.savePromise = savePromise;
+    const storedRanking = await savePromise;
     payoffRankingRef.current = storedRanking;
     setPayoffRanking(storedRanking);
+    generationRanking.saved = true;
+    if (generationRanking.pendingProjects === rankedProjects) generationRanking.pendingProjects = null;
+  };
+  // @desc Store the processing screen's ranking once the story is ready, so an order the user arranged but didn't save
+  //   is kept rather than dropped with the screen. A save the user started is let finish first.
+  // @returns {Promise<boolean>} Whether a ranking from the processing screen is stored.
+  const persistGenerationRanking = async () => {
+    const generationRanking = generationRankingRef.current;
+    await generationRanking.savePromise?.catch(() => {});
+    const pendingProjects = generationRanking.pendingProjects;
+    if (pendingProjects?.length) {
+      try {
+        await savePayoffRanking(pendingProjects);
+      } catch (error) {
+        logIfEnabled("[quarter-retrospective] could not save the ranking when the story was ready", error?.message);
+        return false;
+      }
+    }
+    return generationRanking.saved;
   };
   // @desc Show a story ending on its end card, adding the ranking slide before it when the quarter has projects and is
   //   still unranked. That choice is made once, as the story starts, so saving on the slide doesn't shift the slides
@@ -192,12 +222,17 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
     saveRetrospectiveNoteTag(app, noteTag);
     prepareSoundtrack();
     setRankingProjects([]);
+    generationRankingRef.current = { pendingProjects: null, savePromise: null, saved: false };
     setView({ kind: "generating", message: `Reading ${ plan.label }'s completed tasks…` });
     const onProgress = message => setView(previous => (previous.kind === "generating" ? { ...previous, message } : previous));
     try {
       const retrospective = await generateRetrospective(app, { ...scope, domainUuid, options, style }, { onProgress,
         onProjectsKnown: setRankingProjects });
       setSaved(previous => [retrospective, ...previous.filter(existing => existing.style !== style)]);
+      if (await persistGenerationRanking()) {
+        setView(previous => (previous.kind === "generating" ? { ...previous, rankingLocked: true } : previous));
+        await new Promise(resolve => setTimeout(resolve, RANKING_PROGRESS_SAVED_MILLISECONDS));
+      }
       showStory(retrospective, options.soundtrackVibe);
     } catch (error) {
       logIfEnabled("[quarter-retrospective] could not generate", error?.message);
@@ -244,7 +279,8 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
     body = (
       <RetrospectiveStatus message={ view.message }>
         { rankingProjects.length >= MINIMUM_PAYOFF_RANKING_PROJECTS ? (
-          <RetrospectivePayoffRanking key={ rankingProjects.map(project => project.name).join("|") } onSave={ savePayoffRanking }
+          <RetrospectivePayoffRanking key={ rankingProjects.map(project => project.name).join("|") } locked={ !!view.rankingLocked }
+            onRankingChange={ rankedProjects => { generationRankingRef.current.pendingProjects = rankedProjects; } } onSave={ savePayoffRanking }
             projects={ rankingProjects } savedRanking={ payoffRanking } />
         ) : null }
       </RetrospectiveStatus>

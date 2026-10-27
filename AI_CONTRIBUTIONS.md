@@ -5,6 +5,19 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-27 — Retrospective processing screen keeps and confirms the user's ranking
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-payoff-ranking.jsx` — `locked` prop disables the chips' buttons and dragging, dims the areas, and shows "Progress saved!" in place of the Save/Skip buttons; `onRankingChange` reports the ranked projects after each user move.
+- `lib/dashboard/quarter-retrospective/quarter-retrospective.jsx` — tracks the processing screen's unsaved ranking and any save in flight; when the story is ready, `persistGenerationRanking` lets an in-flight save finish, saves an unsaved ranking, and, when a ranking from that screen is stored, locks the ranking for `RANKING_PROGRESS_SAVED_MILLISECONDS` (1000ms) before the story plays.
+- `lib/dashboard/styles/quarter-retrospective.scss` — locked ranking and saved message styles.
+- `test/quarter-retrospective-payoff-ranking.test.js` — move reporting and the locked state.
+
+**Task:** Make clear that the ranking arranged while a retrospective generates is saved, not discarded.
+
+---
+
 ## 2026-10-27 — Retrospective takeaways note: spaced paragraphs and colored month tables
 
 **Model:** Claude Opus 5.5

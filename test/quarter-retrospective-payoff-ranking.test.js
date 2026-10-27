@@ -169,6 +169,22 @@ describe("RetrospectivePayoffRanking", () => {
     expect(container.querySelector("[role='alert']").textContent).toContain("Couldn't save");
     expect(chipNames(container, "ranked")).toEqual(["Garden"]);
   });
+
+  it("reports each move to its caller, and once locked takes no moves and says the progress was saved", async () => {
+    const onRankingChange = jest.fn();
+    const props = { onRankingChange, onSave: jest.fn(async () => {}), projects: PROJECTS };
+    const container = await render(createElement(RetrospectivePayoffRanking, props));
+    expect(onRankingChange).not.toHaveBeenCalled();
+    await click(container.querySelector("[aria-label='Rank Garden']"));
+    expect(onRankingChange.mock.calls.at(-1)[0].map(project => project.name)).toEqual(["Garden"]);
+
+    await act(async () => { mounted.root.render(createElement(RetrospectivePayoffRanking, { ...props, locked: true })); });
+    expect(container.querySelector(".retrospective-options-primary")).toBeNull();
+    expect(container.querySelector(".retrospective-payoff-ranking-saved").textContent).toBe("Progress saved!");
+    expect([...container.querySelectorAll(".retrospective-payoff-chip-move")].every(button => button.disabled)).toBe(true);
+    expect([...container.querySelectorAll(".retrospective-payoff-chip")].some(chip => chip.draggable)).toBe(false);
+    expect(chipNames(container, "ranked")).toEqual(["Garden"]);
+  });
 });
 
 describe("RetrospectiveStory with an interactive slide", () => {
