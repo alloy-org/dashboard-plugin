@@ -185,4 +185,32 @@ describe("generation with month digests", () => {
     expect(payloads.get("Projects").projects).toEqual([expect.objectContaining({ derivedFrom: "themes", name: "Write the book" })]);
     expect(payloads.get("Month 2")).toMatchObject({ generatedBy: "fallback", taskCount: 0 });
   });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Another style reuses the earlier generation's month digests while the quarter's completed task count is
+  //   unchanged. Once a task is completed later in the quarter, every month is digested again, including one whose own
+  //   count still matches.
+  it("digests every month again once the quarter's completed task count changes", async () => {
+    const app = maintenanceApp({ tasks: [] });
+    const completedAt = (month, day) => Math.floor(new Date(2026, month - 1, day, 12).getTime() / 1000);
+    const julyTask = { completedAt: completedAt(7, 6), content: "Draft chapter one", uuid: "task-1", victoryValue: 4 };
+    app.getCompletedTasks = jest.fn(async () => [julyTask]);
+    const monthPrompts = [];
+    const requestPrompt = async prompt => {
+      if (!prompt.startsWith("Summarize ")) return null;
+      monthPrompts.push(prompt.match(/^Summarize (\w+)/)[1]);
+      return { highlights: [{ summary: "Progress", taskIds: ["t1"] }], themes: [{ name: "Drafting", taskIds: ["t1"] }] };
+    };
+    const request = { domainName: "Work", domainUuid: "work-domain", options: {}, quarter: 3, year: 2026 };
+    await generateRetrospective(app, { ...request, style: "data" }, { requestPrompt });
+    expect(monthPrompts).toEqual(["July"]);
+
+    await generateRetrospective(app, { ...request, style: "roast" }, { requestPrompt });
+    expect(monthPrompts).toEqual(["July"]);
+
+    const augustTask = { completedAt: completedAt(8, 3), content: "Draft chapter two", uuid: "task-2", victoryValue: 3 };
+    app.getCompletedTasks = jest.fn(async () => [julyTask, augustTask]);
+    await generateRetrospective(app, { ...request, style: "spotify" }, { requestPrompt });
+    expect(monthPrompts.slice(1).sort()).toEqual(["August", "July"]);
+  });
 });
