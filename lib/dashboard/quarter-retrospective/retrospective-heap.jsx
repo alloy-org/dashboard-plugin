@@ -13,6 +13,7 @@ const HEAP_FALL_MILLISECONDS = 600;
 const HEAP_LONGEST_STEP_MILLISECONDS = 40;
 const NO_PROJECT_LABEL = "No project";
 const NO_PROJECT_CANVAS_COLOR = "rgba(255, 255, 255, 0.55)";
+const LEGEND_LABEL_MAX_CHARACTERS = 50;
 
 // ----------------------------------------------------------------------------------------------
 // @desc The delay between one block's start and the next.
@@ -96,7 +97,18 @@ function HeapCanvas({ label, layout }) {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc The heap and its legend.
+// @desc A legend entry's text: the project name, cut to LEGEND_LABEL_MAX_CHARACTERS with an ellipsis when longer,
+//   followed by its completed task count in parentheses.
+// @param {object} entry - { label, taskCount } from the heap's legend.
+// @returns {string} The text shown beside the entry's swatch.
+function legendEntryText({ label, taskCount }) {
+  const shortLabel = label.length > LEGEND_LABEL_MAX_CHARACTERS ? `${ label.slice(0, LEGEND_LABEL_MAX_CHARACTERS - 1).trimEnd() }…` : label;
+  return `${ shortLabel } (${ taskCount.toLocaleString() })`;
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc The heap and its legend. Each legend entry names its project, truncated to LEGEND_LABEL_MAX_CHARACTERS, and
+//   how many completed tasks it contributed.
 // @param {object} props - An object with the following properties:
 //   - {object} heap - { blocks, legend } from the statistics' progressHeap
 // @returns {JSX.Element} The heap.
@@ -104,9 +116,9 @@ export default function RetrospectiveHeap({ heap }) {
   const layout = useMemo(() => progressHeapLayout(heap.blocks), [heap]);
   const taskWord = layout.placed.length === 1 ? "task" : "tasks";
   const label = `A pile of ${ layout.placed.length.toLocaleString() } completed ${ taskWord }`;
-  const hasNoProjectBlocks = layout.placed.some(block => !block.slot);
+  const noProjectTaskCount = heap.blocks.filter(([slot]) => !slot).length;
   const legend = [...(heap.legend || [])];
-  if (legend.length && hasNoProjectBlocks) legend.push({ label: NO_PROJECT_LABEL, slot: 0 });
+  if (legend.length && noProjectTaskCount) legend.push({ label: NO_PROJECT_LABEL, slot: 0, taskCount: noProjectTaskCount });
   return (
     <div className="retrospective-heap">
       { layout.placed.length > HEAP_ELEMENT_LIMIT ? <HeapCanvas label={ label } layout={ layout } /> : <HeapBlocks label={ label } layout={ layout } /> }
@@ -115,7 +127,7 @@ export default function RetrospectiveHeap({ heap }) {
           { legend.map(entry => (
             <li className="retrospective-heap-legend-entry" key={ `${ entry.slot }-${ entry.label }` }>
               <span className={ `retrospective-heap-swatch retrospective-heap-block--slot-${ entry.slot }` } />
-              { entry.label }
+              <span title={ entry.label }>{ legendEntryText(entry) }</span>
             </li>
           )) }
         </ul>

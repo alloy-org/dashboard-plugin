@@ -119,8 +119,8 @@ describe("gatherRetrospectiveQuarter", () => {
 
     const post = gathered.completions.find(completion => completion.taskUuid === "task-post");
     expect(post).toMatchObject({ footnoteText: expect.stringContaining("The first draft."), noteName: "Launch plan", noteTags: ["work/launch"] });
-    expect(gathered.media).toEqual([{ alt: "Cover", footnoteText: expect.stringContaining("The first draft."), taskUuid: "task-post",
-      url: "https://images.example.com/cover.png" }]);
+    expect(gathered.media).toEqual([{ alt: "Cover", footnoteText: expect.stringContaining("The first draft."), taskText: "Write the launch post draft",
+      taskUuid: "task-post", url: "https://images.example.com/cover.png" }]);
     expect(app.getNoteContent.mock.calls.filter(([handle]) => handle.uuid === "launch-note")).toHaveLength(1);
     expect(gathered.projects).toEqual([{ derivedFrom: "plan", name: "Launch", uuid: "project-launch" }]);
     expect(gathered.statistics.doneAndOpenByProject).toEqual([{ doneCount: 0, name: "Launch", openCount: 1, projectUuid: "project-launch" }]);

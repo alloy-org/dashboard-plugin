@@ -5,6 +5,32 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-27 — Retrospective photo slides pick a layout from the image's shape and caption with the task
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-slide.jsx` — `ImageSlide` measures the photo's natural size on load; `imageLayoutFromDimensions` keeps the full-bleed cover layout for images within 1.25x of the slide's aspect ratio and frames any other image whole between headline and caption. The photo stays hidden until its layout is known.
+- `lib/dashboard/styles/quarter-retrospective.scss` — Photo frame element, fade-in, and the `retrospective-slide--image-framed` layout (contained, rounded image on the slide's tone, no scrim, caption clamped to four lines).
+- `lib/dashboard/quarter-retrospective/retrospective-story-writer.js` — Image offers carry their task's text, shown to the AI and used as the photo slide's caption; a missing headline falls back to "A Q{n} moment from the archives…" instead of dropping the slide.
+- `lib/dashboard/quarter-retrospective/retrospective-data.js` — Media candidates carry `taskText`.
+- `lib/dashboard/quarter-retrospective/retrospective-statistics.js` — `retrospectiveTaskText` drops images and footnote definitions and reduces footnote references to their label.
+- `test/quarter-retrospective-story-writer.test.js`, `test/quarter-retrospective-gathering.test.js`, `test/quarter-retrospective-statistics.test.js` — Layout choice, task-text captions, archive headline fallback, and task text cleaning.
+
+**Task:** Keep wide screenshots in the retrospective slideshow legible instead of cropping them to a magnified sliver.
+
+---
+
+## 2026-10-27 — Task mountain legend shows task counts and truncates long names
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-heap.jsx` — `legendEntryText` follows each legend entry with its completed task count in parentheses, including "No project", and cuts project names longer than 50 characters with an ellipsis (the full name stays in the entry's title).
+- `test/quarter-retrospective-story-writer.test.js` — Legend entries carry counts; a long project name is truncated.
+
+**Task:** Show per-project task counts in the retrospective's task mountain legend and truncate long project names.
+
+---
+
 ## 2026-10-27 — Retrospective backfills completed task <> project relationships
 
 **Model:** Claude Opus 5.5

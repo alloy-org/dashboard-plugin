@@ -1133,19 +1133,62 @@ $retrospective-backdrop-layouts: (
     width: 10px;
   }
 
-  // The photo fills the slide and the scrim darkens it from the bottom, where the words sit.
+  // A photo slide starts in the fill layout with its photo hidden, until the photo loads and its shape picks the layout.
+  // Filled, the photo covers the slide and the scrim darkens it from the bottom, where the words sit.
   .retrospective-slide--image {
     justify-content: flex-end;
 
     > .retrospective-slide-kicker, > .retrospective-slide-headline, > .retrospective-slide-caption { position: relative; }
   }
 
+  .retrospective-slide-photo-frame {
+    inset: 0;
+    position: absolute;
+  }
+
   .retrospective-slide-photo {
     height: 100%;
-    inset: 0;
     object-fit: cover;
-    position: absolute;
+    opacity: 0;
+    transition: opacity 400ms ease-out;
     width: 100%;
+  }
+
+  .retrospective-slide-photo--shown { opacity: 1; }
+
+  // Framed, a photo of another shape sits whole between the headline and the caption on the slide's tone, sized to fit
+  // the space they leave without being enlarged past its own size.
+  .retrospective-slide--image-framed {
+    justify-content: flex-start;
+
+    .retrospective-slide-photo-frame {
+      flex: 1 1 0;
+      min-height: 0;
+      order: 1;
+      position: relative;
+    }
+
+    .retrospective-slide-photo {
+      border-radius: $radius-md;
+      box-shadow: 0 12px 40px $color-overlay-shadow;
+      height: auto;
+      inset: 0;
+      margin: auto;
+      max-height: 100%;
+      max-width: 100%;
+      position: absolute;
+      width: auto;
+    }
+
+    .retrospective-slide-scrim { display: none; }
+
+    > .retrospective-slide-caption {
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 4;
+      display: -webkit-box;
+      order: 2;
+      overflow: hidden;
+    }
   }
 
   .retrospective-slide-scrim {

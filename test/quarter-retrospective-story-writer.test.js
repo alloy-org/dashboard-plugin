@@ -12,7 +12,7 @@ import { retrospectiveStatistics } from "dashboard/quarter-retrospective/retrosp
 import { storyImageOffers, writeRetrospectiveStory, writtenStorySlides } from "dashboard/quarter-retrospective/retrospective-story-writer";
 import { maintenanceApp } from "./project-maintenance-test-app";
 
-const { default: RetrospectiveSlide } = await import("dashboard/quarter-retrospective/retrospective-slide");
+const { default: RetrospectiveSlide, imageLayoutFromDimensions } = await import("dashboard/quarter-retrospective/retrospective-slide");
 
 // ----------------------------------------------------------------------------------------------
 // @desc A completed task, completed at local noon on a day of July 2026.
@@ -117,7 +117,7 @@ describe("story replies", () => {
       monthName: "August" }];
     const media = [{ alt: "Launch party", footnoteText: "We shipped", url: "https://x.com/a.png" }];
     const imageOffers = storyImageOffers(monthDigests, media);
-    expect(imageOffers).toEqual([{ alt: "Launch party", context: "We shipped", id: "i1", monthName: "July", url: "https://x.com/a.png" }]);
+    expect(imageOffers).toEqual([{ alt: "Launch party", context: "We shipped", id: "i1", monthName: "July", taskText: "", url: "https://x.com/a.png" }]);
     const reply = { genre: { caption: "Heads down, ship it.", name: "Deep-Focus Builder" }, imageSlides: [{ afterSlideId: "intro", caption: "Worth it",
       headline: "Launch night", imageId: "i1", kicker: "July" }, { afterSlideId: "intro", headline: "Again", imageId: "i1" },
     { headline: "Invented", imageId: "i9" }], slides: [{ caption: "Five whole tasks", headline: "Your quarter", id: "intro", kicker: "Wrapped" }] };
@@ -131,6 +131,22 @@ describe("story replies", () => {
 
     const roast = writtenStorySlides(reply, { baseSlides, imageOffers, statistics, style: "roast" });
     expect(roast.slides.some(slide => slide.id === "personality")).toBe(false);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A photo slide's caption is the text of the task holding its image, and a reply that gives the slide no
+  //   headline gets the archive headline rather than losing the photo.
+  it("captions photo slides with their task's text", () => {
+    const { baseSlides, statistics } = sortedQuarter();
+    const monthDigests = [{ imageUrls: ["https://x.com/a.png"], monthName: "July" }];
+    const media = [{ alt: "Launch party", footnoteText: "We shipped", taskText: "Ship the beta launch", url: "https://x.com/a.png" }];
+    const imageOffers = storyImageOffers(monthDigests, media);
+    const reply = { imageSlides: [{ afterSlideId: "intro", caption: "Invented caption", imageId: "i1" }],
+      slides: [{ caption: "Five whole tasks", headline: "Your quarter", id: "intro", kicker: "Wrapped" }] };
+    const written = writtenStorySlides(reply, { baseSlides, imageOffers, statistics, style: "roast" });
+    const photoSlide = written.slides.find(slide => slide.kind === "image");
+    expect(photoSlide).toMatchObject({ caption: "Ship the beta launch", headline: `A Q${ statistics.quarter } moment from the archives…`,
+      kicker: "July" });
   });
 
   // ----------------------------------------------------------------------------------------------
@@ -207,7 +223,7 @@ describe("slide kinds", () => {
     const heapSlide = baseSlides.find(slide => slide.id === "progress-heap");
     const heapMount = await renderSlide(heapSlide);
     expect(heapMount.querySelectorAll(".retrospective-heap-block")).toHaveLength(5);
-    expect([...heapMount.querySelectorAll(".retrospective-heap-legend-entry")].map(entry => entry.textContent)).toEqual(["Launch", "Garden", "No project"]);
+    expect([...heapMount.querySelectorAll(".retrospective-heap-legend-entry")].map(entry => entry.textContent)).toEqual(["Launch (3)", "Garden (1)", "No project (1)"]);
     expect(heapMount.querySelector(".retrospective-heap-pile").getAttribute("aria-label")).toBe("A pile of 5 completed tasks");
     await act(async () => { mounted.root.unmount(); });
     mounted.mountPoint.remove();
@@ -218,6 +234,18 @@ describe("slide kinds", () => {
     const months = [...timelineMount.querySelectorAll(".retrospective-slide-timeline-month")];
     expect(months.map(month => month.querySelector(".retrospective-slide-timeline-label").textContent)).toEqual(["July", "August", "September"]);
     expect(months[0].querySelector(".retrospective-slide-timeline-note").textContent).toBe("Launch week");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A project name longer than fifty characters is cut short in the legend, keeping its task count.
+  it("truncates long project names in the heap legend", async () => {
+    const { baseSlides } = sortedQuarter();
+    const heapSlide = baseSlides.find(slide => slide.id === "progress-heap");
+    const longName = "Amplenote effectively markets dashboard, mood tracking, and assignment";
+    const legend = heapSlide.heap.legend.map((entry, index) => (index ? entry : { ...entry, label: longName }));
+    const heapMount = await renderSlide({ ...heapSlide, heap: { ...heapSlide.heap, legend } });
+    const firstEntryText = heapMount.querySelector(".retrospective-heap-legend-entry").textContent;
+    expect(firstEntryText).toBe("Amplenote effectively markets dashboard, mood tra… (3)");
   });
 
   // ----------------------------------------------------------------------------------------------
@@ -237,5 +265,25 @@ describe("slide kinds", () => {
     await act(async () => { photo.dispatchEvent(new Event("error")); });
     expect(imageMount.querySelector(".retrospective-slide-photo")).toBeNull();
     expect(imageMount.querySelector(".retrospective-slide-headline").textContent).toBe("Launch night");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A photo stays hidden until it loads; a wide screenshot is then framed whole, and a photo about the slide's
+  //   shape fills it.
+  it("picks a photo's layout from its shape once it loads", async () => {
+    const photoSlide = { caption: "Ship the beta", figure: null, headline: "A Q3 moment from the archives…", id: "image-i1",
+      imageUrl: "https://x.com/a.png", items: [], kicker: "July", kind: "image", tone: "dusk" };
+    const imageMount = await renderSlide(photoSlide);
+    const photo = imageMount.querySelector(".retrospective-slide-photo");
+    expect(photo.classList.contains("retrospective-slide-photo--shown")).toBe(false);
+    Object.defineProperty(photo, "naturalWidth", { value: 2400 });
+    Object.defineProperty(photo, "naturalHeight", { value: 1350 });
+    await act(async () => { photo.dispatchEvent(new Event("load")); });
+    expect(imageMount.querySelector(".retrospective-slide--image-framed")).not.toBeNull();
+    expect(photo.classList.contains("retrospective-slide-photo--shown")).toBe(true);
+
+    expect(imageLayoutFromDimensions({ height: 1600, slideAspect: 9 / 16, width: 900 })).toBe("fill");
+    expect(imageLayoutFromDimensions({ height: 1000, slideAspect: 9 / 16, width: 1000 })).toBe("framed");
+    expect(imageLayoutFromDimensions({ height: 0, slideAspect: 9 / 16, width: 0 })).toBe("framed");
   });
 });

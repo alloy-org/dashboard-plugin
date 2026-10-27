@@ -1,16 +1,21 @@
 // One slide of the Quarter Retrospective story: a kicker, a large figure that counts up from zero, a headline, an
 // optional ranked list, a caption, and an optional explanation with a detail that opens on hover or tap. A slide's
-// kind adds what it draws between its headline and caption: done and open bars per project, each project's hardest tasks, the progress heap, or a timeline of months; a photo slide sets one of the user's images behind
-// its words. The hardest tasks list is exported so the story can show it with a link per project to document it. Behind the words of every other slide sit two drifting shapes placed by the slide's position, film grain,
+// kind adds what it draws between its headline and caption: done and open bars per project, each project's hardest tasks, the progress heap, or a timeline of months; a photo slide shows one of the user's images, filling the
+// slide behind its words when the image is about the slide's shape and framed whole between them otherwise. The hardest tasks list is exported so the story can show it with a link per project to document it. Behind the words of every other slide sit two drifting shapes placed by the slide's position, film grain,
 // and, when the story gives one, an abstract photo blended into the slide's tone. Each part enters a beat after the one
 // above it, and the slide is remounted for every slide shown, so the entrance replays as the story advances.
 import RetrospectiveHeap from "dashboard/quarter-retrospective/retrospective-heap";
 import { SLIDE_KINDS } from "dashboard/quarter-retrospective/retrospective-slides";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { prefersReducedMotion } from "util/browser-utility";
 import { logIfEnabled } from "util/log";
 
 const COUNT_UP_MILLISECONDS = 1200;
+// A slide's width over its height when it can't be measured, matching the story's phone-shaped frame.
+const DEFAULT_SLIDE_ASPECT = 9 / 16;
+// An image whose shape is within this factor of the slide's fills the slide; any other is framed whole.
+const FILL_ASPECT_TOLERANCE = 1.25;
+export const IMAGE_LAYOUTS = Object.freeze({ fill: "fill", framed: "framed" });
 // The shapes behind a slide take one of this many arrangements, in turn as the story advances.
 export const BACKDROP_LAYOUT_COUNT = 4;
 
@@ -234,16 +239,31 @@ function SlideItems({ items }) {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc A photo slide: the image fills the slide behind a darkening scrim, with the words along the bottom. An image
-//   that fails to load is removed, leaving the slide's tone behind the words.
+// @desc A photo slide. Once the image loads, its shape picks the layout: an image close to the slide's shape fills the
+//   slide behind a darkening scrim with the words along the bottom, and any other image, such as a wide screenshot, is
+//   framed whole between the headline and caption on the slide's tone, so none of it is cropped or covered. The image
+//   stays hidden until its layout is known. An image that fails to load is removed, leaving the slide's tone behind
+//   the words.
 // @param {object} props - { slide }.
 // @returns {JSX.Element} The slide.
 function ImageSlide({ slide }) {
   const [imageFailed, setImageFailed] = useState(false);
+  const [imageLayout, setImageLayout] = useState(null);
+  const slideRef = useRef(null);
+  const handleImageLoad = event => {
+    const slideElement = slideRef.current;
+    const slideAspect = slideElement?.clientHeight ? slideElement.clientWidth / slideElement.clientHeight : DEFAULT_SLIDE_ASPECT;
+    setImageLayout(imageLayoutFromDimensions({ height: event.currentTarget.naturalHeight, slideAspect, width: event.currentTarget.naturalWidth }));
+  };
+  const layoutClass = imageLayout ? ` retrospective-slide--image-${ imageLayout }` : "";
   return (
-    <section aria-roledescription="slide" className={ `retrospective-slide retrospective-slide--image retrospective-slide--${ slide.tone }` }>
+    <section aria-roledescription="slide" className={ `retrospective-slide retrospective-slide--image${ layoutClass } retrospective-slide--${ slide.tone }` }
+        ref={ slideRef }>
       { imageFailed ? null : (
-        <img alt="" className="retrospective-slide-photo" onError={ () => setImageFailed(true) } src={ slide.imageUrl } />
+        <div className="retrospective-slide-photo-frame">
+          <img alt="" className={ `retrospective-slide-photo${ imageLayout ? " retrospective-slide-photo--shown" : "" }` }
+            onError={ () => setImageFailed(true) } onLoad={ handleImageLoad } src={ slide.imageUrl } />
+        </div>
       ) }
       <span aria-hidden="true" className="retrospective-slide-scrim" />
       <p className="retrospective-slide-kicker">{ slide.kicker }</p>
@@ -251,6 +271,18 @@ function ImageSlide({ slide }) {
       <p className="retrospective-slide-caption">{ slide.caption }</p>
     </section>
   );
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Which layout suits an image on a slide: "fill" when its width-to-height ratio is within FILL_ASPECT_TOLERANCE
+//   of the slide's, so covering the slide crops little of it, and "framed" otherwise, or when its size is unknown.
+// @param {object} dimensions - { height, slideAspect, width }: the image's natural size and the slide's width over height.
+// @returns {string} "fill" or "framed".
+export function imageLayoutFromDimensions({ height, slideAspect, width }) {
+  if (!width || !height || !slideAspect) return IMAGE_LAYOUTS.framed;
+  const aspectRatioDifference = (width / height) / slideAspect;
+  const isCloseToSlide = aspectRatioDifference <= FILL_ASPECT_TOLERANCE && aspectRatioDifference >= 1 / FILL_ASPECT_TOLERANCE;
+  return isCloseToSlide ? IMAGE_LAYOUTS.fill : IMAGE_LAYOUTS.framed;
 }
 
 // ----------------------------------------------------------------------------------------------

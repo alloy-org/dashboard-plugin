@@ -135,6 +135,8 @@ describe("retrospective helpers", () => {
   it("reduces task markdown to a short line", () => {
     expect(retrospectiveTaskText("Read **[the spec](https://example.com)**\n now")).toBe("Read the spec now");
     expect(retrospectiveTaskText("x".repeat(120))).toHaveLength(90);
+    expect(retrospectiveTaskText("Ship the beta ![Beta launch](https://x.com/beta.png)")).toBe("Ship the beta");
+    expect(retrospectiveTaskText("Write the [launch post][^1] today [^2]\n\n[^1]: The first draft.")).toBe("Write the launch post today");
   });
 
   it("measures scheduled minutes from the span, then the duration", () => {
