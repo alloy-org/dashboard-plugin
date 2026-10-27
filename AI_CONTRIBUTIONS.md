@@ -5,6 +5,18 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-27 — Exported retrospective video leads the end card
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-video-export.jsx` — State moves into `useRetrospectiveVideoExport`, cleared when the story changes; `RetrospectiveVideoResult` renders the video with its Download, Share, and Upload buttons apart from the encode buttons, and "Test video" becomes "Partial video".
+- `lib/dashboard/quarter-retrospective/quarter-retrospective.jsx` — Holds the export and renders the video result beside the end card.
+- `lib/dashboard/styles/quarter-retrospective.scss` — The video result is ordered to the top of the end card slide, and the preview is framed with a border and shadow so it stands out from the slide; the hardest tasks list hides its scrollbar.
+
+**Task:** Make a finished retrospective video obvious by placing it at the top of the end card.
+
+---
+
 ## 2026-10-27 — Retrospective video export trial
 
 **Model:** Claude Opus 5.5

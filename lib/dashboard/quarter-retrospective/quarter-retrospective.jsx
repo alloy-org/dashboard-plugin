@@ -25,7 +25,7 @@ import { MINIMUM_PAYOFF_RANKING_PROJECTS, RETROSPECTIVE_STYLES, SLIDE_KINDS, sli
   slidesWithPayoffRanking } from "dashboard/quarter-retrospective/retrospective-slides";
 import { createRetrospectiveAudioContext } from "dashboard/quarter-retrospective/retrospective-soundtrack";
 import RetrospectiveStory, { SLIDE_MILLISECONDS } from "dashboard/quarter-retrospective/retrospective-story";
-import RetrospectiveVideoExport from "dashboard/quarter-retrospective/retrospective-video-export";
+import RetrospectiveVideoExport, { RetrospectiveVideoResult, useRetrospectiveVideoExport } from "dashboard/quarter-retrospective/retrospective-video-export";
 import { saveRetrospectiveTakeaways } from "dashboard/quarter-retrospective/retrospective-takeaways";
 import { pluginSettings, updatePluginSetting } from "plugin-data";
 import { useEffect, useRef, useState } from "react";
@@ -117,6 +117,10 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
   // any of its saves stored a ranking.
   const generationRankingRef = useRef({ pendingProjects: null, savePromise: null, saved: false });
   const scope = { domainName, quarter: plan.quarter, year: plan.year };
+  const storyRetrospective = view.kind === "story" ? view.retrospective : null;
+  const videoExport = useRetrospectiveVideoExport({ app, fileStem: storyRetrospective
+    ? `${ plan.label } ${ retrospectiveStyleLabel(storyRetrospective.style) } retrospective` : plan.label,
+    slideMilliseconds: SLIDE_MILLISECONDS, slides: view.slides || [], soundtrackVibe: view.soundtrackVibe || null, storyKey: storyRetrospective });
 
   useEffect(() => {
     let cancelled = false;
@@ -254,7 +258,7 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
     showStory(retrospective, soundtrackVibe);
   };
   // @desc The controls of a story's interactive slides: the ranking, which moves the story on once saved or skipped,
-  //   the hardest tasks, which moves on when the user continues, and the end card.
+  //   the hardest tasks, which moves on when the user continues, and the end card, with any video exported from it.
   const renderInteractiveSlide = (slide, { onDone, onReplay }) => {
     if (slide.kind === SLIDE_KINDS.hardestTasks && slide.hardestProjects?.length) {
       return (
@@ -271,11 +275,13 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
     if (slide.kind !== SLIDE_KINDS.endCard || view.kind !== "story") return null;
     const takeawaysSaved = saved.some(retrospective => retrospective.takeawaysNoteUuid) || !!view.retrospective.takeawaysNoteUuid;
     return (
-      <RetrospectiveEndCard onGenerateNew={ showOptions } onReplay={ onReplay } onSaveTakeaways={ () => saveTakeaways(view.retrospective) }
-        takeawaysSaved={ takeawaysSaved }>
-        <RetrospectiveVideoExport app={ app } fileStem={ `${ plan.label } ${ retrospectiveStyleLabel(view.retrospective.style) } retrospective` }
-          slideMilliseconds={ SLIDE_MILLISECONDS } slides={ view.slides } soundtrackVibe={ view.soundtrackVibe || null } />
-      </RetrospectiveEndCard>
+      <>
+        <RetrospectiveVideoResult videoExport={ videoExport } />
+        <RetrospectiveEndCard onGenerateNew={ showOptions } onReplay={ onReplay } onSaveTakeaways={ () => saveTakeaways(view.retrospective) }
+          takeawaysSaved={ takeawaysSaved }>
+          <RetrospectiveVideoExport videoExport={ videoExport } />
+        </RetrospectiveEndCard>
+      </>
     );
   };
 
