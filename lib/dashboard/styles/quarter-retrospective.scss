@@ -1,10 +1,11 @@
-// Styles for the Quarter Retrospective: the overlay it opens in, the tall story card, its header links, the options and
-// status screens, the progress segments, each slide's tone, and what each kind of slide draws: project bars, the month
-// timeline, the progress heap, and photo slides. Slides keep their own saturated gradients in both themes, like a year-in-review story, so every
-// gradient stop is dark enough for white text; the card chrome around them follows the dashboard theme. Behind each
-// slide's words a backdrop layers an optional abstract photo, two drifting accent shapes, and film grain, all kept faint
-// enough, and pushed toward the slide's edges, that the white text keeps its contrast. The payoff ranking's project chips
-// appear on the processing screen and on a slide of their own.
+// Styles for the Quarter Retrospective: the overlay it opens in, the tall story card, its header links, the options
+// and status screens, the progress segments, each slide's tone, and what each kind of slide draws: project bars, the
+// month timeline, each project's hardest tasks, the progress heap, and photo slides. Slides keep their own saturated
+// gradients in both themes, like a year-in-review story, so every gradient stop is dark enough for white text; the
+// card chrome around them follows the dashboard theme. Behind each slide's words a backdrop layers an optional
+// abstract photo, two drifting accent shapes, and film grain, all kept faint enough, and pushed toward the slide's
+// edges, that the white text keeps its contrast. The payoff ranking's project chips appear on the processing screen
+// and on a slide of their own.
 
 @use 'sass:list';
 @use 'sass:map';
@@ -186,18 +187,51 @@ $retrospective-backdrop-layouts: (
     &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: 2px; }
   }
 
+  // The ranked list and the projects not ranked yet. Neither scrolls on its own: the screen around them does, so a
+  // drag held near its edge can scroll from one area to the other.
+  .retrospective-payoff-zone {
+    border: 2px dashed $retrospective-slide-rule;
+    border-radius: $radius-md;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+    padding: $sp-sm;
+    transition: border-color 160ms;
+  }
+
+  .retrospective-payoff-zone--ranked { border-style: solid; }
+  .retrospective-payoff-zone--drag-over { border-color: $retrospective-text-on-slide; }
+
+  .retrospective-payoff-zone-label {
+    color: $retrospective-text-on-slide-muted;
+    font-size: $smaller-font-size;
+    margin: 0;
+  }
+
+  .retrospective-payoff-zone-empty {
+    color: $retrospective-text-on-slide-muted;
+    margin: 0;
+    padding: $sp-sm 0;
+    text-align: center;
+  }
+
   .retrospective-payoff-ranking-list {
     display: flex;
     flex-direction: column;
     gap: $sp-xs;
     list-style: none;
     margin: 0;
-    max-height: 40vh;
-    overflow-y: auto;
     padding: 0;
-    scrollbar-width: none;
+  }
 
-    &::-webkit-scrollbar { display: none; }
+  // Unranked projects wrap as pills, so ten of them take a few rows rather than a screen's height.
+  .retrospective-payoff-unranked-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-xs;
+    list-style: none;
+    margin: 0;
+    padding: 0;
   }
 
   .retrospective-payoff-chip {
@@ -212,6 +246,11 @@ $retrospective-backdrop-layouts: (
     transition: background 160ms, border-color 160ms, opacity 160ms;
 
     &:hover { background: $retrospective-chip-background-hover; }
+  }
+
+  .retrospective-payoff-chip--unranked {
+    border-radius: 999px;
+    padding: 2px 2px 2px $sp-md;
   }
 
   .retrospective-payoff-chip--dragging { cursor: grabbing; opacity: 0.45; }
@@ -258,9 +297,14 @@ $retrospective-backdrop-layouts: (
     margin: 0;
   }
 
-  // On its slide the ranking sits above the footer, which shares its layer.
+  // On its slide the ranking sits above the footer, which shares its layer, and the slide scrolls, without a
+  // scrollbar, when a quarter's projects outgrow it.
   .retrospective-slide--payoff-ranking {
     justify-content: flex-start;
+    overflow-y: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar { display: none; }
 
     .retrospective-payoff-ranking { position: relative; z-index: 2; }
   }
@@ -734,6 +778,76 @@ $retrospective-backdrop-layouts: (
   .retrospective-slide-bar-done { background: $retrospective-text-on-slide; }
   .retrospective-slide-bar-open { background: $retrospective-bar-open; }
 
+  .retrospective-slide-subheadline {
+    color: $retrospective-text-on-slide-muted;
+    font-size: $default-font-size;
+    font-style: italic;
+    margin: 0;
+  }
+
+  // The hardest tasks slide starts at the top, and its project list scrolls when the projects outgrow the slide.
+  .retrospective-slide--hardest-tasks { justify-content: flex-start; }
+
+  .retrospective-slide-hardest-projects {
+    display: flex;
+    flex: 0 1 auto;
+    flex-direction: column;
+    gap: $sp-md;
+    list-style: none;
+    margin: 0;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0;
+    scrollbar-width: thin;
+  }
+
+  .retrospective-slide-hardest-project {
+    animation: retrospective-enter $retrospective-entrance-duration ease-out both;
+    animation-delay: calc(#{$retrospective-entrance-step * 3} + var(--item-index) * 90ms);
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+  }
+
+  .retrospective-slide-hardest-project-name {
+    font-size: $default-font-size;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin: 0;
+    overflow-wrap: anywhere;
+    text-transform: uppercase;
+  }
+
+  .retrospective-slide-hardest-tasks {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .retrospective-slide-hardest-task {
+    border-bottom: 1px solid $retrospective-slide-rule;
+    display: flex;
+    gap: $sp-md;
+    justify-content: space-between;
+    padding-bottom: $sp-xs;
+  }
+
+  .retrospective-slide-hardest-task-text {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .retrospective-slide-hardest-task-difficulty {
+    color: $retrospective-text-on-slide-muted;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
   .retrospective-slide-timeline {
     display: flex;
     gap: $sp-md;
@@ -899,7 +1013,7 @@ $retrospective-backdrop-layouts: (
 
   @media (prefers-reduced-motion: reduce) {
     .retrospective-slide, .retrospective-slide > *, .retrospective-slide > .retrospective-slide-backdrop, .retrospective-slide-item,
-    .retrospective-slide-bar, .retrospective-slide-timeline-month, .retrospective-slide-timeline-column, .retrospective-heap-block,
+    .retrospective-slide-bar, .retrospective-slide-hardest-project, .retrospective-slide-timeline-month, .retrospective-slide-timeline-column, .retrospective-heap-block,
     .retrospective-backdrop-shape { animation: none; }
   }
 

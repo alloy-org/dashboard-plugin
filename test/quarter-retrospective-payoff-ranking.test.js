@@ -1,15 +1,15 @@
 // Verify the project payoff ranking: the yearly rankings note it saves to and re-ranks in place, recalling the most
 // recent ranked quarters across a year boundary, ordering projects as last ranked, the ranking slide's place in a
-// story before its end card, the ranking list's buttons and drag and drop, a story waiting on its interactive slide, and the rankings
-// reaching the project suggestion prompt.
+// story before its end card only for two or more projects, the ranked and unranked areas with their buttons and drag and
+// drop, a story waiting on its interactive slide, and the rankings reaching the project suggestion prompt.
 import { jest } from "@jest/globals";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { maintenanceApp } from "./project-maintenance-test-app";
 
-const { payoffRankingFromProjects, projectPayoffRankingsNoteName, projectsInPayoffOrder, readProjectPayoffRanking,
+const { payoffRankingFromProjects, payoffRankingGroups, projectPayoffRankingsNoteName, projectsInPayoffOrder, readProjectPayoffRanking,
   recentProjectPayoffRankings, saveProjectPayoffRanking } = await import("dashboard/quarter-retrospective/project-payoff-rankings");
-const { default: RetrospectivePayoffRanking, reorderedProjects } = await import("dashboard/quarter-retrospective/retrospective-payoff-ranking");
+const { default: RetrospectivePayoffRanking, movedPayoffProject } = await import("dashboard/quarter-retrospective/retrospective-payoff-ranking");
 const { END_CARD_SLIDE_ID, PAYOFF_RANKING_SLIDE_ID, SLIDE_KINDS, slidesWithEndCard,
   slidesWithPayoffRanking } = await import("dashboard/quarter-retrospective/retrospective-slides");
 const { default: RetrospectiveStory, STORY_TICK_MILLISECONDS } = await import("dashboard/quarter-retrospective/retrospective-story");
@@ -37,7 +37,8 @@ async function render(element) {
 }
 
 const click = async element => { await act(async () => { element.dispatchEvent(new MouseEvent("click", { bubbles: true })); }); };
-const chipNames = container => [...container.querySelectorAll(".retrospective-payoff-chip-name")].map(name => name.textContent);
+const chipNames = (container, zone) => [...container.querySelectorAll(`.retrospective-payoff-chip--${ zone } .retrospective-payoff-chip-name`)]
+  .map(name => name.textContent);
 
 // ----------------------------------------------------------------------------------------------
 // @desc A drag event carrying a minimal dataTransfer, which jsdom doesn't provide.
@@ -92,8 +93,23 @@ describe("payoff rankings note", () => {
     const ordered = projectsInPayoffOrder(PROJECTS, ranking);
     expect(ordered.map(project => project.name)).toEqual(["Garden", "Etsy shop", "Get outdoors"]);
     expect(projectsInPayoffOrder(PROJECTS, null)).toEqual(PROJECTS);
-    expect(reorderedProjects(PROJECTS, 0, 2).map(project => project.name)).toEqual(["Get outdoors", "Garden", "Etsy shop"]);
-    expect(reorderedProjects(PROJECTS, 0, 5)).toBe(PROJECTS);
+    const groups = payoffRankingGroups(PROJECTS, ranking);
+    expect(groups.rankedProjects.map(project => project.name)).toEqual(["Garden", "Etsy shop"]);
+    expect(groups.unrankedProjects.map(project => project.name)).toEqual(["Get outdoors"]);
+    expect(payoffRankingGroups(PROJECTS, null)).toEqual({ rankedProjects: [], unrankedProjects: PROJECTS });
+  });
+
+  it("moves a project within an area or into the other", () => {
+    const groups = { ranked: [PROJECTS[0]], unranked: [PROJECTS[1], PROJECTS[2]] };
+    const names = moved => [moved.ranked.map(project => project.name), moved.unranked.map(project => project.name)];
+    const ranked = movedPayoffProject(groups, { fromIndex: 1, fromZone: "unranked", toIndex: 0, toZone: "ranked" });
+    expect(names(ranked)).toEqual([["Garden", "Etsy shop"], ["Get outdoors"]]);
+    const appended = movedPayoffProject(groups, { fromIndex: 0, fromZone: "unranked", toIndex: null, toZone: "ranked" });
+    expect(names(appended)).toEqual([["Etsy shop", "Get outdoors"], ["Garden"]]);
+    const reordered = movedPayoffProject(ranked, { fromIndex: 0, fromZone: "ranked", toIndex: 1, toZone: "ranked" });
+    expect(names(reordered)).toEqual([["Etsy shop", "Garden"], ["Get outdoors"]]);
+    expect(movedPayoffProject(groups, { fromIndex: 5, fromZone: "unranked", toIndex: 0, toZone: "ranked" })).toBe(groups);
+    expect(movedPayoffProject(groups, { fromIndex: 0, fromZone: "ranked", toIndex: null, toZone: "ranked" })).toBe(groups);
   });
 
   it("places the ranking slide before the end card, and only once", () => {
@@ -105,42 +121,53 @@ describe("payoff rankings note", () => {
     expect(slidesWithPayoffRanking(STORY_SLIDES, PROJECTS).map(slide => slide.id)).toEqual(["intro", "summary", PAYOFF_RANKING_SLIDE_ID]);
     expect(slidesWithPayoffRanking(slides, PROJECTS)).toBe(slides);
     expect(slidesWithPayoffRanking(STORY_SLIDES, [])).toBe(STORY_SLIDES);
+    expect(slidesWithPayoffRanking(STORY_SLIDES, PROJECTS.slice(0, 1))).toBe(STORY_SLIDES);
   });
 });
 
 describe("RetrospectivePayoffRanking", () => {
-  it("reorders with the move buttons and by dragging, then saves the order", async () => {
+  it("ranks only the projects moved up, by button or by dragging, then saves them in order", async () => {
     const onSave = jest.fn(async () => {});
     const onSaved = jest.fn();
     const container = await render(createElement(RetrospectivePayoffRanking, { onSave, onSaved, projects: PROJECTS }));
-    expect(container.querySelector("[aria-label='Move Etsy shop up']").disabled).toBe(true);
+    expect(chipNames(container, "ranked")).toEqual([]);
+    expect(chipNames(container, "unranked")).toEqual(["Etsy shop", "Get outdoors", "Garden"]);
+    const saveButton = () => container.querySelector(".retrospective-options-primary");
+    expect(saveButton().disabled).toBe(true);
 
-    await click(container.querySelector("[aria-label='Move Etsy shop down']"));
-    expect(chipNames(container)).toEqual(["Get outdoors", "Etsy shop", "Garden"]);
+    await click(container.querySelector("[aria-label='Rank Get outdoors']"));
+    expect(chipNames(container, "ranked")).toEqual(["Get outdoors"]);
 
-    const chips = container.querySelectorAll(".retrospective-payoff-chip");
-    await act(async () => { chips[2].dispatchEvent(dragEvent("dragstart")); });
-    await act(async () => { chips[0].dispatchEvent(dragEvent("dragover")); });
-    await act(async () => { chips[0].dispatchEvent(dragEvent("drop")); });
-    expect(chipNames(container)).toEqual(["Garden", "Get outdoors", "Etsy shop"]);
-
-    const saveButton = container.querySelector(".retrospective-options-primary");
-    expect(saveButton.textContent).toBe("Save ranking");
-    await click(saveButton);
-    expect(onSave.mock.calls[0][0].map(project => project.name)).toEqual(["Garden", "Get outdoors", "Etsy shop"]);
-    expect(onSaved).toHaveBeenCalled();
-    expect(saveButton.textContent).toBe("Saved ✓");
+    const gardenChip = [...container.querySelectorAll(".retrospective-payoff-chip--unranked")].find(chip => chip.textContent.includes("Garden"));
+    const rankedChip = container.querySelector(".retrospective-payoff-chip--ranked");
+    await act(async () => { gardenChip.dispatchEvent(dragEvent("dragstart")); });
+    await act(async () => { rankedChip.dispatchEvent(dragEvent("dragover")); });
+    await act(async () => { rankedChip.dispatchEvent(dragEvent("drop")); });
+    expect(chipNames(container, "ranked")).toEqual(["Garden", "Get outdoors"]);
+    expect(chipNames(container, "unranked")).toEqual(["Etsy shop"]);
 
     await click(container.querySelector("[aria-label='Move Garden down']"));
-    expect(saveButton.textContent).toBe("Update ranking");
+    expect(chipNames(container, "ranked")).toEqual(["Get outdoors", "Garden"]);
+
+    expect(saveButton().textContent).toBe("Save ranking");
+    await click(saveButton());
+    expect(onSave.mock.calls[0][0].map(project => project.name)).toEqual(["Get outdoors", "Garden"]);
+    expect(onSaved).toHaveBeenCalled();
+    expect(saveButton().textContent).toBe("Saved ✓");
+
+    await click(container.querySelector("[aria-label='Unrank Garden']"));
+    expect(chipNames(container, "unranked")).toEqual(["Etsy shop", "Garden"]);
+    expect(saveButton().textContent).toBe("Update ranking");
   });
 
-  it("keeps the order and says so when saving fails", async () => {
+  it("starts with a saved ranking's projects ranked, and keeps them when saving fails", async () => {
     const onSave = jest.fn(async () => { throw new Error("offline"); });
-    const container = await render(createElement(RetrospectivePayoffRanking, { onSave, projects: PROJECTS }));
+    const savedRanking = payoffRankingFromProjects([PROJECTS[2]], "2026-10-26T00:00:00.000Z");
+    const container = await render(createElement(RetrospectivePayoffRanking, { onSave, projects: PROJECTS, savedRanking }));
+    expect(chipNames(container, "ranked")).toEqual(["Garden"]);
     await click(container.querySelector(".retrospective-options-primary"));
     expect(container.querySelector("[role='alert']").textContent).toContain("Couldn't save");
-    expect(chipNames(container)).toEqual(["Etsy shop", "Get outdoors", "Garden"]);
+    expect(chipNames(container, "ranked")).toEqual(["Garden"]);
   });
 });
 

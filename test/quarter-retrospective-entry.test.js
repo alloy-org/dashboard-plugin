@@ -143,6 +143,20 @@ describe("QuarterRetrospective", () => {
     expect(document.body.querySelector(".retrospective-story")).not.toBeNull();
   });
 
+  it("offers to generate again, not play, a saved story told from no completed tasks", async () => {
+    const app = retrospectiveApp();
+    const completedTasks = await app.getCompletedTasks();
+    app.getCompletedTasks.mockImplementation(async () => []);
+    await generateRetrospective(app, { domainName: "Work", domainUuid: "work-domain", options: {}, quarter: 3, style: "data", year: 2026 });
+    app.getCompletedTasks.mockImplementation(async () => completedTasks);
+    await renderRetrospective(app);
+    expect(notes(styleCards())[0]).toMatch(/^Saved .+, with no tasks$/);
+    expect(primaryButton().textContent).toBe("Generate a new Data retrospective");
+    expect(document.body.querySelector(".retrospective-options-secondary")).toBeNull();
+    await clickAndSettle(primaryButton());
+    expect(app.noteContent("Work Q3 2026 Data Retrospective Data")).toContain('"totalTaskCount":1');
+  });
+
   it("plays the chosen vibe from the click that started the story, and remembers a mute", async () => {
     window.AudioContext = FakeAudioContext;
     const app = retrospectiveApp();

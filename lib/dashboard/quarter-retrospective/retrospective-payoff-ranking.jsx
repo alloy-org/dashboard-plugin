@@ -1,29 +1,43 @@
-// The payoff ranking a Quarter Retrospective asks for once the quarter's projects are known: the projects as a list
-// of chips the user reorders, by dragging a chip or with its Move up and Move down buttons, to answer whether the
-// work on each really paid off. It appears on the processing screen while the story is written, and as a slide
-// before the story's summary when the quarter is still unranked. Saving hands the order to the caller to store.
+// The payoff ranking a Quarter Retrospective asks for once the quarter's projects are known. The projects start in an
+// "unranked" area, and the user moves them up into the ranked list, by dragging or with a chip's Rank button, then
+// reorders that list by dragging or with Move up and Move down, to answer whether the work on each really paid off.
+// Keeping the two apart means only an order the user chose is saved, never the order the projects happened to arrive
+// in. While a chip is dragged, holding it near the top or bottom of the scrolling screen scrolls it, so a long list
+// can still reach the ranked area. It appears on the processing screen while the story is written, and as a slide
+// before the story's summary when the quarter is still unranked. Saving hands the ranked projects to the caller.
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
-import { projectsInPayoffOrder } from "dashboard/quarter-retrospective/project-payoff-rankings";
-import { useRef, useState } from "react";
+import { payoffRankingGroups } from "dashboard/quarter-retrospective/project-payoff-rankings";
+import { useEffect, useRef, useState } from "react";
 import { logIfEnabled } from "util/log";
 
 export const PAYOFF_RANKING_PROMPT = "Now that time has passed, rank projects by: Did my work on this really pay off?";
 export const PAYOFF_RANKING_TOOLTIP = "We'll use this to help build future plans: Plan Builder will remind you which "
   + "projects paid off and weigh them when suggesting new ones.";
 export const PAYOFF_SAVE_STATES = Object.freeze({ failed: "failed", saved: "saved", saving: "saving", unsaved: "unsaved" });
+export const PAYOFF_RANKING_ZONES = Object.freeze({ ranked: "ranked", unranked: "unranked" });
+// How close to a scrolling screen's top or bottom edge, in pixels, a dragged chip scrolls it, and by how much per
+// dragover event, which browsers repeat every 50ms or so while the pointer is held still.
+const DRAG_SCROLL_EDGE_PIXELS = 56;
+const DRAG_SCROLL_STEP_PIXELS = 14;
 
 // ----------------------------------------------------------------------------------------------
-// @desc Move one project to another's place in the list, shifting those between.
-// @param {Array<object>} projects - Projects in their current order.
-// @param {number} fromIndex - Where the moved project is now.
-// @param {number} toIndex - Where it goes.
-// @returns {Array<object>} A new list; the same order when either index is out of range.
-export function reorderedProjects(projects, fromIndex, toIndex) {
-  const outOfRange = index => index < 0 || index >= projects.length;
-  if (fromIndex === toIndex || outOfRange(fromIndex) || outOfRange(toIndex)) return projects;
-  const remainingProjects = projects.filter((project, index) => index !== fromIndex);
-  remainingProjects.splice(toIndex, 0, projects[fromIndex]);
-  return remainingProjects;
+// @desc Move one project within its area or into the other, shifting those after it.
+// @param {object} groups - { ranked, unranked }: the projects of each area, in order.
+// @param {object} move - An object with the following properties:
+//   - {number} fromIndex - Where the project is now within its area
+//   - {string} fromZone - A PAYOFF_RANKING_ZONES value
+//   - {number|null} toIndex - Where it goes within the destination area; null puts it last
+//   - {string} toZone - A PAYOFF_RANKING_ZONES value
+// @returns {object} New { ranked, unranked } groups; the same groups when the move changes nothing or is out of range.
+export function movedPayoffProject(groups, { fromIndex, fromZone, toIndex, toZone }) {
+  const sourceProjects = groups[fromZone];
+  if (!sourceProjects || !groups[toZone] || fromIndex < 0 || fromIndex >= sourceProjects.length) return groups;
+  if (fromZone === toZone && (toIndex === fromIndex || (toIndex === null && fromIndex === sourceProjects.length - 1))) return groups;
+  const remainingProjects = sourceProjects.filter((project, index) => index !== fromIndex);
+  const destinationProjects = fromZone === toZone ? remainingProjects : [...groups[toZone]];
+  const insertIndex = toIndex === null ? destinationProjects.length : Math.min(Math.max(toIndex, 0), destinationProjects.length);
+  destinationProjects.splice(insertIndex, 0, sourceProjects[fromIndex]);
+  return { ...groups, [fromZone]: remainingProjects, [toZone]: destinationProjects };
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -38,84 +52,166 @@ function saveButtonLabel(saveState, rankedBefore) {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc One project in the ranking: its rank, its name, and buttons to move it up or down. The chip can be dragged
-//   onto another to take its place.
-// @param {object} props - { dragState, index, onDragEnd, onDragOver, onDragStart, onDrop, onMove, project, projectCount }.
+// @desc Scroll the nearest scrolling ancestor of an element when a drag is held near its top or bottom edge.
+// @param {Element} element - The element under the pointer.
+// @param {number} clientY - The pointer's vertical position in the viewport.
+function scrollNearDragEdge(element, clientY) {
+  let container = element instanceof Element ? element : null;
+  while (container && !(container.scrollHeight > container.clientHeight && /(auto|scroll)/.test(getComputedStyle(container).overflowY))) {
+    container = container.parentElement;
+  }
+  if (!container) return;
+  const bounds = container.getBoundingClientRect();
+  if (clientY < bounds.top + DRAG_SCROLL_EDGE_PIXELS) container.scrollTop -= DRAG_SCROLL_STEP_PIXELS;
+  else if (clientY > bounds.bottom - DRAG_SCROLL_EDGE_PIXELS) container.scrollTop += DRAG_SCROLL_STEP_PIXELS;
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc The class names of a chip, marking the one being dragged and the one a drag is over.
+// @param {object} options - { baseClass, dragState, index, zone }.
+// @returns {string} The class names.
+function chipClassNames({ baseClass, dragState, index, zone }) {
+  const dragging = dragState.dragging?.zone === zone && dragState.dragging.index === index;
+  const draggedOver = !dragging && dragState.over?.zone === zone && dragState.over.index === index;
+  const classNames = ["retrospective-payoff-chip", baseClass, dragging ? "retrospective-payoff-chip--dragging" : "",
+    draggedOver ? "retrospective-payoff-chip--drag-over" : ""];
+  return classNames.filter(Boolean).join(" ");
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc One ranked project: its rank, its name, and buttons to move it up or down or back out of the ranking. The chip
+//   can be dragged onto another to take its place, or back to the unranked area.
+// @param {object} props - { dragHandlers, dragState, index, onMove, project, rankedCount }.
 // @returns {JSX.Element} The chip.
-function PayoffRankingChip({ dragState, index, onDragEnd, onDragOver, onDragStart, onDrop, onMove, project, projectCount }) {
-  const chipClasses = ["retrospective-payoff-chip", dragState.draggingIndex === index ? "retrospective-payoff-chip--dragging" : "",
-    dragState.dragOverIndex === index && dragState.draggingIndex !== index ? "retrospective-payoff-chip--drag-over" : ""];
+function RankedPayoffChip({ dragHandlers, dragState, index, onMove, project, rankedCount }) {
+  const zone = PAYOFF_RANKING_ZONES.ranked;
+  const moveTo = (toIndex, toZone = zone) => onMove({ fromIndex: index, fromZone: zone, toIndex, toZone });
   return (
-    <li className={ chipClasses.filter(Boolean).join(" ") } draggable onDragEnd={ onDragEnd } onDragOver={ event => onDragOver(event, index) }
-      onDragStart={ event => onDragStart(event, index) } onDrop={ event => onDrop(event, index) }>
+    <li className={ chipClassNames({ baseClass: "retrospective-payoff-chip--ranked", dragState, index, zone }) } draggable
+      onDragEnd={ dragHandlers.onDragEnd } onDragOver={ event => dragHandlers.onDragOver(event, zone, index) }
+      onDragStart={ event => dragHandlers.onDragStart(event, zone, index) } onDrop={ event => dragHandlers.onDrop(event, zone, index) }>
       <span className="retrospective-payoff-chip-rank">{ index + 1 }</span>
       <span className="retrospective-payoff-chip-name">{ project.name }</span>
       <button aria-label={ `Move ${ project.name } up` } className="retrospective-payoff-chip-move" disabled={ index === 0 }
-        onClick={ () => onMove(index, index - 1) } title="Move up" type="button">↑</button>
-      <button aria-label={ `Move ${ project.name } down` } className="retrospective-payoff-chip-move" disabled={ index === projectCount - 1 }
-        onClick={ () => onMove(index, index + 1) } title="Move down" type="button">↓</button>
+        onClick={ () => moveTo(index - 1) } title="Move up" type="button">↑</button>
+      <button aria-label={ `Move ${ project.name } down` } className="retrospective-payoff-chip-move" disabled={ index === rankedCount - 1 }
+        onClick={ () => moveTo(index + 1) } title="Move down" type="button">↓</button>
+      <button aria-label={ `Unrank ${ project.name }` } className="retrospective-payoff-chip-move"
+        onClick={ () => moveTo(null, PAYOFF_RANKING_ZONES.unranked) } title="Back to unranked" type="button">×</button>
     </li>
   );
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Drag-and-drop state for the ranking list, built on HTML5 drag and drop as the dashboard layout popup is.
-// @param {Function} onMove - Receives (fromIndex, toIndex) when a chip is dropped on another.
-// @returns {object} { dragState, onDragEnd, onDragOver, onDragStart, onDrop }.
-function usePayoffRankingDrag(onMove) {
-  const draggedIndexRef = useRef(null);
-  const [dragState, setDragState] = useState({ dragOverIndex: null, draggingIndex: null });
-  const clearDrag = () => {
-    draggedIndexRef.current = null;
-    setDragState({ dragOverIndex: null, draggingIndex: null });
-  };
-  const onDragStart = (event, index) => {
-    draggedIndexRef.current = index;
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", String(index));
-    setDragState({ dragOverIndex: null, draggingIndex: index });
-  };
-  const onDragOver = (event, index) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-    setDragState(previous => (previous.dragOverIndex === index ? previous : { ...previous, dragOverIndex: index }));
-  };
-  const onDrop = (event, index) => {
-    event.preventDefault();
-    const draggedIndex = draggedIndexRef.current;
-    clearDrag();
-    if (draggedIndex !== null) onMove(draggedIndex, index);
-  };
-  return { dragState, onDragEnd: clearDrag, onDragOver, onDragStart, onDrop };
+// @desc One project not ranked yet: a pill with its name and a button that ranks it last. The pill can be dragged up
+//   into the ranked list.
+// @param {object} props - { dragHandlers, dragState, index, onMove, project }.
+// @returns {JSX.Element} The pill.
+function UnrankedPayoffChip({ dragHandlers, dragState, index, onMove, project }) {
+  const zone = PAYOFF_RANKING_ZONES.unranked;
+  return (
+    <li className={ chipClassNames({ baseClass: "retrospective-payoff-chip--unranked", dragState, index, zone }) } draggable
+      onDragEnd={ dragHandlers.onDragEnd } onDragOver={ event => dragHandlers.onDragOver(event, zone, index) }
+      onDragStart={ event => dragHandlers.onDragStart(event, zone, index) } onDrop={ event => dragHandlers.onDrop(event, zone, index) }>
+      <span className="retrospective-payoff-chip-name">{ project.name }</span>
+      <button aria-label={ `Rank ${ project.name }` } className="retrospective-payoff-chip-move"
+        onClick={ () => onMove({ fromIndex: index, fromZone: zone, toIndex: null, toZone: PAYOFF_RANKING_ZONES.ranked }) } title="Rank next"
+        type="button">↑</button>
+    </li>
+  );
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc The ranking: the prompt with a tooltip on how the ranking is used, the projects to reorder, and the save and
-//   skip buttons. Reordering after a save marks the ranking unsaved again.
+// @desc Drag-and-drop state for the two areas, built on HTML5 drag and drop as the dashboard layout popup is. A drop
+//   on a chip takes that chip's place; a drop elsewhere in an area puts the project last there. While a chip is
+//   dragged, a document-wide dragover listener scrolls the screen when the pointer nears its edge.
+// @param {Function} onMove - Receives a movedPayoffProject move when a chip is dropped.
+// @returns {object} { dragHandlers, dragState }: dragHandlers being { onDragEnd, onDragOver, onDragStart, onDrop }, each
+//   taking (event, zone, index), index null for an area itself.
+function usePayoffRankingDrag(onMove) {
+  const draggedRef = useRef(null);
+  const [dragState, setDragState] = useState({ dragging: null, over: null });
+  const dragging = !!dragState.dragging;
+  useEffect(() => {
+    if (!dragging) return undefined;
+    const scrollOnDrag = event => scrollNearDragEdge(event.target, event.clientY);
+    document.addEventListener("dragover", scrollOnDrag);
+    return () => document.removeEventListener("dragover", scrollOnDrag);
+  }, [dragging]);
+  const onDragEnd = () => {
+    draggedRef.current = null;
+    setDragState({ dragging: null, over: null });
+  };
+  const onDragStart = (event, zone, index) => {
+    event.stopPropagation();
+    draggedRef.current = { index, zone };
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", String(index));
+    setDragState({ dragging: { index, zone }, over: null });
+  };
+  const onDragOver = (event, zone, index) => {
+    if (!draggedRef.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = "move";
+    setDragState(previous => (previous.over?.zone === zone && previous.over.index === index ? previous : { ...previous, over: { index, zone } }));
+  };
+  const onDrop = (event, zone, index) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const dragged = draggedRef.current;
+    onDragEnd();
+    if (dragged) onMove({ fromIndex: dragged.index, fromZone: dragged.zone, toIndex: index, toZone: zone });
+  };
+  return { dragHandlers: { onDragEnd, onDragOver, onDragStart, onDrop }, dragState };
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc One area of the ranking, which takes a drop anywhere within it.
+// @param {object} props - { children, className, dragHandlers, dragState, label, zone }.
+// @returns {JSX.Element} The area.
+function PayoffRankingZone({ children, className, dragHandlers, dragState, label, zone }) {
+  const draggedOver = dragState.over?.zone === zone && dragState.over.index === null;
+  return (
+    <section className={ `retrospective-payoff-zone ${ className }${ draggedOver ? " retrospective-payoff-zone--drag-over" : "" }` }
+      onDragOver={ event => dragHandlers.onDragOver(event, zone, null) } onDrop={ event => dragHandlers.onDrop(event, zone, null) }>
+      <p className="retrospective-payoff-zone-label">{ label }</p>
+      { children }
+    </section>
+  );
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc The ranking: the prompt with a tooltip on how the ranking is used, the ranked list above the projects not
+//   ranked yet, and the save and skip buttons. Saving needs at least one ranked project and stores only those. Any
+//   change after a save marks the ranking unsaved again.
 // @param {object} props - An object with the following properties:
 //   - {Function} onSave - async (rankedProjects) => void; stores the order, the project that paid off most first
 //   - {Function|null} [onSaved] - Called after a save succeeds, such as to move the story on
 //   - {Function|null} [onSkip] - Leaves without saving; none hides the Skip button
 //   - {Array<object>} projects - { derivedFrom, name, uuid } per project
-//   - {object|null} [savedRanking] - The quarter's stored ranking, which sets the starting order
+//   - {object|null} [savedRanking] - The quarter's stored ranking, whose projects start in the ranked list
 // @returns {JSX.Element} The ranking.
 export default function RetrospectivePayoffRanking({ onSave, onSaved = null, onSkip = null, projects, savedRanking = null }) {
-  const [order, setOrder] = useState(() => projectsInPayoffOrder(projects, savedRanking));
+  const [groups, setGroups] = useState(() => {
+    const { rankedProjects, unrankedProjects } = payoffRankingGroups(projects, savedRanking);
+    return { ranked: rankedProjects, unranked: unrankedProjects };
+  });
   const [saveState, setSaveState] = useState(PAYOFF_SAVE_STATES.unsaved);
   const [savedHere, setSavedHere] = useState(false);
   const rankedBefore = !!savedRanking || savedHere;
 
-  // @desc Move a project and mark the order as changed since the last save.
-  const moveProject = (fromIndex, toIndex) => {
-    setOrder(previous => reorderedProjects(previous, fromIndex, toIndex));
+  // @desc Move a project and mark the ranking as changed since the last save.
+  const moveProject = move => {
+    setGroups(previous => movedPayoffProject(previous, move));
     setSaveState(PAYOFF_SAVE_STATES.unsaved);
   };
-  const { dragState, onDragEnd, onDragOver, onDragStart, onDrop } = usePayoffRankingDrag(moveProject);
-  // @desc Store the order, reporting a failure beside the button rather than losing the user's order.
+  const { dragHandlers, dragState } = usePayoffRankingDrag(moveProject);
+  // @desc Store the ranked projects, reporting a failure beside the button rather than losing the user's order.
   const handleSave = async () => {
     setSaveState(PAYOFF_SAVE_STATES.saving);
     try {
-      await onSave(order);
+      await onSave(groups.ranked);
       setSaveState(PAYOFF_SAVE_STATES.saved);
       setSavedHere(true);
       if (onSaved) onSaved();
@@ -124,8 +220,10 @@ export default function RetrospectivePayoffRanking({ onSave, onSaved = null, onS
       setSaveState(PAYOFF_SAVE_STATES.failed);
     }
   };
-  const chipHandlers = { dragState, onDragEnd, onDragOver, onDragStart, onDrop, onMove: moveProject };
+  const chipProps = { dragHandlers, dragState, onMove: moveProject };
   const saveBusy = saveState === PAYOFF_SAVE_STATES.saving || saveState === PAYOFF_SAVE_STATES.saved;
+  const unrankedLabel = groups.ranked.length ? "Not ranked yet: drag up to rank, or leave out"
+    : "Drag each project up, or tap its ↑, in the order it paid off";
 
   return (
     <div className="retrospective-payoff-ranking">
@@ -135,14 +233,29 @@ export default function RetrospectivePayoffRanking({ onSave, onSaved = null, onS
           <span aria-label={ PAYOFF_RANKING_TOOLTIP } className="retrospective-payoff-ranking-info" role="img" tabIndex={ 0 }>ⓘ</span>
         </DashboardTippy>
       </p>
-      <ol className="retrospective-payoff-ranking-list">
-        { order.map((project, index) => (
-          <PayoffRankingChip { ...chipHandlers } index={ index } key={ project.uuid || project.name } project={ project }
-            projectCount={ order.length } />
-        )) }
-      </ol>
+      <PayoffRankingZone className="retrospective-payoff-zone--ranked" dragHandlers={ dragHandlers } dragState={ dragState }
+        label="Paid off most" zone={ PAYOFF_RANKING_ZONES.ranked }>
+        { groups.ranked.length ? (
+          <ol className="retrospective-payoff-ranking-list">
+            { groups.ranked.map((project, index) => (
+              <RankedPayoffChip { ...chipProps } index={ index } key={ project.uuid || project.name } project={ project }
+                rankedCount={ groups.ranked.length } />
+            )) }
+          </ol>
+        ) : <p className="retrospective-payoff-zone-empty">Drop projects here</p> }
+      </PayoffRankingZone>
+      { groups.unranked.length ? (
+        <PayoffRankingZone className="retrospective-payoff-zone--unranked" dragHandlers={ dragHandlers } dragState={ dragState }
+          label={ unrankedLabel } zone={ PAYOFF_RANKING_ZONES.unranked }>
+          <ul className="retrospective-payoff-unranked-list">
+            { groups.unranked.map((project, index) => (
+              <UnrankedPayoffChip { ...chipProps } index={ index } key={ project.uuid || project.name } project={ project } />
+            )) }
+          </ul>
+        </PayoffRankingZone>
+      ) : null }
       <div className="retrospective-payoff-ranking-actions">
-        <button className="retrospective-options-primary" disabled={ saveBusy } onClick={ handleSave } type="button">
+        <button className="retrospective-options-primary" disabled={ saveBusy || !groups.ranked.length } onClick={ handleSave } type="button">
           { saveButtonLabel(saveState, rankedBefore) }
         </button>
         { onSkip ? <button className="retrospective-options-secondary" onClick={ onSkip } type="button">Skip</button> : null }

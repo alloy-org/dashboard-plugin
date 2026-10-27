@@ -1,7 +1,8 @@
 // The Quarter Retrospective's options screen, shown every time the retrospective opens: a card per style and a card per
 // soundtrack vibe, one of each chosen from the start, the toggles that apply to this quarter (the calendar, when the
 // journal recorded any of it, and images from the user's notes), and a button that plays the chosen style's saved story
-// or generates it. A style the AI writes can be chosen only when an AI is available or its story was saved. The
+// or generates it. A saved story told from no completed tasks has nothing to show, so it is offered for generating
+// again rather than playing when it can be. A style the AI writes can be chosen only when an AI is available or its story was saved. The
 // button's click is the gesture a later phase starts music from.
 import { AI_WRITTEN_RETROSPECTIVE_STYLES, AVAILABLE_RETROSPECTIVE_STYLES, DEFAULT_RETROSPECTIVE_SOUNDTRACK_VIBE, DEFAULT_RETROSPECTIVE_STYLE,
   RETROSPECTIVE_SOUNDTRACK_VIBES } from "dashboard/quarter-retrospective/retrospective-generation";
@@ -45,7 +46,7 @@ function ChoiceCard({ className, description, disabled = false, note = null, onS
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Why a style's card can't be chosen, or when its story was saved.
+// @desc Why a style's card can't be chosen, or when its story was saved and whether it was told from no tasks.
 // @param {object} options - { aiAvailable, savedRetrospective, style }.
 // @returns {object} { disabled, note }.
 function styleCardState({ aiAvailable, savedRetrospective, style }) {
@@ -53,7 +54,8 @@ function styleCardState({ aiAvailable, savedRetrospective, style }) {
   if (savedRetrospective) {
     const savedDate = new Date(savedRetrospective.generatedAt);
     const savedLabel = Number.isFinite(savedDate.getTime()) ? savedDate.toLocaleDateString("en-US", { day: "numeric", month: "short" }) : null;
-    return { disabled: false, note: savedLabel ? `Saved ${ savedLabel }` : "Saved" };
+    const savedNote = savedLabel ? `Saved ${ savedLabel }` : "Saved";
+    return { disabled: false, note: savedRetrospective.totalTaskCount === 0 ? `${ savedNote }, with no tasks` : savedNote };
   }
   if (AI_WRITTEN_RETROSPECTIVE_STYLES.includes(style) && !aiAvailable) return { disabled: true, note: "Needs an AI provider (Dashboard Settings)" };
   return { disabled: false, note: null };
@@ -91,6 +93,8 @@ export default function RetrospectiveOptions({ aiAvailable, calendarCoverage, on
   const chosenSaved = savedByStyle.get(style) || null;
   const chosenLabel = retrospectiveStyleLabel(style);
   const canGenerate = AVAILABLE_RETROSPECTIVE_STYLES.includes(style) && (aiAvailable || !AI_WRITTEN_RETROSPECTIVE_STYLES.includes(style));
+  const playableSaved = chosenSaved && !(chosenSaved.totalTaskCount === 0 && canGenerate) ? chosenSaved : null;
+  const generateLabel = chosenSaved ? `Generate a new ${ chosenLabel } retrospective` : `Generate ${ chosenLabel } retrospective`;
   const generate = () => onGenerate(style, { includeCalendar: calendarAvailable && includeCalendar, includeImages, soundtrackVibe });
 
   return (
@@ -131,16 +135,16 @@ export default function RetrospectiveOptions({ aiAvailable, calendarCoverage, on
       </label>
 
       <div className="retrospective-options-actions">
-        { chosenSaved ? (
-          <button className="retrospective-options-primary" onClick={ () => onPlay(chosenSaved, soundtrackVibe) } type="button">
+        { playableSaved ? (
+          <button className="retrospective-options-primary" onClick={ () => onPlay(playableSaved, soundtrackVibe) } type="button">
             { `Play ${ chosenLabel } retrospective` }
           </button>
         ) : (
           <button className="retrospective-options-primary" disabled={ !canGenerate } onClick={ generate } type="button">
-            { `Generate ${ chosenLabel } retrospective` }
+            { generateLabel }
           </button>
         ) }
-        { chosenSaved && canGenerate ? (
+        { playableSaved && canGenerate ? (
           <button className="retrospective-options-secondary" onClick={ generate } type="button">{ `Generate a new ${ chosenLabel } one` }</button>
         ) : null }
       </div>

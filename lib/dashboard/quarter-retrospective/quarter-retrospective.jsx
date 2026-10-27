@@ -2,8 +2,8 @@
 // style and a soundtrack vibe and then plays that style's saved story or generates it. While a story plays, a header
 // lists the other styles already generated, a mute button for the soundtrack, and a way back to the options; it always
 // offers the quarter's plan note. The click that plays or generates a story is the gesture its soundtrack starts from.
-// Once a generation knows the quarter's projects, the processing screen asks the user to rank them by payoff; a story
-// played while the quarter is still unranked asks the same on a slide before its end card. The end card replays the
+// Once a generation knows the quarter's projects, the processing screen asks the user to rank them by payoff when there
+// are at least two; a story played while the quarter is still unranked asks the same on a slide before its end card. The end card replays the
 // story, goes back to the options to generate another, or saves the quarter's takeaways in a note and opens it.
 import { SETTING_KEYS } from "constants/settings";
 import { readProjectPayoffRanking, saveProjectPayoffRanking } from "dashboard/quarter-retrospective/project-payoff-rankings";
@@ -14,7 +14,8 @@ import RetrospectivePayoffRanking from "dashboard/quarter-retrospective/retrospe
 import { retrospectiveStyleLabel } from "dashboard/quarter-retrospective/retrospective-data-note";
 import { generateRetrospective, quarterCalendarCoverage, retrospectiveAiAvailable, retrospectivePromptRequester,
   savedRetrospectives } from "dashboard/quarter-retrospective/retrospective-generation";
-import { RETROSPECTIVE_STYLES, SLIDE_KINDS, slidesWithEndCard, slidesWithPayoffRanking } from "dashboard/quarter-retrospective/retrospective-slides";
+import { MINIMUM_PAYOFF_RANKING_PROJECTS, RETROSPECTIVE_STYLES, SLIDE_KINDS, slidesWithEndCard,
+  slidesWithPayoffRanking } from "dashboard/quarter-retrospective/retrospective-slides";
 import { createRetrospectiveAudioContext } from "dashboard/quarter-retrospective/retrospective-soundtrack";
 import RetrospectiveStory from "dashboard/quarter-retrospective/retrospective-story";
 import { saveRetrospectiveTakeaways } from "dashboard/quarter-retrospective/retrospective-takeaways";
@@ -193,6 +194,7 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
   const showOptions = () => setView({ kind: "options" });
   // @desc Play a saved story with the soundtrack vibe chosen on the options screen, or the one already playing.
   const playSaved = (retrospective, soundtrackVibe = view.soundtrackVibe) => {
+    logIfEnabled("[quarter-retrospective] playing a saved story", { generatedAt: retrospective.generatedAt, style: retrospective.style });
     prepareSoundtrack();
     showStory(retrospective, soundtrackVibe);
   };
@@ -214,7 +216,7 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
   else if (view.kind === "generating") {
     body = (
       <RetrospectiveStatus message={ view.message }>
-        { rankingProjects.length ? (
+        { rankingProjects.length >= MINIMUM_PAYOFF_RANKING_PROJECTS ? (
           <RetrospectivePayoffRanking key={ rankingProjects.map(project => project.name).join("|") } onSave={ savePayoffRanking }
             projects={ rankingProjects } savedRanking={ payoffRanking } />
         ) : null }

@@ -5,6 +5,44 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-27 — Retrospective: "Aw no you di'nt" hardest tasks slide
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-task-difficulty.js` — new: asks a decisions model a 1–10 difficulty score question per completed task of each project with at least 5 completions, batched per project with an anchored rubric; picks each project's three hardest tasks rated above 5; builds the scrolling "Aw no you di'nt" slide and places it before the summary; records and reuses ratings by task UUID.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` — rates task difficulty alongside story writing (decisions model only, injectable `decisionsEndpointFactory`), adds the slide, records a Task Difficulty section; earlier data notes are read once and shared with digest reuse.
+- `lib/dashboard/quarter-retrospective/retrospective-statistics.js` — `completionsWithInferredProjects` exported.
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js`, `retrospective-data-note.js` — `SLIDE_KINDS.hardestTasks`, `RETROSPECTIVE_SECTIONS.taskDifficulty`.
+- `lib/dashboard/quarter-retrospective/retrospective-slide.jsx`, `lib/dashboard/styles/quarter-retrospective.scss` — slide subheadline and the hardest tasks list.
+- `test/quarter-retrospective-task-difficulty.test.js` — new coverage.
+
+## 2026-10-27 — Retrospective: regenerate empty stories, skip one-project rankings, rank by moving projects up
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-payoff-ranking.jsx` — rewritten as two areas: projects start unranked (wrapping pills) and move up into the ranked list by drag or ↑, reorder there with drag or ↑/↓, and return with ×. Only ranked projects are saved; Save needs at least one. `movedPayoffProject` replaces `reorderedProjects`. A document-wide dragover listener scrolls the nearest scrolling ancestor while a drag nears its edge.
+- `lib/dashboard/quarter-retrospective/project-payoff-rankings.js` — `payoffRankingGroups` splits projects into those a stored ranking names and the rest; `_payoffRankOfProject` shared with `projectsInPayoffOrder`.
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js`, `quarter-retrospective.jsx` — `MINIMUM_PAYOFF_RANKING_PROJECTS` (2) gates the ranking slide and the processing screen's ranking.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` — saved and generated retrospectives carry `totalTaskCount` from their statistics.
+- `lib/dashboard/quarter-retrospective/retrospective-options.jsx` — a saved story with no tasks is offered as "Generate a new X retrospective" rather than played, and its card notes "with no tasks".
+- `lib/dashboard/styles/quarter-retrospective.scss` — ranked and unranked areas, unranked pills, and a scrolling ranking slide; the ranked list no longer scrolls on its own.
+- `test/quarter-retrospective-payoff-ranking.test.js`, `test/quarter-retrospective-entry.test.js` — coverage for the above.
+
+**Task:** Offer regeneration for a zero-task retrospective, skip ranking a single project, and make payoff ranking distinguish a chosen order from the default one.
+
+---
+
+## 2026-10-27 — Retrospective logs the completed tasks it read
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-data.js` — `_quarterCompletedTasks` logs the window, domain, count, and a sample of the tasks it read; when the domain returns none it also logs the count across every domain (`_everyDomainCompletedTaskCount`). The gathered count, genuinely completed count, and in-quarter count are logged too.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js`, `quarter-retrospective.jsx` — log the total task count a story is generated from, and when a saved story is played instead.
+
+**Task:** Diagnose a retrospective that reports 0 completed tasks for a quarter whose task domain shows 10–15 completions.
+
+---
+
 ## 2026-10-27 — Quarterly Planning opens on the previous quarter early in a quarter; retrospective options polish
 
 **Model:** Claude Opus 5.5

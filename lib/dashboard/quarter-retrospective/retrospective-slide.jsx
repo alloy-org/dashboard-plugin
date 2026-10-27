@@ -1,6 +1,6 @@
 // One slide of the Quarter Retrospective story: a kicker, a large figure that counts up from zero, a headline, an
 // optional ranked list, and a caption. A slide's kind adds what it draws between its headline and caption: done and
-// open bars per project, the progress heap, or a timeline of months; a photo slide sets one of the user's images behind
+// open bars per project, each project's hardest tasks, the progress heap, or a timeline of months; a photo slide sets one of the user's images behind
 // its words. Behind the words of every other slide sit two drifting shapes placed by the slide's position, film grain,
 // and, when the story gives one, an abstract photo blended into the slide's tone. Each part enters a beat after the one
 // above it, and the slide is remounted for every slide shown, so the entrance replays as the story advances.
@@ -73,6 +73,30 @@ function SlideBars({ bars }) {
             <span className="retrospective-slide-bar-done" style={{ width: `${ (bar.done / largestTotal) * 100 }%` }} />
             <span className="retrospective-slide-bar-open" style={{ width: `${ ((bar.open || 0) / largestTotal) * 100 }%` }} />
           </span>
+        </li>
+      )) }
+    </ol>
+  );
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Each project's hardest tasks, as rated for difficulty, in a list that scrolls when the projects outgrow the slide.
+// @param {object} props - { hardestProjects } as { name, taskCount, tasks } per project, tasks as { difficulty, text }.
+// @returns {JSX.Element} The projects.
+function SlideHardestTasks({ hardestProjects }) {
+  return (
+    <ol className="retrospective-slide-hardest-projects">
+      { hardestProjects.map((project, index) => (
+        <li className="retrospective-slide-hardest-project" key={ `${ index }-${ project.name }` } style={{ "--item-index": index }}>
+          <h3 className="retrospective-slide-hardest-project-name">{ project.name }</h3>
+          <ol className="retrospective-slide-hardest-tasks">
+            { project.tasks.map((task, taskIndex) => (
+              <li className="retrospective-slide-hardest-task" key={ `${ taskIndex }-${ task.text }` }>
+                <span className="retrospective-slide-hardest-task-text">{ task.text }</span>
+                <span className="retrospective-slide-hardest-task-difficulty">{ `${ task.difficulty }/10` }</span>
+              </li>
+            )) }
+          </ol>
         </li>
       )) }
     </ol>
@@ -167,6 +191,9 @@ function ImageSlide({ slide }) {
 // @returns {JSX.Element|null} The drawing, or null when the slide has none.
 function SlideBody({ slide }) {
   if (slide.kind === SLIDE_KINDS.bars && slide.bars?.length) return <SlideBars bars={ slide.bars } />;
+  if (slide.kind === SLIDE_KINDS.hardestTasks && slide.hardestProjects?.length) {
+    return <SlideHardestTasks hardestProjects={ slide.hardestProjects } />;
+  }
   if (slide.kind === SLIDE_KINDS.heap && slide.heap?.blocks?.length) return <RetrospectiveHeap heap={ slide.heap } />;
   if (slide.kind === SLIDE_KINDS.timeline && slide.columns?.length) return <SlideTimeline columns={ slide.columns } />;
   if (slide.items?.length) return <SlideItems items={ slide.items } />;
@@ -180,7 +207,7 @@ function SlideBody({ slide }) {
 //   - {string|null} [photoUrl] - An abstract photo to blend behind the words; none leaves the shapes on the tone alone
 //   - {number} [position=0] - The slide's zero-based place in the story, which arranges the shapes behind it
 //   - {object} slide - From slidesFromStatistics or the story writer: { caption, figure, headline, id, items, kicker,
-//     kind, tone }, plus what its kind draws
+//     kind, subheadline?, tone }, plus what its kind draws
 // @returns {JSX.Element} The slide.
 export default function RetrospectiveSlide({ children = null, photoUrl = null, position = 0, slide }) {
   if (slide.kind === SLIDE_KINDS.image && slide.imageUrl) return <ImageSlide slide={ slide } />;
@@ -190,6 +217,7 @@ export default function RetrospectiveSlide({ children = null, photoUrl = null, p
       <p className="retrospective-slide-kicker">{ slide.kicker }</p>
       { slide.figure ? <SlideFigure figure={ slide.figure } /> : null }
       <h2 className="retrospective-slide-headline">{ slide.headline }</h2>
+      { slide.subheadline ? <p className="retrospective-slide-subheadline">{ slide.subheadline }</p> : null }
       { children || <SlideBody slide={ slide } /> }
       { slide.caption ? <p className="retrospective-slide-caption">{ slide.caption }</p> : null }
       <SlideBackdrop photoUrl={ photoUrl } position={ position } />
