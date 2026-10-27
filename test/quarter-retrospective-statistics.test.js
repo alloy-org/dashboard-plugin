@@ -94,6 +94,16 @@ describe("retrospectiveStatistics", () => {
     expect(retrospectiveStatistics({ completedTasks, entriesByDate, quarter: 3, year: 2026 }).totalVictoryValue).toBe(6);
   });
 
+  it("rounds Victory Value sums to hundredths, without floating point error", () => {
+    const completedTasks = [completedTask("a", { victoryValue: 0.1 }), completedTask("b", { victoryValue: 0.2 })];
+    const entriesByDate = new Map([["2026-07-10", [ledgerEntry("a", "2026-07-10", launch), ledgerEntry("b", "2026-07-10", launch)]]]);
+    const statistics = retrospectiveStatistics({ completedTasks, entriesByDate, quarter: 3, year: 2026 });
+    expect(statistics.totalVictoryValue).toBe(0.3);
+    expect(statistics.busiestDay.victoryValue).toBe(0.3);
+    expect(statistics.projectTotals[0].victoryValue).toBe(0.3);
+    expect(quarterTotals({ completedTasks, entriesByDate, quarter: 3, year: 2026 }).totalVictoryValue).toBe(0.3);
+  });
+
   it("keeps only genuine completions inside the quarter", () => {
     const dismissed = { ...completedTask("dismissed"), dismissedAt: 1 };
     const completedTasks = [completedTask("inside"), completedTask("before", { month: 6 }), completedTask("after", { month: 10 }), dismissed];

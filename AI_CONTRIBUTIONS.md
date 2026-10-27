@@ -5,6 +5,32 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-27 — Retrospective backfills completed task <> project relationships
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-project-backfill.js` (new) — Once a quarter's projects are known, every project rates the quarter's unassigned completed tasks in parallel through the decisions endpoint (APPLICABILITY_CRITERIA, batches of 20). Each task goes to its highest-rated project when that rating reaches DEFAULT_MINIMUM_MATCH_SCORE (6). Unclassified tasks come first, and tasks the live classifier judged "None" fill the last batch's open room. Every verdict is written to the quarter's completed task ledger as `classifiedBy: "retrospective"`, so a later run doesn't ask again. Projects inferred from themes are saved to the past quarter's project task store as Past projects, and their theme tasks are written to the ledger as `classifiedBy: "themes"`.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` — Runs the backfill beside month digestion when the quarter has projects, or after inference when it doesn't. Recomputes statistics and project credits from the backfilled ledger, and shares one lazily resolved decisions endpoint with the difficulty ratings.
+- `lib/dashboard/quarter-retrospective/retrospective-data.js` — Gathering returns the scope and each store project's example open tasks, and names a saved inferred project's origin "themes".
+- `lib/dashboard/quarter-retrospective/retrospective-month-digests.js` — Exports INFERRED_PROJECT_UUID_PREFIX.
+- `lib/dashboard/projects/completed-task-project-classification.js` — CLASSIFIED_BY gains `retrospective` and `themes`.
+- `test/quarter-retrospective-project-backfill.test.js` (new) — Candidate order and padding, highest-project-above-cutoff crediting, per-project requests, a ledger for a quarter of the prior year, and an end-to-end generation that infers, saves, credits, and is read back without asking again.
+
+**Task:** Group a past quarter's task cairn by project by backfilling completed task <> project relationships through the decisions endpoint.
+
+---
+
+## 2026-10-27 — Retrospective Victory Value sums rounded to hundredths
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-statistics.js` — `_roundedVictoryValue` and `_victoryValueSum` round the quarter's total, the quarter before's total, the busiest day's, and each project's Victory Value to hundredths, so floating point error (2257.499999999996) no longer reaches the slides or the story writer's prompt.
+- `test/quarter-retrospective-statistics.test.js` — 0.1 + 0.2 sums to 0.3 in every total.
+
+**Task:** Fix the unrounded Victory Value on the quarter-over-quarter slide.
+
+---
+
 ## 2026-10-27 — Retrospective processing screen keeps and confirms the user's ranking
 
 **Model:** Claude Opus 5.5
