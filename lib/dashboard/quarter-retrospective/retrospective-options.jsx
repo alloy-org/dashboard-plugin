@@ -1,6 +1,7 @@
 // The Quarter Retrospective's options screen, shown every time the retrospective opens: a card per style and a card per
 // soundtrack vibe, one of each chosen from the start, the toggles that apply to this quarter (the calendar, when the
-// journal recorded any of it, and images from the user's notes), and a button that plays the chosen style's saved story
+// journal recorded any of it, and images from the user's notes), the tag every note the retrospective writes is given,
+// suggested from the tags on the user's planning notes, and a button that plays the chosen style's saved story
 // or generates it. A saved story told from no completed tasks has nothing to show, so it is offered for generating
 // again rather than playing when it can be. A style the AI writes can be chosen only when an AI is available or its story was saved. The
 // button's click is the gesture a later phase starts music from.
@@ -77,17 +78,22 @@ function initialStyle({ aiAvailable, saved }) {
 // @param {object} props - An object with the following properties:
 //   - {boolean} aiAvailable - Whether an AI can write the Roast and Spotify styles
 //   - {object|null} calendarCoverage - { coveredDays, totalDays } from the calendar journal, or null when unknown
-//   - {Function} onGenerate - Receives (style, options), options being { includeCalendar, includeImages, soundtrackVibe }
-//   - {Function} onPlay - Receives (retrospective, soundtrackVibe) to play a saved story
+//   - {string} initialNoteTag - The tag retrospective notes are given, as last chosen
+//   - {Function} onGenerate - Receives (style, options), options being { includeCalendar, includeImages, noteTag,
+//     soundtrackVibe }
+//   - {Function} onPlay - Receives (retrospective, soundtrackVibe, noteTag) to play a saved story
 //   - {string} quarterLabel - Such as "Q3 2026"
 //   - {Array<object>} saved - The quarter's saved retrospectives, newest first
+//   - {Array<string>} [tagSuggestions] - Tags offered as the note tag is typed
 // @returns {JSX.Element} The screen.
-export default function RetrospectiveOptions({ aiAvailable, calendarCoverage, onGenerate, onPlay, quarterLabel, saved }) {
+export default function RetrospectiveOptions({ aiAvailable, calendarCoverage, initialNoteTag, onGenerate, onPlay, quarterLabel, saved,
+    tagSuggestions = [] }) {
   const calendarAvailable = !!calendarCoverage?.coveredDays;
   const [includeCalendar, setIncludeCalendar] = useState(true);
   const [includeImages, setIncludeImages] = useState(true);
   const [style, setStyle] = useState(() => initialStyle({ aiAvailable, saved }));
   const [soundtrackVibe, setSoundtrackVibe] = useState(DEFAULT_RETROSPECTIVE_SOUNDTRACK_VIBE);
+  const [noteTag, setNoteTag] = useState(initialNoteTag);
   const styles = Object.values(RETROSPECTIVE_STYLES);
   const savedByStyle = new Map(saved.map(retrospective => [retrospective.style, retrospective]));
   const chosenSaved = savedByStyle.get(style) || null;
@@ -95,7 +101,7 @@ export default function RetrospectiveOptions({ aiAvailable, calendarCoverage, on
   const canGenerate = AVAILABLE_RETROSPECTIVE_STYLES.includes(style) && (aiAvailable || !AI_WRITTEN_RETROSPECTIVE_STYLES.includes(style));
   const playableSaved = chosenSaved && !(chosenSaved.totalTaskCount === 0 && canGenerate) ? chosenSaved : null;
   const generateLabel = chosenSaved ? `Generate a new ${ chosenLabel } retrospective` : `Generate ${ chosenLabel } retrospective`;
-  const generate = () => onGenerate(style, { includeCalendar: calendarAvailable && includeCalendar, includeImages, soundtrackVibe });
+  const generate = () => onGenerate(style, { includeCalendar: calendarAvailable && includeCalendar, includeImages, noteTag, soundtrackVibe });
 
   return (
     <div className="retrospective-options">
@@ -134,9 +140,19 @@ export default function RetrospectiveOptions({ aiAvailable, calendarCoverage, on
         <span>Show images from my notes, when any fit (Roast and Spotify)</span>
       </label>
 
+      <label className="retrospective-options-tag-picker">
+        <span className="retrospective-options-section-title">Tag for retrospective notes</span>
+        <input className="retrospective-options-tag-input" list="retrospective-tag-suggestions" onChange={ event => setNoteTag(event.target.value) }
+          placeholder={ initialNoteTag } spellCheck={ false } type="text" value={ noteTag } />
+        <span className="retrospective-options-tag-hint">Given to the takeaways note, each "Document how you did it" note, and the archived data notes.</span>
+      </label>
+      <datalist id="retrospective-tag-suggestions">
+        { tagSuggestions.map(suggestion => <option key={ suggestion } value={ suggestion } />) }
+      </datalist>
+
       <div className="retrospective-options-actions">
         { playableSaved ? (
-          <button className="retrospective-options-primary" onClick={ () => onPlay(playableSaved, soundtrackVibe) } type="button">
+          <button className="retrospective-options-primary" onClick={ () => onPlay(playableSaved, soundtrackVibe, noteTag) } type="button">
             { `Play ${ chosenLabel } retrospective` }
           </button>
         ) : (

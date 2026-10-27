@@ -1,13 +1,14 @@
 // One slide of the Quarter Retrospective story: a kicker, a large figure that counts up from zero, a headline, an
 // optional ranked list, and a caption. A slide's kind adds what it draws between its headline and caption: done and
 // open bars per project, each project's hardest tasks, the progress heap, or a timeline of months; a photo slide sets one of the user's images behind
-// its words. Behind the words of every other slide sit two drifting shapes placed by the slide's position, film grain,
+// its words. The hardest tasks list is exported so the story can show it with a link per project to document it. Behind the words of every other slide sit two drifting shapes placed by the slide's position, film grain,
 // and, when the story gives one, an abstract photo blended into the slide's tone. Each part enters a beat after the one
 // above it, and the slide is remounted for every slide shown, so the entrance replays as the story advances.
 import RetrospectiveHeap from "dashboard/quarter-retrospective/retrospective-heap";
 import { SLIDE_KINDS } from "dashboard/quarter-retrospective/retrospective-slides";
 import { useEffect, useState } from "react";
 import { prefersReducedMotion } from "util/browser-utility";
+import { logIfEnabled } from "util/log";
 
 const COUNT_UP_MILLISECONDS = 1200;
 // The shapes behind a slide take one of this many arrangements, in turn as the story advances.
@@ -81,9 +82,26 @@ function SlideBars({ bars }) {
 
 // ----------------------------------------------------------------------------------------------
 // @desc Each project's hardest tasks, as rated for difficulty, in a list that scrolls when the projects outgrow the slide.
-// @param {object} props - { hardestProjects } as { name, taskCount, tasks } per project, tasks as { difficulty, text }.
+//   Given onDocumentProject, each project ends in a "Document how you did it" link that says so while its note opens
+//   and reports a failure beside it.
+// @param {object} props - An object with the following properties:
+//   - {Array<object>} hardestProjects - { name, taskCount, tasks } per project, tasks as { difficulty, text }
+//   - {Function|null} [onDocumentProject] - async (project) => void; opens the project's documentation note
 // @returns {JSX.Element} The projects.
-function SlideHardestTasks({ hardestProjects }) {
+export function SlideHardestTasks({ hardestProjects, onDocumentProject = null }) {
+  const [documentState, setDocumentState] = useState({ failedIndex: null, openingIndex: null });
+  // @desc Open a project's documentation note, reporting a failure rather than leaving the link waiting.
+  const documentProject = async (project, index) => {
+    setDocumentState({ failedIndex: null, openingIndex: index });
+    try {
+      await onDocumentProject(project);
+      setDocumentState({ failedIndex: null, openingIndex: null });
+    } catch (error) {
+      logIfEnabled("[retrospective-slide] could not open the documentation note", error?.message);
+      setDocumentState({ failedIndex: index, openingIndex: null });
+    }
+  };
+
   return (
     <ol className="retrospective-slide-hardest-projects">
       { hardestProjects.map((project, index) => (
@@ -97,6 +115,15 @@ function SlideHardestTasks({ hardestProjects }) {
               </li>
             )) }
           </ol>
+          { onDocumentProject ? (
+            <button className="retrospective-slide-document-link" disabled={ documentState.openingIndex !== null }
+              onClick={ () => documentProject(project, index) } type="button">
+              { documentState.openingIndex === index ? "Opening…" : "Document how you did it" }
+            </button>
+          ) : null }
+          { documentState.failedIndex === index ? (
+            <p className="retrospective-slide-document-error" role="alert">Couldn't open the note. Try again.</p>
+          ) : null }
         </li>
       )) }
     </ol>

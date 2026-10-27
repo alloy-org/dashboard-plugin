@@ -5,6 +5,20 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-27 — Retrospective: retrospective note tag and "Document how you did it" notes
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-note-tag.js` — new: the tag retrospective notes are given (setting `RETROSPECTIVE_NOTE_TAG`, default `planning/retrospective`), typed tags normalized, saved once when changed, and suggestions from the tags on the user's planning notes.
+- `lib/dashboard/quarter-retrospective/retrospective-project-documentation.js` — new: writes or reopens "How I pulled off {project} ({quarter})", listing the project's hardest tasks above headings to fill in, tagged with the retrospective tag.
+- `lib/dashboard/quarter-retrospective/retrospective-data-note.js`, `project-payoff-rankings.js`, `retrospective-takeaways.js` — the archived data and payoff ranking notes and the takeaways note are created with the Dashboard tag plus the retrospective tag; takeaways no longer use the planning note tag.
+- `lib/dashboard/quarter-retrospective/retrospective-options.jsx` — tag picker (text input with suggestions) under the toggles; the tag goes with generate and play.
+- `lib/dashboard/quarter-retrospective/quarter-retrospective.jsx` — loads tag suggestions, saves the chosen tag, and shows the hardest tasks slide as interactive (scrollable, a link per project, Continue) that opens the project's documentation note.
+- `lib/dashboard/quarter-retrospective/retrospective-slide.jsx` — `SlideHardestTasks` exported with an optional per-project "Document how you did it" link and failure message.
+- `lib/constants/settings.js` — `DEFAULT_RETROSPECTIVE_TAG`, `SETTING_KEYS.RETROSPECTIVE_NOTE_TAG`.
+- `lib/dashboard/styles/quarter-retrospective.scss` — tag picker, document links, and Continue button.
+- `test/quarter-retrospective-note-tag.test.js` — new coverage.
+
 ## 2026-10-27 — Retrospective: "Aw no you di'nt" hardest tasks slide
 
 **Model:** Claude Opus 5.5

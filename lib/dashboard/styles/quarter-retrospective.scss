@@ -1,6 +1,7 @@
 // Styles for the Quarter Retrospective: the overlay it opens in, the tall story card, its header links, the options
 // and status screens, the progress segments, each slide's tone, and what each kind of slide draws: project bars, the
-// month timeline, each project's hardest tasks, the progress heap, and photo slides. Slides keep their own saturated
+// month timeline, each project's hardest tasks with their "Document how you did it" links, the progress heap, and photo
+// slides. The options screen ends with the tag picker for the notes the retrospective writes. Slides keep their own saturated
 // gradients in both themes, like a year-in-review story, so every gradient stop is dark enough for white text; the
 // card chrome around them follows the dashboard theme. Behind each slide's words a backdrop layers an optional
 // abstract photo, two drifting accent shapes, and film grain, all kept faint enough, and pushed toward the slide's
@@ -375,6 +376,30 @@ $retrospective-backdrop-layouts: (
     cursor: pointer;
     display: flex;
     gap: $sp-sm;
+  }
+
+  .retrospective-options-tag-picker {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+  }
+
+  .retrospective-options-tag-input {
+    background: transparent;
+    border: 1px solid $retrospective-slide-rule;
+    border-radius: $sp-xs;
+    color: $retrospective-text-on-slide;
+    font: inherit;
+    min-height: $retrospective-control-height;
+    padding: $sp-xs $sp-sm;
+
+    &::placeholder { color: $retrospective-text-on-slide-muted; }
+    &:focus-visible { border-color: $retrospective-text-on-slide; outline: 2px solid $retrospective-text-on-slide; outline-offset: 2px; }
+  }
+
+  .retrospective-options-tag-hint {
+    color: $retrospective-text-on-slide-muted;
+    font-size: $smaller-font-size;
   }
 
   .retrospective-options-section-title {
@@ -788,6 +813,7 @@ $retrospective-backdrop-layouts: (
   // The hardest tasks slide starts at the top, and its project list scrolls when the projects outgrow the slide.
   .retrospective-slide--hardest-tasks { justify-content: flex-start; }
 
+  // The list and its Continue button sit above the footer, which shares their layer, as the ranking's controls do.
   .retrospective-slide-hardest-projects {
     display: flex;
     flex: 0 1 auto;
@@ -798,7 +824,9 @@ $retrospective-backdrop-layouts: (
     min-height: 0;
     overflow-y: auto;
     padding: 0;
+    position: relative;
     scrollbar-width: thin;
+    z-index: 2;
   }
 
   .retrospective-slide-hardest-project {
@@ -846,6 +874,44 @@ $retrospective-backdrop-layouts: (
     font-variant-numeric: tabular-nums;
     font-weight: 700;
     white-space: nowrap;
+  }
+
+  .retrospective-slide-document-link {
+    align-self: flex-start;
+    background: transparent;
+    border: 0;
+    color: $retrospective-text-on-slide-muted;
+    cursor: pointer;
+    font-size: $smaller-font-size;
+    padding: 0;
+    text-decoration: underline;
+
+    &:hover:not(:disabled), &:focus-visible { color: $retrospective-text-on-slide; }
+    &:disabled { cursor: default; opacity: 0.6; }
+  }
+
+  .retrospective-slide-document-error {
+    font-size: $smaller-font-size;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .retrospective-slide-continue {
+    align-self: flex-start;
+    background: transparent;
+    border: 1px solid $retrospective-slide-rule;
+    border-radius: $retrospective-control-height;
+    color: $retrospective-text-on-slide;
+    cursor: pointer;
+    flex: none;
+    font-weight: 600;
+    min-height: $retrospective-control-height;
+    padding: $sp-xs $sp-md;
+    position: relative;
+    z-index: 2;
+
+    &:hover { border-color: $retrospective-text-on-slide; }
+    &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: 2px; }
   }
 
   .retrospective-slide-timeline {

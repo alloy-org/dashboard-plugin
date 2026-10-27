@@ -4,7 +4,9 @@
 // offers the quarter's plan note. The click that plays or generates a story is the gesture its soundtrack starts from.
 // Once a generation knows the quarter's projects, the processing screen asks the user to rank them by payoff when there
 // are at least two; a story played while the quarter is still unranked asks the same on a slide before its end card. The end card replays the
-// story, goes back to the options to generate another, or saves the quarter's takeaways in a note and opens it.
+// story, goes back to the options to generate another, or saves the quarter's takeaways in a note and opens it. The
+// "Aw no you di'nt" slide waits for the user, so its list can be scrolled, and offers each project a note documenting
+// how its hardest tasks were done. Every note the retrospective writes carries the tag chosen on the options screen.
 import { SETTING_KEYS } from "constants/settings";
 import { readProjectPayoffRanking, saveProjectPayoffRanking } from "dashboard/quarter-retrospective/project-payoff-rankings";
 import RetrospectiveEndCard from "dashboard/quarter-retrospective/retrospective-end-card";
@@ -12,6 +14,9 @@ import RetrospectiveOptions from "dashboard/quarter-retrospective/retrospective-
 import RetrospectiveOverlay from "dashboard/quarter-retrospective/retrospective-overlay";
 import RetrospectivePayoffRanking from "dashboard/quarter-retrospective/retrospective-payoff-ranking";
 import { retrospectiveStyleLabel } from "dashboard/quarter-retrospective/retrospective-data-note";
+import { retrospectiveNoteTag, retrospectiveTagSuggestions, saveRetrospectiveNoteTag } from "dashboard/quarter-retrospective/retrospective-note-tag";
+import { saveProjectDocumentationNote } from "dashboard/quarter-retrospective/retrospective-project-documentation";
+import { SlideHardestTasks } from "dashboard/quarter-retrospective/retrospective-slide";
 import { generateRetrospective, quarterCalendarCoverage, retrospectiveAiAvailable, retrospectivePromptRequester,
   savedRetrospectives } from "dashboard/quarter-retrospective/retrospective-generation";
 import { MINIMUM_PAYOFF_RANKING_PROJECTS, RETROSPECTIVE_STYLES, SLIDE_KINDS, slidesWithEndCard,
@@ -99,6 +104,7 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
   const [muted, setMuted] = useState(initialSoundtrackMuted);
   const [payoffRanking, setPayoffRanking] = useState(null);
   const [rankingProjects, setRankingProjects] = useState([]);
+  const [tagSuggestions, setTagSuggestions] = useState([]);
   const audioContextRef = useRef(null);
   const payoffRankingRef = useRef(null);
   const scope = { domainName, quarter: plan.quarter, year: plan.year };
@@ -111,8 +117,9 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
     }), quarterCalendarCoverage(app, scope), retrospectiveAiAvailable(app), readProjectPayoffRanking(app, scope).catch(error => {
       logIfEnabled("[quarter-retrospective] could not read the payoff ranking", error?.message);
       return null;
-    })]).then(([savedList, coverage, aiFound, storedRanking]) => {
+    }), retrospectiveTagSuggestions(app)]).then(([savedList, coverage, aiFound, storedRanking, suggestions]) => {
       if (cancelled) return;
+      setTagSuggestions(suggestions);
       payoffRankingRef.current = storedRanking;
       setPayoffRanking(storedRanking);
       setSaved(savedList);
@@ -141,6 +148,15 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
     Promise.resolve().then(() => app.setSetting(SETTING_KEYS.RETROSPECTIVE_SOUNDTRACK_MUTED, String(nextMuted))).catch(error => {
       logIfEnabled("[quarter-retrospective] could not save the soundtrack mute", error?.message);
     });
+  };
+
+  // @desc Write the project's documentation note, or find the one already written, then close the retrospective and
+  //   open the note.
+  // @param {object} project - { name, tasks } from the hardest tasks slide.
+  const documentProject = async project => {
+    const { noteUuid } = await saveProjectDocumentationNote(app, { project, quarter: plan.quarter, year: plan.year });
+    onClose();
+    navigateToNote(app, noteUuid);
   };
 
   // @desc Store the user's payoff ranking of the quarter's projects, replacing any earlier one.
@@ -172,7 +188,8 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
 
   // @desc Generate a style and play it, replacing any saved retrospective of the same style in the header's list. The
   //   status screen names each step of the generation as it starts. The story keeps the soundtrack vibe chosen for it.
-  const handleGenerate = async (style, options) => {
+  const handleGenerate = async (style, { noteTag, ...options }) => {
+    saveRetrospectiveNoteTag(app, noteTag);
     prepareSoundtrack();
     setRankingProjects([]);
     setView({ kind: "generating", message: `Reading ${ plan.label }'s completed tasks…` });
@@ -192,15 +209,25 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
     navigateToNote(app, plan.noteUUID);
   } : null;
   const showOptions = () => setView({ kind: "options" });
-  // @desc Play a saved story with the soundtrack vibe chosen on the options screen, or the one already playing.
-  const playSaved = (retrospective, soundtrackVibe = view.soundtrackVibe) => {
+  // @desc Play a saved story with the soundtrack vibe chosen on the options screen, or the one already playing,
+  //   remembering the tag chosen there when one is given.
+  const playSaved = (retrospective, soundtrackVibe = view.soundtrackVibe, noteTag = null) => {
+    if (noteTag !== null) saveRetrospectiveNoteTag(app, noteTag);
     logIfEnabled("[quarter-retrospective] playing a saved story", { generatedAt: retrospective.generatedAt, style: retrospective.style });
     prepareSoundtrack();
     showStory(retrospective, soundtrackVibe);
   };
   // @desc The controls of a story's interactive slides: the ranking, which moves the story on once saved or skipped,
-  //   and the end card.
+  //   the hardest tasks, which moves on when the user continues, and the end card.
   const renderInteractiveSlide = (slide, { onDone, onReplay }) => {
+    if (slide.kind === SLIDE_KINDS.hardestTasks && slide.hardestProjects?.length) {
+      return (
+        <>
+          <SlideHardestTasks hardestProjects={ slide.hardestProjects } onDocumentProject={ documentProject } />
+          <button className="retrospective-slide-continue" onClick={ onDone } type="button">Continue</button>
+        </>
+      );
+    }
     if (slide.kind === SLIDE_KINDS.payoffRanking) {
       return <RetrospectivePayoffRanking onSave={ savePayoffRanking } onSaved={ onDone } onSkip={ onDone } projects={ slide.projects }
         savedRanking={ payoffRanking } />;
@@ -225,8 +252,8 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
   }
   else if (view.kind === "error") body = <RetrospectiveStatus message={ view.message } onRetry={ showOptions } />;
   else if (view.kind === "options") {
-    body = <RetrospectiveOptions aiAvailable={ aiAvailable } calendarCoverage={ calendarCoverage } onGenerate={ handleGenerate } onPlay={ playSaved }
-      quarterLabel={ plan.label } saved={ saved } />;
+    body = <RetrospectiveOptions aiAvailable={ aiAvailable } calendarCoverage={ calendarCoverage } initialNoteTag={ retrospectiveNoteTag() }
+      onGenerate={ handleGenerate } onPlay={ playSaved } quarterLabel={ plan.label } saved={ saved } tagSuggestions={ tagSuggestions } />;
   } else {
     // Spotify stories blend abstract photos behind their slides, picked by when the story was generated.
     const spotifyStory = view.retrospective.style === RETROSPECTIVE_STYLES.spotify;
