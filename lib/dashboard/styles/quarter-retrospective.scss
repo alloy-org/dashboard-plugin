@@ -46,6 +46,8 @@ $retrospective-backdrop-grain-opacity: 0.16;
 $retrospective-chip-background: rgba(255, 255, 255, 0.14);
 $retrospective-chip-background-hover: rgba(255, 255, 255, 0.22);
 $retrospective-chip-move-size: 28px;
+$retrospective-explanation-detail-background: rgba(0, 0, 0, 0.82);
+$retrospective-explanation-icon-size: 18px;
 // Fractal noise drawn once as an SVG tile and repeated, so the grain costs no download.
 $retrospective-grain-tile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)'/%3E%3C/svg%3E");
 
@@ -765,6 +767,77 @@ $retrospective-backdrop-layouts: (
     color: $retrospective-text-on-slide-muted;
     font-size: $default-font-size;
     margin: 0;
+  }
+
+  // The explanation sits above the tap zones so its prompt can be hovered and tapped, but lets presses on its text
+  // through to them. The prompt's detail opens above the prompt, over the words, so opening it never moves the prompt
+  // out from under the pointer.
+  .retrospective-slide-explanation {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+    pointer-events: none;
+    position: relative;
+    z-index: 2;
+  }
+
+  .retrospective-slide-explanation-text {
+    color: $retrospective-text-on-slide-muted;
+    font-size: $smaller-font-size;
+    margin: 0;
+  }
+
+  .retrospective-slide-explanation-detail-anchor { position: relative; }
+
+  .retrospective-slide-explanation-prompt {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    color: $retrospective-text-on-slide;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: $smaller-font-size;
+    font-weight: 600;
+    gap: $sp-xs;
+    padding: $sp-xs 0;
+    pointer-events: auto;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+
+    &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: 2px; }
+  }
+
+  .retrospective-slide-explanation-icon {
+    align-items: center;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+    display: inline-flex;
+    flex: none;
+    font-family: Georgia, serif;
+    font-size: 12px;
+    font-style: italic;
+    font-weight: 700;
+    height: $retrospective-explanation-icon-size;
+    justify-content: center;
+    width: $retrospective-explanation-icon-size;
+  }
+
+  .retrospective-slide-explanation-detail {
+    backdrop-filter: blur(6px);
+    background: $retrospective-explanation-detail-background;
+    border: 1px solid $retrospective-slide-rule;
+    border-radius: 10px;
+    bottom: 100%;
+    color: $retrospective-text-on-slide;
+    font-size: $smaller-font-size;
+    left: 0;
+    padding: $sp-sm $sp-md;
+    pointer-events: auto;
+    position: absolute;
+    right: 0;
+
+    p { margin: 0; }
+    p + p { margin-top: $sp-sm; }
   }
 
   .retrospective-slide-bars {

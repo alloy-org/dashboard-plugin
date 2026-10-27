@@ -1,5 +1,5 @@
 // Quarter Retrospective story player and overlay: auto-advance, tap and keyboard navigation, pausing, the soundtrack
-// following the story, and closing.
+// following the story, a slide's explanation detail holding the slide, and closing.
 import { jest } from "@jest/globals";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
@@ -126,6 +126,29 @@ describe("RetrospectiveStory", () => {
     expect(counterText(container)).toBe("2 / 3");
     expect(container.querySelector(".retrospective-story-paused-badge")).toBeNull();
     expect(container.querySelector(".retrospective-story-hint")).toBeNull();
+  });
+
+  it("explains a slide, opening its detail on a tap and holding the slide until the detail closes", async () => {
+    const explainedSlides = [{ ...slides[0], explanation: "Victory Value is a score.",
+      explanationDetail: { label: "How do we calculate it?", paragraphs: ["From its duration.", "And your goals."] } }, ...slides.slice(1)];
+    const container = await render(createElement(RetrospectiveStory, { label: "Q3 2026 retrospective", slideMilliseconds: SLIDE_MILLISECONDS,
+      slides: explainedSlides }));
+    expect(container.querySelector(".retrospective-slide-explanation-text").textContent).toBe("Victory Value is a score.");
+    const prompt = container.querySelector(".retrospective-slide-explanation-prompt");
+    expect(prompt.textContent).toBe("iHow do we calculate it?");
+    expect(container.querySelector(".retrospective-slide-explanation-detail")).toBeNull();
+
+    await click(prompt);
+    const detail = container.querySelector(".retrospective-slide-explanation-detail");
+    expect([...detail.querySelectorAll("p")].map(paragraph => paragraph.textContent)).toEqual(["From its duration.", "And your goals."]);
+    expect(prompt.getAttribute("aria-expanded")).toBe("true");
+    await passTime(SLIDE_MILLISECONDS * 3);
+    expect(counterText(container)).toBe("1 / 3");
+
+    await click(prompt);
+    expect(container.querySelector(".retrospective-slide-explanation-detail")).toBeNull();
+    await passTime(SLIDE_MILLISECONDS + 100);
+    expect(counterText(container)).toBe("2 / 3");
   });
 
   it("plays its soundtrack, suspending it on pause, fading it at the end, and starting it again on Replay", async () => {

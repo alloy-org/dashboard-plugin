@@ -1,12 +1,12 @@
 // One slide of the Quarter Retrospective story: a kicker, a large figure that counts up from zero, a headline, an
-// optional ranked list, and a caption. A slide's kind adds what it draws between its headline and caption: done and
-// open bars per project, each project's hardest tasks, the progress heap, or a timeline of months; a photo slide sets one of the user's images behind
+// optional ranked list, a caption, and an optional explanation with a detail that opens on hover or tap. A slide's
+// kind adds what it draws between its headline and caption: done and open bars per project, each project's hardest tasks, the progress heap, or a timeline of months; a photo slide sets one of the user's images behind
 // its words. The hardest tasks list is exported so the story can show it with a link per project to document it. Behind the words of every other slide sit two drifting shapes placed by the slide's position, film grain,
 // and, when the story gives one, an abstract photo blended into the slide's tone. Each part enters a beat after the one
 // above it, and the slide is remounted for every slide shown, so the entrance replays as the story advances.
 import RetrospectiveHeap from "dashboard/quarter-retrospective/retrospective-heap";
 import { SLIDE_KINDS } from "dashboard/quarter-retrospective/retrospective-slides";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { prefersReducedMotion } from "util/browser-utility";
 import { logIfEnabled } from "util/log";
 
@@ -131,6 +131,48 @@ export function SlideHardestTasks({ hardestProjects, onDocumentProject = null })
 }
 
 // ----------------------------------------------------------------------------------------------
+// @desc A slide's explanation, and a prompt such as "How do we calculate it?" whose detail opens above it while a mouse
+//   hovers over it, and opens or closes on a click or tap, so a touch screen can read it too. The detail stays open
+//   once clicked until clicked again, and the slide reports whether it is open so the story can wait while it's read.
+// @param {object} props - An object with the following properties:
+//   - {string|null} explanation - The paragraph shown on the slide
+//   - {object|null} explanationDetail - { label, paragraphs }: the prompt and the detail it opens
+//   - {Function|null} onDetailOpenChange - (open) => void
+// @returns {JSX.Element} The explanation.
+function SlideExplanation({ explanation, explanationDetail, onDetailOpenChange }) {
+  const [hovered, setHovered] = useState(false);
+  const [pinned, setPinned] = useState(false);
+  const open = hovered || pinned;
+  const detailId = useId();
+
+  useEffect(() => {
+    onDetailOpenChange?.(open);
+  }, [open]);
+
+  return (
+    <div className="retrospective-slide-explanation">
+      { explanation ? <p className="retrospective-slide-explanation-text">{ explanation }</p> : null }
+      { explanationDetail ? (
+        <div className="retrospective-slide-explanation-detail-anchor"
+          onPointerEnter={ event => { if (event.pointerType === "mouse") setHovered(true); } }
+          onPointerLeave={ event => { if (event.pointerType === "mouse") setHovered(false); } }>
+          <button aria-controls={ detailId } aria-expanded={ open } className="retrospective-slide-explanation-prompt"
+            onClick={ () => setPinned(previous => !previous) } type="button">
+            <span aria-hidden="true" className="retrospective-slide-explanation-icon">i</span>
+            { explanationDetail.label }
+          </button>
+          { open ? (
+            <div className="retrospective-slide-explanation-detail" id={ detailId } role="tooltip">
+              { explanationDetail.paragraphs.map((paragraph, index) => <p key={ index }>{ paragraph }</p>) }
+            </div>
+          ) : null }
+        </div>
+      ) : null }
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------------------------
 // @desc The quarter's months as columns rising to their task counts, each with its highlight beneath when it has one.
 // @param {object} props - { columns } as { label, note, value } per month.
 // @returns {JSX.Element} The timeline.
@@ -231,12 +273,13 @@ function SlideBody({ slide }) {
 // @desc Render one slide.
 // @param {object} props - An object with the following properties:
 //   - {JSX.Element|null} [children] - Controls shown in place of the slide's body, for an interactive slide
+//   - {Function|null} [onDetailOpenChange] - (open) => void, told when the explanation's detail opens or closes
 //   - {string|null} [photoUrl] - An abstract photo to blend behind the words; none leaves the shapes on the tone alone
 //   - {number} [position=0] - The slide's zero-based place in the story, which arranges the shapes behind it
-//   - {object} slide - From slidesFromStatistics or the story writer: { caption, figure, headline, id, items, kicker,
-//     kind, subheadline?, tone }, plus what its kind draws
+//   - {object} slide - From slidesFromStatistics or the story writer: { caption, explanation?, explanationDetail?, figure,
+//     headline, id, items, kicker, kind, subheadline?, tone }, plus what its kind draws
 // @returns {JSX.Element} The slide.
-export default function RetrospectiveSlide({ children = null, photoUrl = null, position = 0, slide }) {
+export default function RetrospectiveSlide({ children = null, onDetailOpenChange = null, photoUrl = null, position = 0, slide }) {
   if (slide.kind === SLIDE_KINDS.image && slide.imageUrl) return <ImageSlide slide={ slide } />;
   return (
     <section aria-roledescription="slide" className={ `retrospective-slide retrospective-slide--${ slide.kind || SLIDE_KINDS.figure } `
@@ -247,6 +290,10 @@ export default function RetrospectiveSlide({ children = null, photoUrl = null, p
       { slide.subheadline ? <p className="retrospective-slide-subheadline">{ slide.subheadline }</p> : null }
       { children || <SlideBody slide={ slide } /> }
       { slide.caption ? <p className="retrospective-slide-caption">{ slide.caption }</p> : null }
+      { slide.explanation || slide.explanationDetail ? (
+        <SlideExplanation explanation={ slide.explanation || null } explanationDetail={ slide.explanationDetail || null }
+          onDetailOpenChange={ onDetailOpenChange } />
+      ) : null }
       <SlideBackdrop photoUrl={ photoUrl } position={ position } />
     </section>
   );

@@ -1,6 +1,7 @@
 // Play the Quarter Retrospective's slides as a story: a segmented progress bar across the top, each slide advancing
 // on its own after a few seconds, a tap on the left or right side stepping back or ahead, pressing and holding to
-// pause, and the arrow keys and Space doing the same from the keyboard. A Pause button in the footer, a hint beside it on
+// pause, and the arrow keys and Space doing the same from the keyboard. A slide's explanation detail, while open, holds
+// the slide until it closes. A Pause button in the footer, a hint beside it on
 // the first slide, and a badge there while paused make pausing easy to find. The story stops on its last slide. Given an
 // audio context and a soundtrack vibe, it plays that vibe's loop, pausing with the story and fading out at its end.
 // Given a background photo seed, each slide blends an abstract photo behind its words, the next slide's photo loading
@@ -119,6 +120,7 @@ export default function RetrospectiveStory({ audioContext = null, backgroundPhot
   const [elapsed, setElapsed] = useState(0);
   const [held, setHeld] = useState(false);
   const [userPaused, setUserPaused] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
   const pressStartedAt = useRef(0);
   const suppressNextTap = useRef(false);
   const lastIndex = slides.length - 1;
@@ -126,6 +128,7 @@ export default function RetrospectiveStory({ audioContext = null, backgroundPhot
   const currentMilliseconds = slideMilliseconds * slideDurationFactor(slides[index]);
   // @desc Show a slide from the start of its clock.
   const showSlide = nextIndex => {
+    setDetailOpen(false);
     setIndex(nextIndex);
     setElapsed(0);
   };
@@ -138,7 +141,7 @@ export default function RetrospectiveStory({ audioContext = null, backgroundPhot
     onReplay: () => goTo(0) }) : null;
   const interactive = !!interactiveBody;
   const finished = index === lastIndex && (interactive || elapsed >= currentMilliseconds);
-  const paused = held || userPaused || finished || interactive;
+  const paused = held || userPaused || detailOpen || finished || interactive;
   const showPausedBadge = (held || userPaused) && !finished && !interactive;
   const showPauseHint = index === 0 && !paused;
   const photoUrl = backgroundPhotoSeed ? retrospectiveBackgroundUrl(backgroundPhotoSeed, index) : null;
@@ -207,7 +210,8 @@ export default function RetrospectiveStory({ audioContext = null, backgroundPhot
       <div className="retrospective-story-progress">
         { slides.map((slide, segmentIndex) => <ProgressSegment fill={ segmentFill(segmentIndex) } key={ slide.id } />) }
       </div>
-      <RetrospectiveSlide key={ slides[index].id } photoUrl={ photoUrl } position={ index } slide={ slides[index] }>
+      <RetrospectiveSlide key={ slides[index].id } onDetailOpenChange={ setDetailOpen } photoUrl={ photoUrl } position={ index }
+        slide={ slides[index] }>
         { interactiveBody }
       </RetrospectiveSlide>
       { interactive ? null : (

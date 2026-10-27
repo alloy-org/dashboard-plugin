@@ -166,7 +166,8 @@ describe("slidesFromStatistics", () => {
     const factorById = Object.fromEntries(slidesFromStatistics(statistics).map(slide => [slide.id, slideDurationFactor(slide)]));
 
     expect(factorById.intro).toBe(SHORT_SLIDE_DURATION_FACTOR);
-    expect(factorById["victory-total"]).toBe(SHORT_SLIDE_DURATION_FACTOR);
+    // The Victory Value total explains what Victory Value is, which takes the usual time to read.
+    expect(factorById["victory-total"]).toBe(1);
     expect(factorById["progress-heap"]).toBe(1.5);
     expect(factorById["project-victory"]).toBe(1);
   });

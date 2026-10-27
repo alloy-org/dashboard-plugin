@@ -5,6 +5,16 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-27 — Retrospective: Victory Value slide explains Victory Value
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js` — `VICTORY_VALUE_EXPLANATION` and `VICTORY_VALUE_CALCULATION`; the Victory Value total slide carries them as `explanation` and `explanationDetail`, and `slideWordCount` counts the explanation.
+- `lib/dashboard/quarter-retrospective/retrospective-slide.jsx` — `SlideExplanation`: the explanation paragraph and an ⓘ "How do we calculate it?" prompt whose detail opens on mouse hover and toggles on click or tap; reports open changes through `onDetailOpenChange`.
+- `lib/dashboard/quarter-retrospective/retrospective-story.jsx` — holds the slide while its explanation detail is open.
+- `lib/dashboard/styles/quarter-retrospective.scss` — explanation, prompt, icon, and detail popover.
+- `test/quarter-retrospective-story.test.js`, `test/quarter-retrospective-statistics.test.js` — coverage.
+
 ## 2026-10-27 — Retrospective: retrospective note tag and "Document how you did it" notes
 
 **Model:** Claude Opus 5.5
