@@ -131,21 +131,23 @@ describe("servedFromDevServer", () => {
   });
 
   it("recognizes loopback hostnames on any port", () => {
-    stubPageLocation({ hostname: "localhost", port: "3000" });
+    stubPageLocation({ hostname: "localhost", port: "3030" });
     expect(servedFromDevServer()).toBe(true);
     stubPageLocation({ hostname: "127.0.0.1", port: "8080" });
     expect(servedFromDevServer()).toBe(true);
   });
 
-  it("recognizes a LAN address on a dev server port, the localhost:3000 collision workaround", () => {
-    stubPageLocation({ hostname: "192.168.1.42", port: "3000" });
+  it("recognizes a LAN address on a dev server port", () => {
+    stubPageLocation({ hostname: "192.168.1.42", port: "3030" });
     expect(servedFromDevServer()).toBe(true);
-    stubPageLocation({ hostname: "10.0.0.8", port: "3001" });
+    stubPageLocation({ hostname: "10.0.0.8", port: "3031" });
     expect(servedFromDevServer()).toBe(true);
   });
 
   it("rejects a LAN address on an unrelated port and any public host", () => {
     stubPageLocation({ hostname: "192.168.1.42", port: "8080" });
+    expect(servedFromDevServer()).toBe(false);
+    stubPageLocation({ hostname: "192.168.1.42", port: "3000" });
     expect(servedFromDevServer()).toBe(false);
     stubPageLocation({ hostname: "www.amplenote.com", port: "" });
     expect(servedFromDevServer()).toBe(false);

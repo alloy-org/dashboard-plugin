@@ -4,7 +4,7 @@
 import { jest } from "@jest/globals";
 import { gatherRetrospectiveQuarter } from "dashboard/quarter-retrospective/retrospective-data";
 import { quarterBefore } from "constants/quarters";
-import { formattedMinutes, slidesFromStatistics } from "dashboard/quarter-retrospective/retrospective-slides";
+import { formattedMinutes, SHORT_SLIDE_DURATION_FACTOR, slideDurationFactor, slidesFromStatistics, slideWordCount } from "dashboard/quarter-retrospective/retrospective-slides";
 import { quarterTotals, retrospectiveStatistics, retrospectiveTaskText, scheduledMinutes } from "dashboard/quarter-retrospective/retrospective-statistics";
 
 const HOUR_SECONDS = 60 * 60;
@@ -155,6 +155,24 @@ describe("slidesFromStatistics", () => {
       "important-tasks", "outside-projects", "intent", "busiest-day", "summary"]);
     expect(slides[0].headline).toBe("“Liftoff”");
     expect(slides.find(slide => slide.id === "intent").figure.value).toBe(50);
+  });
+
+  it("shortens the slides with few words, keeps the heap long, and leaves data-rich slides at the usual length", () => {
+    const completedTasks = [completedTask("a", { victoryValue: 4 }), completedTask("b")];
+    const entriesByDate = new Map([["2026-07-10", [ledgerEntry("a", "2026-07-10", launch), ledgerEntry("b", "2026-07-10")]]]);
+    const statistics = retrospectiveStatistics({ completedTasks, entriesByDate, quarter: 3, year: 2026 });
+    const factorById = Object.fromEntries(slidesFromStatistics(statistics).map(slide => [slide.id, slideDurationFactor(slide)]));
+
+    expect(factorById.intro).toBe(SHORT_SLIDE_DURATION_FACTOR);
+    expect(factorById["victory-total"]).toBe(SHORT_SLIDE_DURATION_FACTOR);
+    expect(factorById["progress-heap"]).toBe(1.5);
+    expect(factorById["project-victory"]).toBe(1);
+  });
+
+  it("counts a slide's words without its kicker, its figure, or tokens that are only punctuation", () => {
+    const slide = { caption: "From 1 Jul – 30 Sep.", figure: { prefix: "", suffix: "", value: 42 }, headline: "Q3, wrapped",
+      items: [{ label: "Ship it", value: "4 VV" }], kicker: "Your quarter in review" };
+    expect(slideWordCount(slide)).toBe(11);
   });
 
   // ----------------------------------------------------------------------------------------------

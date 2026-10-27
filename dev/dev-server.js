@@ -464,7 +464,7 @@ async function main() {
   const { host, port: esbuildPort } = await ctx.serve({
     servedir: devDir,
     ...(process.env.DASHBOARD_ACCEPTANCE === "true" ? { host: "127.0.0.1" } : {}),
-    port: Number(process.env.DASHBOARD_DEV_BUILD_PORT || 3001),
+    port: Number(process.env.DASHBOARD_DEV_BUILD_PORT || 3031),
   });
 
   const proxyServer = http.createServer((req, res) => {
@@ -566,8 +566,8 @@ async function main() {
     req.pipe(proxyReq, { end: true });
   });
 
-  proxyServer.listen(Number(process.env.DASHBOARD_DEV_PORT || 3000), process.env.DASHBOARD_ACCEPTANCE === "true" ? "127.0.0.1" : undefined, () => {
-    console.log(`[dev] server running at http://localhost:${ process.env.DASHBOARD_DEV_PORT || 3000 }`);
+  proxyServer.listen(Number(process.env.DASHBOARD_DEV_PORT || 3030), process.env.DASHBOARD_ACCEPTANCE === "true" ? "127.0.0.1" : undefined, () => {
+    console.log(`[dev] server running at http://localhost:${ process.env.DASHBOARD_DEV_PORT || 3030 }`);
     console.log("[reload] live reload enabled");
     if (process.env.SENTRY_DSN) console.log('[sentry] reporting enabled, environment "dashboard-dev"');
     else console.log("[sentry] no SENTRY_DSN in .env; dashboard exceptions will not be reported");

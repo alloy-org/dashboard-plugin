@@ -449,9 +449,37 @@ $pace-slice-other-color: #e87ba4;
 
     > .plan-error,
     > .plan-heading,
-    > .plan-summary {
+    > .plan-summary,
+    > .intent-payoff-strip {
       grid-column: 1 / -1;
     }
+
+    /* A reminder of what paid off in recently ranked quarters, kept to a quiet line per quarter so it informs the
+     * answer without competing with the two questions. */
+    .intent-payoff-strip {
+      border-left: 3px solid $color-border;
+      display: flex;
+      flex-direction: column;
+      gap: $sp-xs;
+      padding: $sp-xs $sp-md;
+    }
+
+    .intent-payoff-strip-title {
+      font-size: $smaller-font-size;
+      letter-spacing: 0.06em;
+      margin: 0;
+      text-transform: uppercase;
+    }
+
+    .intent-payoff-strip-quarter {
+      color: $color-text-muted;
+      display: flex;
+      flex-wrap: wrap;
+      gap: $sp-xs $sp-md;
+      margin: 0;
+    }
+
+    .intent-payoff-strip-label { font-weight: 600; }
 
     /* Each category is a card of its own, so the two parallel questions read as two places to answer rather than
      * as one undifferentiated form. The fill is primary against the form's secondary ground; the category color is

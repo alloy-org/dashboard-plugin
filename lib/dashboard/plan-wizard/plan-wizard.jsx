@@ -61,6 +61,7 @@ import WizardProgressSidebar from "dashboard/plan-wizard/wizard-progress-sidebar
 import { WIZARD_STEPS, wizardStepIndexFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useElapsingProgress } from "hooks/use-elapsing-progress";
 import useLlmProviderAccess from "hooks/use-llm-provider-access";
+import usePayoffHighlights from "hooks/use-payoff-highlights";
 import usePlanWizard, { planScopeKey } from "hooks/use-plan-wizard";
 import { useProjectTaskRanking } from "hooks/use-project-task-ranking";
 import useUserEditedPlanNote from "hooks/use-user-edited-plan-note";
@@ -133,6 +134,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const pendingStepKeyRef = useRef(null);
   const scopeKey = planScopeKey({ domainName, domainUuid, quarter, year });
   const existingPlanNoteUuid = useUserEditedPlanNote({ app, domainName, domainUuid, quarter, year });
+  const payoffHighlights = usePayoffHighlights({ app, domainName, quarter, year });
   const { hasLlmProviderAccess, isCheckingLlmProviderAccess } = useLlmProviderAccess(app);
   // Refresh the selected quarter's task rankings through the shared queue once the builder is not mid-request.
   useProjectTaskRanking({ app, domainName, domainUuid,
@@ -482,7 +484,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
             state, and unmounting it would discard whatever the user had typed but not yet saved. */ }
           { rendersPlanContent && step.key === "intent" ? (
             <div className="plan-wizard-intent-step-frame" hidden={ isShowingIntentReading }>
-              <IntentStep { ...{ isRefreshing, isSaving, pendingDirection, planningContext, scopeKey } }
+              <IntentStep { ...{ isRefreshing, isSaving, payoffHighlights, pendingDirection, planningContext, scopeKey } }
                 onAnswerStateChange={ setHasIntentAnswer } onFindProjects={ handleFindProjects }
                 onOpenReading={ () => setIsViewingIntentReading(true) } onPendingDirectionApplied={ () => setPendingDirection(null) }
                 onRegisterNavigate={ handleRegisterNavigate } onSave={ saveGoals } readingProgress={ intentReadingProgress } />

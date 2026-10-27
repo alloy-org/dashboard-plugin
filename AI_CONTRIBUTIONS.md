@@ -5,6 +5,54 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-26 — Retrospective backgrounds and motion (phase 8), project payoff ranking (phase 9)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/util/background-splash-images.js` — `RETROSPECTIVE_BACKGROUND_URLS`, twelve abstract Unsplash textures, and `retrospectiveBackgroundUrl(seed, slidePosition)` at a 720x1280 story size.
+- `lib/dashboard/quarter-retrospective/retrospective-slide.jsx` — `SlideBackdrop`: an optional blended photo, two accent shapes in one of `BACKDROP_LAYOUT_COUNT` layouts, and grain; `children` replace the body for an interactive slide.
+- `lib/dashboard/quarter-retrospective/retrospective-story.jsx` — `backgroundPhotoSeed` and next-photo preloading; `renderInteractiveSlide`, under which a slide's clock, tap zones, hold-to-pause, and Space step aside until its controls call `onDone`.
+- `lib/dashboard/styles/quarter-retrospective.scss` — per-tone accent colors, backdrop layers and drift, scale-and-blur slide entrance, blurred part entrances, and the payoff ranking's chips, processing-screen layout, and slide.
+- `lib/dashboard/quarter-retrospective/project-payoff-rankings.js` (new) — the yearly `{domain} Project Payoff Rankings {year}` note: save, read, recall the most recent ranked quarters, and order projects as last ranked.
+- `lib/dashboard/quarter-retrospective/retrospective-payoff-ranking.jsx` (new) — the draggable ranking list with Move up/down buttons, tooltip, save, and skip.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` — `onProjectsKnown`, and `projects` on generated and saved retrospectives.
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js` — `SLIDE_KINDS.payoffRanking` and `slidesWithPayoffRanking`.
+- `lib/dashboard/quarter-retrospective/quarter-retrospective.jsx` — Spotify photo seed; reads and saves the ranking; the ranking on the processing screen and as a story slide while the quarter is unranked.
+- `lib/plan-wizard/prospect-evidence.js`, `lib/plan-wizard/prospect-discovery.js` — `payoffRankings` evidence (`recalledPayoffRankings`) listed inside the prompt's evidence fence, with instructions to weigh it.
+- `lib/hooks/use-payoff-highlights.js` (new), `lib/dashboard/plan-wizard/intent-step.jsx`, `lib/dashboard/plan-wizard/plan-wizard.jsx`, `lib/dashboard/styles/plan-wizard.scss` — the intent page's "What paid off" strip.
+- `jest.config.js` — the `.scss` stub is matched before path prefixes, so `dashboard/styles/*.scss` imports no longer load the real stylesheet as JavaScript.
+- `test/quarter-retrospective-payoff-ranking.test.js` (new), `test/quarter-retrospective-story.test.js`, `test/background-splash-images.test.js`, `test/quarter-retrospective-data-note.test.js` — coverage for all of the above.
+- `doc/plan-quarter-retrospective.md` — status of phases 8 and 9.
+
+**Task:** Continue the Quarter Retrospective plan through phases 8 and 9.
+
+---
+
+## 2026-10-26 — Retrospective slides with few words hold for less time
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js` — `slideWordCount` counts a slide's main-content words (headline, caption, rows, bars, month columns); `slideDurationFactor` keeps a slide's own `durationFactor` and otherwise holds a slide under `SHORT_SLIDE_WORD_LIMIT` words for `SHORT_SLIDE_DURATION_FACTOR` (7/12) of the usual time.
+- `lib/dashboard/quarter-retrospective/retrospective-story.jsx` — the story clock uses `slideDurationFactor`, so AI-rewritten slides are judged by the words shown.
+- `test/quarter-retrospective-statistics.test.js` — the intro and Victory Value slides shorten, the heap stays long, data slides stay at the usual length; the word count's exclusions.
+
+**Task:** Give slides with under ten words of main content a shorter time on screen.
+
+---
+
+## 2026-10-26 — Dev server moves to port 3030
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `dev/dev-server.js` — the dashboard defaults to port 3030 and esbuild's own server to 3031, off the 3000 that Rails and its kubectl port-forward hold.
+- `lib/util/dev-environment.js` — `DEV_SERVER_PORTS` follows to 3030 and 3031.
+- `test/debug-evaluate.test.js` — the new ports, and a LAN address on 3000 no longer reads as the dev server.
+- `README.md` — the new port and its environment overrides.
+
+**Task:** Start the dashboard dev server on a port other than 3000.
+
+---
+
 ## 2026-10-26 — Retrospective soundtrack synthesized per vibe, with a remembered mute
 
 **Model:** Claude Opus 5.5

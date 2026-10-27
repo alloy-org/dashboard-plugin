@@ -2,12 +2,17 @@
 // style and a soundtrack vibe and then plays that style's saved story or generates it. While a story plays, a header
 // lists the other styles already generated, a mute button for the soundtrack, and a way back to the options; it always
 // offers the quarter's plan note. The click that plays or generates a story is the gesture its soundtrack starts from.
+// Once a generation knows the quarter's projects, the processing screen asks the user to rank them by payoff; a story
+// played while the quarter is still unranked asks the same on a slide before its summary.
 import { SETTING_KEYS } from "constants/settings";
+import { readProjectPayoffRanking, saveProjectPayoffRanking } from "dashboard/quarter-retrospective/project-payoff-rankings";
 import RetrospectiveOptions from "dashboard/quarter-retrospective/retrospective-options";
 import RetrospectiveOverlay from "dashboard/quarter-retrospective/retrospective-overlay";
+import RetrospectivePayoffRanking from "dashboard/quarter-retrospective/retrospective-payoff-ranking";
 import { retrospectiveStyleLabel } from "dashboard/quarter-retrospective/retrospective-data-note";
 import { generateRetrospective, quarterCalendarCoverage, retrospectiveAiAvailable,
   savedRetrospectives } from "dashboard/quarter-retrospective/retrospective-generation";
+import { RETROSPECTIVE_STYLES, SLIDE_KINDS, slidesWithPayoffRanking } from "dashboard/quarter-retrospective/retrospective-slides";
 import { createRetrospectiveAudioContext } from "dashboard/quarter-retrospective/retrospective-soundtrack";
 import RetrospectiveStory from "dashboard/quarter-retrospective/retrospective-story";
 import { pluginSettings, updatePluginSetting } from "plugin-data";
@@ -60,13 +65,15 @@ function RetrospectiveHeader({ currentStyle, muted, onOpenPlanNote, onPlay, onSh
 
 // ----------------------------------------------------------------------------------------------
 // @desc The screen shown while the quarter is read or a retrospective is generated, or after either fails.
-// @param {object} props - { message, onRetry }: onRetry, when given, shows a button that goes back to the options.
+// @param {object} props - { children, message, onRetry }: onRetry, when given, shows a button that goes back to the
+//   options; children, such as the payoff ranking, sit below the message.
 // @returns {JSX.Element} The status screen.
-function RetrospectiveStatus({ message, onRetry = null }) {
+function RetrospectiveStatus({ children = null, message, onRetry = null }) {
   return (
-    <div className="retrospective-status" role="status">
-      <p className="retrospective-status-message">{ message }</p>
+    <div className={ `retrospective-status${ children ? " retrospective-status--with-task" : "" }` }>
+      <p className="retrospective-status-message" role="status">{ message }</p>
       { onRetry ? <button className="retrospective-story-control" onClick={ onRetry } type="button">Back to styles</button> : null }
+      { children }
     </div>
   );
 }
@@ -86,7 +93,10 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
   const [calendarCoverage, setCalendarCoverage] = useState(null);
   const [aiAvailable, setAiAvailable] = useState(false);
   const [muted, setMuted] = useState(initialSoundtrackMuted);
+  const [payoffRanking, setPayoffRanking] = useState(null);
+  const [rankingProjects, setRankingProjects] = useState([]);
   const audioContextRef = useRef(null);
+  const payoffRankingRef = useRef(null);
   const scope = { domainName, quarter: plan.quarter, year: plan.year };
 
   useEffect(() => {
@@ -94,8 +104,13 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
     Promise.all([savedRetrospectives(app, scope).catch(error => {
       logIfEnabled("[quarter-retrospective] could not read saved retrospectives", error?.message);
       return [];
-    }), quarterCalendarCoverage(app, scope), retrospectiveAiAvailable(app)]).then(([savedList, coverage, aiFound]) => {
+    }), quarterCalendarCoverage(app, scope), retrospectiveAiAvailable(app), readProjectPayoffRanking(app, scope).catch(error => {
+      logIfEnabled("[quarter-retrospective] could not read the payoff ranking", error?.message);
+      return null;
+    })]).then(([savedList, coverage, aiFound, storedRanking]) => {
       if (cancelled) return;
+      payoffRankingRef.current = storedRanking;
+      setPayoffRanking(storedRanking);
       setSaved(savedList);
       setCalendarCoverage(coverage);
       setAiAvailable(aiFound);
@@ -124,16 +139,32 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
     });
   };
 
+  // @desc Store the user's payoff ranking of the quarter's projects, replacing any earlier one.
+  // @param {Array<object>} rankedProjects - { derivedFrom, name, uuid } per project, the one that paid off most first.
+  const savePayoffRanking = async rankedProjects => {
+    const storedRanking = await saveProjectPayoffRanking(app, { ...scope, rankedProjects });
+    payoffRankingRef.current = storedRanking;
+    setPayoffRanking(storedRanking);
+  };
+  // @desc Show a story, adding the ranking slide when the quarter has projects and is still unranked. That choice is
+  //   made once, as the story starts, so saving on the slide doesn't shift the slides under the story.
+  const showStory = (retrospective, soundtrackVibe) => {
+    const slides = payoffRankingRef.current ? retrospective.slides : slidesWithPayoffRanking(retrospective.slides, retrospective.projects);
+    setView({ kind: "story", retrospective, slides, soundtrackVibe });
+  };
+
   // @desc Generate a style and play it, replacing any saved retrospective of the same style in the header's list. The
   //   status screen names each step of the generation as it starts. The story keeps the soundtrack vibe chosen for it.
   const handleGenerate = async (style, options) => {
     prepareSoundtrack();
+    setRankingProjects([]);
     setView({ kind: "generating", message: `Reading ${ plan.label }'s completed tasks…` });
     const onProgress = message => setView(previous => (previous.kind === "generating" ? { ...previous, message } : previous));
     try {
-      const retrospective = await generateRetrospective(app, { ...scope, domainUuid, options, style }, { onProgress });
+      const retrospective = await generateRetrospective(app, { ...scope, domainUuid, options, style }, { onProgress,
+        onProjectsKnown: setRankingProjects });
       setSaved(previous => [retrospective, ...previous.filter(existing => existing.style !== style)]);
-      setView({ kind: "story", retrospective, soundtrackVibe: options.soundtrackVibe });
+      showStory(retrospective, options.soundtrackVibe);
     } catch (error) {
       logIfEnabled("[quarter-retrospective] could not generate", error?.message);
       setView({ kind: "error", message: `Couldn't build the retrospective: ${ error?.message || "unknown error" }` });
@@ -147,19 +178,37 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
   // @desc Play a saved story with the soundtrack vibe chosen on the options screen, or the one already playing.
   const playSaved = (retrospective, soundtrackVibe = view.soundtrackVibe) => {
     prepareSoundtrack();
-    setView({ kind: "story", retrospective, soundtrackVibe });
+    showStory(retrospective, soundtrackVibe);
   };
+  // @desc The ranking on a story's ranking slide, which moves the story on once saved or skipped.
+  const renderInteractiveSlide = (slide, { onDone }) => (slide.kind === SLIDE_KINDS.payoffRanking ? (
+    <RetrospectivePayoffRanking onSave={ savePayoffRanking } onSaved={ onDone } onSkip={ onDone } projects={ slide.projects }
+      savedRanking={ payoffRanking } />
+  ) : null);
 
   let body;
   if (view.kind === "loading") body = <RetrospectiveStatus message={ `Looking for ${ plan.label } retrospectives…` } />;
-  else if (view.kind === "generating") body = <RetrospectiveStatus message={ view.message } />;
+  else if (view.kind === "generating") {
+    body = (
+      <RetrospectiveStatus message={ view.message }>
+        { rankingProjects.length ? (
+          <RetrospectivePayoffRanking key={ rankingProjects.map(project => project.name).join("|") } onSave={ savePayoffRanking }
+            projects={ rankingProjects } savedRanking={ payoffRanking } />
+        ) : null }
+      </RetrospectiveStatus>
+    );
+  }
   else if (view.kind === "error") body = <RetrospectiveStatus message={ view.message } onRetry={ showOptions } />;
   else if (view.kind === "options") {
     body = <RetrospectiveOptions aiAvailable={ aiAvailable } calendarCoverage={ calendarCoverage } onGenerate={ handleGenerate } onPlay={ playSaved }
       quarterLabel={ plan.label } saved={ saved } />;
   } else {
-    body = <RetrospectiveStory audioContext={ audioContextRef.current } key={ view.retrospective.generatedAt }
-      label={ `${ plan.label } retrospective` } muted={ muted } slides={ view.retrospective.slides } soundtrackVibe={ view.soundtrackVibe || null } />;
+    // Spotify stories blend abstract photos behind their slides, picked by when the story was generated.
+    const spotifyStory = view.retrospective.style === RETROSPECTIVE_STYLES.spotify;
+    const backgroundPhotoSeed = spotifyStory ? view.retrospective.generatedAt || RETROSPECTIVE_STYLES.spotify : null;
+    body = <RetrospectiveStory audioContext={ audioContextRef.current } backgroundPhotoSeed={ backgroundPhotoSeed }
+      key={ view.retrospective.generatedAt } label={ `${ plan.label } retrospective` } muted={ muted }
+      renderInteractiveSlide={ renderInteractiveSlide } slides={ view.slides } soundtrackVibe={ view.soundtrackVibe || null } />;
   }
   const currentStyle = view.kind === "story" ? view.retrospective.style : null;
   const storyHasSoundtrack = view.kind === "story" && !!audioContextRef.current && !!view.soundtrackVibe;

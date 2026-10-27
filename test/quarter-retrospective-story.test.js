@@ -7,6 +7,7 @@ import { FakeAudioContext } from "./fake-audio-context";
 
 const { default: RetrospectiveOverlay } = await import("dashboard/quarter-retrospective/retrospective-overlay");
 const { default: RetrospectiveStory, HOLD_MILLISECONDS, STORY_TICK_MILLISECONDS } = await import("dashboard/quarter-retrospective/retrospective-story");
+const { retrospectiveBackgroundUrl } = await import("util/background-splash-images");
 
 const SLIDE_MILLISECONDS = 1000;
 const slides = [
@@ -151,6 +152,27 @@ describe("RetrospectiveStory", () => {
     const replayGain = masterGains[masterGains.length - 1];
     expect(replayGain).not.toBe(masterGain);
     expect(replayGain.disconnected).toBe(false);
+  });
+
+  it("layers shapes and grain behind each slide, and blends a photo behind it only when given a seed", async () => {
+    const plainContainer = await renderStory();
+    expect(plainContainer.querySelector(".retrospective-slide-backdrop--layout-0")).not.toBeNull();
+    expect(plainContainer.querySelectorAll(".retrospective-backdrop-shape")).toHaveLength(2);
+    expect(plainContainer.querySelector(".retrospective-backdrop-photo")).toBeNull();
+    await act(async () => { mounted.root.unmount(); });
+    mounted.mountPoint.remove();
+
+    const seed = "2026-10-26T12:00:00.000Z";
+    const container = await render(createElement(RetrospectiveStory, { backgroundPhotoSeed: seed, label: "Q3 2026 retrospective",
+      slideMilliseconds: SLIDE_MILLISECONDS, slides }));
+    expect(container.querySelector(".retrospective-backdrop-photo").getAttribute("src")).toBe(retrospectiveBackgroundUrl(seed, 0));
+    await pressKey("ArrowRight");
+    expect(container.querySelector(".retrospective-slide-backdrop--layout-1")).not.toBeNull();
+    expect(container.querySelector(".retrospective-backdrop-photo").getAttribute("src")).toBe(retrospectiveBackgroundUrl(seed, 1));
+
+    await dispatch(container.querySelector(".retrospective-backdrop-photo"), new Event("error"));
+    expect(container.querySelector(".retrospective-backdrop-photo")).toBeNull();
+    expect(container.querySelectorAll(".retrospective-backdrop-shape")).toHaveLength(2);
   });
 
   it("holds while pressed, and letting go of a hold does not change slides", async () => {

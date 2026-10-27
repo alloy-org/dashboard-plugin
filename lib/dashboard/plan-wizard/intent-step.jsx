@@ -2,7 +2,8 @@
 // personally. Suggestions are offered as starting points that fill the focused field; nothing becomes a chosen
 // intent until the user saves. A background inference response replaces the offered suggestions but never the
 // text a user has begun typing. A link below the fields opens the reading page, which shows how those suggestions
-// were drawn from the user's notes.
+// were drawn from the user's notes. When recent quarters were ranked in the Quarter Retrospective, a strip above the
+// fields recalls what paid off.
 
 import ExpandingTextarea from "dashboard/plan-wizard/expanding-textarea";
 import { IntentReadingProgressBar } from "dashboard/plan-wizard/intent-reading-page";
@@ -113,6 +114,27 @@ function IntentReadingLink({ isRefreshing, onOpenReading, progressFraction }) {
 }
 
 // ----------------------------------------------------------------------------------------------
+// @desc A compact reminder of the projects that paid off most in recently ranked quarters.
+// @param {object} params - { payoffHighlights }: { label, rankings } per quarter, rankings { projectName, rank }.
+// @returns {JSX.Element|null} The strip, or null when no quarter was ranked.
+function PayoffHighlightStrip({ payoffHighlights }) {
+  if (!payoffHighlights.length) return null;
+  return (
+    <section aria-label="What paid off" className="intent-payoff-strip">
+      <h3 className="intent-payoff-strip-title">What paid off</h3>
+      { payoffHighlights.map(rankedQuarter => (
+        <p className="intent-payoff-strip-quarter" key={ rankedQuarter.label }>
+          <span className="intent-payoff-strip-label">{ rankedQuarter.label }</span>
+          { rankedQuarter.rankings.map(entry => (
+            <span className="intent-payoff-strip-project" key={ entry.rank }>{ `${ entry.rank }. ${ entry.projectName }` }</span>
+          )) }
+        </p>
+      )) }
+    </section>
+  );
+}
+
+// ----------------------------------------------------------------------------------------------
 // @desc Render and save the first wizard page. Draft text is local state seeded from stored goals; it is
 //   reseeded only when the plan scope changes or a save succeeds, so suggestions arriving from a background
 //   refresh cannot discard what the user is in the middle of writing.
@@ -123,6 +145,7 @@ function IntentReadingLink({ isRefreshing, onOpenReading, progressFraction }) {
 //   - {Function} onAnswerStateChange - Reports whether Next should be enabled.
 //   - {Function} onFindProjects - Moves to the projects page and runs discovery there.
 //   - {Function} onOpenReading - Shows the reading page, leaving this page mounted underneath it.
+//   - {Array<object>} payoffHighlights - Top projects of recently ranked quarters, from usePayoffHighlights.
 //   - {Function} onPendingDirectionApplied - Clears pendingDirection once it has been placed.
 //   - {object|null} pendingDirection - A direction picked on the reading page, placed like a suggestion chip.
 //   - {number} readingProgress - Elapsed fill of the running reading.
@@ -134,8 +157,8 @@ function IntentReadingLink({ isRefreshing, onOpenReading, progressFraction }) {
 // The wizard's shared Next button runs this page's handler: discovery reads stored intents, so an unsaved answer
 // would otherwise be invisible and the user would be shown projects chosen for the prior answer.
 export default function IntentStep({ isRefreshing, isSaving, onAnswerStateChange, onFindProjects,
-    onOpenReading = null, onPendingDirectionApplied = null, onRegisterNavigate, onSave, pendingDirection = null,
-    planningContext, readingProgress = 0, scopeKey }) {
+    onOpenReading = null, onPendingDirectionApplied = null, onRegisterNavigate, onSave, payoffHighlights = [],
+    pendingDirection = null, planningContext, readingProgress = 0, scopeKey }) {
   const [draftFields, setDraftFields] = useState(() => draftFieldsFromGoals(planningContext.goals));
   const [focusedFieldUuid, setFocusedFieldUuid] = useState(null);
   const capturedAtRef = useRef(null);
@@ -238,6 +261,7 @@ export default function IntentStep({ isRefreshing, isSaving, onAnswerStateChange
     <div className="plan-step-container intent-step-container">
       <h2 className="plan-heading">{ INTENT_STEP_COPY.title }</h2>
       <p className="plan-summary">{ INTENT_STEP_COPY.summary }</p>
+      <PayoffHighlightStrip payoffHighlights={ payoffHighlights } />
       <IntentStepCategory { ...categoryProps } fields={ workFields } onAddSecondary={ () => handleAddSecondary("work") }
         possibilities={ planningContext.possibilities.work } userCategoryEm="work" />
       <IntentStepCategory { ...categoryProps } fields={ personalFields }

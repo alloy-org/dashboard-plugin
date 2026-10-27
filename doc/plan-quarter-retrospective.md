@@ -16,8 +16,8 @@ takeaways note.
 
 Nothing imports these modules yet, so the retrospective is unreachable in the app.
 
-Phases 3–7 and the follow-ups to phase 7 are committed. Phase 8's audio is built and uncommitted; its backgrounds and
-motion, and phases 9–10, are not started.
+Phases 3–7, the follow-ups to phase 7, and phase 8's audio are committed. Phase 8's backgrounds and motion and phase 9
+are built and uncommitted. Phase 10 is not started.
 
 ## Goal
 
@@ -317,7 +317,10 @@ through `raceWizardPrompt` (callLLM raced against the user's own provider) with 
 
 ### Phase 8 — Spotify production values
 
-- **Backgrounds.**
+- **Backgrounds (built).** Every style's slides get two accent shapes and SVG film grain behind their words, placed by
+  the slide's position in one of four layouts and drifting slowly; each tone carries its own accent color. Spotify
+  stories also blend an abstract photo into each slide's tone (`retrospectiveBackgroundUrl`, seeded by when the story
+  was generated), preloading the next slide's photo. The original design follows.
   - **Primary layer:** generated in CSS. Recaps like Spotify Wrapped use saturated duotone gradients, large
     geometric or warped shapes, grain, and a background that varies a little per slide but keeps one treatment
     (see sources). Shapes and SVG grain cost no licensing or network, so they form this layer.
@@ -342,10 +345,15 @@ through `raceWizardPrompt` (callLLM raced against the user's own provider) with 
     prefers reduced motion.
   - **Deferred:** a licensed track. Pixabay's license allows use without attribution but restricts redistributing
     music files on their own, so read each track's license before hosting one.
-- **Motion.** Slide transitions use scale and blur entrances. The kicker and figure come in with stagger, as part 2
+- **Motion (built).** Slide transitions use scale and blur entrances. The kicker and figure come in with stagger, as part 2
   already does.
 
-### Phase 9 — Project payoff ranking
+### Phase 9 — Project payoff ranking (built)
+
+Built as designed below, with these specifics: storage is `project-payoff-rankings.js`, reusing the data note's JSON
+sections; `generateRetrospective` reports projects through `onProjectsKnown`; the ranking slide is added at play time
+by `slidesWithPayoffRanking` before the summary (the end card doesn't exist yet), and the story waits on it through
+`renderInteractiveSlide`. Plan Builder's evidence carries `payoffRankings`, read by `recalledPayoffRankings`.
 
 - **Where it appears:** the processing screen, and as a slide before the end card when skipped there. It shows only
   when projects were found or inferred.

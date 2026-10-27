@@ -3,9 +3,15 @@
 // pause, and the arrow keys and Space doing the same from the keyboard. A Pause button in the footer, a hint beside it on
 // the first slide, and a badge there while paused make pausing easy to find. The story stops on its last slide. Given an
 // audio context and a soundtrack vibe, it plays that vibe's loop, pausing with the story and fading out at its end.
+// Given a background photo seed, each slide blends an abstract photo behind its words, the next slide's photo loading
+// while the current one shows. A slide the caller renders as interactive, such as the payoff ranking, waits for the
+// user: its clock doesn't run, the tap zones and hold-to-pause step aside so its controls can be used, and it moves
+// on when the caller's controls say it's done.
 import RetrospectiveSlide from "dashboard/quarter-retrospective/retrospective-slide";
+import { slideDurationFactor } from "dashboard/quarter-retrospective/retrospective-slides";
 import { RetrospectiveSoundtrack } from "dashboard/quarter-retrospective/retrospective-soundtrack";
 import { useEffect, useRef, useState } from "react";
+import { retrospectiveBackgroundUrl } from "util/background-splash-images";
 
 export const SLIDE_MILLISECONDS = 7200;
 export const STORY_TICK_MILLISECONDS = 50;
@@ -40,6 +46,18 @@ function useStoryClock({ elapsed, index, paused, setElapsed, showSlide, slideCou
   useEffect(() => {
     if (elapsed >= slideMilliseconds && index < slideCount - 1) showSlide(index + 1);
   }, [elapsed, index, slideCount, slideMilliseconds]);
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Start loading the next slide's background photo while the current slide shows, so it is ready when the slide
+//   enters rather than fading in late.
+// @param {object} options - { backgroundPhotoSeed, index, slideCount }: no seed loads nothing.
+function usePreloadedBackgroundPhoto({ backgroundPhotoSeed, index, slideCount }) {
+  useEffect(() => {
+    if (!backgroundPhotoSeed || index + 1 >= slideCount || typeof Image !== "function") return;
+    const preloadedImage = new Image();
+    preloadedImage.src = retrospectiveBackgroundUrl(backgroundPhotoSeed, index + 1);
+  }, [backgroundPhotoSeed, index, slideCount]);
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -82,15 +100,19 @@ function useStorySoundtrack({ audioContext, finished, muted, slideMilliseconds, 
 // @desc The story player.
 // @param {object} props - An object with the following properties:
 //   - {AudioContext|null} [audioContext] - Where the soundtrack plays, made from a user's click; none plays no soundtrack
+//   - {string|null} [backgroundPhotoSeed] - Picks the abstract photos behind the slides, stable per story; none shows
+//     no photos
 //   - {string} label - Accessible name for the story, such as "Q3 2026 retrospective"
 //   - {boolean} [muted=false] - Whether the soundtrack is silenced
+//   - {Function|null} [renderInteractiveSlide] - (slide, { onDone }) => the controls an interactive slide shows in
+//     place of its body, or null for a slide that plays as usual; onDone moves the story to the next slide
 //   - {Array<object>} slides - From slidesFromStatistics
-//   - {number} [slideMilliseconds=SLIDE_MILLISECONDS] - How long each slide shows before advancing, times the slide's
-//     durationFactor when it has one
+//   - {number} [slideMilliseconds=SLIDE_MILLISECONDS] - How long a data-rich slide shows before advancing, times the
+//     slide's slideDurationFactor, which shortens a slide with few words and lengthens the heap
 //   - {string|null} [soundtrackVibe] - A RETROSPECTIVE_SOUNDTRACK_VIBES value for the soundtrack
 // @returns {JSX.Element} The story.
-export default function RetrospectiveStory({ audioContext = null, label, muted = false, slides, slideMilliseconds = SLIDE_MILLISECONDS,
-  soundtrackVibe = null }) {
+export default function RetrospectiveStory({ audioContext = null, backgroundPhotoSeed = null, label, muted = false,
+    renderInteractiveSlide = null, slides, slideMilliseconds = SLIDE_MILLISECONDS, soundtrackVibe = null }) {
   const [index, setIndex] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [held, setHeld] = useState(false);
@@ -98,13 +120,8 @@ export default function RetrospectiveStory({ audioContext = null, label, muted =
   const pressStartedAt = useRef(0);
   const suppressNextTap = useRef(false);
   const lastIndex = slides.length - 1;
-  // A slide that needs longer, such as the heap, stretches its own clock.
-  const currentMilliseconds = slideMilliseconds * (Number(slides[index]?.durationFactor) || 1);
-  const finished = index === lastIndex && elapsed >= currentMilliseconds;
-  const paused = held || userPaused || finished;
-  const showPausedBadge = (held || userPaused) && !finished;
-  const showPauseHint = index === 0 && !paused;
-
+  // A slide that needs longer, such as the heap, stretches its own clock; one with few words shortens it.
+  const currentMilliseconds = slideMilliseconds * slideDurationFactor(slides[index]);
   // @desc Show a slide from the start of its clock.
   const showSlide = nextIndex => {
     setIndex(nextIndex);
@@ -115,24 +132,35 @@ export default function RetrospectiveStory({ audioContext = null, label, muted =
     if (nextIndex > lastIndex) return;
     showSlide(Math.max(0, nextIndex));
   };
+  const interactiveBody = renderInteractiveSlide ? renderInteractiveSlide(slides[index], { onDone: () => goTo(index + 1) }) : null;
+  const interactive = !!interactiveBody;
+  const finished = index === lastIndex && elapsed >= currentMilliseconds;
+  const paused = held || userPaused || finished || interactive;
+  const showPausedBadge = (held || userPaused) && !finished && !interactive;
+  const showPauseHint = index === 0 && !paused;
+  const photoUrl = backgroundPhotoSeed ? retrospectiveBackgroundUrl(backgroundPhotoSeed, index) : null;
 
   useStoryClock({ elapsed, index, paused, setElapsed, showSlide, slideCount: slides.length, slideMilliseconds: currentMilliseconds });
   useStorySoundtrack({ audioContext, finished, muted, slideMilliseconds, soundtrackVibe, userPaused });
+  usePreloadedBackgroundPhoto({ backgroundPhotoSeed, index, slideCount: slides.length });
 
   useEffect(() => {
     const handleKeyDown = event => {
       if (event.key === "ArrowRight") goTo(index + 1);
       else if (event.key === "ArrowLeft") goTo(index - 1);
-      else if (event.key === " ") {
+      else if (event.key === " " && !interactive) {
         event.preventDefault();
         setUserPaused(previous => !previous);
       }
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [index, lastIndex]);
+  }, [index, interactive, lastIndex]);
 
+  // @desc Begin a press that may become a hold. An interactive slide's controls take presses, and a drag among them
+  //   never ends in a pointerup, so presses there are left alone.
   const pressStart = () => {
+    if (interactive) return;
     pressStartedAt.current = Date.now();
     suppressNextTap.current = false;
     setHeld(true);
@@ -164,11 +192,17 @@ export default function RetrospectiveStory({ audioContext = null, label, muted =
       <div className="retrospective-story-progress">
         { slides.map((slide, segmentIndex) => <ProgressSegment fill={ segmentFill(segmentIndex) } key={ slide.id } />) }
       </div>
-      <RetrospectiveSlide key={ slides[index].id } slide={ slides[index] } />
-      <button aria-label="Previous slide" className="retrospective-story-tap retrospective-story-tap--previous"
-        onClick={ tapTo(-1) } type="button" />
-      <button aria-label="Next slide" className="retrospective-story-tap retrospective-story-tap--next" onClick={ tapTo(1) }
-        type="button" />
+      <RetrospectiveSlide key={ slides[index].id } photoUrl={ photoUrl } position={ index } slide={ slides[index] }>
+        { interactiveBody }
+      </RetrospectiveSlide>
+      { interactive ? null : (
+        <>
+          <button aria-label="Previous slide" className="retrospective-story-tap retrospective-story-tap--previous"
+            onClick={ tapTo(-1) } type="button" />
+          <button aria-label="Next slide" className="retrospective-story-tap retrospective-story-tap--next" onClick={ tapTo(1) }
+            type="button" />
+        </>
+      ) }
       <div className="retrospective-story-footer">
         <span className="retrospective-story-counter">{ `${ index + 1 } / ${ slides.length }` }</span>
         { showPauseHint ? <span className="retrospective-story-hint">Hold anywhere or press Space to pause</span> : null }

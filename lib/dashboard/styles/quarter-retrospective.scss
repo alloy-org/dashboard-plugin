@@ -1,7 +1,10 @@
 // Styles for the Quarter Retrospective: the overlay it opens in, the tall story card, its header links, the options and
 // status screens, the progress segments, each slide's tone, and what each kind of slide draws: project bars, the month
 // timeline, the progress heap, and photo slides. Slides keep their own saturated gradients in both themes, like a year-in-review story, so every
-// gradient stop is dark enough for white text; the card chrome around them follows the dashboard theme.
+// gradient stop is dark enough for white text; the card chrome around them follows the dashboard theme. Behind each
+// slide's words a backdrop layers an optional abstract photo, two drifting accent shapes, and film grain, all kept faint
+// enough, and pushed toward the slide's edges, that the white text keeps its contrast. The payoff ranking's project chips
+// appear on the processing screen and on a slide of their own.
 
 @use 'sass:list';
 @use 'sass:map';
@@ -31,18 +34,40 @@ $retrospective-heap-fall-duration: 600ms;
 $retrospective-heap-no-project: rgba(255, 255, 255, 0.55);
 $retrospective-heap-block-edge: rgba(0, 0, 0, 0.28);
 $retrospective-photo-scrim: linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.45) 45%, rgba(0, 0, 0, 0.12) 100%);
+$retrospective-slide-entrance-duration: 480ms;
+$retrospective-entrance-blur: 6px;
+$retrospective-backdrop-drift-duration: 16s;
+$retrospective-backdrop-photo-opacity: 0.55;
+$retrospective-backdrop-glow-opacity: 0.32;
+$retrospective-backdrop-blob-opacity: 0.16;
+$retrospective-backdrop-grain-opacity: 0.16;
+$retrospective-chip-background: rgba(255, 255, 255, 0.14);
+$retrospective-chip-background-hover: rgba(255, 255, 255, 0.22);
+$retrospective-chip-move-size: 28px;
+// Fractal noise drawn once as an SVG tile and repeated, so the grain costs no download.
+$retrospective-grain-tile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)'/%3E%3C/svg%3E");
 
-// Two stops per tone, each dark enough at its lightest for white body text.
+// Two stops per tone, each dark enough at its lightest for white body text, then a bright accent the backdrop's shapes
+// take at low opacity.
 $retrospective-tones: (
-  'intro': (#1f1147, #6d1d74),
-  'gold': (#5c3b00, #a8460f),
-  'forest': (#0b3d2c, #1d6b48),
-  'violet': (#2e1065, #6331a8),
-  'teal': (#063f47, #0f6e78),
-  'ember': (#5a1010, #9c2a1c),
-  'dusk': (#1e2a4f, #4c2a63),
-  'ocean': (#0a2a5c, #1b5aa0),
-  'sunrise': (#5e1d3c, #a3402a),
+  'intro': (#1f1147, #6d1d74, #ff5fa2),
+  'gold': (#5c3b00, #a8460f, #ffb347),
+  'forest': (#0b3d2c, #1d6b48, #4be3a0),
+  'violet': (#2e1065, #6331a8, #b18cff),
+  'teal': (#063f47, #0f6e78, #3ee6e0),
+  'ember': (#5a1010, #9c2a1c, #ff7a59),
+  'dusk': (#1e2a4f, #4c2a63, #8f7bff),
+  'ocean': (#0a2a5c, #1b5aa0, #4fb3ff),
+  'sunrise': (#5e1d3c, #a3402a, #ff9a5c),
+);
+
+// Where the two backdrop shapes sit in each layout, as (glow top, glow left, blob top, blob left, blob turn). Each layout
+// keeps both shapes toward the slide's edges, so they frame the words rather than sit behind them.
+$retrospective-backdrop-layouts: (
+  0: (-18%, 38%, 68%, -30%, 0deg),
+  1: (58%, 46%, -16%, -34%, 70deg),
+  2: (-14%, -42%, 62%, 40%, 140deg),
+  3: (64%, -40%, -20%, 36%, 210deg),
 );
 
 .quarter-retrospective-overlay {
@@ -127,6 +152,110 @@ $retrospective-tones: (
     color: $retrospective-text-on-slide-muted;
     font-size: $large-font-size;
     margin: 0;
+  }
+
+  // With the payoff ranking below it, the message leads from the top so the list has room to grow.
+  .retrospective-status--with-task {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .retrospective-payoff-ranking {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-md;
+    width: 100%;
+  }
+
+  .retrospective-payoff-ranking-prompt {
+    font-size: $large-font-size;
+    font-weight: 700;
+    line-height: 1.3;
+    margin: 0;
+  }
+
+  .retrospective-payoff-ranking-info {
+    color: $retrospective-text-on-slide-muted;
+    cursor: help;
+    font-weight: 400;
+
+    &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: 2px; }
+  }
+
+  .retrospective-payoff-ranking-list {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+    list-style: none;
+    margin: 0;
+    max-height: 40vh;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .retrospective-payoff-chip {
+    align-items: center;
+    background: $retrospective-chip-background;
+    border: 2px solid transparent;
+    border-radius: $radius-md;
+    cursor: grab;
+    display: flex;
+    gap: $sp-sm;
+    padding: $sp-xs $sp-xs $sp-xs $sp-md;
+    transition: background 160ms, border-color 160ms, opacity 160ms;
+
+    &:hover { background: $retrospective-chip-background-hover; }
+  }
+
+  .retrospective-payoff-chip--dragging { cursor: grabbing; opacity: 0.45; }
+  .retrospective-payoff-chip--drag-over { border-color: $retrospective-text-on-slide; }
+
+  .retrospective-payoff-chip-rank {
+    color: $retrospective-text-on-slide-muted;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    min-width: 1.5em;
+  }
+
+  .retrospective-payoff-chip-name {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .retrospective-payoff-chip-move {
+    background: transparent;
+    border: 1px solid $retrospective-slide-rule;
+    border-radius: 50%;
+    color: $retrospective-text-on-slide;
+    cursor: pointer;
+    flex-shrink: 0;
+    height: $retrospective-chip-move-size;
+    padding: 0;
+    width: $retrospective-chip-move-size;
+
+    &:hover:not(:disabled) { border-color: $retrospective-text-on-slide; }
+    &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: 2px; }
+    &:disabled { cursor: default; opacity: 0.3; }
+  }
+
+  .retrospective-payoff-ranking-actions {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+  }
+
+  .retrospective-payoff-ranking-error {
+    color: $retrospective-text-on-slide;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  // On its slide the ranking sits above the footer, which shares its layer.
+  .retrospective-slide--payoff-ranking {
+    justify-content: flex-start;
+
+    .retrospective-payoff-ranking { position: relative; z-index: 2; }
   }
 
   .retrospective-options-kicker {
@@ -352,14 +481,19 @@ $retrospective-tones: (
     padding: $sp-xs $sp-md;
   }
 
+  // Isolated so the backdrop, beneath every other child, still sits above the slide's own gradient.
   .retrospective-slide {
+    animation: retrospective-slide-in $retrospective-slide-entrance-duration ease-out both;
     color: $retrospective-text-on-slide;
     display: flex;
     flex-direction: column;
     gap: $sp-md;
     height: 100%;
+    isolation: isolate;
     justify-content: center;
+    overflow: hidden;
     padding: 56px $sp-xl 64px;
+    position: relative;
 
     > * { animation: retrospective-enter $retrospective-entrance-duration ease-out both; }
     > :nth-child(2) { animation-delay: $retrospective-entrance-step; }
@@ -371,8 +505,75 @@ $retrospective-tones: (
 
   @each $tone, $stops in $retrospective-tones {
     .retrospective-slide--#{$tone} {
+      --retrospective-accent: #{list.nth($stops, 3)};
       background: linear-gradient(160deg, list.nth($stops, 1) 0%, list.nth($stops, 2) 100%);
     }
+  }
+
+  // Takes the slide's gradient as its own background, so the photo's blend mixes with the tone inside the backdrop.
+  .retrospective-slide > .retrospective-slide-backdrop {
+    animation: retrospective-backdrop-in $retrospective-entrance-duration * 2 ease-out both;
+    background: inherit;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    position: absolute;
+    z-index: -1;
+  }
+
+  .retrospective-backdrop-photo {
+    height: 100%;
+    inset: 0;
+    mix-blend-mode: soft-light;
+    object-fit: cover;
+    opacity: 0;
+    position: absolute;
+    transition: opacity 600ms ease-out;
+    width: 100%;
+  }
+
+  .retrospective-backdrop-photo--loaded { opacity: $retrospective-backdrop-photo-opacity; }
+
+  .retrospective-backdrop-shape {
+    animation: retrospective-backdrop-drift $retrospective-backdrop-drift-duration ease-in-out infinite alternate;
+    aspect-ratio: 1;
+    background: var(--retrospective-accent);
+    position: absolute;
+  }
+
+  .retrospective-backdrop-shape--glow {
+    border-radius: 50%;
+    filter: blur(48px);
+    opacity: $retrospective-backdrop-glow-opacity;
+    width: 95%;
+  }
+
+  .retrospective-backdrop-shape--blob {
+    animation-direction: alternate-reverse;
+    border-radius: 42% 58% 70% 30% / 45% 40% 60% 55%;
+    mix-blend-mode: screen;
+    opacity: $retrospective-backdrop-blob-opacity;
+    width: 110%;
+  }
+
+  @each $layout, $placement in $retrospective-backdrop-layouts {
+    .retrospective-slide-backdrop--layout-#{$layout} {
+      .retrospective-backdrop-shape--glow { left: list.nth($placement, 2); top: list.nth($placement, 1); }
+
+      .retrospective-backdrop-shape--blob {
+        left: list.nth($placement, 4);
+        rotate: list.nth($placement, 5);
+        top: list.nth($placement, 3);
+      }
+    }
+  }
+
+  .retrospective-backdrop-grain {
+    background-image: $retrospective-grain-tile;
+    inset: 0;
+    mix-blend-mode: overlay;
+    opacity: $retrospective-backdrop-grain-opacity;
+    position: absolute;
   }
 
   .retrospective-slide-kicker {
@@ -594,8 +795,6 @@ $retrospective-tones: (
   // The photo fills the slide and the scrim darkens it from the bottom, where the words sit.
   .retrospective-slide--image {
     justify-content: flex-end;
-    overflow: hidden;
-    position: relative;
 
     > .retrospective-slide-kicker, > .retrospective-slide-headline, > .retrospective-slide-caption { position: relative; }
   }
@@ -615,8 +814,24 @@ $retrospective-tones: (
   }
 
   @keyframes retrospective-enter {
-    from { opacity: 0; transform: translateY($retrospective-entrance-distance); }
+    from { filter: blur($retrospective-entrance-blur); opacity: 0; transform: translateY($retrospective-entrance-distance) scale(0.97); }
+    to { filter: none; opacity: 1; transform: none; }
+  }
+
+  // The whole slide settles from slightly large and soft, as if the camera pulled focus onto it.
+  @keyframes retrospective-slide-in {
+    from { filter: blur($retrospective-entrance-blur * 2); opacity: 0.4; transform: scale(1.06); }
+    to { filter: none; opacity: 1; transform: none; }
+  }
+
+  @keyframes retrospective-backdrop-in {
+    from { opacity: 0; transform: scale(1.12); }
     to { opacity: 1; transform: none; }
+  }
+
+  @keyframes retrospective-backdrop-drift {
+    from { transform: translate(0, 0) scale(1); }
+    to { transform: translate(6%, -5%) scale(1.08); }
   }
 
   @keyframes retrospective-rise {
@@ -632,8 +847,9 @@ $retrospective-tones: (
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .retrospective-slide > *, .retrospective-slide-item, .retrospective-slide-bar, .retrospective-slide-timeline-month,
-    .retrospective-slide-timeline-column, .retrospective-heap-block { animation: none; }
+    .retrospective-slide, .retrospective-slide > *, .retrospective-slide > .retrospective-slide-backdrop, .retrospective-slide-item,
+    .retrospective-slide-bar, .retrospective-slide-timeline-month, .retrospective-slide-timeline-column, .retrospective-heap-block,
+    .retrospective-backdrop-shape { animation: none; }
   }
 
   @include breakpoint($breakpoint-large-phone) {

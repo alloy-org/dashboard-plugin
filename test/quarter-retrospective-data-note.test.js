@@ -113,6 +113,8 @@ describe("retrospective generation", () => {
     const saved = await savedRetrospectives(app, REQUEST);
     expect(saved.map(retrospective => retrospective.style)).toEqual(["data"]);
     expect(saved[0].slides).toEqual(generated.slides);
+    expect(Array.isArray(generated.projects)).toBe(true);
+    expect(saved[0].projects).toEqual(generated.projects);
   });
 
   // ----------------------------------------------------------------------------------------------

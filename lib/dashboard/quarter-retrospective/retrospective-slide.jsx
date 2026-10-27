@@ -1,14 +1,17 @@
 // One slide of the Quarter Retrospective story: a kicker, a large figure that counts up from zero, a headline, an
 // optional ranked list, and a caption. A slide's kind adds what it draws between its headline and caption: done and
 // open bars per project, the progress heap, or a timeline of months; a photo slide sets one of the user's images behind
-// its words. Each part enters a beat after the one above it, and the slide is remounted for every slide shown, so the
-// entrance replays as the story advances.
+// its words. Behind the words of every other slide sit two drifting shapes placed by the slide's position, film grain,
+// and, when the story gives one, an abstract photo blended into the slide's tone. Each part enters a beat after the one
+// above it, and the slide is remounted for every slide shown, so the entrance replays as the story advances.
 import RetrospectiveHeap from "dashboard/quarter-retrospective/retrospective-heap";
 import { SLIDE_KINDS } from "dashboard/quarter-retrospective/retrospective-slides";
 import { useEffect, useState } from "react";
 import { prefersReducedMotion } from "util/browser-utility";
 
 const COUNT_UP_MILLISECONDS = 1200;
+// The shapes behind a slide take one of this many arrangements, in turn as the story advances.
+export const BACKDROP_LAYOUT_COUNT = 4;
 
 // ----------------------------------------------------------------------------------------------
 // @desc Count from zero up to a value with an ease-out curve. Without requestAnimationFrame, or with reduced
@@ -99,6 +102,28 @@ function SlideTimeline({ columns }) {
 }
 
 // ----------------------------------------------------------------------------------------------
+// @desc The decorative layers behind a slide's words: an abstract photo blended into the slide's tone when one is given,
+//   two large shapes arranged by the slide's position, and film grain. A photo fades in once loaded, and one that fails
+//   to load is removed, leaving the shapes on the tone.
+// @param {object} props - { photoUrl, position }: photoUrl may be null; position is the slide's place in the story.
+// @returns {JSX.Element} The backdrop, hidden from screen readers.
+function SlideBackdrop({ photoUrl, position }) {
+  const [photoState, setPhotoState] = useState("loading");
+  const layout = Math.abs(Math.trunc(position)) % BACKDROP_LAYOUT_COUNT;
+  return (
+    <div aria-hidden="true" className={ `retrospective-slide-backdrop retrospective-slide-backdrop--layout-${ layout }` }>
+      { photoUrl && photoState !== "failed" ? (
+        <img alt="" className={ `retrospective-backdrop-photo retrospective-backdrop-photo--${ photoState }` }
+          onError={ () => setPhotoState("failed") } onLoad={ () => setPhotoState("loaded") } src={ photoUrl } />
+      ) : null }
+      <span className="retrospective-backdrop-shape retrospective-backdrop-shape--glow" />
+      <span className="retrospective-backdrop-shape retrospective-backdrop-shape--blob" />
+      <span className="retrospective-backdrop-grain" />
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------------------------
 // @desc A ranked list of rows, each a label and an optional value.
 // @param {object} props - { items } as { label, value } rows.
 // @returns {JSX.Element} The list.
@@ -151,10 +176,13 @@ function SlideBody({ slide }) {
 // ----------------------------------------------------------------------------------------------
 // @desc Render one slide.
 // @param {object} props - An object with the following properties:
+//   - {JSX.Element|null} [children] - Controls shown in place of the slide's body, for an interactive slide
+//   - {string|null} [photoUrl] - An abstract photo to blend behind the words; none leaves the shapes on the tone alone
+//   - {number} [position=0] - The slide's zero-based place in the story, which arranges the shapes behind it
 //   - {object} slide - From slidesFromStatistics or the story writer: { caption, figure, headline, id, items, kicker,
 //     kind, tone }, plus what its kind draws
 // @returns {JSX.Element} The slide.
-export default function RetrospectiveSlide({ slide }) {
+export default function RetrospectiveSlide({ children = null, photoUrl = null, position = 0, slide }) {
   if (slide.kind === SLIDE_KINDS.image && slide.imageUrl) return <ImageSlide slide={ slide } />;
   return (
     <section aria-roledescription="slide" className={ `retrospective-slide retrospective-slide--${ slide.kind || SLIDE_KINDS.figure } `
@@ -162,8 +190,9 @@ export default function RetrospectiveSlide({ slide }) {
       <p className="retrospective-slide-kicker">{ slide.kicker }</p>
       { slide.figure ? <SlideFigure figure={ slide.figure } /> : null }
       <h2 className="retrospective-slide-headline">{ slide.headline }</h2>
-      <SlideBody slide={ slide } />
+      { children || <SlideBody slide={ slide } /> }
       { slide.caption ? <p className="retrospective-slide-caption">{ slide.caption }</p> : null }
+      <SlideBackdrop photoUrl={ photoUrl } position={ position } />
     </section>
   );
 }
