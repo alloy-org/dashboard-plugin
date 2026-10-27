@@ -17,7 +17,7 @@ const STYLE_DESCRIPTIONS = Object.freeze({
 
 const SOUNDTRACK_VIBE_CHOICES = Object.freeze([
   { description: "A mellow pad and an easy beat.", icon: "🌙", label: "Chill", vibe: RETROSPECTIVE_SOUNDTRACK_VIBES.chill },
-  { description: "Retro synths with a steady drive.", icon: "🌆", label: "Synthwave", vibe: RETROSPECTIVE_SOUNDTRACK_VIBES.synthwave },
+  { description: "Retro synths with a steady drive.", icon: "🌆", label: "Synth", vibe: RETROSPECTIVE_SOUNDTRACK_VIBES.synthwave },
   { description: "Big, bright, and triumphant.", icon: "🏆", label: "Anthem", vibe: RETROSPECTIVE_SOUNDTRACK_VIBES.anthem },
 ]);
 

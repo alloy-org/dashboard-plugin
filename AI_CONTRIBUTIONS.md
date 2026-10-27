@@ -5,6 +5,20 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-27 — Quarterly Planning opens on the previous quarter early in a quarter; retrospective options polish
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-page.js` — `homePageOffset`: -1 (previous quarter beside the current one) until the current quarter's midpoint, counted in calendar days, then 0.
+- `lib/dashboard/planning.jsx` — the pager stores steps from that home pair (`pageStep`), so the Back button, the week section and a domain change all return to it.
+- `lib/dashboard/quarter-retrospective/retrospective-options.jsx` — the Synthwave vibe is now "Synth", so every vibe's emoji and name share a line.
+- `lib/dashboard/styles/quarter-retrospective.scss` — the options, status and payoff ranking screens scroll without a visible scrollbar.
+- `test/quarter-page.test.js`, `test/planning-quarter-pager.test.js`, `test/planning-plan-begun.test.js`, `test/quarter-retrospective-entry.test.js` — coverage for the above.
+
+**Task:** Hide the retrospective options' scrollbar, keep vibe titles on one line, and show the previous and current quarters until the current one is half done.
+
+---
+
 ## 2026-10-27 — Retrospective end card and takeaways note (phase 10)
 
 **Model:** Claude Opus 5.5

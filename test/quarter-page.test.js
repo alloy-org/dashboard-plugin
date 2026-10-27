@@ -1,9 +1,18 @@
 // The Quarterly Planning pager moves one quarter at a time and rolls across the year boundary.
-import { quarterPageWindow, quarterPlanForPage, quarterShiftedBy } from "dashboard/quarter-page";
+import { homePageOffset, quarterPageWindow, quarterPlanForPage, quarterShiftedBy } from "dashboard/quarter-page";
 
 const currentPlan = { domainName: "Work", hasAllMonthlyDetails: false, label: "Q4 2026", noteUUID: "q4-note", quarter: 4,
   year: 2026 };
 const nextPlan = { domainName: "Work", hasAllMonthlyDetails: false, label: "Q1 2027", noteUUID: null, quarter: 1, year: 2027 };
+
+describe("homePageOffset", () => {
+  it("opens one quarter back until the current quarter's midpoint, then on the current quarter", () => {
+    expect(homePageOffset({ now: new Date(2026, 9, 1), quarter: 4, year: 2026 })).toBe(-1);
+    expect(homePageOffset({ now: new Date(2026, 10, 15, 23, 59), quarter: 4, year: 2026 })).toBe(-1);
+    expect(homePageOffset({ now: new Date(2026, 10, 16), quarter: 4, year: 2026 })).toBe(0);
+    expect(homePageOffset({ now: new Date(2026, 11, 31), quarter: 4, year: 2026 })).toBe(0);
+  });
+});
 
 describe("quarterShiftedBy", () => {
   it("steps backward and forward across the new year", () => {

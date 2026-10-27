@@ -8,7 +8,7 @@ import { hasStartedFirstPlanIdeaRun, recordFirstPlanIdeaRun } from "dashboard/id
 import IdeaRunProgressPopup from "dashboard/idea-generation/idea-run-progress";
 import MonthFocusPlan, { MonthIntensityMeter } from "dashboard/month-focus-plan";
 import PlanWizard from "dashboard/plan-wizard/plan-wizard";
-import { quarterPageWindow, quarterPlanForPage, quartersMatch } from "dashboard/quarter-page";
+import { homePageOffset, quarterPageWindow, quarterPlanForPage, quartersMatch } from "dashboard/quarter-page";
 import QuarterPageButton from "dashboard/quarter-page-button";
 import QuarterRetrospective from "dashboard/quarter-retrospective/quarter-retrospective";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
@@ -239,7 +239,9 @@ function storedPlanToggles() {
 
 // ----------------------------------------------------------------------------------------------
 // @desc The Quarterly Planning widget: two quarter cards, side buttons that step to a past or future quarter,
-//   the month and week sections beneath them, and the Plan Builder overlay a card or the header action opens.
+//   the month and week sections beneath them, and the Plan Builder overlay a card or the header action opens. In the
+//   first half of a quarter the cards open on the previous quarter beside the current one; from the midpoint on, on
+//   the current quarter beside the next.
 // @param {object} props - An object with the following properties:
 //   - {object} app - Amplenote embed app proxy.
 //   - {number} [gridHeightSize=1] - Cell height in grid rows; two rows adds the upcoming week's section.
@@ -287,12 +289,17 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   const [planEntrySettled, setPlanEntrySettled] = useState(false);
   const [planToggles, setPlanToggles] = useState(() => storedPlanToggles());
   const ideaRun = useIdeaGenerationRun({ app, domainName: taskDomainName, domainUuid: taskDomainUUID });
-  const [pageOffset, setPageOffset] = useState(0);
+  // Quarters the user has stepped away from the home pair. The home pair itself depends on how far into the
+  // current quarter today is, so it is added below rather than stored.
+  const [pageStep, setPageStep] = useState(0);
   const [pagedPlans, setPagedPlans] = useState(null);
   const [pageLoadGeneration, setPageLoadGeneration] = useState(0);
   const monthRequestId = useRef(0);
 
   const isTwoTall = gridHeightSize >= 2;
+  const homeOffset = quarterlyPlans?.current?.quarter ? homePageOffset({ quarter: quarterlyPlans.current.quarter,
+    year: quarterlyPlans.current.year }) : 0;
+  const pageOffset = homeOffset + pageStep;
   // ----------------------------------------------------------------------------------------------
   // @desc Quarters on screen whose plan note the dashboard has not loaded. Each is looked up for saved Plan Builder
   //   answers, which dismiss the splash and mark the card as a plan in progress, and for a note created since load.
@@ -341,7 +348,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   const wizardQuarterProgress = quarterProgress(wizardQuarterPlan);
   const checkingPlanProgress = planNotesMissing && !wizardQuarterProgress;
   const showPlanEntry = planNotesMissing && wizardQuarterProgress?.begun === false;
-  const weekSectionVisible = isTwoTall && pageOffset === 0;
+  const weekSectionVisible = isTwoTall && pageStep === 0;
   const planCreated = !!(wizardQuarterPlan?.noteUUID && currentPlan?.noteUUID);
   const generateIdeasAction = planCreated ? generateIdeasButton(ideaRun) : null;
   const buildPlanAction = canStartWizard && !showPlanEntry && !checkingPlanProgress && !planCreated ? (
@@ -350,8 +357,8 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
       ✍️ Build plan
     </button>
   ) : generateIdeasAction;
-  const returnToCurrentAction = pageOffset !== 0 && currentPlan?.label ? (
-    <button className="planning-return-quarter" onClick={ () => setPageOffset(0) } type="button">
+  const returnToCurrentAction = pageStep !== 0 && currentPlan?.label ? (
+    <button className="planning-return-quarter" onClick={ () => setPageStep(0) } type="button">
       { `↩ Back to ${ currentPlan.label }` }
     </button>
   ) : null;
@@ -386,7 +393,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
     setWeekContent(null);
     setInitialLoadDone(false);
     setMirroredCurrentNoteUuid(null);
-    setPageOffset(0);
+    setPageStep(0);
     setPagedPlans(null);
     setWizardPlan(null);
     setPlanEntrySettled(false);
@@ -629,7 +636,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   return (
     <WidgetWrapper headerActions={headerActions} title={widgetTitle} widgetId="planning">
       <div className="planning-quarter-row">
-        <QuarterPageButton direction="previous" onClick={ () => setPageOffset(offset => offset - 1) }
+        <QuarterPageButton direction="previous" onClick={ () => setPageStep(step => step - 1) }
           quarter={ pageWindow.previous } />
         <div className="planning-quarters">
           {[leftPlan, rightPlan].map(plan => (
@@ -644,7 +651,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
             />
           ))}
         </div>
-        <QuarterPageButton direction="following" onClick={ () => setPageOffset(offset => offset + 1) }
+        <QuarterPageButton direction="following" onClick={ () => setPageStep(step => step + 1) }
           quarter={ pageWindow.following } />
       </div>
       {monthProjectCount !== null && activeTab !== null && !pagePending ? (

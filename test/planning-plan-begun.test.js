@@ -51,10 +51,11 @@ async function settle() {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Mount Planning on Oct 2, 2026, when Q4 is the quarter Plan Builder would open.
+// @desc Mount Planning on Nov 20, 2026, past Q4's midpoint, so the cards show Q4 beside Q1 2027 and Q4 is the quarter
+//   Plan Builder would open.
 // @returns {Promise<object>} { cleanup, container }
 async function renderPlanning() {
-  const restoreNow = freezeNow(new Date(2026, 9, 2));
+  const restoreNow = freezeNow(new Date(2026, 10, 20));
   const app = createPlanWizardApp();
   app.getNoteSections = jest.fn(async () => []);
   const mountPoint = document.createElement("div");

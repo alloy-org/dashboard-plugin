@@ -92,7 +92,7 @@ describe("QuarterRetrospective", () => {
     expect(styleCards().map(card => card.disabled)).toEqual([false, true, true]);
     expect(notes(styleCards())).toEqual([null, "Needs an AI provider (Dashboard Settings)", "Needs an AI provider (Dashboard Settings)"]);
     expect(checked(styleCards())).toEqual(["true", "false", "false"]);
-    expect(titles(vibeCards())).toEqual(["🌙 Chill", "🌆 Synthwave", "🏆 Anthem"]);
+    expect(titles(vibeCards())).toEqual(["🌙 Chill", "🌆 Synth", "🏆 Anthem"]);
     expect(checked(vibeCards())).toEqual(["true", "false", "false"]);
 
     await clickAndSettle(vibeCards()[2]);
