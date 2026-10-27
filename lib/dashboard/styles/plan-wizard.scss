@@ -3,6 +3,7 @@
  * instead of inheriting the widget card's cramped column. */
 
 @use 'theme-tokens' as *;
+@use 'z-indexes' as *;
 
 $plan-wizard-edge-inset-horizontal: 10%;
 $plan-wizard-edge-inset-horizontal-phone: 10px;
@@ -12,7 +13,6 @@ $plan-wizard-pending-spinner-size: 14px;
 $plan-wizard-sidebar-width: 220px;
 $plan-wizard-shadow-blur: 40px;
 $plan-wizard-shadow-y: 12px;
-$plan-wizard-z-index: 1100;
 
 // Categorical slice colors for the rail's pace ring, one fixed hue per rhythm in the pace page's option order so a
 // rhythm keeps its color whichever others are present. Mid-tone steps that read on both the light and dark rail.
@@ -47,7 +47,7 @@ $pace-slice-other-color: #e87ba4;
   position: absolute;
   top: 0;
   width: var(--dashboard-viewport-width, 100vw);
-  z-index: $plan-wizard-z-index;
+  z-index: $z-index-plan-wizard;
 
   @include breakpoint($breakpoint-tablet) {
     padding: $plan-wizard-edge-inset-vertical $plan-wizard-edge-inset-horizontal-phone;
@@ -60,7 +60,7 @@ $pace-slice-other-color: #e87ba4;
     position: fixed;
     top: 0;
     width: var(--dashboard-viewport-width, 100vw);
-    z-index: 0;
+    z-index: $z-index-plan-wizard-backdrop;
   }
 
   /* The dialog fills the width the overlay's inset leaves it and takes exactly the height its page asks for.
@@ -82,7 +82,7 @@ $pace-slice-other-color: #e87ba4;
     padding: $sp-xl;
     position: relative;
     width: 100%;
-    z-index: 1;
+    z-index: $z-index-plan-wizard-page;
 
     @include breakpoint($breakpoint-large-phone) {
       padding: $sp-lg;

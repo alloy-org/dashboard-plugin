@@ -5,6 +5,30 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-27 — One file for every z-index
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/styles/_z-indexes.scss` (new) — every z-index in the dashboard's stylesheets as a named variable, grouped by the stacking context it competes in (the document, the grid shell, the plan wizard, the retrospective overlay and slide, single elements inside a widget), with the values set outside the stylesheets (tippy's 9999, confetti's 2000) noted.
+- `config-popup.scss`, `dashboard.scss`, `dashboard-tippy.scss`, `graveyard.scss`, `idea-run-progress.scss`, `peak-hours.scss`, `plan-wizard.scss`, `proposed-agenda-popover.scss`, `quarter-retrospective.scss` (all in `lib/dashboard/styles/`) — use those variables in place of literal numbers and their own `$…-z-index` variables; the compiled CSS is unchanged.
+
+**Task:** Give every stacking context one file to read its z-index values from.
+
+---
+
+## 2026-10-27 — Retrospective options fit one screen
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-options.jsx` — headline is now "Craft your Q{n} retrospective"; the images toggle and note tag picker sit behind an "Advanced options" link that disappears once clicked.
+- `lib/dashboard/styles/quarter-retrospective.scss` — `.retrospective-options-advanced-link`; on a story with tap zones the slide sits above them with presses passing through except on its buttons, so the Victory Value explanation's "How do we calculate it?" prompt can be hovered and clicked (the slide's `isolation: isolate` had trapped the explanation's z-index beneath the tap zones); the progress bar moves up a layer so the raised slide doesn't cover it.
+- `lib/dashboard/quarter-retrospective/retrospective-story.jsx` — `retrospective-story--tappable` modifier when the slide isn't interactive.
+- `test/planning-quarter-pager.test.js`, `test/quarter-retrospective-note-tag.test.js` — the new headline, and the tag picker revealed through the link.
+
+**Task:** Fit the retrospective's first options screen without scrolling, and fix the explanation prompt that changed slides instead of opening its detail.
+
+---
+
 ## 2026-10-27 — Retrospective: Victory Value slide explains Victory Value
 
 **Model:** Claude Opus 5.5

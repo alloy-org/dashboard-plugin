@@ -1,7 +1,7 @@
 // The Quarter Retrospective's options screen, shown every time the retrospective opens: a card per style and a card per
-// soundtrack vibe, one of each chosen from the start, the toggles that apply to this quarter (the calendar, when the
-// journal recorded any of it, and images from the user's notes), the tag every note the retrospective writes is given,
-// suggested from the tags on the user's planning notes, and a button that plays the chosen style's saved story
+// soundtrack vibe, one of each chosen from the start, the calendar toggle when the journal recorded any of this quarter,
+// an "Advanced options" link revealing the images toggle and the tag every note the retrospective writes is given
+// (suggested from the tags on the user's planning notes), and a button that plays the chosen style's saved story
 // or generates it. A saved story told from no completed tasks has nothing to show, so it is offered for generating
 // again rather than playing when it can be. A style the AI writes can be chosen only when an AI is available or its story was saved. The
 // button's click is the gesture a later phase starts music from.
@@ -82,7 +82,7 @@ function initialStyle({ aiAvailable, saved }) {
 //   - {Function} onGenerate - Receives (style, options), options being { includeCalendar, includeImages, noteTag,
 //     soundtrackVibe }
 //   - {Function} onPlay - Receives (retrospective, soundtrackVibe, noteTag) to play a saved story
-//   - {string} quarterLabel - Such as "Q3 2026"
+//   - {string} quarterLabel - Such as "Q3 2026"; the headline names only its quarter, so it fits on one line
 //   - {Array<object>} saved - The quarter's saved retrospectives, newest first
 //   - {Array<string>} [tagSuggestions] - Tags offered as the note tag is typed
 // @returns {JSX.Element} The screen.
@@ -94,6 +94,8 @@ export default function RetrospectiveOptions({ aiAvailable, calendarCoverage, in
   const [style, setStyle] = useState(() => initialStyle({ aiAvailable, saved }));
   const [soundtrackVibe, setSoundtrackVibe] = useState(DEFAULT_RETROSPECTIVE_SOUNDTRACK_VIBE);
   const [noteTag, setNoteTag] = useState(initialNoteTag);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const quarterName = quarterLabel.split(" ")[0];
   const styles = Object.values(RETROSPECTIVE_STYLES);
   const savedByStyle = new Map(saved.map(retrospective => [retrospective.style, retrospective]));
   const chosenSaved = savedByStyle.get(style) || null;
@@ -106,7 +108,7 @@ export default function RetrospectiveOptions({ aiAvailable, calendarCoverage, in
   return (
     <div className="retrospective-options">
       <p className="retrospective-options-kicker">Your quarter in review</p>
-      <h2 className="retrospective-options-headline">{ `How should we tell ${ quarterLabel }?` }</h2>
+      <h2 className="retrospective-options-headline">{ `Craft your ${ quarterName } retrospective` }</h2>
 
       <h3 className="retrospective-options-section-title" id="retrospective-style-heading">Style</h3>
       <div aria-labelledby="retrospective-style-heading" className="retrospective-choice-cards" role="radiogroup">
@@ -135,20 +137,26 @@ export default function RetrospectiveOptions({ aiAvailable, calendarCoverage, in
           <span>{ `Include calendar events (your calendar covers ${ calendarCoverage.coveredDays } of ${ calendarCoverage.totalDays } days)` }</span>
         </label>
       ) : null }
-      <label className="retrospective-options-toggle">
-        <input checked={ includeImages } onChange={ event => setIncludeImages(event.target.checked) } type="checkbox" />
-        <span>Show images from my notes, when any fit (Roast and Spotify)</span>
-      </label>
+      { showAdvanced ? (
+        <>
+          <label className="retrospective-options-toggle">
+            <input checked={ includeImages } onChange={ event => setIncludeImages(event.target.checked) } type="checkbox" />
+            <span>Show images from my notes, when any fit (Roast and Spotify)</span>
+          </label>
 
-      <label className="retrospective-options-tag-picker">
-        <span className="retrospective-options-section-title">Tag for retrospective notes</span>
-        <input className="retrospective-options-tag-input" list="retrospective-tag-suggestions" onChange={ event => setNoteTag(event.target.value) }
-          placeholder={ initialNoteTag } spellCheck={ false } type="text" value={ noteTag } />
-        <span className="retrospective-options-tag-hint">Given to the takeaways note, each "Document how you did it" note, and the archived data notes.</span>
-      </label>
-      <datalist id="retrospective-tag-suggestions">
-        { tagSuggestions.map(suggestion => <option key={ suggestion } value={ suggestion } />) }
-      </datalist>
+          <label className="retrospective-options-tag-picker">
+            <span className="retrospective-options-section-title">Tag for retrospective notes</span>
+            <input className="retrospective-options-tag-input" list="retrospective-tag-suggestions" onChange={ event => setNoteTag(event.target.value) }
+              placeholder={ initialNoteTag } spellCheck={ false } type="text" value={ noteTag } />
+            <span className="retrospective-options-tag-hint">Given to the takeaways note, each "Document how you did it" note, and the archived data notes.</span>
+          </label>
+          <datalist id="retrospective-tag-suggestions">
+            { tagSuggestions.map(suggestion => <option key={ suggestion } value={ suggestion } />) }
+          </datalist>
+        </>
+      ) : (
+        <button className="retrospective-options-advanced-link" onClick={ () => setShowAdvanced(true) } type="button">Advanced options</button>
+      ) }
 
       <div className="retrospective-options-actions">
         { playableSaved ? (

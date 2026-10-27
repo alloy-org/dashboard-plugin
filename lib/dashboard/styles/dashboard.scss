@@ -5,6 +5,7 @@
  */
 
 @use 'theme' as *;
+@use 'z-indexes' as *;
 // Document-wide box-sizing reset and body typography; the only rules here that no component class can scope.
 @use 'global-reset';
 // Inlined Roboto @font-face — must ship in-bundle because the embed's data: URL origin blocks Google Fonts.
@@ -37,7 +38,7 @@ $error-padding: 40px;
     opacity: 0;
     pointer-events: none;
     position: absolute;
-    z-index: 0;
+    z-index: $z-index-dashboard-background-fade;
   }
 
   /* Suppressing the animation leaves the overlay transparent, so the swap lands as an instant cut when
@@ -63,7 +64,7 @@ $error-padding: 40px;
     }
 
     .dashboard-grid-shell--focused {
-      z-index: 2;
+      z-index: $z-index-dashboard-grid-focused;
     }
 
     /* [OpenAI gpt-5.4] Task: backdrop button that exits focused-widget mode on click */
@@ -74,7 +75,7 @@ $error-padding: 40px;
       cursor: zoom-out;
       inset: 0;
       position: fixed;
-      z-index: 2;
+      z-index: $z-index-dashboard-grid-focus-backdrop;
     }
 
     /* The toolbar holds the task-domain selector on the left and the Settings / Layout buttons on the
@@ -174,7 +175,7 @@ $error-padding: 40px;
       .grid-cell-surface--focused {
         pointer-events: auto;
         position: fixed;
-        z-index: 5;
+        z-index: $z-index-grid-cell-focused-surface;
       }
 
       /* [Claude] Task: dashboard drag visual states for long-press widget reordering */
@@ -187,7 +188,7 @@ $error-padding: 40px;
       &.grid-cell--dragging-ready {
         animation: widget-wobble 0.35s ease-in-out infinite alternate;
         opacity: 1;
-        z-index: 3;
+        z-index: $z-index-grid-cell-dragging-ready;
       }
 
       &.grid-cell--drag-shift {
@@ -201,7 +202,7 @@ $error-padding: 40px;
       &.grid-cell--focused {
         --grid-cell-base-opacity: 1;
         pointer-events: auto;
-        z-index: 4;
+        z-index: $z-index-grid-cell-focused;
       }
 
       &.grid-cell--focus-overlay-host {
@@ -215,7 +216,7 @@ $error-padding: 40px;
       }
 
       &.grid-cell--focus-hidden {
-        z-index: 1;
+        z-index: $z-index-grid-cell-focus-hidden;
       }
     }
 

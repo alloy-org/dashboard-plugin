@@ -205,7 +205,7 @@ export default function RetrospectiveStory({ audioContext = null, backgroundPhot
   }
 
   return (
-    <div aria-label={ label } aria-roledescription="story" className="retrospective-story" onPointerCancel={ pressEnd }
+    <div aria-label={ label } aria-roledescription="story" className={ `retrospective-story${ interactive ? "" : " retrospective-story--tappable" }` } onPointerCancel={ pressEnd }
       onPointerDown={ pressStart } onPointerLeave={ pressEnd } onPointerUp={ pressEnd } role="region">
       <div className="retrospective-story-progress">
         { slides.map((slide, segmentIndex) => <ProgressSegment fill={ segmentFill(segmentIndex) } key={ slide.id } />) }

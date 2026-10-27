@@ -5,12 +5,12 @@
  */
 
 @use 'theme-tokens' as *;
+@use 'z-indexes' as *;
 
 $config-popup-max-width: 90%;
 $config-popup-min-width: 320px;
 $config-popup-shadow-blur: 32px;
 $config-popup-shadow-y: 8px;
-$config-popup-z-index: 1000;
 
 /* [Claude] Task: modal overlay and popup card styles with submit/cancel actions */
 /* Prompt: "popup component that pops up setting options upon clicking Configure" */
@@ -31,7 +31,7 @@ $config-popup-z-index: 1000;
   position: fixed;
   top: 0;
   width: var(--dashboard-viewport-width, 100vw);
-  z-index: $config-popup-z-index;
+  z-index: $z-index-config-popup;
 
   /* Everything the popup contains is scoped to the overlay so no other card in the dashboard can pick these
    * rules up, but scoped through `:where()` so the scoping costs no specificity. Four stylesheets extend the

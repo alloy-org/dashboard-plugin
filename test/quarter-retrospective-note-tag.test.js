@@ -155,12 +155,17 @@ describe("project documentation note", () => {
 
 describe("options tag picker", () => {
   // ----------------------------------------------------------------------------------------------
-  // @desc The picker starts on "planning/retrospective"; a tag typed there is saved when the story is generated, and
+  // @desc The picker stays hidden until "Advanced options" is clicked, which removes the link; it starts on
+  //   "planning/retrospective", and a tag typed there is saved when the story is generated, and
   //   the data note is given it.
   it("starts on the default tag and gives the typed tag to the generated notes", async () => {
     const app = taggedApp();
     await render(createElement(QuarterRetrospective, { app, domainName: "Work", domainUuid: "work-domain", onClose: jest.fn(),
       plan: { label: "Q3 2026", noteUUID: null, quarter: 3, year: 2026 } }));
+    expect(document.body.querySelector(".retrospective-options-tag-input")).toBeNull();
+    const advancedLink = document.body.querySelector(".retrospective-options-advanced-link");
+    await act(async () => { advancedLink.dispatchEvent(new MouseEvent("click", { bubbles: true })); });
+    expect(document.body.querySelector(".retrospective-options-advanced-link")).toBeNull();
     const input = document.body.querySelector(".retrospective-options-tag-input");
     expect(input.value).toBe("planning/retrospective");
     const suggestions = [...document.body.querySelectorAll("#retrospective-tag-suggestions option")].map(option => option.value);

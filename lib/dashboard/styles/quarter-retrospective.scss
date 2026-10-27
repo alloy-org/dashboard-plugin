@@ -11,8 +11,8 @@
 @use 'sass:list';
 @use 'sass:map';
 @use 'theme-tokens' as *;
+@use 'z-indexes' as *;
 
-$retrospective-z-index: 1100;
 $retrospective-card-height: min(88vh, 720px);
 $retrospective-card-aspect: list.slash(9, 16);
 $retrospective-segment-height: 3px;
@@ -82,7 +82,7 @@ $retrospective-backdrop-layouts: (
   justify-content: center;
   padding: $sp-lg;
   position: fixed;
-  z-index: $retrospective-z-index;
+  z-index: $z-index-quarter-retrospective;
 
   .retrospective-overlay-card {
     aspect-ratio: $retrospective-card-aspect;
@@ -105,7 +105,7 @@ $retrospective-backdrop-layouts: (
     position: absolute;
     right: $sp-sm;
     top: $sp-md;
-    z-index: 3;
+    z-index: $z-index-retrospective-chrome;
   }
 
   // Sits beneath the progress bar, beside the close button, above the slide's tap zones.
@@ -117,7 +117,7 @@ $retrospective-backdrop-layouts: (
     position: absolute;
     right: 48px;
     top: $sp-lg + $sp-sm;
-    z-index: 3;
+    z-index: $z-index-retrospective-chrome;
   }
 
   .retrospective-header-link {
@@ -309,7 +309,7 @@ $retrospective-backdrop-layouts: (
 
     &::-webkit-scrollbar { display: none; }
 
-    .retrospective-payoff-ranking { position: relative; z-index: 2; }
+    .retrospective-payoff-ranking { position: relative; z-index: $z-index-retrospective-slide-controls; }
   }
 
   // The end card's controls sit above the footer, which shares their layer, as the ranking's do.
@@ -321,7 +321,7 @@ $retrospective-backdrop-layouts: (
     margin-top: $sp-md;
     position: relative;
     width: 100%;
-    z-index: 2;
+    z-index: $z-index-retrospective-slide-controls;
   }
 
   .retrospective-end-card-hint,
@@ -378,6 +378,19 @@ $retrospective-backdrop-layouts: (
     cursor: pointer;
     display: flex;
     gap: $sp-sm;
+  }
+
+  .retrospective-options-advanced-link {
+    align-self: flex-start;
+    background: transparent;
+    border: 0;
+    color: $retrospective-text-on-slide-muted;
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+    text-decoration: underline;
+
+    &:hover, &:focus-visible { color: $retrospective-text-on-slide; }
   }
 
   .retrospective-options-tag-picker {
@@ -518,6 +531,7 @@ $retrospective-backdrop-layouts: (
     user-select: none;
   }
 
+  // Above the slide, which rises over the tap zones on a tappable story and would otherwise cover the progress.
   .retrospective-story-progress {
     display: flex;
     gap: $sp-xs;
@@ -525,7 +539,7 @@ $retrospective-backdrop-layouts: (
     position: absolute;
     right: $sp-md;
     top: $sp-md;
-    z-index: 2;
+    z-index: $z-index-retrospective-chrome;
   }
 
   .retrospective-story-segment {
@@ -551,9 +565,19 @@ $retrospective-backdrop-layouts: (
     cursor: pointer;
     position: absolute;
     top: 0;
-    z-index: 1;
+    z-index: $z-index-retrospective-tap-zone;
 
     &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: -4px; }
+  }
+
+  // The slide is its own stacking context, so nothing inside it can rise above the tap zones by z-index alone. On a
+  // slide with tap zones the slide itself sits above them but lets presses through, and only its buttons and the
+  // explanation's detail take them, so the explanation's prompt can be hovered and clicked without changing slides.
+  .retrospective-story--tappable > .retrospective-slide {
+    pointer-events: none;
+    z-index: $z-index-retrospective-raised-slide;
+
+    button { pointer-events: auto; }
   }
 
   .retrospective-story-tap--previous { left: 0; width: 33%; }
@@ -568,7 +592,7 @@ $retrospective-backdrop-layouts: (
     left: $sp-lg;
     position: absolute;
     right: $sp-lg;
-    z-index: 2;
+    z-index: $z-index-retrospective-footer;
   }
 
   // A pill with a solid scrim and an outline, so it reads as a button over any slide's gradient or photo.
@@ -640,7 +664,7 @@ $retrospective-backdrop-layouts: (
     overflow: hidden;
     pointer-events: none;
     position: absolute;
-    z-index: -1;
+    z-index: $z-index-retrospective-slide-backdrop;
   }
 
   .retrospective-backdrop-photo {
@@ -769,8 +793,7 @@ $retrospective-backdrop-layouts: (
     margin: 0;
   }
 
-  // The explanation sits above the tap zones so its prompt can be hovered and tapped, but lets presses on its text
-  // through to them. The prompt's detail opens above the prompt, over the words, so opening it never moves the prompt
+  // The explanation lets presses on its text through to the tap zones, while its prompt and detail take their own. The prompt's detail opens above the prompt, over the words, so opening it never moves the prompt
   // out from under the pointer.
   .retrospective-slide-explanation {
     display: flex;
@@ -778,7 +801,7 @@ $retrospective-backdrop-layouts: (
     gap: $sp-sm;
     pointer-events: none;
     position: relative;
-    z-index: 2;
+    z-index: $z-index-retrospective-slide-controls;
   }
 
   .retrospective-slide-explanation-text {
@@ -899,7 +922,7 @@ $retrospective-backdrop-layouts: (
     padding: 0;
     position: relative;
     scrollbar-width: thin;
-    z-index: 2;
+    z-index: $z-index-retrospective-slide-controls;
   }
 
   .retrospective-slide-hardest-project {
@@ -981,7 +1004,7 @@ $retrospective-backdrop-layouts: (
     min-height: $retrospective-control-height;
     padding: $sp-xs $sp-md;
     position: relative;
-    z-index: 2;
+    z-index: $z-index-retrospective-slide-controls;
 
     &:hover { border-color: $retrospective-text-on-slide; }
     &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: 2px; }

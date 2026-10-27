@@ -1,5 +1,6 @@
 // Shared portal shell and calendar/priority contents, scoped independently of the widget card.
 @use 'theme-tokens' as *;
+@use 'z-indexes' as *;
 
 .proposed-agenda-popover {
   background: $color-bg-card;
@@ -12,7 +13,7 @@
   max-width: calc(100vw - 16px);
   overflow: auto;
   position: fixed;
-  z-index: 10020;
+  z-index: $z-index-proposed-agenda-popover;
 
   button, input { font: inherit; }
   button { color: inherit; cursor: pointer; }

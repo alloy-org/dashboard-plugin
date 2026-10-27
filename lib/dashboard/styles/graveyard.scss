@@ -5,6 +5,7 @@
  */
 
 @use 'theme-tokens' as *;
+@use 'z-indexes' as *;
 
 /* [Claude claude-sonnet-4-6] Task: Graveyard widget — scrollable task list with action links */
 /* Prompt: "add a new graveyard.js component..." */
@@ -49,7 +50,7 @@
     overflow-y: auto;
     padding: 0;
     position: relative;
-    z-index: 1;
+    z-index: $z-index-graveyard-task-list;
   }
 
   /* [Claude claude-sonnet-4-6] Task: task item fade — solid background covers meadow, fades out on dismiss */

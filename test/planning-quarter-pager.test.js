@@ -129,7 +129,7 @@ describe("PlanningWidget quarter pager", () => {
 
     await clickAndSettle(unrecordedCard);
     expect(document.body.querySelector(".plan-wizard-page")).toBeNull();
-    expect(document.body.querySelector(".retrospective-options-headline").textContent).toBe("How should we tell Q2 2026?");
+    expect(document.body.querySelector(".retrospective-options-headline").textContent).toBe("Craft your Q2 retrospective");
     expect(document.body.querySelector(".retrospective-header-link")).toBeNull();
     await clickAndSettle(document.body.querySelector(".retrospective-overlay-close"));
     expect(document.body.querySelector(".quarter-retrospective-overlay")).toBeNull();

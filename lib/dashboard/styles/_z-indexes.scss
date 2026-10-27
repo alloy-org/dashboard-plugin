@@ -1,0 +1,50 @@
+// Every z-index in the dashboard's stylesheets, grouped by the stacking context it competes in. A z-index only orders
+// an element against others in the same stacking context, so each group names the element that creates its context;
+// a value in one group says nothing about a value in another. Add a new layer to the group it competes in, or start a
+// group for a new context, rather than writing a number in a component's stylesheet.
+
+// ── The document ──
+// The dashboard's containers are positioned without a z-index, so they create no stacking context of their own and
+// the background fade and the focused grid shell compete here with the overlays. Two values are set outside the
+// stylesheets: tippy.js gives its tooltips 9999 by default, and the plan wizard's confetti (project-card.jsx) draws
+// at 2000.
+$z-index-dashboard-background-fade: 0;
+$z-index-dashboard-grid-focused: 2;
+$z-index-config-popup: 1000;
+$z-index-plan-wizard: 1100;
+$z-index-quarter-retrospective: 1100;
+// Above tippy's 9999.
+$z-index-proposed-agenda-popover: 10020;
+
+// ── .dashboard-grid-shell (isolation: isolate) ──
+// The backdrop that exits focus mode covers the hidden cells and stays beneath the focused one.
+$z-index-grid-cell-focus-hidden: 1;
+$z-index-dashboard-grid-focus-backdrop: 2;
+$z-index-grid-cell-dragging-ready: 3;
+$z-index-grid-cell-focused: 4;
+$z-index-grid-cell-focused-surface: 5;
+
+// ── .plan-wizard-overlay ──
+$z-index-plan-wizard-backdrop: 0;
+$z-index-plan-wizard-page: 1;
+
+// ── .quarter-retrospective-overlay ──
+// The story's tap zones sit over the slide. On a story with tap zones the slide rises above them and lets presses
+// through to them, except on its buttons. The footer shares the raised slide's layer and follows it in the markup;
+// the progress bar, header links and close button sit above both.
+$z-index-retrospective-tap-zone: 1;
+$z-index-retrospective-raised-slide: 2;
+$z-index-retrospective-footer: 2;
+$z-index-retrospective-chrome: 3;
+
+// ── .retrospective-slide (isolation: isolate) ──
+// The backdrop sits behind the slide's words; the explanation and each interactive slide's controls lift above them.
+$z-index-retrospective-slide-backdrop: -1;
+$z-index-retrospective-slide-controls: 2;
+
+// ── Inside a widget ──
+// Single elements lifted over a sibling in their own widget.
+$z-index-graveyard-task-list: 1;
+$z-index-idea-progress-step-circle: 1;
+$z-index-peak-hours-tooltip: 10;
+$z-index-tippy-content: 1;

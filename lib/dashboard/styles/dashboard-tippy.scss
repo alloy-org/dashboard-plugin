@@ -11,6 +11,7 @@
  */
 
 @use 'theme-tokens' as *;
+@use 'z-indexes' as *;
 
 // ── Tippy base positioning (replaces tippy.css; styled inline by Popper for position) ──
 
@@ -43,7 +44,7 @@ $tooltip-row-padding-y: 2px;
 .tippy-content {
   padding: $sp-sm $sp-md;
   position: relative;
-  z-index: 1;
+  z-index: $z-index-tippy-content;
 }
 
 // ── Arrow positioning per placement ──

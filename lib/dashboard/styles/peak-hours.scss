@@ -5,6 +5,7 @@
  */
 
 @use 'theme-tokens' as *;
+@use 'z-indexes' as *;
 
 /* [Claude] Task: Peak Hours widget layout, metrics grid, chart, tooltip, and legend */
 /* Prompt: "rewrite peak-hours into a project-native widget with standalone stylesheet" */
@@ -123,7 +124,7 @@
     pointer-events: none;
     position: absolute;
     white-space: nowrap;
-    z-index: 10;
+    z-index: $z-index-peak-hours-tooltip;
   }
 
   .peak-hours-tooltip-header {

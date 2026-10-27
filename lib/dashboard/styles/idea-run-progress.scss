@@ -1,5 +1,6 @@
 // Styles for the in-Dashboard "Generate ideas" progress window, shown when the host cannot open it in a prompt.
 @use 'theme-tokens' as *;
+@use 'z-indexes' as *;
 
 .idea-run-progress {
   display: flex;
@@ -110,7 +111,7 @@
     position: relative;
     transition: background-color 0.3s, border-color 0.3s;
     width: 26px;
-    z-index: 1;
+    z-index: $z-index-idea-progress-step-circle;
   }
 
   .progress-step-item--active .progress-step-circle {
