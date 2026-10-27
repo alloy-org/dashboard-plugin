@@ -5,6 +5,17 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-27 — Retrospective takeaways note: spaced paragraphs and colored month tables
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-takeaways.js` — `_spacedProse` puts an empty paragraph (`\`) between the paragraphs of the Summary, Calendar, What paid off, and month prose; Month by month is now one two-row table per month, its name in white on a dark shade of the month's color (`MONTH_CELL_COLORS`) over a body cell in a light hue of it with dark text, separated by a blank line. The body cell points to a footnote holding the task count and mood, prose, and highlights, since a table cell holds only one line of markdown; the definitions close the note.
+- `test/quarter-retrospective-takeaways.test.js` — the month tables and footnote, and the paragraph spacing.
+
+**Task:** Make the takeaways note's paragraphs readable and give each month a colored table.
+
+---
+
 ## 2026-10-27 — One file for every z-index
 
 **Model:** Claude Opus 5.5

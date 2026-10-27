@@ -12,7 +12,7 @@ const { readRetrospectiveDataNote, RETROSPECTIVE_SECTIONS, retrospectiveMonthSec
 const { default: RetrospectiveEndCard } = await import("dashboard/quarter-retrospective/retrospective-end-card");
 const { SLIDE_KINDS, slidesWithEndCard } = await import("dashboard/quarter-retrospective/retrospective-slides");
 const { default: RetrospectiveStory } = await import("dashboard/quarter-retrospective/retrospective-story");
-const { retrospectiveTakeawaysNoteName, saveRetrospectiveTakeaways, takeawaysProjectRows,
+const { retrospectiveTakeawaysNoteName, saveRetrospectiveTakeaways, takeawaysMarkdown, takeawaysProjectRows,
   writtenTakeaways } = await import("dashboard/quarter-retrospective/retrospective-takeaways");
 
 const SCOPE = { domainName: "Work", quarter: 3, year: 2026 };
@@ -85,7 +85,9 @@ describe("saveRetrospectiveTakeaways", () => {
     expect(note).toContain("| Etsy shop | 30 | 25h | 1,240 | 30 / 4 |");
     expect(note).toContain("| Garden \\| Yard | 12 | 10h | 300 | 12 / — |");
     expect(note).toContain("11 completed tasks advanced no project.");
-    expect(note).toContain("### July\n\n*20 tasks completed · mood: heads-down*\n\nJuly set the pace.\n\n- Shipped the July listings");
+    expect(note).toContain('|**July**<!-- {"cell":{"backgroundColor":"#22374F","color":"#FFFFFF","colwidth":700}} -->|\n|[^1]<!-- {"cell":');
+    expect(note).toContain("[^1]: \n    *20 tasks completed · mood: heads-down*\n\n    \\\n\n    July set the pace.\n\n    \\\n\n    - Shipped the July listings");
+    expect(note).toContain("-->|\n\n\\\n\n| |\n|-|\n|**August**");
     expect(note).toContain("August kept it going.");
     expect(note).not.toContain("## Heading");
     expect(note).toContain("## What paid off");
@@ -126,6 +128,13 @@ describe("takeaways prose and rows", () => {
     expect(written.summary.endsWith(".")).toBe(true);
     expect([...written.months.keys()]).toEqual([1]);
     expect(written.calendar).toBeNull();
+  });
+
+  it("puts an empty paragraph between prose paragraphs while keeping a list together", () => {
+    const written = { calendar: null, months: new Map(), paidOff: null, summary: "First line.\nSecond line.\n\n- One\n- Two" };
+    const note = takeawaysMarkdown({ domainName: "Work", monthDigests: [], payoffRanking: null, projectRows: [],
+      statistics: { quarter: 3, totalTaskCount: 1, year: 2026 }, written });
+    expect(note).toContain("## Summary\n\nFirst line.\n\n\\\n\nSecond line.\n\n\\\n\n- One\n- Two\n\n|");
   });
 
   it("falls back to the ranked leaders for statistics saved before project totals", () => {
