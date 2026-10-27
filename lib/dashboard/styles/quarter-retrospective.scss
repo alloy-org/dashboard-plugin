@@ -975,8 +975,11 @@ $retrospective-backdrop-layouts: (
     overflow-y: auto;
     padding: 0;
     position: relative;
-    scrollbar-width: thin;
+    // Still scrolls, but without a light scrollbar track cutting across the slide's right edge.
+    scrollbar-width: none;
     z-index: $z-index-retrospective-slide-controls;
+
+    &::-webkit-scrollbar { display: none; }
   }
 
   .retrospective-slide-hardest-project {
