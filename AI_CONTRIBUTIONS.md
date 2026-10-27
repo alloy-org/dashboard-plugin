@@ -5,6 +5,22 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-27 — Retrospective video export trial
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-video.js` (new) — `encodeRetrospectiveVideo` draws each non-interactive slide on a 1080×1920 canvas frame by frame (tone gradient, drifting accent glows, still film grain, kicker, counting figure, headline, list, caption, each rising in on a stagger, with crossfades between slides), and encodes it with WebCodecs through mediabunny into H.264/AAC MP4, falling back to VP9 or VP8 with Opus in WebM. `videoTimeline` lays slides along the clock using `slideDurationFactor`. Bars, heap, timeline, and photos aren't drawn yet.
+- `lib/dashboard/quarter-retrospective/retrospective-video-export.jsx` (new) — End card trial: encodes three slides or the whole story, previews the result with its codecs, size, and encode time, and tries download, the Web Share API, and `attachNoteMedia`, reporting each outcome.
+- `lib/dashboard/quarter-retrospective/retrospective-soundtrack.js` — `renderSoundtrackOffline` and `RetrospectiveSoundtrack.scheduleThrough` render the synthesized loop into an AudioBuffer on an OfflineAudioContext, fading out over its last seconds.
+- `lib/dashboard/quarter-retrospective/retrospective-end-card.jsx`, `quarter-retrospective.jsx` — The end card takes extra controls; the retrospective passes it the video trial.
+- `lib/dashboard/styles/quarter-retrospective.scss` — Trial styles; the end card slide centers safely and scrolls once its content outgrows it.
+- `package.json` — Adds `mediabunny` for MP4/WebM muxing.
+- `test/quarter-retrospective-video.test.js` (new), `test/quarter-retrospective-soundtrack.test.js` — Video timeline and offline scheduling.
+
+**Task:** Test whether a Quarter Retrospective can be exported as a shareable video with its soundtrack.
+
+---
+
 ## 2026-10-27 — Retrospective photo slides pick a layout from the image's shape and caption with the task
 
 **Model:** Claude Opus 5.5

@@ -326,6 +326,17 @@ $retrospective-backdrop-layouts: (
     .retrospective-payoff-ranking { position: relative; z-index: $z-index-retrospective-slide-controls; }
   }
 
+  // The end card stays centered until the video export trial's preview and results outgrow it, then scrolls without a
+  // scrollbar rather than pushing its first controls out of reach. Both classes are named so this outweighs the
+  // .retrospective-slide rule below, which centers and clips every slide.
+  .retrospective-slide.retrospective-slide--end-card {
+    justify-content: safe center;
+    overflow-y: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar { display: none; }
+  }
+
   // The end card's controls sit above the footer, which shares their layer, as the ranking's do.
   .retrospective-end-card {
     align-items: stretch;
@@ -368,6 +379,35 @@ $retrospective-backdrop-layouts: (
     &:hover:not(:disabled) { border-color: $retrospective-text-on-slide; }
     &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: 2px; }
     &:disabled { cursor: default; opacity: 0.5; }
+  }
+
+  // The video export trial below the end card's controls. The Download link takes the option buttons' look.
+  .retrospective-video-export {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+
+    a.retrospective-end-card-option {
+      align-items: center;
+      display: inline-flex;
+      justify-content: center;
+      text-decoration: none;
+    }
+  }
+
+  .retrospective-video-export-note {
+    color: $retrospective-text-on-slide-muted;
+    font-size: 0.8em;
+    margin: 0;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+
+  .retrospective-video-export-preview {
+    align-self: center;
+    aspect-ratio: $retrospective-card-aspect;
+    border-radius: $sp-sm;
+    max-height: 40vh;
   }
 
   .retrospective-options-kicker {

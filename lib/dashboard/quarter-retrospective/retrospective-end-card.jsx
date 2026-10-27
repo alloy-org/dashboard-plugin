@@ -14,8 +14,9 @@ export const TAKEAWAYS_SAVE_STATES = Object.freeze({ failed: "failed", idle: "id
 //   - {Function} onSaveTakeaways - async () => void; writes the takeaways note, or finds the one already written, and
 //     opens it
 //   - {boolean} [takeawaysSaved=false] - Whether the quarter's takeaways note is known to exist, which offers to open it
+//   - {JSX.Element|null} [children] - More controls, shown below the others
 // @returns {JSX.Element} The controls.
-export default function RetrospectiveEndCard({ onGenerateNew, onReplay, onSaveTakeaways, takeawaysSaved = false }) {
+export default function RetrospectiveEndCard({ children = null, onGenerateNew, onReplay, onSaveTakeaways, takeawaysSaved = false }) {
   const [saveState, setSaveState] = useState(TAKEAWAYS_SAVE_STATES.idle);
   const saving = saveState === TAKEAWAYS_SAVE_STATES.saving;
 
@@ -46,6 +47,7 @@ export default function RetrospectiveEndCard({ onGenerateNew, onReplay, onSaveTa
         <button className="retrospective-end-card-option" disabled={ saving } onClick={ onReplay } type="button">↺ Replay retrospective</button>
         <button className="retrospective-end-card-option" disabled={ saving } onClick={ onGenerateNew } type="button">Generate new</button>
       </div>
+      { children }
     </div>
   );
 }

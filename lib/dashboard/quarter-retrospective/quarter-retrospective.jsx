@@ -24,7 +24,8 @@ import { generateRetrospective, quarterCalendarCoverage, retrospectiveAiAvailabl
 import { MINIMUM_PAYOFF_RANKING_PROJECTS, RETROSPECTIVE_STYLES, SLIDE_KINDS, slidesWithEndCard,
   slidesWithPayoffRanking } from "dashboard/quarter-retrospective/retrospective-slides";
 import { createRetrospectiveAudioContext } from "dashboard/quarter-retrospective/retrospective-soundtrack";
-import RetrospectiveStory from "dashboard/quarter-retrospective/retrospective-story";
+import RetrospectiveStory, { SLIDE_MILLISECONDS } from "dashboard/quarter-retrospective/retrospective-story";
+import RetrospectiveVideoExport from "dashboard/quarter-retrospective/retrospective-video-export";
 import { saveRetrospectiveTakeaways } from "dashboard/quarter-retrospective/retrospective-takeaways";
 import { pluginSettings, updatePluginSetting } from "plugin-data";
 import { useEffect, useRef, useState } from "react";
@@ -269,8 +270,13 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
     }
     if (slide.kind !== SLIDE_KINDS.endCard || view.kind !== "story") return null;
     const takeawaysSaved = saved.some(retrospective => retrospective.takeawaysNoteUuid) || !!view.retrospective.takeawaysNoteUuid;
-    return <RetrospectiveEndCard onGenerateNew={ showOptions } onReplay={ onReplay } onSaveTakeaways={ () => saveTakeaways(view.retrospective) }
-      takeawaysSaved={ takeawaysSaved } />;
+    return (
+      <RetrospectiveEndCard onGenerateNew={ showOptions } onReplay={ onReplay } onSaveTakeaways={ () => saveTakeaways(view.retrospective) }
+        takeawaysSaved={ takeawaysSaved }>
+        <RetrospectiveVideoExport app={ app } fileStem={ `${ plan.label } ${ retrospectiveStyleLabel(view.retrospective.style) } retrospective` }
+          slideMilliseconds={ SLIDE_MILLISECONDS } slides={ view.slides } soundtrackVibe={ view.soundtrackVibe || null } />
+      </RetrospectiveEndCard>
+    );
   };
 
   let body;

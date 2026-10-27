@@ -111,6 +111,19 @@ describe("retrospective soundtrack", () => {
     soundtrack.stop();
   });
 
+  it("schedules every step through a set end at once, fading out over the last seconds, for an offline render", () => {
+    const { audioContext, soundtrack } = fakeSoundtrack();
+    soundtrack.scheduleThrough(10);
+    const masterGain = audioContext.nodes.find(audioNode => audioNode.kind === "gain" && audioNode.connections.includes(audioContext.destination));
+    const lastAutomation = masterGain.gain.automations[masterGain.gain.automations.length - 1];
+    expect(lastAutomation).toEqual({ kind: "linear", target: 0, time: 10 });
+    expect(masterGain.gain.automations).toContainEqual({ kind: "set", target: SOUNDTRACK_VOLUME, time: 10 - SOUNDTRACK_FADE_SECONDS });
+    const startTimes = audioContext.startedSources.map(started => started.time);
+    expect(Math.min(...startTimes)).toBe(0);
+    expect(Math.max(...startTimes)).toBeLessThan(10);
+    expect(Math.max(...startTimes)).toBeGreaterThan(9);
+  });
+
   it("makes a started context where Web Audio exists, and none where it doesn't", () => {
     expect(createRetrospectiveAudioContext()).toBeNull();
     window.AudioContext = FakeAudioContext;
