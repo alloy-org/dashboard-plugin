@@ -47,6 +47,8 @@ describe("retrospectiveStatistics", () => {
     expect(statistics.leaders.byTaskCount.map(project => [project.name, project.taskCount])).toEqual([["Launch the app", 2], ["Get fit", 2]]);
     expect(statistics.leaders.byMinutes).toEqual([{ minutes: 180, name: "Launch the app", taskCount: 2, victoryValue: 14 },
       { minutes: 120, name: "Get fit", taskCount: 2, victoryValue: 3 }]);
+    expect(statistics.projectTotals.map(project => [project.projectUuid, project.taskCount, project.victoryValue])).toEqual([[launch.uuid, 2, 14],
+      [fitness.uuid, 2, 3]]);
     expect(statistics.totalMinutes).toBe(300);
     expect(statistics.defaultedDurationCount).toBe(2);
   });

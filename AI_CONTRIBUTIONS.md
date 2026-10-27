@@ -5,6 +5,25 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-27 — Retrospective end card and takeaways note (phase 10)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-takeaways.js` (new) — `saveRetrospectiveTakeaways`: one AI call writes the prose of the `{domain} Q{q} {year} Retrospective` note, whose tables come from the statistics; a fallback summary without an AI; the note's UUID recorded in the data note's Takeaways section, and an existing note reopened rather than duplicated.
+- `lib/dashboard/quarter-retrospective/retrospective-end-card.jsx` (new) — Save takeaways / Open takeaways note, Replay retrospective, and Generate new.
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js` — `SLIDE_KINDS.endCard`, `END_CARD_SLIDE_ID`, `slidesWithEndCard`; the payoff ranking slide now sits before the end card.
+- `lib/dashboard/quarter-retrospective/retrospective-story.jsx` — `onReplay` for interactive slides; an interactive last slide finishes the story and hides the footer's control.
+- `lib/dashboard/quarter-retrospective/retrospective-statistics.js` — `projectTotals` for every project, from which the leaders are now ranked.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` — `retrospectivePromptRequester` exported; saved retrospectives carry `takeawaysNoteUuid`.
+- `lib/dashboard/quarter-retrospective/quarter-retrospective.jsx` — every story ends on the end card; saving takeaways closes the retrospective and opens the note.
+- `lib/dashboard/styles/quarter-retrospective.scss` — end card layout and buttons.
+- `test/quarter-retrospective-takeaways.test.js` (new), `test/quarter-retrospective-payoff-ranking.test.js`, `test/quarter-retrospective-statistics.test.js` — coverage for the above.
+- `doc/plan-quarter-retrospective.md` — phase 10 marked built.
+
+**Task:** Complete phase 10 of the Quarter Retrospective plan.
+
+---
+
 ## 2026-10-26 — Retrospective backgrounds and motion (phase 8), project payoff ranking (phase 9)
 
 **Model:** Claude Opus 5.5

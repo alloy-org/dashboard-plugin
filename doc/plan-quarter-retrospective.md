@@ -3,7 +3,7 @@
 Written October 26, 2026. This is a working plan for progressive commits, not a specification. Each phase should
 leave the suite green, `npm run build` passing, and the production bundle smoke test passing.
 
-## Status (October 26, 2026)
+## Status (October 27, 2026)
 
 Parts 1 and 2 of the original five-part outline are committed. This plan replaces parts 3–5 with phases 3–10 below,
 because the scope grew to include generation styles, LLM-written stories, a payoff ranking for projects, and a
@@ -16,8 +16,8 @@ takeaways note.
 
 Nothing imports these modules yet, so the retrospective is unreachable in the app.
 
-Phases 3–7, the follow-ups to phase 7, and phase 8's audio are committed. Phase 8's backgrounds and motion and phase 9
-are built and uncommitted. Phase 10 is not started.
+Phases 3–9 and the follow-ups to phase 7 are committed. Phase 10 is built and uncommitted, which completes the plan;
+what remains is the host checks under "Still to verify".
 
 ## Goal
 
@@ -352,7 +352,7 @@ through `raceWizardPrompt` (callLLM raced against the user's own provider) with 
 
 Built as designed below, with these specifics: storage is `project-payoff-rankings.js`, reusing the data note's JSON
 sections; `generateRetrospective` reports projects through `onProjectsKnown`; the ranking slide is added at play time
-by `slidesWithPayoffRanking` before the summary (the end card doesn't exist yet), and the story waits on it through
+by `slidesWithPayoffRanking` before the end card, and the story waits on it through
 `renderInteractiveSlide`. Plan Builder's evidence carries `payoffRankings`, read by `recalledPayoffRankings`.
 
 - **Where it appears:** the processing screen, and as a slide before the end card when skipped there. It shows only
@@ -374,7 +374,19 @@ by `slidesWithPayoffRanking` before the summary (the end card doesn't exist yet)
   evidence section inside the fence, "Past projects ranked by payoff", listing quarter, rank, and name. The ranking
   instructions favor continuing or extending projects that paid off and are wary of repeating ones ranked last.
 
-### Phase 10 — End card and takeaways note
+### Phase 10 — End card and takeaways note (built)
+
+Built as designed below, with these specifics:
+- `slidesWithEndCard` adds the end card at play time, so stories saved earlier end on it too. It is an interactive
+  slide: the soundtrack fades out on reaching it, and its controls (`retrospective-end-card.jsx`) replace the footer's
+  Replay.
+- `retrospective-takeaways.js` writes the note. The AI writes only prose, as JSON: a summary, a paragraph per month,
+  the calendar, and what paid off. Without an AI, or with an unusable reply, a summary is built from the totals.
+- The statistics gained `projectTotals` (tasks, minutes, and Victory Value for every project) for the projects table.
+  Statistics saved before that fall back to the projects that led a ranking.
+- The note is tagged like a plan note. Its UUID goes in `## Takeaways`; a second save, from any style, finds the note
+  by that UUID or by name and opens it.
+
 
 - **Replay** restarts the story.
 - **Generate new** returns to the options screen.

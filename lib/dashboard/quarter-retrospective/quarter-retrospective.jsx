@@ -3,18 +3,21 @@
 // lists the other styles already generated, a mute button for the soundtrack, and a way back to the options; it always
 // offers the quarter's plan note. The click that plays or generates a story is the gesture its soundtrack starts from.
 // Once a generation knows the quarter's projects, the processing screen asks the user to rank them by payoff; a story
-// played while the quarter is still unranked asks the same on a slide before its summary.
+// played while the quarter is still unranked asks the same on a slide before its end card. The end card replays the
+// story, goes back to the options to generate another, or saves the quarter's takeaways in a note and opens it.
 import { SETTING_KEYS } from "constants/settings";
 import { readProjectPayoffRanking, saveProjectPayoffRanking } from "dashboard/quarter-retrospective/project-payoff-rankings";
+import RetrospectiveEndCard from "dashboard/quarter-retrospective/retrospective-end-card";
 import RetrospectiveOptions from "dashboard/quarter-retrospective/retrospective-options";
 import RetrospectiveOverlay from "dashboard/quarter-retrospective/retrospective-overlay";
 import RetrospectivePayoffRanking from "dashboard/quarter-retrospective/retrospective-payoff-ranking";
 import { retrospectiveStyleLabel } from "dashboard/quarter-retrospective/retrospective-data-note";
-import { generateRetrospective, quarterCalendarCoverage, retrospectiveAiAvailable,
+import { generateRetrospective, quarterCalendarCoverage, retrospectiveAiAvailable, retrospectivePromptRequester,
   savedRetrospectives } from "dashboard/quarter-retrospective/retrospective-generation";
-import { RETROSPECTIVE_STYLES, SLIDE_KINDS, slidesWithPayoffRanking } from "dashboard/quarter-retrospective/retrospective-slides";
+import { RETROSPECTIVE_STYLES, SLIDE_KINDS, slidesWithEndCard, slidesWithPayoffRanking } from "dashboard/quarter-retrospective/retrospective-slides";
 import { createRetrospectiveAudioContext } from "dashboard/quarter-retrospective/retrospective-soundtrack";
 import RetrospectiveStory from "dashboard/quarter-retrospective/retrospective-story";
+import { saveRetrospectiveTakeaways } from "dashboard/quarter-retrospective/retrospective-takeaways";
 import { pluginSettings, updatePluginSetting } from "plugin-data";
 import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "util/browser-utility";
@@ -146,11 +149,24 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
     payoffRankingRef.current = storedRanking;
     setPayoffRanking(storedRanking);
   };
-  // @desc Show a story, adding the ranking slide when the quarter has projects and is still unranked. That choice is
-  //   made once, as the story starts, so saving on the slide doesn't shift the slides under the story.
+  // @desc Show a story ending on its end card, adding the ranking slide before it when the quarter has projects and is
+  //   still unranked. That choice is made once, as the story starts, so saving on the slide doesn't shift the slides
+  //   under the story.
   const showStory = (retrospective, soundtrackVibe) => {
-    const slides = payoffRankingRef.current ? retrospective.slides : slidesWithPayoffRanking(retrospective.slides, retrospective.projects);
+    const endedSlides = slidesWithEndCard(retrospective.slides, plan.label);
+    const slides = payoffRankingRef.current ? endedSlides : slidesWithPayoffRanking(endedSlides, retrospective.projects);
     setView({ kind: "story", retrospective, slides, soundtrackVibe });
+  };
+  // @desc Write the quarter's takeaways note from the playing story's data note, or find the one already written, then
+  //   close the retrospective and open the note. Every saved style learns of the note, since the quarter has one.
+  // @param {object} retrospective - The playing retrospective, whose noteUuid is its data note.
+  const saveTakeaways = async retrospective => {
+    const requestPrompt = await retrospectivePromptRequester(app);
+    const { noteUuid } = await saveRetrospectiveTakeaways(app, { ...scope, dataNoteUuid: retrospective.noteUuid,
+      payoffRanking: payoffRankingRef.current }, { requestPrompt });
+    setSaved(previous => previous.map(existing => ({ ...existing, takeawaysNoteUuid: noteUuid })));
+    onClose();
+    navigateToNote(app, noteUuid);
   };
 
   // @desc Generate a style and play it, replacing any saved retrospective of the same style in the header's list. The
@@ -180,11 +196,18 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
     prepareSoundtrack();
     showStory(retrospective, soundtrackVibe);
   };
-  // @desc The ranking on a story's ranking slide, which moves the story on once saved or skipped.
-  const renderInteractiveSlide = (slide, { onDone }) => (slide.kind === SLIDE_KINDS.payoffRanking ? (
-    <RetrospectivePayoffRanking onSave={ savePayoffRanking } onSaved={ onDone } onSkip={ onDone } projects={ slide.projects }
-      savedRanking={ payoffRanking } />
-  ) : null);
+  // @desc The controls of a story's interactive slides: the ranking, which moves the story on once saved or skipped,
+  //   and the end card.
+  const renderInteractiveSlide = (slide, { onDone, onReplay }) => {
+    if (slide.kind === SLIDE_KINDS.payoffRanking) {
+      return <RetrospectivePayoffRanking onSave={ savePayoffRanking } onSaved={ onDone } onSkip={ onDone } projects={ slide.projects }
+        savedRanking={ payoffRanking } />;
+    }
+    if (slide.kind !== SLIDE_KINDS.endCard || view.kind !== "story") return null;
+    const takeawaysSaved = saved.some(retrospective => retrospective.takeawaysNoteUuid) || !!view.retrospective.takeawaysNoteUuid;
+    return <RetrospectiveEndCard onGenerateNew={ showOptions } onReplay={ onReplay } onSaveTakeaways={ () => saveTakeaways(view.retrospective) }
+      takeawaysSaved={ takeawaysSaved } />;
+  };
 
   let body;
   if (view.kind === "loading") body = <RetrospectiveStatus message={ `Looking for ${ plan.label } retrospectives…` } />;

@@ -140,6 +140,10 @@ $retrospective-backdrop-layouts: (
     height: 100%;
     overflow-y: auto;
     padding: 64px $sp-xl $sp-xl;
+    // Still scrolls, but without a light scrollbar track cutting down the purple's right edge.
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar { display: none; }
   }
 
   .retrospective-status {
@@ -191,6 +195,9 @@ $retrospective-backdrop-layouts: (
     max-height: 40vh;
     overflow-y: auto;
     padding: 0;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar { display: none; }
   }
 
   .retrospective-payoff-chip {
@@ -256,6 +263,50 @@ $retrospective-backdrop-layouts: (
     justify-content: flex-start;
 
     .retrospective-payoff-ranking { position: relative; z-index: 2; }
+  }
+
+  // The end card's controls sit above the footer, which shares their layer, as the ranking's do.
+  .retrospective-end-card {
+    align-items: stretch;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+    margin-top: $sp-md;
+    position: relative;
+    width: 100%;
+    z-index: 2;
+  }
+
+  .retrospective-end-card-hint,
+  .retrospective-end-card-error {
+    margin: 0;
+    text-align: center;
+  }
+
+  .retrospective-end-card-hint { color: $retrospective-text-on-slide-muted; }
+  .retrospective-end-card-error { color: $retrospective-text-on-slide; font-weight: 600; }
+
+  .retrospective-end-card-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-sm;
+  }
+
+  .retrospective-end-card-option {
+    background: transparent;
+    border: 1px solid $retrospective-slide-rule;
+    border-radius: $retrospective-control-height;
+    color: $retrospective-text-on-slide;
+    cursor: pointer;
+    flex: 1 1 10em;
+    font-weight: 600;
+    min-height: 44px;
+    padding: $sp-xs $sp-md;
+    transition: border-color 160ms;
+
+    &:hover:not(:disabled) { border-color: $retrospective-text-on-slide; }
+    &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: 2px; }
+    &:disabled { cursor: default; opacity: 0.5; }
   }
 
   .retrospective-options-kicker {

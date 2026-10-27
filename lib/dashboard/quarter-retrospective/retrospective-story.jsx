@@ -6,7 +6,8 @@
 // Given a background photo seed, each slide blends an abstract photo behind its words, the next slide's photo loading
 // while the current one shows. A slide the caller renders as interactive, such as the payoff ranking, waits for the
 // user: its clock doesn't run, the tap zones and hold-to-pause step aside so its controls can be used, and it moves
-// on when the caller's controls say it's done.
+// on when the caller's controls say it's done. An interactive last slide, the end card, counts as the story's end: the
+// soundtrack fades out on reaching it, and its own controls offer Replay in place of the footer's.
 import RetrospectiveSlide from "dashboard/quarter-retrospective/retrospective-slide";
 import { slideDurationFactor } from "dashboard/quarter-retrospective/retrospective-slides";
 import { RetrospectiveSoundtrack } from "dashboard/quarter-retrospective/retrospective-soundtrack";
@@ -104,8 +105,9 @@ function useStorySoundtrack({ audioContext, finished, muted, slideMilliseconds, 
 //     no photos
 //   - {string} label - Accessible name for the story, such as "Q3 2026 retrospective"
 //   - {boolean} [muted=false] - Whether the soundtrack is silenced
-//   - {Function|null} [renderInteractiveSlide] - (slide, { onDone }) => the controls an interactive slide shows in
-//     place of its body, or null for a slide that plays as usual; onDone moves the story to the next slide
+//   - {Function|null} [renderInteractiveSlide] - (slide, { onDone, onReplay }) => the controls an interactive slide
+//     shows in place of its body, or null for a slide that plays as usual; onDone moves the story to the next slide and
+//     onReplay starts it over from the first
 //   - {Array<object>} slides - From slidesFromStatistics
 //   - {number} [slideMilliseconds=SLIDE_MILLISECONDS] - How long a data-rich slide shows before advancing, times the
 //     slide's slideDurationFactor, which shortens a slide with few words and lengthens the heap
@@ -132,9 +134,10 @@ export default function RetrospectiveStory({ audioContext = null, backgroundPhot
     if (nextIndex > lastIndex) return;
     showSlide(Math.max(0, nextIndex));
   };
-  const interactiveBody = renderInteractiveSlide ? renderInteractiveSlide(slides[index], { onDone: () => goTo(index + 1) }) : null;
+  const interactiveBody = renderInteractiveSlide ? renderInteractiveSlide(slides[index], { onDone: () => goTo(index + 1),
+    onReplay: () => goTo(0) }) : null;
   const interactive = !!interactiveBody;
-  const finished = index === lastIndex && elapsed >= currentMilliseconds;
+  const finished = index === lastIndex && (interactive || elapsed >= currentMilliseconds);
   const paused = held || userPaused || finished || interactive;
   const showPausedBadge = (held || userPaused) && !finished && !interactive;
   const showPauseHint = index === 0 && !paused;
@@ -186,6 +189,18 @@ export default function RetrospectiveStory({ audioContext = null, backgroundPhot
     return Math.min(1, elapsed / currentMilliseconds);
   };
 
+  let footerControl = null;
+  if (!finished) {
+    footerControl = (
+      <button aria-label={ userPaused ? "Play story" : "Pause story" } className="retrospective-story-control"
+        onClick={ () => setUserPaused(previous => !previous) } type="button">
+        { userPaused ? "▶ Play" : "❚❚ Pause" }
+      </button>
+    );
+  } else if (!interactive) {
+    footerControl = <button className="retrospective-story-control" onClick={ () => goTo(0) } type="button">↺ Replay</button>;
+  }
+
   return (
     <div aria-label={ label } aria-roledescription="story" className="retrospective-story" onPointerCancel={ pressEnd }
       onPointerDown={ pressStart } onPointerLeave={ pressEnd } onPointerUp={ pressEnd } role="region">
@@ -207,14 +222,7 @@ export default function RetrospectiveStory({ audioContext = null, backgroundPhot
         <span className="retrospective-story-counter">{ `${ index + 1 } / ${ slides.length }` }</span>
         { showPauseHint ? <span className="retrospective-story-hint">Hold anywhere or press Space to pause</span> : null }
         { showPausedBadge ? <span aria-hidden="true" className="retrospective-story-paused-badge">❚❚ Paused</span> : null }
-        { finished ? (
-          <button className="retrospective-story-control" onClick={ () => goTo(0) } type="button">↺ Replay</button>
-        ) : (
-          <button aria-label={ userPaused ? "Play story" : "Pause story" } className="retrospective-story-control"
-            onClick={ () => setUserPaused(previous => !previous) } type="button">
-            { userPaused ? "▶ Play" : "❚❚ Pause" }
-          </button>
-        ) }
+        { footerControl }
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 // Verify the project payoff ranking: the yearly rankings note it saves to and re-ranks in place, recalling the most
 // recent ranked quarters across a year boundary, ordering projects as last ranked, the ranking slide's place in a
-// story, the ranking list's buttons and drag and drop, a story waiting on its interactive slide, and the rankings
+// story before its end card, the ranking list's buttons and drag and drop, a story waiting on its interactive slide, and the rankings
 // reaching the project suggestion prompt.
 import { jest } from "@jest/globals";
 import { act, createElement } from "react";
@@ -10,7 +10,8 @@ import { maintenanceApp } from "./project-maintenance-test-app";
 const { payoffRankingFromProjects, projectPayoffRankingsNoteName, projectsInPayoffOrder, readProjectPayoffRanking,
   recentProjectPayoffRankings, saveProjectPayoffRanking } = await import("dashboard/quarter-retrospective/project-payoff-rankings");
 const { default: RetrospectivePayoffRanking, reorderedProjects } = await import("dashboard/quarter-retrospective/retrospective-payoff-ranking");
-const { PAYOFF_RANKING_SLIDE_ID, SLIDE_KINDS, slidesWithPayoffRanking } = await import("dashboard/quarter-retrospective/retrospective-slides");
+const { END_CARD_SLIDE_ID, PAYOFF_RANKING_SLIDE_ID, SLIDE_KINDS, slidesWithEndCard,
+  slidesWithPayoffRanking } = await import("dashboard/quarter-retrospective/retrospective-slides");
 const { default: RetrospectiveStory, STORY_TICK_MILLISECONDS } = await import("dashboard/quarter-retrospective/retrospective-story");
 const { prospectPromptFromEvidence } = await import("plan-wizard/prospect-discovery");
 const { recalledPayoffRankings } = await import("plan-wizard/prospect-evidence");
@@ -95,10 +96,13 @@ describe("payoff rankings note", () => {
     expect(reorderedProjects(PROJECTS, 0, 5)).toBe(PROJECTS);
   });
 
-  it("places the ranking slide before the summary, and only once", () => {
-    const slides = slidesWithPayoffRanking(STORY_SLIDES, PROJECTS);
-    expect(slides.map(slide => slide.id)).toEqual(["intro", PAYOFF_RANKING_SLIDE_ID, "summary"]);
-    expect(slides[1]).toMatchObject({ kind: SLIDE_KINDS.payoffRanking, projects: PROJECTS });
+  it("places the ranking slide before the end card, and only once", () => {
+    const endedSlides = slidesWithEndCard(STORY_SLIDES, "Q3 2026");
+    expect(slidesWithEndCard(endedSlides, "Q3 2026")).toBe(endedSlides);
+    const slides = slidesWithPayoffRanking(endedSlides, PROJECTS);
+    expect(slides.map(slide => slide.id)).toEqual(["intro", "summary", PAYOFF_RANKING_SLIDE_ID, END_CARD_SLIDE_ID]);
+    expect(slides[2]).toMatchObject({ kind: SLIDE_KINDS.payoffRanking, projects: PROJECTS });
+    expect(slidesWithPayoffRanking(STORY_SLIDES, PROJECTS).map(slide => slide.id)).toEqual(["intro", "summary", PAYOFF_RANKING_SLIDE_ID]);
     expect(slidesWithPayoffRanking(slides, PROJECTS)).toBe(slides);
     expect(slidesWithPayoffRanking(STORY_SLIDES, [])).toBe(STORY_SLIDES);
   });
@@ -143,7 +147,7 @@ describe("RetrospectivePayoffRanking", () => {
 describe("RetrospectiveStory with an interactive slide", () => {
   it("waits on the ranking slide without tap zones, and moves on when the ranking is done", async () => {
     jest.useFakeTimers();
-    const slides = slidesWithPayoffRanking(STORY_SLIDES, PROJECTS);
+    const slides = slidesWithPayoffRanking(STORY_SLIDES.slice(0, 1), PROJECTS).concat(STORY_SLIDES.slice(1));
     const renderInteractiveSlide = (slide, { onDone }) => (slide.kind === SLIDE_KINDS.payoffRanking
       ? createElement("button", { className: "ranking-done-button", onClick: onDone, type: "button" }, "Done") : null);
     const container = await render(createElement(RetrospectiveStory, { label: "Q3 2026 retrospective", renderInteractiveSlide,
