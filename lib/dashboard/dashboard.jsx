@@ -13,6 +13,7 @@ import { apiKeyBucketFromLlmProvider, apiKeyFromProvider, apiKeySettingFromKeyPr
 import { reportPriorCrashIfAny, stampBreadcrumbSettled, writeRenderBreadcrumb } from "crash-breadcrumb";
 import { dashboardAdminToolsAvailability } from 'dashboard-admin-tools';
 import { DashboardLoadContext, useDashboardLoadTracker, useReportWidgetLoaded, useWidgetLoadedEvent } from 'dashboard-load-tracking';
+import { countOpenTasks, fetchCompletedTaskCount, taskCountEventProps } from 'dashboard/dashboard-load-task-counts';
 import DashboardLayoutPopup from 'dashboard-layout-popup';
 import DashboardSettingNote from "dashboard-setting-note";
 import DashboardSettingsPopup from 'dashboard-settings-popup';
@@ -481,6 +482,8 @@ export default function DashboardApp({ app, initPromise }) {
   const breadcrumbStartedAtRef = useRef(Date.now());
   const breadcrumbWriteRef = useRef(null);
   const breadcrumbStampedRef = useRef(false);
+  // The Task Domain's task counts for the load event, read once the initial payload arrives.
+  const loadTaskCountsRef = useRef(null);
 
   useEffect(() => {
     const t0 = Date.now();
@@ -529,6 +532,9 @@ export default function DashboardApp({ app, initPromise }) {
         breadcrumbWriteRef.current = writeRenderBreadcrumb(app, { deviceProfile: deviceProfileRef.current,
           startedAt: breadcrumbStartedAtRef.current, widgetIds: intendedWidgetIds(data.settings) });
       }
+      const openTaskCount = countOpenTasks(data.tasks);
+      loadTaskCountsRef.current = fetchCompletedTaskCount(app, data.activeTaskDomain || null)
+        .then(completedTaskCount => taskCountEventProps({ completedTaskCount, openTaskCount }));
       applyDashboardData(data, {
         initializeDomainTasks, setConfigParams,
         setCurrentDate, setDailyVictoryValues, setMoodRatings, setPluginNoteUUID,
@@ -748,7 +754,8 @@ export default function DashboardApp({ app, initPromise }) {
   const renderedWidgetIds = displayedComponents
     .map((config, index) => config?.widgetId || DEFAULT_DASHBOARD_COMPONENTS[index]?.widgetId)
     .filter(id => CELL_COMPONENTS[id]);
-  const loadTracker = useDashboardLoadTracker(renderedWidgetIds, { onSettle: handleDashboardSettled });
+  const loadTracker = useDashboardLoadTracker(renderedWidgetIds, { eventProps: () => loadTaskCountsRef.current,
+    onSettle: handleDashboardSettled });
 
   if (error) {
     return (

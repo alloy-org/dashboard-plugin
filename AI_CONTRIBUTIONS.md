@@ -5,6 +5,19 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-27 — Task Domain task counts on the dashboard load event
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/dashboard-load-task-counts.js` (new) — `countOpenTasks` counts the initial payload's open tasks; `fetchCompletedTaskCount` reads the past seven days of completions in the Task Domain through `getCompletedTasks` with `taskDomainUUID`, giving up after 5s; `taskCountEventProps` sends each count exactly and as a range from `taskCountBucket`.
+- `lib/dashboard/dashboard-load-tracking.js` — `useDashboardLoadTracker` takes an `eventProps` option whose properties, or promised properties, are merged into `dashboardLoadSuccess`/`dashboardLoadError`.
+- `lib/dashboard/dashboard.jsx` — Starts the task count lookup when the initial payload arrives and passes it to the load tracker.
+- `test/dashboard-load-task-counts.test.js` (new), `test/dashboard-load-tracking.test.js` — Counts, ranges, lookup failures and timeouts, and the event waiting for promised properties.
+
+**Task:** Report how many open and recently completed tasks a typical user's Dashboard Task Domain holds.
+
+---
+
 ## 2026-10-27 — Exported retrospective video leads the end card
 
 **Model:** Claude Opus 5.5
