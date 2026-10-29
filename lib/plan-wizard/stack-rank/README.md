@@ -188,6 +188,41 @@ The note is archived, tagged `plugins/dashboard`, and seeded with `Amplenote` an
 without that marker belongs to the user and is never rewritten. Definitions have their Rich Footnotes resolved
 before they are sent anywhere.
 
+# People and recent-task terms
+
+Project discovery only reads project wording, so the dictionary also grows from the tasks themselves. Reconciliation
+asks `task-term-scan-store.js` whether a scan is due: some task was created after the watermark saved in
+`User terms dictionary {year} task scan`, and the last scan is a day old, or an hour old when it left a backlog. The
+`discoverTaskTerms` job (`jobs/discover-task-terms.js`) sends up to 60 of those tasks, oldest first. The first scan of a
+year reaches back 14 days.
+
+`task-term-discovery.js` asks for terms and for people. For each person it asks who they most likely are to the account
+owner, the kinds of work they come up in, and any other names the tasks use for them. A proposal is kept only when it
+is new to the dictionary and appears in a task. The owner is never proposed.
+
+Deliberate mentions are read before the provider is asked (`person-mentions.js`):
+
+- `@@Name` is stored as `[@Name](https://www.amplenote.com/notes/people/{personUUID})`, an Amplenote user whom
+  `app.getPeople` lists with their shared notes.
+- `@Name`, completed to a note link whose text keeps the `@`, points at the user's own note about the person.
+- A linked person the provider leaves out is still added, so evidence and refinement can fill in their definition.
+- A typed `@Name` with no link is only a hint to the provider.
+
+The owner's names come from `app.getCurrentPerson()` (`{ name, uuid }`, added to ample-web's plugin interface) and from
+a user-written `- **Me** (also Your Name): …` bullet, which is how an older host learns them.
+
+People live under the dictionary's `# People` heading as `- **Lucian Ruscanu** (also Lucian): … [builder]`. The
+dictionary object keys a person by every name joined with ` / `, and `termPattern` matches any of them, so a task saying
+"Lucian" draws in the entry. A person's evidence (`person-evidence.js`) leads with three kinds of passage, then the usual
+search passages:
+
+- the opening of their linked note
+- their open tasks grouped by note, whose names show the area of work
+- the notes shared with them
+
+Its digest covers every passage, so a new task naming them brings refinement back. The schedule takes people ahead of
+terms due for the same reason, and the refinement prompt asks about the person's relationship to the owner.
+
 # Jev
 
 `lib/providers/jev-client.js` posts to System One. Questions are built with `scoreQuestion` in

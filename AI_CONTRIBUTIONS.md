@@ -5,6 +5,27 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-28 — Collaborators and recent-task terms in the user terms dictionary
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/plan-wizard/stack-rank/dictionary-people.js` (new) — The `# People` bullet format with other names (`(also Lucian)`), the owner's `Me` bullet, and `dictionaryKeyFromEntry`, which keys a person by every name.
+- `lib/plan-wizard/stack-rank/person-mentions.js` (new) — `personMentionsFromMarkdown` finds `@@` person links, `@` note links, and typed `@Name`; `mentionedPeopleFromTasks` leaves out the owner; `accountOwner` reads `app.getCurrentPerson` and the `Me` bullet.
+- `lib/plan-wizard/stack-rank/task-term-discovery.js` (new) — The prompt and acceptance rules for terms and people drawn from recently added tasks; linked people the provider omits are still added.
+- `lib/plan-wizard/stack-rank/task-term-scan-store.js` (new) — The scan's watermark, backlog, and per-person links note; `dueTaskTermScanRequests` and `tasksForTermScan`.
+- `lib/plan-wizard/stack-rank/person-evidence.js` (new) — A person's evidence leads with their linked note, the tasks naming them grouped by note, and the notes shared with them.
+- `lib/dashboard/work-queue/jobs/discover-task-terms.js` (new) — The `discoverTaskTerms` job, which queues evidence for the first people it adds.
+- `lib/plan-wizard/stack-rank/user-terms-dictionary.js` — Reads and merges the People section, matching a person by any of their names; the seed note gains the heading.
+- `lib/plan-wizard/stack-rank/dictionary-term-discovery.js` — `termPattern` matches any name in a ` / `-joined key.
+- `lib/plan-wizard/stack-rank/dictionary-term-schedule.js`, `dictionary-term-refinement.js` — People are scheduled ahead of terms and refined with a relationship-focused prompt.
+- `lib/dashboard/work-queue/jobs/collect-term-evidence.js`, `project-job-requests.js`, `reconcile-projects.js`, `dashboard-work-handlers.js`, `lib/dashboard/idea-generation/idea-generation-run-plan.js` — Wiring: evidence requests carry `domainUuid`; reconciliation schedules the scan; the handler is registered.
+- `test/collaborator-terms.test.js` (new), `test/project-maintenance-jobs.test.js` — Coverage of the above.
+- ample-web (separate repo): `ample-notes-store/actions/get-plugin-current-person.js` (new) plus wiring for `app.getCurrentPerson()` in the plugin interface, sandbox, MCP docs, and its test.
+
+**Task:** Periodically scan recently added tasks for new dictionary terms, treat the people they name (especially `@`/`@@` mentions) as high-relevance terms defined relative to the account owner, and keep them current as they reappear.
+
+---
+
 ## 2026-10-27 — Task Domain task counts on the dashboard load event
 
 **Model:** Claude Opus 5.5
