@@ -5,7 +5,7 @@ import QuarterProject from "quarter-project";
 import DecisionsResponse from "providers/decisions-response";
 import { generativeRankPrompt, rankedTasksFromCandidateIds, rankedTasksFromRatings, rankedTasksFromResponse,
   suggestionQuestions } from "dashboard/suggestions/suggestion-task-rank";
-import { activitiesClearOfObligations, goalCoachTaskPool, refillRejectedSuggestion, slotRankedTasks,
+import { activitiesClearOfObligations, firstOpenSuggestionStart, goalCoachTaskPool, refillRejectedSuggestion, slotRankedTasks,
   suggestionHourAvailability, tasksNotRecentlySuggested } from "dashboard/suggestions/suggestion-task-slots";
 
 const TUESDAY = new Date(2026, 9, 6, 15, 0, 0);
@@ -247,8 +247,36 @@ describe("suggestion hour availability", () => {
     expect(availability.closedHours.filter(entry => entry.reason === "occupied").map(entry => entry.hour))
       .toEqual(["10:00", "11:00"]);
     expect(availability.eventObligationCount).toBe(1);
+    expect(availability.isCrowdedDay).toBe(false);
+    expect(availability.largestFreeBlock).toEqual({ end: "18:00", minutes: 420, start: "11:00" });
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Three events spaced so every on-the-hour start sits within 30 minutes of one would close the whole day; as a
+  //   crowded day it offers the half hours beside them instead, and suggestions are placed there.
+  it("offers half-hour starts with no buffer on a day with three or more obligations", () => {
+    const obligations = [{ durationMinutes: 150, source: "event", startMinutes: 9 * 60 + 30, title: "Morning block" },
+      { durationMinutes: 150, source: "event", startMinutes: 12 * 60 + 30, title: "Midday block" },
+      { durationMinutes: 150, source: "event", startMinutes: 15 * 60 + 30, title: "Afternoon block" }];
+    const availability = suggestionHourAvailability({ nowMinutes: null, obligations });
+    expect(availability.isCrowdedDay).toBe(true);
+    expect(availability.openHours).toEqual(["09:00", "12:00", "15:00"]);
+    expect(availability.largestFreeBlock).toEqual({ end: "09:30", minutes: 30, start: "09:00" });
+    const { activities, reserveTasks } = slotRankedTasks([nextTaskOf("a"), nextTaskOf("b"), nextTaskOf("c"), nextTaskOf("d")],
+      { obligations });
+    expect(activities.map(activity => activity.startTime)).toEqual(["09:00", "12:00", "15:00"]);
+    expect(reserveTasks.map(task => task.taskUuid)).toEqual(["d"]);
+    expect(firstOpenSuggestionStart({ activities, obligations })).toBeNull();
   });
 });
+
+// ----------------------------------------------------------------------------------------------
+// @desc A half-hour ranked task with the given UUID.
+// @param {string} taskUuid - The task's UUID, also used as its text.
+// @returns {object}
+function nextTaskOf(taskUuid) {
+  return { durationMinutes: 30, rationale: "Fits", taskText: taskUuid, taskUuid };
+}
 
 describe("project suggestion log", () => {
   // ----------------------------------------------------------------------------------------------

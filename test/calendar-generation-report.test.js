@@ -7,6 +7,7 @@ import { initialProjectTaskStoreMarkdown } from "dashboard/project-tasks/project
 import { calendarGenerationReportMarkdown, calendarGenerationReportName, debugConsoleInLayout,
   rankingSelectionTrace, writeCalendarGenerationReport } from "dashboard/suggestions/calendar-generation-report";
 import { projectCadenceCounts } from "dashboard/suggestions/day-project-candidates";
+import { suggestionHourAvailability } from "dashboard/suggestions/suggestion-task-slots";
 import QuarterProject from "quarter-project";
 
 const MONDAY = new Date(2026, 9, 19);
@@ -216,6 +217,20 @@ describe("calendar generation report", () => {
     const busyAfternoon = [{ durationMinutes: 480, source: "event", startMinutes: 600, title: "Offsite" }];
     const markdown = calendarGenerationReportMarkdown([rankedDay({ obligations: busyAfternoon })]);
     expect(markdown).not.toContain("Not filled because");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A cached day whose obligations close every start says it ran no ranking, and names its largest free block.
+  it("explains a cached day with no open start by its largest free block", () => {
+    const obligations = [{ durationMinutes: 240, source: "event", startMinutes: 540, title: "Workshop" },
+      { durationMinutes: 300, source: "event", startMinutes: 13 * 60 + 15, title: "Review" }];
+    const { dayOutcome, dayResult } = cachedDay();
+    const suggestionHours = suggestionHourAvailability({ nowMinutes: null, obligations });
+    const markdown = calendarGenerationReportMarkdown([{ dayOutcome: { ...dayOutcome, activities: [], suggestionHours },
+      dayResult: { ...dayResult, obligations } }]);
+    expect(markdown).toContain("  - 0 working hours free of obligations, earliest start 09:00");
+    expect(markdown).toContain("  - Largest free block: 13:00-13:15 (15 minutes)");
+    expect(markdown).toContain("  - No fresh ranking ran: with no open start time, no task or idea was rated for this day");
   });
 
   // ----------------------------------------------------------------------------------------------

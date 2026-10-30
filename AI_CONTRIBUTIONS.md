@@ -5,6 +5,18 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-29 — Crowded calendar days offer half-hour starts beside obligations; report names the largest free block
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/suggestions/suggestion-task-slots.js` — `_daySpacing` treats a day with three or more timed obligations as crowded: placement, refill, relocation, preparation, open-start checks, and `suggestionHourAvailability` then step by half hours with no buffer instead of on the hour with 30 minutes of space. `suggestionHourAvailability` also returns `isCrowdedDay` and `largestFreeBlock`, the longest uncovered stretch of the working day.
+- `lib/dashboard/suggestions/calendar-generation-report.js` — Unfilled days name crowded-day spacing, the largest free block, and, for a cached day with no open start, that no fresh ranking ran.
+- `test/ranked-task-suggestions.test.js`, `test/calendar-generation-report.test.js` — Crowded-day placement, largest free block, and the cached no-open-start report lines.
+
+**Task:** A busy Friday suggested nothing despite many well-rated project tasks, because every hourly start fell within 30 minutes of an obligation and the cached day never ranked.
+
+---
+
 ## 2026-10-28 — Run the test suite on push with GitHub Actions
 
 **Model:** Claude Opus 5.5
