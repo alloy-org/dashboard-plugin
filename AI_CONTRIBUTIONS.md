@@ -5,6 +5,16 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-28 — Run the test suite on push with GitHub Actions
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `.github/workflows/test.yml` (created) — On every push and pull request, installs dependencies, runs `npm run build`, and runs Jest. The LLM and Jev access token variables are set empty so the live-service tests, which already skip without a token, stay skipped.
+
+**Task:** Run the test suite on push, excluding tests that call external services.
+
+---
+
 ## 2026-10-28 — Collaborators and recent-task terms in the user terms dictionary
 
 **Model:** Claude Opus 5.5

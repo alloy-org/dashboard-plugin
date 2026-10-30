@@ -1,0 +1,28 @@
+# Builds the plugin and runs the Jest suite on every push and pull request. Tests that call a live LLM or Jev
+# endpoint skip themselves when their access token is absent, so the token variables are forced empty here to keep
+# them skipped even if repository secrets with those names are added later.
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      ANTHROPIC_AI_ACCESS_TOKEN: ""
+      GEMINI_AI_ACCESS_TOKEN: ""
+      GROK_AI_ACCESS_TOKEN: ""
+      JEV_ACCESS_TOKEN: ""
+      OPEN_AI_ACCESS_TOKEN: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # The build checks the host plugin's import boundary and produces the bundle that production-plugin.test.js loads
+      - run: npm run build
+      - run: NODE_OPTIONS=--experimental-vm-modules npx jest --no-coverage
