@@ -54,7 +54,8 @@ describe("Goal Coach's ranking preparation", () => {
     const rankingPreparer = jest.fn(async () => ({ status: "completed" }));
     const result = await analyzeGoalCoachTasks(coldApp(), { minimumTaskCount: 1, noteName: TODAY_NOTE, rankingPreparer });
     expect(rankingPreparer).toHaveBeenCalledTimes(1);
-    expect(rankingPreparer).toHaveBeenCalledWith({ domainName: "Work", domainUuid: "dom-work", targetDate: expect.any(Date) });
+    expect(rankingPreparer).toHaveBeenCalledWith({ domainName: "Work", domainUuid: "dom-work", surface: "dreamTask",
+      targetDate: expect.any(Date) });
     expect(result.tasks.length).toBeGreaterThan(0);
   });
 
@@ -74,7 +75,7 @@ describe("the agenda's ranking preparation", () => {
     const rankingPreparer = jest.fn(async () => ({ status: "completed" }));
     const targetDate = new Date(2026, 8, 21);
     const result = await generateProposedAgenda(coldApp(), { domainName: "Work", domainUuid: "dom-work", rankingPreparer, targetDate });
-    expect(rankingPreparer).toHaveBeenCalledWith({ domainName: "Work", domainUuid: "dom-work", targetDate });
+    expect(rankingPreparer).toHaveBeenCalledWith({ domainName: "Work", domainUuid: "dom-work", surface: "agenda", targetDate });
     expect(result.activities).toEqual(expect.arrayContaining([expect.objectContaining({ taskUuid: "task-7" })]));
   });
 

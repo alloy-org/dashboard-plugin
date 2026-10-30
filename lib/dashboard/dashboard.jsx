@@ -650,11 +650,12 @@ export default function DashboardApp({ app, initPromise }) {
   //   regardless of per-widget errors. Chained after the pending write to avoid a last-write-wins
   //   race, and guarded to run at most once.
   //
-  //   Settling submits the quarter's queued reconciliation and opens the maintenance gate after its grace period.
-  //   These signals precede the breadcrumb guard so its stamped-already condition cannot suppress queue startup.
+  //   Settling starts the maintenance gate, which opens after its grace period once the visible widgets have rendered
+  //   their content; the quarter's queued reconciliation is submitted only then, so its queue note write and task read
+  //   do not compete with the widgets' first loads. These signals precede the breadcrumb guard so its stamped-already
+  //   condition cannot suppress queue startup.
   const handleDashboardSettled = useCallback(() => {
-    startQueuedMaintenance();
-    reportLoadSettled();
+    reportLoadSettled(startQueuedMaintenance);
     if (breadcrumbStampedRef.current || !breadcrumbWriteRef.current) return;
     breadcrumbStampedRef.current = true;
     logMemorySample('load-settle');

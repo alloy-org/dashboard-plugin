@@ -171,6 +171,18 @@ describe("proposed-agenda-archive", () => {
     expect(unknown.meetingKeys).toBeNull();
   });
 
+  // ----------------------------------------------------------------------------------------------
+  // @desc A day stored with no proposals, as when its obligations leave no free hour, is served with its reserves
+  //   rather than missed, so the day is not generated again on every visit.
+  it("serves a day stored with no proposals, keeping its reserves", async () => {
+    const app = buildNoteApp();
+    await storeProposedAgenda(app, { activities: [], date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER,
+      reserveTasks: [{ durationMinutes: 30, rationale: "Keep warm.", taskText: "Write the notes", taskUuid: "task-9" }] });
+    const loaded = await loadCachedProposedAgenda(app, { date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER });
+    expect(loaded.activities).toEqual([]);
+    expect(loaded.reserveTasks.map(task => task.taskUuid)).toEqual(["task-9"]);
+  });
+
   it("misses on a different date or priority", async () => {
     const app = buildNoteApp();
     await storeProposedAgenda(app, { activities: [ACT_A], date: DATE, priorityKey: PRIORITY, providerEm: PROVIDER });
@@ -462,6 +474,18 @@ describe("generateProposedAgenda caching + regeneration", () => {
     const afterReseed = await generateProposedAgenda(app, { priorityKey: PRIORITY });
     expect(afterReseed.fromCache).toBe(true);
     expect(afterReseed.activities.map(a => a.title)).toEqual(["Gen 2 morning", "Gen 2 midday"]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A generation that places nothing is still stored, so the next visit finds the day.
+  it("stores a generation that placed nothing", async () => {
+    const app = buildGenerationApp(() => []);
+    const first = await generateProposedAgenda(app, { priorityKey: PRIORITY });
+    expect(first.error).toBeUndefined();
+    expect(first.activities).toEqual([]);
+    const records = storedRecords(app, new Date());
+    expect(records).toHaveLength(1);
+    expect(records[0].proposedTasks).toEqual([]);
   });
 
   it("reports 'No tasks found available to schedule in Task Domain' when the domain has no tasks", async () => {

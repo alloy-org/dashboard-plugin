@@ -53,6 +53,23 @@ function harness() {
 
 describe("WidgetMountCoordinator", () => {
   // ----------------------------------------------------------------------------------------------
+  // @desc A visible widget counts as loading until it reports its content or an error, whether or not it has mounted;
+  //   a widget only near the viewport does not count.
+  it("reports whether a visible widget has yet to render its content", async () => {
+    const { coordinator, pass, register, report } = harness();
+    expect(coordinator.visibleContentPending()).toBe(false);
+    const generations = { agenda: register("agenda"), mood: register("mood") };
+    report(0, { agenda: true, mood: true });
+    report(1, { agenda: true });
+    expect(coordinator.visibleContentPending()).toBe(true);
+    await pass();
+    coordinator.reportCommitted("agenda", generations.agenda);
+    expect(coordinator.visibleContentPending()).toBe(true);
+    coordinator.reportContentReady("agenda", "error");
+    expect(coordinator.visibleContentPending()).toBe(false);
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc One observer batch reports several widgets; visible ones mount first, and only one mount runs until its
   //   commit releases the permit.
   it("mounts visible widgets first, one at a time, releasing on commit", async () => {

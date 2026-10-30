@@ -13,6 +13,7 @@ import { taskRatingKey } from "plan-wizard/stack-rank/task-rating-cache";
 import { guideSectionRange, jsonPayloadMarkdown, prospectIndexHeadingText } from "plan-wizard/vision-guide-markdown";
 import { initializeVisionGuide } from "plan-wizard/vision-guide-notes";
 import { setPluginData } from "plugin-data";
+import { forgetSharedTaskReads } from "util/all-notes-tasks";
 import { GENERATED_IDEA, jobContext, maintenanceApp, NOW, ratingRequest, runProjectJob, SCOPE_INPUT,
   storedProjectUuid } from "./project-maintenance-test-app";
 
@@ -65,6 +66,8 @@ describe("queued project evidence", () => {
     const baseline = (await readProject(app)).refreshState.similarity;
     expect(baseline.watermark.sequence).toBe(1);
     app.getTaskDomainTasks.mockResolvedValue([{ ...oldTask, content: "Tune widget layout" }]);
+    // The Dashboard forgets its shared task read when it learns a task changed; the edit here arrives the same way.
+    forgetSharedTaskReads(app);
     requestAnswers.mockRejectedValueOnce(new Error("Batch unavailable"));
     await expect(runProjectJob(handler, { context: jobContext(app), input })).rejects.toThrow("Batch unavailable");
     expect((await readProject(app)).refreshState.similarity).toEqual(baseline);

@@ -5,6 +5,20 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-30 — Proposed Agenda's first load of the day answers from the stored ranking
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda/proposed-agenda-service.js` — `_generateFreshSchedule` reads the task selection, quarterly plan context, and the domain's native open tasks at once; new `_rankedAgenda` uses a current stored ranking without waiting on the queue, and publishes an earlier one as a provisional agenda before waiting; the ranking is asked with native open tasks, matching the queued preparation; a fresh agenda that placed nothing is stored.
+- `lib/dashboard/proposed-agenda/proposed-agenda-archive.js` — `loadCachedProposedAgenda` serves a matching record that holds no proposals.
+- `lib/dashboard/suggestions/ranked-task-suggestions.js` — `agendaSuggestionsFromProjects` takes `storedOnly`, returns `current`, and logs hour availability when it places nothing.
+- `lib/dashboard/work-queue/jobs/prepare-day-ranking.js`, `prepared-day-ranking.js`, `lib/goal-coach-service.js` — A waiting widget's request names its surface, gets its own job key, and prepares only that surface.
+- `lib/util/all-notes-tasks.js`, `lib/hooks/use-dashboard-task-updates.js`, `lib/dashboard/work-queue/jobs/project-job-inputs.js` — Task reads are shared in flight and for 15 seconds, forgotten when the Dashboard learns a task changed.
+- `lib/hooks/use-dashboard-work-queue.js`, `lib/dashboard/work-queue/widget-mount-coordinator.js`, `dashboard-work-policy.js`, `lib/dashboard/dashboard.jsx`, `lib/hooks/use-project-maintenance-queue.js` — The maintenance gate waits for visible widgets' content (up to 20 seconds) and only then submits reconciliation.
+- `test/proposed-agenda-stored-ranking.test.js` (new), plus tests in `all-notes-tasks`, `day-ranking-store`, `proposed-agenda-archive`, `widget-mount-coordinator`, `dashboard-work-activation`, `prepared-day-ranking-consumers`, `project-maintenance-state`.
+
+---
+
 ## 2026-10-29 — Plausible events for Quarter Retrospective generation and video export
 
 **Model:** Claude Opus 5.5
