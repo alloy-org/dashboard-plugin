@@ -5,6 +5,15 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-29 — Plausible events for Quarter Retrospective generation and video export
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/quarter-retrospective.jsx` — `handleGenerate` fires a `generateRetrospective` Dashboard Action with style, quarter, project count, and task count once a story is built.
+- `lib/dashboard/quarter-retrospective/retrospective-video-export.jsx` — `encode` fires `exportRetrospectiveVideo` with whether the whole story was encoded, its size in MB, encode seconds, and whether it has a soundtrack.
+
+---
+
 ## 2026-10-29 — Crowded calendar days offer half-hour starts beside obligations; report names the largest free block
 
 **Model:** Claude Opus 5.5

@@ -32,6 +32,7 @@ import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "util/browser-utility";
 import { navigateToNote } from "util/goal-notes";
 import { logIfEnabled } from "util/log";
+import { snapDashboardAction } from "util/plausible";
 
 // How long the processing screen shows the locked ranking with its "Progress saved!" message before the story plays.
 export const RANKING_PROGRESS_SAVED_MILLISECONDS = 1000;
@@ -234,6 +235,8 @@ export default function QuarterRetrospective({ app, domainName, domainUuid, onCl
       const retrospective = await generateRetrospective(app, { ...scope, domainUuid, options, style }, { onProgress,
         onProjectsKnown: setRankingProjects });
       setSaved(previous => [retrospective, ...previous.filter(existing => existing.style !== style)]);
+      snapDashboardAction("generateRetrospective", { projectCount: retrospective.projects.length, quarter: scope.quarter, style,
+        taskCount: retrospective.totalTaskCount });
       if (await persistGenerationRanking()) {
         setView(previous => (previous.kind === "generating" ? { ...previous, rankingLocked: true } : previous));
         await new Promise(resolve => setTimeout(resolve, RANKING_PROGRESS_SAVED_MILLISECONDS));

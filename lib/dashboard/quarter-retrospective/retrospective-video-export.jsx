@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { encodeRetrospectiveVideo, retrospectiveVideoSupported } from "dashboard/quarter-retrospective/retrospective-video";
 import { logIfEnabled } from "util/log";
+import { snapDashboardAction } from "util/plausible";
 
 // How many slides the partial video encodes.
 export const TRIAL_SLIDE_COUNT = 3;
@@ -66,6 +67,8 @@ export function useRetrospectiveVideoExport({ app, fileStem, slides, slideMillis
         slides: encodedSlides, soundtrackVibe });
       logIfEnabled(LOG_LABEL, "encoded", { audioCodec: encoded.audioCodec, bytes: encoded.blob.size,
         elapsedMilliseconds: Math.round(encoded.elapsedMilliseconds), mimeType: encoded.mimeType, videoCodec: encoded.videoCodec });
+      snapDashboardAction("exportRetrospectiveVideo", { fullStory, megabytes: Math.round(encoded.blob.size / 104857.6) / 10,
+        seconds: Math.round(encoded.elapsedMilliseconds / 1000), withSoundtrack: !!soundtrackVibe });
       setVideoUrl(URL.createObjectURL(encoded.blob));
       setResult(encoded);
     } catch (encodeError) {
