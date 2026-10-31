@@ -76,4 +76,34 @@ describe("DashboardWorkDiagnostics", () => {
     await Promise.resolve();
     expect(notifications).toBe(1);
   });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Blocking credited to a job is the main-thread stalling that overlapped its run, including a stall that
+  //   straddled its start and one reported after it finished. A stall credited to another job type is not included.
+  //   A widget content report, which is not a scheduler attempt, is credited from the stalls already seen.
+  it("records when a job began and how much main-thread blocking overlapped it", () => {
+    let now = 1_000;
+    const diagnostics = new DashboardWorkDiagnostics({ clock: () => now });
+    diagnostics.attributeMainThreadStall({ blockingMilliseconds: 50, durationMilliseconds: 100, endedAt: 1_100,
+      jobTypes: ["estimateTaskDurations"], startedAt: 1_000 });
+    diagnostics.record({ attempt: 1, jobKey: "estimate:q", jobType: "estimateTaskDurations", type: "started" });
+    diagnostics.attributeMainThreadStall({ blockingMilliseconds: 80, durationMilliseconds: 120, endedAt: 1_500,
+      jobTypes: ["estimateTaskDurations"], startedAt: 1_380 });
+    diagnostics.attributeMainThreadStall({ blockingMilliseconds: 500, durationMilliseconds: 500, endedAt: 1_800,
+      jobTypes: ["widgetMount"], startedAt: 1_300 });
+    now = 5_000;
+    diagnostics.record({ attempt: 1, durationMilliseconds: 4_000, jobKey: "estimate:q", jobType: "estimateTaskDurations",
+      startedAt: 1_000, type: "completed" });
+    expect(diagnostics.snapshot().events.find(event => event.type === "completed")).toMatchObject({ at: 5_000, blockingMilliseconds: 130,
+      startedAt: 1_000 });
+    diagnostics.attributeMainThreadStall({ blockingMilliseconds: 90, durationMilliseconds: 300, endedAt: 5_200,
+      jobTypes: ["estimateTaskDurations"], startedAt: 4_900 });
+    const completed = diagnostics.snapshot().events.find(event => event.type === "completed");
+    expect(completed.blockingMilliseconds).toBe(160);
+    diagnostics.record({ at: 3_000, durationMilliseconds: 2_000, jobKey: "widgetMount:agenda", jobType: "widgetMount",
+      startedAt: 1_000, type: "contentReady" });
+    expect(diagnostics.snapshot().events.find(event => event.type === "contentReady").blockingMilliseconds).toBe(500);
+    expect(diagnostics.exportSnapshot().diagnostics.events).toEqual(expect.arrayContaining([
+      expect.objectContaining({ blockingMilliseconds: 160, startedAt: 1_000, type: "completed" })]));
+  });
 });

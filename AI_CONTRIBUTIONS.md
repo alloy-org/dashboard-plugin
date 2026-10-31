@@ -5,6 +5,48 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-31 — Shown suggestions move out of the Project Tasks note into a small per-domain note
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/suggestions/suggestion-shown-store.js` (new) — `SuggestionShownStore` keeps the latest shown time per task UUID and per idea ID in an archived `Dashboard Shown Suggestions {domain}` JSON note. Times more than 14 days before the latest one are dropped, and at most 500 entries are kept. A note written by a newer version is never overwritten.
+- `lib/dashboard/quarter-project-repository.js` — `recordShownTasks` makes one write to that note per showing. It no longer reads or writes the Project Tasks note once per project, and it no longer creates project sections for the log.
+- `lib/dashboard/project-tasks/project-task-store.js` — `readCollectedProjectTasks` adds the note's shown times to each stored project's `taskSuggestions`. `appendSuggestionLog` is removed.
+- `lib/dashboard/quarter-project-serialization.js` — Store sections no longer write `### {uuid} suggested` log headings, so rewriting a section drops them. Legacy headings are still read.
+- `lib/dashboard/project-tasks/project-suggestion-log.js`, `lib/dashboard/quarter-project.js` — Removed the unused log writers (`suggestionLogAppends`, `suggestionSectionsMarkdown`, `taskSuggestionsWithShown`, `QuarterProject#recordShownTasks`).
+- `lib/plan-wizard/stack-rank/README.md` — Suggestion log section rewritten.
+- Tests: `suggestion-shown-store` (new), plus updates to `quarter-project-repository`, `quarter-project`, `project-task-store`, `ranked-task-suggestions`, and `project-task-evidence`.
+
+**Task:** Recording each showing appended a bullet per task to a Project Tasks note that had grown to 359K characters, with one full read and write per project. A Sentry user report tied that pattern to a near-minute window-resize stall.
+
+---
+
+## 2026-10-30 — Queue outcome durations record main-thread blocking and exact start and end
+
+**Model:** Grok 4.7
+**Files created/modified:**
+- `lib/dashboard/work-queue/dashboard-work-diagnostics.js` — A finished attempt keeps `startedAt`. Main-thread stalls credited to its job type are totalled as `blockingMilliseconds` on the outcome, including stalls that straddle its start or arrive after it is recorded.
+- `lib/dashboard/work-queue/main-thread-lag-monitor.js` — Reports each blocking stall from the preferred source (long frames, or timers where the browser reports none) through `onStall`.
+- `lib/hooks/use-dashboard-work-queue.js` — Passes those stalls to the runtime's diagnostics.
+- `lib/dashboard/work-queue/dashboard-work-scheduler.js` — Records the exact start and end of an attempt, including one cancelled while running.
+- `lib/dashboard/work-queue/widget-mount-coordinator.js` — A content report records admission as its start and content as its end.
+- `lib/dashboard/work-queue/dashboard-queue-inspector-model.js` — `formattedLocalTime` and `outcomeDurationTooltip`.
+- `lib/dashboard/work-queue/dashboard-queue-inspector-sections.jsx`, `dashboard-queue-durable-sections.jsx`, `lib/dashboard/styles/dashboard-queue-inspector.scss` — The Ran for cell shows a blocked line when the main thread stalled, and hovering it shows the local start and end. A caption explains that Ran for includes waiting.
+- Tests in `dashboard-work-diagnostics`, `dashboard-queue-inspector`, `main-thread-instrumentation`, and `widget-mount-coordinator`.
+
+**Task:** Make the Debug Console queue durations interpretable: elapsed time is not a freeze, record which runs blocked the main thread, and show the exact local start and end on hover.
+
+---
+
+## 2026-10-30 — Live speed and quality evaluation of agenda model contenders
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `test/agenda-model-eval-live.test.js` (new) — Runs only with `AGENDA_MODEL_EVAL=1`. Sends `generativeRankPrompt` and `benefitRationalePrompt` to each `provider:model:thinking` contender (OpenAI with `reasoning_effort`, Gemini with `thinkingLevel`), streamed to time the first token and the whole answer; scores rankings by NDCG@5 against graded candidates (or top-5 overlap with a reference model), checks benefit sentences against the prompt's rules, estimates cost, and writes a Markdown report to `notes/agenda-model-eval/`. Extra JSON cases load from `notes/agenda-model-eval/cases/`.
+- `test/fixtures/agenda-model-eval-cases.js` (new) — A graded five-project ranking state and six benefit activities.
+
+---
+
 ## 2026-10-30 — Proposed Agenda's first load of the day answers from the stored ranking
 
 **Model:** Claude Opus 5.5

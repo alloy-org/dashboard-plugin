@@ -3,7 +3,7 @@
 // tasks while an unfinished one keeps every rating, and
 // that the suggestion log is read from and appended to its headings.
 import { associationResult, projectTaskMatches } from "dashboard/project-tasks/project-collection-steps";
-import { suggestionLogAppends, suggestionLogFromSection } from "dashboard/project-tasks/project-suggestion-log";
+import { suggestionLogFromSection } from "dashboard/project-tasks/project-suggestion-log";
 import { isSuggestableTaskRecord, TASK_LINK_REASONS } from "dashboard/project-tasks/project-task-evidence";
 import QuarterProject from "dashboard/quarter-project";
 import { rankedTaskAssociations } from "plan-wizard/stack-rank/stack-rank-project-tasks";
@@ -130,19 +130,5 @@ describe("suggestion log headings", () => {
     expect(suggestionLogFromSection(sectionBody)).toEqual([
       { suggestedAt: "2026-09-01T12:00:00.000Z", taskUuid: "task-1" },
       { ideaId: "idea-0a1b2c3d", suggestedAt: "2026-09-02T12:00:00.000Z" }]);
-  });
-
-  // ----------------------------------------------------------------------------------------------
-  // @desc A known identity gains a bullet under its heading; a new one gets its own heading inside the last one's
-  //   body; a section with no log heading asks for a whole-section write.
-  it("plans heading-scoped appends", () => {
-    const writes = suggestionLogAppends(sectionBody, [{ suggestedAt: "2026-09-03T12:00:00.000Z", taskUuid: "task-1" },
-      { suggestedAt: "2026-09-03T12:00:00.000Z", taskUuid: "task-2" }]);
-    expect(writes).toEqual([
-      { body: "- task-1 — 2026-09-01T12:00:00.000Z\n- task-1 — 2026-09-03T12:00:00.000Z\n\n", headingText: "task-1 suggested" },
-      { body: "- idea-0a1b2c3d — 2026-09-02T12:00:00.000Z\n\n### task-2 suggested\n- task-2 — 2026-09-03T12:00:00.000Z\n",
-        headingText: "idea-0a1b2c3d suggested" }]);
-    expect(suggestionLogAppends("- Last attempted: never\n", [{ suggestedAt: "2026-09-03T12:00:00.000Z", taskUuid: "a" }]))
-      .toBeNull();
   });
 });

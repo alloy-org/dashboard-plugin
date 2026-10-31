@@ -232,7 +232,7 @@ describe("project task store sections", () => {
 
   // ----------------------------------------------------------------------------------------------
   // @desc A section written before the lists were split and the log moved to headings is still read: its single
-  //   Existing tasks list, and the relatedTasks and taskSuggestions its payload carried.
+  //   Existing tasks list, and the relatedTasks and taskSuggestions its payload carried. Rewriting it drops the log.
   it("reads a section written in the earlier format", () => {
     const legacySection = "- Last attempted: never\n\n- Existing tasks\n"
       + "  - [Draft release notes](https://www.amplenote.com/notes/tasks/open-task)\n- Suggested tasks\n  - (none yet)\n"
@@ -246,7 +246,7 @@ describe("project task store sections", () => {
     expect(record.taskSuggestions).toEqual([{ suggestedAt: "2026-09-01T12:00:00.000Z", taskUuid: "open-task" },
       { suggestedAt: "2026-08-01T12:00:00.000Z", taskUuid: "older-task" }]);
     const rewritten = record.toStoreSection();
-    expect(rewritten.indexOf("### open-task suggested")).toBeGreaterThan(rewritten.indexOf("```json"));
+    expect(rewritten).not.toContain("### open-task suggested");
     expect(rewritten).not.toContain('"taskSuggestions"');
   });
 

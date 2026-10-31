@@ -1,6 +1,5 @@
 // The day-project selection, Jev and generative ranking, hour placement, and the project-note suggestion log.
 import { dayProjectGroups, deadlineWithinComingWeek } from "dashboard/suggestions/day-project-candidates";
-import { suggestionSectionsMarkdown } from "dashboard/project-tasks/project-suggestion-log";
 import QuarterProject from "quarter-project";
 import DecisionsResponse from "providers/decisions-response";
 import { generativeRankPrompt, rankedTasksFromCandidateIds, rankedTasksFromRatings, rankedTasksFromResponse,
@@ -280,13 +279,13 @@ function nextTaskOf(taskUuid) {
 
 describe("project suggestion log", () => {
   // ----------------------------------------------------------------------------------------------
-  // @desc A shown task is an h3 under the project, and a later suggestion appends to that task's bullet list.
-  it("renders an h3 per task uuid and round-trips the log through the project section", () => {
-    const taskSuggestions = [{ suggestedAt: "2026-10-06T15:00:00.000Z", taskUuid: "task-1" },
-      { suggestedAt: "2026-10-06T18:00:00.000Z", taskUuid: "task-1" }];
-    expect(suggestionSectionsMarkdown(taskSuggestions)).toContain("### task-1 suggested");
-    expect(suggestionSectionsMarkdown(taskSuggestions)).toContain("- task-1 — 2026-10-06T18:00:00.000Z");
-    const markdown = new QuarterProject({ summary: "Launch", uuid: "project-1", taskSuggestions }).toStoreSection();
-    expect(QuarterProject.fromStoreSection(markdown).taskSuggestions).toEqual(taskSuggestions);
+  // @desc A legacy log heading is read back from a section, and rewriting the section drops it.
+  it("reads legacy log headings and drops them when the section is rewritten", () => {
+    const markdown = new QuarterProject({ summary: "Launch", uuid: "project-1" }).toStoreSection()
+      + "\n### task-1 suggested\n- task-1 — 2026-10-06T15:00:00.000Z\n- task-1 — 2026-10-06T18:00:00.000Z\n";
+    const legacy = QuarterProject.fromStoreSection(markdown);
+    expect(legacy.taskSuggestions).toEqual([{ suggestedAt: "2026-10-06T15:00:00.000Z", taskUuid: "task-1" },
+      { suggestedAt: "2026-10-06T18:00:00.000Z", taskUuid: "task-1" }]);
+    expect(legacy.toStoreSection()).not.toContain("### task-1 suggested");
   });
 });

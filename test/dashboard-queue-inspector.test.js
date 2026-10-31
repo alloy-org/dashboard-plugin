@@ -5,8 +5,8 @@
 import { jest } from "@jest/globals";
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
-import { ALL_JOBS_FILTER, filteredJobs, formattedRevision, queueInspectorView, queueOverview, recentOutcomes, savedJobRows,
-  urgentRenderRows } from "dashboard/work-queue/dashboard-queue-inspector-model";
+import { ALL_JOBS_FILTER, filteredJobs, formattedLocalTime, formattedRevision, outcomeDurationTooltip, queueInspectorView,
+  queueOverview, recentOutcomes, savedJobRows, urgentRenderRows } from "dashboard/work-queue/dashboard-queue-inspector-model";
 import DashboardWorkDiagnosticsStore from "dashboard/work-queue/dashboard-work-diagnostics-store";
 import { workHandlerRegistry } from "dashboard/work-queue/dashboard-work-handlers";
 import DashboardWorkRepository from "dashboard/work-queue/dashboard-work-repository";
@@ -119,6 +119,24 @@ describe("Saved job rows", () => {
     expect(formattedRevision("1", now)).toBe("1");
     expect(formattedRevision(null, now)).toBe("—");
   });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A duration's tooltip is the local clock time the job began and the local clock time it ended. Without a
+  //   recorded start, the start is the end minus the elapsed time.
+  it("describes a run by the local time it began and ended", () => {
+    const beganAt = Date.UTC(2026, 9, 30, 18, 46, 12, 48);
+    const endedAt = beganAt + 65_000;
+    const clockTime = epochMilliseconds => {
+      const clock = new Date(epochMilliseconds).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
+      return `${ clock }.${ String(new Date(epochMilliseconds).getMilliseconds()).padStart(3, "0") }`;
+    };
+    expect(formattedLocalTime(beganAt)).toBe(clockTime(beganAt));
+    expect(outcomeDurationTooltip({ at: endedAt, durationMilliseconds: 65_000, startedAt: beganAt }))
+      .toBe(`Began ${ clockTime(beganAt) }\nEnded ${ clockTime(endedAt) }`);
+    expect(outcomeDurationTooltip({ at: endedAt, durationMilliseconds: 65_000 }))
+      .toBe(`Began ${ clockTime(beganAt) }\nEnded ${ clockTime(endedAt) }`);
+    expect(outcomeDurationTooltip({ durationMilliseconds: 65_000 })).toBeNull();
+  });
 });
 
 describe("DashboardQueueInspector", () => {
@@ -211,6 +229,35 @@ describe("DashboardQueueInspector", () => {
     expect(rowTexts[1]).toContain("generateProjectIdeasLaunch dashboard");
     expect(rowTexts[1]).toContain("Generated 5 ideas, kept 3");
     expect(rowTexts[1]).not.toContain("ideas:project-9");
+    act(() => root.unmount());
+    runtime.dispose();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Ran for stays the elapsed time. Hovering it shows when the job began and ended, and a job that stalled the
+  //   main thread says so under the elapsed time. A stall credited to a different job type is not shown on this row.
+  it("shows when a run began and ended, and which runs blocked the main thread", async () => {
+    let now = 1_700_000_000_000;
+    const runtime = createDashboardWorkRuntime({ clock: () => now });
+    runtime.scheduler.setConditions({ loadSettled: true });
+    await runtime.scheduler.enqueue({ key: "estimate:quarter", run: () => {
+      now += 65_000;
+      return { outcomeDetail: "Estimated 40 durations, reused 44" };
+    }, type: "estimateTaskDurations" });
+    runtime.diagnostics.attributeMainThreadStall({ blockingMilliseconds: 240, durationMilliseconds: 300, endedAt: now - 1_000,
+      jobTypes: ["estimateTaskDurations"], startedAt: now - 1_300 });
+    runtime.diagnostics.attributeMainThreadStall({ blockingMilliseconds: 900, durationMilliseconds: 900, endedAt: now - 1_000,
+      jobTypes: ["widgetMount"], startedAt: now - 1_900 });
+    const completed = runtime.diagnostics.snapshot().events.find(event => event.type === "completed");
+    expect(completed).toMatchObject({ at: 1_700_000_065_000, blockingMilliseconds: 240, durationMilliseconds: 65_000,
+      startedAt: 1_700_000_000_000 });
+    const { container, root } = render(createElement(DashboardQueueInspector, { work: { mountCoordinator: null, runtime } }));
+    const outcomeSection = [...container.querySelectorAll("section")].find(section => section.textContent.startsWith("Recent outcomes"));
+    const durationCell = outcomeSection.querySelector(".queue-inspector-duration");
+    expect(durationCell.textContent).toContain("1 min");
+    expect(durationCell.textContent).toContain("blocked 240 ms");
+    expect(durationCell.getAttribute("title")).toBe(outcomeDurationTooltip(completed));
+    expect(outcomeSection.textContent).toContain("Ran for includes waiting");
     act(() => root.unmount());
     runtime.dispose();
   });

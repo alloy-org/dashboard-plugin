@@ -123,12 +123,13 @@ the hash existed, or before the lists were split, are read as before.
 
 # Suggestion log
 
-The section ends with one `### {task UUID or idea ID} suggested` heading per suggestion shown, each holding a bullet
-per time it was shown. The headings are the log; the payload no longer carries `taskSuggestions`. Because they close
-the section, each heading holds only its own bullets, so `QuarterProjectRepository#recordShownTasks` appends by
-rewriting just the headings it touches with `replaceNoteContent` scoped to that heading. A suggestion shown for the
-first time gets its heading inside the body of the project's last log heading. The whole project section is rewritten
-instead when the project has no log heading yet, or when a heading to rewrite also appears under another project.
+The latest time each task or idea was shown is kept per task domain in the archived `Dashboard Shown Suggestions
+{domain UUID}` note (`SuggestionShownStore`), as JSON objects of ISO times keyed by task UUID and by idea ID. Each
+showing is one write to that note, `QuarterProjectRepository#recordShownTasks`, so it never reads or rewrites the
+Project Tasks note; times older than 14 days, and the oldest beyond 500 entries, are dropped. `readCollectedProjectTasks`
+adds those times to each stored project's `taskSuggestions`, which `minutesSinceRecommended` reads. Sections written by
+an earlier version end with `### {task UUID or idea ID} suggested` headings, one bullet per showing; they are still
+read, and are dropped the next time the project's section is rewritten.
 
 The sources page leaves out cited tasks rated below 6, both from the project's task count and from the list it
 opens to. Tasks not yet rated are still shown. It also counts and lists every task in the project's "Existing tasks

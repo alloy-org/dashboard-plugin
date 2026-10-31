@@ -3,6 +3,7 @@
 // All are read when the inspector opens or the operator refreshes, and are labelled unavailable rather than empty when
 // durable work is off or a note is unreadable.
 import { formattedAge, formattedDuration, formattedRevision, savedJobRows } from "dashboard/work-queue/dashboard-queue-inspector-model";
+import { OutcomeDurationCell } from "dashboard/work-queue/dashboard-queue-inspector-sections";
 
 // ------------------------------------------------------------------------------------------
 // @desc Outcomes of durable jobs from this and earlier sessions, newest first, with how saving history has gone.
@@ -31,7 +32,7 @@ export function DurableHistorySection({ history, now, sessionId }) {
                 <td>{record.status}{record.recovered ? " (output already written)" : ""}</td>
                 <td title={record.jobKey}>{record.jobType}<div className="queue-inspector-detail">{record.jobKey}</div></td>
                 <td>{record.attempt ?? "—"}</td>
-                <td>{formattedDuration(record.durationMilliseconds)}</td>
+                <OutcomeDurationCell event={record} />
                 <td>{record.outputRevision ?? "—"}</td>
                 <td>{record.sessionId === sessionId ? "This session" : record.sessionId || "—"}</td>
                 <td>{record.error ? `${ record.failureClassification }: ${ record.error }` : "—"}</td>

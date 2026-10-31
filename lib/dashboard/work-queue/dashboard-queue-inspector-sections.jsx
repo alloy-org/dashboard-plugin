@@ -1,7 +1,7 @@
 // The sections of the admin Queue inspector: an overview of the runtime and its admission conditions, the active and
 // pending jobs with their filters, urgent widget renders, resource permits, recent outcomes, and timings by job type.
 // Each section only displays the view it is given; none of them changes the queue.
-import { formattedAge, formattedDuration, jobFilterOptions } from "dashboard/work-queue/dashboard-queue-inspector-model";
+import { formattedAge, formattedDuration, jobFilterOptions, outcomeDurationTooltip } from "dashboard/work-queue/dashboard-queue-inspector-model";
 
 // ------------------------------------------------------------------------------------------
 // @desc A labelled select over a list of values, with an "All" choice that clears the filter.
@@ -15,6 +15,21 @@ function JobFilterSelect({ label, onChange, options, value }) {
         {options.map(option => <option key={option} value={option}>{option}</option>)}
       </select>
     </label>
+  );
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc The "Ran for" cell. The time is elapsed, including waiting. When the main thread stalled while the job ran,
+//   a second line says for how long. Hovering the cell shows the local time the job began and when it ended.
+// @param {object} props - { event }: an outcome with at, blockingMilliseconds, durationMilliseconds, and startedAt.
+export function OutcomeDurationCell({ event }) {
+  const tooltip = outcomeDurationTooltip(event);
+  const blockedText = event.blockingMilliseconds > 0 ? `blocked ${ formattedDuration(event.blockingMilliseconds) }` : null;
+  return (
+    <td className={tooltip ? "queue-inspector-duration" : undefined} title={tooltip || undefined}>
+      {formattedDuration(event.durationMilliseconds)}
+      {blockedText && <div className="queue-inspector-detail">{blockedText}</div>}
+    </td>
   );
 }
 
@@ -73,12 +88,15 @@ export function QueueJobSection({ allJobs, filters, jobs, now, onFiltersChange }
 // ------------------------------------------------------------------------------------------
 // @desc Recently finished jobs, newest first, with failure messages already sanitized by diagnostics. Under each job
 //   type is the project or note it worked on when the job reported one, otherwise its key; the detail is the failure,
-//   or what a completed job reported doing, such as how many ideas it kept.
+//   or what a completed job reported doing, such as how many ideas it kept. Ran for is elapsed time, not time the
+//   page was frozen; a blocked line is the main-thread stalling credited to that job while it ran.
 // @param {object} props - { now, outcomes }.
 export function QueueOutcomeSection({ now, outcomes }) {
   return (
     <section className="queue-inspector-section">
       <h4>Recent outcomes</h4>
+      <p className="queue-inspector-caption">Ran for includes waiting on notes and models. Hover a duration for the local
+        start and end. A blocked line is main-thread stalling while that job ran, shared when other jobs ran too.</p>
       {outcomes.length === 0 ? <p className="queue-inspector-empty">No job has finished yet.</p> : (
         <table className="queue-inspector-table">
           <thead><tr><th>When</th><th>Outcome</th><th>Job</th><th>Ran for</th><th>Detail</th></tr></thead>
@@ -90,7 +108,7 @@ export function QueueOutcomeSection({ now, outcomes }) {
                 <td title={event.jobKey}>
                   {event.jobType}<div className="queue-inspector-detail">{event.outcomeSubject || event.jobKey}</div>
                 </td>
-                <td>{formattedDuration(event.durationMilliseconds)}</td>
+                <OutcomeDurationCell event={event} />
                 <td>{event.error || event.outcomeDetail || "—"}</td>
               </tr>
             ))}

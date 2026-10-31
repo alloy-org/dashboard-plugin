@@ -103,11 +103,21 @@
     }
   }
 
+  .queue-inspector-caption {
+    color: $color-text-secondary;
+    margin: 0 0 $sp-xs;
+    white-space: normal;
+  }
+
   .queue-inspector-detail {
     color: $color-text-muted;
     max-width: 260px;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .queue-inspector-duration {
+    cursor: help;
   }
 
   .queue-inspector-outcome--failed td {

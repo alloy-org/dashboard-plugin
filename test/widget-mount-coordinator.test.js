@@ -255,8 +255,9 @@ describe("WidgetMountCoordinator", () => {
     coordinator.reportContentReady("agenda");
     const outcomes = recentOutcomes(runtime.diagnostics.snapshot().events);
     expect(outcomes).toHaveLength(1);
-    expect(outcomes[0]).toMatchObject({ durationMilliseconds: 2450, jobKey: "widgetMount:agenda", jobType: "widgetMount",
-      outcomeDetail: "Rendered its content; waited 50 ms for its turn, committed in 3 ms", type: "contentReady" });
+    expect(outcomes[0]).toMatchObject({ at: 2600, blockingMilliseconds: 0, durationMilliseconds: 2450, jobKey: "widgetMount:agenda",
+      jobType: "widgetMount", outcomeDetail: "Rendered its content; waited 50 ms for its turn, committed in 3 ms", startedAt: 150,
+      type: "contentReady" });
     expect(runtime.diagnostics.snapshot().timings.widgetMount.runs).toBe(1);
   });
 });
