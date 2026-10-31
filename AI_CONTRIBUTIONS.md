@@ -5,6 +5,17 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-10-31 — Phase timing for rankProjectTasks attempts
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/jobs/rank-project-tasks.js` — Each attempt logs `[rank-project-tasks] attempt timing` with the handler's total time and the milliseconds spent per phase: readInputs, readTasks, readCitedTasks, prepareRanker, taskSnapshot, termRevisions, rate, savePartialScores, selectAccepted, writeResult, and durationRequest. The rate-and-pause logic moved into `_rankingTurn`, so `_rankingAttempt` can log on every exit path.
+- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` — `_freshRanking` logs `described tasks` with the time `prospectiveTaskDetails` spent reading notes, and how many notes and tasks it read.
+
+**Task:** The queue inspector showed rankProjectTasks at 13–16s while Jev answered in 120–330ms. These logs show which phase takes the rest.
+
+---
+
 ## 2026-10-31 — Shown suggestions move out of the Project Tasks note into a small per-domain note
 
 **Model:** Claude Opus 5.5
