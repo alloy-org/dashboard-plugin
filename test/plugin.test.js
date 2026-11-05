@@ -211,6 +211,13 @@ describe('Dashboard Plugin', () => {
       expect(result).toBe('new-uuid');
     });
 
+    it('should return a note through boundedNoteContent only when it fits the length', async () => {
+      const spyApp = { ...mockApp, getNoteContent: jest.fn().mockResolvedValue('0123456789') };
+      await expect(plugin.onEmbedCall(spyApp, 'boundedNoteContent', { uuid: 'short' }, 10)).resolves.toBe('0123456789');
+      await expect(plugin.onEmbedCall(spyApp, 'boundedNoteContent', { uuid: 'long' }, 9)).resolves.toEqual({ omittedCharacters: 10 });
+      expect(spyApp.getNoteContent).toHaveBeenCalledWith({ uuid: 'long' });
+    });
+
     it('should return error for unknown action', async () => {
       const result = await plugin.onEmbedCall(mockApp, 'unknownAction');
 

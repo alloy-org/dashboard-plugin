@@ -1,13 +1,14 @@
 // Verify the evidence collected for a dictionary term: passages are cut where the term appears as a whole word, carry
 // their heading and the full Rich Footnotes they cite, and an uncited footnote naming the term gives its own passage;
-// collection skips notes the plugin maintains, keeps a copied passage once, spreads passages across notes, bounds the
+// collection skips notes the plugin maintains, merge reports, and notes too long to read, keeps a copied passage once, spreads passages across notes, bounds the
 // notes it reads, and falls back to an unquoted search; the job saves the record or retires when the term is gone; and
 // the store gives up the oldest records' passages first when they outgrow the note, keeps a passage quoting a fenced
 // block readable, and rebuilds a note whose JSON was cut short.
+import { jest } from "@jest/globals";
 import { createCollectTermEvidenceHandler } from "dashboard/work-queue/jobs/collect-term-evidence";
 import { termEvidenceRequest } from "dashboard/work-queue/jobs/project-job-requests";
 import DashboardNoteWriter from "dashboard/work-queue/dashboard-note-writer";
-import { collectTermEvidence, EVIDENCE_OUTCOMES, MAXIMUM_EVIDENCE_NOTES_READ, MAXIMUM_PASSAGE_CHARACTERS,
+import { collectTermEvidence, EVIDENCE_OUTCOMES, MAXIMUM_EVIDENCE_NOTE_CHARACTERS, MAXIMUM_EVIDENCE_NOTES_READ, MAXIMUM_PASSAGE_CHARACTERS,
   termPassagesFromContent } from "plan-wizard/stack-rank/dictionary-term-evidence";
 import { MAXIMUM_STORED_PASSAGE_CHARACTERS, savedTermEvidence, storedTermEvidence,
   termEvidenceNoteName } from "plan-wizard/stack-rank/dictionary-term-evidence-store";
@@ -82,6 +83,35 @@ describe("dictionary term evidence", () => {
       query: { text: "\"Widget\"", unquotedFallback: false } });
     expect(evidence.sourceDigest).toMatch(/^[0-9a-f]{8}$/);
     expect(app.getNoteContent).not.toHaveBeenCalledWith({ uuid: "seed-1" });
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc An Amplenote merge report is never read, found by its tag or its name, and a note longer than
+  //   MAXIMUM_EVIDENCE_NOTE_CHARACTERS is skipped once its length is known.
+  it("skips merge reports and notes too long to read", async () => {
+    const app = notebookApp([
+      { content: "Widget patch one.", name: "Merge report - Wed Nov 04 2026 07:26:16", tags: ["merge-reports"] },
+      { content: "Widget patch two.", name: "Merge report - Tue Nov 03 2026 10:00:00" },
+      { content: `Widget export.\n\n${ "x".repeat(MAXIMUM_EVIDENCE_NOTE_CHARACTERS) }`, name: "Pasted export" },
+      { content: "Widget one.", name: "Planning" },
+    ]);
+    const evidence = await collectTermEvidence(app, { now: NOW, term: "Widget" });
+    expect(evidence.passages.map(passage => passage.text)).toEqual(["Widget one."]);
+    expect(evidence.notesRead).toBe(1);
+    expect(app.getNoteContent.mock.calls.map(([handle]) => handle.uuid)).toEqual(["seed-3", "seed-4"]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Over the embed bridge a note is read through the plugin's boundedNoteContent action, so the plugin drops an
+  //   oversized note before relaying it.
+  it("reads through the plugin's bounded read when the app offers it", async () => {
+    const app = notebookApp([{ content: "Widget one.", name: "Planning" }, { content: "Widget two.", name: "Huge" }]);
+    app.boundedNoteContent = jest.fn(async ({ uuid }, maximumCharacters) => {
+      return uuid === "seed-2" ? { omittedCharacters: maximumCharacters + 1 } : app.getNoteContent({ uuid });
+    });
+    const evidence = await collectTermEvidence(app, { now: NOW, term: "Widget" });
+    expect(app.boundedNoteContent).toHaveBeenCalledWith({ uuid: "seed-2" }, MAXIMUM_EVIDENCE_NOTE_CHARACTERS);
+    expect(evidence.sources.map(source => source.noteName)).toEqual(["Planning"]);
   });
 
   // ----------------------------------------------------------------------------------------------

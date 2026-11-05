@@ -5,6 +5,21 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-11-04 — Guard evidence reads against merge reports and oversized notes; hold back jobs that freeze sessions
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/util/bounded-note-content.js` (new) — `boundedNoteContent` returns a note's content only when it fits a length, else `{ omittedCharacters }`. `readNoteContentWithinLength` uses the plugin's `boundedNoteContent` embed action when the app offers it, so the plugin drops an oversized note before it crosses the bridge.
+- `lib/plugin.js` — `onEmbedCall` handles `boundedNoteContent`.
+- `lib/plan-wizard/stack-rank/dictionary-term-evidence.js` — `isAmplenoteMergeReport` (by `merge-reports` tag or "Merge report" name) excludes merge reports from evidence searches. Notes over `MAXIMUM_EVIDENCE_NOTE_CHARACTERS` (2M) are skipped.
+- `lib/plan-wizard/stack-rank/person-evidence.js` — Linked notes are read with the same length bound.
+- `lib/dashboard/work-queue/dashboard-work-job.js` — A job whose claim lapses for the second consecutive time without a checkpoint in between fails until its inputs change, instead of returning to pending. A checkpoint clears an earlier abandonment.
+- Tests: `dictionary-term-evidence`, `dashboard-work-repository`, `plugin`.
+
+**Task:** The Dashboard froze at launch three times in a row. `collectTermEvidence` for "gitclient" read a 61 MB Amplenote merge report of the Project Tasks note, and recovery resumed the abandoned job on every launch.
+
+---
+
 ## 2026-10-31 — Phase timing for rankProjectTasks attempts
 
 **Model:** Claude Opus 5.5
