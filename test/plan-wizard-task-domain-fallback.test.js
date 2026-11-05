@@ -1,7 +1,7 @@
 // Verify consent, date boundaries, domain membership, and fresh discovery evidence for sparse planning domains.
 
 import { jest } from "@jest/globals";
-import { preparePlanTaskDomain } from "plan-wizard/task-domain-fallback";
+import { MINIMUM_PLAN_DOMAIN_TASKS, preparePlanTaskDomain } from "plan-wizard/task-domain-fallback";
 import { fetchDomainOrAllNotesTasks } from "util/all-notes-tasks";
 
 const REFERENCE_DATE = new Date("2026-11-05T12:00:00Z");
@@ -37,8 +37,8 @@ function taskNote(overrides = {}) {
 describe("Plan Builder task-domain fallback", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc A domain at the threshold must never trigger account-wide discovery or consent.
-  it("does not scan or prompt when the domain has twenty open tasks", async () => {
-    const tasks = Array.from({ length: 20 }, (unused, index) => ({ uuid: `task-${ index }` }));
+  it("does not scan or prompt when the domain reaches the task threshold", async () => {
+    const tasks = Array.from({ length: MINIMUM_PLAN_DOMAIN_TASKS }, (unused, index) => ({ uuid: `task-${ index }` }));
     const app = fallbackApp({ notes: [taskNote()], tasks });
     await preparePlanTaskDomain(app, SCOPE);
     expect(app.filterNotes).not.toHaveBeenCalled();
@@ -46,13 +46,14 @@ describe("Plan Builder task-domain fallback", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Completed and dismissed tasks do not hide a sparse domain at nineteen open tasks.
-  it("offers the fallback at nineteen open tasks even when done tasks are returned", async () => {
-    const tasks = Array.from({ length: 19 }, (unused, index) => ({ uuid: `task-${ index }` }));
+  // @desc Completed and dismissed tasks do not hide a domain one open task below the threshold.
+  it("offers the fallback one task below the threshold even when done tasks are returned", async () => {
+    const openTaskCount = MINIMUM_PLAN_DOMAIN_TASKS - 1;
+    const tasks = Array.from({ length: openTaskCount }, (unused, index) => ({ uuid: `task-${ index }` }));
     tasks.push({ completedAt: 123, uuid: "task-done" }, { dismissedAt: 123, uuid: "task-dismissed" });
     const app = fallbackApp({ notes: [taskNote()], tasks });
     await preparePlanTaskDomain(app, SCOPE);
-    expect(app.alert.mock.calls[0][0]).toContain("19 tasks");
+    expect(app.alert.mock.calls[0][0]).toContain(`${ openTaskCount } tasks`);
     expect(app.addNoteTag).toHaveBeenCalledTimes(1);
   });
 
