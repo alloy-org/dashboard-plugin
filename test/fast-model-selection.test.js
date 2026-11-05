@@ -3,8 +3,9 @@
 // the key that authenticates it, which is what a request carrying `key=null` demonstrated was possible.
 import { SETTING_KEYS } from "constants/settings";
 import { WIZARD_LLM_TIMEOUT_SECONDS } from "plan-wizard/plan-models";
-import { incidentalLlmOptions, wizardLlmOptions } from "plan-wizard/wizard-prompt-diagnostics";
-import { fastModelOptions, incidentalModelOptions } from "providers/ai-provider-settings";
+import { AUDIT_LLM_TIMEOUT_SECONDS, auditLlmOptions, incidentalLlmOptions, lightLlmOptions,
+  wizardLlmOptions } from "plan-wizard/wizard-prompt-diagnostics";
+import { fastModelOptions, incidentalModelOptions, lightModelOptions } from "providers/ai-provider-settings";
 
 describe("fastModelOptions", () => {
   it("prefers Gemini's flash tier when a Gemini key is stored, even under another configured provider", () => {
@@ -77,5 +78,37 @@ describe("incidentalModelOptions", () => {
   it("names no model when no provider has a key", () => {
     expect(incidentalModelOptions({})).toBeNull();
     expect(incidentalLlmOptions({})).toEqual({ jsonResponse: true, timeoutSeconds: WIZARD_LLM_TIMEOUT_SECONDS });
+  });
+});
+
+describe("lightLlmOptions", () => {
+  // Light-reasoning work asks Gemini's flash-lite model: directly with a Gemini key, otherwise through callLLM while the
+  // direct leg falls back to the keyed provider's small model rather than its reasoning fast tier.
+  it("asks Gemini's flash-lite directly when a Gemini key is stored", () => {
+    const settings = { [SETTING_KEYS.LLM_API_KEY_GEMINI]: "gemini-key", [SETTING_KEYS.LLM_API_KEY_OPENAI]: "openai-key" };
+    expect(lightLlmOptions(settings)).toEqual({ aiModel: "gemini-3.5-flash-lite", amplenoteAiModel: "gemini-3.5-flash-lite",
+      apiKey: "gemini-key", jsonResponse: true, timeoutSeconds: WIZARD_LLM_TIMEOUT_SECONDS });
+  });
+
+  it("asks callLLM for flash-lite and OpenAI for its small model when only an OpenAI key is stored", () => {
+    const settings = { [SETTING_KEYS.LLM_API_KEY_OPENAI]: "openai-key", [SETTING_KEYS.LLM_PROVIDER_MODEL]: "openai" };
+    expect(lightModelOptions(settings)).toEqual(incidentalModelOptions(settings));
+    expect(lightLlmOptions(settings)).toEqual({ aiModel: "gpt-5.4-mini", amplenoteAiModel: "gemini-3.5-flash-lite", apiKey: "openai-key",
+      jsonResponse: true, reasoningEffort: "none", timeoutSeconds: WIZARD_LLM_TIMEOUT_SECONDS });
+  });
+
+  it("still names flash-lite for callLLM when no provider has a key", () => {
+    expect(lightLlmOptions({})).toEqual({ amplenoteAiModel: "gemini-3.5-flash-lite", jsonResponse: true,
+      timeoutSeconds: WIZARD_LLM_TIMEOUT_SECONDS });
+  });
+});
+
+describe("auditLlmOptions", () => {
+  it("asks gpt-5.6 at its default reasoning, directly only with an OpenAI key", () => {
+    const settings = { [SETTING_KEYS.LLM_API_KEY_GEMINI]: "gemini-key", [SETTING_KEYS.LLM_API_KEY_OPENAI]: "openai-key" };
+    expect(auditLlmOptions(settings)).toEqual({ aiModel: "gpt-5.6", amplenoteAiModel: "gpt-5.6", apiKey: "openai-key",
+      jsonResponse: true, timeoutSeconds: AUDIT_LLM_TIMEOUT_SECONDS });
+    expect(auditLlmOptions({ [SETTING_KEYS.LLM_API_KEY_GEMINI]: "gemini-key" })).toEqual({ amplenoteAiModel: "gpt-5.6",
+      jsonResponse: true, timeoutSeconds: AUDIT_LLM_TIMEOUT_SECONDS });
   });
 });

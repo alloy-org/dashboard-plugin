@@ -5,6 +5,39 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-11-05 — Offer recent task notes when Plan Builder's Task Domain is sparse
+
+**Model:** GPT-6
+**Files created/modified:**
+- `lib/plan-wizard/task-domain-fallback.js` (new) — Below 20 open domain tasks, find distinct notes with open tasks changed in the last 30 days and missing `todo`. Ask for consent before tagging and directly including those notes in the selected domain, report partial failures, and refresh shared task reads afterward.
+- `lib/hooks/use-plan-wizard.js` — Wait for the opening fallback before loading suggestions, cancel pending writes after closure or scope changes, and retain normal planning if the fallback fails.
+- `test/plan-wizard-task-domain-fallback.test.js` (new) — Cover the threshold, date boundaries, inherited tags, consent, cancellation, failures, async note filters, and refreshed evidence cache.
+- `test/plan-wizard-ui.test.js` — Verify that opening waits for consent and project discovery uses newly included tasks.
+- `build/compiled.js` — Regenerate the production plugin bundle with the fallback.
+
+**Task:** Expand sparse Plan Builder Task Domains with recently changed task notes after user approval, then re-query tasks for project ideas.
+
+---
+
+## 2026-11-04 — Light-reasoning tier for dictionary terms; weekly gpt-5.6 audit of one term
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/constants/llm-providers.js` — `LIGHT_REASONING_MODEL` (`gemini-3.5-flash-lite`) and `AUDIT_MODEL` (`gpt-5.6`).
+- `lib/providers/ai-provider-settings.js` — `lightModelOptions` (Gemini key → flash-lite, else the keyed provider's incidental tier) and `auditModelOptions` (OpenAI key → gpt-5.6).
+- `lib/plan-wizard/wizard-prompt-diagnostics.js` — `lightLlmOptions` and `auditLlmOptions`, which add `amplenoteAiModel`; audits get a 180s timeout.
+- `lib/plan-wizard/wizard-prompt-runner.js` — `raceWizardPrompt` asks callLLM for `amplenoteAiModel` when given, so callLLM can serve a model the user has no key for.
+- `lib/plan-wizard/stack-rank/dictionary-term-refinement.js`, `dictionary-term-discovery.js`, `task-term-discovery.js` — Routine prompts use the light tier. `refineDictionaryTerm({ audit })` uses the audit tier.
+- `lib/plan-wizard/stack-rank/dictionary-term-schedule.js` — `dueTermAudit` picks at most one previously collected term per `TERM_AUDIT_INTERVAL_MILLISECONDS` (7 days), least recently audited first. `termAuditRefinementDue` decides when an audit can refine; progress rows include `auditedAt`.
+- `lib/dashboard/work-queue/jobs/collect-term-evidence.js`, `refine-dictionary-term.js`, `project-job-requests.js` — `audit` job input. Audit collections stamp `auditedAt` and always request a refinement when they find passages. Audit refinements complete at revision `audit:<sourceDigest>`.
+- `lib/plan-wizard/stack-rank/dictionary-term-evidence-store.js` — Carries `auditedAt` over when evidence is replaced.
+- `lib/dashboard/work-queue/dashboard-queue-durable-sections.jsx` — The Queue inspector shows when a term was last audited.
+- Tests: `dictionary-term-refinement`, `fast-model-selection`, `wizard-prompt-race`.
+
+**Task:** Run dictionary term work on gemini-3.5-flash-lite instead of gpt-5.6, and use gpt-5.6 at most once a week to audit one definition.
+
+---
+
 ## 2026-11-04 — Guard evidence reads against merge reports and oversized notes; hold back jobs that freeze sessions
 
 **Model:** Claude Opus 5.5

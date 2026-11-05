@@ -131,6 +131,7 @@ export function DictionaryTermSection({ now, terms }) {
                   {row.refinementOutcome ? `${ row.refinementOutcome }${ row.evidenceQuality ? ` (${ row.evidenceQuality })` : "" }` : "—"}
                   {row.refinementAttemptedAt ? <div className="queue-inspector-detail">{`Tried ${ at(row.refinementAttemptedAt) }; `
                     + `last rewritten ${ at(row.refinedAt) }`}</div> : null}
+                  {row.auditedAt ? <div className="queue-inspector-detail">{`Audited ${ at(row.auditedAt) }`}</div> : null}
                   {row.keptReason ? <div className="queue-inspector-detail">{row.keptReason}</div> : null}
                   {row.uncertainty ? <div className="queue-inspector-detail">Uncertain: {row.uncertainty}</div> : null}
                 </td>

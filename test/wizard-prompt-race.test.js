@@ -87,6 +87,17 @@ describe("raceWizardPrompt", () => {
       undefined, undefined);
   });
 
+  // A tier callLLM can serve on the plugin LLM license, but the user holds no key for, asks callLLM for its own model
+  // while the direct leg asks for the keyed provider's.
+  it("asks callLLM for amplenoteAiModel when one is given, leaving the direct leg on aiModel", async () => {
+    amplenoteLlmMock.mockResolvedValue({ source: "amplenote-llm" });
+    llmPromptMock.mockResolvedValue(null);
+    await raceWizardPrompt({}, "prompt", { aiModel: "gpt-5.4-mini", amplenoteAiModel: "gemini-3.5-flash-lite", apiKey: "openai-key",
+      jsonResponse: true, timeoutSeconds: 60 });
+    expect(amplenoteLlmMock.mock.calls[0][2].aiModel).toBe("gemini-3.5-flash-lite");
+    expect(llmPromptMock.mock.calls[0][3]).toBe("gpt-5.4-mini");
+  });
+
   // Both legs take a reasoning budget: callLLM translates it to each provider's closest equivalent.
   it("forwards a reasoning budget to both sources", async () => {
     amplenoteLlmMock.mockResolvedValue(null);

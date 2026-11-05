@@ -973,6 +973,40 @@ describe("PlanWizard project discovery", () => {
       noteName: "Billing", noteUUID: "note-billing", uuid: "task-d" });
   }
 
+  // ----------------------------------------------------------------------------------------------
+  // @desc Opening a sparse domain waits for consent, then discovers projects from the newly included tasks.
+  it("waits for the task-note fallback and uses its fresh tasks for project discovery", async () => {
+    const app = createPlanWizardApp();
+    const recentNote = { archived: false, changed: new Date().toISOString(), content: "Reporting work", name: "Reporting",
+      tags: [], uuid: "note-reporting" };
+    app.notes.push(recentNote);
+    const originalFilterNotes = app.filterNotes.getMockImplementation();
+    app.filterNotes.mockImplementation(options => options?.group === "taskLists" ? [recentNote] : originalFilterNotes(options));
+    let confirmInclusion;
+    app.alert = jest.fn(() => new Promise(resolve => { confirmInclusion = resolve; }));
+    app.addNoteTag = jest.fn(async () => { recentNote.tags.push("todo"); return true; });
+    app.addTaskDomainNote = jest.fn(async () => { pushRecentCompletions(app); return true; });
+    inferenceImplementation = respondToBothPrompts({ workIntent: "Ship the analytics offering",
+      proposals: [{ focusMonths: [], resolvedTaskUuids: ["task-a", "task-b"], summary: "Automate the weekly report",
+        substantiation: "Both newly included tasks concern reporting.", userCategoryEm: "work" }] });
+    const { cleanup, container } = await renderPlanWizard({ app });
+    expect(app.alert).toHaveBeenCalledTimes(1);
+    expect(app.addNoteTag).not.toHaveBeenCalled();
+    expect(inferenceCalls).toHaveLength(0);
+    expect(container.querySelector(".intent-step-container")).toBeNull();
+
+    await act(async () => { confirmInclusion("include-task-notes"); });
+    await settle();
+    expect(recentNote.tags).toContain("todo");
+    expect(app.addTaskDomainNote).toHaveBeenCalledWith(SCOPE.domainUuid, { uuid: recentNote.uuid });
+    await typeInto(workFields(container)[0], "Ship the analytics offering");
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+    expect(container.querySelector(".project-row--proposed .project-row-name").value).toBe("Automate the weekly report");
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.prospects[0].relatedTasks).toEqual(["task-a", "task-b"]);
+    await cleanup();
+  });
+
   it("saves the intent, advances to projects, and shows what discovery proposed with its reasoning", async () => {
     const app = createPlanWizardApp();
     pushRecentCompletions(app);
