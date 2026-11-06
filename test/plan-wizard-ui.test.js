@@ -974,7 +974,7 @@ describe("PlanWizard project discovery", () => {
   }
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Opening a sparse domain waits for consent, then discovers projects from the newly included tasks.
+  // @desc Opening a domain in a notebook without tags waits for consent, then discovers projects from the newly included tasks.
   it("waits for the task-note fallback and uses its fresh tasks for project discovery", async () => {
     const app = createPlanWizardApp();
     const recentNote = { archived: false, changed: new Date().toISOString(), content: "Reporting work", name: "Reporting",

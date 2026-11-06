@@ -5,6 +5,19 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-11-06 — Offer todo to untagged task notes only when the notebook does not use tags
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files created/modified:**
+- `lib/plan-wizard/task-domain-fallback.js` — Replace the 20-open-task threshold with a tag-use check: the offer appears only when every note with open tasks changed in the past 30 days, apart from `daily-jots` and `starter-notes` notes, carries no tag. Offer the untagged notes changed in the past three months that hold open tasks, or that hold only done tasks with one completed in those three months (read through the `untagged` filter group and `getNoteTasks`, capped at 250 notes). A note with any tag is never offered. Consent, domain inclusion, failure reporting, and the task refresh are unchanged.
+- `test/plan-wizard-task-domain-fallback.test.js` — Cover tagged and todo-tagged recent notes blocking the offer, ignored daily-jots/starter-notes tags, the 30-day and three-month boundaries, recently completed notes, a rejected untagged filter, and the existing consent, cancellation, and failure cases.
+- `test/plan-wizard-ui.test.js` — Reword the opening-fallback test for the new rule.
+- `build/compiled.js` — Regenerate the production plugin bundle.
+
+**Task:** Apply the todo tag at Plan Builder's start only for notebooks that do not organize with tags, and never to a note that already has a tag.
+
+---
+
 ## 2026-11-05 — Offer recent task notes when Plan Builder's Task Domain is sparse
 
 **Model:** GPT-6
