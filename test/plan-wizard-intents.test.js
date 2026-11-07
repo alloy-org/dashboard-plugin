@@ -114,6 +114,25 @@ test("reads completed domain tasks from getCompletedTasks when the task list omi
 });
 
 // ----------------------------------------------------------------------------------------------
+// @desc Confirm a note the domain holds by tag is read with its completed tasks, even when the domain's task list
+//   and the completed-task lookup both leave it out, as they do for a note that just joined the domain.
+test("reads completed tasks from every note the task domain lists", async () => {
+  const app = createPlanWizardApp();
+  app.notes.push({ archived: false, content: "Tagged todo last week", name: "Fresh todo note", tags: ["todo"], uuid: "note-tagged" });
+  app.getTaskDomainTasks = jest.fn(async () => [{ content: "Still open", createdAt: 1757000000, noteUUID: "note-work", uuid: "open-1" }]);
+  app.getCompletedTasks = jest.fn(async () => []);
+  app.getTaskDomains = jest.fn(async () => [{ name: "Work", notes: [{ name: "Fresh todo note", uuid: "note-tagged" }], uuid: "domain-work" }]);
+  app.getNoteTasks = jest.fn(async handle => (handle.uuid === "note-tagged" ? [completedTask(5, { noteUUID: undefined, uuid: "tagged" })] : []));
+
+  const evidence = await collectIntentEvidence(app, scope, { referenceDate });
+  expect(app.getNoteTasks).toHaveBeenCalledWith({ uuid: "note-tagged" }, { includeDone: true });
+  expect(evidence.work.references.map(reference => reference.taskUuid)).toEqual(["tagged"]);
+  expect(retrievalFromEvidence(evidence)).toEqual({ completedTaskCount: 1, noteCount: 2, taskCount: 2 });
+  const readItems = readItemsFromEvidence(evidence);
+  expect(readItems.filter(item => item.kind === "note").map(item => item.label)).toEqual(["Fresh todo note"]);
+});
+
+// ----------------------------------------------------------------------------------------------
 // @desc Confirm a domain with no completions at all still reads the notes behind its recent tasks and lists
 //   those tasks, since they are what the prompt reasons over.
 test("lists recent tasks and their notes when nothing was completed", async () => {

@@ -198,15 +198,18 @@ export default function IntentReadingPage({ directions, intentReading, isRefresh
         <button className="intent-reading-return" onClick={ onReturn } type="button">Return to Plan Builder</button>
       </header>
       <IntentReadingProgressBar fraction={ isReady ? 1 : progressFraction } />
-      <p className="intent-reading-status" role="status">
-        { !isRefreshing && !hasStoredReading ? "No sources are stored for these suggestions yet." : statusText }
-      </p>
-      { /* Rereading stays offered whenever no reading is running, so a stored reading can always be replaced. */ }
-      { !isRefreshing ? (
-        <button className="plan-button plan-button--dashed intent-reading-reread" onClick={ onReread } type="button">
-          { hasStoredReading ? "Reread my notes" : "Read my notes now" }
-        </button>
-      ) : null }
+      { /* Rereading stays offered beside the status whenever no reading is running, so a stored reading can always be
+        replaced. */ }
+      <div className="intent-reading-status-row">
+        <p className="intent-reading-status" role="status">
+          { !isRefreshing && !hasStoredReading ? "No sources are stored for these suggestions yet." : statusText }
+        </p>
+        { !isRefreshing ? (
+          <button className="plan-button intent-reading-reread" onClick={ onReread } type="button">
+            { hasStoredReading ? "Reread my notes" : "Read my notes now" }
+          </button>
+        ) : null }
+      </div>
       <div className="intent-reading-columns">
         <section className="intent-reading-column">
           <h3 className="intent-reading-section-heading">

@@ -650,6 +650,18 @@ $pace-slice-other-color: #e87ba4;
       }
     }
 
+    .intent-reading-status-row {
+      align-items: center;
+      display: flex;
+      gap: $sp-md;
+      justify-content: space-between;
+
+      .intent-reading-reread {
+        align-self: center;
+        flex-shrink: 0;
+      }
+    }
+
     .intent-reading-status {
       color: $color-text-secondary;
       font-size: $default-font-size;
