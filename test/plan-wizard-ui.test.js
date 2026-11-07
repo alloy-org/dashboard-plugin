@@ -974,29 +974,24 @@ describe("PlanWizard project discovery", () => {
   }
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Opening a domain in a notebook without tags waits for consent, then discovers projects from the newly included tasks.
-  it("waits for the task-note fallback and uses its fresh tasks for project discovery", async () => {
+  // @desc Opening a domain in a notebook without tags adds todo to its task notes without asking, then discovers
+  //   projects from the newly included tasks.
+  it("tags task notes before loading and uses their fresh tasks for project discovery", async () => {
     const app = createPlanWizardApp();
     const recentNote = { archived: false, changed: new Date().toISOString(), content: "Reporting work", name: "Reporting",
       tags: [], uuid: "note-reporting" };
     app.notes.push(recentNote);
     const originalFilterNotes = app.filterNotes.getMockImplementation();
     app.filterNotes.mockImplementation(options => options?.group === "taskLists" ? [recentNote] : originalFilterNotes(options));
-    let confirmInclusion;
-    app.alert = jest.fn(() => new Promise(resolve => { confirmInclusion = resolve; }));
+    app.alert = jest.fn(async () => null);
     app.addNoteTag = jest.fn(async () => { recentNote.tags.push("todo"); return true; });
     app.addTaskDomainNote = jest.fn(async () => { pushRecentCompletions(app); return true; });
     inferenceImplementation = respondToBothPrompts({ workIntent: "Ship the analytics offering",
       proposals: [{ focusMonths: [], resolvedTaskUuids: ["task-a", "task-b"], summary: "Automate the weekly report",
         substantiation: "Both newly included tasks concern reporting.", userCategoryEm: "work" }] });
     const { cleanup, container } = await renderPlanWizard({ app });
-    expect(app.alert).toHaveBeenCalledTimes(1);
-    expect(app.addNoteTag).not.toHaveBeenCalled();
-    expect(inferenceCalls).toHaveLength(0);
-    expect(container.querySelector(".intent-step-container")).toBeNull();
-
-    await act(async () => { confirmInclusion("include-task-notes"); });
     await settle();
+    expect(app.alert).not.toHaveBeenCalled();
     expect(recentNote.tags).toContain("todo");
     expect(app.addTaskDomainNote).toHaveBeenCalledWith(SCOPE.domainUuid, { uuid: recentNote.uuid });
     await typeInto(workFields(container)[0], "Ship the analytics offering");

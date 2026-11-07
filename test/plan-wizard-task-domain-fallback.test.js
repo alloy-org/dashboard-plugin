@@ -1,6 +1,6 @@
 // Verify when Plan Builder offers untagged task notes to its Task Domain: only when recent task notes carry no tags
 // besides daily-jots and starter-notes, offering untagged notes changed in three months with open or recently
-// completed tasks, with consent, date boundaries, failures, and fresh discovery evidence.
+// completed tasks, without asking, with date boundaries, failures, and fresh discovery evidence.
 
 import { jest } from "@jest/globals";
 import { preparePlanTaskDomain } from "plan-wizard/task-domain-fallback";
@@ -24,7 +24,7 @@ function fallbackApp({ notes = [], tasksByNoteUuid = {}, untaggedNotes = [] } = 
       domainTasks.push({ content: "New project evidence", createdAt: REFERENCE_SECONDS, noteUUID: uuid, uuid: `task-${ uuid }` });
       return true;
     }),
-    alert: jest.fn(async () => "include-task-notes"),
+    alert: jest.fn(async () => null),
     filterNotes: jest.fn(async ({ group } = {}) => group === "untagged" ? untaggedNotes : notes),
     getNoteTasks: jest.fn(async ({ uuid }) => tasksByNoteUuid[uuid] || []),
     getTaskDomainTasks: jest.fn(async () => domainTasks.slice()),
@@ -51,19 +51,19 @@ function taggedNoteUuids(app) {
 describe("Plan Builder task-domain fallback", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc A notebook whose recent task notes use tags is organized already, so nothing is offered.
-  it("does not prompt when a recent task note carries a tag", async () => {
+  it("tags nothing when a recent task note carries a tag", async () => {
     const app = fallbackApp({ notes: [taskNote(), taskNote({ tags: ["project/launch"], uuid: "note-tagged" })] });
     await preparePlanTaskDomain(app, SCOPE);
-    expect(app.alert).not.toHaveBeenCalled();
     expect(app.addNoteTag).not.toHaveBeenCalled();
+    expect(app.addTaskDomainNote).not.toHaveBeenCalled();
   });
 
   // ----------------------------------------------------------------------------------------------
   // @desc A todo tag on a recent task note is still a tag, so the notebook is treated as organized.
-  it("does not prompt when a recent task note already carries todo", async () => {
+  it("tags nothing when a recent task note already carries todo", async () => {
     const app = fallbackApp({ notes: [taskNote(), taskNote({ tags: ["todo"], uuid: "note-todo" })] });
     await preparePlanTaskDomain(app, SCOPE);
-    expect(app.alert).not.toHaveBeenCalled();
+    expect(app.addNoteTag).not.toHaveBeenCalled();
   });
 
   // ----------------------------------------------------------------------------------------------
@@ -89,19 +89,17 @@ describe("Plan Builder task-domain fallback", () => {
     await preparePlanTaskDomain(app, SCOPE);
 
     expect(app.filterNotes).toHaveBeenCalledWith({ group: "taskLists" }, "changed");
-    expect(app.alert.mock.calls[0][0]).toContain("3 untagged notes");
-    expect(app.alert.mock.calls[0][0]).toContain("Work Task Domain");
     expect(taggedNoteUuids(app)).toEqual(["note-recent", "note-month-boundary", "note-quarter-boundary"]);
     expect(app.addTaskDomainNote.mock.calls.map(([domainUuid]) => domainUuid)).toEqual(["domain-work", "domain-work", "domain-work"]);
   });
 
   // ----------------------------------------------------------------------------------------------
   // @desc A recent note with only daily-jots or starter notes leaves nothing to judge tag use by.
-  it("does not prompt when no untagged task note changed in the past thirty days", async () => {
+  it("tags nothing when no untagged task note changed in the past thirty days", async () => {
     const notes = [taskNote({ tags: ["daily-jots"], uuid: "note-jot" }), taskNote({ changed: "2026-09-15T12:00:00Z", uuid: "note-older" })];
     const app = fallbackApp({ notes });
     await preparePlanTaskDomain(app, SCOPE);
-    expect(app.alert).not.toHaveBeenCalled();
+    expect(app.addNoteTag).not.toHaveBeenCalled();
   });
 
   // ----------------------------------------------------------------------------------------------
@@ -133,10 +131,11 @@ describe("Plan Builder task-domain fallback", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Approval tags and includes each note, then replaces the evidence collector's cache.
-  it("includes task notes with consent and refreshes the shared tasks", async () => {
+  // @desc Each note is tagged and included without asking the user, then the evidence collector's cache is replaced.
+  it("includes task notes without prompting and refreshes the shared tasks", async () => {
     const app = fallbackApp({ notes: [taskNote(), taskNote({ uuid: "note-second" })] });
     await preparePlanTaskDomain(app, SCOPE);
+    expect(app.alert).not.toHaveBeenCalled();
     expect(app.addTaskDomainNote.mock.calls).toEqual([["domain-work", { uuid: "note-recent" }], ["domain-work", { uuid: "note-second" }]]);
     expect(app.getTaskDomainTasks).toHaveBeenCalledTimes(1);
     const tasks = await fetchDomainOrAllNotesTasks(app, SCOPE.domainUuid, { includeDone: true });
@@ -184,18 +183,6 @@ describe("Plan Builder task-domain fallback", () => {
     expect(app.getTaskDomainTasks).toHaveBeenCalledTimes(1);
   });
 
-  // ----------------------------------------------------------------------------------------------
-  // @desc The explicit Include notes action is the only response that authorizes tagging.
-  it.each([null, -1, "unexpected"])("leaves notes untouched when consent returns %s", async action => {
-    const app = fallbackApp({ notes: [taskNote()] });
-    app.alert.mockResolvedValue(action);
-    await preparePlanTaskDomain(app, SCOPE);
-    expect(app.addNoteTag).not.toHaveBeenCalled();
-    expect(app.addTaskDomainNote).not.toHaveBeenCalled();
-    expect(app.getTaskDomainTasks).not.toHaveBeenCalled();
-  });
-
-  // ----------------------------------------------------------------------------------------------
   // @desc A note whose changed timestamp is unavailable can still qualify through its updated timestamp.
   it("accepts updated metadata and async iterable note filters", async () => {
     const app = fallbackApp();
@@ -219,46 +206,46 @@ describe("Plan Builder task-domain fallback", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Domain changes and closure while a prompt is pending revoke that builder instance's writes.
-  it("does not mutate notes when the builder closes during confirmation", async () => {
-    const app = fallbackApp({ notes: [taskNote()] });
+  // @desc Domain changes and closure while note tasks are being read revoke that builder instance's writes.
+  it("does not mutate notes when the builder closes while notes are being read", async () => {
+    const app = fallbackApp({ notes: [taskNote()], untaggedNotes: [taskNote({ uuid: "note-completed" })] });
     let isActive = true;
-    app.alert.mockImplementation(async () => { isActive = false; return "include-task-notes"; });
+    app.getNoteTasks.mockImplementation(async () => { isActive = false; return []; });
     await preparePlanTaskDomain(app, { ...SCOPE, isActive: () => isActive });
     expect(app.addNoteTag).not.toHaveBeenCalled();
     expect(app.addTaskDomainNote).not.toHaveBeenCalled();
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Tag failures must not stop later approved notes or leave discovery using its pre-write task snapshot.
-  it("reports partial failures and refreshes tasks from notes that were included", async () => {
+  // @desc Tag failures must not stop later notes or leave discovery using its pre-write task snapshot.
+  it("skips failed notes silently and refreshes tasks from notes that were included", async () => {
     const app = fallbackApp({ notes: [taskNote(), taskNote({ uuid: "note-second" }), taskNote({ uuid: "note-third" })] });
     app.addNoteTag.mockResolvedValueOnce(false);
     app.addTaskDomainNote.mockRejectedValueOnce(new Error("Shared note cannot be included"));
     await preparePlanTaskDomain(app, SCOPE);
     expect(app.addNoteTag).toHaveBeenCalledTimes(3);
     expect(app.addTaskDomainNote).toHaveBeenCalledTimes(2);
-    expect(app.alert.mock.calls[1][0]).toContain("2 of 3 notes could not be included");
+    expect(app.alert).not.toHaveBeenCalled();
     const tasks = await fetchDomainOrAllNotesTasks(app, SCOPE.domainUuid, { includeDone: true });
     expect(tasks.map(task => task.noteUUID)).toEqual(["note-third"]);
   });
 
   // ----------------------------------------------------------------------------------------------
   // @desc The embed bridge may resolve a failed call as an envelope instead of rejecting its promise.
-  it("reports bridge write failures without treating them as successful tagging", async () => {
+  it("does not treat bridge write failures as successful tagging", async () => {
     const app = fallbackApp({ notes: [taskNote()] });
     app.addNoteTag.mockResolvedValue({ embedCallFailed: true, error: "Cannot modify note" });
     await preparePlanTaskDomain(app, SCOPE);
     expect(app.addTaskDomainNote).not.toHaveBeenCalled();
-    expect(app.alert.mock.calls[1][0]).toContain("1 of 1 notes could not be included");
+    expect(app.alert).not.toHaveBeenCalled();
   });
 
   // ----------------------------------------------------------------------------------------------
   // @desc A failed note listing must not be read as a notebook without tags.
-  it("does not prompt when listing task notes fails", async () => {
+  it("tags nothing when listing task notes fails", async () => {
     const app = fallbackApp();
     app.filterNotes.mockRejectedValue(new Error("Offline"));
     await expect(preparePlanTaskDomain(app, SCOPE)).rejects.toThrow("Offline");
-    expect(app.alert).not.toHaveBeenCalled();
+    expect(app.addNoteTag).not.toHaveBeenCalled();
   });
 });
