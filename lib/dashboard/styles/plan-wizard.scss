@@ -682,6 +682,12 @@ $pace-slice-other-color: #e87ba4;
       font-weight: 400;
     }
 
+    .intent-reading-retrieval {
+      color: $color-text-muted;
+      font-size: $smaller-font-size;
+      margin: 0;
+    }
+
     .intent-reading-placeholder {
       color: $color-text-muted;
       font-size: $smaller-font-size;

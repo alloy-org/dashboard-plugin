@@ -190,6 +190,7 @@ describe("PlanWizard intent step", () => {
     expect(readingPage.querySelector(".intent-reading-status").textContent).toBe("Looking for themes and directions…");
     const readLabels = [...readingPage.querySelectorAll(".intent-reading-read-label")].map(label => label.textContent);
     expect(readLabels).toEqual(["Hiring: frontend contractor", "Book dentist"]);
+    expect(readingPage.querySelector(".intent-reading-retrieval").textContent).toBe("Read 1 task from 1 note, 1 of them completed");
     expect(readingPage.querySelectorAll(".intent-reading-theme").length).toBe(0);
     expect(container.querySelector(".plan-wizard-navigation")).toBeNull();
 
@@ -264,7 +265,7 @@ describe("PlanWizard intent step", () => {
     await clickAndSettle(readingPage.querySelector(".intent-reading-reread"));
 
     expect(readingPage.querySelector(".intent-reading-status").textContent).toBe("Ready. Pick a direction or write your own.");
-    expect(readingPage.querySelector(".intent-reading-reread")).toBeNull();
+    expect(readingPage.querySelector(".intent-reading-reread").textContent).toBe("Reread my notes");
     await cleanup();
   });
 
@@ -1954,5 +1955,25 @@ describe("PlanWizard modal presentation", () => {
     expect(answerField.tagName).toBe("INPUT");
     expect(answerField.getAttribute("type")).toBe("text");
     await cleanup();
+  });
+});
+
+describe("IntentReadingPage retrieval line", () => {
+  it("asks for a Reread when the stored reading predates the retrieval counts", async () => {
+    const { default: IntentReadingPage } = await import("dashboard/plan-wizard/intent-reading-page");
+    const mountPoint = document.createElement("div");
+    document.body.appendChild(mountPoint);
+    const root = createRoot(mountPoint);
+    const intentReading = { phase: "ready", readItems: [{ kind: "note", label: "Launch notes", noteUuid: "note-1" }], retrieval: null,
+      themeJudgements: {}, themes: [] };
+    await act(async () => {
+      root.render(createElement(IntentReadingPage, { directions: [], intentReading, isRefreshing: false, onApplyDirection: () => {},
+        onJudgeTheme: () => {}, onReread: () => {}, onReturn: () => {}, progressFraction: 1 }));
+    });
+    const retrievalText = mountPoint.querySelector(".intent-reading-retrieval").textContent;
+    expect(retrievalText).toBe("Task and note counts weren't recorded for this reading. Reread my notes to count them.");
+    expect(mountPoint.querySelector(".intent-reading-reread").textContent).toBe("Reread my notes");
+    await act(async () => { root.unmount(); });
+    mountPoint.remove();
   });
 });

@@ -4,7 +4,7 @@ import { jest } from "@jest/globals";
 import { collectIntentEvidence, completedTasksWithinWindow, isGenuinelyCompleted, isPersonalNote,
   recentlyCreatedTasks } from "plan-wizard/intent-evidence";
 import { defaultPersonalPossibilities, inferIntentPossibilities, intentPromptFromEvidence } from "plan-wizard/intent-inference";
-import { readItemsFromEvidence, themeJudgementsWithChange, themesFromPartialResponse, themesFromResponse } from "plan-wizard/intent-reading";
+import { readItemsFromEvidence, retrievalFromEvidence, themeJudgementsWithChange, themesFromPartialResponse, themesFromResponse } from "plan-wizard/intent-reading";
 import { resolvePlanScope } from "plan-wizard/plan-models";
 import { readPlanGoals, refreshPlanIntentPossibilities, savePlanThemeJudgement } from "plan-wizard/plan-wizard-service";
 import { createPlanWizardApp } from "./fixtures/plan-wizard-app.js";
@@ -89,6 +89,10 @@ test("collects scoped evidence, excluding planning notes and resolving footnotes
   expect(evidence.personal.hasPersonalTaggedEvidence).toBe(true);
   expect(evidence.personal.references.map(reference => reference.taskUuid)).toEqual(["hike"]);
   expect(evidence.coverage).toMatchObject({ completedTaskCount: 2, personalTaskCount: 1, windowMonths: 3 });
+  const retrieval = retrievalFromEvidence(evidence);
+  expect(retrieval.noteCount).toBe(2);
+  expect(retrieval.taskCount).toBeGreaterThanOrEqual(retrieval.completedTaskCount);
+  expect(retrieval.completedTaskCount).toBe(evidence.coverage.retrievedCompletedTaskCount);
   const workNoteContext = evidence.work.noteContext.find(note => note.noteUuid === "note-work");
   expect(workNoteContext.text).toContain("Cut invoice errors in half.");
 });
@@ -237,8 +241,10 @@ test("stores the reading and applies theme judgements to the next pass", async (
   await refreshPlanIntentPossibilities(app, { ...scope, onProgress: event => progressEvents.push(event), promptRunner, referenceDate });
   expect(progressEvents).toEqual([{ phase: "evidence", readItems: [
     { kind: "note", label: "Work log", noteUuid: "note-work", taskUuid: null },
-    { kind: "task", label: "Interview contractor", noteUuid: "note-work", taskUuid: "task-4-a" }], themes: [] }]);
+    { kind: "task", label: "Interview contractor", noteUuid: "note-work", taskUuid: "task-4-a" }],
+    retrieval: { completedTaskCount: 1, noteCount: 1, taskCount: 1 }, themes: [] }]);
   expect((await readPlanGoals(app, scope)).intentReading.themes.map(theme => theme.label)).toEqual(["Hiring", "Time off"]);
+  expect((await readPlanGoals(app, scope)).intentReading.retrieval).toEqual({ completedTaskCount: 1, noteCount: 1, taskCount: 1 });
 
   await savePlanThemeJudgement(app, { ...scope, judgement: "pinned", label: "Hiring" });
   await savePlanThemeJudgement(app, { ...scope, judgement: "dismissed", label: "Time off" });

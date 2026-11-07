@@ -54,4 +54,16 @@ describe("amplenoteLlmPrompt", () => {
     const app = { callLLM: jest.fn().mockRejectedValue(new Error("LLM API request timed out")) };
     await expect(amplenoteLlmPrompt(app, "prompt", { jsonResponse: true })).resolves.toBeNull();
   });
+
+  it("sends the key saved for the model's provider as userApiKey", async () => {
+    const app = { callLLM: jest.fn().mockResolvedValue({ textOutput: "ok" }), settings: { "OpenAI API Key": " openai-key " } };
+    await amplenoteLlmPrompt(app, "prompt", { aiModel: "gpt-5.6" });
+    expect(app.callLLM.mock.calls[0][0].userApiKey).toBe("openai-key");
+  });
+
+  it("sends no userApiKey when only another provider's key is saved", async () => {
+    const app = { callLLM: jest.fn().mockResolvedValue({ textOutput: "ok" }), settings: { "OpenAI API Key": "openai-key" } };
+    await amplenoteLlmPrompt(app, "prompt", { aiModel: "claude-sonnet-5-5" });
+    expect(app.callLLM.mock.calls[0][0]).not.toHaveProperty("userApiKey");
+  });
 });
