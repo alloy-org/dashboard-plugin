@@ -292,7 +292,7 @@ export default function QuarterlyPlanEntry({ app, domainUuid, onBuildPlan, onOpe
   useEffect(() => {
     let active = true;
     setEntryState(null);
-    resolveQuarterlyPlanEntry(app, { domainUuid }).then(state => {
+    resolveQuarterlyPlanEntry(app, { domainUuid, isActive: () => active }).then(state => {
       if (!active) return;
       setEntryState(state);
       onSettled();
