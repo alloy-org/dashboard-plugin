@@ -145,6 +145,46 @@ describe("Plan Builder task-domain fallback", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
+  // @desc A host that lists included notes a few reads late must not leave discovery sharing the read taken first.
+  it("reads the domain again until the host lists the included notes' tasks", async () => {
+    const app = fallbackApp({ notes: [taskNote()] });
+    const listedTasks = [{ content: "New project evidence", noteUUID: "note-recent", uuid: "task-note-recent" }];
+    app.getTaskDomainTasks.mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValue(listedTasks);
+    const wait = jest.fn(async () => {});
+    const includedNoteCount = await preparePlanTaskDomain(app, { ...SCOPE, wait });
+    expect(includedNoteCount).toBe(1);
+    expect(app.getTaskDomainTasks).toHaveBeenCalledTimes(3);
+    expect(wait).toHaveBeenCalledTimes(2);
+    const tasks = await fetchDomainOrAllNotesTasks(app, SCOPE.domainUuid, { includeDone: true });
+    expect(tasks.map(task => task.noteUUID)).toEqual(["note-recent"]);
+    expect(app.getTaskDomainTasks).toHaveBeenCalledTimes(3);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc When the host never lists the included notes, the last incomplete read is not shared with discovery.
+  it("stops after five reads and leaves no incomplete read to share", async () => {
+    const app = fallbackApp({ notes: [taskNote()] });
+    app.getTaskDomainTasks.mockResolvedValue([]);
+    const wait = jest.fn(async () => {});
+    await preparePlanTaskDomain(app, { ...SCOPE, wait });
+    expect(app.getTaskDomainTasks).toHaveBeenCalledTimes(5);
+    expect(wait).toHaveBeenCalledTimes(4);
+    await fetchDomainOrAllNotesTasks(app, SCOPE.domainUuid, { includeDone: true });
+    expect(app.getTaskDomainTasks).toHaveBeenCalledTimes(6);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Closing the builder while waiting on the host ends the retries.
+  it("stops reading the domain once the builder closes", async () => {
+    const app = fallbackApp({ notes: [taskNote()] });
+    app.getTaskDomainTasks.mockResolvedValue([]);
+    let isActive = true;
+    const wait = jest.fn(async () => { isActive = false; });
+    await preparePlanTaskDomain(app, { ...SCOPE, isActive: () => isActive, wait });
+    expect(app.getTaskDomainTasks).toHaveBeenCalledTimes(1);
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc The explicit Include notes action is the only response that authorizes tagging.
   it.each([null, -1, "unexpected"])("leaves notes untouched when consent returns %s", async action => {
     const app = fallbackApp({ notes: [taskNote()] });

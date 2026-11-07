@@ -5,6 +5,14 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-11-06 — Show fallback-included notes' tasks in Plan Builder
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files created/modified:**
+- `lib/plan-wizard/task-domain-fallback.js` — After approval, read the domain fresh until it lists a task from an included note (up to five reads, one second apart, ending early when the builder closes), so the 15-second shared task read that intent and project discovery reuse is not one taken before the host applied the inclusion. When the host never lists them, drop the shared reads instead of keeping the incomplete one. `preparePlanTaskDomain` now returns the number of notes included and accepts an injectable `wait`.
+- `lib/hooks/use-plan-wizard.js` — When the fallback included notes, rerun intent inference even if the scope already holds cached suggestions.
+- `test/plan-wizard-task-domain-fallback.test.js`, `test/plan-wizard-ui.test.js` — Cover a host that lists included notes late, one that never does, closing during retries, and the inference rerun over cached suggestions.
+
 ## 2026-11-06 — Offer todo to untagged task notes only when the notebook does not use tags
 
 **Model:** Claude Opus 5.5 (1M context)

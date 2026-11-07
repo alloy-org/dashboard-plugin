@@ -1007,6 +1007,30 @@ describe("PlanWizard project discovery", () => {
     await cleanup();
   });
 
+  // ----------------------------------------------------------------------------------------------
+  // @desc Suggestions cached before the fallback included notes were drawn without those notes' tasks, so approving
+  //   the inclusion reruns inference rather than reusing them.
+  it("reruns inference over cached suggestions after the fallback includes notes", async () => {
+    const app = createPlanWizardApp();
+    const first = await renderPlanWizard({ app });
+    expect(inferenceCalls).toHaveLength(1);
+    await first.cleanup();
+
+    const recentNote = { archived: false, changed: new Date().toISOString(), content: "Reporting work", name: "Reporting",
+      tags: [], uuid: "note-reporting" };
+    app.notes.push(recentNote);
+    const originalFilterNotes = app.filterNotes.getMockImplementation();
+    app.filterNotes.mockImplementation(options => options?.group === "taskLists" ? [recentNote] : originalFilterNotes(options));
+    app.alert = jest.fn(async () => "include-task-notes");
+    app.addNoteTag = jest.fn(async () => { recentNote.tags.push("todo"); return true; });
+    app.addTaskDomainNote = jest.fn(async () => { pushRecentCompletions(app); return true; });
+    const second = await renderPlanWizard({ app });
+    await settle();
+    expect(app.addTaskDomainNote).toHaveBeenCalledTimes(1);
+    expect(inferenceCalls).toHaveLength(2);
+    await second.cleanup();
+  });
+
   it("saves the intent, advances to projects, and shows what discovery proposed with its reasoning", async () => {
     const app = createPlanWizardApp();
     pushRecentCompletions(app);
