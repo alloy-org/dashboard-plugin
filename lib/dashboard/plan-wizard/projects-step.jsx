@@ -12,8 +12,9 @@
 
 import { IntentReadingProgressBar } from "dashboard/plan-wizard/intent-reading-page";
 import ProjectCard from "dashboard/plan-wizard/project-card";
-import { completionRecordFromRow, draftRowsFromProspects, emptyProjectRow, priorityRecordFromRow,
-  prospectRecordsFromDraftRows, rejectionRecordFromRow } from "dashboard/plan-wizard/projects-step-fields";
+import { NoteGlyph } from "dashboard/plan-wizard/project-note-search-menu";
+import { completionRecordFromRow, draftRowsFromProspects, emptyProjectRow, linkedRowUuidByNoteUuidFromRows,
+  priorityRecordFromRow, prospectRecordsFromDraftRows, rejectionRecordFromRow } from "dashboard/plan-wizard/projects-step-fields";
 import { useRegisteredNavigate } from "dashboard/plan-wizard/step-navigation";
 import { citedTaskUuidsFromSubstantiations } from "dashboard/plan-wizard/substantiation-task-references";
 import useCitedTasks from "hooks/use-cited-tasks";
@@ -110,6 +111,9 @@ export default function ProjectsStep({ app, discoveryFailureReason = null, disco
   const citedTaskUuids = useMemo(() => citedTaskUuidsFromSubstantiations(planningContext.prospects.flatMap(prospect =>
     prospect.substantiations ?? [prospect.substantiation])), [planningContext.prospects]);
   const citedTaskByUuid = useCitedTasks(app, citedTaskUuids);
+  // Rebuilt only when a link changes, not on each keystroke, so typing in one card does not re-render the others.
+  const linkedNotesKey = draftRows.filter(row => row.primaryNoteUuid).map(row => `${ row.primaryNoteUuid }:${ row.uuid }`).join(",");
+  const linkedRowUuidByNoteUuid = useMemo(() => linkedRowUuidByNoteUuidFromRows(draftRows), [linkedNotesKey]);
 
   useEffect(() => {
     if (seededScopeRef.current === scopeKey && !capturedAtRef.current) return;
@@ -206,6 +210,11 @@ export default function ProjectsStep({ app, discoveryFailureReason = null, disco
     <div className="plan-step-container projects-step-container">
       <h2 className="plan-heading">{ PROJECTS_STEP_COPY.title }</h2>
       <p className="plan-summary">{ PROJECTS_STEP_COPY.summary }</p>
+      <p className="projects-step-note-hint">
+        <NoteGlyph />
+        Already have a note that spells out a project? Click the icon beside any project name to link it — Plan Builder
+        reads the note and shows how the project gets done.
+      </p>
       { onOpenSources ? (
         <ProjectSourcesLink { ...{ discoveryProgress, isDiscovering } } onOpenSources={ onOpenSources } />
       ) : null }
@@ -226,8 +235,8 @@ export default function ProjectsStep({ app, discoveryFailureReason = null, disco
             ) }
             <div className="projects-step-card-grid">
               { categoryRows.map(row => (
-                <ProjectCard { ...{ citedTaskByUuid, row } } isDisabled={ isSaving } key={ row.uuid }
-                  onChangeSummary={ handleChangeRow } onReject={ handleReject } onSetCompletion={ handleSetCompletion }
+                <ProjectCard { ...{ app, citedTaskByUuid, linkedRowUuidByNoteUuid, row } } isDisabled={ isSaving }
+                  key={ row.uuid } onChangeRow={ handleChangeRow } onReject={ handleReject } onSetCompletion={ handleSetCompletion }
                   onSetPriority={ handleSetPriority } />
               )) }
             </div>

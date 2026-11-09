@@ -335,8 +335,9 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
 
   // Escape closes the wizard, as it does for every other dashboard modal. Answers already saved are stored, and
   // an unsaved draft is deliberately not confirmed away here: reopening restores each step from what was saved.
+  // An Escape a field inside the wizard already handled, such as one closing a project's note search, is left alone.
   useEffect(() => {
-    const handleKeyDown = event => { if (event.key === "Escape") onClose(); };
+    const handleKeyDown = event => { if (event.key === "Escape" && !event.defaultPrevented) onClose(); };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
@@ -430,7 +431,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
               <circle cx="12" cy="12" r="4" />
               <circle className="plan-wizard-title-icon-center" cx="12" cy="12" r="1.5" />
             </svg>
-            <h1 className="plan-wizard-title">Plan Builder - Beta</h1>
+            <h1 className="plan-wizard-title">Plan Builder</h1>
             <span className="plan-wizard-title-quarter">{ headerQuarterLabel }</span>
             { existingPlanNoteUuid ? (
               <button className="plan-wizard-existing-note-link" disabled={ isOpeningPlanNote }
@@ -447,6 +448,14 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
             )) }
           </div>
           <span className="plan-wizard-progress">{ `${ stepIndex + 1 } of ${ WIZARD_STEPS.length }` }</span>
+          { /* An explicit way out, so leaving does not depend on knowing that Escape or the backdrop also close. */ }
+          <button aria-label="Close Plan Builder" className="plan-wizard-close" onClick={ onClose } title="Close"
+            type="button">
+            <svg aria-hidden="true" className="plan-wizard-close-icon" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="9.5" />
+              <path d="M8.5 8.5l7 7M15.5 8.5l-7 7" />
+            </svg>
+          </button>
         </header>
         { rendersProgressSidebar ? (
           <WizardProgressBar { ...{ isOpeningPlanNote, progressRows, quarterLabel } }

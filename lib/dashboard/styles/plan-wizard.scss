@@ -250,6 +250,40 @@ $pace-slice-other-color: #e87ba4;
     white-space: nowrap;
   }
 
+  /* Closes the wizard from the header's far right. It stays visible at every width, unlike the step count beside
+   * it, so a narrow dialog still has an obvious exit. Nested under `.plan-wizard-page` to beat that block's
+   * `button { border: 1px solid }` default. */
+  .plan-wizard-page .plan-wizard-close {
+    align-items: center;
+    background: none;
+    border: none;
+    border-radius: 999px;
+    color: $color-text-muted;
+    cursor: pointer;
+    display: flex;
+    flex: 0 0 auto;
+    padding: 2px;
+
+    &:hover {
+      background: none;
+      color: $color-text-secondary;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $color-success;
+      outline-offset: 1px;
+    }
+  }
+
+  .plan-wizard-close-icon {
+    fill: none;
+    height: 22px;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-width: 1.75;
+    width: 22px;
+  }
+
   .plan-wizard-status {
     color: $color-text-secondary;
     font-size: $default-font-size;
@@ -1163,6 +1197,428 @@ $pace-slice-other-color: #e87ba4;
 
       p {
         margin: 0;
+      }
+    }
+
+    .projects-step-note-hint {
+      align-items: flex-start;
+      color: $color-text-secondary;
+      display: flex;
+      font-size: $smaller-font-size;
+      gap: $sp-sm;
+      margin: 0;
+    }
+
+    /* The glyphs drawn for a note and for a typed name, sized to sit inline with the text beside them. */
+    .project-note-glyph,
+    .project-source-glyph {
+      fill: none;
+      flex: 0 0 16px;
+      height: 16px;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 1.8;
+      width: 16px;
+    }
+
+    .projects-step-note-hint .project-note-glyph {
+      color: $color-link;
+      margin-top: 1px;
+    }
+
+    /* A project's name field: a source toggle at the left, then a typed name, a note search, or a linked note. The
+     * field is positioned so its two drop-downs can hang beneath it over the cards that follow. */
+    .project-source-field {
+      flex: 1 1 auto;
+      min-width: 0;
+      position: relative;
+
+      .project-source-box {
+        align-items: flex-start;
+        background: $color-bg-primary;
+        border: 1px solid $color-border;
+        border-radius: $radius-sm;
+        display: flex;
+        gap: $sp-xs;
+        min-height: $plan-wizard-input-min-height;
+        padding: $sp-xs;
+
+        &:focus-within {
+          border-color: $color-accent;
+        }
+      }
+
+      button.project-source-toggle {
+        align-items: center;
+        background: $color-bg-secondary;
+        border: 0;
+        color: $color-text-secondary;
+        display: inline-flex;
+        flex: 0 0 auto;
+        gap: 2px;
+        padding: $sp-xs;
+      }
+
+      .project-source-chevron {
+        font-size: 10px;
+        line-height: 1;
+      }
+
+      textarea.project-row-name,
+      input.project-source-search {
+        background: transparent;
+        border: 0;
+        min-height: 0;
+        padding: $sp-xs;
+      }
+
+      button.project-source-note-change,
+      button.project-source-unlinked {
+        align-items: center;
+        background: transparent;
+        border: 0;
+        color: $color-text;
+        display: flex;
+        flex: 1 1 auto;
+        font-size: $default-font-size;
+        font-weight: 600;
+        gap: $sp-sm;
+        justify-content: space-between;
+        min-width: 0;
+        padding: $sp-xs;
+        text-align: left;
+
+        &:disabled {
+          opacity: 1;
+        }
+      }
+
+      button.project-source-unlinked {
+        font-weight: 400;
+      }
+
+      .project-source-note-name {
+        overflow-wrap: anywhere;
+      }
+
+      /* The linked note's name reopens the search, so it shades on hover to show it can be changed. */
+      button.project-source-note-change {
+        border-radius: $radius-sm;
+        cursor: pointer;
+
+        &:hover:not(:disabled),
+        &:focus-visible {
+          background: color-mix(in srgb, $color-blue 22%, transparent);
+        }
+      }
+
+      button.project-source-note-open {
+        align-self: center;
+        background: transparent;
+        border: 0;
+        border-radius: $radius-sm;
+        color: $color-link;
+        flex: 0 0 auto;
+        padding: $sp-xs $sp-sm;
+
+        &:hover {
+          background: color-mix(in srgb, $color-blue 22%, transparent);
+        }
+      }
+
+      .project-source-menu,
+      .project-note-menu {
+        background: $color-bg-card;
+        border: 1px solid $color-border;
+        border-radius: $radius-md;
+        box-shadow: 0 8px 24px $color-overlay-shadow;
+        left: 0;
+        margin-top: $sp-xs;
+        padding: $sp-xs;
+        position: absolute;
+        right: 0;
+        top: 100%;
+        z-index: $z-index-project-note-menu;
+      }
+
+      .project-source-menu {
+        max-width: 22rem;
+      }
+
+      button.project-source-menu-option,
+      .project-note-menu-entry button,
+      button.project-note-menu-create {
+        align-items: flex-start;
+        background: transparent;
+        border: 0;
+        color: $color-text;
+        display: flex;
+        font-weight: 400;
+        gap: $sp-sm;
+        padding: $sp-sm;
+        text-align: left;
+        width: 100%;
+      }
+
+      button.project-source-menu-option:hover,
+      .project-note-menu-entry--highlighted button,
+      button.project-note-menu-create--highlighted {
+        background: $color-blue-light;
+      }
+
+      .project-source-menu-text,
+      .project-note-menu-text {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .project-source-menu-label,
+      .project-note-menu-name {
+        font-size: $default-font-size;
+        font-weight: 600;
+      }
+
+      .project-source-menu-description,
+      .project-note-menu-detail {
+        color: $color-text-muted;
+        font-size: $smaller-font-size;
+      }
+
+      .project-source-menu-check {
+        color: $color-link;
+      }
+
+      .project-note-menu-heading {
+        color: $color-text-muted;
+        font-size: $smaller-font-size;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        margin: $sp-sm $sp-sm $sp-xs;
+        text-transform: uppercase;
+      }
+
+      .project-note-menu-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .project-note-menu-hint {
+        align-self: center;
+        color: $color-text-muted;
+        flex: 0 0 auto;
+        font-size: $smaller-font-size;
+      }
+
+      .project-note-menu-scope {
+        border-bottom: 1px solid $color-border;
+        color: $color-text-muted;
+        font-size: $smaller-font-size;
+        font-style: italic;
+        margin: 0 0 $sp-xs;
+        padding: $sp-xs $sp-sm $sp-sm;
+      }
+
+      .project-note-menu-empty {
+        color: $color-text-muted;
+        font-size: $smaller-font-size;
+        margin: $sp-sm;
+      }
+
+      button.project-note-menu-create {
+        border-top: 1px solid $color-border;
+        border-radius: 0;
+        color: $color-link;
+        margin-top: $sp-xs;
+      }
+
+      .project-note-menu-keys {
+        color: $color-text-muted;
+        display: flex;
+        font-size: $smaller-font-size;
+        gap: $sp-md;
+        margin: $sp-xs $sp-sm;
+      }
+    }
+
+    .project-source-field--linked .project-source-box {
+      background: $color-blue-light;
+      border-color: $color-link;
+    }
+
+    /* Chosen to be defined by a note, but no note picked: the typed name stays, outlined as unfinished. */
+    .project-source-field--unlinked .project-source-box {
+      border-color: $color-danger;
+      box-shadow: 0 0 0 1px $color-danger;
+    }
+
+    .project-source-field--trashed {
+      .project-source-box {
+        background: $color-bg-secondary;
+        border-color: $color-border;
+      }
+
+      button.project-source-note-change {
+        color: $color-text-muted;
+        text-decoration: line-through;
+      }
+    }
+
+    .project-row--note-trashed {
+      border-style: dashed;
+    }
+
+    /* "How it gets done": what the linked note says, its next tasks, and how much of it is finished. */
+    .project-note-synopsis {
+      display: flex;
+      flex-direction: column;
+      gap: $sp-sm;
+
+      .project-note-synopsis-heading {
+        align-items: baseline;
+        display: flex;
+        flex-wrap: wrap;
+        gap: $sp-sm;
+        margin: 0;
+      }
+
+      .project-note-synopsis-title {
+        color: $color-text;
+        font-size: $smaller-font-size;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .project-note-synopsis-meta {
+        color: $color-text-muted;
+        flex: 1 1 auto;
+        font-size: $smaller-font-size;
+      }
+
+      button.project-note-reread {
+        border: 0;
+        font-weight: 400;
+        padding: 0;
+      }
+
+      .project-note-synopsis-text {
+        color: $color-text;
+        margin: 0;
+      }
+
+      .project-note-task-list {
+        display: flex;
+        flex-direction: column;
+        gap: $sp-xs;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .project-note-task {
+        align-items: center;
+        display: flex;
+        gap: $sp-sm;
+      }
+
+      .project-note-task-marker {
+        align-items: center;
+        border: 1px solid $color-border;
+        border-radius: 50%;
+        color: $color-text-secondary;
+        display: inline-flex;
+        flex: 0 0 18px;
+        font-size: 11px;
+        height: 18px;
+        justify-content: center;
+      }
+
+      .project-note-task--done .project-note-task-marker {
+        background: $color-success;
+        border-color: $color-success;
+        color: $color-bg-card;
+      }
+
+      .project-note-task-text {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .project-note-task-due,
+      .project-note-task-count {
+        color: $color-text-muted;
+        font-size: $smaller-font-size;
+        margin: 0;
+      }
+    }
+
+    /* The placeholder drawn while a note is read for the first time, shaped like the panel it will become. */
+    .project-note-synopsis--reading {
+      .project-note-skeleton-line {
+        animation: project-note-skeleton-pulse 1.4s ease-in-out infinite;
+        background: $color-bg-secondary;
+        border-radius: $radius-sm;
+        display: block;
+        flex: 0 1 70%;
+        height: 12px;
+      }
+
+      .project-note-skeleton-line--long {
+        width: 95%;
+      }
+
+      .project-note-skeleton-line--medium {
+        width: 75%;
+      }
+
+      .project-note-skeleton-task {
+        align-items: center;
+        display: flex;
+        gap: $sp-sm;
+      }
+
+      .project-note-skeleton-dot {
+        animation: project-note-skeleton-pulse 1.4s ease-in-out infinite;
+        background: $color-bg-secondary;
+        border-radius: 50%;
+        flex: 0 0 18px;
+        height: 18px;
+      }
+
+      @keyframes project-note-skeleton-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+    }
+
+    .project-note-synopsis--trashed {
+      background: $color-bg-secondary;
+      border-radius: $radius-sm;
+      padding: $sp-md;
+
+      .project-note-trashed-message {
+        color: $color-text;
+        margin: 0;
+      }
+
+      .project-note-trashed-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: $sp-sm;
+      }
+
+      button {
+        background: $color-bg-primary;
+        font-weight: 400;
+      }
+
+      button.project-note-restore {
+        border-color: $color-link;
+        color: $color-link;
       }
     }
 
@@ -2215,6 +2671,23 @@ $pace-slice-other-color: #e87ba4;
     color: $color-text-muted;
     font-size: $smaller-font-size;
     line-height: 1.35;
+  }
+
+  .progress-step-note-summary {
+    align-items: center;
+    color: $color-link;
+    display: flex;
+    font-size: $smaller-font-size;
+    gap: $sp-xs;
+    line-height: 1.35;
+
+    .plan-note-icon {
+      flex-basis: 14px;
+      height: 14px;
+      margin-top: 0;
+      stroke: currentColor;
+      width: 14px;
+    }
   }
 
   /* The Project cadence row draws its breakdown as a ring with a caption beside it; the caption names the hovered

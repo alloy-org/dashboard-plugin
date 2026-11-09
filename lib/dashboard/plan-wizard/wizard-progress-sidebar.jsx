@@ -78,6 +78,9 @@ function WizardProgressSidebar({ headingText = "Quarterly plan", isOpeningPlanNo
                 <span className="progress-step-label">{ row.label }</span>
                 { row.paceSlices ? <PaceBreakdownPie paceSlices={ row.paceSlices } summary={ row.summary } />
                   : row.summary ? <span className="progress-step-summary">{ row.summary }</span> : null }
+                { row.noteSummary ? (
+                  <span className="progress-step-note-summary"><PlanNoteIcon />{ row.noteSummary }</span>
+                ) : null }
               </span>
             </>
           );

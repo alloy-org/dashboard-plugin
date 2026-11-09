@@ -27,6 +27,8 @@ $z-index-grid-cell-focused-surface: 5;
 // ── .plan-wizard-overlay ──
 $z-index-plan-wizard-backdrop: 0;
 $z-index-plan-wizard-page: 1;
+// A project card's source and note search menus overlap the cards below them in the projects grid.
+$z-index-project-note-menu: 2;
 
 // ── .quarter-retrospective-overlay ──
 // The story's tap zones sit over the slide. On a story with tap zones the slide rises above them and lets presses

@@ -173,7 +173,7 @@ describe("ProjectCard Status control", () => {
   function renderCard(onSetCompletion, rowFields = {}) {
     const [row] = draftRowsFromProspects([prospectRecord({ summary: "Ship diff-view v2", uuid: "ship", ...rowFields })]);
     act(() => {
-      root.render(createElement(ProjectCard, { isDisabled: false, onChangeSummary: jest.fn(), onReject: jest.fn(),
+      root.render(createElement(ProjectCard, { isDisabled: false, onChangeRow: jest.fn(), onReject: jest.fn(),
         onSetCompletion, onSetPriority: jest.fn(async () => true), row }));
     });
   }

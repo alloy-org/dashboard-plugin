@@ -475,10 +475,9 @@ describe("PlanWizard intent step", () => {
     const tabbableControls = [...container.querySelectorAll(".plan-wizard-page input, .plan-wizard-page button")]
       .filter(element => !element.disabled && element.tabIndex >= 0);
 
-    expect(container.querySelector(".plan-wizard-close")).toBeNull();
     expect(suggestions.every(button => button.tabIndex === -1)).toBe(true);
     expect(tabbableControls.every(element => element.matches(
-      ".intent-step-input, .intent-step-reading-link, .intent-step-container .plan-button--dashed, .plan-wizard-cancel, .plan-wizard-next")))
+      ".intent-step-input, .intent-step-reading-link, .intent-step-container .plan-button--dashed, .plan-wizard-cancel, .plan-wizard-close, .plan-wizard-next")))
       .toBe(true);
     expect(container.querySelector(".intent-step-save")).toBeNull();
     expect(container.querySelector(".intent-step-continue")).toBeNull();
@@ -515,7 +514,7 @@ describe("PlanWizard step navigation", () => {
   it("opens on the intent step and reports its position in the sequence", async () => {
     const { cleanup, container } = await renderPlanWizard();
     const stepDots = [...container.querySelectorAll(".plan-wizard-step-dot")];
-    expect(container.querySelector(".plan-wizard-title").textContent).toBe("Plan Builder - Beta");
+    expect(container.querySelector(".plan-wizard-title").textContent).toBe("Plan Builder");
     expect(container.querySelector(".plan-wizard-title-quarter").textContent).toBe("Q4 2026");
     expect(container.querySelector(".plan-wizard-progress").textContent).toBe(`1 of ${ WIZARD_STEPS.length }`);
     expect(stepDots).toHaveLength(WIZARD_STEPS.length);
@@ -1935,6 +1934,14 @@ describe("PlanWizard modal presentation", () => {
     await act(async () => {
       document.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "Escape" }));
     });
+    expect(closeCalls).toEqual(["closed"]);
+    await cleanup();
+  });
+
+  it("closes from the header's close button", async () => {
+    const closeCalls = [];
+    const { cleanup, container } = await renderPlanWizard({ onClose: () => closeCalls.push("closed") });
+    await act(async () => container.querySelector(".plan-wizard-close").click());
     expect(closeCalls).toEqual(["closed"]);
     await cleanup();
   });

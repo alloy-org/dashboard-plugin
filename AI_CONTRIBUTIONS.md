@@ -5,6 +5,64 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-11-09 — Project note search: change a linked note, offer only notes with tasks
+
+**Model:** Claude Opus 5.5
+**Files modified:**
+- `lib/dashboard/plan-wizard/project-source-field.jsx` — A linked note's name is now a button that reopens the note search; the ↗ arrow is its own button that opens the note. Escape hint reads "keep current note" while a note is linked.
+- `lib/dashboard/plan-wizard/project-note-search-menu.jsx` — "Recently changed notes with tasks shown" caption, a "Names containing …" heading once text is typed, and no more disabled "Used by another project" entries.
+- `lib/plan-wizard/project-note-candidates.js` — Candidates come from the `taskLists` note group, leave out every note already defining a project, and, once text is typed, are the newest notes whose names contain every typed word (`noteNameContainsWords`).
+- `lib/hooks/use-project-note-candidates.js` — Takes the project name and typed text separately, counts tasks for every listed note, and drops notes whose count comes back zero.
+- `lib/dashboard/styles/plan-wizard.scss` — Hover shading on the linked note name and the open arrow; caption style; removed styles for the "taken" badge.
+- `test/plan-wizard-project-note-source.test.js` — Tests for typed name matching, the task-list group read, and the change/open buttons.
+
+**Task:** Let the user click a linked project note's name to pick a different note, and limit the note picker to recently changed notes with tasks, filtered by the words typed.
+
+---
+
+## 2026-11-09 — Plan Builder header: drop "Beta", add a close button
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files modified:**
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` — Title reads "Plan Builder"; a circled-X close button sits right of the step count and calls `onClose`.
+- `lib/dashboard/styles/plan-wizard.scss` — Styles for the close button, which stays visible at narrow widths.
+- `test/plan-wizard-ui.test.js` — Title expectation updated, close button allowed in the intent page tab order, new test that it closes the wizard.
+
+**Task:** Remove "Beta" from the Plan Builder title and give the user an obvious way to exit.
+
+---
+
+## 2026-11-09 — Double the dashboard background photo pool
+
+**Model:** GPT-6
+**Files modified:**
+- `lib/util/background-splash-images.js` — Expand the shared dashboard and quote splash pool from 50 to 100 distinct URLs. Add visually verified descriptions beside every new photo and correct mismatched descriptions in the existing splash and graveyard pools so individual backgrounds are easy to prune.
+- `build/compiled.js` — Regenerate the production plugin bundle with the expanded photo pool.
+
+**Task:** Double the poignant background image choices and describe each image in a comment.
+**Validation:** Downloaded and visually inspected thumbnails for all retained and new URLs. Verified 100 unique splash URLs, preserved the original 50 in order, and checked that every background URL has a description. `npm run build` and all 45 tests across `background-splash-images`, `app`, and `production-plugin` passed.
+
+---
+
+## 2026-11-09 — Define a Plan Builder project with a note
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files created/modified:**
+- `lib/plan-wizard/project-note-candidates.js` (created) — Note search for a project: best matches by name overlap with the project (plus search hits), recently edited notes, notes already used by another project marked, task counts for best matches.
+- `lib/plan-wizard/project-note-synopsis.js` (created) — Reduce a linked note to its opening prose, latest finished task, next open tasks, and done/total counts; a note `findNote` no longer returns reads as missing.
+- `lib/hooks/use-project-note-candidates.js`, `lib/hooks/use-project-note-synopsis.js` (created) — Debounced search; cached note reading with a trashed state that re-checks on window focus.
+- `lib/dashboard/plan-wizard/project-source-field.jsx`, `project-note-search-menu.jsx`, `project-note-synopsis.jsx` (created) — Source toggle (Name it yourself / Define with a note), note search menu with keyboard navigation and "New note from this project", red outline for an unlinked note project, linked-note link, and the "How it gets done" panel with reading and trashed states.
+- `lib/dashboard/plan-wizard/project-card.jsx`, `projects-step.jsx`, `projects-step-fields.js` — Draft rows carry `primaryNoteUuid` and `projectSourceEm`; every saved record carries `primaryNoteUuid`; a linked project takes and follows the note's name; page hint about linking notes.
+- `lib/dashboard/plan-wizard/wizard-progress-fields.js`, `wizard-progress-sidebar.jsx` — "N defined by notes" under Project list.
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` — Escape handled by a field no longer closes the wizard.
+- `lib/dashboard/plan-wizard/project-source-field.jsx` — While the source menu or note search is open, it takes Escape in the window's capture phase, so Escape closes the menu wherever focus is and never reaches the Plan Builder dialog.
+- `lib/dashboard/styles/plan-wizard.scss`, `lib/dashboard/styles/_z-indexes.scss` — Styles for the above.
+- `test/plan-wizard-project-note-source.test.js` (created), `test/plan-wizard-project-completion.test.js` — Coverage for ranking, synopsis, persistence through decisions and into QuarterProject, sidebar count, and the card's unlinked, reading, and trashed states.
+
+**Task:** Let each Plan Builder project be defined by a note so its tasks draw preferentially from that note.
+
+---
+
 ## 2026-11-06 — Show fallback-included notes' tasks in Plan Builder
 
 **Model:** Claude Opus 5.5 (1M context)
