@@ -83,6 +83,8 @@ function ProjectSourcesLink({ discoveryProgress, isDiscovering, onOpenSources })
 //   - {number} discoveryProgress - Elapsed fill of the running discovery pass, measured by the wizard shell so the
 //     sources page shows the same fill.
 //   - {string|null} discoveryFailureReason - Why the last discovery pass proposed nothing, when it proposed none.
+//   - {string|null} domainName - Name of the Task Domain being planned.
+//   - {string|null} domainUuid - The Task Domain being planned, which a note picked to define a project is added to.
 //   - {boolean} isConsolidating - True while a consolidation pass is in flight.
 //   - {boolean} isDiscovering - True while a discovery pass is in flight.
 //   - {boolean} isSaving - True while a save is in flight.
@@ -97,9 +99,9 @@ function ProjectSourcesLink({ discoveryProgress, isDiscovering, onOpenSources })
 //   - {object} planningContext - Stored goals and prospects for the scope.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 // @returns {JSX.Element} The projects page.
-export default function ProjectsStep({ app, discoveryFailureReason = null, discoveryProgress = 0, isConsolidating = false,
-    isDiscovering = false, isSaving, onConsolidate, onDiscover, onNavigate, onOpenSources = null, onRegisterNavigate, onSave,
-    onSaveDecision, planningContext, scopeKey }) {
+export default function ProjectsStep({ app, discoveryFailureReason = null, discoveryProgress = 0, domainName = null,
+    domainUuid = null, isConsolidating = false, isDiscovering = false, isSaving, onConsolidate, onDiscover, onNavigate,
+    onOpenSources = null, onRegisterNavigate, onSave, onSaveDecision, planningContext, scopeKey }) {
   const [draftRows, setDraftRows] = useState(() => draftRowsFromProspects(planningContext.prospects,
     planningContext.goals));
   const capturedAtRef = useRef(null);
@@ -235,7 +237,7 @@ export default function ProjectsStep({ app, discoveryFailureReason = null, disco
             ) }
             <div className="projects-step-card-grid">
               { categoryRows.map(row => (
-                <ProjectCard { ...{ app, citedTaskByUuid, linkedRowUuidByNoteUuid, row } } isDisabled={ isSaving }
+                <ProjectCard { ...{ app, citedTaskByUuid, domainName, domainUuid, linkedRowUuidByNoteUuid, row } } isDisabled={ isSaving }
                   key={ row.uuid } onChangeRow={ handleChangeRow } onReject={ handleReject } onSetCompletion={ handleSetCompletion }
                   onSetPriority={ handleSetPriority } />
               )) }

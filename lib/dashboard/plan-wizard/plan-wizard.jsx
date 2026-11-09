@@ -508,8 +508,8 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
             survives the visit. */ }
           { rendersPlanContent && step.key === "projects" ? (
             <div className="plan-wizard-projects-step-frame" hidden={ isShowingProjectSources }>
-              <ProjectsStep { ...{ app, discoveryFailureReason, discoveryProgress, isConsolidating, isDiscovering, isSaving,
-                planningContext, scopeKey } }
+              <ProjectsStep { ...{ app, discoveryFailureReason, discoveryProgress, domainName, domainUuid, isConsolidating,
+                isDiscovering, isSaving, planningContext, scopeKey } }
                 onConsolidate={ consolidateProspects } onDiscover={ discoverProspects } onNavigate={ handleProjectNavigation }
                 onOpenSources={ () => setIsViewingProjectSources(true) } onRegisterNavigate={ handleRegisterNavigate }
                 onSave={ saveProspects } onSaveDecision={ saveProspectDecision } />

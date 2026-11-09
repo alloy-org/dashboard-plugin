@@ -1455,6 +1455,60 @@ $pace-slice-other-color: #e87ba4;
       box-shadow: 0 0 0 1px $color-danger;
     }
 
+    /* A picked note waiting to join the Task Domain, shown in place of the field's usual contents. */
+    .project-source-pending {
+      align-items: center;
+      display: flex;
+      flex: 1 1 auto;
+      font-weight: 600;
+      gap: $sp-sm;
+      min-width: 0;
+      padding: $sp-xs;
+    }
+
+    .project-source-pending-status {
+      color: $color-text-muted;
+      font-size: $smaller-font-size;
+      font-weight: 400;
+    }
+
+    /* The Task Domain would not take the picked note: red field, an exclamation, and Retry or Cancel beneath. */
+    .project-source-field--inclusion-failed {
+      .project-source-box {
+        background: color-mix(in srgb, $color-danger 14%, $color-bg-primary);
+        border-color: $color-danger;
+        box-shadow: 0 0 0 1px $color-danger;
+      }
+
+      .project-source-inclusion-mark {
+        align-items: center;
+        background: $color-danger;
+        border-radius: 50%;
+        color: $color-bg-primary;
+        display: inline-flex;
+        flex: 0 0 auto;
+        font-weight: 700;
+        height: 1.25rem;
+        justify-content: center;
+        width: 1.25rem;
+      }
+
+      .project-source-inclusion-alert {
+        margin-top: $sp-xs;
+      }
+
+      .project-source-inclusion-message {
+        color: $color-danger;
+        font-size: $smaller-font-size;
+        margin: 0 0 $sp-xs;
+      }
+
+      .project-source-inclusion-actions {
+        display: flex;
+        gap: $sp-sm;
+      }
+    }
+
     .project-source-field--trashed {
       .project-source-box {
         background: $color-bg-secondary;

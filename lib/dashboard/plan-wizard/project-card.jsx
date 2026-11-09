@@ -78,6 +78,8 @@ function ProjectReason({ citedTaskByUuid, reason }) {
 // @param {object} params - An object with the following properties:
 //   - {object} app - Amplenote app interface, used to search, read, and open the note defining the project.
 //   - {object} citedTaskByUuid - Tasks cited by the page's reasons, from useCitedTasks.
+//   - {string|null} domainName - Name of the Task Domain being planned.
+//   - {string|null} domainUuid - The Task Domain being planned, which a picked note is added to; null for All Notes.
 //   - {boolean} isDisabled - Whether a page-level save prevents editing.
 //   - {object} linkedRowUuidByNoteUuid - { [noteUuid]: rowUuid } for notes defining projects on the page.
 //   - {Function} onChangeRow - Receives the row UUID and edited row fields.
@@ -86,8 +88,8 @@ function ProjectReason({ citedTaskByUuid, reason }) {
 //   - {Function} onSetPriority - Persists a row and priorityEm, resolving to whether it succeeded.
 //   - {object} row - Draft project row rendered by this card.
 // @returns {JSX.Element} An independently memoized project card.
-function ProjectCard({ app, citedTaskByUuid = {}, isDisabled, linkedRowUuidByNoteUuid = {}, onChangeRow, onReject,
-    onSetCompletion, onSetPriority, row }) {
+function ProjectCard({ app, citedTaskByUuid = {}, domainName = null, domainUuid = null, isDisabled, linkedRowUuidByNoteUuid = {},
+    onChangeRow, onReject, onSetCompletion, onSetPriority, row }) {
   const cardRef = useRef(null);
   const [isCompleted, setIsCompleted] = useState(Boolean(row.completedAt));
   const [isDecisionSaving, setIsDecisionSaving] = useState(false);
@@ -141,7 +143,7 @@ function ProjectCard({ app, citedTaskByUuid = {}, isDisabled, linkedRowUuidByNot
   return (
     <div aria-busy={ isDecisionSaving } className={ rowClass } ref={ cardRef }>
       <div className="project-row-header">
-        <ProjectSourceField { ...{ app, isNoteTrashed, linkedRowUuidByNoteUuid, onChangeRow, row } }
+        <ProjectSourceField { ...{ app, domainName, domainUuid, isNoteTrashed, linkedRowUuidByNoteUuid, onChangeRow, row } }
           isDisabled={ isDisabled || isDecisionSaving } isSearchOpen={ isNoteSearchOpen }
           onSetSearchOpen={ setIsNoteSearchOpen } />
         { row.isStored ? (
@@ -153,7 +155,8 @@ function ProjectCard({ app, citedTaskByUuid = {}, isDisabled, linkedRowUuidByNot
       </div>
       { row.primaryNoteUuid ? (
         <ProjectNoteSynopsis isReading={ noteReading.isReading } noteName={ row.summary }
-          onNameYourself={ () => onChangeRow(row.uuid, { primaryNoteUuid: null, projectSourceEm: "name" }) }
+          onNameYourself={ () => onChangeRow(row.uuid, { primaryNoteLinkedAt: null, primaryNoteName: null, primaryNoteUuid: null,
+            projectSourceEm: "name" }) }
           onPickAnother={ () => setIsNoteSearchOpen(true) } onReread={ noteReading.reread }
           onRestore={ () => app.navigate(`https://www.amplenote.com/notes/${ row.primaryNoteUuid }`) }
           statusEm={ noteReading.statusEm } synopsis={ noteReading.synopsis } />
@@ -204,7 +207,8 @@ function ProjectCard({ app, citedTaskByUuid = {}, isDisabled, linkedRowUuidByNot
 export function projectCardPropsEqual(previous, next) {
   const previousRow = previous.row;
   const nextRow = next.row;
-  return previous.app === next.app && previous.isDisabled === next.isDisabled
+  return previous.app === next.app && previous.domainName === next.domainName && previous.domainUuid === next.domainUuid
+    && previous.isDisabled === next.isDisabled
     && previous.linkedRowUuidByNoteUuid === next.linkedRowUuidByNoteUuid && previous.onChangeRow === next.onChangeRow
     && previous.onReject === next.onReject && previous.onSetCompletion === next.onSetCompletion
     && previous.onSetPriority === next.onSetPriority && previousRow.approvalStatusEm === nextRow.approvalStatusEm

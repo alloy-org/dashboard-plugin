@@ -5,6 +5,26 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-11-09 — Project notes join the Task Domain when picked, and remember when they were picked
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files created:**
+- `test/plan-wizard-project-note-domain.test.js` — Tests for including a picked note in the domain, the Retry/Cancel notice, and storing the pick's time and note name through to `QuarterProject`.
+
+**Files modified:**
+- `lib/plan-wizard/task-domain-fallback.js` — `includeNoteInTaskDomain` leaves a note the domain lists alone, otherwise includes it with `addTaskDomainNote` and tags it todo, counting a declined inclusion when the domain then lists the note.
+- `lib/dashboard/plan-wizard/project-source-field.jsx` — Picking or creating a note first adds it to the Task Domain; while that runs the field shows the note as pending, and a refusal shows a red field with an exclamation and Retry/Cancel, leaving the project as it was. A pick records `primaryNoteLinkedAt` and `primaryNoteName`.
+- `lib/dashboard/plan-wizard/project-card.jsx`, `projects-step.jsx`, `plan-wizard.jsx` — Pass the domain being planned down to the note picker; naming the project by hand clears the note fields.
+- `lib/dashboard/plan-wizard/projects-step-fields.js` — Draft rows and every record built from them carry `primaryNoteLinkedAt` and `primaryNoteName`.
+- `lib/plan-wizard/action-prospect.js` — Validates both fields, clearing them when the project has no primary note.
+- `lib/plan-wizard/prospect-consolidation.js` — A combined proposal keeps its survivor's note fields.
+- `lib/dashboard/project-progress-model.js`, `lib/dashboard/quarter-project.js`, `lib/dashboard/quarter-project-serialization.js` — `QuarterProject` takes both fields from the prospect and the progress note persists them.
+- `lib/dashboard/styles/plan-wizard.scss` — Pending and inclusion-failed field styles.
+
+**Task:** Instead of reading a project note's tasks from outside the Task Domain, add the note to the domain when it is picked as a Project's source, and say so in red when that fails, letting the user retry or cancel the pick. Record the note's name and pick time on the project.
+
+---
+
 ## 2026-11-09 — Project note search: change a linked note, offer only notes with tasks
 
 **Model:** Claude Opus 5.5
