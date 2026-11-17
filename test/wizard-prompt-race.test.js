@@ -71,6 +71,13 @@ describe("raceWizardPrompt", () => {
     await expect(raceWizardPrompt({}, "prompt", KEYED_OPTIONS)).rejects.toThrow(/direct-provider \(Timeout\)/);
   });
 
+  it("names callLLM's reason alongside the direct provider's when both legs fail", async () => {
+    amplenoteLlmMock.mockRejectedValue(new Error("your saved API key: You exceeded your current quota"));
+    llmPromptMock.mockRejectedValue(new Error("Request failed with status 429"));
+    const request = raceWizardPrompt({}, "prompt", KEYED_OPTIONS);
+    await expect(request).rejects.toThrow(/amplenote-llm \(your saved API key: You exceeded your current quota\)/);
+  });
+
   it("resolves null when no source stated a reason, so an absent plugin LLM license is not reported as a failure", async () => {
     amplenoteLlmMock.mockResolvedValue(null);
     const unkeyedOptions = { jsonResponse: true, timeoutSeconds: 60 };
@@ -82,7 +89,7 @@ describe("raceWizardPrompt", () => {
     llmPromptMock.mockResolvedValue(null);
     await raceWizardPrompt({}, "prompt", KEYED_OPTIONS);
     expect(amplenoteLlmMock).toHaveBeenCalledWith({}, "prompt", { aiModel: "gemini-3.5-flash-lite", jsonResponse: true,
-      reasoningEffort: undefined, source: "plan-wizard", timeoutSeconds: 60 });
+      preferLicense: true, reasoningEffort: undefined, rejectWithReason: true, source: "plan-wizard", timeoutSeconds: 60 });
     expect(llmPromptMock).toHaveBeenCalledWith({}, null, "prompt", "gemini-3.5-flash-lite", "gemini-key", true, 60,
       undefined, undefined);
   });
@@ -106,6 +113,6 @@ describe("raceWizardPrompt", () => {
     expect(llmPromptMock).toHaveBeenCalledWith({}, null, "prompt", "gemini-3.5-flash-lite", "gemini-key", true, 60,
       "low", undefined);
     expect(amplenoteLlmMock).toHaveBeenCalledWith({}, "prompt", { aiModel: "gemini-3.5-flash-lite", jsonResponse: true,
-      reasoningEffort: "low", source: "plan-wizard", timeoutSeconds: 60 });
+      preferLicense: true, reasoningEffort: "low", rejectWithReason: true, source: "plan-wizard", timeoutSeconds: 60 });
   });
 });

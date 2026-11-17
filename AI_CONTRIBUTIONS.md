@@ -5,6 +5,18 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-11-17 — callLLM falls back to the plugin LLM license when a saved key fails
+
+**Model:** Claude Opus 5.5
+**Files modified:**
+- `lib/providers/amplenote-llm.js` — `amplenoteLlmPrompt` retries a failed (non-timeout) call made with the user's saved key once on the plugin LLM license; `preferLicense` skips the key whenever a license exists; `rejectWithReason` rejects with the key's and license's failure reasons instead of resolving null. Only an answer on the license marks the license available. New helpers `_callLlmOnce`, `_parsedReply`, `_labelledFailureReason`, `_isTimeoutReason`.
+- `lib/plan-wizard/wizard-prompt-runner.js` — The callLLM leg passes `preferLicense` and `rejectWithReason`, so it uses the license rather than repeating the direct leg's key, and its failure reason reaches the user's notice.
+- `test/amplenote-llm.test.js`, `test/wizard-prompt-race.test.js` — Tests for the license retry, license preference, timeout, failure reasons, and the race reporting both legs.
+
+**Task:** An Agent Pro subscriber with an out-of-credit OpenAI key saved in Dashboard Settings had every Plan Builder prompt fail with 429, because callLLM sends a userApiKey straight to the provider and never reached the license; the license leg's failure was also invisible in the error notice.
+
+---
+
 ## 2026-11-09 — Project notes join the Task Domain when picked, and remember when they were picked
 
 **Model:** Claude Opus 5.5 (1M context)
