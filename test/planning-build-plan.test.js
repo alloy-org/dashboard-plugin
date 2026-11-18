@@ -129,10 +129,10 @@ describe("PlanningWidget build plan", () => {
   it("offers Generate ideas in place of Build plan once the plan exists", async () => {
     const quarterlyPlans = { current: { ...currentPlan, noteUUID: "plan-q3" }, next: nextPlan };
     const { cleanup, container } = await renderPlanning({ app: createPlanWizardApp(), now: new Date(2026, 8, 1), quarterlyPlans });
-    const headerButtons = [...container.querySelectorAll(".widget-header-action")];
+    const headerButtons = [ ...container.querySelectorAll(".planning-build-plan, .planning-generate-ideas") ];
     const headerLabels = headerButtons.map(button => button.textContent.trim());
-    expect(headerLabels).toContain("💡 Generate ideas");
-    expect(headerLabels).not.toContain("✍️ Build plan");
+    expect(headerLabels).toContain("Generate ideas");
+    expect(headerLabels).not.toContain("Build plan");
     expect(headerButtons.find(button => button.textContent.includes("Generate ideas")).disabled).toBe(true);
     await cleanup();
   });

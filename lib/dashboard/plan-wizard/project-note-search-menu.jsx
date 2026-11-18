@@ -3,6 +3,9 @@
 // words. An action at the bottom starts a new note named after the project. Notes already defining a project on the
 // page are never listed, so two projects never claim one note.
 
+import { PlainButton } from "dashboard/controls";
+import { MdAdd, MdArrowDownward, MdArrowUpward, MdDescription, MdKeyboardReturn } from "react-icons/md";
+
 // ----------------------------------------------------------------------------------------------
 // @desc List the menu's choosable entries in the order arrow keys move through them.
 // @param {object} candidates - { bestMatches, recentlyEdited } from useProjectNoteCandidates.
@@ -17,12 +20,7 @@ export function selectableMenuItems(candidates) {
 // @desc Draw the page glyph that marks a note.
 // @returns {JSX.Element} An inline document icon.
 export function NoteGlyph() {
-  return (
-    <svg aria-hidden="true" className="project-note-glyph" viewBox="0 0 24 24">
-      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
-      <path d="M14 3v5h5M9 13h6M9 17h6" />
-    </svg>
-  );
+  return <MdDescription className="project-note-glyph" size={ 16 } />;
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -39,15 +37,19 @@ function NoteMenuEntry({ candidate, isHighlighted, onHighlight, onLinkNote }) {
   const entryClass = `project-note-menu-entry${ isHighlighted ? " project-note-menu-entry--highlighted" : "" }`;
   return (
     <li aria-selected={ isHighlighted } className={ entryClass } role="option">
-      <button onClick={ () => onLinkNote(candidate) }
-        onMouseDown={ event => event.preventDefault() } onMouseEnter={ onHighlight } type="button">
+      <PlainButton className="project-note-menu-entry-button" onClick={ () => onLinkNote(candidate) }
+        onMouseDown={ event => event.preventDefault() } onMouseEnter={ onHighlight }>
         <NoteGlyph />
         <span className="project-note-menu-text">
           <span className="project-note-menu-name">{ candidate.name }</span>
           <span className="project-note-menu-detail">{ detailParts.join(" · ") }</span>
         </span>
-        { isHighlighted ? <span aria-hidden="true" className="project-note-menu-hint">↵ Link</span> : null }
-      </button>
+        {
+          isHighlighted ? (
+            <span aria-hidden="true" className="project-note-menu-hint"><MdKeyboardReturn size={ 14 } /> Link</span>
+          ) : null
+        }
+      </PlainButton>
     </li>
   );
 }
@@ -96,13 +98,15 @@ export default function ProjectNoteSearchMenu({ candidates, escapeHint, highligh
       { !hasNotes ? (
         <p className="project-note-menu-empty">{ candidates.isSearching ? "Searching your notes…" : emptyMessage }</p>
       ) : null }
-      <button className={ `project-note-menu-create${ highlightedItem?.kind === "create" ? " project-note-menu-create--highlighted" : "" }` }
+      <PlainButton className={ `project-note-menu-create${ highlightedItem?.kind === "create" ? " project-note-menu-create--highlighted" : "" }` }
         disabled={ isCreatingNote } onClick={ onCreateNote } onMouseDown={ event => event.preventDefault() }
-        onMouseEnter={ () => onHighlight(menuItems.length - 1) } type="button">
-        <span aria-hidden="true">+</span> { isCreatingNote ? "Creating note…" : "New note from this project" }
-      </button>
+        onMouseEnter={ () => onHighlight(menuItems.length - 1) }>
+        <MdAdd size={ 16 } /> { isCreatingNote ? "Creating note…" : "New note from this project" }
+      </PlainButton>
       <p aria-hidden="true" className="project-note-menu-keys">
-        <span>↑↓ move</span><span>↵ link note</span><span>esc { escapeHint }</span>
+        <span><MdArrowUpward size={ 14 } /><MdArrowDownward size={ 14 } /> move</span>
+        <span><MdKeyboardReturn size={ 14 } /> link note</span>
+        <span>esc { escapeHint }</span>
       </p>
     </div>
   );

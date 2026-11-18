@@ -377,7 +377,7 @@ describe("Goal Coach action links", () => {
           }));
         });
         const cards = await waitForGoalCoachCards(container);
-        const noteLink = cards[0].querySelector("a.goal-coach-source-note-badge");
+        const noteLink = cards[0].querySelector("button.goal-coach-source-note-link");
         expect(noteLink.textContent).toBe("Outreach plan");
 
         await act(async () => { noteLink.click(); });

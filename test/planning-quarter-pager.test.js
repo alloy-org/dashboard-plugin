@@ -98,7 +98,7 @@ describe("PlanningWidget quarter pager", () => {
     expect(container.querySelector("[aria-label='Show Q1 2027']")).not.toBeNull();
     const [pastCard, currentCard] = container.querySelectorAll(".quarter-card");
     expect(pastCard.querySelector(".quarter-past-badge").textContent).toBe("Past");
-    expect(pastCard.querySelector(".quarter-status").textContent).toBe("✨ Retrospective");
+    expect(pastCard.querySelector(".quarter-status").textContent).toBe("Retrospective");
     expect(pastCard.querySelector("input")).toBeNull();
     expect(currentCard.querySelector(".quarter-past-badge")).toBeNull();
     expect(currentCard.querySelector("input")).not.toBeNull();
@@ -121,9 +121,9 @@ describe("PlanningWidget quarter pager", () => {
     await clickAndSettle(container.querySelector("[aria-label='Show Q2 2026']"));
 
     expect(cardTitles(container)).toEqual(["Q2 2026 · Work", "Q3 2026 · Work"]);
-    expect(container.querySelector(".planning-return-quarter").textContent).toBe("↩ Back to Q4 2026");
+    expect(container.querySelector(".planning-return-quarter").textContent).toBe("Back to Q4 2026");
     const [unrecordedCard] = container.querySelectorAll(".quarter-card");
-    expect(unrecordedCard.querySelector(".quarter-status").textContent).toBe("✨ Retrospective");
+    expect(unrecordedCard.querySelector(".quarter-status").textContent).toBe("Retrospective");
     expect(container.querySelector(".month-tab.active").textContent).toBe("Apr");
     expect(container.querySelector(".month-content-unrecorded").textContent).toBe("No plan was recorded for Q2 2026.");
 

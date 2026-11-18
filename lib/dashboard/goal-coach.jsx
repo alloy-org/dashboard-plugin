@@ -16,9 +16,13 @@ import { isAmplenoteLlmAvailable } from "providers/amplenote-llm";
 import { recordShownTaskSuggestions } from "dashboard/suggestions/ranked-task-suggestions";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
+import { Badge, Button, EmptyState, ErrorState, IconButton, LoadingState, PlainButton } from "dashboard/controls";
 import { useDashboardWork } from "dashboard/work-queue/dashboard-work-context";
 import { preparedDayRankingAwaiter } from "dashboard/work-queue/prepared-day-ranking";
 import { DASHBOARD_TASKS_UPDATED_EVENT } from "hooks/use-dashboard-task-updates";
+import { MdBalance, MdCheckCircle, MdClose, MdDescription, MdEditNote, MdEvent, MdFitnessCenter,
+  MdManageSearch, MdPushPin, MdRefresh, MdRemoveCircleOutline, MdScience,
+  MdTrackChanges } from "react-icons/md";
 import { amplenoteMarkdownRender, attachFootnotePopups } from "util/amplenote-markdown-render";
 import { logIfEnabled } from "util/log";
 import { snapDashboardAction } from "util/plausible";
@@ -28,6 +32,8 @@ import WidgetWrapper from "widget-wrapper";
 
 import "styles/goal-coach.scss";
 
+// Relevance badges read green for strong matches, amber for middling ones, and red for weak ones.
+const BADGE_TONE_BY_RATING_TIER = { high: 'status', low: 'danger', medium: 'warning' };
 const MIN_TEXT_OVERFLOW_SIZE = 230;
 const WIDGET_ID = 'dream-task';
 const CARD_REMOVE_FADE_MS = 280;
@@ -96,16 +102,16 @@ function _taskKey(task) {
 function GoalCoachKindBadge({ isClickable, onOpenTaskNote, task }) {
   if (task.isExisting && task.sourceNoteName) {
     return (
-      <a
-        href="#"
-        className="goal-coach-source-note-badge"
-        onClick={(event) => onOpenTaskNote(event, task)}
-        title={`Open note: ${ task.sourceNoteName }`}
-      >{task.sourceNoteName}</a>
+      <PlainButton className="goal-coach-source-note-link" onClick={ event => onOpenTaskNote(event, task) }
+        title={ `Open note: ${ task.sourceNoteName }` }>
+        <Badge className="goal-coach-source-note-badge" uppercase={ false }>{ task.sourceNoteName }</Badge>
+      </PlainButton>
     );
   }
   if (!task.isExisting && isClickable) {
-    return <span className="goal-coach-new-badge" title="New task — click to create">+new</span>;
+    return (
+      <Badge className="goal-coach-new-badge" title="New task — click to create" tone="action">+new</Badge>
+    );
   }
   return null;
 }
@@ -113,33 +119,27 @@ function GoalCoachKindBadge({ isClickable, onOpenTaskNote, task }) {
 function NoteLink({ noteUUID, onOpenNote }) {
   if (!noteUUID) return null;
   return (
-    <a
-      href="#"
-      className="widget-header-action"
-      onClick={onOpenNote}
-      title="Open today's proposed tasks note"
-    >🗒️ Note</a>
+    <IconButton Icon={ MdDescription } label="Open today's proposed tasks note" onClick={ onOpenNote }
+      size="small" />
   );
 }
 
+// ----------------------------------------------------------------------------------------------
+// @desc Header action that opens the provider chooser before reseeding; its tooltip explains what reseeding
+//   excludes.
 function ReseedLink({ onReseed }) {
   return (
-    <a
-      href="#"
-      className="widget-header-action"
-      onClick={onReseed}
-      title="Get new task suggestions (excludes tasks shown today)"
-    >🔄 Reseed</a>
+    <IconButton Icon={ MdRefresh } label="Reseed" onClick={ onReseed } size="small"
+      tooltip="Reseed: get new task suggestions (excludes tasks shown today)" />
   );
 }
 
-function LoadingState() {
+// ----------------------------------------------------------------------------------------------
+// @desc The widget while suggestions are being generated.
+function GoalCoachLoading() {
   return (
     <WidgetWrapper widgetId={WIDGET_ID}>
-      <div className="goal-coach-loading">
-        <div className="goal-coach-spinner" />
-        <p>Analyzing the finest tasks …</p>
-      </div>
+      <LoadingState className="goal-coach-loading">Analyzing the finest tasks …</LoadingState>
     </WidgetWrapper>
   );
 }
@@ -147,16 +147,16 @@ function LoadingState() {
 // [Claude claude-opus-4-8] Task: list of highlighted Ample Agent Pro features rendered as pills
 // [Claude claude-opus-4-8 (1M context)] Task: features now feed the shared NoConfigUpsell card
 const NO_CONFIG_FEATURES = [
-  { icon: '🎯', label: 'Highlight goal-matched tasks' },
-  { icon: '⚖️', label: 'Sort tasks (fun, fast, etc)' },
-  { icon: '🕵', label: 'Deep note search' },
-  { icon: '💪', label: 'Task completion agent' },
-  { icon: '🔬', label: 'Multi-agent deep research' },
-  { icon: '✏️', label: 'Finish a note in progress' },
+  { Icon: MdTrackChanges, label: 'Highlight goal-matched tasks' },
+  { Icon: MdBalance, label: 'Sort tasks (fun, fast, etc)' },
+  { Icon: MdManageSearch, label: 'Deep note search' },
+  { Icon: MdFitnessCenter, label: 'Task completion agent' },
+  { Icon: MdScience, label: 'Multi-agent deep research' },
+  { Icon: MdEditNote, label: 'Finish a note in progress' },
 ];
 
 // [Claude claude-opus-4-6] Task: render specific error messages based on errorCode from the service
-function ErrorState({ errorInfo, noteLink, onRetry, onSettingsClick }) {
+function GoalCoachError({ errorInfo, noteLink, onRetry, onSettingsClick }) {
   const { error, errorCode, errorDetail, providerName } = errorInfo;
   let content;
   switch (errorCode) {
@@ -166,7 +166,7 @@ function ErrorState({ errorInfo, noteLink, onRetry, onSettingsClick }) {
           <p>{`The API key for ${ providerName || 'your AI provider' } appears to be invalid or unauthorized.`}</p>
           <p>
             {'Please check your API key in '}
-            <a href="#" className="goal-coach-settings-link" onClick={onSettingsClick}>AI settings</a>
+            <Button onClick={ onSettingsClick } variant="link">AI settings</Button>
             .
           </p>
         </>
@@ -196,21 +196,18 @@ function ErrorState({ errorInfo, noteLink, onRetry, onSettingsClick }) {
   }
   return (
     <WidgetWrapper widgetId={WIDGET_ID} headerActions={noteLink}>
-      <div className="goal-coach-error">
-        {content}
-        <button className="goal-coach-retry" onClick={onRetry}>Retry</button>
-      </div>
+      <ErrorState className="goal-coach-error" onRetry={ onRetry } title={ null }>{ content }</ErrorState>
     </WidgetWrapper>
   );
 }
 
-function EmptyState({ noteLink, onRetry }) {
+// ----------------------------------------------------------------------------------------------
+// @desc The widget when the analysis returned no suggestions, with a Refresh action.
+function GoalCoachEmpty({ noteLink, onRetry }) {
   return (
     <WidgetWrapper widgetId={WIDGET_ID} headerActions={noteLink}>
-      <div className="goal-coach-empty">
-        <p>No task suggestions available.</p>
-        <button className="goal-coach-retry" onClick={onRetry}>Refresh</button>
-      </div>
+      <EmptyState action={ <Button onClick={ onRetry } variant="outlined">Refresh</Button> }
+        className="goal-coach-empty" title="No task suggestions available." />
     </WidgetWrapper>
   );
 }
@@ -254,10 +251,10 @@ function TaskList({ goalCoachTasks, maxTasks, headerActions, onTaskClick, listRe
                   dangerouslySetInnerHTML={{ __html: titleHtml }}
                 />
                 <GoalCoachKindBadge isClickable={isClickable} onOpenTaskNote={onOpenTaskNote} task={goalCoachTask} />
-                <span
-                  className={`goal-coach-rating goal-coach-rating--${ _ratingTier(goalCoachTask.rating) }`}
+                <Badge className={`goal-coach-rating goal-coach-rating--${ _ratingTier(goalCoachTask.rating) }`}
                   title={`Relevance: ${ goalCoachTask.rating }/10`}
-                >{`${ goalCoachTask.rating }/10`}</span>
+                  tone={ BADGE_TONE_BY_RATING_TIER[_ratingTier(goalCoachTask.rating)] }
+                >{`${ goalCoachTask.rating }/10`}</Badge>
               </div>
               <p
                 className={explanationClassName}
@@ -266,34 +263,26 @@ function TaskList({ goalCoachTasks, maxTasks, headerActions, onTaskClick, listRe
                 dangerouslySetInnerHTML={{ __html: explanationHtml }}
               />
               <div className="goal-coach-card-actions">
-                <a
-                  href="#"
-                  className="goal-coach-card-action"
-                  onClick={(event) => onPreserve(event, goalCoachTask)}
+                <Button className="goal-coach-card-action" dense iconSize={ 16 }
+                  Icon={ goalCoachTask.preserveThroughTomorrow ? MdRemoveCircleOutline : MdPushPin }
+                  onClick={ event => onPreserve(event, goalCoachTask) }
                   title={goalCoachTask.preserveThroughTomorrow
                     ? 'Clicking this will remove preserve status so the task can reseed normally'
                     : 'Clicking this will ensure that the task remains present in your Goal Coach list through tomorrow (normally tasks reseed daily)'}
-                >{goalCoachTask.preserveThroughTomorrow ? '🚫 Remove preserve' : '📎 Preserve'}</a>
-                <a
-                  href="#"
-                  className="goal-coach-card-action"
-                  onClick={(event) => onComplete(event, goalCoachTask)}
+                >{ goalCoachTask.preserveThroughTomorrow ? 'Remove preserve' : 'Preserve' }</Button>
+                <Button className="goal-coach-card-action" dense iconSize={ 16 } Icon={ MdCheckCircle }
+                  onClick={ event => onComplete(event, goalCoachTask) }
                   title="Mark this task complete and replace it with another suggestion when available"
-                >✅ Completed</a>
+                >Completed</Button>
                 {isScheduled ? null : (
-                  <a
-                    href="#"
-                    className="goal-coach-card-action"
-                    onClick={(event) => onSchedule(event, goalCoachTask)}
-                    title="Schedule this task for a specific date and time"
-                  >📅 Schedule</a>
+                  <Button className="goal-coach-card-action" dense iconSize={ 16 } Icon={ MdEvent }
+                    onClick={ event => onSchedule(event, goalCoachTask) }
+                    title="Schedule this task for a specific date and time">Schedule</Button>
                 )}
-                <a
-                  href="#"
-                  className="goal-coach-card-action"
-                  onClick={(event) => onRemove(event, goalCoachTask)}
+                <Button className="goal-coach-card-action" dense iconSize={ 16 } Icon={ MdClose }
+                  onClick={ event => onRemove(event, goalCoachTask) }
                   title="Remove this task and replace it with another suggestion when available"
-                >❌ Remove</a>
+                >Remove</Button>
               </div>
             </div>
           );
@@ -308,12 +297,15 @@ function TaskList({ goalCoachTasks, maxTasks, headerActions, onTaskClick, listRe
 
 function ConfiguredBody({ loading, error, tasks, maxTasks, noteLink, headerActions,
     onSettingsClick, runAnalysis, onTaskClick, listRef, llmAttributionFooter, actionHandlers }) {
-  if (loading) return <LoadingState />;
+  if (loading) return <GoalCoachLoading />;
   if (error) {
-    return <ErrorState errorInfo={error} noteLink={noteLink} onRetry={() => runAnalysis(null)} onSettingsClick={onSettingsClick} />;
+    return (
+      <GoalCoachError errorInfo={error} noteLink={noteLink} onRetry={() => runAnalysis(null)}
+        onSettingsClick={onSettingsClick} />
+    );
   }
   if (!tasks || tasks.length === 0) {
-    return <EmptyState noteLink={noteLink} onRetry={() => runAnalysis(null)} />;
+    return <GoalCoachEmpty noteLink={noteLink} onRetry={() => runAnalysis(null)} />;
   }
   return (
     <TaskList
@@ -380,7 +372,6 @@ function useGoalCoachActions(app, defaultNoteUUID, noteUUID, setTasks, { reserve
   }, []);
 
   const onCompleteTask = useCallback(async (event, goalCoachTask) => {
-    event.preventDefault();
     snapDashboardAction("approveDreamTask", { via: "complete" });
     fireConfettiForTask(event);
     const completedNoteUUID = goalCoachTask.uuid ? null : await dailyJotNoteUuidFromToday(app);
@@ -394,7 +385,6 @@ function useGoalCoachActions(app, defaultNoteUUID, noteUUID, setTasks, { reserve
   }, [app, fireConfettiForTask, patchTaskMetadata, removeTaskAfterFade, taskDomainName, taskDomainUUID]);
 
   const onPreserveTask = useCallback(async (event, goalCoachTask) => {
-    event.preventDefault();
     const key = _taskKey(goalCoachTask);
     const nextPreserveState = !goalCoachTask.preserveThroughTomorrow;
     setTasks(previous => (previous || []).map(candidate => (
@@ -404,7 +394,6 @@ function useGoalCoachActions(app, defaultNoteUUID, noteUUID, setTasks, { reserve
   }, [patchTaskMetadata, setTasks]);
 
   const onRemoveTask = useCallback(async (event, goalCoachTask) => {
-    event.preventDefault();
     const removedAt = new Date().toISOString();
     await patchTaskMetadata(goalCoachTask, { completedAt: null, removedAt });
     await recordDreamIdeaDecision(app, goalCoachTask, { domainName: taskDomainName, domainUuid: taskDomainUUID,
@@ -422,7 +411,6 @@ function useGoalCoachActions(app, defaultNoteUUID, noteUUID, setTasks, { reserve
   }, [app, noteUUID, patchTaskMetadata, removeTaskAfterFade, reserveTasks, taskDomainName, taskDomainUUID]);
 
   const onScheduleTask = useCallback(async (event, goalCoachTask) => {
-    event.preventDefault();
     const { events, tasks: scheduledTasks } = await fetchSchedulingOccupancy(app);
     const now = new Date();
     const todaySlots = buildAvailableTimeSlots(now, events, scheduledTasks);
@@ -622,20 +610,17 @@ export default function GoalCoachWidget({ app, gridHeightSize, gridWidthSize, on
     attachFootnotePopups(listRef.current);
   }, [tasks, error, loading]);
 
-  const onOpenNote = async (e) => {
-    e.preventDefault();
+  const onOpenNote = async () => {
     if (noteUUID) await app.navigate(`https://www.amplenote.com/notes/${ noteUUID }`);
   };
 
-  const onSettingsClick = (e) => {
-    e.preventDefault();
+  const onSettingsClick = () => {
     handleOpenSettings(onOpenSettings);
   };
 
   // [Claude claude-opus-4-8 (1M context)] Task: open the shared AI-provider chooser before reseeding
   // Prompt: "use this selector in [DreamTask] as well"
-  const onReseed = (e) => {
-    e.preventDefault();
+  const onReseed = () => {
     setProviderPopupOpen(true);
   };
 

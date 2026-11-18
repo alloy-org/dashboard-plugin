@@ -1,0 +1,208 @@
+/* Shared control styles matching the host app's Material components: icon buttons, text / outlined / raised
+ * buttons, small uppercase labels, empty states, outlined text fields and selects, and underline tabs. Widget
+ * stylesheets @include these on their existing class names; dashboard.scss
+ * also emits them as `.dashboard-*` classes for markup that has no class of its own yet. */
+
+@use 'theme-tokens' as *;
+
+$button-height: 36px;
+$dense-button-height: 32px;
+$field-height: 36px;
+$icon-button-size: 28px;
+
+// ------------------------------------------------------------------------------------------
+// @desc Shared shape of the host's MDC buttons: uppercase 500-weight label, 4px corners, icon gap.
+@mixin button-base($height: $dense-button-height) {
+  align-items: center;
+  border: none;
+  border-radius: $radius-sm;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: $smaller-font-size;
+  font-weight: 500;
+  gap: $sp-sm;
+  height: $height;
+  justify-content: center;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  white-space: nowrap;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+
+  .material-icon {
+    flex-shrink: 0;
+  }
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc A centered empty or first-run state: faint icon, short title, one sentence, optional actions.
+@mixin empty-state {
+  align-items: center;
+  color: $color-text-medium-contrast;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: $sp-sm;
+  justify-content: center;
+  padding: $sp-lg $sp-sm;
+  text-align: center;
+
+  > .material-icon {
+    color: $color-text-lower-contrast;
+  }
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc Round icon-only button in low-contrast ink, filled faintly on hover, like the host's MDC icon buttons.
+@mixin icon-button($size: $icon-button-size) {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: $color-text-low-contrast;
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  height: $size;
+  justify-content: center;
+  padding: 0;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  width: $size;
+
+  &:hover:not(:disabled) {
+    background: $color-background-element-low-contrast;
+    color: $color-text-high-contrast;
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.4;
+  }
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc Bordered secondary button, for alternatives that sit next to a raised primary action.
+@mixin outlined-button($height: $dense-button-height) {
+  @include button-base($height);
+  background: transparent;
+  border: 1px solid $color-border-primary;
+  color: $color-text-link;
+  padding: 0 15px;
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, $color-text-link 8%, transparent);
+  }
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc Small uppercase label for groups inside a widget, matching the host's section headings.
+@mixin overline-label {
+  color: $color-text-low-contrast;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc Filled primary button in the host action color with its paired ink.
+@mixin raised-button($height: $button-height) {
+  @include button-base($height);
+  background: $color-background-action-high-contrast;
+  box-shadow: $shadow-elevation-2;
+  color: $color-text-button;
+  padding: 0 $sp-lg;
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, $color-background-action-high-contrast 88%, #000000);
+  }
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc Dropdown in the host's outlined field shape, with a chevron drawn from gradients in the muted text color so it
+//   follows the theme instead of a fixed-color image.
+@mixin select-field($height: $field-height) {
+  @include text-field($height);
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, $color-text-low-contrast 50%),
+    linear-gradient(135deg, $color-text-low-contrast 50%, transparent 50%);
+  background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
+  background-size: 5px 5px, 5px 5px;
+  cursor: pointer;
+  padding-right: 28px;
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc Borderless button in the host link color (readable on every theme's surface), for secondary and header actions.
+@mixin text-button($height: $dense-button-height) {
+  @include button-base($height);
+  background: transparent;
+  color: $color-text-link;
+  padding: 0 $sp-sm;
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, $color-text-link 8%, transparent);
+  }
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc Single-line input in the host's outlined field shape: 1px border, 4px corners, accent border on focus.
+@mixin text-field($height: $field-height) {
+  background-color: $color-background-primary;
+  border: 1px solid $color-border-primary;
+  border-radius: $radius-sm;
+  box-sizing: border-box;
+  color: $color-text-high-contrast;
+  font-family: inherit;
+  font-size: 14px;
+  height: $height;
+  padding: 0 10px;
+  transition: border-color 0.15s ease;
+
+  &::placeholder {
+    color: $color-text-lower-contrast;
+  }
+
+  &:focus {
+    border-color: $color-background-action-high-contrast;
+    outline: none;
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+}
+
+// ------------------------------------------------------------------------------------------
+// @desc Underline tab like the dashboard header's domain tabs: muted label, 2px rule under the active tab.
+//   The active state is the `.active` class or aria-selected="true".
+@mixin underline-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: $color-text-low-contrast;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  padding: $sp-sm $sp-md;
+  transition: border-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    color: $color-text-high-contrast;
+  }
+
+  &.active,
+  &[aria-selected="true"] {
+    border-bottom-color: $color-text-high-contrast;
+    color: $color-text-high-contrast;
+  }
+}

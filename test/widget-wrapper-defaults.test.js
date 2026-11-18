@@ -2,6 +2,7 @@
 //   title, and subtitle from widgetId via WIDGET_REGISTRY, so widgets need not pass them
 import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
+import { MdScience } from "react-icons/md";
 
 const { default: WidgetWrapper } = await import("widget-wrapper");
 const { widgetDataFromId } = await import("constants/settings");
@@ -30,11 +31,19 @@ describe("WidgetWrapper header defaults", () => {
     document.body.innerHTML = "";
   });
 
-  it("takes the icon and title from the registry when the widget passes only its id", async () => {
+  it("takes the Material icon from the widget icon map and the title from the registry", async () => {
     const registryEntry = widgetDataFromId("victory-value");
     const container = await renderWrapper({ widgetId: "victory-value" });
-    expect(headerText(container, ".widget-icon")).toBe(registryEntry.icon);
+    expect(container.querySelector(".widget-icon svg")).not.toBeNull();
+    expect(headerText(container, ".widget-icon")).toBe("");
     expect(headerText(container, ".widget-title__label")).toBe(registryEntry.name);
+  });
+
+  it("has a Material icon for every registered widget", async () => {
+    const { WIDGET_ICON_BY_ID } = await import("widget-icons");
+    const { WIDGET_REGISTRY } = await import("layout-profiles");
+    const widgetIdsWithoutIcons = WIDGET_REGISTRY.filter(entry => !WIDGET_ICON_BY_ID[entry.widgetId]);
+    expect(widgetIdsWithoutIcons.map(entry => entry.widgetId)).toEqual([]);
   });
 
   it("prefers the registry's visibleTitle over its name, as the widget's own call used to", async () => {
@@ -43,8 +52,9 @@ describe("WidgetWrapper header defaults", () => {
   });
 
   it("lets a widget with a state-dependent header override either default", async () => {
-    const container = await renderWrapper({ icon: "🧪", title: "Overridden", widgetId: "victory-value" });
-    expect(headerText(container, ".widget-icon")).toBe("🧪");
+    const container = await renderWrapper({ icon: createElement(MdScience, { "data-testid": "override-icon" }),
+      title: "Overridden", widgetId: "victory-value" });
+    expect(container.querySelector(".widget-icon [data-testid='override-icon']")).not.toBeNull();
     expect(headerText(container, ".widget-title__label")).toBe("Overridden");
   });
 

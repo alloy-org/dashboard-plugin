@@ -44,6 +44,7 @@
 // Background maintenance waits while the builder covers the dashboard; queued rankings refresh its task scores.
 
 import { quarterLabel as displayQuarterLabel } from "constants/quarters";
+import { Button, ErrorState, IconButton, LoadingState, PlainButton } from "dashboard/controls";
 import NoteEditor from "dashboard/note-editor";
 import DoneEnoughStep from "dashboard/plan-wizard/done-enough-step";
 import IntentReadingPage from "dashboard/plan-wizard/intent-reading-page";
@@ -69,6 +70,7 @@ import { useSuspendWidgetMounting } from "hooks/use-widget-mount-suspension";
 import { WIZARD_LLM_TIMEOUT_SECONDS } from "plan-wizard/plan-models";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { MdClose } from "react-icons/md";
 import { navigateToNote } from "util/goal-notes";
 import "dashboard/styles/plan-wizard.scss";
 
@@ -426,20 +428,23 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
       <div aria-label="Plan your quarter" aria-modal="true" className="plan-wizard-page" role="dialog">
         <header className="plan-wizard-header">
           <div className="plan-wizard-title-group" title={ `${ quarterLabel } · ${ domainLabel }` }>
-            <svg aria-hidden="true" className="plan-wizard-title-icon" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="8" />
-              <circle cx="12" cy="12" r="4" />
-              <circle className="plan-wizard-title-icon-center" cx="12" cy="12" r="1.5" />
-            </svg>
             <h1 className="plan-wizard-title">Plan Builder</h1>
             <span className="plan-wizard-title-quarter">{ headerQuarterLabel }</span>
             { existingPlanNoteUuid ? (
-              <button className="plan-wizard-existing-note-link" disabled={ isOpeningPlanNote }
-                onClick={ handleViewExistingPlanNote } type="button">
+              <PlainButton className="plan-wizard-existing-note-link" disabled={ isOpeningPlanNote }
+                onClick={ handleViewExistingPlanNote }>
                 { isOpeningPlanNote ? "Opening…" : "View quarterly plan note" }
-              </button>
+              </PlainButton>
             ) : null }
           </div>
+          { /* An explicit way out, so leaving does not depend on knowing that Escape or the backdrop also close. */ }
+          <IconButton className="plan-wizard-close" Icon={ MdClose } label="Close Plan Builder" onClick={ onClose }
+            size="dialog" tooltip="Close" />
+        </header>
+        <div className="plan-wizard-step-strip">
+          <span className="plan-wizard-step-position">
+            Step <span className="plan-wizard-progress">{ `${ stepIndex + 1 } of ${ WIZARD_STEPS.length }` }</span>
+          </span>
           <div aria-label={ `Step ${ stepIndex + 1 } of ${ WIZARD_STEPS.length }` } className="plan-wizard-step-track">
             { WIZARD_STEPS.map((wizardStep, wizardStepIndex) => (
               <span aria-hidden="true"
@@ -447,16 +452,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
                 key={ wizardStep.key } />
             )) }
           </div>
-          <span className="plan-wizard-progress">{ `${ stepIndex + 1 } of ${ WIZARD_STEPS.length }` }</span>
-          { /* An explicit way out, so leaving does not depend on knowing that Escape or the backdrop also close. */ }
-          <button aria-label="Close Plan Builder" className="plan-wizard-close" onClick={ onClose } title="Close"
-            type="button">
-            <svg aria-hidden="true" className="plan-wizard-close-icon" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="9.5" />
-              <path d="M8.5 8.5l7 7M15.5 8.5l-7 7" />
-            </svg>
-          </button>
-        </header>
+        </div>
         { rendersProgressSidebar ? (
           <WizardProgressBar { ...{ isOpeningPlanNote, progressRows, quarterLabel } }
             onOpenPlanNote={ handleViewQuarterlyPlan } onSelectStep={ handleSelectStep }
@@ -468,15 +464,22 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
             onOpenPlanNote={ handleViewQuarterlyPlan } onSelectStep={ handleSelectStep } />
         ) : null }
         <div className="plan-wizard-body-main">
-          { isLoading ? <p className="plan-wizard-status">Loading your plan…</p> : null }
+          {
+            isLoading
+              ? <LoadingState className="plan-wizard-status">Loading your plan…</LoadingState>
+              : null
+          }
           { error && !isLoading ? (
-            <div className="plan-wizard-error" role="alert">
-              <p className="plan-wizard-error-title">Plan Builder could not read its saved Vision Guide.</p>
+            <ErrorState className="plan-wizard-error" onRetry={ reload } retryLabel="Try again"
+              title={ (
+                <span className="plan-wizard-error-title">
+                  Plan Builder could not read its saved Vision Guide.
+                </span>
+              ) }>
               <p className="plan-wizard-error-message">{ error.message }</p>
               <p className="plan-wizard-error-guidance">No planning data was changed. Correct the named record or
                 retry after a temporary connection problem.</p>
-              <button className="plan-wizard-retry" onClick={ reload } type="button">Try again</button>
-            </div>
+            </ErrorState>
           ) : null }
           { inspectingNoteUuid ? (
             <NoteEditor app={ app } noteUUID={ inspectingNoteUuid } onBack={ () => setInspectingNoteUuid(null) } />
@@ -542,27 +545,32 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
           { rendersPlanContent && !isShowingSidePage ? (
             <nav className="plan-wizard-navigation">
               { isFirstStep ? (
-                <button className="plan-wizard-cancel" onClick={ onClose } type="button">Cancel</button>
+                <Button className="plan-wizard-cancel" onClick={ onClose }>Cancel</Button>
               ) : (
-                <button className="plan-wizard-back" disabled={ isNavigatingSaveStep && (isSaving || isPublishing) }
-                  onClick={ isNavigatingSaveStep ? () => handleNavigateStep(-1) : () => handleStepChange(-1) }
-                  type="button">Back</button>
+                <Button className="plan-wizard-back"
+                  disabled={ isNavigatingSaveStep && (isSaving || isPublishing) }
+                  onClick={ isNavigatingSaveStep
+                    ? () => handleNavigateStep(-1)
+                    : () => handleStepChange(-1) }>
+                  Back
+                </Button>
               ) }
               <div className="plan-wizard-advance-group">
                 { isLastStep ? (
-                  <button className="plan-wizard-view-plan" disabled={ isOpeningPlanNote || isSaving || isPublishing }
-                    onClick={ handleViewQuarterlyPlan } type="button">
+                  <Button className="plan-wizard-view-plan"
+                    disabled={ isOpeningPlanNote || isSaving || isPublishing }
+                    onClick={ handleViewQuarterlyPlan }>
                     { isOpeningPlanNote ? "Opening…" : "View Quarterly Plan" }
-                  </button>
+                  </Button>
                 ) : null }
-                <button className="plan-wizard-next"
+                <Button className="plan-wizard-next"
                   disabled={ (isLastStep && (!hasDoneEnoughSelection || isOpeningPlanNote))
                     || (isFirstStep && ((!hasIntentAnswer && !hasPersistedIntent) || isSaving))
                     || (isNavigatingSaveStep && (isSaving || isPublishing || isOpeningPlanNote)) }
                   onClick={ isFirstStep || isNavigatingSaveStep ? () => handleNavigateStep(1) : () => handleStepChange(1) }
-                  type="button">
+                  variant="raised">
                   { advanceButtonLabel }
-                </button>
+                </Button>
               </div>
             </nav>
           ) : null }

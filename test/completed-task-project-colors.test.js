@@ -6,7 +6,22 @@ import { dailyProjectSegments, NO_PROJECT_COLOR_TOKEN, NO_PROJECT_KEY, OTHER_PRO
   projectLegendItems, projectUuidsByCompletion } from "dashboard/projects/completed-task-project-colors";
 import { ledgerDateSectionMarkdown } from "dashboard/projects/completed-task-project-ledger";
 import { displayedQuarters, readCompletedTaskProjects } from "hooks/use-completed-task-projects";
-import { buildDailyValuesForWeek, buildTooltipHTML } from "victory-value";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { buildDailyValuesForWeek, tooltipContentFromDay } from "victory-value";
+
+// ----------------------------------------------------------------------------------------------
+// @desc Render tooltip content into a detached element and return its markup.
+// @param {JSX.Element} content - Tooltip content.
+// @returns {Promise<string>} The rendered HTML.
+async function markupFromContent(content) {
+  const container = document.createElement("div");
+  const root = createRoot(container);
+  await act(async () => { root.render(content); });
+  const markup = container.innerHTML;
+  root.unmount();
+  return markup;
+}
 
 // ----------------------------------------------------------------------------------------------
 // @desc A ledger entry.
@@ -104,15 +119,17 @@ describe("completed task project colors", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc Each tooltip row names its task's project beside the project's swatch, the name escaped; a task no project
   //   claims shows no project.
-  it("names each task's project in the tooltip", () => {
+  it("names each task's project in the tooltip", async () => {
     const entriesByDate = new Map([["2026-10-10", [{ ...entry("claimed", "alpha", "2026-10-10"), projectName: "Ship <v2>" }]]]);
     const completedTasksByDate = { "2026-10-10": [task("claimed", 4), task("unclaimed", 1)] };
     const projects = completedTaskProjects(entriesByDate);
     const dailyValues = buildDailyValuesForWeek(completedTasksByDate, [], "2026-10-10", projects);
-    const html = buildTooltipHTML(6, dailyValues, completedTasksByDate, [], projects);
-    expect(html).toContain("<span class=\"dashboard-tooltip-row-swatch\" style=\"background: var(--dashboard-color-category-1)\"></span>"
-      + "Ship &lt;v2&gt;</span>");
+    const html = await markupFromContent(tooltipContentFromDay(6, dailyValues, completedTasksByDate, [], projects));
+    // jsdom drops var() colors from inline styles, so the swatch's color token is covered by the color assignment
+    // tests above; here the swatch must sit beside the project's escaped name.
+    expect(html).toContain("<span class=\"dashboard-tooltip-row-swatch\"></span>Ship &lt;v2&gt;</span>");
     expect(html.match(/dashboard-tooltip-row-project/g)).toHaveLength(1);
-    expect(buildTooltipHTML(6, dailyValues, completedTasksByDate, [], null)).not.toContain("dashboard-tooltip-row-project");
+    expect(await markupFromContent(tooltipContentFromDay(6, dailyValues, completedTasksByDate, [], null)))
+      .not.toContain("dashboard-tooltip-row-project");
   });
 });

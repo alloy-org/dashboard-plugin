@@ -1,4 +1,5 @@
 // Side control on the Quarterly Planning pager. The label is the quarter a click brings into the pair.
+import { PlainButton } from "dashboard/controls";
 
 // ----------------------------------------------------------------------------------------------
 // @desc One side of the quarter pager. Previous sits to the left of the cards and following to the right.
@@ -12,13 +13,13 @@ export default function QuarterPageButton({ direction, onClick, quarter }) {
   const chevronFirst = direction === "previous";
   const chevron = <QuarterPageChevron direction={ direction } />;
   return (
-    <button aria-label={ `Show ${ quarter.label }` }
+    <PlainButton aria-label={ `Show ${ quarter.label }` }
       className={ `quarter-page-button quarter-page-button--${ direction }` } onClick={ onClick }
-      title={ `Show ${ quarter.label }` } type="button">
+      title={ `Show ${ quarter.label }` }>
       { chevronFirst ? chevron : null }
       <span className="quarter-page-label">{ quarter.label }</span>
       { chevronFirst ? null : chevron }
-    </button>
+    </PlainButton>
   );
 }
 

@@ -5,7 +5,9 @@
  * Prompt summary: "widget that fetches quotes via callPlugin and displays on image tiles"
  */
 import { useEffect, useState } from "react";
+import { IconButton, LoadingState } from "dashboard/controls";
 import { getRandomQuotes } from "quotes-data";
+import { MdRefresh } from "react-icons/md";
 import { backgroundSplashUrl } from "util/background-splash-images";
 import WidgetWrapper from "widget-wrapper";
 import "styles/quotes.scss"
@@ -34,15 +36,13 @@ export default function QuotesWidget({ gridHeightSize, planContent, quotes }) {
   };
 
   const reseedButton = (
-    <button className="widget-header-action" onClick={handleReseed} title="Reseed quotes">
-      ↻ Reseed
-    </button>
+    <IconButton Icon={ MdRefresh } label="Reseed quotes" onClick={ handleReseed } size="small" />
   );
 
   if (loading) {
     return (
       <WidgetWrapper widgetId="quotes">
-        <div className="quotes-loading">Generating quotes...</div>
+        <LoadingState>Generating quotes...</LoadingState>
       </WidgetWrapper>
     );
   }
@@ -54,7 +54,7 @@ export default function QuotesWidget({ gridHeightSize, planContent, quotes }) {
           <div
             key={i}
             className="quote-tile"
-            style={{ backgroundImage: 'linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.6)), url(' + backgroundSplashUrl('small', backgroundSeed, i) + ')' }}
+            style={{ '--quote-tile-photo': 'url(' + backgroundSplashUrl('small', backgroundSeed, i) + ')' }}
           >
             <p className="quote-text">{'"' + q.text + '"'}</p>
             {q.author ? <span className="quote-author">{'— ' + q.author}</span> : null}

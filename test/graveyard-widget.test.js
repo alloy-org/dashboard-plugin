@@ -241,9 +241,9 @@ describe("GraveyardWidget", () => {
       .find((element) => element.textContent.includes("Note"));
 
     expect(keepAction).not.toBeNull();
-    expect(keepAction.textContent).toBe("🧲 Keep");
+    expect(keepAction.textContent).toBe("Keep");
     expect(noteAction).not.toBeNull();
-    expect(noteAction.textContent).toBe("📓 Note");
+    expect(noteAction.textContent).toBe("Note");
 
     await act(async () => {
       noteAction.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -285,8 +285,8 @@ describe("GraveyardWidget", () => {
       ],
     });
 
-    const refreshLink = Array.from(container.querySelectorAll(".widget-header-action"))
-      .find((element) => element.textContent.includes("Refresh"));
+    const refreshLink = Array.from(container.querySelectorAll(".graveyard-refresh"))
+      .find((element) => element.getAttribute("aria-label")?.includes("Refresh"));
     expect(refreshLink).not.toBeNull();
     expect(container.textContent).toContain("Initial graveyard task");
 

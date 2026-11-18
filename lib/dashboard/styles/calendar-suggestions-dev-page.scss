@@ -2,17 +2,12 @@
 @use 'theme-tokens' as *;
 
 .calendar-suggestions-dev-page {
-  background-color: $color-bg-page;
-  color: $color-text;
+  background-color: $color-background-secondary;
+  color: $color-text-high-contrast;
   margin: 0 auto;
   max-width: 900px;
   min-height: 100vh;
   padding: $sp-lg;
-
-  .calendar-suggestions-back-link {
-    color: $color-link;
-    font-size: $smaller-font-size;
-  }
 
   .calendar-suggestions-title {
     font-size: $large-font-size;
@@ -26,57 +21,25 @@
     gap: $sp-md;
   }
 
-  .calendar-suggestions-domain,
-  .calendar-suggestions-range-button,
-  .calendar-suggestions-suggest-button {
-    background-color: $color-bg-card;
-    border: 1px solid $color-border;
-    border-radius: $radius-sm;
-    color: $color-text;
-    font-size: $smaller-font-size;
-    padding: $sp-xs $sp-md;
-  }
-
   .calendar-suggestions-range {
     display: flex;
     gap: $sp-xs;
   }
 
-  .calendar-suggestions-range-button {
-    cursor: pointer;
-
-    &.is-selected {
-      background-color: $color-accent;
-      border-color: $color-accent;
-      color: $color-text-on-accent;
-    }
-  }
-
-  .calendar-suggestions-suggest-button {
-    border-color: $color-accent;
-    cursor: pointer;
-    font-weight: 600;
-
-    &:disabled {
-      cursor: progress;
-      opacity: 0.6;
-    }
-  }
-
   .calendar-suggestions-status {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: $smaller-font-size;
     margin: $sp-md 0;
 
     &.is-error {
-      color: $color-danger;
+      color: $color-text-error-high-contrast;
     }
   }
 
   .suggestion-day-section {
-    background-color: $color-bg-card;
-    border: 1px solid $color-border;
-    border-radius: $radius-md;
+    background-color: $color-background-primary;
+    border: 1px solid $color-border-primary;
+    border-radius: $radius-lg;
     margin-bottom: $sp-md;
     padding: $sp-md;
   }
@@ -87,7 +50,7 @@
   }
 
   .suggestion-day-empty {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: $smaller-font-size;
     margin: 0;
   }
@@ -99,7 +62,7 @@
   }
 
   .suggestion-row-item {
-    border-top: 1px solid $color-border;
+    border-top: 1px solid $color-border-primary;
     padding: $sp-sm 0;
 
     &:first-child {
@@ -116,7 +79,7 @@
 
   .suggestion-row-time {
     font-variant-numeric: tabular-nums;
-    font-weight: 600;
+    font-weight: 500;
   }
 
   .suggestion-row-title {
@@ -126,21 +89,21 @@
 
   .suggestion-row-badge,
   .suggestion-row-duration {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: $smaller-font-size;
   }
 
   .suggestion-row-rationale {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     font-size: $smaller-font-size;
     margin: $sp-xs 0 0;
     white-space: pre-wrap;
   }
 
   .calendar-report-section {
-    background-color: $color-bg-card;
-    border: 1px solid $color-border;
-    border-radius: $radius-md;
+    background-color: $color-background-primary;
+    border: 1px solid $color-border-primary;
+    border-radius: $radius-lg;
     margin-top: $sp-lg;
     padding: $sp-md;
   }
@@ -151,13 +114,13 @@
   }
 
   .calendar-report-name {
-    font-weight: 600;
+    font-weight: 500;
     margin: 0 0 $sp-md;
   }
 
   .calendar-report-uuid,
   .calendar-report-empty {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: $smaller-font-size;
     font-weight: normal;
   }
@@ -167,7 +130,7 @@
   }
 
   .calendar-report-content {
-    border-top: 1px solid $color-border;
+    border-top: 1px solid $color-border-primary;
     font-size: $smaller-font-size;
     overflow-wrap: anywhere;
     padding-top: $sp-sm;
@@ -187,7 +150,7 @@
     }
 
     a {
-      color: $color-link;
+      color: $color-text-link;
     }
 
     table {
@@ -196,7 +159,7 @@
     }
 
     th, td {
-      border: 1px solid $color-border;
+      border: 1px solid $color-border-primary;
       padding: $sp-xs $sp-sm;
       text-align: left;
     }
@@ -207,13 +170,13 @@
   }
 
   .calendar-report-markdown-toggle {
-    color: $color-text-secondary;
+    color: $color-text-medium-contrast;
     cursor: pointer;
     font-size: $smaller-font-size;
   }
 
   .calendar-report-markdown-text {
-    background-color: $color-bg-page;
+    background-color: $color-background-secondary;
     border-radius: $radius-sm;
     font-size: $smaller-font-size;
     overflow-x: auto;

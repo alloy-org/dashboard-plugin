@@ -4,11 +4,13 @@
  * Task: Peak Hours widget — hourly distribution chart of task creation and completion
  * Prompt summary: "rewrite peak-hours as a project-native widget consuming completed tasks from dashboard"
  */
-import { useThemeRevision } from "hooks/use-theme-revision";
+import PeakHoursChart from "dashboard/charts/peak-hours-chart";
+import { EmptyState, IconButton, LoadingState } from "dashboard/controls";
 import { useEffect, useRef, useMemo, useCallback, useState } from "react";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { dateFromDateInput, dateFromMonthKey, formatHourLabel, monthKeyFromDateInput,
   monthStartFromDateInput } from "util/date-utility";
+import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 import { logIfEnabled } from "util/log";
 import WidgetWrapper from "widget-wrapper";
 import "styles/peak-hours.scss";
@@ -86,126 +88,6 @@ function buildHourlyData(tasks) {
 }
 
 // ---------------------------------------------------------------------------
-// Canvas drawing
-// ---------------------------------------------------------------------------
-
-function getThemeColors(el) {
-  const s = getComputedStyle(el);
-  return {
-    barCreated: s.getPropertyValue('--dashboard-color-blue').trim() || '#5b7bbf',
-    barCompleted: s.getPropertyValue('--dashboard-color-accent').trim() || '#e8853d',
-    axisText: s.getPropertyValue('--dashboard-color-text-secondary').trim() || '#7a8699',
-    gridLine: s.getPropertyValue('--dashboard-color-border').trim() || '#d8dde6',
-  };
-}
-
-// [Claude] Task: draw grouped bar chart on canvas using theme-aware colors from CSS custom properties
-// Prompt: "rewrite peak-hours chart to use project theme tokens for light/dark mode support"
-// Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
-function drawChart(canvas, createdData, completedData, hourLabels) {
-  const ctx = canvas.getContext("2d");
-  const dpr = window.devicePixelRatio || 1;
-  const rect = canvas.parentElement.getBoundingClientRect();
-  const W = rect.width;
-  const H = rect.height;
-  if (W <= 0 || H <= 0) return;
-
-  canvas.width = W * dpr;
-  canvas.height = H * dpr;
-  canvas.style.width = `${W}px`;
-  canvas.style.height = `${H}px`;
-  ctx.scale(dpr, dpr);
-
-  const colors = getThemeColors(canvas);
-  const padLeft = 48;
-  const padRight = 12;
-  const padTop = 12;
-  const padBottom = 40;
-  const chartW = W - padLeft - padRight;
-  const chartH = H - padTop - padBottom;
-
-  const maxVal = Math.max(...createdData, ...completedData, 1);
-  const niceMax = Math.ceil(maxVal / 10) * 10 || 10;
-
-  ctx.clearRect(0, 0, W, H);
-
-  const yTicks = 5;
-  ctx.font = "11px -apple-system, BlinkMacSystemFont, system-ui, sans-serif";
-  ctx.textAlign = "right";
-  ctx.textBaseline = "middle";
-  for (let i = 0; i <= yTicks; i++) {
-    const val = Math.round((niceMax / yTicks) * i);
-    const y = padTop + chartH - (chartH * i) / yTicks;
-    ctx.fillStyle = colors.axisText;
-    ctx.fillText(`${val}`, padLeft - 8, y);
-    if (i > 0) {
-      ctx.strokeStyle = colors.gridLine;
-      ctx.globalAlpha = 0.4;
-      ctx.lineWidth = 0.5;
-      ctx.beginPath();
-      ctx.moveTo(padLeft, y);
-      ctx.lineTo(padLeft + chartW, y);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-  }
-
-  const n = 24;
-  const groupW = chartW / n;
-  const barW = groupW * 0.32;
-  const gap = groupW * 0.04;
-
-  for (let i = 0; i < n; i++) {
-    const x = padLeft + i * groupW + (groupW - barW * 2 - gap) / 2;
-    const hCreated = (createdData[i] / niceMax) * chartH;
-    const hCompleted = (completedData[i] / niceMax) * chartH;
-
-    ctx.fillStyle = colors.barCreated;
-    roundRect(ctx, x, padTop + chartH - hCreated, barW, hCreated, 2);
-
-    ctx.fillStyle = colors.barCompleted;
-    roundRect(ctx, x + barW + gap, padTop + chartH - hCompleted, barW, hCompleted, 2);
-  }
-
-  ctx.fillStyle = colors.axisText;
-  ctx.font = "10px -apple-system, BlinkMacSystemFont, system-ui, sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  const labelStep = chartW < 300 ? 4 : 2;
-  for (let i = 0; i < n; i += labelStep) {
-    const x = padLeft + i * groupW + groupW / 2;
-    ctx.fillText(hourLabels[i], x, padTop + chartH + 8);
-  }
-}
-
-function roundRect(ctx, x, y, w, h, r) {
-  if (h < 1) return;
-  r = Math.min(r, h / 2, w / 2);
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.arcTo(x + w, y, x + w, y + r, r);
-  ctx.lineTo(x + w, y + h);
-  ctx.lineTo(x, y + h);
-  ctx.lineTo(x, y + r);
-  ctx.arcTo(x, y, x + r, y, r);
-  ctx.closePath();
-  ctx.fill();
-}
-
-function getBarIndex(canvas, e) {
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const W = rect.width;
-  const padLeft = 48;
-  const padRight = 12;
-  const chartW = W - padLeft - padRight;
-  const rel = x - padLeft;
-  if (rel < 0 || rel > chartW) return -1;
-  return Math.floor((rel / chartW) * 24);
-}
-
-// ---------------------------------------------------------------------------
 // Render helpers
 // ---------------------------------------------------------------------------
 
@@ -240,24 +122,11 @@ function LegendItem({ modifierClass, label }) {
 function MonthNavigator({ label, forwardDisabled, onNavigate }) {
   return (
     <span className="peak-hours-month-nav">
-      <button
-        type="button"
-        className="peak-hours-month-nav-arrow"
-        aria-label="Previous month"
-        onClick={() => onNavigate(-1)}
-      >
-        ‹
-      </button>
+      <IconButton className="peak-hours-month-nav-arrow" Icon={ MdChevronLeft } label="Previous month"
+        onClick={ () => onNavigate(-1) } size="small" />
       <span className="peak-hours-month-nav-label">{label}</span>
-      <button
-        type="button"
-        className="peak-hours-month-nav-arrow"
-        aria-label="Next month"
-        disabled={forwardDisabled}
-        onClick={() => onNavigate(1)}
-      >
-        ›
-      </button>
+      <IconButton className="peak-hours-month-nav-arrow" disabled={ forwardDisabled } Icon={ MdChevronRight }
+        label="Next month" onClick={ () => onNavigate(1) } size="small" />
     </span>
   );
 }
@@ -278,9 +147,6 @@ function MonthNavigator({ label, forwardDisabled, onNavigate }) {
 // @param {object} props - App bridge, dates, and time formatting preference.
 // @returns {JSX.Element} Hourly activity widget.
 export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFormat }) {
-  const themeRevision = useThemeRevision();
-  const canvasRef = useRef(null);
-  const [tooltip, setTooltip] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState([]);
@@ -364,30 +230,6 @@ export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFo
     return dateFromDateInput(viewMonthDate).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   }, [viewMonthDate]);
 
-  useEffect(() => {
-    if (!canvasRef.current) return;
-    drawChart(canvasRef.current, createdByHour, completedByHour, hourLabels);
-    const handleResize = () => {
-      if (canvasRef.current) drawChart(canvasRef.current, createdByHour, completedByHour, hourLabels);
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, [completedByHour, createdByHour, hourLabels, themeRevision]);
-
-  const handleMouseMove = useCallback((e) => {
-    const idx = getBarIndex(canvasRef.current, e);
-    if (idx < 0 || idx > 23) { setTooltip(null); return; }
-    const rect = canvasRef.current.getBoundingClientRect();
-    setTooltip({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top - 60,
-      hour: hourLabels[idx],
-      created: createdByHour[idx],
-      completed: completedByHour[idx],
-    });
-  }, [createdByHour, completedByHour]);
-
-  const handleMouseLeave = useCallback(() => setTooltip(null), []);
   useWidgetLoadedEvent(WIDGET_ID, !loading && !error, !!error);
 
   const monthNavigator = (
@@ -397,9 +239,7 @@ export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFo
   if (loading) {
     return (
       <WidgetWrapper subtitle={monthNavigator} widgetId={WIDGET_ID}>
-        <div className="peak-hours-empty">
-          <p>Loading monthly task history…</p>
-        </div>
+        <LoadingState className="peak-hours-loading">Loading monthly task history…</LoadingState>
       </WidgetWrapper>
     );
   }
@@ -407,9 +247,7 @@ export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFo
   if (totalTasks === 0) {
     return (
       <WidgetWrapper subtitle={monthNavigator} widgetId={WIDGET_ID}>
-        <div className="peak-hours-empty">
-          <p>No completed task data available yet.</p>
-        </div>
+        <EmptyState className="peak-hours-empty" title="No completed task data available yet." />
       </WidgetWrapper>
     );
   }
@@ -425,30 +263,7 @@ export default function PeakHoursWidget({ app, currentDate, selectedDate, timeFo
         <LegendItem modifierClass="peak-hours-legend-swatch--created" label="Created value" />
         <LegendItem modifierClass="peak-hours-legend-swatch--completed" label="Completed value" />
       </div>
-      <div className="peak-hours-chart-container">
-        <canvas
-          ref={canvasRef}
-          className="peak-hours-canvas"
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
-        />
-        {tooltip && (
-          <div
-            className="peak-hours-tooltip"
-            style={{ left: tooltip.x, top: tooltip.y, transform: 'translateX(-50%)' }}
-          >
-            <div className="peak-hours-tooltip-header">{tooltip.hour}</div>
-            <div className="peak-hours-tooltip-row">
-              <span className="peak-hours-tooltip-label peak-hours-tooltip-label--created">Created:</span>
-              {` ${tooltip.created} pts`}
-            </div>
-            <div className="peak-hours-tooltip-row">
-              <span className="peak-hours-tooltip-label peak-hours-tooltip-label--completed">Completed:</span>
-              {` ${tooltip.completed} pts`}
-            </div>
-          </div>
-        )}
-      </div>
+      <PeakHoursChart completedByHour={completedByHour} createdByHour={createdByHour} hourLabels={hourLabels} />
     </WidgetWrapper>
   );
 }

@@ -7,6 +7,7 @@
 // the last page, that button reads Done and closes the wizard, saving an unsaved selection on its way out so a
 // user who chose a condition and reached for Done instead of Save condition keeps their answer.
 
+import { Badge, Button, PlainButton, TextField } from "dashboard/controls";
 import DoneEnoughConditions from "dashboard/plan-wizard/done-enough-conditions";
 import { DONE_ENOUGH_CUSTOM_KEY, RELEASE_CHOICES, RELEASE_CUSTOM_KEY, RELEASE_HEADING,
   doneEnoughDraftFromAnswer, doneEnoughOptionFromKey, doneEnoughTextFromDraft,
@@ -105,7 +106,7 @@ export default function DoneEnoughStep({ answer, isSaving, onAnswerStateChange, 
     <div className="plan-step-container done-enough-container">
       <div className="done-enough-eyebrow">
         <span className="plan-category-heading">Adaptive module</span>
-        <span className="done-enough-optional-badge">Optional</span>
+        <Badge className="done-enough-optional-badge">Optional</Badge>
       </div>
       <h2 className="plan-heading done-enough-heading">{ DONE_ENOUGH_STEP_COPY.title }</h2>
       <p className="plan-summary">{ DONE_ENOUGH_STEP_COPY.summary }</p>
@@ -119,18 +120,18 @@ export default function DoneEnoughStep({ answer, isSaving, onAnswerStateChange, 
           <h3 className="done-enough-release-heading">{ RELEASE_HEADING }</h3>
           <div className="done-enough-release-list">
             { RELEASE_CHOICES.map(activity => (
-              <button aria-pressed={ draft.releaseKeys.includes(activity.key) } className="done-enough-release-choice"
-                disabled={ isSaving } key={ activity.key }
+              <PlainButton aria-pressed={ draft.releaseKeys.includes(activity.key) }
+                className="done-enough-release-choice" disabled={ isSaving } key={ activity.key }
                 onClick={ () => changeDraft(previous => ({ ...previous,
-                  releaseKeys: toggledReleaseKeysFromSelection(previous.releaseKeys, activity.key) })) }
-                type="button">
+                  releaseKeys: toggledReleaseKeysFromSelection(previous.releaseKeys, activity.key) })) }>
                 { activity.label }
-              </button>
+              </PlainButton>
             )) }
           </div>
           { draft.releaseKeys.includes(RELEASE_CUSTOM_KEY) ? (
-            <input className="done-enough-release-custom-input" disabled={ isSaving }
-              onChange={ event => changeDraft(previous => ({ ...previous, customReleaseText: event.target.value })) }
+            <TextField className="done-enough-release-custom-input" disabled={ isSaving } hideLabel
+              label={ CUSTOM_RELEASE_PLACEHOLDER }
+              onChange={ text => changeDraft(previous => ({ ...previous, customReleaseText: text })) }
               placeholder={ CUSTOM_RELEASE_PLACEHOLDER } type="text" value={ draft.customReleaseText } />
           ) : null }
         </div>
@@ -138,9 +139,10 @@ export default function DoneEnoughStep({ answer, isSaving, onAnswerStateChange, 
       </div>
       { hasSaved ? <p className="plan-saved">Saved.</p> : null }
       <div className="plan-actions">
-        <button className="plan-button plan-button--primary" disabled={ isSaving || !canSave } onClick={ handleSave } type="button">
+        <Button className="plan-button plan-button--primary" disabled={ isSaving || !canSave }
+          onClick={ handleSave } variant="raised">
           { isSaving ? "Saving…" : saveLabel }
-        </button>
+        </Button>
         <p className="plan-optional">This one is optional — you can move on without choosing a condition.</p>
       </div>
     </div>

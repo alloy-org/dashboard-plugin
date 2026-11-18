@@ -6,6 +6,7 @@
  */
 
 @use 'theme-tokens' as *;
+@use 'controls' as *;
 
 .no-config-upsell {
   align-items: center;
@@ -22,48 +23,29 @@
     justify-content: center;
   }
 
-  .no-config-upsell-badge {
-    border-radius: 999px;
-    font-size: $smaller-font-size;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    padding: $sp-xs $sp-md;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-
-  .no-config-upsell-badge--brand {
-    background: rgba(74, 158, 255, 0.12);
-    color: $color-blue;
-  }
-
-  .no-config-upsell-badge--price {
-    border: 1px solid $color-border;
-    color: $color-text-secondary;
-    text-transform: none;
-  }
-
   .no-config-upsell-headline {
-    color: $color-navy;
-    font-size: $small-heading-font-size;
-    font-weight: 700;
-    line-height: 1.25;
+    color: $color-text-high-contrast;
+    font-size: $large-font-size;
+    font-weight: 500;
+    line-height: 1.3;
     margin: $sp-xs 0 0;
   }
 
   .no-config-upsell-subhead {
-    color: $color-text-secondary;
-    font-size: $default-font-size;
+    color: $color-text-medium-contrast;
+    font-size: $smaller-font-size;
     line-height: 1.45;
     margin: 0;
     max-width: 26rem;
   }
 
+  /* Features read as a two-column checklist rather than pills: icon in the action color, then the label. */
   .no-config-upsell-features {
     display: grid;
-    gap: $sp-sm;
+    gap: $sp-xs $sp-lg;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    justify-content: center;
+    margin-top: $sp-xs;
+    text-align: left;
     width: 100%;
 
     @include breakpoint($breakpoint-large-phone) {
@@ -73,70 +55,44 @@
 
   .no-config-upsell-feature {
     align-items: center;
-    border: 1px solid $color-border;
-    border-radius: 999px;
-    color: $color-navy;
+    color: $color-text-high-contrast;
     display: flex;
     font-size: $smaller-font-size;
-    font-weight: 600;
-    gap: $sp-xs;
-    justify-content: center;
-    padding: $sp-xs $sp-md;
+    gap: $sp-sm;
+    min-width: 0;
   }
 
   .no-config-upsell-feature-icon {
-    font-size: $default-font-size;
-    line-height: 1;
+    color: $color-background-action-high-contrast;
+    flex-shrink: 0;
   }
 
   .no-config-upsell-more {
-    color: $color-text-muted;
+    color: $color-text-low-contrast;
     font-size: $smaller-font-size;
     margin: 0;
   }
 
   .no-config-upsell-actions {
-    align-items: stretch;
-    border-top: 1px solid $color-border;
+    align-items: center;
     display: flex;
     flex-wrap: wrap;
-    gap: $sp-md;
+    gap: $sp-sm;
     justify-content: center;
-    margin-top: $sp-xs;
-    padding-top: $sp-md;
+    margin-top: $sp-sm;
     width: 100%;
   }
 
-  .no-config-upsell-button {
-    align-items: center;
-    border: 1px solid $color-border;
-    border-radius: $radius-md;
-    color: $color-navy;
-    display: inline-flex;
-    font-size: $default-font-size;
-    font-weight: 600;
-    gap: $sp-xs;
-    justify-content: center;
-    line-height: 1.2;
-    padding: $sp-sm $sp-lg;
-    text-decoration: none;
-    transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
-  }
-
-  .no-config-upsell-button--primary:hover {
-    background: rgba(74, 158, 255, 0.12);
-    border-color: $color-blue;
-    color: $color-blue;
-  }
-
-  .no-config-upsell-button--secondary:hover {
-    border-color: $color-blue;
-    color: $color-blue;
-  }
-
   .no-config-upsell-footnote {
-    color: $color-success;
-    font-size: $smaller-font-size;
+    align-items: center;
+    color: $color-text-low-contrast;
+    display: inline-flex;
+    font-size: 12px;
+    gap: $sp-xs;
     margin: 0;
+
+    .material-icon {
+      color: $color-text-status;
+    }
   }
 }

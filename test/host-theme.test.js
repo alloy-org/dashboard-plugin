@@ -134,3 +134,33 @@ test("development refresh creates its stylesheet and follows browser mode change
   }
   expect(removeListener).toHaveBeenCalled();
 });
+
+// ------------------------------------------------------------------------------------------
+// @desc Pick up a theme changed elsewhere in the app when the pointer returns, throttling rapid re-entries.
+// @returns {Promise<void>}
+test("pointer re-entry refreshes the theme at most once per throttle interval", async () => {
+  document.head.innerHTML = '<style id="dashboard-host-theme">old</style>';
+  const app = { getDashboardTheme: jest.fn().mockResolvedValue({ lightDarkMode: "light", styleProperties: "plum" }) };
+  const nowSpy = jest.spyOn(Date, "now").mockReturnValue(10000);
+  const dispose = installHostThemeRefresh(app);
+  try {
+    document.documentElement.dispatchEvent(new Event("pointerenter"));
+    await Promise.resolve();
+    document.documentElement.dispatchEvent(new Event("pointerenter"));
+    await Promise.resolve();
+    expect(app.getDashboardTheme).toHaveBeenCalledTimes(1);
+    expect(document.getElementById("dashboard-host-theme").textContent).toBe("plum");
+    nowSpy.mockReturnValue(11500);
+    document.documentElement.dispatchEvent(new Event("pointerenter"));
+    await Promise.resolve();
+    expect(app.getDashboardTheme).toHaveBeenCalledTimes(2);
+    dispose();
+    nowSpy.mockReturnValue(20000);
+    document.documentElement.dispatchEvent(new Event("pointerenter"));
+    expect(app.getDashboardTheme).toHaveBeenCalledTimes(2);
+  } finally {
+    dispose();
+    nowSpy.mockRestore();
+    delete document.documentElement.dataset.theme;
+  }
+});

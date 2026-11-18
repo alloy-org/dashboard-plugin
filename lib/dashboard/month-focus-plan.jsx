@@ -1,6 +1,7 @@
 // The Planning widget's view of one month: an intensity meter gauging how many projects the month schedules, and
 // the month's projects as rows the user can star to choose the month's focus. Projects come from the month's
 // "- Focus:" bullet in the quarterly plan note; the rest of the month section renders as markdown beneath them.
+import { Badge, IconButton } from "dashboard/controls";
 import { MONTH_INTENSITY_LEVELS, MONTH_INTENSITY_SEGMENT_COUNT, monthFocusProjects,
   monthPlanIntensity } from "plan-wizard/month-focus-projects";
 import { useEffect, useState } from "react";
@@ -116,12 +117,15 @@ export default function MonthFocusPlan({ content, monthName, onStarProject }) {
             return (
               <li className={ isStarred ? "month-project-row month-project-row--starred" : "month-project-row" } key={ project.label }>
                 <span className="month-project-label">{ project.label }</span>
-                { project.isBuilder ? <span className="month-project-badge">Builder</span> : null }
-                <button aria-label={ isStarred ? `Clear ${ project.label } as ${ monthName }'s focus`
-                  : `Star ${ project.label } as ${ monthName }'s focus` } aria-pressed={ isStarred }
-                  className="month-project-star" onClick={ () => toggleStar(project.label) } type="button">
-                  <StarIcon isFilled={ isStarred } />
-                </button>
+                {
+                  project.isBuilder
+                    ? <Badge className="month-project-badge" uppercase={ false }>Builder</Badge>
+                    : null
+                }
+                <IconButton className="month-project-star" Icon={ <StarIcon isFilled={ isStarred } /> }
+                  label={ isStarred ? `Clear ${ project.label } as ${ monthName }'s focus`
+                    : `Star ${ project.label } as ${ monthName }'s focus` }
+                  onClick={ () => toggleStar(project.label) } pressed={ isStarred } size="small" />
               </li>
             );
           }) }

@@ -1,3 +1,4 @@
+import { Button, EmptyState } from "dashboard/controls";
 import DashboardQueueInspector from "dashboard/work-queue/dashboard-queue-inspector";
 import { useDashboardWork } from "dashboard/work-queue/dashboard-work-context";
 import { runDebugEvaluationSession } from "debug-evaluate-service";
@@ -97,54 +98,26 @@ export default function DebugConsoleWidget({ adminToolsEnabled, app }) {
 
   const logActions = (
     <>
-      <button
-        className="debug-console__header-button"
-        type="button"
-        onClick={handleDebug}
-        title="Evaluate an expression in the plugin host"
-      >
-        Debug
-      </button>
-      <button
-        className="debug-console__header-button"
-        disabled={entries.length === 0}
-        type="button"
-        onClick={() => handleCopy(false)}
-        title="Copy all retained log entries"
-      >
-        Copy all
-      </button>
-      <button
-        className="debug-console__header-button"
-        disabled={entries.length === 0}
-        type="button"
-        onClick={() => handleCopy(true)}
-        title="Copy the most recent 500 log entries"
-      >
-        Copy recent
-      </button>
-      <button
-        className="debug-console__header-button"
-        type="button"
-        onClick={handleClear}
-        title="Clear log entries"
-      >
+      <Button className="debug-console__header-button" dense onClick={ handleDebug }
+        title="Evaluate an expression in the plugin host">Debug</Button>
+      <Button className="debug-console__header-button" dense disabled={ entries.length === 0 }
+        onClick={ () => handleCopy(false) } title="Copy all retained log entries">Copy all</Button>
+      <Button className="debug-console__header-button" dense disabled={ entries.length === 0 }
+        onClick={ () => handleCopy(true) } title="Copy the most recent 500 log entries">Copy recent</Button>
+      <Button className="debug-console__header-button" dense onClick={ handleClear }
+        title="Clear log entries">
         Clear
-      </button>
+      </Button>
     </>
   );
   const headerActions = (
     <div className="debug-console__header-actions">
       {adminToolsEnabled ? (
-        <button
-          className="debug-console__header-button"
-          type="button"
-          aria-pressed={queueInspectorShown}
-          onClick={() => setQueueShown(shown => !shown)}
-          title={queueInspectorShown ? "Return to the log" : "Inspect the Dashboard work queue"}
-        >
+        <Button aria-pressed={ queueInspectorShown } className="debug-console__header-button" dense
+          onClick={ () => setQueueShown(shown => !shown) }
+          title={ queueInspectorShown ? "Return to the log" : "Inspect the Dashboard work queue" }>
           {queueInspectorShown ? "Log" : "Queue"}
-        </button>
+        </Button>
       ) : null}
       {queueInspectorShown ? null : logActions}
     </div>
@@ -152,8 +125,12 @@ export default function DebugConsoleWidget({ adminToolsEnabled, app }) {
   const logEntries = (
     <div className="debug-console" ref={scrollRef}>
       {entries.length === 0
-        ? <div className="debug-console__empty">No log messages yet. Enable Console Logging in Settings to
-            start capturing messages, or press Debug to evaluate an expression in the plugin host.</div>
+        ? (
+          <EmptyState className="debug-console__empty" compact>
+            No log messages yet. Enable Console Logging in Settings to start capturing messages, or press
+            Debug to evaluate an expression in the plugin host.
+          </EmptyState>
+        )
         : entries.map(entry => (
             <div key={entry.id} className="debug-console__entry">
               <span className="debug-console__timestamp">

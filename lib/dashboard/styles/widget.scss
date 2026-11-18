@@ -1,11 +1,9 @@
+@use 'theme-tokens' as *;
+
 .widget {
   :where(button, a, input, textarea, select):focus-visible {
-    outline: 2px solid var(--color-background-action-high-contrast, var(--dashboard-color-blue));
+    outline: 2px solid $color-background-action-high-contrast;
     outline-offset: 2px;
-  }
-  // The header bar is filled with the action color, so a ring in that color would disappear against it.
-  .widget-header :where(button, a, input, textarea, select):focus-visible {
-    outline-color: var(--dashboard-color-header-text);
   }
   .widget-body {
     overflow-y: auto;
@@ -21,14 +19,5 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  .widget-header-action {
-    text-decoration: none;
-    white-space: nowrap;
-
-    &:hover {
-      text-decoration: underline;
-    }
   }
 }

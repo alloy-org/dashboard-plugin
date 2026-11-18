@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { IconButton } from "dashboard/controls";
+import { MdSettings } from "react-icons/md";
 
 export const DASHBOARD_WIDGET_FOCUS_EVENT = "dashboard:widget-focus-request";
 export const MIN_MS_TO_BEGIN_DRAG = 2000;
@@ -184,6 +186,7 @@ export function useDashboardDrag(activeComponents, onReorder) {
 // [Claude] Task: widget header component that emits long-press drag-ready events
 // [Claude claude-4.7-opus] Task: migrate DraggableHeading from createElement to JSX
 // Prompt: "translate this project to render components with JSX instead"
+// @param {JSX.Element|null} icon - The widget's icon element, already resolved by WidgetWrapper.
 export default function DraggableHeading({
   configurable,
   headerActions,
@@ -260,13 +263,12 @@ export default function DraggableHeading({
       className={`widget-header widget-heading-bar${desktopFocusAvailable ? ' widget-heading-bar--focusable' : ''}`}
     >
       {desktopFocusAvailable ? (
-        <button
-          className="widget-icon widget-icon-button"
-          type="button"
-          title={`Focus ${title}`}
-          aria-label={`Focus ${title}`}
-          onClick={() => window.dispatchEvent(new CustomEvent(DASHBOARD_WIDGET_FOCUS_EVENT, { detail: dragEventDetail }))}
-        >{icon}</button>
+        <IconButton className="widget-icon widget-icon-button" Icon={ <>{ icon }</> }
+          label={ `Focus ${ title }` }
+          onClick={ () => window.dispatchEvent(
+            new CustomEvent(DASHBOARD_WIDGET_FOCUS_EVENT, { detail: dragEventDetail })
+          ) }
+          size="small" />
       ) : (
         <span className="widget-icon">{icon}</span>
       )}
@@ -276,12 +278,8 @@ export default function DraggableHeading({
       </h3>
       {headerActions || null}
       {configurable ? (
-        <button className="widget-configure" onClick={onConfigure}>
-          <svg xmlns="http://w3.org" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
-            <circle cx="12" cy="12" r="3"/>
-          </svg>
-        </button>
+        <IconButton className="widget-configure" Icon={ MdSettings } label={ `Configure ${ title }` }
+          onClick={ onConfigure } size="small" />
       ) : null}
     </div>
   );

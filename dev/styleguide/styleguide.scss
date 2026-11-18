@@ -1,0 +1,263 @@
+// Layout for the development style guide, built from the same tokens as the dashboard. The reset, inlined Roboto,
+// and widget card styles come from dashboard.scss, imported by styleguide-app.jsx, so what shows here is what
+// widgets get.
+@use '../../lib/dashboard/styles/theme-tokens' as *;
+@use '../../lib/dashboard/styles/controls' as *;
+
+$styleguide-content-width: 1200px;
+$styleguide-swatch-size: 32px;
+$styleguide-tile-size: 72px;
+
+.styleguide-page {
+  min-height: 100vh;
+
+  .styleguide-bar {
+    align-items: center;
+    background: $color-background-primary;
+    border-bottom: 1px solid $color-border-primary;
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-sm $sp-xl;
+    padding: $sp-sm $sp-xl;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .styleguide-title {
+    color: $color-text-high-contrast;
+    font-size: $large-font-size;
+    font-weight: 500;
+  }
+
+  .styleguide-theme-select {
+    width: 140px;
+  }
+
+  .styleguide-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-xs $sp-md;
+    font-size: 12px;
+
+    a {
+      color: $color-text-link;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  .styleguide-main {
+    margin: 0 auto;
+    max-width: $styleguide-content-width;
+    padding: $sp-xl;
+  }
+
+  .styleguide-section {
+    margin-bottom: $sp-xl * 2;
+    scroll-margin-top: 96px;
+  }
+
+  .styleguide-section-title {
+    color: $color-text-high-contrast;
+    font-size: 20px;
+    font-weight: 500;
+    margin-bottom: $sp-lg;
+  }
+
+  .styleguide-subtitle {
+    @include overline-label;
+    margin-bottom: $sp-sm;
+  }
+
+  .styleguide-panel {
+    @include card;
+    padding: $sp-lg;
+  }
+
+  .styleguide-stack {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-lg;
+  }
+
+  .styleguide-sample-row {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-md;
+  }
+
+  // Colors
+  .styleguide-color-group {
+    margin-bottom: $sp-lg;
+  }
+
+  .styleguide-swatch-grid {
+    display: grid;
+    gap: $sp-sm $sp-lg;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+
+  .styleguide-swatch {
+    align-items: center;
+    display: grid;
+    gap: 0 $sp-sm;
+    grid-template-columns: $styleguide-swatch-size 1fr;
+  }
+
+  .styleguide-swatch-chip {
+    border: 1px solid $color-border-primary;
+    border-radius: $radius-sm;
+    grid-row: span 2;
+    height: $styleguide-swatch-size;
+    width: $styleguide-swatch-size;
+  }
+
+  .styleguide-swatch-name {
+    color: $color-text-high-contrast;
+    font-size: 12px;
+  }
+
+  .styleguide-swatch-value {
+    color: $color-text-low-contrast;
+    font-family: monospace;
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  // Foundations
+  .styleguide-foundations {
+    display: grid;
+    gap: $sp-xl;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  }
+
+  .styleguide-type-sample {
+    color: $color-text-high-contrast;
+    margin-bottom: $sp-xs;
+  }
+
+  .styleguide-type-medium {
+    color: $color-text-medium-contrast;
+    font-weight: 500;
+  }
+
+  .styleguide-spacing-row {
+    align-items: center;
+    color: $color-text-medium-contrast;
+    display: flex;
+    font-size: 12px;
+    gap: $sp-sm;
+    margin-bottom: $sp-xs;
+  }
+
+  .styleguide-spacing-bar {
+    background: $color-background-action-high-contrast;
+    display: inline-block;
+    height: $sp-sm;
+  }
+
+  .styleguide-tile-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-lg;
+  }
+
+  .styleguide-tile {
+    align-items: center;
+    background: $color-background-primary;
+    border: 1px solid $color-border-primary;
+    color: $color-text-medium-contrast;
+    display: flex;
+    font-size: 12px;
+    height: $styleguide-tile-size;
+    justify-content: center;
+    width: $styleguide-tile-size;
+  }
+
+  .styleguide-radius-mark { border-radius: $radius-mark; }
+  .styleguide-radius-sm { border-radius: $radius-sm; }
+  .styleguide-radius-lg { border-radius: $radius-lg; }
+  .styleguide-radius-pill { border-radius: $radius-pill; }
+  .styleguide-shadow-2 { border: none; box-shadow: $shadow-elevation-2; }
+  .styleguide-shadow-3 { border: none; box-shadow: $shadow-elevation-3; }
+  .styleguide-shadow-24 { border: none; box-shadow: $shadow-elevation-24; }
+
+  // Icons
+  .styleguide-icon-grid {
+    display: grid;
+    gap: $sp-sm;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    margin-bottom: $sp-lg;
+  }
+
+  .styleguide-icon-cell {
+    align-items: center;
+    color: $color-text-medium-contrast;
+    display: flex;
+    font-size: 12px;
+    gap: $sp-sm;
+  }
+
+  // Controls
+  .styleguide-field-grid {
+    align-items: start;
+    display: grid;
+    gap: $sp-lg;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+
+  .styleguide-plain-row {
+    border: 1px dashed $color-border-primary;
+    border-radius: $radius-sm;
+    padding: $sp-sm $sp-md;
+  }
+
+  .styleguide-state-grid,
+  .styleguide-chart-grid,
+  .styleguide-widget-grid {
+    display: grid;
+    gap: $sp-lg;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  }
+
+  .styleguide-chart-panel {
+    display: flex;
+    flex-direction: column;
+
+    .victory-value-chart,
+    .peak-hours-chart-container {
+      height: 220px;
+    }
+  }
+
+  .styleguide-dashboard-scope {
+    min-height: 0;
+  }
+
+  .styleguide-chart-scope {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .styleguide-widget-grid .widget {
+    min-height: 220px;
+  }
+
+  .styleguide-note {
+    color: $color-text-low-contrast;
+    font-size: 12px;
+  }
+
+  .styleguide-hover-target {
+    border-bottom: 1px dotted $color-text-low-contrast;
+    color: $color-text-high-contrast;
+    cursor: default;
+  }
+}

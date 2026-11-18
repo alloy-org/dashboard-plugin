@@ -1,6 +1,8 @@
 // Dev-mode inline note editor: load a note's markdown into a contentEditable field with save and back.
 
+import { Button, LoadingState } from "dashboard/controls";
 import { useEffect, useRef, useState } from "react";
+import { MdArrowBack } from "react-icons/md";
 import "styles/note-editor.scss";
 import { fetchNoteContent, saveNoteContent } from "util/goal-notes";
 
@@ -45,7 +47,7 @@ export default function NoteEditor({ app, noteUUID, onBack }) {
   if (loading) {
     return (
       <div className="note-editor">
-        <div className="note-editor-loading">Loading note…</div>
+        <LoadingState>Loading note…</LoadingState>
       </div>
     );
   }
@@ -53,9 +55,12 @@ export default function NoteEditor({ app, noteUUID, onBack }) {
   return (
     <div className="note-editor">
       <div className="note-editor-toolbar">
-        <button className="note-editor-btn note-editor-btn--back" onClick={ onBack } type="button">← Back</button>
-        <button className="note-editor-btn note-editor-btn--save" disabled={ saving } onClick={ handleSave }
-          type="button">{ saving ? "Saving…" : "Save" }</button>
+        <Button className="note-editor-btn--back" dense Icon={ MdArrowBack } onClick={ onBack }
+          variant="outlined">Back</Button>
+        <Button className="note-editor-btn--save" dense disabled={ saving } onClick={ handleSave }
+          variant="raised">
+          { saving ? "Saving…" : "Save" }
+        </Button>
       </div>
       <div aria-label="Data note content" aria-multiline="true" className="note-editor-content" contentEditable="true"
         onInput={ event => setContent(event.currentTarget.textContent ?? "") } ref={ editorRef } role="textbox"

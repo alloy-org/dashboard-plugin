@@ -2,6 +2,8 @@
 // finished task and the next open ones, and how many of its tasks are done. While the note is first read the panel
 // shows a placeholder of the same shape; when the note has been moved to trash it says so and offers the ways forward.
 
+import { Button } from "dashboard/controls";
+import { MdCheck, MdRefresh } from "react-icons/md";
 import { lastUpdatedLabelFromMs } from "shared-notes-service";
 
 // ----------------------------------------------------------------------------------------------
@@ -42,9 +44,9 @@ function TrashedNotice({ onNameYourself, onPickAnother, onRestore }) {
         The note that defined this project was moved to trash, so Plan Builder can no longer read how it gets done.
       </p>
       <div className="project-note-trashed-actions">
-        <button className="project-note-restore" onClick={ onRestore } type="button">Restore note</button>
-        <button onClick={ onPickAnother } type="button">Pick another note</button>
-        <button onClick={ onNameYourself } type="button">Name it yourself</button>
+        <Button className="project-note-restore" dense onClick={ onRestore } variant="outlined">Restore note</Button>
+        <Button dense onClick={ onPickAnother } variant="outlined">Pick another note</Button>
+        <Button dense onClick={ onNameYourself } variant="outlined">Name it yourself</Button>
       </div>
     </div>
   );
@@ -76,9 +78,10 @@ export default function ProjectNoteSynopsis({ isReading, noteName, onNameYoursel
         <span className="project-note-synopsis-meta">
           { statusEm === "failed" ? "The note could not be read" : `From the note · ${ readLabel }` }
         </span>
-        <button className="project-note-reread" disabled={ isReading } onClick={ onReread } type="button">
-          <span aria-hidden="true">⟳</span> { isReading ? "Reading…" : "Re-read" }
-        </button>
+        <Button className="project-note-reread" dense disabled={ isReading } Icon={ MdRefresh } iconSize={ 16 }
+          onClick={ onReread }>
+          { isReading ? "Reading…" : "Re-read" }
+        </Button>
       </p>
       { synopsis?.synopsisText ? <p className="project-note-synopsis-text">{ synopsis.synopsisText }</p> : null }
       { synopsis?.listedTasks.length ? (
@@ -88,7 +91,7 @@ export default function ProjectNoteSynopsis({ isReading, noteName, onNameYoursel
             return (
               <li className={ `project-note-task${ task.isDone ? " project-note-task--done" : "" }` } key={ task.uuid }>
                 <span aria-label={ task.isDone ? "Done" : `Next ${ openTaskNumber }` } className="project-note-task-marker">
-                  { task.isDone ? "✓" : openTaskNumber }
+                  { task.isDone ? <MdCheck size={ 12 } /> : openTaskNumber }
                 </span>
                 <span className="project-note-task-text">{ task.text }</span>
                 { task.dueLabel ? <span className="project-note-task-due">{ task.dueLabel }</span> : null }

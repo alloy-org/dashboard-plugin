@@ -1,0 +1,19 @@
+<!-- The development style guide shell: loads the style guide bundle, which renders every token, control, icon,
+     tooltip, chart, and dialog in a chosen host theme. Served at /styleguide by dev-server.js. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Style guide</title>
+  <link rel="stylesheet" href="/compiled/styleguide.css">
+</head>
+<body>
+  <div id="styleguide-root"></div>
+  <script>
+    // Reload on rebuild, as the dashboard shell does
+    new EventSource("/esbuild-live-reload").onmessage = function () { location.reload(); };
+  </script>
+  <script src="/compiled/styleguide.js"></script>
+</body>
+</html>

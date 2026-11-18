@@ -4,6 +4,7 @@
 // evidence and refinement progress when durable work is on.
 // It is read-only: it adds no job controls, and copying or downloading a snapshot
 // exports the sanitized copy diagnostics produce without retrying, resuming, or reprioritizing anything.
+import { Button, EmptyState } from "dashboard/controls";
 import { DictionaryTermSection, DurableHistorySection, SavedWorkSection } from "dashboard/work-queue/dashboard-queue-durable-sections";
 import { ALL_JOBS_FILTER, filteredJobs, queueOverview, recentOutcomes, urgentRenderRows } from "dashboard/work-queue/dashboard-queue-inspector-model";
 import { QueueJobSection, QueueOutcomeSection, QueueOverviewSection, QueueResourceSection, QueueTimingSection,
@@ -26,8 +27,8 @@ export default function DashboardQueueInspector({ work }) {
   if (!work) {
     return (
       <div className="dashboard-queue-inspector">
-        <p className="queue-inspector-empty">The work queue is not running in this Dashboard: scheduled widget mounting is
-          unavailable and durable maintenance is switched off, so widgets mount on their unscheduled path.</p>
+        <EmptyState>The work queue is not running in this Dashboard: scheduled widget mounting is
+          unavailable and durable maintenance is switched off, so widgets mount on their unscheduled path.</EmptyState>
       </div>
     );
   }
@@ -60,8 +61,8 @@ export default function DashboardQueueInspector({ work }) {
   return (
     <div className="dashboard-queue-inspector">
       <div className="queue-inspector-toolbar">
-        <button type="button" onClick={handleCopy}>Copy snapshot</button>
-        <button type="button" onClick={handleDownload}>Download snapshot</button>
+        <Button dense onClick={ handleCopy } variant="outlined">Copy snapshot</Button>
+        <Button dense onClick={ handleDownload } variant="outlined">Download snapshot</Button>
         <span className="queue-inspector-status" role="status">{exportStatus}</span>
       </div>
       <QueueOverviewSection now={view.capturedAt} overview={overview} />

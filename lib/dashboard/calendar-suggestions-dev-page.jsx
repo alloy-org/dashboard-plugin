@@ -3,8 +3,10 @@
 // action publishes through setScheduledTasks along with the rationale Amplenote would show for it. Below the lists, it
 // shows the report note the pass wrote on how those suggestions were chosen.
 import { useEffect, useMemo, useRef, useState } from "react";
+import { MdArrowBack } from "react-icons/md";
 import { CALENDAR_SUGGESTION_RANGES, calendarSuggestionWindow, runCalendarSuggestionPass,
   suggestionDaysFromPublication } from "dashboard/calendar-suggestions-dev-session";
+import { Button, Select } from "dashboard/controls";
 import { MAX_SUGGESTION_DAYS } from "dashboard/proposed-agenda/proposed-agenda-suggest-action";
 import { amplenoteMarkdownRenderBlock, attachFootnotePopups } from "util/amplenote-markdown-render";
 import "styles/calendar-suggestions-dev-page.scss";
@@ -121,23 +123,25 @@ export default function CalendarSuggestionsDevPage({ app, initPromise }) {
     running: "Generating… each publish through setScheduledTasks replaces the list below." }[run.status];
   return (
     <div className="calendar-suggestions-dev-page">
-      <a className="calendar-suggestions-back-link" href={DASHBOARD_PATH}>← Dashboard</a>
+      <Button className="calendar-suggestions-back-link" dense href={DASHBOARD_PATH} Icon={MdArrowBack}>Dashboard</Button>
       <h1 className="calendar-suggestions-title">Calendar suggestions (dev)</h1>
       <div className="calendar-suggestions-controls">
-        <select className="calendar-suggestions-domain" disabled={run.status === "running"} value={domainUuid || ""}
-          onChange={event => setDomainUuid(event.target.value)}>
-          {domains.map(domain => <option key={domain.uuid} value={domain.uuid}>{domain.name}</option>)}
-        </select>
+        <Select className="calendar-suggestions-domain" dense disabled={run.status === "running"} hideLabel
+          label="Task Domain" onChange={setDomainUuid}
+          options={domains.map(domain => ({ label: domain.name, value: domain.uuid }))} value={domainUuid || ""} />
         <div className="calendar-suggestions-range" role="group" aria-label="Calendar view length">
           {CALENDAR_SUGGESTION_RANGES.map(option => (
-            <button className={`calendar-suggestions-range-button${ option.key === rangeKey ? " is-selected" : "" }`}
-              disabled={run.status === "running"} key={option.key} onClick={() => setRangeKey(option.key)} type="button">
+            <Button className={`calendar-suggestions-range-button${ option.key === rangeKey ? " is-selected" : "" }`} dense
+              disabled={run.status === "running"} key={option.key} onClick={() => setRangeKey(option.key)}
+              variant={option.key === rangeKey ? "raised" : "outlined"}>
               {option.label}
-            </button>
+            </Button>
           ))}
         </div>
-        <button className="calendar-suggestions-suggest-button" disabled={run.status === "running" || run.status === "loading"}
-          onClick={handleSuggest} type="button">Suggest</button>
+        <Button className="calendar-suggestions-suggest-button" dense
+          disabled={run.status === "running" || run.status === "loading"} onClick={handleSuggest} variant="raised">
+          Suggest
+        </Button>
       </div>
       <p className={`calendar-suggestions-status is-${ run.status }`}>
         {statusText}

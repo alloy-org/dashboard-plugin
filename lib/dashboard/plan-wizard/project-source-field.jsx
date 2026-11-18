@@ -7,12 +7,14 @@
 // project; if the host will not add it, the field turns red with an exclamation and offers Retry or Cancel, and the
 // project keeps whatever it was defined by before.
 
+import { Button, IconButton, PlainButton, TextField } from "dashboard/controls";
 import ExpandingTextarea from "dashboard/plan-wizard/expanding-textarea";
 import ProjectNoteSearchMenu, { NoteGlyph, selectableMenuItems } from "dashboard/plan-wizard/project-note-search-menu";
 import useProjectNoteCandidates from "hooks/use-project-note-candidates";
 import { includeNoteInTaskDomain } from "plan-wizard/task-domain-fallback";
 import { logIfEnabled } from "util/log";
 import { useEffect, useRef, useState } from "react";
+import { MdCheck, MdExpandMore, MdOpenInNew, MdTitle } from "react-icons/md";
 
 const SOURCE_OPTIONS = [
   { description: "Type a name. Plan Builder explains why it fits your intent.", label: "Name it yourself", value: "name" },
@@ -24,11 +26,7 @@ const SOURCE_OPTIONS = [
 // @desc Draw the letter glyph that marks a typed project name.
 // @returns {JSX.Element} An inline "T" icon.
 function TypedNameGlyph() {
-  return (
-    <svg aria-hidden="true" className="project-source-glyph" viewBox="0 0 24 24">
-      <path d="M5 6h14M12 6v13" />
-    </svg>
-  );
+  return <MdTitle className="project-source-glyph" size={ 16 } />;
 }
 
 // ----------------------------------------------------------------------------------------------
@@ -77,15 +75,15 @@ function ProjectSourceMenu({ onChooseSource, projectSourceEm }) {
   return (
     <div className="project-source-menu" role="menu">
       { SOURCE_OPTIONS.map(option => (
-        <button aria-checked={ option.value === projectSourceEm } className="project-source-menu-option" key={ option.value }
-          onClick={ () => onChooseSource(option.value) } role="menuitemradio" type="button">
+        <PlainButton aria-checked={ option.value === projectSourceEm } className="project-source-menu-option"
+          key={ option.value } onClick={ () => onChooseSource(option.value) } role="menuitemradio">
           { option.value === "note" ? <NoteGlyph /> : <TypedNameGlyph /> }
           <span className="project-source-menu-text">
             <span className="project-source-menu-label">{ option.label }</span>
             <span className="project-source-menu-description">{ option.description }</span>
           </span>
-          { option.value === projectSourceEm ? <span aria-hidden="true" className="project-source-menu-check">✓</span> : null }
-        </button>
+          { option.value === projectSourceEm ? <MdCheck className="project-source-menu-check" size={ 16 } /> : null }
+        </PlainButton>
       )) }
     </div>
   );
@@ -106,8 +104,8 @@ function NoteInclusionAlert({ domainName, onCancel, onRetry }) {
         This note could not be added to { domainLabel }, so its tasks would not reach this project.
       </p>
       <div className="project-source-inclusion-actions">
-        <button className="plan-button plan-button--primary" onClick={ onRetry } type="button">Retry</button>
-        <button className="plan-button" onClick={ onCancel } type="button">Cancel</button>
+        <Button dense onClick={ onRetry } variant="raised">Retry</Button>
+        <Button dense onClick={ onCancel }>Cancel</Button>
       </div>
     </div>
   );
@@ -249,12 +247,12 @@ export default function ProjectSourceField({ app, domainName = null, domainUuid 
   return (
     <div className={ fieldClassNames.join(" ") } ref={ fieldRef }>
       <div className="project-source-box">
-        <button aria-expanded={ isSourceMenuOpen } aria-haspopup="menu" aria-label="Choose how this project is defined"
-          className="project-source-toggle" disabled={ isDisabled || Boolean(pendingNote) }
-          onClick={ () => setIsSourceMenuOpen(previous => !previous) } type="button">
+        <PlainButton aria-expanded={ isSourceMenuOpen } aria-haspopup="menu" aria-label="Choose how this project is defined"
+          className="project-source-toggle" disabled={ isDisabled || !!pendingNote }
+          onClick={ () => setIsSourceMenuOpen(previous => !previous) }>
           { isNoteSource ? <NoteGlyph /> : <TypedNameGlyph /> }
-          <span aria-hidden="true" className="project-source-chevron">⌄</span>
-        </button>
+          <MdExpandMore className="project-source-chevron" size={ 16 } />
+        </PlainButton>
         { pendingNote ? (
           <span aria-busy={ isPicking } className="project-source-pending">
             { isPicking ? null : <span aria-hidden="true" className="project-source-inclusion-mark">!</span> }
@@ -267,27 +265,27 @@ export default function ProjectSourceField({ app, domainName = null, domainUuid 
             placeholder="Name a project that moves an intent forward" shouldAutoFocus={ row.shouldAutoFocus }
             value={ row.summary } />
         ) : isSearchOpen ? (
-          <input aria-label="Search notes to define this project" autoFocus className="project-source-search"
-            onChange={ event => { setSearchText(event.target.value); setHighlightedIndex(0); } }
+          <TextField autoFocus className="project-source-search-field" hideLabel inputClassName="project-source-search"
+            label="Search notes to define this project"
+            onChange={ text => { setSearchText(text); setHighlightedIndex(0); } }
             onKeyDown={ handleSearchKeyDown } placeholder="Search notes to define this project" type="text"
             value={ searchText } />
         ) : isLinked ? (
           <>
-            <button className="project-source-note-change" disabled={ isDisabled } onClick={ () => onSetSearchOpen(true) }
-              title="Choose a different note to define this project" type="button">
+            <PlainButton className="project-source-note-change" disabled={ isDisabled } onClick={ () => onSetSearchOpen(true) }
+              title="Choose a different note to define this project">
               <span className="project-source-note-name">{ row.summary }</span>
-            </button>
+            </PlainButton>
             { isNoteTrashed ? null : (
-              <button aria-label="Open this note in Amplenote" className="project-source-note-open"
-                onClick={ () => app.navigate(`https://www.amplenote.com/notes/${ row.primaryNoteUuid }`) }
-                title="Open this note in Amplenote" type="button">↗</button>
+              <IconButton className="project-source-note-open" Icon={ MdOpenInNew } label="Open this note in Amplenote"
+                onClick={ () => app.navigate(`https://www.amplenote.com/notes/${ row.primaryNoteUuid }`) } size="small" />
             ) }
           </>
         ) : (
-          <button className="project-source-unlinked" disabled={ isDisabled } onClick={ () => onSetSearchOpen(true) }
-            title="No note is linked yet. Choose one, or switch back to naming the project yourself." type="button">
+          <PlainButton className="project-source-unlinked" disabled={ isDisabled } onClick={ () => onSetSearchOpen(true) }
+            title="No note is linked yet. Choose one, or switch back to naming the project yourself.">
             { row.summary.trim() || "Choose a note to define this project" }
-          </button>
+          </PlainButton>
         ) }
       </div>
       { pendingNote?.statusEm === "failed" ? (

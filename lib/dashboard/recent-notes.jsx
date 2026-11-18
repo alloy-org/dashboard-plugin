@@ -4,8 +4,10 @@
  * Task: Recent Notes widget — notes with tasks where no task was created in the past week
  * Prompt summary: "replace AI & Plugins widget with Recent Notes showing notes whose tasks have gone stale"
  */
+import { EmptyState, ErrorState, IconButton, LoadingState, PlainButton } from "dashboard/controls";
 import { useWidgetLoadedEvent } from "dashboard-load-tracking";
 import { useEffect, useMemo, useState } from "react";
+import { MdRefresh } from "react-icons/md";
 import { buildRecentNotesSeed, findStaleTaskNotes } from "recent-notes-service";
 import "styles/recent-notes.scss"
 import { logIfEnabled } from "util/log";
@@ -60,39 +62,31 @@ export default function RecentNotesWidget({ app, gridHeightSize = 1, taskDomainU
   useWidgetLoadedEvent('recent-notes', staleNotes !== null && !error, !!error);
 
   const reseedButton = (
-    <button
-      className="widget-header-action"
-      type="button"
-      onClick={handleReseed}
-      title="Show a different set of notes"
-    >
-      ↻ Reseed
-    </button>
+    <IconButton Icon={ MdRefresh } label="Reseed: show a different set of notes" onClick={ handleReseed } size="small" />
   );
 
   const renderBody = () => {
     if (error) {
-      return <p className="note-error">{`Error: ${error}`}</p>;
+      return <ErrorState className="note-error" title={ null }>{ `Error: ${ error }` }</ErrorState>;
     }
     if (staleNotes === null) {
-      return <p className="note-loading">Loading…</p>;
+      return <LoadingState className="note-loading">Loading…</LoadingState>;
     }
     if (staleNotes.length < MIN_NOTES) {
-      return <p className="note-empty">No notes with stale tasks found.</p>;
+      return <EmptyState className="note-empty" title="No notes with stale tasks found." />;
     }
     return (
       <ul className="note-list">
         {staleNotes.map(({ noteHandle, taskCount }) => (
           <li key={noteHandle.uuid} className="note-item">
-            <button
+            <PlainButton
               className="note-link"
-              type="button"
               onClick={() => app.navigate(`https://www.amplenote.com/notes/${noteHandle.uuid}`)}
               title={`Open "${noteHandle.name || 'Untitled'}"`}
             >
               <span className="note-name">{noteHandle.name || 'Untitled'}</span>
               <span className="note-count">{`${taskCount} open task${taskCount !== 1 ? 's' : ''}`}</span>
-            </button>
+            </PlainButton>
             <div className="note-metadata">
               {noteHandle.changed ? `Last updated: ${new Date(noteHandle.changed).toLocaleDateString()}` : 'No update date'}
             </div>

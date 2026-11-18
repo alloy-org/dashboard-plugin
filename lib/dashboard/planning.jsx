@@ -3,6 +3,7 @@ import { formatWeekLabel, getQuarterMonths, getUpcomingWeekMonday, hasQuarterEnd
   quarterLabel } from "constants/quarters";
 import { IS_DEV_ENVIRONMENT, SETTING_KEYS } from "constants/settings";
 import { buildPlanTargetFromPlans, currentQuarterCardAction } from "dashboard/build-plan-quarter";
+import { Badge, Button, LoadingState, UnderlineTabs } from "dashboard/controls";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
 import { hasStartedFirstPlanIdeaRun, recordFirstPlanIdeaRun } from "dashboard/idea-generation/first-plan-idea-run";
 import IdeaRunProgressPopup from "dashboard/idea-generation/idea-run-progress";
@@ -22,6 +23,7 @@ import QuarterlyPlanEntry from "quarterly-plan-entry";
 import { createOrAppendMonthlyPlan, createOrAppendWeeklyPlan, createQuarterlyPlan, findQuarterPlan,
   getMonthlyPlanContent, starMonthFocusProject } from "quarterly-plan-service";
 import { useEffect, useRef, useState } from "react";
+import { MdAdd, MdAutoAwesome, MdDescription, MdEdit, MdEditNote, MdUndo } from "react-icons/md";
 import { navigateToNote } from "util/goal-notes";
 import { logIfEnabled } from "util/log";
 import { isQuarterPlanEnabled, quarterlyPlanTogglesFromSetting, quarterlyPlanTogglesWithState,
@@ -124,11 +126,12 @@ function QuarterCard({ isPast, onCardClick, onSuggestionToggle, plan, planBegun 
   if (isPast) cardClassNames.push("quarter-card--past");
   if (isPending) cardClassNames.push("quarter-card--pending");
   const quarterTitle = plan.domainName ? `${ plan.label } · ${ plan.domainName }` : plan.label;
-  let statusText = "+ Create Plan";
-  if (isPending) statusText = "Loading…";
-  else if (isPast) statusText = "✨ Retrospective";
-  else if (hasNote) statusText = "📝 Open Plan";
-  else if (isInProgress) statusText = "✏️ Continue Plan";
+  let statusText = "Create Plan";
+  let StatusIcon = MdAdd;
+  if (isPending) [ statusText, StatusIcon ] = [ "Loading…", null ];
+  else if (isPast) [ statusText, StatusIcon ] = [ "Retrospective", MdAutoAwesome ];
+  else if (hasNote) [ statusText, StatusIcon ] = [ "Open Plan", MdDescription ];
+  else if (isInProgress) [ statusText, StatusIcon ] = [ "Continue Plan", MdEdit ];
   const showSuggestionToggle = hasNote && !isPast && !isPending;
 
   const suggestionTip = usedForSuggestions
@@ -141,15 +144,17 @@ function QuarterCard({ isPast, onCardClick, onSuggestionToggle, plan, planBegun 
     <div className={ cardClassNames.join(" ") } onClick={ isPending ? undefined : onCardClick }>
       <div className="quarter-label-row">
         <span className="quarter-label">{ quarterTitle }</span>
-        { isPast ? <span className="quarter-past-badge">Past</span> : null }
+        { isPast ? <Badge className="quarter-past-badge">Past</Badge> : null }
       </div>
       <div className="quarter-status-row">
-        <span className="quarter-status">{ statusText }</span>
+        <span className="quarter-status">
+          { StatusIcon ? <StatusIcon size={ 16 } /> : null }{ statusText }
+        </span>
         { showSuggestionToggle ? (
           <DashboardTippy content={`${ suggestionTip } ${ monthsTip }`} placement="bottom">
             <label className="quarter-suggestion-toggle" onClick={(event) => event.stopPropagation()}>
-              <input checked={usedForSuggestions} onChange={(event) => onSuggestionToggle(event.target.checked)}
-                type="checkbox" />
+              <input checked={usedForSuggestions} className="quarter-suggestion-checkbox"
+                onChange={(event) => onSuggestionToggle(event.target.checked)} type="checkbox" />
             </label>
           </DashboardTippy>
         ) : null}
@@ -174,7 +179,7 @@ function monthContentIsUnrecorded(monthContent) {
 // @returns {JSX.Element|null} The month's area
 function MonthContentArea({ monthContent, monthLoading, onCreatePlan, onStarProject }) {
   if (monthLoading) {
-    return <div className="month-content-loading">Loading…</div>;
+    return <LoadingState>Loading…</LoadingState>;
   }
   if (!monthContent) return null;
   if (monthContentIsUnrecorded(monthContent)) {
@@ -190,9 +195,9 @@ function MonthContentArea({ monthContent, monthLoading, onCreatePlan, onStarProj
   }
   return (
     <div className="month-content-empty">
-      <button className="create-month-plan-link" onClick={onCreatePlan}>
+      <Button className="create-month-plan-link" dense onClick={ onCreatePlan } variant="outlined">
         {`Create a plan for ${monthContent.monthName} ${monthContent.year}`}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -201,7 +206,7 @@ function WeeklyPlanSection({ weekLabel, year, weekLoading, weekContent, onCreate
   if (weekLoading) {
     return (
       <div className="weekly-plan-section">
-        <div className="weekly-plan-loading">Loading…</div>
+        <LoadingState>Loading…</LoadingState>
       </div>
     );
   }
@@ -223,9 +228,9 @@ function WeeklyPlanSection({ weekLabel, year, weekLoading, weekContent, onCreate
   return (
     <div className="weekly-plan-section">
       <div className="weekly-plan-header">Weekly Plan</div>
-      <button className="create-week-plan-link" onClick={onCreateWeekPlan}>
+      <Button className="create-week-plan-link" dense onClick={ onCreateWeekPlan } variant="outlined">
         {`Create a weekly plan for ${weekLabel}, ${year}`}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -268,9 +273,10 @@ function generateIdeasButton(ideaRun) {
     Promise.resolve(ideaRun.start()).catch(error => logIfEnabled("[planning] could not start idea generation", error?.message));
   };
   return (
-    <button className="widget-header-action" disabled={ disabled } onClick={ running ? ideaRun.openProgress : startRun } title={ title } type="button">
-      { running ? "💡 Generating ideas…" : "💡 Generate ideas" }
-    </button>
+    <Button className="planning-generate-ideas" dense disabled={ disabled } Icon={ MdAutoAwesome }
+      onClick={ running ? ideaRun.openProgress : startRun } title={ title }>
+      { running ? "Generating ideas…" : "Generate ideas" }
+    </Button>
   );
 }
 
@@ -352,15 +358,13 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   const planCreated = !!(wizardQuarterPlan?.noteUUID && currentPlan?.noteUUID);
   const generateIdeasAction = planCreated ? generateIdeasButton(ideaRun) : null;
   const buildPlanAction = canStartWizard && !showPlanEntry && !checkingPlanProgress && !planCreated ? (
-    <button className="widget-header-action" onClick={ () => setWizardPlan({ mirrorTarget: null,
-      quarter: wizardQuarterPlan.quarter, year: wizardQuarterPlan.year }) } title={ buildPlanTitle } type="button">
-      ✍️ Build plan
-    </button>
+    <Button className="planning-build-plan" dense Icon={ MdEditNote } onClick={ () => setWizardPlan({ mirrorTarget: null,
+      quarter: wizardQuarterPlan.quarter, year: wizardQuarterPlan.year }) } title={ buildPlanTitle }>Build plan</Button>
   ) : generateIdeasAction;
   const returnToCurrentAction = pageStep !== 0 && currentPlan?.label ? (
-    <button className="planning-return-quarter" onClick={ () => setPageStep(0) } type="button">
-      { `↩ Back to ${ currentPlan.label }` }
-    </button>
+    <Button className="planning-return-quarter" dense Icon={ MdUndo } onClick={ () => setPageStep(0) }>
+      { `Back to ${ currentPlan.label }` }
+    </Button>
   ) : null;
   const headerActions = buildPlanAction || returnToCurrentAction ? (
     <div className="planning-header-actions">{ returnToCurrentAction }{ buildPlanAction }</div>
@@ -530,7 +534,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   if (!plansReady) {
     return (
       <WidgetWrapper title={widgetTitle} widgetId="planning">
-        <p className="planning-empty">Loading quarterly plans…</p>
+        <LoadingState>Loading quarterly plans…</LoadingState>
         {planWizardOverlay}
       </WidgetWrapper>
     );
@@ -539,7 +543,7 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
   if (checkingPlanProgress) {
     return (
       <WidgetWrapper title={widgetTitle} widgetId="planning">
-        <p className="planning-empty">Checking your plan…</p>
+        <LoadingState>Checking your plan…</LoadingState>
         {planWizardOverlay}
       </WidgetWrapper>
     );
@@ -657,15 +661,12 @@ export default function PlanningWidget({ app, gridHeightSize = 1, onOpenSettings
       {monthProjectCount !== null && activeTab !== null && !pagePending ? (
         <MonthIntensityMeter monthName={ monthContent.monthName } projectCount={ monthProjectCount } />
       ) : null}
-      <div className="month-tabs">
-        {viewedMonths.map(month => (
-          <button
-            className={ "month-tab" + (month.index === activeTab ? " active" : "") }
-            key={ month.index }
-            onClick={ () => openPlanningMonth(month, activeTab) }
-          >{ month.short }</button>
-        ))}
-      </div>
+      <UnderlineTabs ariaLabel="Month" className="month-tabs" deselectable
+        onChange={ monthIndex => openPlanningMonth(viewedMonths.find(month => month.index === (monthIndex ?? activeTab)),
+          activeTab) }
+        tabs={ viewedMonths.map(month => ({ className: "month-tab" + (month.index === activeTab ? " active" : ""),
+          id: month.index, label: month.short })) }
+        value={ activeTab } />
       {activeTab !== null && !pagePending ? (
         <div className="month-content-area">
           <MonthContentArea

@@ -76,7 +76,7 @@ $retrospective-backdrop-layouts: (
 
 .quarter-retrospective-overlay {
   align-items: center;
-  background: $color-overlay-backdrop;
+  background: $color-background-scrim;
   display: flex;
   inset: 0;
   justify-content: center;
@@ -86,9 +86,9 @@ $retrospective-backdrop-layouts: (
 
   .retrospective-overlay-card {
     aspect-ratio: $retrospective-card-aspect;
-    background: $color-bg-card;
+    background: $color-background-primary;
     border-radius: $radius-lg;
-    box-shadow: 0 12px 40px $color-overlay-shadow;
+    box-shadow: $shadow-elevation-24;
     height: $retrospective-card-height;
     max-width: 100%;
     overflow: hidden;
@@ -1227,7 +1227,7 @@ $retrospective-backdrop-layouts: (
 
     .retrospective-slide-photo {
       border-radius: $radius-md;
-      box-shadow: 0 12px 40px $color-overlay-shadow;
+      box-shadow: $shadow-elevation-24;
       height: auto;
       inset: 0;
       margin: auto;

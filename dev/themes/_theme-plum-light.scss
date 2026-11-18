@@ -1,0 +1,93 @@
+// Plum light theme snapshot from ample-web (app/javascript/lib/ample-style/themes) for the development style guide.
+@mixin theme-plum-light {
+  // Backgrounds
+  --color-background-primary-rgb:                 #{ derive-rgb-values-from-hex(#FFF) };
+  --color-background-primary:                     #FFF;
+  --color-background-secondary:                   #F9FAFA;
+  --color-background-tertiary:                    #F2F3F3;
+  --color-background-popup:                       #FFF;
+  --color-background-popup-small:                 #303233;
+  --color-background-scrim:                       rgba(0, 0, 0, 0.32);
+  --color-background-scrim-high-contrast:         rgba(255, 255, 255, 0.8);
+
+  // Borders
+  --color-border-primary:                         #E6E8E8;
+  --color-border-secondary:                       #E6E8E8;
+  --color-border-tertiary:                        #B2B6B8;
+
+  // Components
+  --color-background-element-high-contrast:       #B2B6B8;
+  --color-background-element-medium-contrast:     #E6E8E8;
+  --color-background-element-medium-contrast-rgb: #{ derive-rgb-values-from-hex(#E6E8E8) };
+  --color-background-element-low-contrast:        #F2F3F3;
+  --color-background-action-high-contrast:        #A451C9;
+  --color-background-action-high-contrast-rgb:    #{ derive-rgb-values-from-hex(#A451C9) };
+  --color-background-action-high-contrast-alt:    #D778FF;
+  --color-background-action-medium-contrast:      #EDDEFC;
+  --color-background-action-low-contrast:         #F5EBFF;
+  --color-background-error-high-contrast:         #F5624C;
+  --color-background-error-medium-contrast:       #FEEAE7;
+  --color-background-notice:                      #ffffb4;
+
+  // Text & icons
+  --color-text-high-contrast:                     #303233;
+  --color-text-medium-contrast:                   #6A6D70;
+  --color-text-low-contrast:                      #929497;
+  --color-text-lower-contrast:                    #B2B6B8;
+  --color-text-high-contrast-inverse:             #FFF;
+  --color-text-link:                              #9544B8;
+  --color-text-reversed:                          #FFF;
+  --color-text-status:                            #0BBF7D;
+  --color-text-error-high-contrast:               #da3317;
+  --color-text-error-medium-contrast:             #F5624C;
+  --color-text-error-low-contrast:                #FFB238;
+  --color-text-error-low-contrast-rgb: #{ derive-rgb-values-from-hex(#FFB238) };
+  --color-text-button:                            #FFF;
+  --color-text-reversed-link:                     #E69BFF;
+  --color-text-nav-high-contrast:                 #F3F3F4;
+  --color-text-nav-medium-contrast:               #A5A1A6;
+  --color-text-nav-low-contrast:                  #959096;
+  --color-text-nav-lower-contrast:                #756B78;
+
+  // Custom applications
+  --color-background-banner:                      #261E30;
+  --color-background-code:                        rgba(178, 182, 184, 0.32);
+  --color-background-header:                      #3A2C4D;
+  --color-background-highlight:                   rgba(255, 178, 56, 0.32);
+  --color-background-note-menu-button:            #E4E6E6;
+  --color-background-reversed:                    #929497;
+  --color-background-reversed-secondary:          #6A6D70;
+  --color-background-reversed-secondary-rgb: #{ derive-rgb-values-from-hex(#6A6D70) };
+  --color-background-search-bar:                  #251B33;
+  --color-background-task-value:                  #E6E8E8;
+  --color-background-banner-alt:                  #513163;
+  --color-background-dialog:                      #3A2C4D;
+  --color-background-nav:                         #291E38;
+  --color-background-nav-active:                  #362A45;
+  --color-background-nav-avatar:                  #502D63;
+  --color-background-nav-divider:                 #43305B;
+  --color-background-nav-menu:                    #1C1426;
+  --color-background-nav-menu-button:             #43305B;
+  --color-background-nav-menu-divider:            #43305B;
+  --color-background-nav-menu-expanded:           #1C1426;
+  --color-background-logo:                        #FFF;
+
+  // Overlays for states
+  --color-overlay-low-contrast:                   #D778FF;
+  --color-overlay-high-contrast: #fff;
+
+  --opacity-overlay-low-contrast-hover: 0.12;
+  --opacity-overlay-low-contrast-focus: 0.16;
+  --opacity-overlay-low-contrast-press: 0.14;
+
+  --opacity-overlay-high-contrast-hover: 0.08;
+  --opacity-overlay-high-contrast-focus: 0.16;
+  --opacity-overlay-high-contrast-press: 0.12;
+
+  --mdc-theme-error:                              #F5624C;
+  --mdc-theme-on-primary:                         #FFF;
+  --mdc-theme-on-secondary:                       #F9FBFC;
+  --mdc-theme-primary:                            #A451C9;
+  --mdc-theme-secondary:                          #3A2C4D;
+  --mdc-theme-surface:                            #FFF;
+}

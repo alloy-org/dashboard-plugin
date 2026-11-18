@@ -6,9 +6,12 @@
  */
 
 import { SETTING_KEYS } from "constants/settings";
+import { IconButton, PlainButton } from "dashboard/controls";
 import { LAYOUT_PROFILES, layoutMatchesProfile, sizingFromProfile } from "layout-profiles";
 import { useState } from "react";
+import { MdChevronRight, MdClose, MdWarningAmber } from "react-icons/md";
 import "styles/layout-picker.scss";
+import { LAYOUT_PROFILE_ICON_BY_ID } from "widget-icons";
 import WidgetWrapper from "widget-wrapper";
 
 const WIDGET_ID = 'layout-picker';
@@ -32,25 +35,24 @@ export async function saveLayoutWithProfile({ app, isReset, onLayoutPersist, onS
 // Prompt: "translate this project to render components with JSX instead"
 function ProfileCard({ profile, onApply, applyingId, isMatch }) {
   const isApplying = applyingId === profile.id;
+  const ProfileIcon = LAYOUT_PROFILE_ICON_BY_ID[profile.id];
   const isDisabled = !!applyingId;
-  const actionLabel = isApplying ? 'Applying…' : isMatch ? 'Apply' : 'Apply — replaces all widgets →';
+  const actionLabel = isApplying ? 'Applying…' : isMatch ? 'Apply' : 'Apply — replaces all widgets';
   const className = `layout-picker-profile-button${ isApplying ? ' layout-picker-profile-button--applying' : '' }${ isMatch ? ' layout-picker-profile-button--current' : '' }`;
   const actionClassName = `layout-picker-profile-action${ isMatch ? ' layout-picker-profile-action--current' : '' }`;
   return (
     <div className="layout-picker-profile">
-      <button
-        className={className}
-        disabled={isDisabled}
-        onClick={() => onApply(profile)}
-        type="button"
-      >
+      <PlainButton className={ className } disabled={ isDisabled } onClick={ () => onApply(profile) }>
         <div className="layout-picker-profile-header">
-          <span className="layout-picker-profile-icon" aria-hidden="true">{profile.icon}</span>
+          <ProfileIcon className="layout-picker-profile-icon" size={ 20 } />
           <span className="layout-picker-profile-name">{profile.name}</span>
-          <span className={actionClassName}>{actionLabel}</span>
+          <span className={actionClassName}>
+            {actionLabel}
+            {isApplying ? null : <MdChevronRight />}
+          </span>
         </div>
         <p className="layout-picker-profile-description">{profile.description}</p>
-      </button>
+      </PlainButton>
     </div>
   );
 }
@@ -86,13 +88,16 @@ export default function LayoutPickerWidget({ app, currentLayout, onLayoutApply, 
   };
 
   const headerActions = (
-    <span className="widget-header-action" onClick={handleDismiss}>✕ Dismiss</span>
+    <IconButton Icon={ MdClose } label="Dismiss" onClick={ handleDismiss } size="small" />
   );
 
   return (
     <WidgetWrapper headerActions={headerActions} widgetId={WIDGET_ID}>
       {anyMatch ? null : (
-        <p className="layout-picker-warning">⚠️ Clicking a profile reorders all dashboard widgets.</p>
+        <p className="layout-picker-warning">
+          <MdWarningAmber className="layout-picker-warning-icon" />
+          Clicking a profile reorders all dashboard widgets.
+        </p>
       )}
       <div className="layout-picker-profiles">
         {LAYOUT_PROFILES.map((profile, index) => (
