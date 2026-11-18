@@ -6,6 +6,11 @@
 
 @use 'theme-tokens' as *;
 
+// Banner thumbnails: about the banners' 4:1 shape at two per row in a phone-width popup
+$banner-options-maximum-height: 300px;
+$banner-thumbnail-height: 40px;
+$banner-thumbnail-minimum-width: 150px;
+
 .dashboard-settings-container {
 
   // ── API key field ────────────────────────────────────────────────────────────────────
@@ -45,21 +50,24 @@
   }
 
   // ── Banner image picker ──────────────────────────────────────────────────────────────
-  // Thumbnails keep the banners' 4:1 shape, as ample-web's note style menu shows them, and scroll past 300px.
+  // A wrapping row of fixed-height thumbnails that scrolls past 300px. Every size is explicit: grid rows sized from
+  // aspect-ratio overlapped in the iOS app's WebKit.
 
   .dashboard-settings-banner-options {
-    display: grid;
+    align-content: flex-start;
+    display: flex;
+    flex-shrink: 0;
+    flex-wrap: wrap;
     gap: $sp-sm;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    max-height: 300px;
+    max-height: $banner-options-maximum-height;
     overflow-y: auto;
     padding: $sp-xs;
   }
 
   .dashboard-settings-banner-option {
-    aspect-ratio: 4 / 1;
     border-radius: $radius-sm;
-    max-width: 100%;
+    flex: 1 1 $banner-thumbnail-minimum-width;
+    height: $banner-thumbnail-height;
     overflow: hidden;
     position: relative;
 

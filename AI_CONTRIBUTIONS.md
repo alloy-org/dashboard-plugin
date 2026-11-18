@@ -5,6 +5,20 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-11-18 — Banner thumbnails no longer overlap on iOS
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/styles/dashboard-settings-popup.scss` — Banner thumbnails are a wrapping flex row of fixed-height (40px) tiles with a non-shrinking scroll container, replacing a grid whose rows were sized from `aspect-ratio`, which overlapped in the iOS app's WebKit (an image-carried aspect ratio overlapped too).
+- `lib/dashboard/dashboard-settings-popup.jsx` — Thumbnails declare the banner files' 2000x500 size, so lazy images reserve their space before loading.
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Jest: 1814 passed, 2 failed (the two that fail on main too); build succeeds. Not yet checked on an iOS device.
+**Task:** Fix overlapping banner image choices in the mobile settings popup.
+**Prompt summary:** "on mobile the banner image settings shows a bunch of overlapping images instead of a nice flex grid"
+
+---
+
 ## 2026-11-18 — Merge main into the redesign branch
 
 **Model:** Claude Opus 5.5

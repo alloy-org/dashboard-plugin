@@ -17,6 +17,9 @@ import { logIfEnabled } from "util/log";
 import "styles/dashboard-settings-popup.scss"
 
 const API_KEY_LINK_ICON_SIZE = 14;
+// The banner files' size, so a lazily loaded thumbnail reserves its 4:1 space before it loads
+const BANNER_IMAGE_HEIGHT = 500;
+const BANNER_IMAGE_WIDTH = 2000;
 const TIME_FORMAT_OPTIONS = [
   { label: "Use meridian (am/pm) times", value: "meridian" },
   { label: "24 hour time", value: "24h" },
@@ -149,8 +152,8 @@ function BannerImageSection({ onBannerImageChange, selectedBannerImageName }) {
             <PlainButton aria-pressed={ selectedBannerImageName === bannerImageName }
               className="dashboard-settings-banner-option" key={ bannerImageName }
               onClick={ () => onBannerImageChange(bannerImageName) } title={ bannerImageName.replace("-", " ") }>
-              <img alt={ `${ bannerImageName } banner image` } loading="lazy"
-                src={ bannerImageURLFromBannerImageName(bannerImageName) } />
+              <img alt={ `${ bannerImageName } banner image` } height={ BANNER_IMAGE_HEIGHT } loading="lazy"
+                src={ bannerImageURLFromBannerImageName(bannerImageName) } width={ BANNER_IMAGE_WIDTH } />
             </PlainButton>
           ))
         }
