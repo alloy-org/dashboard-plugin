@@ -1,6 +1,6 @@
 // Verify that marking a project Complete is stored in the Vision Guide, designated in the quarterly plan note, and
 // honored by every suggestion surface that reads either one: the agenda's project progress and the plan content
-// that Proposed Agenda and Dream Task send to the model. Also covers the projects page's Status control and the
+// that Proposed Agenda and Goal Coach send to the model. Also covers the projects page's Status control and the
 // rule that lets a well-stocked plan skip project discovery.
 
 import { jest } from "@jest/globals";
@@ -173,7 +173,7 @@ describe("ProjectCard Status control", () => {
   function renderCard(onSetCompletion, rowFields = {}) {
     const [row] = draftRowsFromProspects([prospectRecord({ summary: "Ship diff-view v2", uuid: "ship", ...rowFields })]);
     act(() => {
-      root.render(createElement(ProjectCard, { isDisabled: false, onChangeSummary: jest.fn(), onReject: jest.fn(),
+      root.render(createElement(ProjectCard, { isDisabled: false, onChangeRow: jest.fn(), onReject: jest.fn(),
         onSetCompletion, onSetPriority: jest.fn(async () => true), row }));
     });
   }

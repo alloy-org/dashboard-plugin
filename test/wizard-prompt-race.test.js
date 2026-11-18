@@ -1,14 +1,16 @@
 // Tests for the wizard's racing prompt runner: both sources answer the same prompt and the first usable result
-// wins. The behavior that matters is what the sequential fallback could not do — a slow Agent Pro must not delay
+// wins. The behavior that matters is what the sequential fallback could not do — a slow callLLM must not delay
 // a fast direct provider, and a fast failure from either source must not settle the race against a slower success.
 import { jest } from "@jest/globals";
 import { mockFetchAiProvider } from "./mock-fetch-ai-provider.js";
 
-const agentProMock = jest.fn();
+const amplenoteLlmMock = jest.fn();
 const llmPromptMock = jest.fn();
 
-await mockFetchAiProvider({ agentProPrompt: (...args) => agentProMock(...args),
-  llmPrompt: (...args) => llmPromptMock(...args) });
+await mockFetchAiProvider({ llmPrompt: (...args) => llmPromptMock(...args) });
+await jest.unstable_mockModule("providers/amplenote-llm", async () => ({
+  amplenoteDecisionRequester: jest.fn(), amplenoteLlmModel: jest.fn(), amplenoteLlmPrompt: (...args) => amplenoteLlmMock(...args),
+  isAmplenoteLlmAvailable: jest.fn() }));
 
 const { raceWizardPrompt } = await import("plan-wizard/wizard-prompt-runner");
 
@@ -26,72 +28,91 @@ function resolveAfter(value, delayMs) {
 
 describe("raceWizardPrompt", () => {
   beforeEach(() => {
-    agentProMock.mockReset();
+    amplenoteLlmMock.mockReset();
     llmPromptMock.mockReset();
   });
 
-  it("answers with the direct provider when Agent Pro is still running", async () => {
-    agentProMock.mockReturnValue(resolveAfter({ source: "agent-pro" }, 80));
+  it("answers with the direct provider when callLLM is still running", async () => {
+    amplenoteLlmMock.mockReturnValue(resolveAfter({ source: "amplenote-llm" }, 80));
     llmPromptMock.mockResolvedValue({ source: "direct" });
     await expect(raceWizardPrompt({}, "prompt", KEYED_OPTIONS)).resolves.toEqual({ source: "direct", wizardPromptSource: "direct-provider" });
   });
 
-  it("answers with Agent Pro when the direct provider is slower", async () => {
-    agentProMock.mockResolvedValue({ source: "agent-pro" });
+  it("answers with callLLM when the direct provider is slower", async () => {
+    amplenoteLlmMock.mockResolvedValue({ source: "amplenote-llm" });
     llmPromptMock.mockReturnValue(resolveAfter({ source: "direct" }, 80));
-    await expect(raceWizardPrompt({}, "prompt", KEYED_OPTIONS)).resolves.toEqual({ source: "agent-pro", wizardPromptSource: "agent-pro" });
+    await expect(raceWizardPrompt({}, "prompt", KEYED_OPTIONS)).resolves.toEqual({ source: "amplenote-llm", wizardPromptSource: "amplenote-llm" });
   });
 
   it("waits for the slower source when the faster one fails rather than settling on its failure", async () => {
-    agentProMock.mockResolvedValue(null);
+    amplenoteLlmMock.mockResolvedValue(null);
     llmPromptMock.mockReturnValue(resolveAfter({ source: "direct" }, 40));
     await expect(raceWizardPrompt({}, "prompt", KEYED_OPTIONS)).resolves.toEqual({ source: "direct", wizardPromptSource: "direct-provider" });
   });
 
   it("treats a rejection as a source dropping out, not as the race's answer", async () => {
     llmPromptMock.mockRejectedValue(new Error("Timeout"));
-    agentProMock.mockReturnValue(resolveAfter({ source: "agent-pro" }, 40));
-    await expect(raceWizardPrompt({}, "prompt", KEYED_OPTIONS)).resolves.toEqual({ source: "agent-pro", wizardPromptSource: "agent-pro" });
+    amplenoteLlmMock.mockReturnValue(resolveAfter({ source: "amplenote-llm" }, 40));
+    await expect(raceWizardPrompt({}, "prompt", KEYED_OPTIONS)).resolves.toEqual({ source: "amplenote-llm", wizardPromptSource: "amplenote-llm" });
   });
 
-  it("races Agent Pro alone when no provider key was resolved", async () => {
-    agentProMock.mockResolvedValue({ source: "agent-pro" });
+  it("races callLLM alone when no provider key was resolved", async () => {
+    amplenoteLlmMock.mockResolvedValue({ source: "amplenote-llm" });
     const unkeyedOptions = { jsonResponse: true, timeoutSeconds: 60 };
-    await expect(raceWizardPrompt({}, "prompt", unkeyedOptions)).resolves.toEqual({ source: "agent-pro", wizardPromptSource: "agent-pro" });
+    await expect(raceWizardPrompt({}, "prompt", unkeyedOptions)).resolves.toEqual({ source: "amplenote-llm", wizardPromptSource: "amplenote-llm" });
     expect(llmPromptMock).not.toHaveBeenCalled();
   });
 
   // A source that states why it failed must reach the caller as a failure, not as an empty answer: the pass that
   // reported "no candidate the evidence supports" to the user had in fact never had a response to evaluate.
   it("throws naming the reason when every source that ran failed", async () => {
-    agentProMock.mockResolvedValue(null);
+    amplenoteLlmMock.mockResolvedValue(null);
     llmPromptMock.mockRejectedValue(new Error("Timeout"));
     await expect(raceWizardPrompt({}, "prompt", KEYED_OPTIONS)).rejects.toThrow(/direct-provider \(Timeout\)/);
   });
 
-  it("resolves null when no source stated a reason, so an absent Agent Pro is not reported as a failure", async () => {
-    agentProMock.mockResolvedValue(null);
+  it("names callLLM's reason alongside the direct provider's when both legs fail", async () => {
+    amplenoteLlmMock.mockRejectedValue(new Error("your saved API key: You exceeded your current quota"));
+    llmPromptMock.mockRejectedValue(new Error("Request failed with status 429"));
+    const request = raceWizardPrompt({}, "prompt", KEYED_OPTIONS);
+    await expect(request).rejects.toThrow(/amplenote-llm \(your saved API key: You exceeded your current quota\)/);
+  });
+
+  it("resolves null when no source stated a reason, so an absent plugin LLM license is not reported as a failure", async () => {
+    amplenoteLlmMock.mockResolvedValue(null);
     const unkeyedOptions = { jsonResponse: true, timeoutSeconds: 60 };
     await expect(raceWizardPrompt({}, "prompt", unkeyedOptions)).resolves.toBeNull();
   });
 
   it("forwards the resolved model to both sources so they answer as the same tier", async () => {
-    agentProMock.mockResolvedValue({ source: "agent-pro" });
+    amplenoteLlmMock.mockResolvedValue({ source: "amplenote-llm" });
     llmPromptMock.mockResolvedValue(null);
     await raceWizardPrompt({}, "prompt", KEYED_OPTIONS);
-    expect(agentProMock).toHaveBeenCalledWith({}, "prompt", { aiModel: "gemini-3.5-flash-lite", jsonResponse: true });
+    expect(amplenoteLlmMock).toHaveBeenCalledWith({}, "prompt", { aiModel: "gemini-3.5-flash-lite", jsonResponse: true,
+      preferLicense: true, reasoningEffort: undefined, rejectWithReason: true, source: "plan-wizard", timeoutSeconds: 60 });
     expect(llmPromptMock).toHaveBeenCalledWith({}, null, "prompt", "gemini-3.5-flash-lite", "gemini-key", true, 60,
       undefined, undefined);
   });
 
-  // Only the direct provider takes a reasoning budget; Agent Pro runs the model on its own terms and would reject
-  // an unrecognized field, so the option must not reach it.
-  it("forwards a reasoning budget to the direct provider alone", async () => {
-    agentProMock.mockResolvedValue(null);
+  // A tier callLLM can serve on the plugin LLM license, but the user holds no key for, asks callLLM for its own model
+  // while the direct leg asks for the keyed provider's.
+  it("asks callLLM for amplenoteAiModel when one is given, leaving the direct leg on aiModel", async () => {
+    amplenoteLlmMock.mockResolvedValue({ source: "amplenote-llm" });
+    llmPromptMock.mockResolvedValue(null);
+    await raceWizardPrompt({}, "prompt", { aiModel: "gpt-5.4-mini", amplenoteAiModel: "gemini-3.5-flash-lite", apiKey: "openai-key",
+      jsonResponse: true, timeoutSeconds: 60 });
+    expect(amplenoteLlmMock.mock.calls[0][2].aiModel).toBe("gemini-3.5-flash-lite");
+    expect(llmPromptMock.mock.calls[0][3]).toBe("gpt-5.4-mini");
+  });
+
+  // Both legs take a reasoning budget: callLLM translates it to each provider's closest equivalent.
+  it("forwards a reasoning budget to both sources", async () => {
+    amplenoteLlmMock.mockResolvedValue(null);
     llmPromptMock.mockResolvedValue({ source: "direct" });
     await raceWizardPrompt({}, "prompt", { ...KEYED_OPTIONS, reasoningEffort: "low" });
     expect(llmPromptMock).toHaveBeenCalledWith({}, null, "prompt", "gemini-3.5-flash-lite", "gemini-key", true, 60,
       "low", undefined);
-    expect(agentProMock).toHaveBeenCalledWith({}, "prompt", { aiModel: "gemini-3.5-flash-lite", jsonResponse: true });
+    expect(amplenoteLlmMock).toHaveBeenCalledWith({}, "prompt", { aiModel: "gemini-3.5-flash-lite", jsonResponse: true,
+      preferLicense: true, reasoningEffort: "low", rejectWithReason: true, source: "plan-wizard", timeoutSeconds: 60 });
   });
 });

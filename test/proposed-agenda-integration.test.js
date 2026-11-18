@@ -44,7 +44,7 @@ function currentQuarterPlanName() {
 
 // ----------------------------------------------------------------------------------------------
 // @desc Build an app stub that returns real fixture tasks + quarterly plan content but forces the LLM call
-//   to bypass the Ample Agent Pro callPlugin fallback so the real OpenAI request is exercised.
+//   to skip callLLM, whose quota check reports no plugin LLM license, so the real OpenAI request is exercised.
 // @returns {object} Amplenote-app-shaped stub.
 // [Claude claude-opus-4-8 (1M context)] Task: stub the note/task surface while keeping the LLM call real
 function buildProposedAgendaApp() {
@@ -56,7 +56,7 @@ function buildProposedAgendaApp() {
   const openTasks = SAMPLE_TASKS.filter(task => !task.completedAt && !task.dismissedAt);
   return {
     alert: jest.fn(),
-    callPlugin: jest.fn().mockResolvedValue(undefined),
+    callLLM: jest.fn().mockRejectedValue(new Error("No plugin LLM license")),
     filterNotes: jest.fn().mockResolvedValue([{ name: planName, uuid: PLAN_NOTE_UUID }]),
     findNote: jest.fn().mockResolvedValue(null),
     getNoteContent: jest.fn().mockResolvedValue(TEST_QUARTERLY_CONTENT),

@@ -55,13 +55,13 @@ const { readPlanGoals, savePlanGoals, savePlanProspects, savePlanQuarterAnswer }
 //     document.body to escape the planning widget's stacking context, so its markup is not inside the mount
 //     point; the body is therefore the element that contains it.
 //   - {Function} rerender - Re-renders the wizard with a new scope.
-async function renderPlanWizard({ app = createPlanWizardApp(), onClose = () => {}, onFinished = null, scope = SCOPE } = {}) {
+async function renderPlanWizard({ app = createPlanWizardApp(), onClose = () => {}, onDone = null, onFinished = null, scope = SCOPE } = {}) {
   const mountPoint = document.createElement("div");
   document.body.appendChild(mountPoint);
   const root = createRoot(mountPoint);
   const rerender = async nextScope => {
     await act(async () => {
-      root.render(createElement(PlanWizard, { app, onClose, onFinished, ...nextScope }));
+      root.render(createElement(PlanWizard, { app, onClose, onDone, onFinished, ...nextScope }));
     });
     await settle();
   };
@@ -190,6 +190,7 @@ describe("PlanWizard intent step", () => {
     expect(readingPage.querySelector(".intent-reading-status").textContent).toBe("Looking for themes and directions…");
     const readLabels = [...readingPage.querySelectorAll(".intent-reading-read-label")].map(label => label.textContent);
     expect(readLabels).toEqual(["Hiring: frontend contractor", "Book dentist"]);
+    expect(readingPage.querySelector(".intent-reading-retrieval").textContent).toBe("Read 1 task from 1 note, 1 of them completed");
     expect(readingPage.querySelectorAll(".intent-reading-theme").length).toBe(0);
     expect(container.querySelector(".plan-wizard-navigation")).toBeNull();
 
@@ -264,7 +265,7 @@ describe("PlanWizard intent step", () => {
     await clickAndSettle(readingPage.querySelector(".intent-reading-reread"));
 
     expect(readingPage.querySelector(".intent-reading-status").textContent).toBe("Ready. Pick a direction or write your own.");
-    expect(readingPage.querySelector(".intent-reading-reread")).toBeNull();
+    expect(readingPage.querySelector(".intent-reading-reread").textContent).toBe("Reread my notes");
     await cleanup();
   });
 
@@ -474,10 +475,9 @@ describe("PlanWizard intent step", () => {
     const tabbableControls = [...container.querySelectorAll(".plan-wizard-page input, .plan-wizard-page button")]
       .filter(element => !element.disabled && element.tabIndex >= 0);
 
-    expect(container.querySelector(".plan-wizard-close")).toBeNull();
     expect(suggestions.every(button => button.tabIndex === -1)).toBe(true);
     expect(tabbableControls.every(element => element.matches(
-      ".intent-step-input, .intent-step-reading-link, .intent-step-container .plan-button--dashed, .plan-wizard-cancel, .plan-wizard-next")))
+      ".intent-step-input, .intent-step-reading-link, .intent-step-container .plan-button--dashed, .plan-wizard-cancel, .plan-wizard-close, .plan-wizard-next")))
       .toBe(true);
     expect(container.querySelector(".intent-step-save")).toBeNull();
     expect(container.querySelector(".intent-step-continue")).toBeNull();
@@ -514,7 +514,7 @@ describe("PlanWizard step navigation", () => {
   it("opens on the intent step and reports its position in the sequence", async () => {
     const { cleanup, container } = await renderPlanWizard();
     const stepDots = [...container.querySelectorAll(".plan-wizard-step-dot")];
-    expect(container.querySelector(".plan-wizard-title").textContent).toBe("Plan Builder - Beta");
+    expect(container.querySelector(".plan-wizard-title").textContent).toBe("Plan Builder");
     expect(container.querySelector(".plan-wizard-title-quarter").textContent).toBe("Q4 2026");
     expect(container.querySelector(".plan-wizard-progress").textContent).toBe(`1 of ${ WIZARD_STEPS.length }`);
     expect(stepDots).toHaveLength(WIZARD_STEPS.length);
@@ -627,10 +627,27 @@ describe("PlanWizard step navigation", () => {
   });
 
   it("leaves a cancelled wizard unfinished", async () => {
+    const onDone = jest.fn();
     const onFinished = jest.fn();
-    const { cleanup, container } = await renderPlanWizard({ onFinished });
+    const { cleanup, container } = await renderPlanWizard({ onDone, onFinished });
     await clickAndSettle(container.querySelector(".plan-wizard-cancel"));
     expect(onFinished).not.toHaveBeenCalled();
+    expect(onDone).not.toHaveBeenCalled();
+    await cleanup();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Done tells the caller once the wizard has closed, which the planning widget uses to start the first run of
+  //   "Generate ideas".
+  it("tells the caller Done was clicked after the wizard closes", async () => {
+    const calls = [];
+    const { cleanup, container } = await renderPlanWizard({ onClose: () => calls.push("close"), onDone: () => calls.push("done") });
+    await typeInto(workFields(container)[0], "Ship the analytics offering");
+    for (let step = 1; step < WIZARD_STEPS.length; step += 1) {
+      await clickAndSettle(container.querySelector(".plan-wizard-next"));
+    }
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+    expect(calls).toEqual(["close", "done"]);
     await cleanup();
   });
 });
@@ -955,6 +972,59 @@ describe("PlanWizard project discovery", () => {
     app.tasks.push({ completedAt: secondsAgo(5), content: "Chase the overdue invoice", createdAt: secondsAgo(13),
       noteName: "Billing", noteUUID: "note-billing", uuid: "task-d" });
   }
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Opening a domain in a notebook without tags adds todo to its task notes without asking, then discovers
+  //   projects from the newly included tasks.
+  it("tags task notes before loading and uses their fresh tasks for project discovery", async () => {
+    const app = createPlanWizardApp();
+    const recentNote = { archived: false, changed: new Date().toISOString(), content: "Reporting work", name: "Reporting",
+      tags: [], uuid: "note-reporting" };
+    app.notes.push(recentNote);
+    const originalFilterNotes = app.filterNotes.getMockImplementation();
+    app.filterNotes.mockImplementation(options => options?.group === "taskLists" ? [recentNote] : originalFilterNotes(options));
+    app.alert = jest.fn(async () => null);
+    app.addNoteTag = jest.fn(async () => { recentNote.tags.push("todo"); return true; });
+    app.addTaskDomainNote = jest.fn(async () => { pushRecentCompletions(app); return true; });
+    inferenceImplementation = respondToBothPrompts({ workIntent: "Ship the analytics offering",
+      proposals: [{ focusMonths: [], resolvedTaskUuids: ["task-a", "task-b"], summary: "Automate the weekly report",
+        substantiation: "Both newly included tasks concern reporting.", userCategoryEm: "work" }] });
+    const { cleanup, container } = await renderPlanWizard({ app });
+    await settle();
+    expect(app.alert).not.toHaveBeenCalled();
+    expect(recentNote.tags).toContain("todo");
+    expect(app.addTaskDomainNote).toHaveBeenCalledWith(SCOPE.domainUuid, { uuid: recentNote.uuid });
+    await typeInto(workFields(container)[0], "Ship the analytics offering");
+    await clickAndSettle(container.querySelector(".plan-wizard-next"));
+    expect(container.querySelector(".project-row--proposed .project-row-name").value).toBe("Automate the weekly report");
+    const stored = await readPlanGoals(app, SCOPE);
+    expect(stored.prospects[0].relatedTasks).toEqual(["task-a", "task-b"]);
+    await cleanup();
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Suggestions cached before the fallback included notes were drawn without those notes' tasks, so approving
+  //   the inclusion reruns inference rather than reusing them.
+  it("reruns inference over cached suggestions after the fallback includes notes", async () => {
+    const app = createPlanWizardApp();
+    const first = await renderPlanWizard({ app });
+    expect(inferenceCalls).toHaveLength(1);
+    await first.cleanup();
+
+    const recentNote = { archived: false, changed: new Date().toISOString(), content: "Reporting work", name: "Reporting",
+      tags: [], uuid: "note-reporting" };
+    app.notes.push(recentNote);
+    const originalFilterNotes = app.filterNotes.getMockImplementation();
+    app.filterNotes.mockImplementation(options => options?.group === "taskLists" ? [recentNote] : originalFilterNotes(options));
+    app.alert = jest.fn(async () => "include-task-notes");
+    app.addNoteTag = jest.fn(async () => { recentNote.tags.push("todo"); return true; });
+    app.addTaskDomainNote = jest.fn(async () => { pushRecentCompletions(app); return true; });
+    const second = await renderPlanWizard({ app });
+    await settle();
+    expect(app.addTaskDomainNote).toHaveBeenCalledTimes(1);
+    expect(inferenceCalls).toHaveLength(2);
+    await second.cleanup();
+  });
 
   it("saves the intent, advances to projects, and shows what discovery proposed with its reasoning", async () => {
     const app = createPlanWizardApp();
@@ -1868,6 +1938,14 @@ describe("PlanWizard modal presentation", () => {
     await cleanup();
   });
 
+  it("closes from the header's close button", async () => {
+    const closeCalls = [];
+    const { cleanup, container } = await renderPlanWizard({ onClose: () => closeCalls.push("closed") });
+    await act(async () => container.querySelector(".plan-wizard-close").click());
+    expect(closeCalls).toEqual(["closed"]);
+    await cleanup();
+  });
+
   it("wraps intent answers in textareas while keeping the other short answers as text inputs", async () => {
     const { cleanup, container } = await renderPlanWizard();
     expect(container.querySelectorAll("textarea")).toHaveLength(2);
@@ -1884,5 +1962,25 @@ describe("PlanWizard modal presentation", () => {
     expect(answerField.tagName).toBe("INPUT");
     expect(answerField.getAttribute("type")).toBe("text");
     await cleanup();
+  });
+});
+
+describe("IntentReadingPage retrieval line", () => {
+  it("asks for a Reread when the stored reading predates the retrieval counts", async () => {
+    const { default: IntentReadingPage } = await import("dashboard/plan-wizard/intent-reading-page");
+    const mountPoint = document.createElement("div");
+    document.body.appendChild(mountPoint);
+    const root = createRoot(mountPoint);
+    const intentReading = { phase: "ready", readItems: [{ kind: "note", label: "Launch notes", noteUuid: "note-1" }], retrieval: null,
+      themeJudgements: {}, themes: [] };
+    await act(async () => {
+      root.render(createElement(IntentReadingPage, { directions: [], intentReading, isRefreshing: false, onApplyDirection: () => {},
+        onJudgeTheme: () => {}, onReread: () => {}, onReturn: () => {}, progressFraction: 1 }));
+    });
+    const retrievalText = mountPoint.querySelector(".intent-reading-retrieval").textContent;
+    expect(retrievalText).toBe("Task and note counts weren't recorded for this reading. Reread my notes to count them.");
+    expect(mountPoint.querySelector(".intent-reading-reread").textContent).toBe("Reread my notes");
+    await act(async () => { root.unmount(); });
+    mountPoint.remove();
   });
 });

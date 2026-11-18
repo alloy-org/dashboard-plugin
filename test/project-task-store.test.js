@@ -1,6 +1,7 @@
 // Verify the per-project sections of the quarterly task store round-trip, are written one project at a time, and
 // that stored ideas remain available to agenda prompts and the shared refresh age policy stays stable.
 import { jest } from "@jest/globals";
+import { noteHeadingUrlFromUUID } from "app-util";
 import { taskRatingKey } from "plan-wizard/stack-rank/task-rating-cache";
 import { guideHeadingRanges } from "plan-wizard/vision-guide-markdown";
 import { projectNeedsRefresh } from "dashboard/project-refresh-policy";
@@ -76,7 +77,7 @@ describe("project task store sections", () => {
     expect(unreadableHeadings).toEqual([]);
     expect(recordsByUuid.get("project-uuid")).toMatchObject({ isActive: true, summary: "Launch dashboard" });
     expect(recordsByUuid.get("project-uuid").suggestedTasks[0].taskText).toBe("Audit widget memory");
-    expect(recordsByUuid.get("project-uuid").completedTasks[0].taskUuid).toBe("done-task");
+    expect(recordsByUuid.get("project-uuid").completedTasks).toEqual([]);
   });
 
   // ----------------------------------------------------------------------------------------------
@@ -164,14 +165,27 @@ describe("project task store sections", () => {
 
   // ----------------------------------------------------------------------------------------------
   // @desc The human-readable lists render beside the payload, so the note is readable without parsing JSON.
-  it("renders the three task lists above the payload", () => {
+  it("renders the task lists above the payload, completions only as a link to the ledger", () => {
     const body = storedProject({
       completedTasks: [{ completedAt: "2026-09-14T10:00:00.000Z", taskUuid: "done-task" }],
       relatedTaskRecords: [{ taskText: "Draft release notes", taskUuid: "open-task" }] }).toStoreSection();
     expect(body).toContain("- Last attempted: 2026-09-18T12:00:00.000Z");
     expect(body).toContain("Draft release notes");
     expect(body).toContain("- Generated task ideas\n  - (none yet)");
-    expect(body).toContain("done-task");
+    expect(body).toContain("- Completed tasks: none recorded yet");
+    expect(body).not.toContain("done-task");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc The Completed tasks bullet links to the ledger's day heading, by the anchor Amplenote gives that heading, and
+  //   the link is read back from the payload.
+  it("links the completed tasks bullet to the ledger's day heading", () => {
+    const completedTasksLink = { headingText: "2026-09-18", noteName: "Completed Tasks by Project Q3 2026 Work", noteUuid: "ledger-uuid" };
+    const body = storedProject({ completedTasksLink }).toStoreSection();
+    expect(body).toContain("- Completed tasks: [Completed Tasks by Project Q3 2026 Work, latest on 2026-09-18]"
+      + "(https://www.amplenote.com/notes/ledger-uuid#2026-09-18)\n");
+    expect(QuarterProject.fromStoreSection(body).completedTasksLink).toEqual(completedTasksLink);
+    expect(noteHeadingUrlFromUUID("note-uuid", "Day one: [draft] #2")).toBe("https://www.amplenote.com/notes/note-uuid#Day_one:__draft___2");
   });
 
   // ----------------------------------------------------------------------------------------------
@@ -218,7 +232,7 @@ describe("project task store sections", () => {
 
   // ----------------------------------------------------------------------------------------------
   // @desc A section written before the lists were split and the log moved to headings is still read: its single
-  //   Existing tasks list, and the relatedTasks and taskSuggestions its payload carried.
+  //   Existing tasks list, and the relatedTasks and taskSuggestions its payload carried. Rewriting it drops the log.
   it("reads a section written in the earlier format", () => {
     const legacySection = "- Last attempted: never\n\n- Existing tasks\n"
       + "  - [Draft release notes](https://www.amplenote.com/notes/tasks/open-task)\n- Suggested tasks\n  - (none yet)\n"
@@ -232,7 +246,7 @@ describe("project task store sections", () => {
     expect(record.taskSuggestions).toEqual([{ suggestedAt: "2026-09-01T12:00:00.000Z", taskUuid: "open-task" },
       { suggestedAt: "2026-08-01T12:00:00.000Z", taskUuid: "older-task" }]);
     const rewritten = record.toStoreSection();
-    expect(rewritten.indexOf("### open-task suggested")).toBeGreaterThan(rewritten.indexOf("```json"));
+    expect(rewritten).not.toContain("### open-task suggested");
     expect(rewritten).not.toContain('"taskSuggestions"');
   });
 

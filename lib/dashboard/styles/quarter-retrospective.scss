@@ -1,0 +1,1306 @@
+// Styles for the Quarter Retrospective: the overlay it opens in, the tall story card, its header links, the options
+// and status screens, the progress segments, each slide's tone, and what each kind of slide draws: project bars, the
+// month timeline, each project's hardest tasks with their "Document how you did it" links, the progress heap, and photo
+// slides. The options screen ends with the tag picker for the notes the retrospective writes. Slides keep their own saturated
+// gradients in both themes, like a year-in-review story, so every gradient stop is dark enough for white text; the
+// card chrome around them follows the dashboard theme. Behind each slide's words a backdrop layers an optional
+// abstract photo, two drifting accent shapes, and film grain, all kept faint enough, and pushed toward the slide's
+// edges, that the white text keeps its contrast. The payoff ranking's project chips appear on the processing screen
+// and on a slide of their own.
+
+@use 'sass:list';
+@use 'sass:map';
+@use 'theme-tokens' as *;
+@use 'z-indexes' as *;
+
+$retrospective-card-height: min(88vh, 720px);
+$retrospective-card-aspect: list.slash(9, 16);
+$retrospective-segment-height: 3px;
+$retrospective-entrance-distance: 14px;
+$retrospective-entrance-duration: 520ms;
+$retrospective-entrance-step: 140ms;
+$retrospective-text-on-slide: #ffffff;
+$retrospective-text-on-slide-muted: rgba(255, 255, 255, 0.78);
+$retrospective-slide-rule: rgba(255, 255, 255, 0.22);
+$retrospective-segment-track: rgba(255, 255, 255, 0.32);
+$retrospective-control-height: 36px;
+$retrospective-control-background: rgba(0, 0, 0, 0.42);
+$retrospective-control-background-hover: rgba(0, 0, 0, 0.6);
+$retrospective-control-border: rgba(255, 255, 255, 0.6);
+$retrospective-choice-selected-background: rgba(255, 255, 255, 0.32);
+$retrospective-bar-height: 8px;
+$retrospective-bar-open: rgba(255, 255, 255, 0.32);
+$retrospective-timeline-height: 132px;
+$retrospective-heap-minimum-height: 140px;
+$retrospective-heap-fall-duration: 600ms;
+$retrospective-heap-no-project: rgba(255, 255, 255, 0.55);
+$retrospective-heap-block-edge: rgba(0, 0, 0, 0.28);
+$retrospective-photo-scrim: linear-gradient(to top, rgba(0, 0, 0, 0.82) 0%, rgba(0, 0, 0, 0.45) 45%, rgba(0, 0, 0, 0.12) 100%);
+$retrospective-slide-entrance-duration: 480ms;
+$retrospective-entrance-blur: 6px;
+$retrospective-backdrop-drift-duration: 16s;
+$retrospective-backdrop-photo-opacity: 0.55;
+$retrospective-backdrop-glow-opacity: 0.32;
+$retrospective-backdrop-blob-opacity: 0.16;
+$retrospective-backdrop-grain-opacity: 0.16;
+$retrospective-chip-background: rgba(255, 255, 255, 0.14);
+$retrospective-chip-background-hover: rgba(255, 255, 255, 0.22);
+$retrospective-chip-move-size: 28px;
+$retrospective-explanation-detail-background: rgba(0, 0, 0, 0.82);
+$retrospective-explanation-icon-size: 18px;
+// Fractal noise drawn once as an SVG tile and repeated, so the grain costs no download.
+$retrospective-grain-tile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)'/%3E%3C/svg%3E");
+
+// Two stops per tone, each dark enough at its lightest for white body text, then a bright accent the backdrop's shapes
+// take at low opacity.
+$retrospective-tones: (
+  'intro': (#1f1147, #6d1d74, #ff5fa2),
+  'gold': (#5c3b00, #a8460f, #ffb347),
+  'forest': (#0b3d2c, #1d6b48, #4be3a0),
+  'violet': (#2e1065, #6331a8, #b18cff),
+  'teal': (#063f47, #0f6e78, #3ee6e0),
+  'ember': (#5a1010, #9c2a1c, #ff7a59),
+  'dusk': (#1e2a4f, #4c2a63, #8f7bff),
+  'ocean': (#0a2a5c, #1b5aa0, #4fb3ff),
+  'sunrise': (#5e1d3c, #a3402a, #ff9a5c),
+);
+
+// Where the two backdrop shapes sit in each layout, as (glow top, glow left, blob top, blob left, blob turn). Each layout
+// keeps both shapes toward the slide's edges, so they frame the words rather than sit behind them.
+$retrospective-backdrop-layouts: (
+  0: (-18%, 38%, 68%, -30%, 0deg),
+  1: (58%, 46%, -16%, -34%, 70deg),
+  2: (-14%, -42%, 62%, 40%, 140deg),
+  3: (64%, -40%, -20%, 36%, 210deg),
+);
+
+.quarter-retrospective-overlay {
+  align-items: center;
+  background: $color-background-scrim;
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: $sp-lg;
+  position: fixed;
+  z-index: $z-index-quarter-retrospective;
+
+  .retrospective-overlay-card {
+    aspect-ratio: $retrospective-card-aspect;
+    background: $color-background-primary;
+    border-radius: $radius-lg;
+    box-shadow: $shadow-elevation-24;
+    height: $retrospective-card-height;
+    max-width: 100%;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .retrospective-overlay-close {
+    background: transparent;
+    border: 0;
+    color: $retrospective-text-on-slide;
+    cursor: pointer;
+    font-size: $large-font-size;
+    padding: $sp-sm;
+    position: absolute;
+    right: $sp-sm;
+    top: $sp-md;
+    z-index: $z-index-retrospective-chrome;
+  }
+
+  // Sits beneath the progress bar, beside the close button, above the slide's tap zones.
+  .retrospective-overlay-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-xs $sp-md;
+    left: $sp-md;
+    position: absolute;
+    right: 48px;
+    top: $sp-lg + $sp-sm;
+    z-index: $z-index-retrospective-chrome;
+  }
+
+  .retrospective-header-link {
+    background: transparent;
+    border: 0;
+    color: $retrospective-text-on-slide-muted;
+    cursor: pointer;
+    font-size: $smaller-font-size;
+    padding: 0;
+    text-decoration: underline;
+
+    &:hover, &:focus-visible { color: $retrospective-text-on-slide; }
+  }
+
+  // The options and status screens take the intro tone, so the header and close button read on them as on a slide.
+  .retrospective-options,
+  .retrospective-status {
+    background: linear-gradient(160deg, list.nth(map.get($retrospective-tones, 'intro'), 1) 0%,
+      list.nth(map.get($retrospective-tones, 'intro'), 2) 100%);
+    color: $retrospective-text-on-slide;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-md;
+    height: 100%;
+    overflow-y: auto;
+    padding: 64px $sp-xl $sp-xl;
+    // Still scrolls, but without a light scrollbar track cutting down the purple's right edge.
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar { display: none; }
+  }
+
+  .retrospective-status {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .retrospective-status-message {
+    color: $retrospective-text-on-slide-muted;
+    font-size: $large-font-size;
+    margin: 0;
+  }
+
+  // With the payoff ranking below it, the message leads from the top so the list has room to grow.
+  .retrospective-status--with-task {
+    justify-content: flex-start;
+    text-align: left;
+  }
+
+  .retrospective-payoff-ranking {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-md;
+    width: 100%;
+  }
+
+  .retrospective-payoff-ranking-prompt {
+    font-size: $large-font-size;
+    font-weight: 700;
+    line-height: 1.3;
+    margin: 0;
+  }
+
+  .retrospective-payoff-ranking-info {
+    color: $retrospective-text-on-slide-muted;
+    cursor: help;
+    font-weight: 400;
+
+    &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: 2px; }
+  }
+
+  // The ranked list and the projects not ranked yet. Neither scrolls on its own: the screen around them does, so a
+  // drag held near its edge can scroll from one area to the other.
+  .retrospective-payoff-zone {
+    border: 2px dashed $retrospective-slide-rule;
+    border-radius: $radius-md;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+    padding: $sp-sm;
+    transition: border-color 160ms;
+  }
+
+  .retrospective-payoff-zone--ranked { border-style: solid; }
+  .retrospective-payoff-zone--drag-over { border-color: $retrospective-text-on-slide; }
+
+  .retrospective-payoff-zone-label {
+    color: $retrospective-text-on-slide-muted;
+    font-size: $smaller-font-size;
+    margin: 0;
+  }
+
+  .retrospective-payoff-zone-empty {
+    color: $retrospective-text-on-slide-muted;
+    margin: 0;
+    padding: $sp-sm 0;
+    text-align: center;
+  }
+
+  .retrospective-payoff-ranking-list {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  // Unranked projects wrap as pills, so ten of them take a few rows rather than a screen's height.
+  .retrospective-payoff-unranked-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-xs;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .retrospective-payoff-chip {
+    align-items: center;
+    background: $retrospective-chip-background;
+    border: 2px solid transparent;
+    border-radius: $radius-md;
+    cursor: grab;
+    display: flex;
+    gap: $sp-sm;
+    padding: $sp-xs $sp-xs $sp-xs $sp-md;
+    transition: background 160ms, border-color 160ms, opacity 160ms;
+
+    &:hover { background: $retrospective-chip-background-hover; }
+  }
+
+  .retrospective-payoff-chip--unranked {
+    border-radius: 999px;
+    padding: 2px 2px 2px $sp-md;
+  }
+
+  .retrospective-payoff-chip--dragging { cursor: grabbing; opacity: 0.45; }
+  .retrospective-payoff-chip--drag-over { border-color: $retrospective-text-on-slide; }
+
+  .retrospective-payoff-chip-rank {
+    color: $retrospective-text-on-slide-muted;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    min-width: 1.5em;
+  }
+
+  .retrospective-payoff-chip-name {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .retrospective-payoff-chip-move {
+    background: transparent;
+    border: 1px solid $retrospective-slide-rule;
+    border-radius: 50%;
+    color: $retrospective-text-on-slide;
+    cursor: pointer;
+    flex-shrink: 0;
+    height: $retrospective-chip-move-size;
+    padding: 0;
+    width: $retrospective-chip-move-size;
+
+    &:hover:not(:disabled) { border-color: $retrospective-text-on-slide; }
+    &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: 2px; }
+    &:disabled { cursor: default; opacity: 0.3; }
+  }
+
+  .retrospective-payoff-ranking-actions {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+  }
+
+  // Once the story is ready the ranking is stored and frozen for a moment, its chips dimmed and no longer grabbable.
+  .retrospective-payoff-ranking--locked {
+    .retrospective-payoff-zone { opacity: 0.6; transition: opacity 160ms; }
+    .retrospective-payoff-chip { cursor: default; }
+    .retrospective-payoff-chip:hover { background: $retrospective-chip-background; }
+  }
+
+  .retrospective-payoff-ranking-saved {
+    font-size: $large-font-size;
+    font-weight: 700;
+    margin: 0;
+    text-align: center;
+  }
+
+  .retrospective-payoff-ranking-error {
+    color: $retrospective-text-on-slide;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  // On its slide the ranking sits above the footer, which shares its layer, and the slide scrolls, without a
+  // scrollbar, when a quarter's projects outgrow it.
+  .retrospective-slide--payoff-ranking {
+    justify-content: flex-start;
+    overflow-y: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar { display: none; }
+
+    .retrospective-payoff-ranking { position: relative; z-index: $z-index-retrospective-slide-controls; }
+  }
+
+  // The end card stays centered until an exported video and its results outgrow it, then scrolls without a
+  // scrollbar rather than pushing its first controls out of reach. Both classes are named so this outweighs the
+  // .retrospective-slide rule below, which centers and clips every slide.
+  .retrospective-slide.retrospective-slide--end-card {
+    justify-content: safe center;
+    overflow-y: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar { display: none; }
+  }
+
+  // The end card's controls sit above the footer, which shares their layer, as the ranking's do.
+  .retrospective-end-card {
+    align-items: stretch;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+    margin-top: $sp-md;
+    position: relative;
+    width: 100%;
+    z-index: $z-index-retrospective-slide-controls;
+  }
+
+  .retrospective-end-card-hint,
+  .retrospective-end-card-error {
+    margin: 0;
+    text-align: center;
+  }
+
+  .retrospective-end-card-hint { color: $retrospective-text-on-slide-muted; }
+  .retrospective-end-card-error { color: $retrospective-text-on-slide; font-weight: 600; }
+
+  .retrospective-end-card-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-sm;
+  }
+
+  .retrospective-end-card-option {
+    background: transparent;
+    border: 1px solid $retrospective-slide-rule;
+    border-radius: $retrospective-control-height;
+    color: $retrospective-text-on-slide;
+    cursor: pointer;
+    flex: 1 1 10em;
+    font-weight: 600;
+    min-height: 44px;
+    padding: $sp-xs $sp-md;
+    transition: border-color 160ms;
+
+    &:hover:not(:disabled) { border-color: $retrospective-text-on-slide; }
+    &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: 2px; }
+    &:disabled { cursor: default; opacity: 0.5; }
+  }
+
+  // The video export buttons below the end card's controls, with the encode's progress or failure.
+  .retrospective-video-export {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+  }
+
+  // An exported video leads the end card, ahead of its kicker and headline, so it is the first thing seen once encoded.
+  // Like the end card's controls, it sits above the footer, which shares its layer.
+  .retrospective-video-result {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+    order: -1;
+    position: relative;
+    z-index: $z-index-retrospective-slide-controls;
+
+    a.retrospective-end-card-option {
+      align-items: center;
+      display: inline-flex;
+      justify-content: center;
+      text-decoration: none;
+    }
+  }
+
+  .retrospective-video-export-note {
+    color: $retrospective-text-on-slide-muted;
+    font-size: 0.8em;
+    margin: 0;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+
+  // Framed, because the video's first frame is often a slide of the same purple as the end card behind it.
+  .retrospective-video-export-preview {
+    align-self: center;
+    aspect-ratio: $retrospective-card-aspect;
+    border: 1px solid $retrospective-slide-rule;
+    border-radius: $sp-sm;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    max-height: 40vh;
+  }
+
+  .retrospective-options-kicker {
+    color: $retrospective-text-on-slide-muted;
+    font-size: $default-font-size;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin: 0;
+    text-transform: uppercase;
+  }
+
+  .retrospective-options-headline {
+    font-size: $extra-large-heading-font-size;
+    font-weight: 700;
+    line-height: 1.15;
+    margin: 0;
+  }
+
+  .retrospective-options-toggle {
+    align-items: flex-start;
+    color: $retrospective-text-on-slide-muted;
+    cursor: pointer;
+    display: flex;
+    gap: $sp-sm;
+  }
+
+  .retrospective-options-advanced-link {
+    align-self: flex-start;
+    background: transparent;
+    border: 0;
+    color: $retrospective-text-on-slide-muted;
+    cursor: pointer;
+    font: inherit;
+    padding: 0;
+    text-decoration: underline;
+
+    &:hover, &:focus-visible { color: $retrospective-text-on-slide; }
+  }
+
+  .retrospective-options-tag-picker {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+  }
+
+  .retrospective-options-tag-input {
+    background: transparent;
+    border: 1px solid $retrospective-slide-rule;
+    border-radius: $sp-xs;
+    color: $retrospective-text-on-slide;
+    font: inherit;
+    min-height: $retrospective-control-height;
+    padding: $sp-xs $sp-sm;
+
+    &::placeholder { color: $retrospective-text-on-slide-muted; }
+    &:focus-visible { border-color: $retrospective-text-on-slide; outline: 2px solid $retrospective-text-on-slide; outline-offset: 2px; }
+  }
+
+  .retrospective-options-tag-hint {
+    color: $retrospective-text-on-slide-muted;
+    font-size: $smaller-font-size;
+  }
+
+  .retrospective-options-section-title {
+    color: $retrospective-text-on-slide-muted;
+    font-size: $smaller-font-size;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin: $sp-sm 0 0;
+    text-transform: uppercase;
+  }
+
+  .retrospective-choice-cards {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+  }
+
+  // The vibes are short enough to sit side by side.
+  .retrospective-choice-cards--row {
+    flex-direction: row;
+
+    .retrospective-choice-card { flex: 1; min-width: 0; }
+  }
+
+  .retrospective-choice-card {
+    background: $retrospective-slide-rule;
+    border: 2px solid transparent;
+    border-radius: $radius-md;
+    color: $retrospective-text-on-slide;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+    padding: $sp-sm $sp-md;
+    text-align: left;
+    transition: border-color 160ms, background 160ms, transform 160ms;
+
+    &:hover:not(:disabled), &:focus-visible { border-color: $retrospective-control-border; transform: translateY(-1px); }
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.6;
+    }
+  }
+
+  .retrospective-choice-card--selected {
+    background: $retrospective-choice-selected-background;
+    border-color: $retrospective-text-on-slide;
+
+    &:hover:not(:disabled), &:focus-visible { border-color: $retrospective-text-on-slide; }
+  }
+
+  .retrospective-choice-card-title {
+    font-size: $large-font-size;
+    font-weight: 700;
+  }
+
+  .retrospective-choice-card-description,
+  .retrospective-choice-card-note {
+    color: $retrospective-text-on-slide-muted;
+    font-size: $smaller-font-size;
+  }
+
+  .retrospective-choice-card-note {
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  // The primary and secondary buttons sit at the foot of the screen.
+  .retrospective-options-actions {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    gap: $sp-sm;
+    margin-top: auto;
+  }
+
+  .retrospective-options-primary {
+    background: $retrospective-text-on-slide;
+    border: 0;
+    border-radius: $retrospective-control-height;
+    color: list.nth(map.get($retrospective-tones, 'intro'), 1);
+    cursor: pointer;
+    font-size: $large-font-size;
+    font-weight: 700;
+    min-height: 44px;
+    padding: $sp-sm $sp-lg;
+    transition: transform 160ms;
+
+    &:hover:not(:disabled), &:focus-visible { transform: translateY(-1px); }
+    &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: 3px; }
+
+    &:disabled {
+      cursor: default;
+      opacity: 0.5;
+    }
+  }
+
+  .retrospective-options-secondary {
+    background: transparent;
+    border: 0;
+    color: $retrospective-text-on-slide-muted;
+    cursor: pointer;
+    text-decoration: underline;
+
+    &:hover, &:focus-visible { color: $retrospective-text-on-slide; }
+  }
+
+  .retrospective-story {
+    height: 100%;
+    position: relative;
+    touch-action: manipulation;
+    user-select: none;
+  }
+
+  // Above the slide, which rises over the tap zones on a tappable story and would otherwise cover the progress.
+  .retrospective-story-progress {
+    display: flex;
+    gap: $sp-xs;
+    left: $sp-md;
+    position: absolute;
+    right: $sp-md;
+    top: $sp-md;
+    z-index: $z-index-retrospective-chrome;
+  }
+
+  .retrospective-story-segment {
+    background: $retrospective-segment-track;
+    border-radius: $retrospective-segment-height;
+    flex: 1;
+    height: $retrospective-segment-height;
+    overflow: hidden;
+  }
+
+  .retrospective-story-segment-fill {
+    background: $retrospective-text-on-slide;
+    display: block;
+    height: 100%;
+    transform-origin: left center;
+  }
+
+  // The tap zones cover the slide beneath the progress bar; the footer sits above them.
+  .retrospective-story-tap {
+    background: transparent;
+    border: 0;
+    bottom: 0;
+    cursor: pointer;
+    position: absolute;
+    top: 0;
+    z-index: $z-index-retrospective-tap-zone;
+
+    &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: -4px; }
+  }
+
+  // The slide is its own stacking context, so nothing inside it can rise above the tap zones by z-index alone. On a
+  // slide with tap zones the slide itself sits above them but lets presses through, and only its buttons and the
+  // explanation's detail take them, so the explanation's prompt can be hovered and clicked without changing slides.
+  .retrospective-story--tappable > .retrospective-slide {
+    pointer-events: none;
+    z-index: $z-index-retrospective-raised-slide;
+
+    button { pointer-events: auto; }
+  }
+
+  .retrospective-story-tap--previous { left: 0; width: 33%; }
+  .retrospective-story-tap--next { right: 0; width: 67%; }
+
+  .retrospective-story-footer {
+    align-items: center;
+    bottom: $sp-md;
+    color: $retrospective-text-on-slide-muted;
+    display: flex;
+    justify-content: space-between;
+    left: $sp-lg;
+    position: absolute;
+    right: $sp-lg;
+    z-index: $z-index-retrospective-footer;
+  }
+
+  // A pill with a solid scrim and an outline, so it reads as a button over any slide's gradient or photo.
+  .retrospective-story-control {
+    background: $retrospective-control-background;
+    border: 1px solid $retrospective-control-border;
+    border-radius: $retrospective-control-height;
+    color: $retrospective-text-on-slide;
+    cursor: pointer;
+    font-weight: 600;
+    min-height: $retrospective-control-height;
+    padding: $sp-xs $sp-lg;
+
+    &:hover { background: $retrospective-control-background-hover; }
+    &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: 2px; }
+  }
+
+  .retrospective-story-hint {
+    flex: 1;
+    font-size: 0.8em;
+    padding: 0 $sp-sm;
+    text-align: right;
+  }
+
+  // Sits in the footer beside the Play button while the story is paused.
+  .retrospective-story-paused-badge {
+    background: $retrospective-control-background;
+    border-radius: $retrospective-control-height;
+    color: $retrospective-text-on-slide;
+    font-weight: 600;
+    margin: 0 $sp-sm 0 auto;
+    padding: $sp-xs $sp-md;
+  }
+
+  // Isolated so the backdrop, beneath every other child, still sits above the slide's own gradient.
+  .retrospective-slide {
+    animation: retrospective-slide-in $retrospective-slide-entrance-duration ease-out both;
+    color: $retrospective-text-on-slide;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-md;
+    height: 100%;
+    isolation: isolate;
+    justify-content: center;
+    overflow: hidden;
+    padding: 56px $sp-xl 64px;
+    position: relative;
+
+    > * { animation: retrospective-enter $retrospective-entrance-duration ease-out both; }
+    > :nth-child(2) { animation-delay: $retrospective-entrance-step; }
+    > :nth-child(3) { animation-delay: $retrospective-entrance-step * 2; }
+    > :nth-child(4) { animation-delay: $retrospective-entrance-step * 3; }
+    > :nth-child(5) { animation-delay: $retrospective-entrance-step * 4; }
+    > :nth-child(6) { animation-delay: $retrospective-entrance-step * 5; }
+  }
+
+  @each $tone, $stops in $retrospective-tones {
+    .retrospective-slide--#{$tone} {
+      --retrospective-accent: #{list.nth($stops, 3)};
+      background: linear-gradient(160deg, list.nth($stops, 1) 0%, list.nth($stops, 2) 100%);
+    }
+  }
+
+  // Takes the slide's gradient as its own background, so the photo's blend mixes with the tone inside the backdrop.
+  .retrospective-slide > .retrospective-slide-backdrop {
+    animation: retrospective-backdrop-in $retrospective-entrance-duration * 2 ease-out both;
+    background: inherit;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    position: absolute;
+    z-index: $z-index-retrospective-slide-backdrop;
+  }
+
+  .retrospective-backdrop-photo {
+    height: 100%;
+    inset: 0;
+    mix-blend-mode: soft-light;
+    object-fit: cover;
+    opacity: 0;
+    position: absolute;
+    transition: opacity 600ms ease-out;
+    width: 100%;
+  }
+
+  .retrospective-backdrop-photo--loaded { opacity: $retrospective-backdrop-photo-opacity; }
+
+  .retrospective-backdrop-shape {
+    animation: retrospective-backdrop-drift $retrospective-backdrop-drift-duration ease-in-out infinite alternate;
+    aspect-ratio: 1;
+    background: var(--retrospective-accent);
+    position: absolute;
+  }
+
+  .retrospective-backdrop-shape--glow {
+    border-radius: 50%;
+    filter: blur(48px);
+    opacity: $retrospective-backdrop-glow-opacity;
+    width: 95%;
+  }
+
+  .retrospective-backdrop-shape--blob {
+    animation-direction: alternate-reverse;
+    border-radius: 42% 58% 70% 30% / 45% 40% 60% 55%;
+    mix-blend-mode: screen;
+    opacity: $retrospective-backdrop-blob-opacity;
+    width: 110%;
+  }
+
+  @each $layout, $placement in $retrospective-backdrop-layouts {
+    .retrospective-slide-backdrop--layout-#{$layout} {
+      .retrospective-backdrop-shape--glow { left: list.nth($placement, 2); top: list.nth($placement, 1); }
+
+      .retrospective-backdrop-shape--blob {
+        left: list.nth($placement, 4);
+        rotate: list.nth($placement, 5);
+        top: list.nth($placement, 3);
+      }
+    }
+  }
+
+  .retrospective-backdrop-grain {
+    background-image: $retrospective-grain-tile;
+    inset: 0;
+    mix-blend-mode: overlay;
+    opacity: $retrospective-backdrop-grain-opacity;
+    position: absolute;
+  }
+
+  .retrospective-slide-kicker {
+    color: $retrospective-text-on-slide-muted;
+    font-size: $default-font-size;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    margin: 0;
+    text-transform: uppercase;
+  }
+
+  .retrospective-slide-figure {
+    font-size: clamp(56px, 18vw, 104px);
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    line-height: 1;
+    margin: 0;
+  }
+
+  .retrospective-slide-headline {
+    font-size: $extra-large-heading-font-size;
+    font-weight: 700;
+    line-height: 1.15;
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .retrospective-slide-items {
+    counter-reset: retrospective-rank;
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .retrospective-slide-item {
+    animation: retrospective-enter $retrospective-entrance-duration ease-out both;
+    animation-delay: calc(#{$retrospective-entrance-step * 3} + var(--item-index) * 90ms);
+    border-bottom: 1px solid $retrospective-slide-rule;
+    counter-increment: retrospective-rank;
+    display: flex;
+    gap: $sp-md;
+    justify-content: space-between;
+    padding-bottom: $sp-sm;
+
+    &::before {
+      color: $retrospective-text-on-slide-muted;
+      content: counter(retrospective-rank);
+      font-variant-numeric: tabular-nums;
+      font-weight: 700;
+    }
+  }
+
+  .retrospective-slide-item-label {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .retrospective-slide-item-value {
+    color: $retrospective-text-on-slide-muted;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .retrospective-slide-caption {
+    color: $retrospective-text-on-slide-muted;
+    font-size: $default-font-size;
+    margin: 0;
+  }
+
+  // The explanation lets presses on its text through to the tap zones, while its prompt and detail take their own. The prompt's detail opens above the prompt, over the words, so opening it never moves the prompt
+  // out from under the pointer.
+  .retrospective-slide-explanation {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-sm;
+    pointer-events: none;
+    position: relative;
+    z-index: $z-index-retrospective-slide-controls;
+  }
+
+  .retrospective-slide-explanation-text {
+    color: $retrospective-text-on-slide-muted;
+    font-size: $smaller-font-size;
+    margin: 0;
+  }
+
+  .retrospective-slide-explanation-detail-anchor { position: relative; }
+
+  .retrospective-slide-explanation-prompt {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    color: $retrospective-text-on-slide;
+    cursor: pointer;
+    display: inline-flex;
+    font-size: $smaller-font-size;
+    font-weight: 600;
+    gap: $sp-xs;
+    padding: $sp-xs 0;
+    pointer-events: auto;
+    text-decoration: underline dotted;
+    text-underline-offset: 3px;
+
+    &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: 2px; }
+  }
+
+  .retrospective-slide-explanation-icon {
+    align-items: center;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+    display: inline-flex;
+    flex: none;
+    font-family: Georgia, serif;
+    font-size: 12px;
+    font-style: italic;
+    font-weight: 700;
+    height: $retrospective-explanation-icon-size;
+    justify-content: center;
+    width: $retrospective-explanation-icon-size;
+  }
+
+  .retrospective-slide-explanation-detail {
+    backdrop-filter: blur(6px);
+    background: $retrospective-explanation-detail-background;
+    border: 1px solid $retrospective-slide-rule;
+    border-radius: 10px;
+    bottom: 100%;
+    color: $retrospective-text-on-slide;
+    font-size: $smaller-font-size;
+    left: 0;
+    padding: $sp-sm $sp-md;
+    pointer-events: auto;
+    position: absolute;
+    right: 0;
+
+    p { margin: 0; }
+    p + p { margin-top: $sp-sm; }
+  }
+
+  .retrospective-slide-bars {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-md;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .retrospective-slide-bar {
+    animation: retrospective-enter $retrospective-entrance-duration ease-out both;
+    animation-delay: calc(#{$retrospective-entrance-step * 3} + var(--item-index) * 90ms);
+    display: grid;
+    gap: $sp-xs $sp-md;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .retrospective-slide-bar-label { overflow-wrap: anywhere; }
+
+  .retrospective-slide-bar-value {
+    color: $retrospective-text-on-slide-muted;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .retrospective-slide-bar-track {
+    border-radius: $retrospective-bar-height;
+    display: flex;
+    grid-column: 1 / -1;
+    height: $retrospective-bar-height;
+    overflow: hidden;
+  }
+
+  .retrospective-slide-bar-done { background: $retrospective-text-on-slide; }
+  .retrospective-slide-bar-open { background: $retrospective-bar-open; }
+
+  .retrospective-slide-subheadline {
+    color: $retrospective-text-on-slide-muted;
+    font-size: $default-font-size;
+    font-style: italic;
+    margin: 0;
+  }
+
+  // The hardest tasks slide starts at the top, and its project list scrolls when the projects outgrow the slide.
+  .retrospective-slide--hardest-tasks { justify-content: flex-start; }
+
+  // The list and its Continue button sit above the footer, which shares their layer, as the ranking's controls do.
+  .retrospective-slide-hardest-projects {
+    display: flex;
+    flex: 0 1 auto;
+    flex-direction: column;
+    gap: $sp-md;
+    list-style: none;
+    margin: 0;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0;
+    position: relative;
+    // Still scrolls, but without a light scrollbar track cutting across the slide's right edge.
+    scrollbar-width: none;
+    z-index: $z-index-retrospective-slide-controls;
+
+    &::-webkit-scrollbar { display: none; }
+  }
+
+  .retrospective-slide-hardest-project {
+    animation: retrospective-enter $retrospective-entrance-duration ease-out both;
+    animation-delay: calc(#{$retrospective-entrance-step * 3} + var(--item-index) * 90ms);
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+  }
+
+  .retrospective-slide-hardest-project-name {
+    font-size: $default-font-size;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin: 0;
+    overflow-wrap: anywhere;
+    text-transform: uppercase;
+  }
+
+  .retrospective-slide-hardest-tasks {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-xs;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .retrospective-slide-hardest-task {
+    border-bottom: 1px solid $retrospective-slide-rule;
+    display: flex;
+    gap: $sp-md;
+    justify-content: space-between;
+    padding-bottom: $sp-xs;
+  }
+
+  .retrospective-slide-hardest-task-text {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .retrospective-slide-hardest-task-difficulty {
+    color: $retrospective-text-on-slide-muted;
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .retrospective-slide-document-link {
+    align-self: flex-start;
+    background: transparent;
+    border: 0;
+    color: $retrospective-text-on-slide-muted;
+    cursor: pointer;
+    font-size: $smaller-font-size;
+    padding: 0;
+    text-decoration: underline;
+
+    &:hover:not(:disabled), &:focus-visible { color: $retrospective-text-on-slide; }
+    &:disabled { cursor: default; opacity: 0.6; }
+  }
+
+  .retrospective-slide-document-error {
+    font-size: $smaller-font-size;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .retrospective-slide-continue {
+    align-self: flex-start;
+    background: transparent;
+    border: 1px solid $retrospective-slide-rule;
+    border-radius: $retrospective-control-height;
+    color: $retrospective-text-on-slide;
+    cursor: pointer;
+    flex: none;
+    font-weight: 600;
+    min-height: $retrospective-control-height;
+    padding: $sp-xs $sp-md;
+    position: relative;
+    z-index: $z-index-retrospective-slide-controls;
+
+    &:hover { border-color: $retrospective-text-on-slide; }
+    &:focus-visible { outline: 2px solid $retrospective-text-on-slide; outline-offset: 2px; }
+  }
+
+  .retrospective-slide-timeline {
+    display: flex;
+    gap: $sp-md;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .retrospective-slide-timeline-month {
+    align-items: center;
+    animation: retrospective-enter $retrospective-entrance-duration ease-out both;
+    animation-delay: calc(#{$retrospective-entrance-step * 3} + var(--item-index) * 120ms);
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: $sp-xs;
+    min-width: 0;
+    text-align: center;
+  }
+
+  .retrospective-slide-timeline-value {
+    font-size: $large-font-size;
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+  }
+
+  .retrospective-slide-timeline-track {
+    align-items: flex-end;
+    display: flex;
+    height: $retrospective-timeline-height;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .retrospective-slide-timeline-column {
+    animation: retrospective-rise $retrospective-entrance-duration * 2 ease-out both;
+    animation-delay: calc(#{$retrospective-entrance-step * 4} + var(--item-index) * 120ms);
+    background: $retrospective-text-on-slide;
+    border-radius: $radius-sm $radius-sm 0 0;
+    min-height: 2px;
+    transform-origin: bottom center;
+    width: 60%;
+  }
+
+  .retrospective-slide-timeline-label {
+    font-weight: 700;
+  }
+
+  .retrospective-slide-timeline-note {
+    color: $retrospective-text-on-slide-muted;
+    font-size: $smaller-font-size;
+    overflow-wrap: anywhere;
+  }
+
+  .retrospective-heap {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: $sp-sm;
+    min-height: $retrospective-heap-minimum-height;
+  }
+
+  .retrospective-heap-pile {
+    flex: 1 1 auto;
+    min-height: $retrospective-heap-minimum-height;
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+  }
+
+  .retrospective-heap-canvas { display: block; height: 100%; }
+
+  .retrospective-heap-block {
+    animation: retrospective-heap-fall $retrospective-heap-fall-duration cubic-bezier(0.5, 0, 0.75, 0) both;
+    border-radius: 1px;
+    box-shadow: inset 0 0 0 0.5px $retrospective-heap-block-edge;
+    position: absolute;
+  }
+
+  .retrospective-heap-block--slot-0 { background: $retrospective-heap-no-project; }
+
+  @for $slot from 1 through 6 {
+    .retrospective-heap-block--slot-#{$slot} { background: var(--dashboard-color-category-#{$slot}); }
+  }
+
+  .retrospective-heap-legend {
+    color: $retrospective-text-on-slide-muted;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: $smaller-font-size;
+    gap: $sp-xs $sp-md;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .retrospective-heap-legend-entry {
+    align-items: center;
+    display: flex;
+    gap: $sp-xs;
+  }
+
+  .retrospective-heap-swatch {
+    border-radius: 2px;
+    display: inline-block;
+    height: 10px;
+    width: 10px;
+  }
+
+  // A photo slide starts in the fill layout with its photo hidden, until the photo loads and its shape picks the layout.
+  // Filled, the photo covers the slide and the scrim darkens it from the bottom, where the words sit.
+  .retrospective-slide--image {
+    justify-content: flex-end;
+
+    > .retrospective-slide-kicker, > .retrospective-slide-headline, > .retrospective-slide-caption { position: relative; }
+  }
+
+  .retrospective-slide-photo-frame {
+    inset: 0;
+    position: absolute;
+  }
+
+  .retrospective-slide-photo {
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 400ms ease-out;
+    width: 100%;
+  }
+
+  .retrospective-slide-photo--shown { opacity: 1; }
+
+  // Framed, a photo of another shape sits whole between the headline and the caption on the slide's tone, sized to fit
+  // the space they leave without being enlarged past its own size.
+  .retrospective-slide--image-framed {
+    justify-content: flex-start;
+
+    .retrospective-slide-photo-frame {
+      flex: 1 1 0;
+      min-height: 0;
+      order: 1;
+      position: relative;
+    }
+
+    .retrospective-slide-photo {
+      border-radius: $radius-md;
+      box-shadow: $shadow-elevation-24;
+      height: auto;
+      inset: 0;
+      margin: auto;
+      max-height: 100%;
+      max-width: 100%;
+      position: absolute;
+      width: auto;
+    }
+
+    .retrospective-slide-scrim { display: none; }
+
+    > .retrospective-slide-caption {
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 4;
+      display: -webkit-box;
+      order: 2;
+      overflow: hidden;
+    }
+  }
+
+  .retrospective-slide-scrim {
+    background: $retrospective-photo-scrim;
+    inset: 0;
+    position: absolute;
+  }
+
+  @keyframes retrospective-enter {
+    from { filter: blur($retrospective-entrance-blur); opacity: 0; transform: translateY($retrospective-entrance-distance) scale(0.97); }
+    to { filter: none; opacity: 1; transform: none; }
+  }
+
+  // The whole slide settles from slightly large and soft, as if the camera pulled focus onto it.
+  @keyframes retrospective-slide-in {
+    from { filter: blur($retrospective-entrance-blur * 2); opacity: 0.4; transform: scale(1.06); }
+    to { filter: none; opacity: 1; transform: none; }
+  }
+
+  @keyframes retrospective-backdrop-in {
+    from { opacity: 0; transform: scale(1.12); }
+    to { opacity: 1; transform: none; }
+  }
+
+  @keyframes retrospective-backdrop-drift {
+    from { transform: translate(0, 0) scale(1); }
+    to { transform: translate(6%, -5%) scale(1.08); }
+  }
+
+  @keyframes retrospective-rise {
+    from { transform: scaleY(0); }
+    to { transform: none; }
+  }
+
+  // Each block falls its own height times --heap-fall, which is how many of its heights lie above its resting place.
+  @keyframes retrospective-heap-fall {
+    from { opacity: 0; transform: translateY(calc(var(--heap-fall) * -100%)); }
+    8% { opacity: 1; }
+    to { opacity: 1; transform: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .retrospective-slide, .retrospective-slide > *, .retrospective-slide > .retrospective-slide-backdrop, .retrospective-slide-item,
+    .retrospective-slide-bar, .retrospective-slide-hardest-project, .retrospective-slide-timeline-month, .retrospective-slide-timeline-column, .retrospective-heap-block,
+    .retrospective-backdrop-shape { animation: none; }
+  }
+
+  @include breakpoint($breakpoint-large-phone) {
+    padding: 0;
+
+    .retrospective-overlay-card {
+      aspect-ratio: auto;
+      border-radius: 0;
+      height: 100%;
+      width: 100%;
+    }
+  }
+}

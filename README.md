@@ -21,7 +21,9 @@ Start a local dev server with mock data (no Amplenote context required):
 npm run dev
 ```
 
-This launches esbuild in watch mode on `localhost:3000`. The server:
+This launches esbuild in watch mode and serves the dashboard on `localhost:3030`, away from the 3000 that Rails commonly
+holds. Set `DASHBOARD_DEV_PORT` (and `DASHBOARD_DEV_BUILD_PORT`, default 3031, for esbuild's own server) to use others.
+The server:
 
 - Bundles `lib/dashboard/client-entry.js` into an IIFE (`dev/compiled/bundle.js`)
 - Compiles `lib/dashboard/styles/dashboard.scss` to `dev/compiled/bundle.css` on every rebuild

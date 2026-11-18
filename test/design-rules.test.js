@@ -3,6 +3,7 @@
 // but react-icons/md. Content (mood faces, text written into notes, debug output) is listed with its reason.
 import fs from "node:fs";
 import path from "node:path";
+import { isNotYetMigrated } from "./design-system-exceptions.js";
 
 const LIB_DIRECTORY = path.resolve("lib");
 const STYLES_DIRECTORY = path.join(LIB_DIRECTORY, "dashboard", "styles");
@@ -55,9 +56,9 @@ function declarationsOf(property) {
 }
 
 const scriptFiles = filesUnder(LIB_DIRECTORY).filter(file => /\.jsx?$/.test(file))
-  .filter(file => !SKIPPED_FILES.includes(path.relative(LIB_DIRECTORY, file)));
+  .filter(file => !SKIPPED_FILES.includes(path.relative(LIB_DIRECTORY, file)) && !isNotYetMigrated(file));
 const stylesheetFiles = filesUnder(STYLES_DIRECTORY).filter(file => file.endsWith(".scss"))
-  .filter(file => path.basename(file) !== "roboto-font.scss");
+  .filter(file => path.basename(file) !== "roboto-font.scss" && !isNotYetMigrated(file));
 
 describe("design rules", () => {
   it("draws no emoji or Unicode glyphs as UI; icons come from react-icons/md", () => {

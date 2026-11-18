@@ -1,6 +1,6 @@
 // Verify the shared day ranking: its revision covers what the ranker reads but not how recently a candidate was shown,
 // the store keeps a bounded set of rankings and never overwrites a note a newer version wrote, a prepared ranking is
-// reused across Dream Task's and the agenda's requests without another provider request, preparing records nothing
+// reused across Goal Coach's and the agenda's requests without another provider request, preparing records nothing
 // as shown, and the queued preparation stores a ranking that a later request reuses.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
@@ -10,7 +10,7 @@ import QuarterProjectRepository from "dashboard/quarter-project-repository";
 import { agendaSuggestionsFromProjects, dreamSuggestionsFromProjects, prepareDayRanking,
   recordShownTaskSuggestions } from "dashboard/suggestions/ranked-task-suggestions";
 import { dayRankingRevision, suggestionQuestions } from "dashboard/suggestions/suggestion-task-rank";
-import { createPrepareDayRankingHandler } from "dashboard/work-queue/jobs/prepare-day-ranking";
+import { createPrepareDayRankingHandler, dayRankingRequest } from "dashboard/work-queue/jobs/prepare-day-ranking";
 import { setPluginData } from "plugin-data";
 import { jobContext, maintenanceApp, NOW, PROJECT_UUID, SCOPE_INPUT } from "./project-maintenance-test-app";
 
@@ -166,7 +166,7 @@ describe("prepareDayRanking", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc The agenda slots a ranking Dream Task's request prepared, with no provider request and no exposure recorded.
+  // @desc The agenda slots a ranking Goal Coach's request prepared, with no provider request and no exposure recorded.
   it("lets the agenda reuse a prepared ranking without recording exposure", async () => {
     const app = maintenanceApp({ tasks: TASKS });
     await storeQualifyingProject(app);
@@ -199,6 +199,28 @@ describe("prepareDayRanking", () => {
     expect(earlier.ranking.current).toBe(false);
     const earlierTaskUuids = earlier.ranking.rankedTasks.map(task => task.taskUuid);
     expect(earlierTaskUuids).toEqual(["task-1", "task-2"]);
+    expect(requestAnswers).toHaveBeenCalledTimes(1);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc The agenda can be placed from the store alone, without asking the ranker, and says whether the ranking it
+  //   placed answered the current question, so a caller knows whether to wait for the current one.
+  it("places the agenda from the store alone and says whether that ranking is current", async () => {
+    const app = maintenanceApp({ tasks: TASKS });
+    await storeQualifyingProject(app);
+    const requestAnswers = positionalAnswers();
+    const midnight = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
+    const agendaOptions = { ...DOMAIN, projects: [], storedOnly: true, targetDate: midnight };
+    expect(await agendaSuggestionsFromProjects(app, { ...agendaOptions, openTasks: TASKS })).toBeNull();
+    await prepareDayRanking(app, { ...DOMAIN, openTasks: TASKS, requestAnswers, targetDate: NOW });
+    const current = await agendaSuggestionsFromProjects(app, { ...agendaOptions, openTasks: TASKS });
+    expect(current.current).toBe(true);
+    expect(current.activities.map(activity => activity.taskUuid)).toEqual(["task-1", "task-2"]);
+    const grownTasks = [...TASKS, { content: "Record the demo", noteUUID: "task-note", uuid: "task-3" }];
+    await storeQualifyingProject(app, grownTasks);
+    const earlier = await agendaSuggestionsFromProjects(app, { ...agendaOptions, openTasks: grownTasks });
+    expect(earlier.current).toBe(false);
+    expect(earlier.activities.map(activity => activity.taskUuid)).toEqual(["task-1", "task-2"]);
     expect(requestAnswers).toHaveBeenCalledTimes(1);
   });
 
@@ -253,6 +275,27 @@ describe("prepareDayRanking job", () => {
     expect(second).toEqual({ outcomes: { dreamTask: "stored" }, revision: first.revision });
     expect(requestAnswers).toHaveBeenCalledTimes(1);
     expect(() => handler.validateInput({ ...job.input, dateKey: "tomorrow" })).toThrow("dateKey");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A widget's request names its own surface: it has a key of its own, and the job prepares only that surface,
+  //   retiring when that surface does not plan the day. Saturday's agenda plans Monday, so only Goal Coach plans it.
+  it("prepares only the surface a widget's request names", async () => {
+    const app = maintenanceApp({ tasks: TASKS });
+    await storeQualifyingProject(app);
+    const requestAnswers = positionalAnswers();
+    const handler = createPrepareDayRankingHandler({ requestAnswers });
+    const agendaRequest = dayRankingRequest({ dateKey: DATE_KEY, ...DOMAIN, surface: "agenda" }, { requestedAt: 1 });
+    const sharedRequest = dayRankingRequest({ dateKey: DATE_KEY, ...DOMAIN }, { requestedAt: 1 });
+    expect(agendaRequest.key).toBe(`${ sharedRequest.key }:agenda`);
+    expect(agendaRequest.input).toEqual({ ...sharedRequest.input, surface: "agenda" });
+    expect(() => handler.validateInput({ ...sharedRequest.input, surface: "calendar" })).toThrow("surface");
+    const agendaJob = { ...job, input: agendaRequest.input };
+    expect(await handler.run({ context: jobContext(app), job: agendaJob, signal: null })).toEqual({ status: "superseded" });
+    expect(requestAnswers).not.toHaveBeenCalled();
+    const dreamJob = { ...job, input: { ...sharedRequest.input, surface: "dreamTask" } };
+    const dreamOutcome = await handler.run({ context: jobContext(app), job: dreamJob, signal: null });
+    expect(dreamOutcome.outcomes).toEqual({ dreamTask: "ranked" });
   });
 
   // ----------------------------------------------------------------------------------------------

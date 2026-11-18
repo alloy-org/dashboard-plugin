@@ -139,6 +139,30 @@ describe('Dashboard Plugin', () => {
       expect(Array.isArray(result.tasks)).toBe(true);
     });
 
+    // The host's callLLM and callDecisionModel replies keep their data in fields and expose it through getters, which
+    // the embed bridge drops; onEmbedCall must hand the embed the documented properties as plain fields.
+    it('copies callLLM and callDecisionModel getter properties into plain objects', async () => {
+      class HostLlmResponse {
+        constructor() { this._textOutput = '{"ok":true}'; this._json = { id: 'msg_1' }; }
+        get textOutput() { return this._textOutput; }
+        get callCost() { return 0.01; }
+      }
+      class HostDecisionResponse {
+        constructor() { this._json = { answers: { task_1: { score: 2.4, type: 'score' } } }; }
+        get answers() { return this._json.answers; }
+      }
+      const bridgeApp = { ...mockApp, callDecisionModel: jest.fn(async () => new HostDecisionResponse()),
+        callLLM: jest.fn(async options => (options.checkQuota ? 4.5 : new HostLlmResponse())) };
+
+      const llmResult = await plugin.onEmbedCall(bridgeApp, 'callLLM', { input: [], model: 'claude-haiku-5-5', timeoutMs: 1000 });
+      const decisionResult = await plugin.onEmbedCall(bridgeApp, 'callDecisionModel', { questions: {} });
+      const quotaResult = await plugin.onEmbedCall(bridgeApp, 'callLLM', { checkQuota: true });
+
+      expect(JSON.parse(JSON.stringify(llmResult))).toEqual({ callCost: 0.01, textOutput: '{"ok":true}' });
+      expect(JSON.parse(JSON.stringify(decisionResult))).toEqual({ answers: { task_1: { score: 2.4, type: 'score' } } });
+      expect(quotaResult).toBe(4.5);
+    });
+
     it('should handle getTaskDomainTasks action', async () => {
       const result = await plugin.onEmbedCall(mockApp, 'getTaskDomainTasks', 'work');
 
@@ -185,6 +209,13 @@ describe('Dashboard Plugin', () => {
       const result = await plugin.onEmbedCall(spyApp, 'createNote', 'Test Note', ['tag1']);
       expect(spyApp.createNote).toHaveBeenCalledWith('Test Note', ['tag1']);
       expect(result).toBe('new-uuid');
+    });
+
+    it('should return a note through boundedNoteContent only when it fits the length', async () => {
+      const spyApp = { ...mockApp, getNoteContent: jest.fn().mockResolvedValue('0123456789') };
+      await expect(plugin.onEmbedCall(spyApp, 'boundedNoteContent', { uuid: 'short' }, 10)).resolves.toBe('0123456789');
+      await expect(plugin.onEmbedCall(spyApp, 'boundedNoteContent', { uuid: 'long' }, 9)).resolves.toEqual({ omittedCharacters: 10 });
+      expect(spyApp.getNoteContent).toHaveBeenCalledWith({ uuid: 'long' });
     });
 
     it('should return error for unknown action', async () => {

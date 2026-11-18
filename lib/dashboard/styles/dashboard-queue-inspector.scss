@@ -84,11 +84,21 @@
     }
   }
 
+  .queue-inspector-caption {
+    color: $color-text-medium-contrast;
+    margin: 0 0 $sp-xs;
+    white-space: normal;
+  }
+
   .queue-inspector-detail {
     color: $color-text-low-contrast;
     max-width: 260px;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .queue-inspector-duration {
+    cursor: help;
   }
 
   .queue-inspector-outcome--failed td {

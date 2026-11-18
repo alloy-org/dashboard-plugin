@@ -1,7 +1,7 @@
 // Preserve task-change, idea-refinement, and completion evidence through the queued handlers after legacy removal.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
-import { readCollectedProjectTasks } from "dashboard/project-tasks/project-task-store";
+import { projectTaskStoreNoteName, readCollectedProjectTasks } from "dashboard/project-tasks/project-task-store";
 import QuarterProjectRepository from "dashboard/quarter-project-repository";
 import { createGenerateProjectIdeasHandler } from "dashboard/work-queue/jobs/generate-project-ideas";
 import { createRankProjectTasksHandler } from "dashboard/work-queue/jobs/rank-project-tasks";
@@ -13,6 +13,7 @@ import { taskRatingKey } from "plan-wizard/stack-rank/task-rating-cache";
 import { guideSectionRange, jsonPayloadMarkdown, prospectIndexHeadingText } from "plan-wizard/vision-guide-markdown";
 import { initializeVisionGuide } from "plan-wizard/vision-guide-notes";
 import { setPluginData } from "plugin-data";
+import { forgetSharedTaskReads } from "util/all-notes-tasks";
 import { GENERATED_IDEA, jobContext, maintenanceApp, NOW, ratingRequest, runProjectJob, SCOPE_INPUT,
   storedProjectUuid } from "./project-maintenance-test-app";
 
@@ -65,6 +66,8 @@ describe("queued project evidence", () => {
     const baseline = (await readProject(app)).refreshState.similarity;
     expect(baseline.watermark.sequence).toBe(1);
     app.getTaskDomainTasks.mockResolvedValue([{ ...oldTask, content: "Tune widget layout" }]);
+    // The Dashboard forgets its shared task read when it learns a task changed; the edit here arrives the same way.
+    forgetSharedTaskReads(app);
     requestAnswers.mockRejectedValueOnce(new Error("Batch unavailable"));
     await expect(runProjectJob(handler, { context: jobContext(app), input })).rejects.toThrow("Batch unavailable");
     expect((await readProject(app)).refreshState.similarity).toEqual(baseline);
@@ -100,21 +103,15 @@ describe("queued project evidence", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Completion text survives an API window that no longer returns the task, but reopening removes the completion.
-  it("retains completion history until a task is observed reopened", async () => {
+  // @desc The completed task ledger records completions, so a ranking that observes a completed task leaves it out of
+  //   the project task store, whose Completed tasks bullet only links to the ledger once it holds one.
+  it("leaves completions out of the project task store", async () => {
     const task = { completedAt: 1789552800, content: "Launch dashboard polish", uuid: "finished-task" };
     const app = maintenanceApp({ tasks: [task] });
     const input = { ...SCOPE_INPUT, projectUuid: await storedProjectUuid(app) };
-    const handler = createRankProjectTasksHandler();
-    await runProjectJob(handler, { context: jobContext(app), input });
-    const completions = (await readProject(app)).completedTasks;
-    expect(completions).toEqual([expect.objectContaining({ taskText: task.content, taskUuid: task.uuid })]);
-    app.getTaskDomainTasks.mockResolvedValue([]);
-    await runProjectJob(handler, { context: jobContext(app), input });
-    expect((await readProject(app)).completedTasks).toEqual(completions);
-    app.getTaskDomainTasks.mockResolvedValue([{ ...task, completedAt: null }]);
-    await runProjectJob(handler, { context: jobContext(app), input });
+    await runProjectJob(createRankProjectTasksHandler(), { context: jobContext(app), input });
     expect((await readProject(app)).completedTasks).toEqual([]);
+    expect(app.noteContent(projectTaskStoreNoteName(SCOPE))).toContain("- Completed tasks: none recorded yet");
   });
 
   // ----------------------------------------------------------------------------------------------

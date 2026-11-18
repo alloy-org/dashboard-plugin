@@ -55,16 +55,19 @@ describe("QuarterProject", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc A project survives a round trip through its store section.
+  // @desc A project survives a round trip through its store section, except its shown times, which the section never
+  //   carries since they live in the shown suggestions note.
   it("reads back the store section it renders", () => {
     const project = new QuarterProject({ summary: "Launch dashboard", uuid: "project-uuid", blocksPerWeek: 2,
       relatedTaskRecords: [{ linkedBy: "assigned", taskText: "Build the picker", taskUuid: "open-task" },
-        { matchScore: 6.5, taskText: "Wire the export", taskUuid: "similar-task" }], relatedTasks: ["open-task"] });
-    project.recordShownTasks(["open-task"], "2026-09-18T12:00:00.000Z");
-    const restored = QuarterProject.fromStoreSection(project.toStoreSection(), { isActive: false });
+        { matchScore: 6.5, taskText: "Wire the export", taskUuid: "similar-task" }], relatedTasks: ["open-task"],
+      taskSuggestions: [{ suggestedAt: "2026-09-18T12:00:00.000Z", taskUuid: "open-task" }] });
+    const section = project.toStoreSection();
+    const restored = QuarterProject.fromStoreSection(section, { isActive: false });
     expect(restored).toMatchObject({ blocksPerWeek: 2, isActive: false, relatedTasks: ["open-task"], uuid: "project-uuid" });
     expect(restored.relatedTaskRecords).toEqual(project.relatedTaskRecords);
-    expect(restored.taskSuggestions).toEqual(project.taskSuggestions);
+    expect(restored.taskSuggestions).toEqual([]);
+    expect(section).not.toContain("### open-task suggested");
     expect(QuarterProject.fromStoreSection("No payload here")).toBeNull();
   });
 
@@ -132,7 +135,7 @@ describe("QuarterProject", () => {
     const previous = new QuarterProject({ summary: "Launch dashboard", uuid: "project-uuid", projectRevision: 2 });
     const bookkeeping = previous.detachedCopy();
     bookkeeping.setAttemptedAt("2026-09-12T12:00:00.000Z");
-    bookkeeping.recordShownTasks(["open-task"], "2026-09-12T12:00:00.000Z");
+    bookkeeping.taskSuggestions = [{ suggestedAt: "2026-09-12T12:00:00.000Z", taskUuid: "open-task" }];
     bookkeeping.recordRefreshSuccess("similarity", { inputRevision: null, succeededAt: "2026-09-12T12:00:00.000Z" });
     bookkeeping.advanceProjectRevision(previous);
     expect(bookkeeping.projectRevision).toBe(2);

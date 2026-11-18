@@ -1,6 +1,6 @@
 Rate how applicable each prospective task is to each current project, using TypeSafe's Jev decision model. A Jev
-Access Token uses that key. An installed Ample Agent Pro note is asked, through callPlugin, to call Jev's model at
-Jev's URL. The generative provider's fast model rates only when neither of those is available and a provider key is.
+Access Token uses that key. Without one, the host's `app.callDecisionModel` runs Jev on the account's plugin LLM
+license. The generative provider's fast model rates only when neither of those is available and a provider key is.
 
 # Pipeline
 
@@ -19,14 +19,14 @@ without a provider request, preserving cited scores and similar tasks. See
 import { prepareProjectTaskRanker } from "plan-wizard/stack-rank/stack-rank-project-tasks";
 
 const ranker = await prepareProjectTaskRanker(app, { domainName, domainUuid, projects, refineDictionary, tasks });
-// null when no Jev key, OpenAI key, Ample Agent Pro note, or generative provider is available
+// null when no Jev key, OpenAI key, plugin LLM license, or generative provider is available
 const { acceptedTasks, failureReason, minimumMatchScore } = await ranker.rankProject(project, matchedTaskRecords);
 ```
 
 1. `build-project-task-context.js` opens `User terms dictionary {year}`. Any project not yet listed under its
    `Examined projects` heading goes through the queue's term-discovery job first. Builder requests reconciliation
    when its provider is idle; subsequent jobs share the runtime's provider limits.
-2. `dictionary-term-discovery.js` asks the configured generative provider (the wizard's Agent Pro / direct provider
+2. `dictionary-term-discovery.js` asks the configured generative provider (the wizard's `app.callLLM` / direct provider
    race) which terms in those projects an outsider would misread. Jev can't take this step because it only rates
    and does not write text. A proposed term is kept only if it occurs in the wording of a project it was proposed
    for.
@@ -123,15 +123,18 @@ the hash existed, or before the lists were split, are read as before.
 
 # Suggestion log
 
-The section ends with one `### {task UUID or idea ID} suggested` heading per suggestion shown, each holding a bullet
-per time it was shown. The headings are the log; the payload no longer carries `taskSuggestions`. Because they close
-the section, each heading holds only its own bullets, so `QuarterProjectRepository#recordShownTasks` appends by
-rewriting just the headings it touches with `replaceNoteContent` scoped to that heading. A suggestion shown for the
-first time gets its heading inside the body of the project's last log heading. The whole project section is rewritten
-instead when the project has no log heading yet, or when a heading to rewrite also appears under another project.
+The latest time each task or idea was shown is kept per task domain in the archived `Dashboard Shown Suggestions
+{domain UUID}` note (`SuggestionShownStore`), as JSON objects of ISO times keyed by task UUID and by idea ID. Each
+showing is one write to that note, `QuarterProjectRepository#recordShownTasks`, so it never reads or rewrites the
+Project Tasks note; times older than 14 days, and the oldest beyond 500 entries, are dropped. `readCollectedProjectTasks`
+adds those times to each stored project's `taskSuggestions`, which `minutesSinceRecommended` reads. Sections written by
+an earlier version end with `### {task UUID or idea ID} suggested` headings, one bullet per showing; they are still
+read, and are dropped the next time the project's section is rewritten.
 
 The sources page leaves out cited tasks rated below 6, both from the project's task count and from the list it
-opens to. Tasks not yet rated are still shown.
+opens to. Tasks not yet rated are still shown. It also counts and lists every task in the project's "Existing tasks
+eligible for suggestion" list, by the text stored there, so a project's tasks show even when discovery read too few
+recent tasks to find them.
 
 # Search depth
 
@@ -157,7 +160,7 @@ in the hash and are not.
 `decisionsEndpointForApp` (`providers/decisions-endpoint-for-app.js`) chooses what rates and returns a
 `DecisionsEndpoint`; rankers call its `rankedResponses({ questions, state })` and read the `DecisionsResponse` it
 returns with `ratingFor(questionName)`, never learning which model answered. Jev is asked first, with a Jev key or
-through Ample Agent Pro. OpenAI's Decisions API, with an OpenAI key or through Agent Pro, is the fallback when a Jev
+through `app.callDecisionModel`. OpenAI's Decisions API, with an OpenAI key, is the fallback when a Jev
 request fails, and is asked first for an hour after one does. Both decision models report `scorerEm` "jev": they rate
 the same large pool, on the same permit.
 
@@ -186,6 +189,41 @@ The note is archived, tagged `plugins/dashboard`, and seeded with `Amplenote` an
 without that marker belongs to the user and is never rewritten. Definitions have their Rich Footnotes resolved
 before they are sent anywhere.
 
+# People and recent-task terms
+
+Project discovery only reads project wording, so the dictionary also grows from the tasks themselves. Reconciliation
+asks `task-term-scan-store.js` whether a scan is due: some task was created after the watermark saved in
+`User terms dictionary {year} task scan`, and the last scan is a day old, or an hour old when it left a backlog. The
+`discoverTaskTerms` job (`jobs/discover-task-terms.js`) sends up to 60 of those tasks, oldest first. The first scan of a
+year reaches back 14 days.
+
+`task-term-discovery.js` asks for terms and for people. For each person it asks who they most likely are to the account
+owner, the kinds of work they come up in, and any other names the tasks use for them. A proposal is kept only when it
+is new to the dictionary and appears in a task. The owner is never proposed.
+
+Deliberate mentions are read before the provider is asked (`person-mentions.js`):
+
+- `@@Name` is stored as `[@Name](https://www.amplenote.com/notes/people/{personUUID})`, an Amplenote user whom
+  `app.getPeople` lists with their shared notes.
+- `@Name`, completed to a note link whose text keeps the `@`, points at the user's own note about the person.
+- A linked person the provider leaves out is still added, so evidence and refinement can fill in their definition.
+- A typed `@Name` with no link is only a hint to the provider.
+
+The owner's names come from `app.getCurrentPerson()` (`{ name, uuid }`, added to ample-web's plugin interface) and from
+a user-written `- **Me** (also Your Name): …` bullet, which is how an older host learns them.
+
+People live under the dictionary's `# People` heading as `- **Lucian Ruscanu** (also Lucian): … [builder]`. The
+dictionary object keys a person by every name joined with ` / `, and `termPattern` matches any of them, so a task saying
+"Lucian" draws in the entry. A person's evidence (`person-evidence.js`) leads with three kinds of passage, then the usual
+search passages:
+
+- the opening of their linked note
+- their open tasks grouped by note, whose names show the area of work
+- the notes shared with them
+
+Its digest covers every passage, so a new task naming them brings refinement back. The schedule takes people ahead of
+terms due for the same reason, and the refinement prompt asks about the person's relationship to the owner.
+
 # Jev
 
 `lib/providers/jev-client.js` posts to System One. Questions are built with `scoreQuestion` in
@@ -197,8 +235,8 @@ localhost. **Jev Access Token**, entered by choosing Jev in Dashboard Settings' 
 
 - An OpenRouter key (`sk-or-…`) goes straight to OpenRouter's `/api/v1/systemone`, which allows any origin.
 - From a browser, a TypeSafe key goes through `aged-sunset-proxy.amplenote.workers.dev`, the Worker Ample Agent Pro
-  uses for Tinify, as `?apiurl=https://api.typesafe.ai/v1/systemone`. An installed Ample Agent Pro note is not sent there: Agent Pro
-  receives the System One body, the model `jev-latest`, and `https://api.typesafe.ai/v1/systemone`.
+  uses for Tinify, as `?apiurl=https://api.typesafe.ai/v1/systemone`. A request through `app.callDecisionModel` is not
+  sent there: the host proxies it on the plugin LLM license, asking for `jev-latest`.
 - From Node, a TypeSafe key goes to TypeSafe directly. That is how `test/stack-rank.test.js` makes its live call when
   `JEV_ACCESS_TOKEN` is set in `.env`.
 

@@ -31,8 +31,14 @@ steps:
 4. **Summarize.** Report what changed.
 
 A progress window shows the run. Its title is "Generating ideas for X Projects". It has a four-circle stepper, a
-pulsing spinner, and an ETA that starts at 5:00 and only shrinks. A status line reads like "Run 1 of 2 max per day ·
+pulsing spinner, and an ETA that starts at 2:00 and only shrinks. A status line reads like "Run 1 of 2 max per day ·
 Consumed 38% of Agent Pro quota". Runs are limited to two per local day.
+
+The first time the user clicks **Done** in Plan Builder on the current quarter's plan, the planning widget starts a run
+as if they had clicked **💡 Generate ideas**, so the projects they just chose have ideas by their first calendar visit.
+The `dashboard_first_plan_idea_runs` setting remembers each domain's quarter once that run starts
+(`first-plan-idea-run.js`). A Done that finds the work queue off, a run under way, or the day's runs spent starts
+nothing and leaves the next Done to try again.
 
 ## What already exists
 
@@ -128,7 +134,7 @@ that does not share the dashboard's in-memory runner. So:
   - It moves to the next step when every awaited key is settled (completed, superseded, failed, or waiting to
     retry), or when the step's time budget runs out.
   - A failure is recorded for the summary and never blocks the next step.
-- **Step budgets** add up to the 5-minute estimate: refine 75s, ideas 120s, rate 75s, summarize 30s.
+- **Step budgets** add up to the 2-minute estimate: refine 30s, ideas 50s, rate 30s, summarize 10s.
   - Remaining ETA is the remaining steps' budgets scaled by the pace observed so far, clamped at or below the last
     value shown, so the ETA only ever shrinks.
   - When a step overruns, the ETA holds at "Finishing up…" rather than growing.

@@ -7,6 +7,7 @@ import { initialProjectTaskStoreMarkdown } from "dashboard/project-tasks/project
 import { calendarGenerationReportMarkdown, calendarGenerationReportName, debugConsoleInLayout,
   rankingSelectionTrace, writeCalendarGenerationReport } from "dashboard/suggestions/calendar-generation-report";
 import { projectCadenceCounts } from "dashboard/suggestions/day-project-candidates";
+import { suggestionHourAvailability } from "dashboard/suggestions/suggestion-task-slots";
 import QuarterProject from "quarter-project";
 
 const MONDAY = new Date(2026, 9, 19);
@@ -219,6 +220,20 @@ describe("calendar generation report", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
+  // @desc A cached day whose obligations close every start says it ran no ranking, and names its largest free block.
+  it("explains a cached day with no open start by its largest free block", () => {
+    const obligations = [{ durationMinutes: 240, source: "event", startMinutes: 540, title: "Workshop" },
+      { durationMinutes: 300, source: "event", startMinutes: 13 * 60 + 15, title: "Review" }];
+    const { dayOutcome, dayResult } = cachedDay();
+    const suggestionHours = suggestionHourAvailability({ nowMinutes: null, obligations });
+    const markdown = calendarGenerationReportMarkdown([{ dayOutcome: { ...dayOutcome, activities: [], suggestionHours },
+      dayResult: { ...dayResult, obligations } }]);
+    expect(markdown).toContain("  - 0 working hours free of obligations, earliest start 09:00");
+    expect(markdown).toContain("  - Largest free block: 13:00-13:15 (15 minutes)");
+    expect(markdown).toContain("  - No fresh ranking ran: with no open start time, no task or idea was rated for this day");
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc A day that produced no agenda still gets a heading, with its error and the ranker's outcome.
   it("explains a day that suggested nothing", () => {
     const dayResult = { day: MONDAY, error: "No tasks found available to schedule in Task Domain.", obligations: [],
@@ -229,6 +244,21 @@ describe("calendar generation report", () => {
     expect(markdown).toContain("  - Generation error: No tasks found available to schedule in Task Domain.");
     expect(markdown).toContain("  - No open task in the task domain and no project candidate");
     expect(markdown).toContain("  - Ranker had no candidates: no live project offered a task or idea");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Requests made for a day are listed under it, those for the whole pass in a section before the days, and a day
+  //   that made none says so; their characters do not count against the day's own budget.
+  it("lists the DecisionsEndpoint requests for each day and for the whole pass", () => {
+    const request = { kind: "Ranking", questionCount: 3, rubricText: "1; 2", sampleInstructions: "Rate task_1",
+      sampleName: "task_1", stateText: "x".repeat(5000) };
+    const days = [{ ...rankedDay(), decisionRequests: [request] }, { ...cachedDay(), decisionRequests: [] }];
+    const markdown = calendarGenerationReportMarkdown(days, { passDecisionRequests: [{ ...request, kind: "Salience" }] });
+    expect(markdown).toMatch(/^# Every day\n- DecisionsEndpoint requests made for the whole pass \(1\):\n  - Salience, 3 questions/);
+    expect(markdown).toContain("- DecisionsEndpoint requests (1):\n  - Ranking, 3 questions, 5,015 characters without its tasks:"
+      + "\n    - Each task asked, as task_1: `Rate task_1`");
+    expect(markdown).toContain("- DecisionsEndpoint requests: none sent for this day");
+    expect(markdown).not.toContain("report truncated");
   });
 
   // ----------------------------------------------------------------------------------------------

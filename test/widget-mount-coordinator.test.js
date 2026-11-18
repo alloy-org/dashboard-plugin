@@ -53,6 +53,23 @@ function harness() {
 
 describe("WidgetMountCoordinator", () => {
   // ----------------------------------------------------------------------------------------------
+  // @desc A visible widget counts as loading until it reports its content or an error, whether or not it has mounted;
+  //   a widget only near the viewport does not count.
+  it("reports whether a visible widget has yet to render its content", async () => {
+    const { coordinator, pass, register, report } = harness();
+    expect(coordinator.visibleContentPending()).toBe(false);
+    const generations = { agenda: register("agenda"), mood: register("mood") };
+    report(0, { agenda: true, mood: true });
+    report(1, { agenda: true });
+    expect(coordinator.visibleContentPending()).toBe(true);
+    await pass();
+    coordinator.reportCommitted("agenda", generations.agenda);
+    expect(coordinator.visibleContentPending()).toBe(true);
+    coordinator.reportContentReady("agenda", "error");
+    expect(coordinator.visibleContentPending()).toBe(false);
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc One observer batch reports several widgets; visible ones mount first, and only one mount runs until its
   //   commit releases the permit.
   it("mounts visible widgets first, one at a time, releasing on commit", async () => {
@@ -238,8 +255,9 @@ describe("WidgetMountCoordinator", () => {
     coordinator.reportContentReady("agenda");
     const outcomes = recentOutcomes(runtime.diagnostics.snapshot().events);
     expect(outcomes).toHaveLength(1);
-    expect(outcomes[0]).toMatchObject({ durationMilliseconds: 2450, jobKey: "widgetMount:agenda", jobType: "widgetMount",
-      outcomeDetail: "Rendered its content; waited 50 ms for its turn, committed in 3 ms", type: "contentReady" });
+    expect(outcomes[0]).toMatchObject({ at: 2600, blockingMilliseconds: 0, durationMilliseconds: 2450, jobKey: "widgetMount:agenda",
+      jobType: "widgetMount", outcomeDetail: "Rendered its content; waited 50 ms for its turn, committed in 3 ms", startedAt: 150,
+      type: "contentReady" });
     expect(runtime.diagnostics.snapshot().timings.widgetMount.runs).toBe(1);
   });
 });

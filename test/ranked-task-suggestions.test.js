@@ -1,12 +1,11 @@
 // The day-project selection, Jev and generative ranking, hour placement, and the project-note suggestion log.
 import { dayProjectGroups, deadlineWithinComingWeek } from "dashboard/suggestions/day-project-candidates";
-import { suggestionSectionsMarkdown } from "dashboard/project-tasks/project-suggestion-log";
 import QuarterProject from "quarter-project";
 import DecisionsResponse from "providers/decisions-response";
 import { generativeRankPrompt, rankedTasksFromCandidateIds, rankedTasksFromRatings, rankedTasksFromResponse,
   suggestionQuestions } from "dashboard/suggestions/suggestion-task-rank";
-import { activitiesClearOfObligations, refillRejectedSuggestion, slotRankedTasks, suggestionHourAvailability,
-  tasksNotRecentlySuggested } from "dashboard/suggestions/suggestion-task-slots";
+import { activitiesClearOfObligations, firstOpenSuggestionStart, goalCoachTaskPool, refillRejectedSuggestion, slotRankedTasks,
+  suggestionHourAvailability, tasksNotRecentlySuggested } from "dashboard/suggestions/suggestion-task-slots";
 
 const TUESDAY = new Date(2026, 9, 6, 15, 0, 0);
 
@@ -153,12 +152,23 @@ describe("suggestion ranking", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Dream task will not repeat a suggestion from the past three days.
+  // @desc Goal Coach will not repeat a suggestion from the past three days.
   it("drops tasks suggested within the past three days", () => {
     const fresh = { minutesSinceRecommended: null, taskUuid: "new" };
     const recent = { minutesSinceRecommended: 60, taskUuid: "recent" };
     const old = { minutesSinceRecommended: 3 * 24 * 60, taskUuid: "old" };
     expect(tasksNotRecentlySuggested([fresh, recent, old]).map(task => task.taskUuid)).toEqual(["new", "old"]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc When too few candidates are fresh to fill Goal Coach's cards, the least recently suggested fill in after them.
+  it("fills Goal Coach's cards with the least recently suggested tasks when too few are fresh", () => {
+    const fresh = { minutesSinceRecommended: null, taskUuid: "new" };
+    const hourAgo = { minutesSinceRecommended: 60, taskUuid: "hour-ago" };
+    const dayAgo = { minutesSinceRecommended: 24 * 60, taskUuid: "day-ago" };
+    expect(goalCoachTaskPool([hourAgo, fresh, dayAgo]).map(task => task.taskUuid)).toEqual(["new", "day-ago", "hour-ago"]);
+    const secondFresh = { minutesSinceRecommended: null, taskUuid: "also-new" };
+    expect(goalCoachTaskPool([hourAgo, fresh, secondFresh]).map(task => task.taskUuid)).toEqual(["new", "also-new"]);
   });
 });
 
@@ -236,18 +246,46 @@ describe("suggestion hour availability", () => {
     expect(availability.closedHours.filter(entry => entry.reason === "occupied").map(entry => entry.hour))
       .toEqual(["10:00", "11:00"]);
     expect(availability.eventObligationCount).toBe(1);
+    expect(availability.isCrowdedDay).toBe(false);
+    expect(availability.largestFreeBlock).toEqual({ end: "18:00", minutes: 420, start: "11:00" });
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Three events spaced so every on-the-hour start sits within 30 minutes of one would close the whole day; as a
+  //   crowded day it offers the half hours beside them instead, and suggestions are placed there.
+  it("offers half-hour starts with no buffer on a day with three or more obligations", () => {
+    const obligations = [{ durationMinutes: 150, source: "event", startMinutes: 9 * 60 + 30, title: "Morning block" },
+      { durationMinutes: 150, source: "event", startMinutes: 12 * 60 + 30, title: "Midday block" },
+      { durationMinutes: 150, source: "event", startMinutes: 15 * 60 + 30, title: "Afternoon block" }];
+    const availability = suggestionHourAvailability({ nowMinutes: null, obligations });
+    expect(availability.isCrowdedDay).toBe(true);
+    expect(availability.openHours).toEqual(["09:00", "12:00", "15:00"]);
+    expect(availability.largestFreeBlock).toEqual({ end: "09:30", minutes: 30, start: "09:00" });
+    const { activities, reserveTasks } = slotRankedTasks([nextTaskOf("a"), nextTaskOf("b"), nextTaskOf("c"), nextTaskOf("d")],
+      { obligations });
+    expect(activities.map(activity => activity.startTime)).toEqual(["09:00", "12:00", "15:00"]);
+    expect(reserveTasks.map(task => task.taskUuid)).toEqual(["d"]);
+    expect(firstOpenSuggestionStart({ activities, obligations })).toBeNull();
   });
 });
 
+// ----------------------------------------------------------------------------------------------
+// @desc A half-hour ranked task with the given UUID.
+// @param {string} taskUuid - The task's UUID, also used as its text.
+// @returns {object}
+function nextTaskOf(taskUuid) {
+  return { durationMinutes: 30, rationale: "Fits", taskText: taskUuid, taskUuid };
+}
+
 describe("project suggestion log", () => {
   // ----------------------------------------------------------------------------------------------
-  // @desc A shown task is an h3 under the project, and a later suggestion appends to that task's bullet list.
-  it("renders an h3 per task uuid and round-trips the log through the project section", () => {
-    const taskSuggestions = [{ suggestedAt: "2026-10-06T15:00:00.000Z", taskUuid: "task-1" },
-      { suggestedAt: "2026-10-06T18:00:00.000Z", taskUuid: "task-1" }];
-    expect(suggestionSectionsMarkdown(taskSuggestions)).toContain("### task-1 suggested");
-    expect(suggestionSectionsMarkdown(taskSuggestions)).toContain("- task-1 — 2026-10-06T18:00:00.000Z");
-    const markdown = new QuarterProject({ summary: "Launch", uuid: "project-1", taskSuggestions }).toStoreSection();
-    expect(QuarterProject.fromStoreSection(markdown).taskSuggestions).toEqual(taskSuggestions);
+  // @desc A legacy log heading is read back from a section, and rewriting the section drops it.
+  it("reads legacy log headings and drops them when the section is rewritten", () => {
+    const markdown = new QuarterProject({ summary: "Launch", uuid: "project-1" }).toStoreSection()
+      + "\n### task-1 suggested\n- task-1 — 2026-10-06T15:00:00.000Z\n- task-1 — 2026-10-06T18:00:00.000Z\n";
+    const legacy = QuarterProject.fromStoreSection(markdown);
+    expect(legacy.taskSuggestions).toEqual([{ suggestedAt: "2026-10-06T15:00:00.000Z", taskUuid: "task-1" },
+      { suggestedAt: "2026-10-06T18:00:00.000Z", taskUuid: "task-1" }]);
+    expect(legacy.toStoreSection()).not.toContain("### task-1 suggested");
   });
 });

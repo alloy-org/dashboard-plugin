@@ -1,5 +1,6 @@
 // Exercise DashboardWorkRepository and DashboardWorkJob: versioned persistence in an archived queue note, coalescing
-// requests, stale-attempt rejection, checkpoints that survive an expired claim, retry and configuration states, the
+// requests, stale-attempt rejection, checkpoints that survive an expired claim, retry and configuration states, holding
+// back a job two sessions in a row stopped during, the
 // records and notes a newer version wrote, and bounded retention of finished jobs.
 import { jest } from "@jest/globals";
 import { workQueueNotesApp } from "./work-queue-test-notes";
@@ -164,6 +165,33 @@ describe("DashboardWorkRepository attempts", () => {
     expect(job.request({ desiredRevision: "r1" }, 9000)).toBe(false);
     expect(job.request({ desiredRevision: "r2" }, 9000)).toBe(true);
     expect(job).toMatchObject({ attempt: 0, status: "pending" });
+  });
+});
+
+describe("DashboardWorkJob abandonment", () => {
+  // ----------------------------------------------------------------------------------------------
+  // @desc A job whose session stops during it returns to pending once; when the next session also stops during it
+  //   without saving a checkpoint it fails until its inputs change, while a checkpoint in between forgives the first stop.
+  it("holds back a job two sessions in a row stopped during", () => {
+    const lapsed = attempt => attempt * 1000 + CLAIM_LEASE_MILLISECONDS + 1;
+    const job = DashboardWorkJob.create({ desiredRevision: "r1", key: "evidence:term", type: "rank" }, 0);
+    job.claim({ now: 1000, ownerId: "first", token: "a1" });
+    expect(job.release({ expired: true, now: lapsed(1) })).toBe(true);
+    expect(job).toMatchObject({ lastFailure: { classification: "abandoned" }, status: "pending" });
+    job.claim({ now: 2000, ownerId: "second", token: "a2" });
+    job.release({ expired: true, now: lapsed(2) });
+    expect(job.status).toBe("failed");
+    expect(job.lastFailure.message).toMatch(/Two sessions in a row/);
+    expect(job.request({ desiredRevision: "r1" }, 9000)).toBe(false);
+    expect(job.request({ desiredRevision: "r2" }, 9000)).toBe(true);
+    const checkpointed = DashboardWorkJob.create({ desiredRevision: "r1", key: "rank:p", type: "rank" }, 0);
+    checkpointed.claim({ now: 1000, ownerId: "first", token: "b1" });
+    checkpointed.release({ expired: true, now: lapsed(1) });
+    checkpointed.claim({ now: 2000, ownerId: "second", token: "b2" });
+    checkpointed.checkpoint("b2", { batch: 1 }, 2500);
+    expect(checkpointed.lastFailure).toBeNull();
+    checkpointed.release({ expired: true, now: lapsed(3) });
+    expect(checkpointed).toMatchObject({ cursor: { batch: 1 }, status: "pending" });
   });
 });
 

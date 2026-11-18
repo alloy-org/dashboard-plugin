@@ -44,7 +44,7 @@
 // Background maintenance waits while the builder covers the dashboard; queued rankings refresh its task scores.
 
 import { quarterLabel as displayQuarterLabel } from "constants/quarters";
-import { Button, ErrorState, LoadingState, PlainButton } from "dashboard/controls";
+import { Button, ErrorState, IconButton, LoadingState, PlainButton } from "dashboard/controls";
 import NoteEditor from "dashboard/note-editor";
 import DoneEnoughStep from "dashboard/plan-wizard/done-enough-step";
 import IntentReadingPage from "dashboard/plan-wizard/intent-reading-page";
@@ -62,6 +62,7 @@ import WizardProgressSidebar from "dashboard/plan-wizard/wizard-progress-sidebar
 import { WIZARD_STEPS, wizardStepIndexFromKey } from "dashboard/plan-wizard/wizard-steps";
 import { useElapsingProgress } from "hooks/use-elapsing-progress";
 import useLlmProviderAccess from "hooks/use-llm-provider-access";
+import usePayoffHighlights from "hooks/use-payoff-highlights";
 import usePlanWizard, { planScopeKey } from "hooks/use-plan-wizard";
 import { useProjectTaskRanking } from "hooks/use-project-task-ranking";
 import useUserEditedPlanNote from "hooks/use-user-edited-plan-note";
@@ -69,6 +70,7 @@ import { useSuspendWidgetMounting } from "hooks/use-widget-mount-suspension";
 import { WIZARD_LLM_TIMEOUT_SECONDS } from "plan-wizard/plan-models";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { MdClose } from "react-icons/md";
 import { navigateToNote } from "util/goal-notes";
 import "dashboard/styles/plan-wizard.scss";
 
@@ -102,12 +104,14 @@ function currentDocumentScrollTop() {
 //   - {Function} onClose - Dismisses the wizard and returns to the planning widget.
 //   - {Function|null} onFinished - Runs after the quarter's plan note has been published, before the wizard
 //     closes or navigates away. Done and View Quarterly Plan call it; Cancel, Escape, and the backdrop do not.
+//   - {Function|null} onDone - Runs once Done has closed the wizard on a finished plan. View Quarterly Plan, which
+//     leaves the Dashboard, and Cancel, Escape, and the backdrop do not call it.
 //   - {Function|null} onOpenSettings - Leaves the wizard for Dashboard Settings, so a user with no AI provider
 //     can add an API key. Null where no caller can open settings, which leaves the gate without its link.
 //   - {number} quarter - Quarter being planned, 1 through 4.
 //   - {number} year - Planning year.
 // @returns {JSX.Element} The wizard.
-export default function PlanWizard({ app, domainName = null, domainUuid = null, onClose, onFinished = null,
+export default function PlanWizard({ app, domainName = null, domainUuid = null, onClose, onDone = null, onFinished = null,
     onOpenSettings = null, quarter, year }) {
   const { consolidateProspects, discoverProspects, discoveryFailureReason, error, intentReading, isConsolidating,
     isDiscovering, isLoading, isLoadingProjectSources, isPublishing, isRefreshing, isSaving, loadProjectSources,
@@ -132,6 +136,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   const pendingStepKeyRef = useRef(null);
   const scopeKey = planScopeKey({ domainName, domainUuid, quarter, year });
   const existingPlanNoteUuid = useUserEditedPlanNote({ app, domainName, domainUuid, quarter, year });
+  const payoffHighlights = usePayoffHighlights({ app, domainName, quarter, year });
   const { hasLlmProviderAccess, isCheckingLlmProviderAccess } = useLlmProviderAccess(app);
   // Refresh the selected quarter's task rankings through the shared queue once the builder is not mid-request.
   useProjectTaskRanking({ app, domainName, domainUuid,
@@ -288,11 +293,12 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
   };
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Close the wizard from Done. A finish hook publishes first and can keep the wizard open by throwing,
-  //   so a copy that failed does not look like the plan was completed.
+  // @desc Close the wizard from Done, then tell the caller through onDone. A finish hook publishes first and can keep
+  //   the wizard open by throwing, so a copy that failed does not look like the plan was completed.
   const closeFinishedWizard = async () => {
     if (!onFinished) {
       onClose();
+      onDone?.();
       return;
     }
     setIsOpeningPlanNote(true);
@@ -300,6 +306,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
     try {
       await publishFinishedPlan();
       onClose();
+      onDone?.();
     } catch (finishError) {
       setPlanNoteError(finishError);
     } finally {
@@ -330,8 +337,9 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
 
   // Escape closes the wizard, as it does for every other dashboard modal. Answers already saved are stored, and
   // an unsaved draft is deliberately not confirmed away here: reopening restores each step from what was saved.
+  // An Escape a field inside the wizard already handled, such as one closing a project's note search, is left alone.
   useEffect(() => {
-    const handleKeyDown = event => { if (event.key === "Escape") onClose(); };
+    const handleKeyDown = event => { if (event.key === "Escape" && !event.defaultPrevented) onClose(); };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
@@ -420,7 +428,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
       <div aria-label="Plan your quarter" aria-modal="true" className="plan-wizard-page" role="dialog">
         <header className="plan-wizard-header">
           <div className="plan-wizard-title-group" title={ `${ quarterLabel } · ${ domainLabel }` }>
-            <h1 className="plan-wizard-title">Plan Builder - Beta</h1>
+            <h1 className="plan-wizard-title">Plan Builder</h1>
             <span className="plan-wizard-title-quarter">{ headerQuarterLabel }</span>
             { existingPlanNoteUuid ? (
               <PlainButton className="plan-wizard-existing-note-link" disabled={ isOpeningPlanNote }
@@ -429,6 +437,9 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
               </PlainButton>
             ) : null }
           </div>
+          { /* An explicit way out, so leaving does not depend on knowing that Escape or the backdrop also close. */ }
+          <IconButton className="plan-wizard-close" Icon={ MdClose } label="Close Plan Builder" onClick={ onClose }
+            size="dialog" tooltip="Close" />
         </header>
         <div className="plan-wizard-step-strip">
           <span className="plan-wizard-step-position">
@@ -485,7 +496,7 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
             state, and unmounting it would discard whatever the user had typed but not yet saved. */ }
           { rendersPlanContent && step.key === "intent" ? (
             <div className="plan-wizard-intent-step-frame" hidden={ isShowingIntentReading }>
-              <IntentStep { ...{ isRefreshing, isSaving, pendingDirection, planningContext, scopeKey } }
+              <IntentStep { ...{ isRefreshing, isSaving, payoffHighlights, pendingDirection, planningContext, scopeKey } }
                 onAnswerStateChange={ setHasIntentAnswer } onFindProjects={ handleFindProjects }
                 onOpenReading={ () => setIsViewingIntentReading(true) } onPendingDirectionApplied={ () => setPendingDirection(null) }
                 onRegisterNavigate={ handleRegisterNavigate } onSave={ saveGoals } readingProgress={ intentReadingProgress } />
@@ -500,8 +511,8 @@ export default function PlanWizard({ app, domainName = null, domainUuid = null, 
             survives the visit. */ }
           { rendersPlanContent && step.key === "projects" ? (
             <div className="plan-wizard-projects-step-frame" hidden={ isShowingProjectSources }>
-              <ProjectsStep { ...{ app, discoveryFailureReason, discoveryProgress, isConsolidating, isDiscovering, isSaving,
-                planningContext, scopeKey } }
+              <ProjectsStep { ...{ app, discoveryFailureReason, discoveryProgress, domainName, domainUuid, isConsolidating,
+                isDiscovering, isSaving, planningContext, scopeKey } }
                 onConsolidate={ consolidateProspects } onDiscover={ discoverProspects } onNavigate={ handleProjectNavigation }
                 onOpenSources={ () => setIsViewingProjectSources(true) } onRegisterNavigate={ handleRegisterNavigate }
                 onSave={ saveProspects } onSaveDecision={ saveProspectDecision } />

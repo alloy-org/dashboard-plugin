@@ -7,19 +7,19 @@ const { DashboardWorkProvider } = await import("dashboard/work-queue/dashboard-w
 
 // [Claude claude-opus-4-8 (1M context)] Task: harness that drives the tracker via a reporting script
 //   and surfaces the settle result to the test.
-function TrackerHarness({ onSettle, reports, widgetIds }) {
-  const tracker = useDashboardLoadTracker(widgetIds, { onSettle });
+function TrackerHarness({ eventProps, onSettle, reports, widgetIds }) {
+  const tracker = useDashboardLoadTracker(widgetIds, { eventProps, onSettle });
   useEffect(() => {
     for (const [action, widgetId] of reports) tracker[action](widgetId);
   }, []);
   return null;
 }
 
-function drive({ reports, widgetIds }) {
+function drive({ eventProps, reports, widgetIds }) {
   const onSettle = jest.fn();
   const container = document.createElement("div");
   const root = createRoot(container);
-  act(() => root.render(createElement(TrackerHarness, { onSettle, reports, widgetIds })));
+  act(() => root.render(createElement(TrackerHarness, { eventProps, onSettle, reports, widgetIds })));
   act(() => root.unmount());
   return onSettle;
 }
@@ -41,6 +41,36 @@ test("reports errors in the settle payload", () => {
   const onSettle = drive({ widgetIds: ["agenda", "calendar"],
     reports: [["reportLoaded", "agenda"], ["reportError", "calendar"]] });
   expect(onSettle).toHaveBeenCalledWith(expect.objectContaining({ errorCount: 1, erroredIds: ["calendar"] }));
+});
+
+// ------------------------------------------------------------------------------------------
+// @desc The aggregate event waits for promised extra properties, such as task counts, and merges them in.
+test("sends extra event properties once their promise resolves", async () => {
+  const plausible = jest.fn();
+  window.plausible = plausible;
+  let resolveProps;
+  const propsPromise = new Promise(resolve => { resolveProps = resolve; });
+  drive({ eventProps: () => propsPromise, reports: [["reportLoaded", "agenda"]], widgetIds: ["agenda"] });
+  expect(plausible).not.toHaveBeenCalled();
+  resolveProps({ openTaskBucket: "100-249", openTaskCount: "143" });
+  await propsPromise;
+  await Promise.resolve();
+  expect(plausible).toHaveBeenCalledWith("Dashboard Action", { props: { action: "dashboardLoadSuccess", deferredCount: 0,
+    openTaskBucket: "100-249", openTaskCount: "143", widgetCount: 1 } });
+  delete window.plausible;
+});
+
+// ------------------------------------------------------------------------------------------
+// @desc A failed lookup of extra properties still sends the load event, without them.
+test("sends the load event without extra properties when their promise rejects", async () => {
+  const plausible = jest.fn();
+  window.plausible = plausible;
+  const propsPromise = Promise.reject(new Error("host unavailable"));
+  drive({ eventProps: () => propsPromise, reports: [["reportLoaded", "agenda"]], widgetIds: ["agenda"] });
+  await propsPromise.catch(() => {});
+  await Promise.resolve();
+  expect(plausible).toHaveBeenCalledWith("Dashboard Action", { props: { action: "dashboardLoadSuccess", deferredCount: 0, widgetCount: 1 } });
+  delete window.plausible;
 });
 
 function WidgetLoadedHarness({ hasError = false, isReady, widgetId }) {

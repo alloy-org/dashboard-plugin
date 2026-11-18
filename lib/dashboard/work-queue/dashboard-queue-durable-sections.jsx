@@ -4,6 +4,7 @@
 // durable work is off or a note is unreadable.
 import { Button, EmptyState } from "dashboard/controls";
 import { formattedAge, formattedDuration, formattedRevision, savedJobRows } from "dashboard/work-queue/dashboard-queue-inspector-model";
+import { OutcomeDurationCell } from "dashboard/work-queue/dashboard-queue-inspector-sections";
 
 // ------------------------------------------------------------------------------------------
 // @desc Outcomes of durable jobs from this and earlier sessions, newest first, with how saving history has gone.
@@ -32,7 +33,7 @@ export function DurableHistorySection({ history, now, sessionId }) {
                 <td>{record.status}{record.recovered ? " (output already written)" : ""}</td>
                 <td title={record.jobKey}>{record.jobType}<div className="queue-inspector-detail">{record.jobKey}</div></td>
                 <td>{record.attempt ?? "—"}</td>
-                <td>{formattedDuration(record.durationMilliseconds)}</td>
+                <OutcomeDurationCell event={record} />
                 <td>{record.outputRevision ?? "—"}</td>
                 <td>{record.sessionId === sessionId ? "This session" : record.sessionId || "—"}</td>
                 <td>{record.error ? `${ record.failureClassification }: ${ record.error }` : "—"}</td>
@@ -133,6 +134,7 @@ export function DictionaryTermSection({ now, terms }) {
                   {row.refinementOutcome ? `${ row.refinementOutcome }${ row.evidenceQuality ? ` (${ row.evidenceQuality })` : "" }` : "—"}
                   {row.refinementAttemptedAt ? <div className="queue-inspector-detail">{`Tried ${ at(row.refinementAttemptedAt) }; `
                     + `last rewritten ${ at(row.refinedAt) }`}</div> : null}
+                  {row.auditedAt ? <div className="queue-inspector-detail">{`Audited ${ at(row.auditedAt) }`}</div> : null}
                   {row.keptReason ? <div className="queue-inspector-detail">{row.keptReason}</div> : null}
                   {row.uncertainty ? <div className="queue-inspector-detail">Uncertain: {row.uncertainty}</div> : null}
                 </td>

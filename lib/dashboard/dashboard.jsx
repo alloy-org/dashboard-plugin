@@ -15,6 +15,7 @@ import { reportPriorCrashIfAny, stampBreadcrumbSettled, writeRenderBreadcrumb } 
 import { dashboardAdminToolsAvailability } from 'dashboard-admin-tools';
 import { DashboardLoadContext, useDashboardLoadTracker, useReportWidgetLoaded, useWidgetLoadedEvent } from 'dashboard-load-tracking';
 import DashboardBannerImage from "dashboard-banner-image";
+import { countOpenTasks, fetchCompletedTaskCount, taskCountEventProps } from 'dashboard/dashboard-load-task-counts';
 import DashboardLayoutPopup from 'dashboard-layout-popup';
 import DashboardSettingNote from "dashboard-setting-note";
 import DashboardSettingsPopup from 'dashboard-settings-popup';
@@ -23,10 +24,11 @@ import { ErrorState, IconButton, LoadingState, PlainButton } from "dashboard/con
 import DaySketchWidget from 'day-sketch';
 import DebugConsoleWidget from 'debug-console';
 import { useDashboardDrag } from 'draggable-heading';
-import DreamTaskWidget from 'dream-task';
+import GoalCoachWidget from 'goal-coach';
 import EnergyPerHabitWidget from 'energy-per-habit';
 import { gridCellFocusProps, useDashboardWidgetFocus, widgetConfigForFocus } from 'focus-widget';
 import GraveyardWidget from 'graveyard';
+import useCalendarHistoryJournal from 'hooks/use-calendar-history-journal';
 import useCompletedTasks from 'hooks/use-completed-tasks';
 import useDashboardLayout from 'hooks/use-dashboard-layout';
 import useDashboardTaskUpdates from 'hooks/use-dashboard-task-updates';
@@ -44,7 +46,7 @@ import ProposedAgendaWidget from 'dashboard/proposed-agenda/proposed-agenda';
 import { setPluginData, updatePluginSetting } from "plugin-data";
 import QuotesWidget from 'quotes';
 import QuickActionsWidget from 'quick-actions';
-import { MdSettings, MdWebAsset } from "react-icons/md";
+import { MdEventNote, MdSettings, MdWebAsset } from "react-icons/md";
 import RecentNotesWidget from 'recent-notes';
 import SharedNotesWidget from 'shared-notes';
 import TaskDomains from 'task-domains';
@@ -195,7 +197,7 @@ const CalendarCell = createWidgetCell('calendar', CalendarWidget, ({ app, comple
 }));
 const DebugConsoleCell = createWidgetCell('debug-console', DebugConsoleWidget, pickProps('adminToolsEnabled', 'app'));
 const EnergyPerHabitCell = createWidgetCell('energy-per-habit', EnergyPerHabitWidget, pickProps('app'));
-const DreamTaskCell = createWidgetCell('dream-task', DreamTaskWidget, ({ app, config, onOpenSettings, providerApiKey,
+const GoalCoachCell = createWidgetCell('dream-task', GoalCoachWidget, ({ app, config, onOpenSettings, providerApiKey,
     providerEm, taskDomainName, taskDomainUUID }) => ({
   app, gridHeightSize: Number(config?.gridHeightSize) || 1, gridWidthSize: Number(config?.gridWidthSize) || 2,
   onOpenSettings, providerApiKey, providerEm, taskDomainName, taskDomainUUID,
@@ -236,7 +238,7 @@ const CELL_COMPONENTS = {
   calendar: CalendarCell,
   'day-sketch': DaySketchCell,
   'debug-console': DebugConsoleCell,
-  'dream-task': DreamTaskCell,
+  'dream-task': GoalCoachCell,
   'energy-per-habit': EnergyPerHabitCell,
   graveyard: GraveyardCell,
   'layout-picker': LayoutPickerCell,
@@ -425,6 +427,7 @@ export default function DashboardApp({ app, initPromise }) {
   const { calendarEvents, calendarEventsLoaded } = useExternalCalendarEvents(app, activeTaskDomain);
   // Null until the dashboard setting note loads, so a dashboard whose banner is off never flashes the default one
   const [bannerImageName, setBannerImageName] = useState(null);
+  useCalendarHistoryJournal(app, { calendarEvents, domainName: activeTaskDomainName, domainUuid: activeTaskDomain });
   const [configParams, setConfigParams] = useState(null);
   const [currentDate, setCurrentDate] = useState(null);
   const [dailyVictoryValues, setDailyVictoryValues] = useState(null);
@@ -453,6 +456,8 @@ export default function DashboardApp({ app, initPromise }) {
   const breadcrumbStartedAtRef = useRef(Date.now());
   const breadcrumbWriteRef = useRef(null);
   const breadcrumbStampedRef = useRef(false);
+  // The Task Domain's task counts for the load event, read once the initial payload arrives.
+  const loadTaskCountsRef = useRef(null);
 
   useEffect(() => {
     const t0 = Date.now();
@@ -501,6 +506,9 @@ export default function DashboardApp({ app, initPromise }) {
         breadcrumbWriteRef.current = writeRenderBreadcrumb(app, { deviceProfile: deviceProfileRef.current,
           startedAt: breadcrumbStartedAtRef.current, widgetIds: intendedWidgetIds(data.settings) });
       }
+      const openTaskCount = countOpenTasks(data.tasks);
+      loadTaskCountsRef.current = fetchCompletedTaskCount(app, data.activeTaskDomain || null)
+        .then(completedTaskCount => taskCountEventProps({ completedTaskCount, openTaskCount }));
       applyDashboardData(data, {
         initializeDomainTasks, setConfigParams,
         setCurrentDate, setDailyVictoryValues, setMoodRatings, setQuarterlyPlans, setWeeklyVictoryValue });
@@ -618,11 +626,12 @@ export default function DashboardApp({ app, initPromise }) {
   //   regardless of per-widget errors. Chained after the pending write to avoid a last-write-wins
   //   race, and guarded to run at most once.
   //
-  //   Settling submits the quarter's queued reconciliation and opens the maintenance gate after its grace period.
-  //   These signals precede the breadcrumb guard so its stamped-already condition cannot suppress queue startup.
+  //   Settling starts the maintenance gate, which opens after its grace period once the visible widgets have rendered
+  //   their content; the quarter's queued reconciliation is submitted only then, so its queue note write and task read
+  //   do not compete with the widgets' first loads. These signals precede the breadcrumb guard so its stamped-already
+  //   condition cannot suppress queue startup.
   const handleDashboardSettled = useCallback(() => {
-    startQueuedMaintenance();
-    reportLoadSettled();
+    reportLoadSettled(startQueuedMaintenance);
     if (breadcrumbStampedRef.current || !breadcrumbWriteRef.current) return;
     breadcrumbStampedRef.current = true;
     logMemorySample('load-settle');
@@ -721,7 +730,8 @@ export default function DashboardApp({ app, initPromise }) {
   const renderedWidgetIds = displayedComponents
     .map((config, index) => config?.widgetId || DEFAULT_DASHBOARD_COMPONENTS[index]?.widgetId)
     .filter(id => CELL_COMPONENTS[id]);
-  const loadTracker = useDashboardLoadTracker(renderedWidgetIds, { onSettle: handleDashboardSettled });
+  const loadTracker = useDashboardLoadTracker(renderedWidgetIds, { eventProps: () => loadTaskCountsRef.current,
+    onSettle: handleDashboardSettled });
 
   if (error) {
     return (
@@ -792,6 +802,14 @@ export default function DashboardApp({ app, initPromise }) {
           />
           <div className="dashboard-toolbar-actions">
             <DashboardUpdateIndicator app={app} />
+            {/* NODE_ENV is tested directly so the production build drops this button; see dashboard-load.jsx. */}
+            {
+              process.env.NODE_ENV === "development" ? (
+                <IconButton className="dashboard-configure-button" Icon={ MdEventNote } label="Calendar suggestions (dev)"
+                  onClick={ () => window.location.assign('/calendar-suggestions') } size="large"
+                  tooltip="Dev only: run the calendar's Suggest action and see each date's suggestions and rationale" />
+              ) : null
+            }
             <IconButton className="dashboard-configure-button" Icon={ MdWebAsset } label="Layout"
               onClick={ () => setFocusState(DASHBOARD_FOCUS.LAYOUT_CONFIG) } size="large"
               tooltip="Layout: configure which widgets are shown and in what order" />

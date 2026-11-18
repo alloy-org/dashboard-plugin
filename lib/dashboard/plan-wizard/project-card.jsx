@@ -1,13 +1,16 @@
 // Render one independently updating project card and persist its priority or completion without disabling sibling
-// cards.
+// cards. A card's project is either named by the user or defined by a note; a note-defined card shows what the note
+// says about how the project gets done in place of the reasons discovery gave for it.
 
 import confetti from "canvas-confetti";
 import { Button, PlainButton } from "dashboard/controls";
 import DashboardTippy from "dashboard/dashboard-tooltip-tippy";
-import ExpandingTextarea from "dashboard/plan-wizard/expanding-textarea";
+import ProjectNoteSynopsis from "dashboard/plan-wizard/project-note-synopsis";
+import ProjectSourceField from "dashboard/plan-wizard/project-source-field";
 import { PROJECT_PRIORITY_OPTIONS } from "dashboard/plan-wizard/projects-step-fields";
 import { citedTaskUuidsFromSubstantiations, substantiationSegments,
   taskChipLabel } from "dashboard/plan-wizard/substantiation-task-references";
+import useProjectNoteSynopsis from "hooks/use-project-note-synopsis";
 import { memo, useEffect, useRef, useState } from "react";
 import { MdCheck } from "react-icons/md";
 
@@ -74,25 +77,35 @@ function ProjectReason({ citedTaskByUuid, reason }) {
 //   Project names wrap and grow to display their full text. Keep emphasis choices visible and disabled
 //   until the project has a nonblank name, and while the project is marked Complete. A row marked
 //   shouldAutoFocus — one the Add another project button just created — takes the cursor as the card mounts.
+//   A project defined by a note takes the note's name as its own, and follows the note when it is renamed.
 // @param {object} params - An object with the following properties:
+//   - {object} app - Amplenote app interface, used to search, read, and open the note defining the project.
 //   - {object} citedTaskByUuid - Tasks cited by the page's reasons, from useCitedTasks.
+//   - {string|null} domainName - Name of the Task Domain being planned.
+//   - {string|null} domainUuid - The Task Domain being planned, which a picked note is added to; null for All Notes.
 //   - {boolean} isDisabled - Whether a page-level save prevents editing.
-//   - {Function} onChangeSummary - Receives the row UUID and edited row fields.
+//   - {object} linkedRowUuidByNoteUuid - { [noteUuid]: rowUuid } for notes defining projects on the page.
+//   - {Function} onChangeRow - Receives the row UUID and edited row fields.
 //   - {Function} onReject - Receives the stored row to reject.
 //   - {Function} onSetCompletion - Persists a row and whether it is complete, resolving to whether it succeeded.
 //   - {Function} onSetPriority - Persists a row and priorityEm, resolving to whether it succeeded.
 //   - {object} row - Draft project row rendered by this card.
 // @returns {JSX.Element} An independently memoized project card.
-function ProjectCard({ citedTaskByUuid = {}, isDisabled, onChangeSummary, onReject, onSetCompletion, onSetPriority, row }) {
+function ProjectCard({ app, citedTaskByUuid = {}, domainName = null, domainUuid = null, isDisabled, linkedRowUuidByNoteUuid = {},
+    onChangeRow, onReject, onSetCompletion, onSetPriority, row }) {
   const cardRef = useRef(null);
   const [isCompleted, setIsCompleted] = useState(Boolean(row.completedAt));
   const [isDecisionSaving, setIsDecisionSaving] = useState(false);
+  const [isNoteSearchOpen, setIsNoteSearchOpen] = useState(false);
   const [selectedPriorityEm, setSelectedPriorityEm] = useState(row.priorityEm);
+  const noteReading = useProjectNoteSynopsis(app, row.primaryNoteUuid);
+  const isNoteTrashed = noteReading.statusEm === "trashed";
   const hasSummary = Boolean(row.summary.trim());
   const wasProposed = row.approvalStatusEm === "awaitingJudgement";
   const wasSuggested = row.approvalStatusEm !== "humanProvided";
   const statusClass = isCompleted ? "project-row--completed" : (wasProposed ? "project-row--proposed" : "project-row--chosen");
-  const rowClass = `project-row ${ statusClass }`;
+  const rowClass = `project-row ${ statusClass }${ isNoteTrashed ? " project-row--note-trashed" : "" }`;
+  const noteName = noteReading.synopsis?.noteName ?? null;
 
   useEffect(() => {
     setSelectedPriorityEm(row.priorityEm);
@@ -101,6 +114,10 @@ function ProjectCard({ citedTaskByUuid = {}, isDisabled, onChangeSummary, onReje
   useEffect(() => {
     setIsCompleted(Boolean(row.completedAt));
   }, [row.completedAt]);
+
+  useEffect(() => {
+    if (noteName && noteName !== row.summary) onChangeRow(row.uuid, { summary: noteName });
+  }, [noteName]);
 
   // ----------------------------------------------------------------------------------------------
   // @desc Optimistically select and persist one priority while only this card shows a pending state.
@@ -129,10 +146,9 @@ function ProjectCard({ citedTaskByUuid = {}, isDisabled, onChangeSummary, onReje
   return (
     <div aria-busy={ isDecisionSaving } className={ rowClass } ref={ cardRef }>
       <div className="project-row-header">
-        <ExpandingTextarea className="project-row-name" disabled={ isDisabled || isDecisionSaving }
-          onChange={ event => onChangeSummary(row.uuid, { summary: event.target.value }) }
-          placeholder="Name a project that moves an intent forward" shouldAutoFocus={ row.shouldAutoFocus }
-          value={ row.summary } />
+        <ProjectSourceField { ...{ app, domainName, domainUuid, isNoteTrashed, linkedRowUuidByNoteUuid, onChangeRow, row } }
+          isDisabled={ isDisabled || isDecisionSaving } isSearchOpen={ isNoteSearchOpen }
+          onSetSearchOpen={ setIsNoteSearchOpen } />
         { row.isStored ? (
           <Button className="project-row-reject" dense disabled={ isDisabled || isDecisionSaving }
             onClick={ () => onReject(row) } title="Remove this project from the plan" tone="danger">
@@ -140,7 +156,14 @@ function ProjectCard({ citedTaskByUuid = {}, isDisabled, onChangeSummary, onReje
           </Button>
         ) : null }
       </div>
-      { wasSuggested ? (
+      { row.primaryNoteUuid ? (
+        <ProjectNoteSynopsis isReading={ noteReading.isReading } noteName={ row.summary }
+          onNameYourself={ () => onChangeRow(row.uuid, { primaryNoteLinkedAt: null, primaryNoteName: null, primaryNoteUuid: null,
+            projectSourceEm: "name" }) }
+          onPickAnother={ () => setIsNoteSearchOpen(true) } onReread={ noteReading.reread }
+          onRestore={ () => app.navigate(`https://www.amplenote.com/notes/${ row.primaryNoteUuid }`) }
+          statusEm={ noteReading.statusEm } synopsis={ noteReading.synopsis } />
+      ) : wasSuggested ? (
         <div className="project-row-provenance">
           { row.substantiations.map(reason => <ProjectReason { ...{ citedTaskByUuid, reason } } key={ reason } />) }
         </div>
@@ -188,11 +211,14 @@ function ProjectCard({ citedTaskByUuid = {}, isDisabled, onChangeSummary, onReje
 export function projectCardPropsEqual(previous, next) {
   const previousRow = previous.row;
   const nextRow = next.row;
-  return previous.isDisabled === next.isDisabled && previous.onChangeSummary === next.onChangeSummary
+  return previous.app === next.app && previous.domainName === next.domainName && previous.domainUuid === next.domainUuid
+    && previous.isDisabled === next.isDisabled
+    && previous.linkedRowUuidByNoteUuid === next.linkedRowUuidByNoteUuid && previous.onChangeRow === next.onChangeRow
     && previous.onReject === next.onReject && previous.onSetCompletion === next.onSetCompletion
     && previous.onSetPriority === next.onSetPriority && previousRow.approvalStatusEm === nextRow.approvalStatusEm
     && previousRow.completedAt === nextRow.completedAt && previousRow.isStored === nextRow.isStored
-    && previousRow.priorityEm === nextRow.priorityEm && previousRow.shouldAutoFocus === nextRow.shouldAutoFocus
+    && previousRow.primaryNoteUuid === nextRow.primaryNoteUuid && previousRow.priorityEm === nextRow.priorityEm
+    && previousRow.projectSourceEm === nextRow.projectSourceEm && previousRow.shouldAutoFocus === nextRow.shouldAutoFocus
     && previousRow.summary === nextRow.summary && previousRow.uuid === nextRow.uuid
     && stringValuesEqual(previousRow.substantiations, nextRow.substantiations)
     && citedTasksEqual(nextRow.substantiations, previous.citedTaskByUuid, next.citedTaskByUuid);

@@ -1,0 +1,186 @@
+// Styles for the dev-only Calendar Suggestions page, which lists each date's published suggestions and rationale.
+@use 'theme-tokens' as *;
+
+.calendar-suggestions-dev-page {
+  background-color: $color-background-secondary;
+  color: $color-text-high-contrast;
+  margin: 0 auto;
+  max-width: 900px;
+  min-height: 100vh;
+  padding: $sp-lg;
+
+  .calendar-suggestions-title {
+    font-size: $large-font-size;
+    margin: $sp-md 0;
+  }
+
+  .calendar-suggestions-controls {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-md;
+  }
+
+  .calendar-suggestions-range {
+    display: flex;
+    gap: $sp-xs;
+  }
+
+  .calendar-suggestions-status {
+    color: $color-text-medium-contrast;
+    font-size: $smaller-font-size;
+    margin: $sp-md 0;
+
+    &.is-error {
+      color: $color-text-error-high-contrast;
+    }
+  }
+
+  .suggestion-day-section {
+    background-color: $color-background-primary;
+    border: 1px solid $color-border-primary;
+    border-radius: $radius-lg;
+    margin-bottom: $sp-md;
+    padding: $sp-md;
+  }
+
+  .suggestion-day-heading {
+    font-size: $small-heading-font-size;
+    margin: 0 0 $sp-sm;
+  }
+
+  .suggestion-day-empty {
+    color: $color-text-low-contrast;
+    font-size: $smaller-font-size;
+    margin: 0;
+  }
+
+  .suggestion-day-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .suggestion-row-item {
+    border-top: 1px solid $color-border-primary;
+    padding: $sp-sm 0;
+
+    &:first-child {
+      border-top: none;
+    }
+  }
+
+  .suggestion-row-header {
+    align-items: baseline;
+    display: flex;
+    flex-wrap: wrap;
+    gap: $sp-sm;
+  }
+
+  .suggestion-row-time {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+
+  .suggestion-row-title {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .suggestion-row-badge,
+  .suggestion-row-duration {
+    color: $color-text-low-contrast;
+    font-size: $smaller-font-size;
+  }
+
+  .suggestion-row-rationale {
+    color: $color-text-medium-contrast;
+    font-size: $smaller-font-size;
+    margin: $sp-xs 0 0;
+    white-space: pre-wrap;
+  }
+
+  .calendar-report-section {
+    background-color: $color-background-primary;
+    border: 1px solid $color-border-primary;
+    border-radius: $radius-lg;
+    margin-top: $sp-lg;
+    padding: $sp-md;
+  }
+
+  .calendar-report-heading {
+    font-size: $small-heading-font-size;
+    margin: 0 0 $sp-xs;
+  }
+
+  .calendar-report-name {
+    font-weight: 500;
+    margin: 0 0 $sp-md;
+  }
+
+  .calendar-report-uuid,
+  .calendar-report-empty {
+    color: $color-text-low-contrast;
+    font-size: $smaller-font-size;
+    font-weight: normal;
+  }
+
+  .calendar-report-empty {
+    margin: 0;
+  }
+
+  .calendar-report-content {
+    border-top: 1px solid $color-border-primary;
+    font-size: $smaller-font-size;
+    overflow-wrap: anywhere;
+    padding-top: $sp-sm;
+
+    h1, h2, h3, h4 {
+      font-size: $small-heading-font-size;
+      margin: $sp-md 0 $sp-xs;
+    }
+
+    ul, ol {
+      margin: $sp-xs 0;
+      padding-left: $sp-lg;
+    }
+
+    p {
+      margin: $sp-xs 0;
+    }
+
+    a {
+      color: $color-text-link;
+    }
+
+    table {
+      border-collapse: collapse;
+      margin: $sp-sm 0;
+    }
+
+    th, td {
+      border: 1px solid $color-border-primary;
+      padding: $sp-xs $sp-sm;
+      text-align: left;
+    }
+  }
+
+  .calendar-report-markdown {
+    margin-top: $sp-md;
+  }
+
+  .calendar-report-markdown-toggle {
+    color: $color-text-medium-contrast;
+    cursor: pointer;
+    font-size: $smaller-font-size;
+  }
+
+  .calendar-report-markdown-text {
+    background-color: $color-background-secondary;
+    border-radius: $radius-sm;
+    font-size: $smaller-font-size;
+    overflow-x: auto;
+    padding: $sp-sm;
+    white-space: pre-wrap;
+  }
+}

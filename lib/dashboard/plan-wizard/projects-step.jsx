@@ -13,8 +13,9 @@
 import { Button } from "dashboard/controls";
 import { IntentReadingProgressBar } from "dashboard/plan-wizard/intent-reading-page";
 import ProjectCard from "dashboard/plan-wizard/project-card";
-import { completionRecordFromRow, draftRowsFromProspects, emptyProjectRow, priorityRecordFromRow,
-  prospectRecordsFromDraftRows, rejectionRecordFromRow } from "dashboard/plan-wizard/projects-step-fields";
+import { NoteGlyph } from "dashboard/plan-wizard/project-note-search-menu";
+import { completionRecordFromRow, draftRowsFromProspects, emptyProjectRow, linkedRowUuidByNoteUuidFromRows,
+  priorityRecordFromRow, prospectRecordsFromDraftRows, rejectionRecordFromRow } from "dashboard/plan-wizard/projects-step-fields";
 import { useRegisteredNavigate } from "dashboard/plan-wizard/step-navigation";
 import { citedTaskUuidsFromSubstantiations } from "dashboard/plan-wizard/substantiation-task-references";
 import useCitedTasks from "hooks/use-cited-tasks";
@@ -85,6 +86,8 @@ function ProjectSourcesLink({ discoveryProgress, isDiscovering, onOpenSources })
 //   - {number} discoveryProgress - Elapsed fill of the running discovery pass, measured by the wizard shell so the
 //     sources page shows the same fill.
 //   - {string|null} discoveryFailureReason - Why the last discovery pass proposed nothing, when it proposed none.
+//   - {string|null} domainName - Name of the Task Domain being planned.
+//   - {string|null} domainUuid - The Task Domain being planned, which a note picked to define a project is added to.
 //   - {boolean} isConsolidating - True while a consolidation pass is in flight.
 //   - {boolean} isDiscovering - True while a discovery pass is in flight.
 //   - {boolean} isSaving - True while a save is in flight.
@@ -99,9 +102,9 @@ function ProjectSourcesLink({ discoveryProgress, isDiscovering, onOpenSources })
 //   - {object} planningContext - Stored goals and prospects for the scope.
 //   - {string} scopeKey - Identifies the domain and quarter; a change reseeds the draft.
 // @returns {JSX.Element} The projects page.
-export default function ProjectsStep({ app, discoveryFailureReason = null, discoveryProgress = 0, isConsolidating = false,
-    isDiscovering = false, isSaving, onConsolidate, onDiscover, onNavigate, onOpenSources = null, onRegisterNavigate, onSave,
-    onSaveDecision, planningContext, scopeKey }) {
+export default function ProjectsStep({ app, discoveryFailureReason = null, discoveryProgress = 0, domainName = null,
+    domainUuid = null, isConsolidating = false, isDiscovering = false, isSaving, onConsolidate, onDiscover, onNavigate,
+    onOpenSources = null, onRegisterNavigate, onSave, onSaveDecision, planningContext, scopeKey }) {
   const [draftRows, setDraftRows] = useState(() => draftRowsFromProspects(planningContext.prospects,
     planningContext.goals));
   const capturedAtRef = useRef(null);
@@ -113,6 +116,9 @@ export default function ProjectsStep({ app, discoveryFailureReason = null, disco
   const citedTaskUuids = useMemo(() => citedTaskUuidsFromSubstantiations(planningContext.prospects.flatMap(prospect =>
     prospect.substantiations ?? [prospect.substantiation])), [planningContext.prospects]);
   const citedTaskByUuid = useCitedTasks(app, citedTaskUuids);
+  // Rebuilt only when a link changes, not on each keystroke, so typing in one card does not re-render the others.
+  const linkedNotesKey = draftRows.filter(row => row.primaryNoteUuid).map(row => `${ row.primaryNoteUuid }:${ row.uuid }`).join(",");
+  const linkedRowUuidByNoteUuid = useMemo(() => linkedRowUuidByNoteUuidFromRows(draftRows), [linkedNotesKey]);
 
   useEffect(() => {
     if (seededScopeRef.current === scopeKey && !capturedAtRef.current) return;
@@ -209,6 +215,11 @@ export default function ProjectsStep({ app, discoveryFailureReason = null, disco
     <div className="plan-step-container projects-step-container">
       <h2 className="plan-heading">{ PROJECTS_STEP_COPY.title }</h2>
       <p className="plan-summary">{ PROJECTS_STEP_COPY.summary }</p>
+      <p className="projects-step-note-hint">
+        <NoteGlyph />
+        Already have a note that spells out a project? Click the icon beside any project name to link it — Plan Builder
+        reads the note and shows how the project gets done.
+      </p>
       { onOpenSources ? (
         <ProjectSourcesLink { ...{ discoveryProgress, isDiscovering } } onOpenSources={ onOpenSources } />
       ) : null }
@@ -229,8 +240,8 @@ export default function ProjectsStep({ app, discoveryFailureReason = null, disco
             ) }
             <div className="projects-step-card-grid">
               { categoryRows.map(row => (
-                <ProjectCard { ...{ citedTaskByUuid, row } } isDisabled={ isSaving } key={ row.uuid }
-                  onChangeSummary={ handleChangeRow } onReject={ handleReject } onSetCompletion={ handleSetCompletion }
+                <ProjectCard { ...{ app, citedTaskByUuid, domainName, domainUuid, linkedRowUuidByNoteUuid, row } } isDisabled={ isSaving }
+                  key={ row.uuid } onChangeRow={ handleChangeRow } onReject={ handleReject } onSetCompletion={ handleSetCompletion }
                   onSetPriority={ handleSetPriority } />
               )) }
             </div>

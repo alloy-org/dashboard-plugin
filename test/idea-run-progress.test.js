@@ -13,7 +13,7 @@ describe("idea run progress", () => {
   // @desc The status line names the run of the day and the quota consumed, and the meter hides without quota data.
   it("describes a snapshot for the window", () => {
     const view = ideaRunProgressView(SNAPSHOT);
-    expect(view.statusParts).toEqual(["Run 1 of 2 max per day", "Consumed 38% of Agent Pro quota"]);
+    expect(view.statusParts).toEqual(["Run 1 of 2 max per day", "Consumed 38% of AI quota"]);
     expect(view.steps.map(step => [step.number, step.state])).toEqual([[1, "done"], [2, "active"]]);
     expect(view.etaLabel).toBe("About 4 min left");
     expect(ideaRunProgressView({ ...SNAPSHOT, quotaUsedFraction: null }).quotaPercent).toBeNull();

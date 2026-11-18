@@ -8,12 +8,27 @@ import { Button, IconButton, PlainButton } from "dashboard/controls";
 import { themeKey } from "plan-wizard/intent-reading";
 import { useEffect, useRef, useState } from "react";
 import { MdCheckBox, MdClose, MdDescription, MdPushPin, MdTrackChanges } from "react-icons/md";
+import { prefersReducedMotion } from "util/browser-utility";
 
 const READ_ITEM_REVEAL_MS = 90;
 const THEME_REVEAL_MS = 220;
 const DIRECTION_REVEAL_MS = 320;
 const STATUS_TEXT = { inferring: "Looking for themes and directions…", reading: "Reading your notes…",
   ready: "Ready. Pick a direction or write your own." };
+
+// ----------------------------------------------------------------------------------------------
+// @desc Describe how many tasks retrieval returned and how many notes held them, so the page shows how much of the
+//   Task Domain the reading could reach, not only the sample listed beneath it.
+// @param {object|null} retrieval - { completedTaskCount, noteCount, taskCount }, or null for a reading saved without it.
+// @returns {string|null} e.g. "Read 76 tasks from 12 notes, 4 of them completed", or null when there are no counts.
+export function retrievalSummaryText(retrieval) {
+  if (!retrieval) return null;
+  const { completedTaskCount, noteCount, taskCount } = retrieval;
+  const taskText = `${ taskCount } ${ taskCount === 1 ? "task" : "tasks" }`;
+  const noteText = `${ noteCount } ${ noteCount === 1 ? "note" : "notes" }`;
+  const completedText = taskCount ? `, ${ completedTaskCount } of them completed` : "";
+  return `Read ${ taskText } from ${ noteText }${ completedText }`;
+}
 
 // ----------------------------------------------------------------------------------------------
 // @desc Count up to itemCount one item per interval once enabled, so a list appears item by item instead of all at
@@ -25,15 +40,14 @@ const STATUS_TEXT = { inferring: "Looking for themes and directions…", reading
 // Under reduced motion the whole list is shown at once, since the staggering is decoration rather than information.
 export function useStaggeredReveal(itemCount, isEnabled, intervalMs) {
   const [revealedCount, setRevealedCount] = useState(0);
-  const prefersReducedMotion = typeof window !== "undefined" && typeof window.matchMedia === "function"
-    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const reducedMotion = prefersReducedMotion();
 
   useEffect(() => {
     if (!isEnabled) {
       setRevealedCount(0);
       return undefined;
     }
-    if (prefersReducedMotion) {
+    if (reducedMotion) {
       setRevealedCount(itemCount);
       return undefined;
     }
@@ -45,7 +59,7 @@ export function useStaggeredReveal(itemCount, isEnabled, intervalMs) {
       });
     }, intervalMs);
     return () => clearInterval(intervalId);
-  }, [intervalMs, isEnabled, itemCount, prefersReducedMotion]);
+  }, [intervalMs, isEnabled, itemCount, reducedMotion]);
 
   return Math.min(revealedCount, itemCount);
 }
@@ -109,7 +123,7 @@ function IntentReadingTheme({ isSaving, judgement, onJudge, theme }) {
 // @desc Render the reading page.
 // @param {object} params - An object with the following properties:
 //   - {Array<object>} directions - The professional IntentPossibility records inferred from this reading.
-//   - {object} intentReading - { phase, readItems, themeJudgements, themes } from usePlanWizard.
+//   - {object} intentReading - { phase, readItems, retrieval, themeJudgements, themes } from usePlanWizard.
 //   - {boolean} isRefreshing - True while a reading is running.
 //   - {Function} onApplyDirection - Receives a direction to place in the intent page's field, then returns there.
 //   - {Function} onJudgeTheme - Receives (label, judgement) and resolves once the judgement is stored.
@@ -121,7 +135,7 @@ function IntentReadingTheme({ isSaving, judgement, onJudge, theme }) {
 //   user acts on, so they are not squeezed under the themes.
 export default function IntentReadingPage({ directions, intentReading, isRefreshing, onApplyDirection, onJudgeTheme,
     onReread, onReturn, progressFraction }) {
-  const { phase, readItems, themeJudgements, themes } = intentReading;
+  const { phase, readItems, retrieval = null, themeJudgements, themes } = intentReading;
   const [savingThemeKeys, setSavingThemeKeys] = useState(() => new Set());
   const openedJudgementsRef = useRef(JSON.stringify(themeJudgements));
   const isReady = phase === "ready" && !isRefreshing;
@@ -134,6 +148,9 @@ export default function IntentReadingPage({ directions, intentReading, isRefresh
     DIRECTION_REVEAL_MS);
   const hasChangedJudgements = JSON.stringify(themeJudgements) !== openedJudgementsRef.current;
   const hasStoredReading = readItems.length > 0 || themes.length > 0;
+  // A reading saved before the counts were recorded still says so, rather than hiding the line until a Reread.
+  const missingRetrievalText = hasStoredReading && !isRefreshing ? "Task and note counts weren't recorded for this reading. Reread my notes to count them." : null;
+  const retrievalSummary = retrievalSummaryText(retrieval) ?? missingRetrievalText;
 
   useEffect(() => {
     if (isRefreshing) openedJudgementsRef.current = JSON.stringify(themeJudgements);
@@ -168,20 +185,26 @@ export default function IntentReadingPage({ directions, intentReading, isRefresh
         <Button className="intent-reading-return" onClick={ onReturn }>Return to Plan Builder</Button>
       </header>
       <IntentReadingProgressBar fraction={ isReady ? 1 : progressFraction } />
-      <p className="intent-reading-status" role="status">
-        { !isRefreshing && !hasStoredReading ? "No sources are stored for these suggestions yet." : statusText }
-      </p>
-      { !isRefreshing && !hasStoredReading ? (
-        <Button className="plan-button plan-button--dashed intent-reading-reread" onClick={ onReread }
-          variant="outlined">
-          Read my notes now
-        </Button>
-      ) : null }
+      { /* Rereading stays offered beside the status whenever no reading is running, so a stored reading can always be
+        replaced. */ }
+      <div className="intent-reading-status-row">
+        <p className="intent-reading-status" role="status">
+          { !isRefreshing && !hasStoredReading ? "No sources are stored for these suggestions yet." : statusText }
+        </p>
+        {
+          !isRefreshing ? (
+            <Button className="plan-button intent-reading-reread" onClick={ onReread } variant="outlined">
+              { hasStoredReading ? "Reread my notes" : "Read my notes now" }
+            </Button>
+          ) : null
+        }
+      </div>
       <div className="intent-reading-columns">
         <section className="intent-reading-column">
           <h3 className="intent-reading-section-heading">
             Read{ readItems.length ? <span className="intent-reading-section-count">{ ` ${ readItems.length }` }</span> : null }
           </h3>
+          { retrievalSummary ? <p className="intent-reading-retrieval">{ retrievalSummary }</p> : null }
           { visibleReadItems.length ? (
             <ul className="intent-reading-read-list">
               { visibleReadItems.map(item => (

@@ -1,0 +1,198 @@
+/* [Claude-authored file]
+ * Created: 2026-03-14 | Model: claude-4.6-opus-high-thinking
+ * Task: Goal Coach widget styles — task suggestion cards with rating badges
+ * Prompt summary: "styles for DreamTask widget showing AI-suggested tasks with ratings"
+ */
+
+@use 'theme-tokens' as *;
+@use 'controls' as *;
+
+/* [Claude] Task: Goal Coach widget layout, cards, rating badges, and state styles */
+/* Prompt: "Create a DreamTask widget that uses an agentic loop to suggest goal-aligned tasks" */
+/* Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking */
+.widget-dream-task {
+  /* [Claude] Task: flex row for multiple header action links (reseed + note) */
+  /* Prompt: "add a link to the top of Dream Task module to reseed the tasks" */
+  /* Date: 2026-03-14 | Model: claude-4.6-sonnet-medium-thinking */
+  .goal-coach-header-actions {
+    align-items: center;
+    display: flex;
+    gap: $sp-sm;
+  }
+  .goal-coach-list {
+    display: flex;
+    flex-direction: column;
+    gap: $sp-md;
+  }
+
+  /* [Claude claude-opus-4-6] Task: attribution line under suggestion cards */
+  /* Prompt: "print which LLM provider generated the suggestions at the bottom of the widget" */
+  .goal-coach-llm-attribution {
+    color: $color-text-medium-contrast;
+    padding-top: $sp-sm;
+  }
+
+  .widget-title {
+    align-items: center;
+    display: flex;
+
+    @include breakpoint($breakpoint-large-phone) {
+      .widget-title__subtitle {
+        display: none;
+      }
+    }
+  }
+
+  /* [Claude] Task: goals summary styling above task cards */
+  /* Prompt: "begin the date's content by summarizing quarter/month/week goals before the task list" */
+  /* Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking */
+  .goal-coach-goals-summary {
+    border-bottom: 1px solid $color-border-primary;
+    margin-bottom: $sp-sm;
+    padding-bottom: $sp-md;
+  }
+
+  .goal-coach-goals-text {
+    color: $color-text-medium-contrast;
+    font-style: italic;
+    margin: 0;
+  }
+
+  .goal-coach-card {
+    border: 1px solid $color-border-primary;
+    border-radius: $radius-sm;
+    opacity: 1;
+    padding: $sp-md $sp-lg;
+    transition: border-color 0.15s ease, opacity 0.28s ease, transform 0.28s ease;
+
+    &:hover {
+      border-color: $color-text-lower-contrast;
+    }
+  }
+
+  /* [Claude gpt-5.3-codex] Task: fade and collapse cards on complete/remove */
+  /* Prompt: "Mark complete/remove should fade out and be replaced by the next generated task" */
+  .goal-coach-card--dismissing {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(6px) scale(0.98);
+  }
+
+  .goal-coach-card-header {
+    align-items: flex-start;
+    display: flex;
+    gap: $sp-sm;
+    justify-content: space-between;
+    margin-bottom: $sp-sm;
+  }
+
+  .goal-coach-card-title {
+    color: $color-text-high-contrast;
+    font-size: $default-font-size;
+    font-weight: 500;
+  }
+
+  .goal-coach-card-title--clickable {
+    cursor: pointer;
+
+    &:hover {
+      color: $color-background-action-high-contrast;
+      text-decoration: underline;
+    }
+  }
+
+
+  /* [Claude] Task: visual distinction for invented (non-existing) task cards */
+  /* Prompt: "at least 50% of suggested tasks should be existing tasks; clicking invented tasks creates them" */
+  /* Date: 2026-03-16 | Model: claude-4.6-opus-high-thinking */
+  .goal-coach-card--invented {
+    border-left: 2px solid $color-background-action-medium-contrast;
+  }
+
+  .goal-coach-new-badge,
+  .goal-coach-rating,
+  .goal-coach-source-note-badge {
+    flex-shrink: 0;
+  }
+
+  /* Long source-note names truncate with an ellipsis; block layout lets text-overflow apply to the label text. */
+  .goal-coach-source-note-badge {
+    display: inline-block;
+    max-width: 11rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  // The source-note badge opens its note, so the button around it is the flex child and underlines it on hover
+  .goal-coach-source-note-link {
+    flex-shrink: 0;
+    min-width: 0;
+
+    &:hover .goal-coach-source-note-badge {
+      text-decoration: underline;
+    }
+  }
+
+  /* [GPT-5.5] Task: stack task text above source note on compact Goal Coach cards */
+  /* Prompt: "apply only below the large iPhone breakpoint" */
+  @include breakpoint($breakpoint-large-phone) {
+    .goal-coach-card-header {
+      gap: $sp-xs;
+      justify-content: flex-start;
+    }
+
+    .goal-coach-card-title {
+      flex: 1 0 100%;
+      min-width: 0;
+      order: 1;
+    }
+
+    .goal-coach-new-badge,
+    .goal-coach-source-note-badge,
+    .goal-coach-rating {
+      display: none;
+    }
+  }
+
+  .goal-coach-card-explanation {
+    color: $color-text-medium-contrast;
+    cursor: pointer;
+    display: -webkit-box;
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  /* [Claude gpt-5.3-codex] Task: expanded explanation state removes the 3-line clamp */
+  /* Prompt: "click explanation to expand unlimited length, click again to collapse to 3 lines" */
+  .goal-coach-card-explanation--expanded {
+    display: block;
+    overflow: visible;
+    text-overflow: clip;
+    line-clamp: initial;
+    -webkit-box-orient: initial;
+    -webkit-line-clamp: initial;
+  }
+
+  /* [Claude gpt-5.3-codex] Task: action row links below task explanation */
+  /* Prompt: "After each dream-task-card-explanation, add links for preserve through tomorrow, mark complete, and remove" */
+  /* Card actions are compact host text buttons, pulled left so the first label lines up with the card text. */
+  .goal-coach-card-actions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 $sp-xs;
+    margin: $sp-xs 0 0 (-$sp-sm);
+  }
+
+  /* The no-config Ample Agent Pro promo card now lives in the shared styles/no-config-upsell.scss, rendered by
+     the standalone NoConfigUpsell component (used by both Goal Coach and Proposed Agenda). */
+
+  /* Error details are several short paragraphs inside the shared ErrorState message. */
+  .goal-coach-error p {
+    margin: 0 0 $sp-xs;
+  }
+}

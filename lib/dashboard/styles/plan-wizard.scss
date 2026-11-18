@@ -4,6 +4,7 @@
 
 @use 'controls' as *;
 @use 'theme-tokens' as *;
+@use 'z-indexes' as *;
 
 $plan-wizard-body-padding: $sp-xl;
 $plan-wizard-body-padding-phone: $sp-lg;
@@ -14,7 +15,6 @@ $plan-wizard-input-min-height: 36px;
 $plan-wizard-pending-row-height: 16px;
 $plan-wizard-sidebar-width: 220px;
 $plan-wizard-step-bar-height: 4px;
-$plan-wizard-z-index: 1100;
 
 // The host's MDC dialog: elevation 24 surface under a title bar in the host's dialog color, which is dark in every
 // theme, so the title ink is the navigation's high-contrast text rather than the page's.
@@ -47,7 +47,7 @@ $plan-wizard-title-bar-text-low: $color-text-nav-low-contrast;
   position: absolute;
   top: 0;
   width: var(--dashboard-viewport-width, 100vw);
-  z-index: $plan-wizard-z-index;
+  z-index: $z-index-plan-wizard;
 
   @include breakpoint($breakpoint-tablet) {
     padding: $plan-wizard-edge-inset-vertical $plan-wizard-edge-inset-horizontal-phone;
@@ -60,7 +60,7 @@ $plan-wizard-title-bar-text-low: $color-text-nav-low-contrast;
     position: fixed;
     top: 0;
     width: var(--dashboard-viewport-width, 100vw);
-    z-index: 0;
+    z-index: $z-index-plan-wizard-backdrop;
   }
 
   /* The dialog fills the width the overlay's inset leaves it and takes exactly the height its page asks for.
@@ -82,7 +82,7 @@ $plan-wizard-title-bar-text-low: $color-text-nav-low-contrast;
     font-size: $default-font-size;
     position: relative;
     width: 100%;
-    z-index: 1;
+    z-index: $z-index-plan-wizard-page;
 
     h1,
     h2,
@@ -249,6 +249,17 @@ $plan-wizard-title-bar-text-low: $color-text-nav-low-contrast;
       border-radius: $radius-mark 0 0 $radius-mark;
     }
 
+  // The shared close IconButton sits on the dark title bar, so it takes the bar's ink
+  .plan-wizard-close {
+    color: $plan-wizard-title-bar-text-low;
+    flex: 0 0 auto;
+    margin-left: auto;
+
+    &:hover:not(:disabled) {
+      color: $plan-wizard-title-bar-text;
+    }
+  }
+
     &:last-child {
       border-radius: 0 $radius-mark $radius-mark 0;
     }
@@ -387,9 +398,37 @@ $plan-wizard-title-bar-text-low: $color-text-nav-low-contrast;
 
     > .plan-error,
     > .plan-heading,
-    > .plan-summary {
+    > .plan-summary,
+    > .intent-payoff-strip {
       grid-column: 1 / -1;
     }
+
+    /* A reminder of what paid off in recently ranked quarters, kept to a quiet line per quarter so it informs the
+     * answer without competing with the two questions. */
+    .intent-payoff-strip {
+      border-left: 3px solid $color-border-primary;
+      display: flex;
+      flex-direction: column;
+      gap: $sp-xs;
+      padding: $sp-xs $sp-md;
+    }
+
+    .intent-payoff-strip-title {
+      font-size: $smaller-font-size;
+      letter-spacing: 0.06em;
+      margin: 0;
+      text-transform: uppercase;
+    }
+
+    .intent-payoff-strip-quarter {
+      color: $color-text-low-contrast;
+      display: flex;
+      flex-wrap: wrap;
+      gap: $sp-xs $sp-md;
+      margin: 0;
+    }
+
+    .intent-payoff-strip-label { font-weight: 500; }
 
     /* Each category is a card of its own, so the two parallel questions read as two places to answer rather than
      * as one undifferentiated form: a 1px bordered tile on the dialog surface, as the host draws cards. */
@@ -502,6 +541,18 @@ $plan-wizard-title-bar-text-low: $color-text-nav-low-contrast;
       flex-shrink: 0;
     }
 
+    .intent-reading-status-row {
+      align-items: center;
+      display: flex;
+      gap: $sp-md;
+      justify-content: space-between;
+
+      .intent-reading-reread {
+        align-self: center;
+        flex-shrink: 0;
+      }
+    }
+
     .intent-reading-status {
       color: $color-text-medium-contrast;
       font-size: $default-font-size;
@@ -532,6 +583,12 @@ $plan-wizard-title-bar-text-low: $color-text-nav-low-contrast;
       font-weight: 400;
       letter-spacing: normal;
       text-transform: none;
+    }
+
+    .intent-reading-retrieval {
+      color: $color-text-low-contrast;
+      font-size: $smaller-font-size;
+      margin: 0;
     }
 
     .intent-reading-placeholder {
@@ -904,6 +961,467 @@ $plan-wizard-title-bar-text-low: $color-text-nav-low-contrast;
 
       p {
         margin: 0;
+      }
+    }
+
+    .projects-step-note-hint {
+      align-items: flex-start;
+      color: $color-text-medium-contrast;
+      display: flex;
+      font-size: $smaller-font-size;
+      gap: $sp-sm;
+      margin: 0;
+    }
+
+    /* The glyphs drawn for a note and for a typed name, sized to sit inline with the text beside them. */
+    .project-note-glyph,
+    .project-source-glyph {
+      flex: 0 0 16px;
+    }
+
+    .projects-step-note-hint .project-note-glyph {
+      color: $color-text-link;
+      margin-top: 1px;
+    }
+
+    /* A project's name field: a source toggle at the left, then a typed name, a note search, or a linked note. The
+     * field is positioned so its two drop-downs can hang beneath it over the cards that follow. */
+    .project-source-field {
+      flex: 1 1 auto;
+      min-width: 0;
+      position: relative;
+
+      .project-source-box {
+        align-items: flex-start;
+        background: $color-background-primary;
+        border: 1px solid $color-border-primary;
+        border-radius: $radius-sm;
+        display: flex;
+        gap: $sp-xs;
+        min-height: $plan-wizard-input-min-height;
+        padding: $sp-xs;
+
+        &:focus-within {
+          border-color: $color-background-action-high-contrast;
+        }
+      }
+
+      .project-source-toggle {
+        align-items: center;
+        background: $color-background-secondary;
+        border-radius: $radius-sm;
+        color: $color-text-medium-contrast;
+        display: inline-flex;
+        flex: 0 0 auto;
+        gap: 2px;
+        padding: $sp-xs;
+      }
+
+      .project-source-chevron {
+        flex: 0 0 auto;
+      }
+
+      textarea.project-row-name {
+        background: transparent;
+        border: 0;
+        min-height: 0;
+        padding: $sp-xs;
+      }
+
+      /* The search sits inside the box, which already draws the field's border and focus. */
+      .project-source-search-field {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .project-source-search {
+        background: transparent;
+        border: 0;
+        height: auto;
+        padding: $sp-xs;
+        width: 100%;
+      }
+
+      .project-source-note-change,
+      .project-source-unlinked {
+        align-items: center;
+        color: $color-text-high-contrast;
+        display: flex;
+        flex: 1 1 auto;
+        font-size: $default-font-size;
+        font-weight: 500;
+        gap: $sp-sm;
+        justify-content: space-between;
+        min-width: 0;
+        padding: $sp-xs;
+        text-align: left;
+      }
+
+      .project-source-unlinked {
+        font-weight: 400;
+      }
+
+      .project-source-note-name {
+        overflow-wrap: anywhere;
+      }
+
+      /* The linked note's name reopens the search, so it shades on hover to show it can be changed. */
+      .project-source-note-change {
+        border-radius: $radius-sm;
+
+        &:hover:not(:disabled) {
+          background: $color-background-action-low-contrast;
+        }
+      }
+
+      .project-source-note-open {
+        align-self: center;
+        flex: 0 0 auto;
+      }
+
+      .project-source-menu,
+      .project-note-menu {
+        background: $color-background-primary;
+        border: 1px solid $color-border-primary;
+        border-radius: $radius-lg;
+        box-shadow: $shadow-elevation-3;
+        left: 0;
+        margin-top: $sp-xs;
+        padding: $sp-xs;
+        position: absolute;
+        right: 0;
+        top: 100%;
+        z-index: $z-index-project-note-menu;
+      }
+
+      .project-source-menu {
+        max-width: 22rem;
+      }
+
+      .project-source-menu-option,
+      .project-note-menu-entry-button,
+      .project-note-menu-create {
+        align-items: flex-start;
+        border-radius: $radius-sm;
+        color: $color-text-high-contrast;
+        display: flex;
+        gap: $sp-sm;
+        padding: $sp-sm;
+        text-align: left;
+        width: 100%;
+      }
+
+      .project-source-menu-option:hover,
+      .project-note-menu-entry--highlighted .project-note-menu-entry-button,
+      .project-note-menu-create--highlighted {
+        background: $color-background-action-low-contrast;
+      }
+
+      .project-source-menu-text,
+      .project-note-menu-text {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-width: 0;
+      }
+
+      .project-source-menu-label,
+      .project-note-menu-name {
+        font-size: $default-font-size;
+        font-weight: 500;
+      }
+
+      .project-source-menu-description,
+      .project-note-menu-detail {
+        color: $color-text-low-contrast;
+        font-size: $smaller-font-size;
+      }
+
+      .project-source-menu-check {
+        color: $color-text-link;
+        flex: 0 0 auto;
+      }
+
+      .project-note-menu-heading {
+        color: $color-text-low-contrast;
+        font-size: $smaller-font-size;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        margin: $sp-sm $sp-sm $sp-xs;
+        text-transform: uppercase;
+      }
+
+      .project-note-menu-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .project-note-menu-hint {
+        align-items: center;
+        align-self: center;
+        color: $color-text-low-contrast;
+        display: inline-flex;
+        flex: 0 0 auto;
+        font-size: $smaller-font-size;
+        gap: 2px;
+      }
+
+      .project-note-menu-scope {
+        border-bottom: 1px solid $color-border-primary;
+        color: $color-text-low-contrast;
+        font-size: $smaller-font-size;
+        font-style: italic;
+        margin: 0 0 $sp-xs;
+        padding: $sp-xs $sp-sm $sp-sm;
+      }
+
+      .project-note-menu-empty {
+        color: $color-text-low-contrast;
+        font-size: $smaller-font-size;
+        margin: $sp-sm;
+      }
+
+      .project-note-menu-create {
+        align-items: center;
+        border-top: 1px solid $color-border-primary;
+        border-radius: 0;
+        color: $color-text-link;
+        margin-top: $sp-xs;
+      }
+
+      .project-note-menu-keys {
+        color: $color-text-low-contrast;
+        display: flex;
+        font-size: $smaller-font-size;
+        gap: $sp-md;
+        margin: $sp-xs $sp-sm;
+
+        span {
+          align-items: center;
+          display: inline-flex;
+          gap: 2px;
+        }
+      }
+    }
+
+    .project-source-field--linked .project-source-box {
+      background: $color-background-action-low-contrast;
+      border-color: $color-text-link;
+    }
+
+    /* Chosen to be defined by a note, but no note picked: the typed name stays, outlined as unfinished. */
+    .project-source-field--unlinked .project-source-box {
+      border-color: $color-text-error-high-contrast;
+      outline: 1px solid $color-text-error-high-contrast;
+    }
+
+    /* A picked note waiting to join the Task Domain, shown in place of the field's usual contents. */
+    .project-source-pending {
+      align-items: center;
+      display: flex;
+      flex: 1 1 auto;
+      font-weight: 500;
+      gap: $sp-sm;
+      min-width: 0;
+      padding: $sp-xs;
+    }
+
+    .project-source-pending-status {
+      color: $color-text-low-contrast;
+      font-size: $smaller-font-size;
+      font-weight: 400;
+    }
+
+    /* The Task Domain would not take the picked note: red field, an exclamation, and Retry or Cancel beneath. */
+    .project-source-field--inclusion-failed {
+      .project-source-box {
+        background: color-mix(in srgb, $color-text-error-high-contrast 14%, $color-background-primary);
+        border-color: $color-text-error-high-contrast;
+        outline: 1px solid $color-text-error-high-contrast;
+      }
+
+      .project-source-inclusion-mark {
+        align-items: center;
+        background: $color-text-error-high-contrast;
+        border-radius: 50%;
+        color: $color-background-primary;
+        display: inline-flex;
+        flex: 0 0 auto;
+        font-weight: 500;
+        height: 1.25rem;
+        justify-content: center;
+        width: 1.25rem;
+      }
+
+      .project-source-inclusion-alert {
+        margin-top: $sp-xs;
+      }
+
+      .project-source-inclusion-message {
+        color: $color-text-error-high-contrast;
+        font-size: $smaller-font-size;
+        margin: 0 0 $sp-xs;
+      }
+
+      .project-source-inclusion-actions {
+        display: flex;
+        gap: $sp-sm;
+      }
+    }
+
+    .project-source-field--trashed {
+      .project-source-box {
+        background: $color-background-secondary;
+        border-color: $color-border-primary;
+      }
+
+      .project-source-note-change {
+        color: $color-text-low-contrast;
+        text-decoration: line-through;
+      }
+    }
+
+    .project-row--note-trashed {
+      border-style: dashed;
+    }
+
+    /* "How it gets done": what the linked note says, its next tasks, and how much of it is finished. */
+    .project-note-synopsis {
+      display: flex;
+      flex-direction: column;
+      gap: $sp-sm;
+
+      .project-note-synopsis-heading {
+        align-items: baseline;
+        display: flex;
+        flex-wrap: wrap;
+        gap: $sp-sm;
+        margin: 0;
+      }
+
+      .project-note-synopsis-title {
+        color: $color-text-high-contrast;
+        font-size: $smaller-font-size;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .project-note-synopsis-meta {
+        color: $color-text-low-contrast;
+        flex: 1 1 auto;
+        font-size: $smaller-font-size;
+      }
+
+      .project-note-reread {
+        align-self: center;
+      }
+
+      .project-note-synopsis-text {
+        color: $color-text-high-contrast;
+        margin: 0;
+      }
+
+      .project-note-task-list {
+        display: flex;
+        flex-direction: column;
+        gap: $sp-xs;
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .project-note-task {
+        align-items: center;
+        display: flex;
+        gap: $sp-sm;
+      }
+
+      .project-note-task-marker {
+        align-items: center;
+        border: 1px solid $color-border-primary;
+        border-radius: 50%;
+        color: $color-text-medium-contrast;
+        display: inline-flex;
+        flex: 0 0 18px;
+        font-size: 11px;
+        height: 18px;
+        justify-content: center;
+      }
+
+      .project-note-task--done .project-note-task-marker {
+        background: $color-text-status;
+        border-color: $color-text-status;
+        color: $color-background-primary;
+      }
+
+      .project-note-task-text {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+
+      .project-note-task-due,
+      .project-note-task-count {
+        color: $color-text-low-contrast;
+        font-size: $smaller-font-size;
+        margin: 0;
+      }
+    }
+
+    /* The placeholder drawn while a note is read for the first time, shaped like the panel it will become. */
+    .project-note-synopsis--reading {
+      .project-note-skeleton-line {
+        animation: project-note-skeleton-pulse 1.4s ease-in-out infinite;
+        background: $color-background-secondary;
+        border-radius: $radius-sm;
+        display: block;
+        flex: 0 1 70%;
+        height: 12px;
+      }
+
+      .project-note-skeleton-line--long {
+        width: 95%;
+      }
+
+      .project-note-skeleton-line--medium {
+        width: 75%;
+      }
+
+      .project-note-skeleton-task {
+        align-items: center;
+        display: flex;
+        gap: $sp-sm;
+      }
+
+      .project-note-skeleton-dot {
+        animation: project-note-skeleton-pulse 1.4s ease-in-out infinite;
+        background: $color-background-secondary;
+        border-radius: 50%;
+        flex: 0 0 18px;
+        height: 18px;
+      }
+
+      @keyframes project-note-skeleton-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+    }
+
+    .project-note-synopsis--trashed {
+      background: $color-background-secondary;
+      border-radius: $radius-sm;
+      padding: $sp-md;
+
+      .project-note-trashed-message {
+        color: $color-text-high-contrast;
+        margin: 0;
+      }
+
+      .project-note-trashed-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: $sp-sm;
       }
     }
 
@@ -1892,6 +2410,23 @@ $plan-wizard-title-bar-text-low: $color-text-nav-low-contrast;
     color: $color-text-low-contrast;
     font-size: $smaller-font-size;
     line-height: 1.35;
+  }
+
+  .progress-step-note-summary {
+    align-items: center;
+    color: $color-text-link;
+    display: flex;
+    font-size: $smaller-font-size;
+    gap: $sp-xs;
+    line-height: 1.35;
+
+    .plan-note-icon {
+      flex-basis: 14px;
+      height: 14px;
+      margin-top: 0;
+      stroke: currentColor;
+      width: 14px;
+    }
   }
 
   /* The Project cadence row draws its breakdown as a ring with a caption beside it; the caption names the hovered

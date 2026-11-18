@@ -1,0 +1,191 @@
+// [Claude-authored file]
+// Created: 2026-03-24 | Model: claude-4.6-opus-high-thinking
+// Task: Goal Coach round-trip integration test — real LLM call, verify cached read-back
+// Prompt summary: "use OPEN_AI_ACCESS_TOKEN for real LLM calls; mock only the app interface, not the AI"
+import { jest } from "@jest/globals";
+import dotenv from "dotenv";
+import fetch from "isomorphic-fetch";
+import { SETTING_KEYS } from "constants/settings";
+import { analyzeGoalCoachTasks } from "goal-coach-service";
+import { setPluginData } from "plugin-data";
+import { SAMPLE_TASKS } from "./fixtures/tasks.js";
+
+dotenv.config();
+global.fetch = fetch;
+
+const ANTHROPIC_KEY = process.env.ANTHROPIC_AI_ACCESS_TOKEN;
+const GEMINI_KEY = process.env.GEMINI_AI_ACCESS_TOKEN;
+const GROK_KEY = process.env.GROK_AI_ACCESS_TOKEN;
+const OPEN_AI_KEY = process.env.OPEN_AI_ACCESS_TOKEN;
+const PROVIDER_KEY_CONFIGS = [
+  { providerEm: "openai", settingKey: SETTING_KEYS.LLM_API_KEY_OPENAI, value: OPEN_AI_KEY },
+  { providerEm: "anthropic", settingKey: SETTING_KEYS.LLM_API_KEY_ANTHROPIC, value: ANTHROPIC_KEY },
+  { providerEm: "gemini", settingKey: SETTING_KEYS.LLM_API_KEY_GEMINI, value: GEMINI_KEY },
+  { providerEm: "grok", settingKey: SETTING_KEYS.LLM_API_KEY_GROK, value: GROK_KEY },
+];
+const PROVIDER_KEY_CONFIGS_WITH_VALUES = PROVIDER_KEY_CONFIGS.filter(provider => !!provider.value);
+const itIfProviderKey = PROVIDER_KEY_CONFIGS_WITH_VALUES.length > 0 ? it : it.skip;
+
+const MOCK_QUARTERLY_PLAN = `# Q1 2026 Plan
+
+## Focus areas
+1. Launch Task Agent Pro product
+2. Build daily outreach habit — reach out to one meaningful person each day
+3. Complete one GitKraken ticket per day
+
+### March
+- Focus: Reliability patches and dashboard polish
+- Key move: Complete Goal Coach widget integration
+
+### Week of March 23
+- Primary focus: Dashboard testing and polish
+- Key tasks: Write integration tests, fix edge cases`;
+
+// ----------------------------------------------------------------------------------------------
+// @desc Build mock app backed by SAMPLE_TASKS and a quarterly plan note, with mutable dream note storage.
+// @param {object} providerConfig - Provider config with `providerEm`.
+// [Claude gpt-5.3-codex] Task: include all provider keys from .env and select active provider for integration test
+// Prompt: "Use valid .env keys for each provider to ensure dream-task-service.test.js passes"
+function buildMockApp(providerConfig) {
+  let dreamNoteContent = "";
+  const providerSettings = PROVIDER_KEY_CONFIGS.reduce((accumulator, config) => {
+    if (config.value) accumulator[config.settingKey] = config.value;
+    return accumulator;
+  }, {});
+  setPluginData({
+    settings: {
+      ...providerSettings,
+      [SETTING_KEYS.TASK_DOMAINS]: JSON.stringify({
+        domains: [{ name: "Work", uuid: "dom-work" }], selectedDomainUuid: "dom-work",
+      }),
+      [SETTING_KEYS.LLM_PROVIDER_MODEL]: providerConfig.providerEm,
+    },
+    context: {},
+  });
+
+  const app = {
+    alert: jest.fn(),
+    findNote: jest.fn().mockResolvedValue({ uuid: "dream-note-uuid" }),
+    createNote: jest.fn().mockResolvedValue("new-note-uuid"),
+    getNoteContent: jest.fn().mockImplementation(({ uuid }) => {
+      if (uuid === "plan-note-uuid") return Promise.resolve(MOCK_QUARTERLY_PLAN);
+      if (uuid === "dream-note-uuid") return Promise.resolve(dreamNoteContent);
+      return Promise.resolve("");
+    }),
+    getTask: jest.fn().mockImplementation(uuid => Promise.resolve(SAMPLE_TASKS.find(t => t.uuid === uuid) || null)),
+    getTaskDomains: jest.fn().mockResolvedValue([{ uuid: "dom-work", name: "Work" }]),
+    getTaskDomainTasks: jest.fn().mockResolvedValue(SAMPLE_TASKS),
+    filterNotes: jest.fn().mockImplementation(({ query }) => {
+      if (query && query.includes("Plan")) {
+        return Promise.resolve([{ name: query, uuid: "plan-note-uuid" }]);
+      }
+      return Promise.resolve([]);
+    }),
+    replaceNoteContent: jest.fn().mockImplementation((_handle, content) => {
+      dreamNoteContent = content;
+      return Promise.resolve(true);
+    }),
+    setNoteName: jest.fn().mockResolvedValue(true),
+  };
+
+  return app;
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Pick the active provider to run integration tests against.
+// @returns {object|null} Provider config with provider enum + setting key + key value.
+// [Claude gpt-5.3-codex] Task: derive active provider from available .env keys
+// Prompt: "Use valid .env keys for each provider to ensure dream-task-service.test.js passes"
+function providerConfigFromEnvironment() {
+  return PROVIDER_KEY_CONFIGS_WITH_VALUES[0] || null;
+}
+
+// ----------------------------------------------------------------------------------------------
+// @desc Derive today's note name identically to the Goal Coach component.
+// [Claude] Task: derive today's note name identically to the Goal Coach component
+// Date: 2026-03-24 | Model: claude-4.6-opus-high-thinking
+function todayNoteName() {
+  const label = new Date().toLocaleString([], { year: "numeric", month: "long", day: "numeric" });
+  return `Dashboard proposed tasks for ${ label }`;
+}
+
+// [Claude gpt-5.3-codex] Generated tests for: Goal Coach write→read round-trip via real provider key from .env
+// Prompt: "Use valid .env keys for each provider to ensure dream-task-service.test.js passes"
+describe("analyzeGoalCoachTasks (requires provider API key from .env)", () => {
+  itIfProviderKey("generates suggestions via real LLM and reads them back from cache", async () => {
+    const providerConfig = providerConfigFromEnvironment();
+    const app = buildMockApp(providerConfig);
+    const noteName = todayNoteName();
+
+    const freshResult = await analyzeGoalCoachTasks(app, {
+      noteName,
+      minimumTaskCount: 1,
+    });
+
+    expect(freshResult.cached).toBe(false);
+    expect(freshResult.tasks.length).toBeGreaterThanOrEqual(3);
+    expect(freshResult.noteUUID).toBe("dream-note-uuid");
+    expect(typeof freshResult.goalsSummary).toBe("string");
+    expect(freshResult.goalsSummary.length).toBeGreaterThan(0);
+
+    for (const task of freshResult.tasks) {
+      expect(typeof task.title).toBe("string");
+      expect(task.title.length).toBeGreaterThan(0);
+      expect(typeof task.rating).toBe("number");
+      expect(task.rating).toBeGreaterThanOrEqual(1);
+      expect(task.rating).toBeLessThanOrEqual(10);
+      expect(typeof task.explanation).toBe("string");
+      expect(task.explanation.length).toBeGreaterThan(0);
+    }
+
+    const existingCount = freshResult.tasks.filter(t => t.isExisting).length;
+    expect(existingCount).toBeGreaterThanOrEqual(Math.ceil(freshResult.tasks.length / 2));
+
+    const validUuids = new Set(SAMPLE_TASKS.map(t => t.uuid));
+    for (const task of freshResult.tasks.filter(t => t.isExisting)) {
+      expect(validUuids.has(task.uuid)).toBe(true);
+      expect(task.noteUUID).toBeTruthy();
+    }
+
+    expect(app.replaceNoteContent).toHaveBeenCalledTimes(1);
+    const writtenNote = app.replaceNoteContent.mock.calls[0][1];
+    expect(writtenNote).not.toMatch(/Generated by/);
+
+    const cachedResult = await analyzeGoalCoachTasks(app, {
+      noteName,
+      minimumTaskCount: 1,
+    });
+
+    expect(cachedResult.cached).toBe(true);
+    expect(cachedResult.tasks.length).toBe(freshResult.tasks.length);
+
+    for (let i = 0; i < freshResult.tasks.length; i++) {
+      const fresh = freshResult.tasks[i];
+      const cached = cachedResult.tasks[i];
+      expect(cached.title).toBe(fresh.title);
+      expect(cached.rating).toBe(fresh.rating);
+      expect(cached.uuid).toBe(fresh.uuid);
+      expect(cached.isExisting).toBe(fresh.isExisting);
+      expect(cached.noteUUID).toBe(fresh.noteUUID);
+      expect(cached.explanation).toBe(fresh.explanation);
+    }
+
+    expect(cachedResult.goalsSummary).toBe(freshResult.goalsSummary);
+  }, 90_000);
+
+  itIfProviderKey("loads the quarterly plan note to build context for the LLM prompt", async () => {
+    const providerConfig = providerConfigFromEnvironment();
+    const app = buildMockApp(providerConfig);
+    const noteName = todayNoteName();
+
+    await analyzeGoalCoachTasks(app, { noteName, minimumTaskCount: 1 });
+
+    expect(app.filterNotes).toHaveBeenCalled();
+    const filterCall = app.filterNotes.mock.calls.map(call => call[0]).find(query => query?.query);
+    // Domain-scoped titles insert the Task Domain before "Plan" ("Q3 2026 Work Plan"); a domain-less
+    // quarter still uses the legacy "Q3 2026 Plan".
+    expect(filterCall.query).toMatch(/^Q\d \d{4}(?: .+)? Plan$/);
+
+    expect(app.getNoteContent).toHaveBeenCalledWith({ uuid: "plan-note-uuid" });
+  }, 90_000);
+});

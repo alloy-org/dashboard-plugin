@@ -5,7 +5,7 @@
 // an acceptance retried from another surface that reuses the task the idea already became.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
-import { handleTaskClick } from "dashboard/dream-task-internals";
+import { handleTaskClick } from "dashboard/goal-coach-internals";
 import { decidedIdeaRecords, IDEA_STATUSES, ideaIdFor, normalizedIdeaRecords } from "dashboard/project-tasks/project-idea-records";
 import { minutesSinceIdeaRecommended } from "dashboard/project-tasks/project-suggestion-log";
 import { readCollectedProjectTasks } from "dashboard/project-tasks/project-task-store";
@@ -16,7 +16,7 @@ import QuarterProject from "dashboard/quarter-project";
 import QuarterProjectRepository from "dashboard/quarter-project-repository";
 import { existingTaskForAcceptedIdea, recordSuggestedIdeaDecisions } from "dashboard/suggestions/ranked-task-suggestions";
 import { rankedTasksFromResponse, suggestionQuestions } from "dashboard/suggestions/suggestion-task-rank";
-import { slotRankedTasks } from "dashboard/suggestions/suggestion-task-slots";
+import { EVENING_DAY_END_MINUTES, slotRankedTasks } from "dashboard/suggestions/suggestion-task-slots";
 import { createGenerateProjectIdeasHandler } from "dashboard/work-queue/jobs/generate-project-ideas";
 import { createRateProjectIdeasHandler } from "dashboard/work-queue/jobs/rate-project-ideas";
 import { ideasRefreshDue, ideasRequestIfDue } from "dashboard/work-queue/quarter-project-work-planner";
@@ -340,6 +340,16 @@ describe("ideas as recommendation candidates", () => {
       taskUuid: null, title: "First idea" })]);
     expect(reserveTasks.map(reserve => reserve.candidateId)).toEqual(["idea:idea-2", "task:task-1"]);
   });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A day that offers evenings keeps placing tasks past 18:00, up to EVENING_DAY_END_MINUTES.
+  it("slots tasks into the evening when the day ends later", () => {
+    const tasks = ["task-1", "task-2", "task-3"].map(taskUuid => ({ candidateId: `task:${ taskUuid }`, rationale: "Why",
+      taskText: taskUuid, taskUuid }));
+    const { activities, reserveTasks } = slotRankedTasks(tasks, { dayEndMinutes: EVENING_DAY_END_MINUTES, nowMinutes: 17 * 60 });
+    expect(activities.map(activity => activity.startTime)).toEqual(["17:00", "18:00", "19:00"]);
+    expect(reserveTasks).toEqual([]);
+  });
 });
 
 describe("decisions on shown ideas", () => {
@@ -393,7 +403,7 @@ describe("decisions on shown ideas", () => {
   // ----------------------------------------------------------------------------------------------
   // @desc Clicking an open idea card inserts its task and accepts the idea; clicking a card for that idea again, as a
   //   cached card or another surface would, opens the accepted task instead of inserting a second one.
-  it("accepts an idea once from Dream Task and reuses its task on a retry", async () => {
+  it("accepts an idea once from Goal Coach and reuses its task on a retry", async () => {
     jest.useFakeTimers({ doNotFake: ["nextTick", "queueMicrotask", "setImmediate", "setInterval", "setTimeout"], now: NOW });
     const app = maintenanceApp({ tasks: [] });
     const idea = ratedIdea("Benchmark the picker");

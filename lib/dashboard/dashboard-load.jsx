@@ -80,8 +80,21 @@ if (process.env.NODE_ENV === "development") {
   initPromise = window.callAmplenotePlugin("init");
 }
 
-createRoot(document.getElementById("dashboard-root")).render(
-  <IconContext.Provider value={ ICON_DEFAULTS }>
-    <DashboardApp app={app} initPromise={initPromise} />
-  </IconContext.Provider>
-);
+const dashboardRoot = createRoot(document.getElementById("dashboard-root"));
+// The dev server serves this same shell at /calendar-suggestions, where the dev-only Calendar Suggestions page replaces
+// the dashboard. The page is imported inside the development test so the production build drops it with the branch.
+if (process.env.NODE_ENV === "development" && window.location.pathname === "/calendar-suggestions") {
+  import("./calendar-suggestions-dev-page.jsx").then(({ default: CalendarSuggestionsDevPage }) => {
+    dashboardRoot.render(
+      <IconContext.Provider value={ ICON_DEFAULTS }>
+        <CalendarSuggestionsDevPage app={app} initPromise={initPromise} />
+      </IconContext.Provider>
+    );
+  });
+} else {
+  dashboardRoot.render(
+    <IconContext.Provider value={ ICON_DEFAULTS }>
+      <DashboardApp app={app} initPromise={initPromise} />
+    </IconContext.Provider>
+  );
+}

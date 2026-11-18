@@ -2,6 +2,9 @@ export default {
   testEnvironment: 'jsdom',
   modulePaths: ['<rootDir>/lib', '<rootDir>/lib/dashboard'],
   moduleNameMapper: {
+    // Stylesheets come first: Jest uses the first pattern that matches, and a path-prefixed import such as
+    // "dashboard/styles/x.scss" would otherwise map to the real file and be parsed as JavaScript
+    '\\.scss$': '<rootDir>/test/stubs/scss.cjs',
     // Stub esbuild virtual modules that have no real files on disk
     '^classic-theme-styles$': '<rootDir>/test/stubs/classic-theme-styles.js',
     '^client-bundle$': '<rootDir>/test/stubs/client-bundle.js',
@@ -16,7 +19,6 @@ export default {
     '^providers/(.*)$': '<rootDir>/lib/providers/$1',
     '^styles/(.*)$': '<rootDir>/test/stubs/scss.cjs',
     '^util/(.*)$':  '<rootDir>/lib/util/$1',
-    '\\.scss$': '<rootDir>/test/stubs/scss.cjs',
   },
   setupFilesAfterEnv: ['<rootDir>/test/setup-react-act.js'],
   extensionsToTreatAsEsm: ['.jsx'],

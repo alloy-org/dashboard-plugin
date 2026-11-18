@@ -1,7 +1,7 @@
 // Exercise goal storage through real repository, merge, service, and host dispatch.
 
 import { createPlanWizardApp } from "./fixtures/plan-wizard-app.js";
-import { readPlanGoals, savePlanGoals, savePlanIntentPossibilities } from "plan-wizard/plan-wizard-service";
+import { clearPlanIntentReading, readPlanGoals, savePlanGoals, savePlanIntentPossibilities } from "plan-wizard/plan-wizard-service";
 import { GUIDE_PREAMBLE_TEXT, guideSectionRange } from "plan-wizard/vision-guide-markdown";
 import { MAXIMUM_GUIDE_SECTION_CHARACTERS, VISION_GUIDE_TAG, findVisionGuide, initializeVisionGuide,
   replaceGuideSection, visionGuideNoteName, visionGuideScopeTag } from "plan-wizard/vision-guide-notes";
@@ -417,4 +417,23 @@ test.each([false, { embedCallFailed: true, error: "Connection lost" }])("wizard 
   app.deleteNote.mockResolvedValueOnce(result);
   await expect(readPlanGoals(app, { ...scope, deleteRetiredGuide: true })).rejects.toThrow('Could not delete retired Vision Guide');
   expect(app.notes).toHaveLength(1);
+});
+
+// ----------------------------------------------------------------------------------------------
+// @desc Clearing the stored reading drops suggestions and the notes read for them, but keeps the goals the user picked,
+//   and a scope with no Vision Guide is not given one.
+test("clears stored suggestions and their reading while keeping picked goals", async () => {
+  const emptyApp = createPlanWizardApp();
+  await expect(clearPlanIntentReading(emptyApp, scope)).resolves.toBe(false);
+  expect(emptyApp.replaceNoteContent).not.toHaveBeenCalled();
+  const app = createPlanWizardApp();
+  await savePlanGoals(app, { ...scope, goals: [goal] });
+  const reading = { readItems: [{ kind: "note", label: "Launch plan" }], themes: [{ label: "Launch", taskCount: 2 }] };
+  await savePlanIntentPossibilities(app, { ...scope, ...inference, reading });
+  await expect(clearPlanIntentReading(app, scope)).resolves.toBe(true);
+  const context = await readPlanGoals(app, scope);
+  expect(context.possibilities.work).toEqual([]);
+  expect(context.intentReading.readItems).toEqual([]);
+  expect(context.generatedAt.work).toBeNull();
+  expect(context.goals[0].goalText).toBe("Grow revenue");
 });

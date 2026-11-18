@@ -18,12 +18,13 @@ const SECONDS_PER_MINUTE = 60;
 let promptsSent = [];
 const llmMock = jest.fn();
 
-await mockFetchAiProvider({ llmPromptWithPluginFallback: (...args) => llmMock(...args) });
+await mockFetchAiProvider({ llmPromptWithAmplenoteFallback: (...args) => llmMock(...args) });
 
 const { activityKey, mergedAgendaRows } = await import("dashboard/proposed-agenda/proposed-agenda-llm-generator");
 const { proposedTaskKey } = await import("dashboard/proposed-agenda/proposed-agenda-archive");
-const { agendaRowsGroupedByDay, proposedAgendaDaysInRange } = await import("dashboard/proposed-agenda/proposed-agenda-range");
+const { agendaRowsGroupedByDay, proposedAgendaDaysInRange, shortViewStartsOnWeekend } = await import("dashboard/proposed-agenda/proposed-agenda-range");
 const { calendarSuggestionFromActivity, suggestScheduledTasksFromDashboard } = await import("dashboard/proposed-agenda/proposed-agenda-suggest-action");
+const { readRerolledDays, recordRerolledDays } = await import("dashboard/suggestions/suggestion-reroll-store");
 
 // ----------------------------------------------------------------------------------------------
 // @desc Build a plugin-side Amplenote app stub: fixture tasks, a quarterly plan note, and the note-writing
@@ -138,6 +139,31 @@ describe("proposedAgendaDaysInRange", () => {
     expect(days.map(day => day.getDate())).toEqual([11, 14, 15]);
   });
 
+  // A re-roll that asks for weekends keeps the window's Saturday and Sunday without letting them push a weekday out.
+  it("adds the window's weekend days when asked, outside the day cap", () => {
+    const friday = new Date(2026, 8, 11, 9, 0, 0);
+    const range = { endAt: Math.floor(new Date(2026, 8, 16, 17, 0, 0).getTime() / 1000),
+      startAt: Math.floor(friday.getTime() / 1000) };
+    const days = proposedAgendaDaysInRange(range, { includeWeekends: true, maxDays: 5, now: friday });
+    expect(days.map(day => day.getDate())).toEqual([11, 12, 13, 14, 15, 16]);
+    const cappedDays = proposedAgendaDaysInRange(range, { includeWeekends: true, maxDays: 1, now: friday });
+    expect(cappedDays.map(day => day.getDate())).toEqual([11]);
+  });
+
+  // Views of one to four days opened on a Saturday or Sunday were opened to see the weekend; a longer view, or
+  // one opening on a weekday, keeps the weekday preference.
+  it("recognizes a view of four days or fewer that opens on a weekend day", () => {
+    const saturdayStart = Math.floor(new Date(2026, 8, 12, 0, 0, 0).getTime() / 1000);
+    const sundayStart = Math.floor(new Date(2026, 8, 13, 0, 0, 0).getTime() / 1000);
+    const fridayStart = Math.floor(new Date(2026, 8, 11, 0, 0, 0).getTime() / 1000);
+    expect(shortViewStartsOnWeekend({ endAt: saturdayStart + SECONDS_PER_DAY - 1, startAt: saturdayStart })).toBe(true);
+    expect(shortViewStartsOnWeekend({ endAt: sundayStart + 3 * SECONDS_PER_DAY, startAt: sundayStart })).toBe(true);
+    expect(shortViewStartsOnWeekend({ endAt: saturdayStart + 4 * SECONDS_PER_DAY - 1, startAt: saturdayStart })).toBe(true);
+    expect(shortViewStartsOnWeekend({ endAt: saturdayStart + 5 * SECONDS_PER_DAY - 1, startAt: saturdayStart })).toBe(false);
+    expect(shortViewStartsOnWeekend({ endAt: fridayStart + 3 * SECONDS_PER_DAY - 1, startAt: fridayStart })).toBe(false);
+    expect(shortViewStartsOnWeekend(null)).toBe(false);
+  });
+
   // An absent or inverted range is how callers say "no range supplied"; the widget then plans its single
   // auto-resolved day instead.
   it("returns no days for an absent, partial, or inverted range", () => {
@@ -211,6 +237,27 @@ describe("suggestScheduledTasksFromDashboard", () => {
     expect(app.context.setScheduledTasks).toHaveBeenCalled();
   });
 
+  // ----------------------------------------------------------------------------------------------
+  // @desc With logging enabled, every hand-off to the calendar logs each suggestion beside the day it was planned for,
+  //   so a suggestion the calendar shows on another day can be traced to the plugin or to the host.
+  it("logs each suggestion handed to the calendar with the day it was planned for", async () => {
+    const { setLoggingEnabled } = await import("util/log");
+    setLoggingEnabled(true);
+    const consoleSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    const { app } = buildApp();
+    const startAt = midnightSeconds(new Date()) + 8 * 60 * SECONDS_PER_MINUTE;
+    const suggestions = await suggestScheduledTasksFromDashboard(app, { endAt: startAt + SECONDS_PER_DAY,
+      scheduledTasks: [], startAt });
+    const handOffCalls = consoleSpy.mock.calls.filter(([label]) => String(label).includes("suggestions by day (returned to host)"));
+    consoleSpy.mockRestore();
+    setLoggingEnabled(false);
+    const [[, handOff]] = handOffCalls;
+    expect(handOff.count).toBe(suggestions.length);
+    expect(handOff.offDayCount).toBe(0);
+    expect(handOff.rows.map(row => row.startAt)).toEqual(suggestions.map(suggestion => suggestion.startAt));
+    expect(handOff.rows[0]).toMatchObject({ landsOnPlannedDay: true, title: expect.any(String) });
+  });
+
   // A multi-day window draws from one queue: a task offered on the first day is not offered again on a later day,
   // even though the model proposes it for every day. The pass then records when and for which days it ran.
   it("offers each task on only one day of the window, and records the pass", async () => {
@@ -226,6 +273,22 @@ describe("suggestScheduledTasksFromDashboard", () => {
     const [settingKey, settingValue] = app.setSetting.mock.calls.at(-1);
     expect(settingKey).toBe(SETTING_KEYS.CALENDAR_SUGGESTIONS_GENERATED);
     expect(JSON.parse(settingValue).dayKeys.length).toBeGreaterThan(0);
+  });
+
+  // A three-day view opening on a future Saturday plans the Saturday and Sunday as well as the Monday, where a
+  // longer view would have planned only the weekdays.
+  it("plans the weekend days of a three-day view that opens on a Saturday", async () => {
+    const { app } = buildApp();
+    app.setSetting = jest.fn().mockResolvedValue(undefined);
+    const saturday = new Date();
+    saturday.setDate(saturday.getDate() + ((6 - saturday.getDay() + 7) % 7 || 7));
+    const startAt = midnightSeconds(saturday);
+    await suggestScheduledTasksFromDashboard(app, { endAt: startAt + 3 * SECONDS_PER_DAY - 1, scheduledTasks: [], startAt });
+
+    const generationCalls = app.setSetting.mock.calls.filter(([key]) => key === SETTING_KEYS.CALENDAR_SUGGESTIONS_GENERATED);
+    const recordedDayKeys = JSON.parse(generationCalls.at(-1)[1]).dayKeys;
+    const recordedWeekdays = recordedDayKeys.map(dayKey => new Date(dayKey).getDay());
+    expect(recordedWeekdays).toEqual([6, 0, 1]);
   });
 
   // The calendar's already-scheduled tasks are the immovable obligations the plan is built around, and they
@@ -325,6 +388,32 @@ describe("suggestScheduledTasksFromDashboard", () => {
     app.context = {};
     const suggestions = await suggestScheduledTasksFromDashboard(app, { ...windowFromToday(1), scheduledTasks: [] });
     expect(suggestions.length).toBeGreaterThan(0);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A day the user re-rolled earlier today is shown again with the re-roll's suggestions, not planned afresh.
+  it("shows a day re-rolled earlier today again instead of planning it", async () => {
+    const { app } = buildApp();
+    const notes = new Map();
+    app.createNote = jest.fn(async name => { notes.set(`note-${ notes.size }`, { content: "", name }); return `note-${ notes.size - 1 }`; });
+    app.findNote = jest.fn(async ({ name }) => {
+      const found = [...notes.entries()].find(([, note]) => note.name === name);
+      return found ? { name, uuid: found[0] } : null;
+    });
+    app.getNoteContent = jest.fn(async ({ uuid }) => notes.get(uuid)?.content ?? "");
+    app.replaceNoteContent = jest.fn(async ({ uuid }, content) => { if (notes.has(uuid)) notes.get(uuid).content = content; return true; });
+    const today = new Date();
+    const day = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const activity = { durationMinutes: 30, ideaId: "idea-9", noteUuid: PLAN_NOTE_UUID, startMinutes: 23 * 60, taskUuid: null,
+      title: "Replayed idea" };
+    await recordRerolledDays(app, { days: [{ activities: [activity], day, excludedKeys: new Set(["idea:idea-9"]) }],
+      domainUuid: "dom-work", focusKey: "layups", now: today, projectUuids: [] });
+    const suggestions = await suggestScheduledTasksFromDashboard(app, { ...windowFromToday(1), scheduledTasks: [],
+      taskDomain: { name: "Work", uuid: "dom-work" } });
+    expect(suggestions.map(suggestion => suggestion.task?.content)).toEqual(["Replayed idea"]);
+    expect(llmMock).not.toHaveBeenCalled();
+    const rerolledDay = (await readRerolledDays(app, { domainUuid: "dom-work", now: today })).get(day.toDateString());
+    expect(rerolledDay.forceRegenerate).toBe(true);
   });
 
   // [OpenAI GPT-5.6] Task: keep suggestions inside the calendar window supplied by Amplenote

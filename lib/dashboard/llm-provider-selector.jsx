@@ -1,7 +1,7 @@
 // [Claude claude-opus-4-8 (1M context)-authored file]
 // Prompt summary: "modern (not default-styled) AI-provider chooser — a ConfigPopup-based modal that lists every
 //   offered provider with what it excels at, plus Submit / Cancel, replacing the native app.prompt radio dialog.
-//   Shared by the proposed-agenda and dream-task widgets."
+//   Shared by the proposed-agenda and goal-coach widgets."
 import ConfigPopup from "config-popup";
 import { RadioGroup } from "dashboard/controls";
 import { defaultSelectedProviderEm, selectableProviderOptions } from "llm-provider";
@@ -15,7 +15,7 @@ import { useState } from "react";
 // @param {object} props - { allowKeylessProviders, configuredProviderEms, currentProviderEm, onCancel,
 //   onSelect, submitLabel, title }.
 //   - {boolean} [allowKeylessProviders=false] - When true, every provider is offered (the chosen provider can
-//       be passed to the Ample Agent Pro fallback even without a local key); otherwise only providers with a
+//       be served by app.callLLM on the plugin LLM license without a local key); otherwise only providers with a
 //       configured key (plus the current one) are shown.
 //   - {Array<string>} [configuredProviderEms=[]] - Provider enums the user has given an API key for.
 //   - {string|null} currentProviderEm - Provider pre-selected when the popup opens (always kept visible).

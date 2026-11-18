@@ -5,6 +5,7 @@
 // the list only shrinks.
 import fs from "node:fs";
 import path from "node:path";
+import { isNotYetMigrated } from "./design-system-exceptions.js";
 
 const LIB_DIRECTORY = path.resolve("lib");
 const CONTROLS_DIRECTORY = path.join(LIB_DIRECTORY, "dashboard", "controls");
@@ -93,9 +94,9 @@ function keysFromRawControl(relativePath, attributes) {
 }
 
 const scriptFiles = filesUnder(LIB_DIRECTORY).filter(file => /\.jsx?$/.test(file))
-  .filter(file => !file.startsWith(CONTROLS_DIRECTORY + path.sep));
+  .filter(file => !file.startsWith(CONTROLS_DIRECTORY + path.sep) && !isNotYetMigrated(file));
 const stylesheetFiles = filesUnder(STYLES_DIRECTORY).filter(file => file.endsWith(".scss"))
-  .filter(file => path.basename(file) !== CONTROL_STYLESHEET);
+  .filter(file => path.basename(file) !== CONTROL_STYLESHEET && !isNotYetMigrated(file));
 
 describe("shared controls usage", () => {
   it("uses the shared buttons, fields, checkboxes, and radio groups instead of raw controls", () => {

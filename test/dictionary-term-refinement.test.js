@@ -1,16 +1,18 @@
 // Verify dictionary refinement and its scheduling: a rewrite is accepted only when it cites the passages shown and the
 // evidence supports it; the refinement job commits a plugin-owned definition, records how it ended, and never sends the
 // same evidence twice; a definition the user adopts while the provider answers is left as the user has it; a failed
-// request is retried or waits for a provider; and a visit collects evidence for at most two plugin-owned terms, those
-// never collected first, then those whose tasks changed, then those past the cooldown.
+// request is retried or waits for a provider; a visit collects evidence for at most two plugin-owned terms, those
+// never collected first, then those whose tasks changed, then those past the cooldown; and routine refinements ask the
+// light-reasoning tier while one term a week is audited by the audit tier.
 import { jest } from "@jest/globals";
+import { AUDIT_MODEL, LIGHT_REASONING_MODEL } from "constants/llm-providers";
 import { createCollectTermEvidenceHandler } from "dashboard/work-queue/jobs/collect-term-evidence";
 import { termEvidenceRequest } from "dashboard/work-queue/jobs/project-job-requests";
 import { createRefineDictionaryTermHandler } from "dashboard/work-queue/jobs/refine-dictionary-term";
 import { EVIDENCE_OUTCOMES } from "plan-wizard/stack-rank/dictionary-term-evidence";
 import { storedTermEvidence } from "plan-wizard/stack-rank/dictionary-term-evidence-store";
 import { acceptedTermRefinement, REFINEMENT_OUTCOMES } from "plan-wizard/stack-rank/dictionary-term-refinement";
-import { dueTermEvidence, dueTermEvidenceRequests, termMentions, termProgressRows,
+import { dueTermEvidence, dueTermEvidenceRequests, TERM_AUDIT_INTERVAL_MILLISECONDS, termMentions, termProgressRows,
   TERMS_PER_VISIT } from "plan-wizard/stack-rank/dictionary-term-schedule";
 import { dictionaryEntriesFromContent } from "plan-wizard/stack-rank/user-terms-dictionary";
 import { jobContext, notebookApp, NOW } from "./project-maintenance-test-app";
@@ -163,6 +165,39 @@ describe("dictionary term refinement", () => {
     const requests = await dueTermEvidenceRequests(app, { now: NOW, tasks: [{ content: "Resize the widget", uuid: "t5" }] });
     expect(requests).toEqual([termEvidenceRequest({ term: "Widget", year: YEAR }, { mentionDigest: termMentions(["Resize the widget"],
       "Widget").mentionDigest, requestedAt: NOW.getTime() })]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A routine refinement asks the light tier. Once a week a visit adds an audit collection for one term already
+  //   refined, whose refinement asks the audit tier about evidence the light tier already used; a second audit waits
+  //   for the interval to pass.
+  it("refines on the light tier and audits one refined term a week on the audit tier", async () => {
+    const app = dictionaryNotebook();
+    const promptRunner = jest.fn().mockResolvedValue(providerAnswer());
+    const handler = createRefineDictionaryTermHandler({ promptRunner });
+    const routineJob = await collectedRefinementJob(app, handler);
+    await handler.run({ context: jobContext(app), job: routineJob, signal: null });
+    expect(promptRunner.mock.calls[0][2].amplenoteAiModel).toBe(LIGHT_REASONING_MODEL);
+
+    const [auditRequest] = await dueTermEvidenceRequests(app, { now: NOW, tasks: [] });
+    expect(auditRequest.input).toMatchObject({ audit: true, term: "Widget" });
+    const collectHandler = createCollectTermEvidenceHandler();
+    const collected = await collectHandler.run({ context: jobContext(app), job: queuedJob(collectHandler, auditRequest), signal: null });
+    const auditJob = queuedJob(handler, collected.followUps[0]);
+    expect(auditJob.desiredRevision).toBe(`audit:${ routineJob.desiredRevision }`);
+
+    promptRunner.mockResolvedValue(providerAnswer({ decision: "keep" }));
+    const audited = await handler.run({ context: jobContext(app), job: auditJob, signal: null });
+    expect(audited).toMatchObject({ outcome: REFINEMENT_OUTCOMES.kept, revision: auditJob.desiredRevision });
+    expect(promptRunner.mock.calls[1][2]).toMatchObject({ amplenoteAiModel: AUDIT_MODEL });
+    expect(await handler.appliedRevision({ context: jobContext(app), job: auditJob })).toBe(auditJob.desiredRevision);
+    const stored = (await storedTermEvidence(app, { year: YEAR })).widget;
+    expect(stored).toMatchObject({ auditedAt: NOW.toISOString(), refinement: { audit: true, refinedAt: NOW.toISOString() } });
+
+    expect(await dueTermEvidenceRequests(app, { now: NOW, tasks: [] })).toEqual([]);
+    const nextWeek = new Date(NOW.getTime() + TERM_AUDIT_INTERVAL_MILLISECONDS + DAY_MILLISECONDS);
+    const nextWeekRequests = await dueTermEvidenceRequests(app, { now: nextWeek, tasks: [] });
+    expect(nextWeekRequests.map(request => request.input.audit ?? false)).toEqual([false]);
   });
 
   // ----------------------------------------------------------------------------------------------

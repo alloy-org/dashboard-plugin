@@ -4,6 +4,7 @@ import { guideHeadingRanges } from "plan-wizard/vision-guide-markdown";
 import { initialProjectTaskStoreMarkdown } from "dashboard/project-tasks/project-task-store-markdown";
 import QuarterProject from "quarter-project";
 import QuarterProjectRepository from "quarter-project-repository";
+import { shownSuggestionNoteName } from "dashboard/suggestions/suggestion-shown-store";
 import DashboardNoteWriter from "dashboard/work-queue/dashboard-note-writer";
 
 const scope = { domainName: "Work", domainUuid: "work-domain", quarter: 3, quarterKey: "2026-Q3", year: 2026 };
@@ -18,17 +19,27 @@ function storeContent(projects) {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc Mock the app bridge with one in-memory store note whose section writes are applied to its content.
+// @desc Mock the app bridge with one in-memory store note whose section writes are applied to its content, and the
+//   domain's shown suggestions note.
 // @param {object} [options] - { content = null }: null when the store does not exist yet.
-// @returns {object} App mock carrying `noteContent` for assertions.
+// @returns {object} App mock carrying `noteContent` and `shownContent` for assertions.
 function storeApp({ content = null } = {}) {
-  const state = { noteContent: content };
+  const state = { noteContent: content, shownContent: null };
+  const isShownNote = name => name === shownSuggestionNoteName(scope.domainUuid);
   const app = {
     context: { refreshNotesList: jest.fn().mockResolvedValue(true) },
-    createNote: jest.fn(async () => { state.noteContent = ""; return "store-note"; }),
-    findNote: jest.fn(async () => (state.noteContent === null ? null : { uuid: "store-note" })),
-    getNoteContent: jest.fn(async () => state.noteContent ?? ""),
+    createNote: jest.fn(async name => {
+      if (isShownNote(name)) { state.shownContent = ""; return "shown-note"; }
+      state.noteContent = "";
+      return "store-note";
+    }),
+    findNote: jest.fn(async ({ name }) => {
+      if (isShownNote(name)) return state.shownContent === null ? null : { uuid: "shown-note" };
+      return state.noteContent === null ? null : { uuid: "store-note" };
+    }),
+    getNoteContent: jest.fn(async ({ uuid }) => (uuid === "shown-note" ? state.shownContent : state.noteContent) ?? ""),
     replaceNoteContent: jest.fn(async (handle, body, options) => {
+      if (handle.uuid === "shown-note") { state.shownContent = body; return true; }
       if (!options?.section) { state.noteContent = body; return true; }
       const heading = options.section.heading;
       const range = guideHeadingRanges(state.noteContent).find(
@@ -39,6 +50,7 @@ function storeApp({ content = null } = {}) {
     }),
   };
   Object.defineProperty(app, "noteContent", { get: () => state.noteContent });
+  Object.defineProperty(app, "shownContent", { get: () => state.shownContent });
   return app;
 }
 
@@ -122,8 +134,7 @@ describe("QuarterProjectRepository results", () => {
     ]);
     const stored = await repository.readOne(scope, "project-uuid");
     expect(stored.taskSimilarityScores).toEqual(scores);
-    expect(stored.taskSuggestions.map(entry => entry.suggestedAt)).toEqual(["2026-09-01T12:00:00.000Z",
-      "2026-09-20T12:00:00.000Z"]);
+    expect(stored.taskSuggestions.map(entry => entry.suggestedAt)).toEqual(["2026-09-20T12:00:00.000Z"]);
   });
 
   // ----------------------------------------------------------------------------------------------
@@ -139,7 +150,7 @@ describe("QuarterProjectRepository results", () => {
       sourceProject: projects[0] });
     const stored = await repository.readOne(scope, "project-uuid");
     expect(stored).toMatchObject({ blocksPerWeek: 2, lastAttemptedAt: "2026-09-21T00:00:00.000Z" });
-    expect(stored.taskSuggestions).toHaveLength(2);
+    expect(stored.taskSuggestions).toEqual([{ suggestedAt: "2026-09-20T12:00:00.000Z", taskUuid: "open-task" }]);
     expect(written).not.toBe(projects[0]);
     expect(projects[0].lastAttemptedAt).toBeNull();
   });
@@ -181,32 +192,32 @@ describe("QuarterProjectRepository results", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc Retiring a project moves it beneath Past projects, where readers see it inactive; a live source project
-  //   moves it back.
+  // @desc Retiring a project moves it beneath Past projects, where readers see it inactive, and the rewrite drops the
+  //   legacy suggestion log its section carried; a live source project moves it back.
   it("retires a project into Past projects and restores it from the live plan", async () => {
     const app = storeApp({ content: storeContent([storedProject()]) });
     const repository = new QuarterProjectRepository({ app, noteWriter: new DashboardNoteWriter({ app }) });
     await repository.applyResult(scope, { apply: project => project.setActive(false), projectUuid: "project-uuid" });
     await expect(repository.readStored(scope)).resolves.toEqual([]);
-    await expect(repository.readOne(scope, "project-uuid")).resolves.toMatchObject({ isActive: false,
-      taskSuggestions: storedProject().taskSuggestions });
+    await expect(repository.readOne(scope, "project-uuid")).resolves.toMatchObject({ isActive: false, taskSuggestions: [] });
     const { projects } = await repository.readMany(scope, { guide: guideWithProject() });
     await repository.applyResult(scope, { apply: project => project.setActive(true), sourceProject: projects[0] });
     await expect(repository.readOne(scope, "project-uuid")).resolves.toMatchObject({ blocksPerWeek: 2, isActive: true });
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc A shown suggestion is appended by rewriting only the log headings it touches: an existing task's heading
-  //   gains a bullet, and a first-time idea gets its own heading, leaving the project's lists and payload unwritten.
-  it("appends shown suggestions by rewriting only their log headings", async () => {
-    const app = storeApp({ content: storeContent([storedProject()]) });
+  // @desc A showing is one write to the shown suggestions note, leaving the store note untouched, and readers see its
+  //   times after the legacy log entries the store's section still carries.
+  it("records shown suggestions in the shown suggestions note without writing the store", async () => {
+    const legacyLog = "### open-task suggested\n- open-task — 2026-09-01T12:00:00.000Z\n\n";
+    const app = storeApp({ content: storeContent([storedProject()]).replace("# Past projects", `${ legacyLog }# Past projects`) });
     const repository = new QuarterProjectRepository({ app, noteWriter: new DashboardNoteWriter({ app }) });
-    const payloadBefore = app.noteContent.slice(0, app.noteContent.indexOf("### open-task suggested"));
+    const storeBefore = app.noteContent;
     await repository.recordShownTasks(scope, { shownAt: "2026-09-20T12:00:00.000Z", suggestions: [
-      { projectUuid: "project-uuid", taskUuid: "open-task" }, { ideaId: "idea-0a1b2c3d", projectUuid: "project-uuid" }] });
-    const writtenSections = app.replaceNoteContent.mock.calls.map(([, , options]) => options?.section?.heading);
-    expect(writtenSections).toEqual([{ level: 3, text: "open-task suggested" }]);
-    expect(app.noteContent.startsWith(payloadBefore)).toBe(true);
+      { projectUuid: "project-uuid", taskUuid: "open-task" }, { ideaId: "idea-0a1b2c3d", projectUuid: "project-uuid" },
+      { projectUuid: "second-uuid", taskUuid: "open-task" }] });
+    expect(app.noteContent).toBe(storeBefore);
+    expect(app.replaceNoteContent.mock.calls.map(([handle]) => handle.uuid)).toEqual(["shown-note"]);
     const stored = await repository.readOne(scope, "project-uuid");
     expect(stored.taskSuggestions).toEqual([{ suggestedAt: "2026-09-01T12:00:00.000Z", taskUuid: "open-task" },
       { suggestedAt: "2026-09-20T12:00:00.000Z", taskUuid: "open-task" },
@@ -214,33 +225,14 @@ describe("QuarterProjectRepository results", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc When the heading to append to also logs the task under another project, a heading-scoped write could reach
-  //   the wrong project, so the project's whole section is rewritten instead.
-  it("rewrites the whole section when a log heading is shared with another project", async () => {
-    const otherProject = storedProject({ summary: "Second project", uuid: "second-uuid" });
-    const app = storeApp({ content: storeContent([storedProject(), otherProject]) });
-    const repository = new QuarterProjectRepository({ app, noteWriter: new DashboardNoteWriter({ app }) });
-    await repository.recordShownTasks(scope, { shownAt: "2026-09-20T12:00:00.000Z",
-      suggestions: [{ projectUuid: "second-uuid", taskUuid: "open-task" }] });
-    const writtenSections = app.replaceNoteContent.mock.calls.map(([, , options]) => options?.section?.heading);
-    expect(writtenSections).toEqual([{ level: 2, text: "Second project (project:second-uuid)" }]);
-    await expect(repository.readOne(scope, "project-uuid")).resolves.toMatchObject({
-      taskSuggestions: storedProject().taskSuggestions });
-    const second = await repository.readOne(scope, "second-uuid");
-    expect(second.taskSuggestions).toHaveLength(2);
-  });
-
-  // ----------------------------------------------------------------------------------------------
-  // @desc A project the store has never held is created, along with the store itself, from its summary and UUID.
-  it("creates the store and a new project's section", async () => {
+  // @desc Recording a showing for a project the store does not hold creates neither the store nor a section.
+  it("does not create the store for a shown project it does not hold", async () => {
     const app = storeApp();
     const repository = new QuarterProjectRepository({ app, noteWriter: new DashboardNoteWriter({ app }) });
     await repository.recordShownTasks(scope, { shownAt: "2026-09-20T12:00:00.000Z",
-      suggestions: [{ projectUuid: "new-project", summary: "Write the handbook", taskUuid: "task-1" },
-        { projectUuid: "new-project", taskUuid: "task-2" }] });
-    const stored = await repository.readOne(scope, "new-project");
-    expect(app.createNote).toHaveBeenCalledTimes(1);
-    expect(stored.summary).toBe("Write the handbook");
-    expect(stored.taskSuggestions.map(entry => entry.taskUuid)).toEqual(["task-1", "task-2"]);
+      suggestions: [{ projectUuid: "new-project", summary: "Write the handbook", taskUuid: "task-1" }] });
+    expect(app.createNote.mock.calls.map(([name]) => name)).toEqual([shownSuggestionNoteName(scope.domainUuid)]);
+    expect(app.noteContent).toBeNull();
+    await expect(repository.readOne(scope, "new-project")).resolves.toBeNull();
   });
 });

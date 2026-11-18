@@ -12,7 +12,7 @@ import { mockFetchAiProvider } from "./mock-fetch-ai-provider.js";
 let lastPromptSent = null;
 const llmMock = jest.fn();
 
-await mockFetchAiProvider({ llmPromptWithPluginFallback: (...args) => llmMock(...args) });
+await mockFetchAiProvider({ llmPromptWithAmplenoteFallback: (...args) => llmMock(...args) });
 
 const { AGENDA_DECISION, decisionLogNoteName, recordAgendaDecisions } = await import("dashboard/proposed-agenda/proposed-agenda-decision-log");
 const { generateProposedAgenda } = await import("dashboard/proposed-agenda/proposed-agenda-service");

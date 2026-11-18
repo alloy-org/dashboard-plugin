@@ -3,6 +3,7 @@
 // short list of fixed colors that have no host equivalent.
 import fs from "node:fs";
 import path from "node:path";
+import { isNotYetMigrated } from "./design-system-exceptions.js";
 
 const LIB_DIRECTORY = path.resolve("lib");
 const STYLES_DIRECTORY = path.join(LIB_DIRECTORY, "dashboard", "styles");
@@ -91,7 +92,7 @@ describe("dashboard color tokens", () => {
 
   it("keeps raw colors in the theme files, apart from the listed fixed colors", () => {
     const colorPattern = /#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)/g;
-    const offenders = componentStylesheetFiles.flatMap(file => {
+    const offenders = componentStylesheetFiles.filter(file => !isNotYetMigrated(file)).flatMap(file => {
       const allowed = ALLOWED_RAW_COLORS[path.basename(file)];
       if (allowed === null) return [];
       const colors = codeFromFile(file).match(colorPattern) || [];
@@ -102,7 +103,8 @@ describe("dashboard color tokens", () => {
 
   it("keeps color literals out of scripts; data colors are named in data-colors.scss", () => {
     const colorPattern = /["'`]#[0-9a-fA-F]{3,8}\b|rgba?\(\s*\d/;
-    const offenders = scriptFiles.filter(file => !SCRIPT_FILES_WITH_COLORS.includes(path.relative(LIB_DIRECTORY, file)))
+    const offenders = scriptFiles.filter(file => !SCRIPT_FILES_WITH_COLORS.includes(path.relative(LIB_DIRECTORY, file))
+      && !isNotYetMigrated(file))
       .filter(file => colorPattern.test(codeFromFile(file)));
     expect(offenders.map(file => path.relative(LIB_DIRECTORY, file))).toEqual([]);
   });

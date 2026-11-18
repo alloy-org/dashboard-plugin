@@ -5,6 +5,1002 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-11-18 — Merge main into the redesign branch
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/goal-coach.jsx`, `styles/goal-coach.scss` — main renamed Dream Task to Goal Coach; the redesign's shared controls are kept under the new names, and main's clickable source-note badge is a PlainButton around the Badge.
+- `lib/dashboard/dashboard.jsx` — Keeps the banner image and main's calendar history journal; main's dev-only calendar suggestions button is an IconButton.
+- `lib/dashboard/plan-wizard/plan-wizard.jsx`, `styles/plan-wizard.scss` — main's close button is the shared dialog IconButton on the title bar; "Beta" dropped as on main.
+- `lib/dashboard/planning.jsx`, `test/planning-quarter-pager.test.js` — main's Retrospective state and page step, with Material icons instead of emoji.
+- `lib/dashboard/plan-wizard/intent-reading-page.jsx`, `work-queue/dashboard-queue-inspector-sections.jsx`, `proposed-agenda/proposed-agenda.jsx`, `no-config-upsell.jsx`, `dashboard-load.jsx`, `plan-wizard/wizard-prompt-runner.js` — main's behavior with the redesign's controls, icon context, and dev sample provider.
+- Stylesheets — main's `z-indexes` module alongside the controls mixins; the redesign's removals (canvas tooltip, background fade) kept.
+- `lib/dashboard/copy-link.jsx` — Deleted, as on main.
+- `lib/dashboard/plan-wizard/project-source-field.jsx`, `project-note-search-menu.jsx`, `project-note-synopsis.jsx`, `calendar-suggestions-dev-page.jsx`, `styles/plan-wizard.scss`, `styles/calendar-suggestions-dev-page.scss` — main's new Plan Builder note fields and calendar suggestions dev page moved onto the shared controls and Material icons; weights, radii, and outlines brought within the design rules.
+- Component stylesheets — main's new rules renamed from the removed color tokens to the host-named ones (`$color-text-muted` → `$color-text-low-contrast`, and so on) so the build compiles.
+- `test/design-system-exceptions.js` (created), `test/design-tokens.test.js`, `test/design-rules.test.js`, `test/controls-usage.test.js`, `doc/design-system.md` — The Quarter Retrospective (main's full-screen story with its own palette) is listed as not yet migrated, in one place.
+- `test/goal-coach-actions.test.js`, `test/planning-quarter-pager.test.js` — Selectors and expected text follow the redesign's markup (source-note button, no emoji or arrow glyphs).
+- `build/compiled.js` — Rebuilt.
+
+**Validation:** Jest: 1814 passed, 2 failed (`goal-coach-actions` daily-jot date and `suggestion-reroll`; both fail on main as well). `npm run build` succeeds.
+**Task:** Resolve merge conflicts with main.
+**Prompt summary:** "This was still not merged and now there are conflicts to solve vs master."
+
+---
+
+## 2026-11-17 — callLLM falls back to the plugin LLM license when a saved key fails
+
+**Model:** Claude Opus 5.5
+**Files modified:**
+- `lib/providers/amplenote-llm.js` — `amplenoteLlmPrompt` retries a failed (non-timeout) call made with the user's saved key once on the plugin LLM license; `preferLicense` skips the key whenever a license exists; `rejectWithReason` rejects with the key's and license's failure reasons instead of resolving null. Only an answer on the license marks the license available. New helpers `_callLlmOnce`, `_parsedReply`, `_labelledFailureReason`, `_isTimeoutReason`.
+- `lib/plan-wizard/wizard-prompt-runner.js` — The callLLM leg passes `preferLicense` and `rejectWithReason`, so it uses the license rather than repeating the direct leg's key, and its failure reason reaches the user's notice.
+- `test/amplenote-llm.test.js`, `test/wizard-prompt-race.test.js` — Tests for the license retry, license preference, timeout, failure reasons, and the race reporting both legs.
+
+**Task:** An Agent Pro subscriber with an out-of-credit OpenAI key saved in Dashboard Settings had every Plan Builder prompt fail with 429, because callLLM sends a userApiKey straight to the provider and never reached the license; the license leg's failure was also invisible in the error notice.
+
+---
+
+## 2026-11-09 — Project notes join the Task Domain when picked, and remember when they were picked
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files created:**
+- `test/plan-wizard-project-note-domain.test.js` — Tests for including a picked note in the domain, the Retry/Cancel notice, and storing the pick's time and note name through to `QuarterProject`.
+
+**Files modified:**
+- `lib/plan-wizard/task-domain-fallback.js` — `includeNoteInTaskDomain` leaves a note the domain lists alone, otherwise includes it with `addTaskDomainNote` and tags it todo, counting a declined inclusion when the domain then lists the note.
+- `lib/dashboard/plan-wizard/project-source-field.jsx` — Picking or creating a note first adds it to the Task Domain; while that runs the field shows the note as pending, and a refusal shows a red field with an exclamation and Retry/Cancel, leaving the project as it was. A pick records `primaryNoteLinkedAt` and `primaryNoteName`.
+- `lib/dashboard/plan-wizard/project-card.jsx`, `projects-step.jsx`, `plan-wizard.jsx` — Pass the domain being planned down to the note picker; naming the project by hand clears the note fields.
+- `lib/dashboard/plan-wizard/projects-step-fields.js` — Draft rows and every record built from them carry `primaryNoteLinkedAt` and `primaryNoteName`.
+- `lib/plan-wizard/action-prospect.js` — Validates both fields, clearing them when the project has no primary note.
+- `lib/plan-wizard/prospect-consolidation.js` — A combined proposal keeps its survivor's note fields.
+- `lib/dashboard/project-progress-model.js`, `lib/dashboard/quarter-project.js`, `lib/dashboard/quarter-project-serialization.js` — `QuarterProject` takes both fields from the prospect and the progress note persists them.
+- `lib/dashboard/styles/plan-wizard.scss` — Pending and inclusion-failed field styles.
+
+**Task:** Instead of reading a project note's tasks from outside the Task Domain, add the note to the domain when it is picked as a Project's source, and say so in red when that fails, letting the user retry or cancel the pick. Record the note's name and pick time on the project.
+
+---
+
+## 2026-11-09 — Project note search: change a linked note, offer only notes with tasks
+
+**Model:** Claude Opus 5.5
+**Files modified:**
+- `lib/dashboard/plan-wizard/project-source-field.jsx` — A linked note's name is now a button that reopens the note search; the ↗ arrow is its own button that opens the note. Escape hint reads "keep current note" while a note is linked.
+- `lib/dashboard/plan-wizard/project-note-search-menu.jsx` — "Recently changed notes with tasks shown" caption, a "Names containing …" heading once text is typed, and no more disabled "Used by another project" entries.
+- `lib/plan-wizard/project-note-candidates.js` — Candidates come from the `taskLists` note group, leave out every note already defining a project, and, once text is typed, are the newest notes whose names contain every typed word (`noteNameContainsWords`).
+- `lib/hooks/use-project-note-candidates.js` — Takes the project name and typed text separately, counts tasks for every listed note, and drops notes whose count comes back zero.
+- `lib/dashboard/styles/plan-wizard.scss` — Hover shading on the linked note name and the open arrow; caption style; removed styles for the "taken" badge.
+- `test/plan-wizard-project-note-source.test.js` — Tests for typed name matching, the task-list group read, and the change/open buttons.
+
+**Task:** Let the user click a linked project note's name to pick a different note, and limit the note picker to recently changed notes with tasks, filtered by the words typed.
+
+---
+
+## 2026-11-09 — Plan Builder header: drop "Beta", add a close button
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files modified:**
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` — Title reads "Plan Builder"; a circled-X close button sits right of the step count and calls `onClose`.
+- `lib/dashboard/styles/plan-wizard.scss` — Styles for the close button, which stays visible at narrow widths.
+- `test/plan-wizard-ui.test.js` — Title expectation updated, close button allowed in the intent page tab order, new test that it closes the wizard.
+
+**Task:** Remove "Beta" from the Plan Builder title and give the user an obvious way to exit.
+
+---
+
+## 2026-11-09 — Double the dashboard background photo pool
+
+**Model:** GPT-6
+**Files modified:**
+- `lib/util/background-splash-images.js` — Expand the shared dashboard and quote splash pool from 50 to 100 distinct URLs. Add visually verified descriptions beside every new photo and correct mismatched descriptions in the existing splash and graveyard pools so individual backgrounds are easy to prune.
+- `build/compiled.js` — Regenerate the production plugin bundle with the expanded photo pool.
+
+**Task:** Double the poignant background image choices and describe each image in a comment.
+**Validation:** Downloaded and visually inspected thumbnails for all retained and new URLs. Verified 100 unique splash URLs, preserved the original 50 in order, and checked that every background URL has a description. `npm run build` and all 45 tests across `background-splash-images`, `app`, and `production-plugin` passed.
+
+---
+
+## 2026-11-09 — Define a Plan Builder project with a note
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files created/modified:**
+- `lib/plan-wizard/project-note-candidates.js` (created) — Note search for a project: best matches by name overlap with the project (plus search hits), recently edited notes, notes already used by another project marked, task counts for best matches.
+- `lib/plan-wizard/project-note-synopsis.js` (created) — Reduce a linked note to its opening prose, latest finished task, next open tasks, and done/total counts; a note `findNote` no longer returns reads as missing.
+- `lib/hooks/use-project-note-candidates.js`, `lib/hooks/use-project-note-synopsis.js` (created) — Debounced search; cached note reading with a trashed state that re-checks on window focus.
+- `lib/dashboard/plan-wizard/project-source-field.jsx`, `project-note-search-menu.jsx`, `project-note-synopsis.jsx` (created) — Source toggle (Name it yourself / Define with a note), note search menu with keyboard navigation and "New note from this project", red outline for an unlinked note project, linked-note link, and the "How it gets done" panel with reading and trashed states.
+- `lib/dashboard/plan-wizard/project-card.jsx`, `projects-step.jsx`, `projects-step-fields.js` — Draft rows carry `primaryNoteUuid` and `projectSourceEm`; every saved record carries `primaryNoteUuid`; a linked project takes and follows the note's name; page hint about linking notes.
+- `lib/dashboard/plan-wizard/wizard-progress-fields.js`, `wizard-progress-sidebar.jsx` — "N defined by notes" under Project list.
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` — Escape handled by a field no longer closes the wizard.
+- `lib/dashboard/plan-wizard/project-source-field.jsx` — While the source menu or note search is open, it takes Escape in the window's capture phase, so Escape closes the menu wherever focus is and never reaches the Plan Builder dialog.
+- `lib/dashboard/styles/plan-wizard.scss`, `lib/dashboard/styles/_z-indexes.scss` — Styles for the above.
+- `test/plan-wizard-project-note-source.test.js` (created), `test/plan-wizard-project-completion.test.js` — Coverage for ranking, synopsis, persistence through decisions and into QuarterProject, sidebar count, and the card's unlinked, reading, and trashed states.
+
+**Task:** Let each Plan Builder project be defined by a note so its tasks draw preferentially from that note.
+
+---
+
+## 2026-11-06 — Show fallback-included notes' tasks in Plan Builder
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files created/modified:**
+- `lib/plan-wizard/task-domain-fallback.js` — After approval, read the domain fresh until it lists a task from an included note (up to five reads, one second apart, ending early when the builder closes), so the 15-second shared task read that intent and project discovery reuse is not one taken before the host applied the inclusion. When the host never lists them, drop the shared reads instead of keeping the incomplete one. `preparePlanTaskDomain` now returns the number of notes included and accepts an injectable `wait`.
+- `lib/hooks/use-plan-wizard.js` — When the fallback included notes, rerun intent inference even if the scope already holds cached suggestions.
+- `test/plan-wizard-task-domain-fallback.test.js`, `test/plan-wizard-ui.test.js` — Cover a host that lists included notes late, one that never does, closing during retries, and the inference rerun over cached suggestions.
+
+---
+
+## 2026-11-06 — Offer todo to untagged task notes only when the notebook does not use tags
+
+**Model:** Claude Opus 5.5 (1M context)
+**Files created/modified:**
+- `lib/plan-wizard/task-domain-fallback.js` — Replace the 20-open-task threshold with a tag-use check: the offer appears only when every note with open tasks changed in the past 30 days, apart from `daily-jots` and `starter-notes` notes, carries no tag. Offer the untagged notes changed in the past three months that hold open tasks, or that hold only done tasks with one completed in those three months (read through the `untagged` filter group and `getNoteTasks`, capped at 250 notes). A note with any tag is never offered. Consent, domain inclusion, failure reporting, and the task refresh are unchanged.
+- `test/plan-wizard-task-domain-fallback.test.js` — Cover tagged and todo-tagged recent notes blocking the offer, ignored daily-jots/starter-notes tags, the 30-day and three-month boundaries, recently completed notes, a rejected untagged filter, and the existing consent, cancellation, and failure cases.
+- `test/plan-wizard-ui.test.js` — Reword the opening-fallback test for the new rule.
+- `build/compiled.js` — Regenerate the production plugin bundle.
+
+**Task:** Apply the todo tag at Plan Builder's start only for notebooks that do not organize with tags, and never to a note that already has a tag.
+
+---
+
+## 2026-11-05 — Offer recent task notes when Plan Builder's Task Domain is sparse
+
+**Model:** GPT-6
+**Files created/modified:**
+- `lib/plan-wizard/task-domain-fallback.js` (new) — Below 20 open domain tasks, find distinct notes with open tasks changed in the last 30 days and missing `todo`. Ask for consent before tagging and directly including those notes in the selected domain, report partial failures, and refresh shared task reads afterward.
+- `lib/hooks/use-plan-wizard.js` — Wait for the opening fallback before loading suggestions, cancel pending writes after closure or scope changes, and retain normal planning if the fallback fails.
+- `test/plan-wizard-task-domain-fallback.test.js` (new) — Cover the threshold, date boundaries, inherited tags, consent, cancellation, failures, async note filters, and refreshed evidence cache.
+- `test/plan-wizard-ui.test.js` — Verify that opening waits for consent and project discovery uses newly included tasks.
+- `build/compiled.js` — Regenerate the production plugin bundle with the fallback.
+
+**Task:** Expand sparse Plan Builder Task Domains with recently changed task notes after user approval, then re-query tasks for project ideas.
+
+---
+
+## 2026-11-04 — Light-reasoning tier for dictionary terms; weekly gpt-5.6 audit of one term
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/constants/llm-providers.js` — `LIGHT_REASONING_MODEL` (`gemini-3.5-flash-lite`) and `AUDIT_MODEL` (`gpt-5.6`).
+- `lib/providers/ai-provider-settings.js` — `lightModelOptions` (Gemini key → flash-lite, else the keyed provider's incidental tier) and `auditModelOptions` (OpenAI key → gpt-5.6).
+- `lib/plan-wizard/wizard-prompt-diagnostics.js` — `lightLlmOptions` and `auditLlmOptions`, which add `amplenoteAiModel`; audits get a 180s timeout.
+- `lib/plan-wizard/wizard-prompt-runner.js` — `raceWizardPrompt` asks callLLM for `amplenoteAiModel` when given, so callLLM can serve a model the user has no key for.
+- `lib/plan-wizard/stack-rank/dictionary-term-refinement.js`, `dictionary-term-discovery.js`, `task-term-discovery.js` — Routine prompts use the light tier. `refineDictionaryTerm({ audit })` uses the audit tier.
+- `lib/plan-wizard/stack-rank/dictionary-term-schedule.js` — `dueTermAudit` picks at most one previously collected term per `TERM_AUDIT_INTERVAL_MILLISECONDS` (7 days), least recently audited first. `termAuditRefinementDue` decides when an audit can refine; progress rows include `auditedAt`.
+- `lib/dashboard/work-queue/jobs/collect-term-evidence.js`, `refine-dictionary-term.js`, `project-job-requests.js` — `audit` job input. Audit collections stamp `auditedAt` and always request a refinement when they find passages. Audit refinements complete at revision `audit:<sourceDigest>`.
+- `lib/plan-wizard/stack-rank/dictionary-term-evidence-store.js` — Carries `auditedAt` over when evidence is replaced.
+- `lib/dashboard/work-queue/dashboard-queue-durable-sections.jsx` — The Queue inspector shows when a term was last audited.
+- Tests: `dictionary-term-refinement`, `fast-model-selection`, `wizard-prompt-race`.
+
+**Task:** Run dictionary term work on gemini-3.5-flash-lite instead of gpt-5.6, and use gpt-5.6 at most once a week to audit one definition.
+
+---
+
+## 2026-11-04 — Guard evidence reads against merge reports and oversized notes; hold back jobs that freeze sessions
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/util/bounded-note-content.js` (new) — `boundedNoteContent` returns a note's content only when it fits a length, else `{ omittedCharacters }`. `readNoteContentWithinLength` uses the plugin's `boundedNoteContent` embed action when the app offers it, so the plugin drops an oversized note before it crosses the bridge.
+- `lib/plugin.js` — `onEmbedCall` handles `boundedNoteContent`.
+- `lib/plan-wizard/stack-rank/dictionary-term-evidence.js` — `isAmplenoteMergeReport` (by `merge-reports` tag or "Merge report" name) excludes merge reports from evidence searches. Notes over `MAXIMUM_EVIDENCE_NOTE_CHARACTERS` (2M) are skipped.
+- `lib/plan-wizard/stack-rank/person-evidence.js` — Linked notes are read with the same length bound.
+- `lib/dashboard/work-queue/dashboard-work-job.js` — A job whose claim lapses for the second consecutive time without a checkpoint in between fails until its inputs change, instead of returning to pending. A checkpoint clears an earlier abandonment.
+- Tests: `dictionary-term-evidence`, `dashboard-work-repository`, `plugin`.
+
+**Task:** The Dashboard froze at launch three times in a row. `collectTermEvidence` for "gitclient" read a 61 MB Amplenote merge report of the Project Tasks note, and recovery resumed the abandoned job on every launch.
+
+---
+
+## 2026-10-31 — Phase timing for rankProjectTasks attempts
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/work-queue/jobs/rank-project-tasks.js` — Each attempt logs `[rank-project-tasks] attempt timing` with the handler's total time and the milliseconds spent per phase: readInputs, readTasks, readCitedTasks, prepareRanker, taskSnapshot, termRevisions, rate, savePartialScores, selectAccepted, writeResult, and durationRequest. The rate-and-pause logic moved into `_rankingTurn`, so `_rankingAttempt` can log on every exit path.
+- `lib/plan-wizard/stack-rank/stack-rank-project-tasks.js` — `_freshRanking` logs `described tasks` with the time `prospectiveTaskDetails` spent reading notes, and how many notes and tasks it read.
+
+**Task:** The queue inspector showed rankProjectTasks at 13–16s while Jev answered in 120–330ms. These logs show which phase takes the rest.
+
+---
+
+## 2026-10-31 — Shown suggestions move out of the Project Tasks note into a small per-domain note
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/suggestions/suggestion-shown-store.js` (new) — `SuggestionShownStore` keeps the latest shown time per task UUID and per idea ID in an archived `Dashboard Shown Suggestions {domain}` JSON note. Times more than 14 days before the latest one are dropped, and at most 500 entries are kept. A note written by a newer version is never overwritten.
+- `lib/dashboard/quarter-project-repository.js` — `recordShownTasks` makes one write to that note per showing. It no longer reads or writes the Project Tasks note once per project, and it no longer creates project sections for the log.
+- `lib/dashboard/project-tasks/project-task-store.js` — `readCollectedProjectTasks` adds the note's shown times to each stored project's `taskSuggestions`. `appendSuggestionLog` is removed.
+- `lib/dashboard/quarter-project-serialization.js` — Store sections no longer write `### {uuid} suggested` log headings, so rewriting a section drops them. Legacy headings are still read.
+- `lib/dashboard/project-tasks/project-suggestion-log.js`, `lib/dashboard/quarter-project.js` — Removed the unused log writers (`suggestionLogAppends`, `suggestionSectionsMarkdown`, `taskSuggestionsWithShown`, `QuarterProject#recordShownTasks`).
+- `lib/plan-wizard/stack-rank/README.md` — Suggestion log section rewritten.
+- Tests: `suggestion-shown-store` (new), plus updates to `quarter-project-repository`, `quarter-project`, `project-task-store`, `ranked-task-suggestions`, and `project-task-evidence`.
+
+**Task:** Recording each showing appended a bullet per task to a Project Tasks note that had grown to 359K characters, with one full read and write per project. A Sentry user report tied that pattern to a near-minute window-resize stall.
+
+---
+
+## 2026-10-30 — Queue outcome durations record main-thread blocking and exact start and end
+
+**Model:** Grok 4.7
+**Files created/modified:**
+- `lib/dashboard/work-queue/dashboard-work-diagnostics.js` — A finished attempt keeps `startedAt`. Main-thread stalls credited to its job type are totalled as `blockingMilliseconds` on the outcome, including stalls that straddle its start or arrive after it is recorded.
+- `lib/dashboard/work-queue/main-thread-lag-monitor.js` — Reports each blocking stall from the preferred source (long frames, or timers where the browser reports none) through `onStall`.
+- `lib/hooks/use-dashboard-work-queue.js` — Passes those stalls to the runtime's diagnostics.
+- `lib/dashboard/work-queue/dashboard-work-scheduler.js` — Records the exact start and end of an attempt, including one cancelled while running.
+- `lib/dashboard/work-queue/widget-mount-coordinator.js` — A content report records admission as its start and content as its end.
+- `lib/dashboard/work-queue/dashboard-queue-inspector-model.js` — `formattedLocalTime` and `outcomeDurationTooltip`.
+- `lib/dashboard/work-queue/dashboard-queue-inspector-sections.jsx`, `dashboard-queue-durable-sections.jsx`, `lib/dashboard/styles/dashboard-queue-inspector.scss` — The Ran for cell shows a blocked line when the main thread stalled, and hovering it shows the local start and end. A caption explains that Ran for includes waiting.
+- Tests in `dashboard-work-diagnostics`, `dashboard-queue-inspector`, `main-thread-instrumentation`, and `widget-mount-coordinator`.
+
+**Task:** Make the Debug Console queue durations interpretable: elapsed time is not a freeze, record which runs blocked the main thread, and show the exact local start and end on hover.
+
+---
+
+## 2026-10-30 — Live speed and quality evaluation of agenda model contenders
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `test/agenda-model-eval-live.test.js` (new) — Runs only with `AGENDA_MODEL_EVAL=1`. Sends `generativeRankPrompt` and `benefitRationalePrompt` to each `provider:model:thinking` contender (OpenAI with `reasoning_effort`, Gemini with `thinkingLevel`), streamed to time the first token and the whole answer; scores rankings by NDCG@5 against graded candidates (or top-5 overlap with a reference model), checks benefit sentences against the prompt's rules, estimates cost, and writes a Markdown report to `notes/agenda-model-eval/`. Extra JSON cases load from `notes/agenda-model-eval/cases/`.
+- `test/fixtures/agenda-model-eval-cases.js` (new) — A graded five-project ranking state and six benefit activities.
+
+---
+
+## 2026-10-30 — Proposed Agenda's first load of the day answers from the stored ranking
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda/proposed-agenda-service.js` — `_generateFreshSchedule` reads the task selection, quarterly plan context, and the domain's native open tasks at once; new `_rankedAgenda` uses a current stored ranking without waiting on the queue, and publishes an earlier one as a provisional agenda before waiting; the ranking is asked with native open tasks, matching the queued preparation; a fresh agenda that placed nothing is stored.
+- `lib/dashboard/proposed-agenda/proposed-agenda-archive.js` — `loadCachedProposedAgenda` serves a matching record that holds no proposals.
+- `lib/dashboard/suggestions/ranked-task-suggestions.js` — `agendaSuggestionsFromProjects` takes `storedOnly`, returns `current`, and logs hour availability when it places nothing.
+- `lib/dashboard/work-queue/jobs/prepare-day-ranking.js`, `prepared-day-ranking.js`, `lib/goal-coach-service.js` — A waiting widget's request names its surface, gets its own job key, and prepares only that surface.
+- `lib/util/all-notes-tasks.js`, `lib/hooks/use-dashboard-task-updates.js`, `lib/dashboard/work-queue/jobs/project-job-inputs.js` — Task reads are shared in flight and for 15 seconds, forgotten when the Dashboard learns a task changed.
+- `lib/hooks/use-dashboard-work-queue.js`, `lib/dashboard/work-queue/widget-mount-coordinator.js`, `dashboard-work-policy.js`, `lib/dashboard/dashboard.jsx`, `lib/hooks/use-project-maintenance-queue.js` — The maintenance gate waits for visible widgets' content (up to 20 seconds) and only then submits reconciliation.
+- `test/proposed-agenda-stored-ranking.test.js` (new), plus tests in `all-notes-tasks`, `day-ranking-store`, `proposed-agenda-archive`, `widget-mount-coordinator`, `dashboard-work-activation`, `prepared-day-ranking-consumers`, `project-maintenance-state`.
+
+---
+
+## 2026-10-29 — Plausible events for Quarter Retrospective generation and video export
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/quarter-retrospective.jsx` — `handleGenerate` fires a `generateRetrospective` Dashboard Action with style, quarter, project count, and task count once a story is built.
+- `lib/dashboard/quarter-retrospective/retrospective-video-export.jsx` — `encode` fires `exportRetrospectiveVideo` with whether the whole story was encoded, its size in MB, encode seconds, and whether it has a soundtrack.
+
+---
+
+## 2026-10-29 — Crowded calendar days offer half-hour starts beside obligations; report names the largest free block
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/suggestions/suggestion-task-slots.js` — `_daySpacing` treats a day with three or more timed obligations as crowded: placement, refill, relocation, preparation, open-start checks, and `suggestionHourAvailability` then step by half hours with no buffer instead of on the hour with 30 minutes of space. `suggestionHourAvailability` also returns `isCrowdedDay` and `largestFreeBlock`, the longest uncovered stretch of the working day.
+- `lib/dashboard/suggestions/calendar-generation-report.js` — Unfilled days name crowded-day spacing, the largest free block, and, for a cached day with no open start, that no fresh ranking ran.
+- `test/ranked-task-suggestions.test.js`, `test/calendar-generation-report.test.js` — Crowded-day placement, largest free block, and the cached no-open-start report lines.
+
+**Task:** A busy Friday suggested nothing despite many well-rated project tasks, because every hourly start fell within 30 minutes of an obligation and the cached day never ranked.
+
+---
+
+## 2026-10-28 — Run the test suite on push with GitHub Actions
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `.github/workflows/test.yml` (created) — On every push and pull request, installs dependencies, runs `npm run build`, and runs Jest. The LLM and Jev access token variables are set empty so the live-service tests, which already skip without a token, stay skipped.
+
+**Task:** Run the test suite on push, excluding tests that call external services.
+
+---
+
+## 2026-10-28 — Collaborators and recent-task terms in the user terms dictionary
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/plan-wizard/stack-rank/dictionary-people.js` (new) — The `# People` bullet format with other names (`(also Lucian)`), the owner's `Me` bullet, and `dictionaryKeyFromEntry`, which keys a person by every name.
+- `lib/plan-wizard/stack-rank/person-mentions.js` (new) — `personMentionsFromMarkdown` finds `@@` person links, `@` note links, and typed `@Name`; `mentionedPeopleFromTasks` leaves out the owner; `accountOwner` reads `app.getCurrentPerson` and the `Me` bullet.
+- `lib/plan-wizard/stack-rank/task-term-discovery.js` (new) — The prompt and acceptance rules for terms and people drawn from recently added tasks; linked people the provider omits are still added.
+- `lib/plan-wizard/stack-rank/task-term-scan-store.js` (new) — The scan's watermark, backlog, and per-person links note; `dueTaskTermScanRequests` and `tasksForTermScan`.
+- `lib/plan-wizard/stack-rank/person-evidence.js` (new) — A person's evidence leads with their linked note, the tasks naming them grouped by note, and the notes shared with them.
+- `lib/dashboard/work-queue/jobs/discover-task-terms.js` (new) — The `discoverTaskTerms` job, which queues evidence for the first people it adds.
+- `lib/plan-wizard/stack-rank/user-terms-dictionary.js` — Reads and merges the People section, matching a person by any of their names; the seed note gains the heading.
+- `lib/plan-wizard/stack-rank/dictionary-term-discovery.js` — `termPattern` matches any name in a ` / `-joined key.
+- `lib/plan-wizard/stack-rank/dictionary-term-schedule.js`, `dictionary-term-refinement.js` — People are scheduled ahead of terms and refined with a relationship-focused prompt.
+- `lib/dashboard/work-queue/jobs/collect-term-evidence.js`, `project-job-requests.js`, `reconcile-projects.js`, `dashboard-work-handlers.js`, `lib/dashboard/idea-generation/idea-generation-run-plan.js` — Wiring: evidence requests carry `domainUuid`; reconciliation schedules the scan; the handler is registered.
+- `test/collaborator-terms.test.js` (new), `test/project-maintenance-jobs.test.js` — Coverage of the above.
+- ample-web (separate repo): `ample-notes-store/actions/get-plugin-current-person.js` (new) plus wiring for `app.getCurrentPerson()` in the plugin interface, sandbox, MCP docs, and its test.
+
+**Task:** Periodically scan recently added tasks for new dictionary terms, treat the people they name (especially `@`/`@@` mentions) as high-relevance terms defined relative to the account owner, and keep them current as they reappear.
+
+---
+
+## 2026-10-27 — Task Domain task counts on the dashboard load event
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/dashboard-load-task-counts.js` (new) — `countOpenTasks` counts the initial payload's open tasks; `fetchCompletedTaskCount` reads the past seven days of completions in the Task Domain through `getCompletedTasks` with `taskDomainUUID`, giving up after 5s; `taskCountEventProps` sends each count exactly and as a range from `taskCountBucket`.
+- `lib/dashboard/dashboard-load-tracking.js` — `useDashboardLoadTracker` takes an `eventProps` option whose properties, or promised properties, are merged into `dashboardLoadSuccess`/`dashboardLoadError`.
+- `lib/dashboard/dashboard.jsx` — Starts the task count lookup when the initial payload arrives and passes it to the load tracker.
+- `test/dashboard-load-task-counts.test.js` (new), `test/dashboard-load-tracking.test.js` — Counts, ranges, lookup failures and timeouts, and the event waiting for promised properties.
+
+**Task:** Report how many open and recently completed tasks a typical user's Dashboard Task Domain holds.
+
+---
+
+## 2026-10-27 — Exported retrospective video leads the end card
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-video-export.jsx` — State moves into `useRetrospectiveVideoExport`, cleared when the story changes; `RetrospectiveVideoResult` renders the video with its Download, Share, and Upload buttons apart from the encode buttons, and "Test video" becomes "Partial video".
+- `lib/dashboard/quarter-retrospective/quarter-retrospective.jsx` — Holds the export and renders the video result beside the end card.
+- `lib/dashboard/styles/quarter-retrospective.scss` — The video result is ordered to the top of the end card slide, and the preview is framed with a border and shadow so it stands out from the slide; the hardest tasks list hides its scrollbar.
+
+**Task:** Make a finished retrospective video obvious by placing it at the top of the end card.
+
+---
+
+## 2026-10-27 — Retrospective video export trial
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-video.js` (new) — `encodeRetrospectiveVideo` draws each non-interactive slide on a 1080×1920 canvas frame by frame (tone gradient, drifting accent glows, still film grain, kicker, counting figure, headline, list, caption, each rising in on a stagger, with crossfades between slides), and encodes it with WebCodecs through mediabunny into H.264/AAC MP4, falling back to VP9 or VP8 with Opus in WebM. `videoTimeline` lays slides along the clock using `slideDurationFactor`. Bars, heap, timeline, and photos aren't drawn yet.
+- `lib/dashboard/quarter-retrospective/retrospective-video-export.jsx` (new) — End card trial: encodes three slides or the whole story, previews the result with its codecs, size, and encode time, and tries download, the Web Share API, and `attachNoteMedia`, reporting each outcome.
+- `lib/dashboard/quarter-retrospective/retrospective-soundtrack.js` — `renderSoundtrackOffline` and `RetrospectiveSoundtrack.scheduleThrough` render the synthesized loop into an AudioBuffer on an OfflineAudioContext, fading out over its last seconds.
+- `lib/dashboard/quarter-retrospective/retrospective-end-card.jsx`, `quarter-retrospective.jsx` — The end card takes extra controls; the retrospective passes it the video trial.
+- `lib/dashboard/styles/quarter-retrospective.scss` — Trial styles; the end card slide centers safely and scrolls once its content outgrows it.
+- `package.json` — Adds `mediabunny` for MP4/WebM muxing.
+- `test/quarter-retrospective-video.test.js` (new), `test/quarter-retrospective-soundtrack.test.js` — Video timeline and offline scheduling.
+
+**Task:** Test whether a Quarter Retrospective can be exported as a shareable video with its soundtrack.
+
+---
+
+## 2026-10-27 — Retrospective photo slides pick a layout from the image's shape and caption with the task
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-slide.jsx` — `ImageSlide` measures the photo's natural size on load; `imageLayoutFromDimensions` keeps the full-bleed cover layout for images within 1.25x of the slide's aspect ratio and frames any other image whole between headline and caption. The photo stays hidden until its layout is known.
+- `lib/dashboard/styles/quarter-retrospective.scss` — Photo frame element, fade-in, and the `retrospective-slide--image-framed` layout (contained, rounded image on the slide's tone, no scrim, caption clamped to four lines).
+- `lib/dashboard/quarter-retrospective/retrospective-story-writer.js` — Image offers carry their task's text, shown to the AI and used as the photo slide's caption; a missing headline falls back to "A Q{n} moment from the archives…" instead of dropping the slide.
+- `lib/dashboard/quarter-retrospective/retrospective-data.js` — Media candidates carry `taskText`.
+- `lib/dashboard/quarter-retrospective/retrospective-statistics.js` — `retrospectiveTaskText` drops images and footnote definitions and reduces footnote references to their label.
+- `test/quarter-retrospective-story-writer.test.js`, `test/quarter-retrospective-gathering.test.js`, `test/quarter-retrospective-statistics.test.js` — Layout choice, task-text captions, archive headline fallback, and task text cleaning.
+
+**Task:** Keep wide screenshots in the retrospective slideshow legible instead of cropping them to a magnified sliver.
+
+---
+
+## 2026-10-27 — Task mountain legend shows task counts and truncates long names
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-heap.jsx` — `legendEntryText` follows each legend entry with its completed task count in parentheses, including "No project", and cuts project names longer than 50 characters with an ellipsis (the full name stays in the entry's title).
+- `test/quarter-retrospective-story-writer.test.js` — Legend entries carry counts; a long project name is truncated.
+
+**Task:** Show per-project task counts in the retrospective's task mountain legend and truncate long project names.
+
+---
+
+## 2026-10-27 — Retrospective backfills completed task <> project relationships
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-project-backfill.js` (new) — Once a quarter's projects are known, every project rates the quarter's unassigned completed tasks in parallel through the decisions endpoint (APPLICABILITY_CRITERIA, batches of 20). Each task goes to its highest-rated project when that rating reaches DEFAULT_MINIMUM_MATCH_SCORE (6). Unclassified tasks come first, and tasks the live classifier judged "None" fill the last batch's open room. Every verdict is written to the quarter's completed task ledger as `classifiedBy: "retrospective"`, so a later run doesn't ask again. Projects inferred from themes are saved to the past quarter's project task store as Past projects, and their theme tasks are written to the ledger as `classifiedBy: "themes"`.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` — Runs the backfill beside month digestion when the quarter has projects, or after inference when it doesn't. Recomputes statistics and project credits from the backfilled ledger, and shares one lazily resolved decisions endpoint with the difficulty ratings.
+- `lib/dashboard/quarter-retrospective/retrospective-data.js` — Gathering returns the scope and each store project's example open tasks, and names a saved inferred project's origin "themes".
+- `lib/dashboard/quarter-retrospective/retrospective-month-digests.js` — Exports INFERRED_PROJECT_UUID_PREFIX.
+- `lib/dashboard/projects/completed-task-project-classification.js` — CLASSIFIED_BY gains `retrospective` and `themes`.
+- `test/quarter-retrospective-project-backfill.test.js` (new) — Candidate order and padding, highest-project-above-cutoff crediting, per-project requests, a ledger for a quarter of the prior year, and an end-to-end generation that infers, saves, credits, and is read back without asking again.
+
+**Task:** Group a past quarter's task cairn by project by backfilling completed task <> project relationships through the decisions endpoint.
+
+---
+
+## 2026-10-27 — Retrospective Victory Value sums rounded to hundredths
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-statistics.js` — `_roundedVictoryValue` and `_victoryValueSum` round the quarter's total, the quarter before's total, the busiest day's, and each project's Victory Value to hundredths, so floating point error (2257.499999999996) no longer reaches the slides or the story writer's prompt.
+- `test/quarter-retrospective-statistics.test.js` — 0.1 + 0.2 sums to 0.3 in every total.
+
+**Task:** Fix the unrounded Victory Value on the quarter-over-quarter slide.
+
+---
+
+## 2026-10-27 — Retrospective processing screen keeps and confirms the user's ranking
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-payoff-ranking.jsx` — `locked` prop disables the chips' buttons and dragging, dims the areas, and shows "Progress saved!" in place of the Save/Skip buttons; `onRankingChange` reports the ranked projects after each user move.
+- `lib/dashboard/quarter-retrospective/quarter-retrospective.jsx` — tracks the processing screen's unsaved ranking and any save in flight; when the story is ready, `persistGenerationRanking` lets an in-flight save finish, saves an unsaved ranking, and, when a ranking from that screen is stored, locks the ranking for `RANKING_PROGRESS_SAVED_MILLISECONDS` (1000ms) before the story plays.
+- `lib/dashboard/styles/quarter-retrospective.scss` — locked ranking and saved message styles.
+- `test/quarter-retrospective-payoff-ranking.test.js` — move reporting and the locked state.
+
+**Task:** Make clear that the ranking arranged while a retrospective generates is saved, not discarded.
+
+---
+
+## 2026-10-27 — Retrospective takeaways note: spaced paragraphs and colored month tables
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-takeaways.js` — `_spacedProse` puts an empty paragraph (`\`) between the paragraphs of the Summary, Calendar, What paid off, and month prose; Month by month is now one two-row table per month, its name in white on a dark shade of the month's color (`MONTH_CELL_COLORS`) over a body cell in a light hue of it with dark text, separated by a blank line. The body cell points to a footnote holding the task count and mood, prose, and highlights, since a table cell holds only one line of markdown; the definitions close the note.
+- `test/quarter-retrospective-takeaways.test.js` — the month tables and footnote, and the paragraph spacing.
+
+**Task:** Make the takeaways note's paragraphs readable and give each month a colored table.
+
+---
+
+## 2026-10-27 — One file for every z-index
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/styles/_z-indexes.scss` (new) — every z-index in the dashboard's stylesheets as a named variable, grouped by the stacking context it competes in (the document, the grid shell, the plan wizard, the retrospective overlay and slide, single elements inside a widget), with the values set outside the stylesheets (tippy's 9999, confetti's 2000) noted.
+- `config-popup.scss`, `dashboard.scss`, `dashboard-tippy.scss`, `graveyard.scss`, `idea-run-progress.scss`, `peak-hours.scss`, `plan-wizard.scss`, `proposed-agenda-popover.scss`, `quarter-retrospective.scss` (all in `lib/dashboard/styles/`) — use those variables in place of literal numbers and their own `$…-z-index` variables; the compiled CSS is unchanged.
+
+**Task:** Give every stacking context one file to read its z-index values from.
+
+---
+
+## 2026-10-27 — Retrospective options fit one screen
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-options.jsx` — headline is now "Craft your Q{n} retrospective"; the images toggle and note tag picker sit behind an "Advanced options" link that disappears once clicked.
+- `lib/dashboard/styles/quarter-retrospective.scss` — `.retrospective-options-advanced-link`; on a story with tap zones the slide sits above them with presses passing through except on its buttons, so the Victory Value explanation's "How do we calculate it?" prompt can be hovered and clicked (the slide's `isolation: isolate` had trapped the explanation's z-index beneath the tap zones); the progress bar moves up a layer so the raised slide doesn't cover it.
+- `lib/dashboard/quarter-retrospective/retrospective-story.jsx` — `retrospective-story--tappable` modifier when the slide isn't interactive.
+- `test/planning-quarter-pager.test.js`, `test/quarter-retrospective-note-tag.test.js` — the new headline, and the tag picker revealed through the link.
+
+**Task:** Fit the retrospective's first options screen without scrolling, and fix the explanation prompt that changed slides instead of opening its detail.
+
+---
+
+## 2026-10-27 — Retrospective: Victory Value slide explains Victory Value
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js` — `VICTORY_VALUE_EXPLANATION` and `VICTORY_VALUE_CALCULATION`; the Victory Value total slide carries them as `explanation` and `explanationDetail`, and `slideWordCount` counts the explanation.
+- `lib/dashboard/quarter-retrospective/retrospective-slide.jsx` — `SlideExplanation`: the explanation paragraph and an ⓘ "How do we calculate it?" prompt whose detail opens on mouse hover and toggles on click or tap; reports open changes through `onDetailOpenChange`.
+- `lib/dashboard/quarter-retrospective/retrospective-story.jsx` — holds the slide while its explanation detail is open.
+- `lib/dashboard/styles/quarter-retrospective.scss` — explanation, prompt, icon, and detail popover.
+- `test/quarter-retrospective-story.test.js`, `test/quarter-retrospective-statistics.test.js` — coverage.
+
+---
+
+## 2026-10-27 — Retrospective: retrospective note tag and "Document how you did it" notes
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-note-tag.js` — new: the tag retrospective notes are given (setting `RETROSPECTIVE_NOTE_TAG`, default `planning/retrospective`), typed tags normalized, saved once when changed, and suggestions from the tags on the user's planning notes.
+- `lib/dashboard/quarter-retrospective/retrospective-project-documentation.js` — new: writes or reopens "How I pulled off {project} ({quarter})", listing the project's hardest tasks above headings to fill in, tagged with the retrospective tag.
+- `lib/dashboard/quarter-retrospective/retrospective-data-note.js`, `project-payoff-rankings.js`, `retrospective-takeaways.js` — the archived data and payoff ranking notes and the takeaways note are created with the Dashboard tag plus the retrospective tag; takeaways no longer use the planning note tag.
+- `lib/dashboard/quarter-retrospective/retrospective-options.jsx` — tag picker (text input with suggestions) under the toggles; the tag goes with generate and play.
+- `lib/dashboard/quarter-retrospective/quarter-retrospective.jsx` — loads tag suggestions, saves the chosen tag, and shows the hardest tasks slide as interactive (scrollable, a link per project, Continue) that opens the project's documentation note.
+- `lib/dashboard/quarter-retrospective/retrospective-slide.jsx` — `SlideHardestTasks` exported with an optional per-project "Document how you did it" link and failure message.
+- `lib/constants/settings.js` — `DEFAULT_RETROSPECTIVE_TAG`, `SETTING_KEYS.RETROSPECTIVE_NOTE_TAG`.
+- `lib/dashboard/styles/quarter-retrospective.scss` — tag picker, document links, and Continue button.
+- `test/quarter-retrospective-note-tag.test.js` — new coverage.
+
+---
+
+## 2026-10-27 — Retrospective: "Aw no you di'nt" hardest tasks slide
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-task-difficulty.js` — new: asks a decisions model a 1–10 difficulty score question per completed task of each project with at least 5 completions, batched per project with an anchored rubric; picks each project's three hardest tasks rated above 5; builds the scrolling "Aw no you di'nt" slide and places it before the summary; records and reuses ratings by task UUID.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` — rates task difficulty alongside story writing (decisions model only, injectable `decisionsEndpointFactory`), adds the slide, records a Task Difficulty section; earlier data notes are read once and shared with digest reuse.
+- `lib/dashboard/quarter-retrospective/retrospective-statistics.js` — `completionsWithInferredProjects` exported.
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js`, `retrospective-data-note.js` — `SLIDE_KINDS.hardestTasks`, `RETROSPECTIVE_SECTIONS.taskDifficulty`.
+- `lib/dashboard/quarter-retrospective/retrospective-slide.jsx`, `lib/dashboard/styles/quarter-retrospective.scss` — slide subheadline and the hardest tasks list.
+- `test/quarter-retrospective-task-difficulty.test.js` — new coverage.
+
+---
+
+## 2026-10-27 — Retrospective: regenerate empty stories, skip one-project rankings, rank by moving projects up
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-payoff-ranking.jsx` — rewritten as two areas: projects start unranked (wrapping pills) and move up into the ranked list by drag or ↑, reorder there with drag or ↑/↓, and return with ×. Only ranked projects are saved; Save needs at least one. `movedPayoffProject` replaces `reorderedProjects`. A document-wide dragover listener scrolls the nearest scrolling ancestor while a drag nears its edge.
+- `lib/dashboard/quarter-retrospective/project-payoff-rankings.js` — `payoffRankingGroups` splits projects into those a stored ranking names and the rest; `_payoffRankOfProject` shared with `projectsInPayoffOrder`.
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js`, `quarter-retrospective.jsx` — `MINIMUM_PAYOFF_RANKING_PROJECTS` (2) gates the ranking slide and the processing screen's ranking.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` — saved and generated retrospectives carry `totalTaskCount` from their statistics.
+- `lib/dashboard/quarter-retrospective/retrospective-options.jsx` — a saved story with no tasks is offered as "Generate a new X retrospective" rather than played, and its card notes "with no tasks".
+- `lib/dashboard/styles/quarter-retrospective.scss` — ranked and unranked areas, unranked pills, and a scrolling ranking slide; the ranked list no longer scrolls on its own.
+- `test/quarter-retrospective-payoff-ranking.test.js`, `test/quarter-retrospective-entry.test.js` — coverage for the above.
+
+**Task:** Offer regeneration for a zero-task retrospective, skip ranking a single project, and make payoff ranking distinguish a chosen order from the default one.
+
+---
+
+## 2026-10-27 — Retrospective logs the completed tasks it read
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-data.js` — `_quarterCompletedTasks` logs the window, domain, count, and a sample of the tasks it read; when the domain returns none it also logs the count across every domain (`_everyDomainCompletedTaskCount`). The gathered count, genuinely completed count, and in-quarter count are logged too.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js`, `quarter-retrospective.jsx` — log the total task count a story is generated from, and when a saved story is played instead.
+
+**Task:** Diagnose a retrospective that reports 0 completed tasks for a quarter whose task domain shows 10–15 completions.
+
+---
+
+## 2026-10-27 — Quarterly Planning opens on the previous quarter early in a quarter; retrospective options polish
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-page.js` — `homePageOffset`: -1 (previous quarter beside the current one) until the current quarter's midpoint, counted in calendar days, then 0.
+- `lib/dashboard/planning.jsx` — the pager stores steps from that home pair (`pageStep`), so the Back button, the week section and a domain change all return to it.
+- `lib/dashboard/quarter-retrospective/retrospective-options.jsx` — the Synthwave vibe is now "Synth", so every vibe's emoji and name share a line.
+- `lib/dashboard/styles/quarter-retrospective.scss` — the options, status and payoff ranking screens scroll without a visible scrollbar.
+- `test/quarter-page.test.js`, `test/planning-quarter-pager.test.js`, `test/planning-plan-begun.test.js`, `test/quarter-retrospective-entry.test.js` — coverage for the above.
+
+**Task:** Hide the retrospective options' scrollbar, keep vibe titles on one line, and show the previous and current quarters until the current one is half done.
+
+---
+
+## 2026-10-27 — Retrospective end card and takeaways note (phase 10)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-takeaways.js` (new) — `saveRetrospectiveTakeaways`: one AI call writes the prose of the `{domain} Q{q} {year} Retrospective` note, whose tables come from the statistics; a fallback summary without an AI; the note's UUID recorded in the data note's Takeaways section, and an existing note reopened rather than duplicated.
+- `lib/dashboard/quarter-retrospective/retrospective-end-card.jsx` (new) — Save takeaways / Open takeaways note, Replay retrospective, and Generate new.
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js` — `SLIDE_KINDS.endCard`, `END_CARD_SLIDE_ID`, `slidesWithEndCard`; the payoff ranking slide now sits before the end card.
+- `lib/dashboard/quarter-retrospective/retrospective-story.jsx` — `onReplay` for interactive slides; an interactive last slide finishes the story and hides the footer's control.
+- `lib/dashboard/quarter-retrospective/retrospective-statistics.js` — `projectTotals` for every project, from which the leaders are now ranked.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` — `retrospectivePromptRequester` exported; saved retrospectives carry `takeawaysNoteUuid`.
+- `lib/dashboard/quarter-retrospective/quarter-retrospective.jsx` — every story ends on the end card; saving takeaways closes the retrospective and opens the note.
+- `lib/dashboard/styles/quarter-retrospective.scss` — end card layout and buttons.
+- `test/quarter-retrospective-takeaways.test.js` (new), `test/quarter-retrospective-payoff-ranking.test.js`, `test/quarter-retrospective-statistics.test.js` — coverage for the above.
+- `doc/plan-quarter-retrospective.md` — phase 10 marked built.
+
+**Task:** Complete phase 10 of the Quarter Retrospective plan.
+
+---
+
+## 2026-10-26 — Retrospective backgrounds and motion (phase 8), project payoff ranking (phase 9)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/util/background-splash-images.js` — `RETROSPECTIVE_BACKGROUND_URLS`, twelve abstract Unsplash textures, and `retrospectiveBackgroundUrl(seed, slidePosition)` at a 720x1280 story size.
+- `lib/dashboard/quarter-retrospective/retrospective-slide.jsx` — `SlideBackdrop`: an optional blended photo, two accent shapes in one of `BACKDROP_LAYOUT_COUNT` layouts, and grain; `children` replace the body for an interactive slide.
+- `lib/dashboard/quarter-retrospective/retrospective-story.jsx` — `backgroundPhotoSeed` and next-photo preloading; `renderInteractiveSlide`, under which a slide's clock, tap zones, hold-to-pause, and Space step aside until its controls call `onDone`.
+- `lib/dashboard/styles/quarter-retrospective.scss` — per-tone accent colors, backdrop layers and drift, scale-and-blur slide entrance, blurred part entrances, and the payoff ranking's chips, processing-screen layout, and slide.
+- `lib/dashboard/quarter-retrospective/project-payoff-rankings.js` (new) — the yearly `{domain} Project Payoff Rankings {year}` note: save, read, recall the most recent ranked quarters, and order projects as last ranked.
+- `lib/dashboard/quarter-retrospective/retrospective-payoff-ranking.jsx` (new) — the draggable ranking list with Move up/down buttons, tooltip, save, and skip.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` — `onProjectsKnown`, and `projects` on generated and saved retrospectives.
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js` — `SLIDE_KINDS.payoffRanking` and `slidesWithPayoffRanking`.
+- `lib/dashboard/quarter-retrospective/quarter-retrospective.jsx` — Spotify photo seed; reads and saves the ranking; the ranking on the processing screen and as a story slide while the quarter is unranked.
+- `lib/plan-wizard/prospect-evidence.js`, `lib/plan-wizard/prospect-discovery.js` — `payoffRankings` evidence (`recalledPayoffRankings`) listed inside the prompt's evidence fence, with instructions to weigh it.
+- `lib/hooks/use-payoff-highlights.js` (new), `lib/dashboard/plan-wizard/intent-step.jsx`, `lib/dashboard/plan-wizard/plan-wizard.jsx`, `lib/dashboard/styles/plan-wizard.scss` — the intent page's "What paid off" strip.
+- `jest.config.js` — the `.scss` stub is matched before path prefixes, so `dashboard/styles/*.scss` imports no longer load the real stylesheet as JavaScript.
+- `test/quarter-retrospective-payoff-ranking.test.js` (new), `test/quarter-retrospective-story.test.js`, `test/background-splash-images.test.js`, `test/quarter-retrospective-data-note.test.js` — coverage for all of the above.
+- `doc/plan-quarter-retrospective.md` — status of phases 8 and 9.
+
+**Task:** Continue the Quarter Retrospective plan through phases 8 and 9.
+
+---
+
+## 2026-10-26 — Retrospective slides with few words hold for less time
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js` — `slideWordCount` counts a slide's main-content words (headline, caption, rows, bars, month columns); `slideDurationFactor` keeps a slide's own `durationFactor` and otherwise holds a slide under `SHORT_SLIDE_WORD_LIMIT` words for `SHORT_SLIDE_DURATION_FACTOR` (7/12) of the usual time.
+- `lib/dashboard/quarter-retrospective/retrospective-story.jsx` — the story clock uses `slideDurationFactor`, so AI-rewritten slides are judged by the words shown.
+- `test/quarter-retrospective-statistics.test.js` — the intro and Victory Value slides shorten, the heap stays long, data slides stay at the usual length; the word count's exclusions.
+
+**Task:** Give slides with under ten words of main content a shorter time on screen.
+
+---
+
+## 2026-10-26 — Dev server moves to port 3030
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `dev/dev-server.js` — the dashboard defaults to port 3030 and esbuild's own server to 3031, off the 3000 that Rails and its kubectl port-forward hold.
+- `lib/util/dev-environment.js` — `DEV_SERVER_PORTS` follows to 3030 and 3031.
+- `test/debug-evaluate.test.js` — the new ports, and a LAN address on 3000 no longer reads as the dev server.
+- `README.md` — the new port and its environment overrides.
+
+**Task:** Start the dashboard dev server on a port other than 3000.
+
+---
+
+## 2026-10-26 — Retrospective soundtrack synthesized per vibe, with a remembered mute
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-soundtrack.js` (new) — `RetrospectiveSoundtrack`, a Web Audio loop per soundtrack vibe (pad, bass, kick, snare, hi-hat) scheduled ahead of the audio clock, with play, pause, fade-out, mute and stop; `createRetrospectiveAudioContext`; `SOUNDTRACK_VIBE_ARRANGEMENTS`, whose tempos fit whole bars into a slide.
+- `lib/dashboard/quarter-retrospective/retrospective-story.jsx` — `useStorySoundtrack` plays the loop for an audio context and vibe, pausing with the user's pause, fading out after the last slide, and restarting on Replay.
+- `lib/dashboard/quarter-retrospective/quarter-retrospective.jsx` — makes the audio context in the Play or Generate click; a "Sound on/off" header button saved to a setting, defaulting to muted under reduced motion; closes the context with the overlay.
+- `lib/constants/settings.js` — `RETROSPECTIVE_SOUNDTRACK_MUTED`.
+- `test/fake-audio-context.js` (new) — an AudioContext stand-in for jsdom that records nodes and source starts.
+- `test/quarter-retrospective-soundtrack.test.js` (new), `test/quarter-retrospective-story.test.js`, `test/quarter-retrospective-entry.test.js` — tempo, scheduling, mute, pause, fade and restart; the story following its pause and end; the header button and its saved setting.
+- `doc/plan-quarter-retrospective.md` — phase 8's audio as built.
+
+**Task:** Phase 8 of the retrospective, audio first.
+
+---
+
+## 2026-10-26 — Plan Builder reconciles projects discovered after its first idle
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/hooks/use-project-task-ranking.js` — the reconciliation request is stamped with a new revision each time the provider returns idle, instead of once per mount, so a reconciliation that completed before discovery no longer makes the post-discovery request a no-op.
+- `test/project-maintenance-queue-hooks.test.js` — a second idle submits the same job key under a new revision.
+
+**Task:** Projects discovered in a fresh Plan Builder session showed no similarity scores on the Project evidence sources page.
+
+---
+
+## 2026-10-26 — Retrospective opens on its options, AI-written styles gated on an AI or a saved story
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/quarter-retrospective.jsx` — always opens on the options screen, so the soundtrack vibe is chosen before anything plays; plays saved stories with the chosen vibe; the header's Options link replaces Generate new, and its Play links show only while a story plays.
+- `lib/dashboard/quarter-retrospective/retrospective-options.jsx` — Roast and Spotify are disabled, noting "Needs an AI provider", when no AI is available and their story wasn't saved; a saved style says "Saved {date}"; the first choice is the most recently saved style, else Spotify when it can be chosen, else Data; one button plays the chosen style's saved story or generates it, with "Generate a new {Style} one" beneath when the AI can write it.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` — `retrospectiveAiAvailable`, which the prompt requester now uses too.
+- `lib/dashboard/styles/quarter-retrospective.scss` — the options screen's primary and secondary buttons.
+- `test/quarter-retrospective-entry.test.js` — options first, gating with and without an AI, and playing a saved Spotify story without one.
+- `doc/plan-quarter-retrospective.md` — the flow's options screen.
+
+**Task:** Disable Spotify without an AI or a saved story, and always show the options screen first.
+
+---
+
+## 2026-10-26 — Retrospective comparison with the quarter before, story pacing, options screen choices
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/constants/quarters.js` — `quarterBefore`, the counterpart of `quarterAfter`.
+- `lib/dashboard/quarter-retrospective/retrospective-data.js` — gathering also reads the quarter before's completed tasks and ledger, failing soft, and passes its totals to the statistics.
+- `lib/dashboard/quarter-retrospective/retrospective-statistics.js` — `quarterTotals`, and `quarterOverQuarter`: the previous totals and the percent change in tasks and Victory Value.
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js` — the `previous-quarter` slide: the larger growth as "+N%", a dip of 10% or less as "Less intense, more room to breathe", and no slide for a larger drop.
+- `lib/dashboard/quarter-retrospective/retrospective-story-writer.js` — a prompt rule for framing the comparison slide.
+- `lib/dashboard/quarter-retrospective/retrospective-story.jsx` — slides play 7.2 seconds instead of 6; a pause hint on the first slide, a "Paused" badge, and an accessible label on the Pause button.
+- `lib/dashboard/quarter-retrospective/retrospective-options.jsx` — style and soundtrack vibe (Chill, Synthwave, Anthem) as radio card groups with defaults, and a Generate button; the vibe goes in the request's options.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` — `RETROSPECTIVE_SOUNDTRACK_VIBES` and the default style and vibe.
+- `lib/dashboard/styles/quarter-retrospective.scss` — the choice cards, Generate button, Pause pill, hint, and badge.
+- `dev/dev-retrospective-tasks.js` — a lighter quarter before last, for the comparison.
+- `test/quarter-retrospective-statistics.test.js`, `test/quarter-retrospective-entry.test.js`, `test/quarter-retrospective-story.test.js` — comparison, options, and pause tests.
+- `doc/plan-quarter-retrospective.md` — the follow-ups to phase 7, the options screen flow, and the vibe in phase 8.
+
+**Task:** Compare a retrospective with the quarter before, slow the story and make pausing findable, and offer style and soundtrack choices before generating.
+
+---
+
+## 2026-10-26 — Retrospective dev fixture, shared reduced-motion check, payoff ranking timing
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `dev/dev-retrospective-tasks.js` (new) — 45 completed tasks dated in the quarter before the current one, clustered in three theme notes (an Etsy spell shop launch, getting outdoors, measuring AI for Microsoft), so the dev dashboard has a quarter to retrospect. Only the Node dev app imports it.
+- `dev/dev-app.js` — adds the fixture's tasks to the sample tasks, and `findNote` falls back to the fixture's theme notes.
+- `lib/util/browser-utility.js` (new) — a home for browser helpers, starting with `prefersReducedMotion()`, which replaces private copies in `retrospective-slide.jsx`, `retrospective-heap.jsx`, and the inline check in `intent-reading-page.jsx`.
+- `doc/plan-quarter-retrospective.md` — phase 9's payoff ranking is first asked for once generation has started.
+
+**Task:** Dev data for the Quarter Retrospective and small follow-ups to phase 7.
+
+---
+
+## 2026-10-26 — Quarter Retrospective story generation per style (phase 7)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-story-writer.js` (new) — one AI call per Roast or Spotify generation rewrites each slide's kicker, headline, and caption in the style's voice, may add up to three photo slides from images the month digests chose, and names a Spotify quarter's genre. Figures, lists, bars, and the heap stay as the statistics built them; a rewritten line citing a number outside the slide's facts and the quarter's totals, or running past its limit, is put back, and only offered images are shown. A failed call keeps the plain words and records `generatedBy: "fallback"`.
+- `lib/dashboard/quarter-retrospective/retrospective-heap-layout.js` (new) — drops blocks onto a pile shaped into a mountain by a slope toward the middle column, deterministically.
+- `lib/dashboard/quarter-retrospective/retrospective-heap.jsx` (new) — draws the heap as falling elements up to 400 blocks and on a canvas above that, with a project legend; reduced motion shows the finished pile.
+- `lib/dashboard/quarter-retrospective/retrospective-statistics.js` — adds `progressHeap`: a [slot, size] block per completion, colored by project (five busiest, then "Other projects") and sized by Victory Value quantile.
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js` — slide kinds (figure, bars, heap, timeline, image); a heap slide, a month timeline that replaces the month-by-month list, and done-vs-open bars.
+- `lib/dashboard/quarter-retrospective/retrospective-slide.jsx` — renderers per kind, including photo slides that drop an image that fails to load.
+- `lib/dashboard/quarter-retrospective/retrospective-story.jsx` — a slide's `durationFactor` stretches its clock.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` — Roast and Spotify available; refuses them without an AI; records the story's `generatedBy` and the images shown.
+- `lib/dashboard/quarter-retrospective/retrospective-options.jsx` — an images toggle.
+- `lib/dashboard/styles/quarter-retrospective.scss` — bars, timeline, heap, and photo slide styles.
+- `test/quarter-retrospective-story-writer.test.js` (new); statistics, data note, entry, and month digest tests updated.
+- `doc/plan-quarter-retrospective.md` — phase 7 marked built.
+
+**Task:** Phase 7 of the Quarter Retrospective plan.
+
+---
+
+## 2026-10-26 — Quarter Retrospective month digests and theme inference (phase 6)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-month-digests.js` (new) — asks the AI to digest each month (highlights, themes, notable moments, mood, images, calendar narrative) with short task and image identifiers; packs a month's tasks into prompts of at most 40,000 characters by whole weeks, dropping footnotes and then the least valuable tasks when a month needs more than four prompts; validates replies against the ids offered; merges a split month's parts; infers 3–7 projects from the months' themes with each task in one project; builds a plain digest when no AI answers; reuses digests from another style's generation when a month's task count is unchanged.
+- `lib/dashboard/quarter-retrospective/retrospective-calendar-categories.js` (new) — sorts calendar events into Personal, Focus blocks, External meetings, 1:1s, Team meetings, and Large meetings from title keywords and attendee counts, counting recurring titles and sampling frequent ones. Replaces the attendee-count categories in `retrospective-task-evidence.js`.
+- `lib/util/concurrency.js` (new) — `forEachWithConcurrency`, moved out of `retrospective-data.js`.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` — runs the digests through `raceWizardPrompt` with a 150-second timeout, recomputes statistics with inferred projects, and records Month 1–3 and inferred projects.
+- `lib/dashboard/quarter-retrospective/retrospective-statistics.js` — credits completions to inferred projects for the project rankings, leaving intent alignment to the ledger; adds `projectsInferred`.
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js` — month-by-month slide from the digests; project captions note inferred projects.
+- `lib/dashboard/quarter-retrospective/retrospective-data.js` — returns the statistics inputs so statistics can be recomputed.
+- `test/quarter-retrospective-month-digests.test.js` (new); gathering, statistics, and data note tests updated.
+- `doc/plan-quarter-retrospective.md` — phase 6 marked built.
+
+**Task:** Phase 6 of the Quarter Retrospective plan.
+
+---
+
+## 2026-10-26 — Quarter Retrospective gathering (phase 5)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-task-evidence.js` (new) — resolves a task's Rich Footnotes from the task and then its note, extracts http(s) images, counts each project's tasks still open at quarter end, and totals meeting time by attendee count.
+- `lib/dashboard/quarter-retrospective/retrospective-data.js` — `gatherRetrospectiveQuarter` replaces `loadRetrospectiveStatistics`: completions enriched with footnote text, images, note names, and tags (each note looked up once, six at a time); projects from the task store and ledger; open-at-quarter-end counts; the calendar journal; image candidates; progress reported per step.
+- `lib/dashboard/quarter-retrospective/retrospective-statistics.js` — tasks with no length count as 60 minutes; adds calendar coverage, defaulted duration count, done and open per project, first and last completion, longest streak, meeting minutes by category, and monthly counts.
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js` — done vs. open, streak, and meetings slides; the time slide notes defaulted durations.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` — records Projects, Calendar, and Media sections and passes progress through.
+- `lib/dashboard/quarter-retrospective/quarter-retrospective.jsx` — the status screen shows each generation step.
+- `test/quarter-retrospective-gathering.test.js` (new); `test/quarter-retrospective-statistics.test.js`, `test/quarter-retrospective-data-note.test.js` updated.
+- `doc/plan-quarter-retrospective.md` — phase 5 marked built.
+
+**Task:** Phase 5 of the Quarter Retrospective plan.
+
+---
+
+## 2026-10-26 — Quarter Retrospective entry point, data note, and options screen (phase 4)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-data-note.js` (new) — names, reads, and writes the archived `{domain} Q{q} {year} {Style} Retrospective Data` note. Each section holds one compact JSON fence with backticks escaped; a payload too large for one write continues in "(continued N)" sections, appended one write at a time. A single-part section can be replaced in place; "Generate new" starts the style's note over. Finds the quarter's saved styles, newest first.
+- `lib/dashboard/quarter-retrospective/retrospective-generation.js` (new) — generates the Data style from the quarter's statistics and records Request, Statistics, and Story, still playing the story when the note can't be written; lists playable saved retrospectives; reads the quarter's calendar journal coverage.
+- `lib/dashboard/quarter-retrospective/retrospective-options.jsx` (new) — style cards (Roast and Spotify shown as coming soon) and the calendar toggle when the journal covers any of the quarter.
+- `lib/dashboard/quarter-retrospective/quarter-retrospective.jsx` (new) — the container: plays the newest saved retrospective or shows the options, with header links for Open plan note, the other saved styles, and Generate new.
+- `lib/dashboard/planning.jsx`, `lib/dashboard/styles/planning.scss` — every past quarter's card reads "✨ Retrospective" and opens it, with or without a plan note.
+- `lib/dashboard/quarter-retrospective/retrospective-overlay.jsx` — fixed its stylesheet import, which did not resolve from the subfolder and broke the build once the overlay was first imported.
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js` — adds the Spotify style.
+- `lib/dashboard/quarter-retrospective/calendar-history-journal.js`, `lib/plan-wizard/vision-guide-notes.js` — a newly created note is written through the identifier `findNote` resolves rather than the local one `createNote` returns; `resolvedNoteHandle` is exported for this.
+- `lib/dashboard/styles/quarter-retrospective.scss` — header links, options and status screens, style cards.
+- `test/quarter-retrospective-data-note.test.js`, `test/quarter-retrospective-entry.test.js` (new); `test/planning-quarter-pager.test.js` updated.
+- `doc/plan-quarter-retrospective.md` — phase 4 marked built.
+
+**Task:** Phase 4 of the Quarter Retrospective plan.
+
+---
+
+## 2026-10-26 — Quarter Retrospective calendar history journal (phase 3)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/calendar-history-journal.js` (new) — records each calendar read into an archived `{domain} Calendar History {year}` note, one `## YYYY-MM-DD` section per day, keeping titles, times, calendar names, and attendee counts but no attendee names. A later observation replaces a day, an empty read never erases recorded events, no journal is created for a calendar with no events, a window across New Year writes to both years, and a session skips re-reading when nothing changed. Also reads a date range back with its day coverage.
+- `lib/dashboard/dated-note-sections.js` (new) — the date-ordered day-section insertion, moved out of the completed task ledger so the journal can share it.
+- `lib/dashboard/projects/completed-task-project-ledger.js` — writes days through the shared module.
+- `lib/hooks/use-calendar-history-journal.js` (new) — records the Dashboard's calendar read for the active domain 20 seconds after it arrives.
+- `lib/hooks/use-external-calendar-events.js` — exports the four-day window length.
+- `lib/dashboard/dashboard.jsx` — mounts the journal hook.
+- `test/calendar-history-journal.test.js` (new).
+- `doc/plan-quarter-retrospective.md` — phase 3 marked built, with how it differs from the plan.
+
+**Task:** Phase 3 of the Quarter Retrospective plan.
+
+---
+
+## 2026-10-26 — Quarter Retrospective plan for the remaining phases
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `doc/plan-quarter-retrospective.md` (created) — phases 3–10 after the two committed parts: calendar journal, entry point and options screen, quarter gathering, month digests and theme inference, story generation per style, Spotify production, project payoff ranking feeding Plan Builder, and the takeaways note.
+
+**Task:** Extrapolate the rest of the Quarter Retrospective plan from Bill's description.
+
+---
+
+## 2026-10-25 — Quarter Retrospective story player (part 2 of 5)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-slide.jsx` (new) — one slide: kicker, a figure that counts up (shown at once under reduced motion or without requestAnimationFrame, and given to screen readers as its final value), headline, ranked list, and caption.
+- `lib/dashboard/quarter-retrospective/retrospective-story.jsx` (new) — plays slides with segmented progress, auto-advance, tap zones, arrow keys, Space and a button to pause, press-and-hold to pause without the release changing slides, and a Replay button on the last slide. Changing slides restarts the clock in the same update, so a finished clock never skips the next slide.
+- `lib/dashboard/quarter-retrospective/retrospective-overlay.jsx` (new) — portaled dialog over the dashboard that closes on Escape, its close button, or a backdrop click, and suspends widget mounting while open.
+- `lib/dashboard/styles/quarter-retrospective.scss` (new) — one `.quarter-retrospective-overlay` wrapper: a 9:16 story card (full screen on phones), a saturated gradient per slide tone, staggered entrances, and reduced-motion handling.
+- `test/quarter-retrospective-story.test.js` (new).
+
+**Task:** Second of five parts of the past-quarter retrospective.
+
+---
+
+## 2026-10-25 — Quarter Retrospective statistics and slide model (part 1 of 5)
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/quarter-retrospective/retrospective-statistics.js` (new) — joins a quarter's genuine completions to the completed task ledger, ranks projects by Victory Value, task count, and scheduled minutes, summarizes important tasks with days from created to completed, counts work outside every project apart from work never classified, and computes intent alignment and the busiest day.
+- `lib/dashboard/quarter-retrospective/retrospective-data.js` (new) — reads the quarter's completed tasks, its ledger, and its Vision Guide intents and quarter name, treating the ledger and guide as optional.
+- `lib/dashboard/quarter-retrospective/retrospective-slides.js` (new) — builds the retrospective story's ordered slides from the statistics, leaving out slides whose facts the quarter lacks.
+- `test/quarter-retrospective-statistics.test.js` (new).
+
+**Task:** First of five parts of a Spotify-Wrapped-style retrospective for past quarters in Quarterly Planning.
+
+---
+
+## 2026-10-25 — Goal Coach fills both cards when most ranked candidates were recently suggested
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/suggestions/suggestion-task-slots.js` — new `goalCoachTaskPool`: fresh candidates first, then, only when they cannot fill every card, recently suggested ones least recent first.
+- `lib/dashboard/suggestions/ranked-task-suggestions.js` — `dreamSuggestionsFromProjects` draws cards and reserves from `goalCoachTaskPool` instead of the fresh list alone.
+- `lib/goal-coach-service.js` — cards removed from today's Goal Coach note join the generation exclusions, so a refill cannot bring one back.
+- `test/ranked-task-suggestions.test.js` — covers the pool's ordering.
+
+**Task:** Reseed showed one card: the ranked pool held four project candidates, three of which the agenda had shown within three days.
+
+---
+
+## 2026-10-25 — Rename DreamTask to Goal Coach; source note badge links to its note
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/goal-coach-service.js`, `lib/dashboard/goal-coach.jsx`, `goal-coach-internals.js`, `goal-coach-schedule.js`, `styles/goal-coach.scss` (renamed from `dream-task*`) — `DreamTask`/`dreamTask` identifiers become `GoalCoach`/`goalCoach` (`analyzeGoalCoachTasks`, `GoalCoachWidget`, `useGoalCoachActions`, ...), and `dream-task-*` CSS classes become `goal-coach-*`.
+- `test/goal-coach-*.test.js` (renamed from `test/dream-task-*.test.js`), plus importers and comments in `lib/`, `test/`, `dev/`, `doc/` and `CLAUDE.md`.
+- Persisted or external names are unchanged: the `dream-task` widget ID (and its `.widget-dream-task` root class), the `dashboard_dream-task_seen_uuids` setting, the `"dreamTask"` day-ranking surface and its revision prefix, the `source: "dream-task"` LLM tag, and the `approveDreamTask`/`generateDreamTasks` analytics events.
+- `lib/dashboard/goal-coach.jsx` — `GoalCoachKindBadge` renders the source note name as a link; `onOpenTaskNote` opens the task's note with `navigateToNote`. Test in `test/goal-coach-actions.test.js`.
+
+**Task:** Rename the DreamTask suite to Goal Coach, and make the note name beside a suggested task navigate to that note.
+
+---
+
+## 2026-10-25 — Completed task ledger is the source of truth for a project's weekly completions
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/projects/project-week-completions.js` (new) — reads the week's "Completed Tasks by Project" ledger entries and completed tasks, and reconciles a project's completions with them: the ledger decides the completions it records, the project's link and similarity matching decides the rest.
+- `lib/dashboard/suggestions/ranked-task-suggestions.js` — `_dayGroups` reconciles each project's completions before `setProgressEvidence`, so the "finished N tasks this week" rationale counts what the ledger credits.
+- `lib/dashboard/project-progress-service.js` — the progress note's completions are reconciled with the week's ledger entries.
+- `lib/dashboard/quarter-project-serialization.js`, `project-tasks/project-collection-steps.js`, `quarter-project.js`, `quarter-project-refresh-state.js` — the Project Tasks store no longer writes the "Completed tasks" bullet or `completedTasks` payload; the ranking job, which reads only open tasks, no longer records completions.
+- `lib/hooks/use-completed-task-projects.js` — reuses the shared quarter and ledger helpers.
+- Completed tasks bullet restored as a link: `QuarterProject.completedTasksLink` (store-owned, kept in the payload) renders as a link to the ledger's latest day heading holding one of the project's completions (`noteHeadingUrlFromUUID` in `lib/app-util.js` mirrors Amplenote's heading anchors). `classify-completed-tasks.js` updates each stored project's link after recording; `readCompletedTaskLedger` now returns the ledger's `noteUuid`, and `latestCompletionDateKeysByProject` is new.
+- Tests: `test/project-week-completions.test.js` (new); store, maintenance, and classification tests updated.
+
+**Task:** Fix the always-empty "Completed tasks" list and make Plan Builder's weekly progress rationale agree with the projects Victory Value credits.
+
+---
+
+## 2026-10-25 — First Plan Builder Done generates ideas; two-minute idea run estimate
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/idea-generation/first-plan-idea-run.js` (new) — remembers, in the `FIRST_PLAN_IDEA_RUNS` setting, which domain quarters' first Done started a "Generate ideas" run.
+- `lib/dashboard/plan-wizard/plan-wizard.jsx` — `onDone` prop, called once Done has closed the wizard.
+- `lib/dashboard/planning.jsx` — `handleWizardDone` starts a run on the current quarter's first Done.
+- `lib/dashboard/idea-generation/idea-generation-run.js`, `idea-run-progress-view.js`, `lib/hooks/use-idea-generation-run.js` — step budgets shortened to sum to two minutes; `RUN_ESTIMATE_SECONDS` sets the starting estimate.
+- `lib/constants/settings.js`, `doc/plan-generate-ideas.md`; tests in `test/first-plan-idea-run.test.js`, `test/plan-wizard-ui.test.js`, `test/idea-generation-run.test.js`.
+
+---
+
+## 2026-10-25 — Project evidence sources lists the Project Tasks note's eligible tasks
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/plan-wizard/plan-wizard-service.js` — `readStoredProjectTaskFields` (replaces `readProjectMatchScores`) returns each stored project's tasks eligible for suggestion beside its similarity scores; `eligibleTasksByProject` builds them.
+- `lib/dashboard/plan-wizard/project-sources-page-fields.js` — `sourceProjectRows` serves the stored eligible tasks after the cited ones; `projectTaskItems` names tasks not read this session by their stored text and orders by similarity within each standing.
+- `lib/dashboard/plan-wizard/project-sources-page.jsx`, `lib/hooks/use-plan-wizard.js` — pass and reload the stored eligible tasks.
+- Tests in `test/plan-wizard-project-sources.test.js`.
+
+---
+
+## 2026-10-24 — Weekend suggestions for short views opening on a weekend
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda/proposed-agenda-range.js` — `shortViewStartsOnWeekend` recognizes a one-day or three-day calendar view whose first date is a Saturday or Sunday.
+- `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` — `_suggestionPassOptions` plans such a view's weekend days on every pass.
+- Tests in `test/proposed-agenda-date-range.test.js`.
+
+---
+
+## 2026-10-24 — Re-roll prompt: weekend and evening checkboxes
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/suggestion-reroll-embed.js` — "Also suggest for" panel with Weekends (shown only when the calendar window holds weekend days) and Evenings checkboxes; both reach the plugin with the rest of the choice and the summary line.
+- `lib/dashboard/suggestions/suggestion-reroll-prompt.js` — `promptedRerollChoice` takes `offersWeekends` and returns `includeEvenings`/`includeWeekends`.
+- `lib/dashboard/proposed-agenda/proposed-agenda-range.js` — `proposedAgendaDaysInRange` `includeWeekends` option keeps the window's weekend days outside the day cap.
+- `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` — `_passOptionsWithWeekendDays` adds weekend days to a re-roll that asked for them, and to ordinary passes replaying a same-date weekend re-roll.
+- `lib/dashboard/suggestions/suggestion-task-slots.js` — `EVENING_DAY_END_MINUTES` (22:00) and a `dayEndMinutes` option on `slotRankedTasks`/`activitiesClearOfObligations`.
+- `lib/dashboard/suggestions/suggestion-reroll-range.js`, `suggestion-reroll-store.js` — thread `includeEvenings` through re-roll slotting, the stored record, and replay.
+- `lib/dashboard/suggestions/calendar-generation-report.js` — report notes which hours a re-roll offered.
+- Tests in `test/suggestion-reroll.test.js`, `test/proposed-agenda-date-range.test.js`, `test/project-task-idea-ratings.test.js`.
+
+**Task:** Let the Suggest re-roll prompt opt into weekend days and evening hours.
+
+---
+
+## 2026-10-23 — Remove unused functions, constants, and modules
+
+**Model:** Grok 4.7
+**Files created/modified:**
+- Removed modules nothing imported: `lib/constants/prompt-strings.js`, `lib/dashboard/copy-link.jsx`, `lib/prompt-api-params.js`, `lib/providers/openai-functions.js`.
+- `lib/providers/fetch-ai-provider.js` — removed `callRemoteAI` and the retry/stream parsers only it called (`requestWithRetry`, `parseAnthropicStream`, `parseGeminiStream`, `parseOpenAICompatibleStream`, `streamAccumulate`). `llmPrompt` and `makeRequest` stay.
+- `lib/providers/fetch-json.js` — removed `shouldStream`, `streamPrefaceString`, `jsonFromMessages`, `fetchJson`, `jsonResponseFromStreamChunk`, and `extendUrlWithParameters`, which only that path used.
+- `lib/providers/ai-provider-settings.js` — removed `defaultProviderModel`, which only `callRemoteAI` called.
+- `lib/app-util.js` — removed the unused answer-cleanup helpers (`arrayFromJumbleResponse`, `arrayFromResponseString`, `cleanTextFromAnswer`, `debugData`, `optionWithoutPrefix`, `trimNoteContentFromAnswer`, `truncate`).
+- `lib/constants/llm-providers.js` — removed unused provider constants, including `PERPLEXITY_TOKEN_LIMITS`.
+- `lib/util/date-utility.js` — removed `weekEndFromDateInput`, `weekStartDayFromFormat`, and `isCurrentWeekEarly`.
+- `lib/hooks/use-plan-wizard.js` — removed `newGoalUuid`.
+- `lib/recommendation-context/day-recommendation-context.js` — removed `allDayEventsForTargetDate`.
+- `lib/shared-notes-service.js` — removed `peopleNoteUuidSummary`.
+- `lib/plan-wizard/prospect-discovery.js` — removed the unread `MAX_LLM_PROCESSING_SECONDS`.
+- `dev/dev-server.js` — removed `sendSSE`; the SSE client set and live-reload plugin stay.
+- `test/test-helpers.js` — kept `mockPlugin`, the only helper tests import, and removed the unused mock builders.
+- `test/dream-task-actions.test.js`, `test/dream-task-retry.test.js` — removed an unread mock field and an unread helper.
+
+**Task:** Remove unused methods, functions, classes, and constants.
+
+---
+
+## 2026-10-23 — Replace Ample Agent Pro callPlugin requests with app.callLLM and app.callDecisionModel
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/providers/amplenote-llm.js` (new) — `amplenoteLlmPrompt` asks `app.callLLM` and resolves null on any failure, including the embed bridge's `{ embedCallFailed }` envelope; `amplenoteDecisionRequester` is a DecisionsEndpoint route over `app.callDecisionModel`, mapping Jev's "predicate" to and from "noul"; `isAmplenoteLlmAvailable` checks quota once per app interface with `checkQuota` and keeps only a positive answer, relying on that check (which throws without a license or quota) rather than testing whether `app.callLLM` exists, since it always does; `amplenoteLlmModel` keeps a model callLLM can route and otherwise asks the default. Removed the unused `isMobilePlatform` copy from `fetch-ai-provider.js` (it only existed to skip `callPlugin` on mobile; `util/device-profile` keeps the live one), and `proposed-agenda-integration.test.js` now stubs an unlicensed `callLLM` in place of `callPlugin`. `lib/providers/amplenote-llm-response.js` (new) copies the host's getter-backed callLLM/callDecisionModel replies into plain objects, and `onEmbedCall` applies it, because the embed bridge kept only the instances' `_textOutput`/`_json` fields. When a reply can't be read, the debug console logs its type, keys and opening JSON; `llmPromptWithAmplenoteFallback` reports callLLM's failure, not a missing provider, when the user has no provider of their own.
+- `lib/util/dev-amplenote-llm.js` (new), `lib/util/browser-dev-app.js` — dev stand-ins for `callLLM` (through the first `.env` provider token) and `callDecisionModel` (through `JEV_ACCESS_TOKEN`, else the OpenAI Decisions API), throwing like an unlicensed account when no token is set.
+- `lib/providers/fetch-ai-provider.js` — `agentProPrompt` removed; `llmPromptWithPluginFallback` renamed `llmPromptWithAmplenoteFallback`, asking callLLM before the configured provider.
+- `lib/providers/ai-provider-settings.js` — Agent Pro note lookup, install check, and responded record removed; `AMPLE_AGENT_PRO_URL` kept for the upsell.
+- `lib/providers/decisions-endpoint-for-app.js` — the keyless Jev route uses callDecisionModel; the Agent Pro OpenAI Decisions route is gone.
+- `lib/plan-wizard/stack-rank/agent-pro-jev-requester.js` (deleted).
+- `lib/plan-wizard/wizard-prompt-runner.js` — the race's first leg is callLLM, which now also receives the reasoning budget and a `source`.
+- `lib/constants/llm-providers.js` — callLLM default model, supported prefixes, and reasoning budgets.
+- Availability checks in `dream-task-service.js`, `dream-task.jsx`, `proposed-agenda.jsx`, `proposed-agenda-service.js`, `quarterly-plan-service.js`, `use-llm-provider-access.js`, `meeting-preparation-ideas.js`, `project-job-inputs.js`, `suggestion-task-rank.js`; comment and copy updates elsewhere.
+- Tests: `test/amplenote-llm.test.js`, `test/amplenote-llm-fallback.test.js` (new, replacing `ample-agent-pro-note.test.js` and `call-plugin-fallback.test.js`); callPlugin stubs replaced with callLLM / callDecisionModel stubs across the agenda, dream task, decisions, stack-rank, wizard race, provider gate, and quarterly plan suites.
+
+**Validation:** Full Jest suite (1544 tests), `npm run build`, production bundle smoke test, dev bundle build.
+**Task:** Use the new callLLM and callDecisionModel plugin APIs instead of calling the Agent Pro plugin, with dev environment mocks.
+
+---
+
+## 2026-10-22 — Plan every weekday of a week view when suggesting calendar tasks
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` — `MAX_SUGGESTION_DAYS` raised from 3 to 5 so a week view gets five weekdays of suggestions; `MAX_DIGEST_ROWS` raised from 30 to 50 to keep the hand-off digest proportional.
+
+**Task:** Generate five days of tasks, not three, when the user has a week selected in the calendar.
+
+---
+
+## 2026-10-19 — List each day's DecisionsEndpoint requests in the calendar generation report
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/providers/decisions-endpoint.js` — `observeDecisionRequests` lets a caller watch every request as it is made; `_notifyRequestObservers` ignores a failing observer.
+- `lib/dashboard/suggestions/calendar-report-decision-requests.js` (new) — `PassDecisionRequests` files a pass's requests under the day being planned, or the whole pass; `abbreviatedDecisionRequest` keeps the first question, rubric, and state with each task list replaced by "[Array of N tasks]"; `decisionRequestLines` renders them as nested bullets with their size.
+- `lib/dashboard/suggestions/calendar-generation-report.js` — each day lists its requests, an "Every day" section lists the pass's, and their characters are added to the report's limit.
+- `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` — collects requests while the report is enabled, filing them as each day completes and ending the observing in a `finally`.
+- `test/calendar-report-decision-requests.test.js` (new), `test/calendar-generation-report.test.js` — abbreviation, filing, and report sections.
+
+**Validation:** Full Jest suite (1538 tests), `npm run build`, production bundle smoke test; a dev re-roll pass showed each day's ranking and duration requests.
+**Task:** Show the prompts sent to the DecisionsEndpoint in the calendar suggestion note, per date, with task lists abbreviated.
+
+---
+
+## 2026-10-19 — Keep the re-roll's focus, and choose where its suggestions come from
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/suggestion-reroll-embed.js` — a "Suggestions come from" row (New + existing, Existing tasks, New tasks); every choice carries the prompt's token and source; the page no longer sends its opening arguments on load; `rememberSuggestionRerollChoice` / `rememberedSuggestionRerollChoice` keep the last choice per prompt.
+- `lib/plugin.js` — `suggestionRerollChoice` remembers the choice before storing the embed's arguments; `renderEmbed` re-renders a re-roll prompt with the remembered choice.
+- `lib/dashboard/suggestions/suggestion-reroll-prompt.js` — opens the prompt with a token and the default source, reads the remembered choice ahead of the prompt result, returns `source`, and logs where the choice came from.
+- `lib/dashboard/suggestions/suggestion-reroll-store.js` — `REROLL_SOURCE_OPTIONS`, `DEFAULT_REROLL_SOURCE_KEY`, `rerollSourceFromKey`; records store `sourceKey`.
+- `lib/dashboard/suggestions/day-project-candidates.js` — `sourceFilteredGroups`.
+- `lib/dashboard/suggestions/ranked-task-suggestions.js` — `rerolledDayRanking` takes `candidateSource` and filters the groups before ranking.
+- `lib/dashboard/suggestions/suggestion-reroll-range.js`, `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` — pass the source through and log it.
+- `lib/dashboard/suggestions/calendar-generation-report.js` — the re-roll section names the source.
+- `test/suggestion-reroll.test.js` — remembered choice, stale token, source filtering, embed and report.
+
+**Validation:** Full Jest suite (1532 tests), `npm run build`, production bundle smoke test.
+**Task:** A re-roll chosen as Moonshots ran as Quarter plan; make the chosen focus reach the ranker, and add a new/existing source choice.
+
+---
+
+## 2026-10-19 — Dev-only Calendar Suggestions page
+
+**Model:** Claude Opus 5.5
+**Files created/modified:**
+- `lib/dashboard/calendar-suggestions-dev-session.js` (created) — `calendarSuggestionWindow`, `calendarSuggestionRequest` (schedulable vs. in-window scheduled tasks), `suggestionDaysFromPublication` (groups published suggestions by local date, marking dates the action does not plan), and `runCalendarSuggestionPass`, which runs `suggestScheduledTasksFromDashboard` against the browser dev app with `context.setScheduledTasks` routed to a callback.
+- `lib/dashboard/calendar-suggestions-dev-page.jsx` (created) — Task Domain picker, One day / 3 day / One week toggle, Suggest button, and per-date lists of each suggestion's time, title, new/existing task, and explanation, updated on every publish.
+- `lib/dashboard/styles/calendar-suggestions-dev-page.scss` (created) — page styles under `.calendar-suggestions-dev-page`.
+- `lib/dashboard/dashboard-load.jsx` — renders the page at `/calendar-suggestions` in development builds, via a dynamic import the production build drops.
+- `lib/dashboard/dashboard.jsx` — development-only "📅 Suggestions (dev)" toolbar button.
+- `dev/dev-server.js` — serves the dev shell at `/calendar-suggestions`.
+- `lib/dashboard/proposed-agenda/proposed-agenda-suggest-action.js` — exports `MAX_SUGGESTION_DAYS`.
+- `test/calendar-suggestions-dev-session.test.js` (created).
+
+**Validation:** Full Jest suite (1529 tests), `npm run build`, production bundle smoke test, a production-define client build confirming the page, its CSS, and the button are absent, and a one-week Suggest run in the dev server.
+**Task:** Let the dev environment request calendar suggestions and show each date's suggestions and rationale.
+
+---
+
 ## 2026-10-19 — Open the Plan Builder in development without an API key
 
 **Model:** Claude Opus 5.5

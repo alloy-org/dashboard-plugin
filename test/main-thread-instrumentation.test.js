@@ -195,6 +195,35 @@ describe("MainThreadLagMonitor", () => {
     expect(monitor.snapshot().timerLag).toMatchObject({ count: 0, samples: 0 });
     monitor.dispose();
   });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc Per-job blocking hears long-frame stalls when the browser reports them, and timer stalls only otherwise, so
+  //   one jank is not credited twice.
+  it("reports each blocking stall once, preferring long frames over timers", () => {
+    const timerStalls = [];
+    const timers = monitorHarness({ activeJobTypes: ["rankProjectTasks"] });
+    timers.monitor.onStall = stall => timerStalls.push(stall);
+    timers.monitor.start();
+    timers.fireTimer(180);
+    expect(timerStalls).toEqual([expect.objectContaining({ blockingMilliseconds: 130, durationMilliseconds: 180,
+      jobTypes: ["rankProjectTasks"] })]);
+    timers.monitor.dispose();
+    let deliver = null;
+    class FakeObserver {
+      static supportedEntryTypes = ["long-animation-frame"];
+      constructor(callback) { deliver = callback; }
+      disconnect() {}
+      observe() {}
+    }
+    const frameStalls = [];
+    const frames = monitorHarness({ activeJobTypes: ["estimateTaskDurations"], performanceObserverClass: FakeObserver });
+    frames.monitor.onStall = stall => frameStalls.push(stall);
+    frames.monitor.start();
+    deliver({ getEntries: () => [{ blockingDuration: 70, duration: 120, scripts: [], startTime: 12_000 }] });
+    frames.fireTimer(180);
+    expect(frameStalls.map(stall => stall.blockingMilliseconds)).toEqual([70]);
+    frames.monitor.dispose();
+  });
 });
 
 describe("main-thread instrumentation in the work queue", () => {

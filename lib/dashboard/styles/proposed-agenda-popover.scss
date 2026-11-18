@@ -1,6 +1,7 @@
 // Shared portal shell and calendar/priority contents, scoped independently of the widget card.
 @use 'theme-tokens' as *;
 @use 'controls' as *;
+@use 'z-indexes' as *;
 
 .proposed-agenda-popover {
   background: $color-background-primary;
@@ -13,7 +14,7 @@
   max-width: calc(100vw - 16px);
   overflow: auto;
   position: fixed;
-  z-index: 10020;
+  z-index: $z-index-proposed-agenda-popover;
 
   .agenda-calendar-day:focus-visible, .agenda-priority-option:focus-visible { outline-offset: -2px; }
   .agenda-calendar-shortcuts { border-bottom: 1px solid $color-border-primary; display: flex; gap: $sp-sm; padding: 14px; }

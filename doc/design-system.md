@@ -37,7 +37,9 @@ These run in `npm test`, so breaking a rule fails the suite with the file and th
 
 Each has a short, commented list of exceptions (mood faces and text written into notes are content; a ruled-line
 editor and an auto-growing textarea cannot be shared controls). Add to a list only with a reason; prefer changing the
-code. The rules live in Jest rather than a linter because the repo has none, and these need to know the design
+code. Whole features not migrated yet are listed once in `test/design-system-exceptions.js` (today: the Quarter
+Retrospective, merged from main with its own palette); remove an entry when its feature is migrated. The rules live in
+Jest rather than a linter because the repo has none, and these need to know the design
 system (which tokens exist, which glyphs are content), not just CSS syntax.
 
 ## Style guide

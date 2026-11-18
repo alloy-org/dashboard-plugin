@@ -52,13 +52,6 @@ function devTokenDefines() {
 // Date: 2026-03-01 | Model: claude-opus-4-6
 const sseClients = new Set();
 
-function sendSSE(data) {
-  const payload = `data: ${JSON.stringify(data)}\n\n`;
-  for (const client of sseClients) {
-    client.write(payload);
-  }
-}
-
 // [Claude] Task: use shared esbuild SCSS plugin so widgets load their own styles
 // Prompt: "refactor so widgets load their own scss instead of dashboard.scss importing everything"
 // Date: 2026-03-14 | Model: claude-4.6-opus-high-thinking
@@ -70,7 +63,6 @@ const liveReloadPlugin = {
   setup(build) {
     build.onEnd((result) => {
       if (result.errors.length > 0) return;
-      // sendSSE({ type: "reload" });
       console.trace("[reload] full reload sent");
     });
   },
@@ -499,7 +491,7 @@ async function main() {
   const { host, port: esbuildPort } = await ctx.serve({
     servedir: devDir,
     ...(process.env.DASHBOARD_ACCEPTANCE === "true" ? { host: "127.0.0.1" } : {}),
-    port: Number(process.env.DASHBOARD_DEV_BUILD_PORT || 3001),
+    port: Number(process.env.DASHBOARD_DEV_BUILD_PORT || 3031),
   });
 
   const proxyServer = http.createServer((req, res) => {
@@ -521,7 +513,7 @@ async function main() {
       handleAcceptanceMetrics(req, res);
       return;
     }
-    if (requestPath === "/" || requestPath === "/index.html") {
+    if (requestPath === "/" || requestPath === "/index.html" || requestPath === "/calendar-suggestions") {
       if (handleDevShell(res)) return;
     }
     if (requestPath === "/styleguide") {
@@ -606,8 +598,8 @@ async function main() {
     req.pipe(proxyReq, { end: true });
   });
 
-  proxyServer.listen(Number(process.env.DASHBOARD_DEV_PORT || 3000), process.env.DASHBOARD_ACCEPTANCE === "true" ? "127.0.0.1" : undefined, () => {
-    console.log(`[dev] server running at http://localhost:${ process.env.DASHBOARD_DEV_PORT || 3000 }`);
+  proxyServer.listen(Number(process.env.DASHBOARD_DEV_PORT || 3030), process.env.DASHBOARD_ACCEPTANCE === "true" ? "127.0.0.1" : undefined, () => {
+    console.log(`[dev] server running at http://localhost:${ process.env.DASHBOARD_DEV_PORT || 3030 }`);
     console.log("[reload] live reload enabled");
     if (process.env.SENTRY_DSN) console.log('[sentry] reporting enabled, environment "dashboard-dev"');
     else console.log("[sentry] no SENTRY_DSN in .env; dashboard exceptions will not be reported");

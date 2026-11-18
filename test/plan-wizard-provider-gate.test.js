@@ -28,8 +28,8 @@ const REAL_TIMER_APIS = ["cancelAnimationFrame", "cancelIdleCallback", "clearImm
   "nextTick", "performance", "queueMicrotask", "requestAnimationFrame", "requestIdleCallback", "setImmediate", "setInterval", "setTimeout"];
 
 // ----------------------------------------------------------------------------------------------
-// @desc Flush the promise chains the widget's month load, the wizard's plan read, and the Ample Agent Pro
-//   lookup each queue.
+// @desc Flush the promise chains the widget's month load, the wizard's plan read, and the plugin LLM license's
+//   quota check each queue.
 async function settle() {
   for (let iteration = 0; iteration < 12; iteration += 1) {
     await act(async () => { await Promise.resolve(); });
@@ -77,16 +77,12 @@ async function openPlanBuilder(container) {
 }
 
 // ----------------------------------------------------------------------------------------------
-// @desc An app whose Ample Agent Pro lookup answers with a note, modelling a user who runs AI features through
-//   the plugin rather than through a key of their own.
-// @returns {object} The plan wizard fixture app with that one lookup replaced.
-function appWithAmpleAgentPro() {
+// @desc An app whose callLLM quota check reports quota remaining, modelling a user who runs AI features on the
+//   account's plugin LLM license rather than through a key of their own.
+// @returns {object} The plan wizard fixture app with callLLM added.
+function appWithAmplenoteLlm() {
   const app = createPlanWizardApp();
-  const findNote = app.findNote;
-  app.findNote = jest.fn(async (query = {}) => {
-    if (query.name === "Ample Agent Pro") return { name: query.name, uuid: "agent-pro-note" };
-    return findNote(query);
-  });
+  app.callLLM = jest.fn(async ({ checkQuota } = {}) => (checkQuota ? 5 : null));
   return app;
 }
 
@@ -121,8 +117,8 @@ describe("PlanWizard provider gate", () => {
     await cleanup();
   });
 
-  it("asks the questions when Ample Agent Pro can run them without a key", async () => {
-    const { cleanup, container } = await renderPlanning({ app: appWithAmpleAgentPro(), onOpenSettings: jest.fn() });
+  it("asks the questions when the plugin LLM license can run them without a key", async () => {
+    const { cleanup, container } = await renderPlanning({ app: appWithAmplenoteLlm(), onOpenSettings: jest.fn() });
     await openPlanBuilder(container);
 
     expect(document.body.querySelector(".provider-key-gate")).toBeNull();

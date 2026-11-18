@@ -74,7 +74,7 @@ describe("IdeaGenerationRun", () => {
     const { durable, publish, submitted } = fakeDurable();
     const { run } = runOver(durable);
     await run.start();
-    expect(run.snapshot()).toMatchObject({ etaSeconds: 300, title: "Generating ideas for 1 Project" });
+    expect(run.snapshot()).toMatchObject({ etaSeconds: 120, title: "Generating ideas for 1 Project" });
     expect(run.snapshot().steps.map(step => step.state)).toEqual(["active", "waiting", "waiting", "waiting"]);
 
     publish({ followUps: [{ jobKey: "rankProjectTasks:launch", jobType: RANK_PROJECT_TASKS_JOB_TYPE, status: "pending" }],
@@ -175,7 +175,7 @@ describe("IdeaGenerationRun", () => {
     expect(run.snapshot().steps.map(step => step.state)).toEqual(["timedOut", "active", "waiting", "waiting"]);
     const rises = estimates.filter((estimate, index) => index > 0 && estimate > estimates[index - 1]);
     expect(rises).toEqual([]);
-    expect(estimates.at(-1)).toBeLessThan(300 - STEP_BUDGET_SECONDS.refine);
+    expect(estimates.at(-1)).toBeLessThan(120 - STEP_BUDGET_SECONDS.refine);
   });
 
   // ----------------------------------------------------------------------------------------------

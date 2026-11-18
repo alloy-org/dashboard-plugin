@@ -4,7 +4,7 @@
  * Task: Unit tests for index-based splash image selection used by the "Swap background" quick action
  * Prompt summary: "one for 'Swap background', which animates a transition to a new background from our array"
  */
-import { backgroundSplashUrl, backgroundSplashUrlFromIndex, SPLASH_IMAGE_COUNT } from "util/background-splash-images";
+import { backgroundSplashUrl, backgroundSplashUrlFromIndex, retrospectiveBackgroundUrl, SPLASH_IMAGE_COUNT } from "util/background-splash-images";
 
 describe('backgroundSplashUrlFromIndex', () => {
   it('sizes large requests for a full-bleed dashboard background', () => {
@@ -31,5 +31,21 @@ describe('backgroundSplashUrlFromIndex', () => {
 
   it('keeps seeded selection stable, since widgets re-render with the same seed', () => {
     expect(backgroundSplashUrl('large', '2026-07-30')).toBe(backgroundSplashUrl('large', '2026-07-30'));
+  });
+});
+
+describe('retrospectiveBackgroundUrl', () => {
+  it('sizes the photo for the tall story card', () => {
+    const url = retrospectiveBackgroundUrl('2026-10-26T12:00:00.000Z', 0);
+    expect(url).toContain('images.unsplash.com');
+    expect(url).toContain('w=720');
+    expect(url).toContain('h=1280');
+  });
+
+  it('shows the same photos when a story replays, and a different photo on each neighboring slide', () => {
+    const seed = '2026-10-26T12:00:00.000Z';
+    const urls = Array.from({ length: 6 }, (unused, slidePosition) => retrospectiveBackgroundUrl(seed, slidePosition));
+    expect(urls).toEqual(Array.from({ length: 6 }, (unused, slidePosition) => retrospectiveBackgroundUrl(seed, slidePosition)));
+    expect(new Set(urls).size).toBe(6);
   });
 });
