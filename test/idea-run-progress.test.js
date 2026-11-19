@@ -86,6 +86,25 @@ describe("idea run progress", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
+  // @desc Ideas that were generated stay described as ready when dictionary discovery failed, and that failure is not
+  //   also shown as the whole run failing or as a discovery that found nothing.
+  it("says ideas are ready when the dictionary update was skipped", () => {
+    const steps = [{ key: "refine", state: "done" }, { key: "ideas", state: "done" }];
+    const progress = { dictionary: { noteUuid: "dictionary-uuid", termCount: 12 }, dictionarySkipped: true, foundTerms: null,
+      ideaProjects: { count: 1, examples: ["Launch"] }, refiningTerms: { count: 0, examples: [] }, storeCounts: null };
+    expect(lineText(ideaRunProgressLines(progress, steps)[0])).toBe("Dictionary update skipped (12 already defined).");
+    const lines = ideaRunSummaryLines({ dictionarySkipped: true, failures: [{ detail: "plugin LLM license: Request contains an invalid argument.",
+      jobType: "discoverDictionaryTerms", subject: null }], projects: [{ ideasDetail: "Generated 20 ideas, kept 11", name: "Launch",
+      recommendableAfter: 11, recommendableBefore: 0, suggestableTasksAfter: 0, suggestableTasksBefore: 0, targeted: true }] });
+    expect(lines.map(line => lineText(line))).toEqual(["Launch: Generated 20 ideas, kept 11; 11 recommendable ideas (was 0); 0 of your tasks.",
+      "Ideas ready; dictionary update skipped."]);
+    const skippedOnly = ideaRunSummaryLines({ dictionarySkipped: true, failures: [{ detail: "Provider down", jobType: "discoverDictionaryTerms" }],
+      projects: [{ ideasDetail: null, name: "Launch", recommendableAfter: null, recommendableBefore: 0, suggestableTasksAfter: null,
+        suggestableTasksBefore: 0, targeted: false }] });
+    expect(skippedOnly.map(line => lineText(line))).toEqual(["Launch: Already had enough well-rated ideas.", "Dictionary update skipped."]);
+  });
+
+  // ----------------------------------------------------------------------------------------------
   // @desc A snapshot pushed by the Dashboard is read back by the window as its view; an unknown run reads as not found.
   it("relays snapshots by run", () => {
     expect(updateIdeaRunProgress({ title: "No run" })).toBe(false);

@@ -14,8 +14,8 @@ import { createGenerateProjectIdeasHandler } from "dashboard/work-queue/jobs/gen
 import { createRankProjectTasksHandler, RANK_PROJECT_TASKS_JOB_TYPE } from "dashboard/work-queue/jobs/rank-project-tasks";
 import { prepareProjectTaskRanker } from "plan-wizard/stack-rank/stack-rank-project-tasks";
 import { setPluginData } from "plugin-data";
-import { backlogTasks, DISCOVERED_TERMS, GENERATED_IDEA, jobContext, maintenanceApp, NOW, ratingRequest, runProjectJob,
-  SCOPE_INPUT, storedProjectUuid } from "./project-maintenance-test-app";
+import { backlogTasks, DISCOVERED_TERMS, GENERATED_IDEA, jobContext, maintenanceApp, NOW, PROJECT_UUID, ratingRequest,
+  runProjectJob, SCOPE_INPUT, storedProjectUuid } from "./project-maintenance-test-app";
 
 describe("project maintenance jobs", () => {
   beforeEach(() => setPluginData({ settings: { [SETTING_KEYS.JEV_ACCESS_TOKEN]: "token" } }));
@@ -212,6 +212,25 @@ describe("project maintenance jobs", () => {
     expect(after.toStoreSection()).toBe(before.toStoreSection());
     const retired = await runProjectJob(handler, { context, input: { ...input, projectUuid: "gone-project" } });
     expect(retired.result).toEqual({ status: "superseded" });
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A failed discovery leaves the dictionary note as it was and still releases the rankings it held, so those
+  //   rankings can run against the existing definitions.
+  it("leaves the dictionary unchanged and releases held rankings when discovery fails", async () => {
+    const app = maintenanceApp({ tasks: backlogTasks() });
+    const context = jobContext(app);
+    const dictionaryUuid = await app.createNote("User terms dictionary 2026", ["plugins/dashboard"]);
+    const seededDictionary = "# Terms\n\n- dashboard: The plugin's home screen of widgets and agendas.\n";
+    await app.replaceNoteContent({ uuid: dictionaryUuid }, seededDictionary);
+    const promptRunner = jest.fn().mockRejectedValue(new Error("Request contains an invalid argument."));
+    const handler = createDiscoverDictionaryTermsHandler({ promptRunner });
+    const input = { ...SCOPE_INPUT, heldRankings: [{ projectUuid: PROJECT_UUID }] };
+    const attempt = runProjectJob(handler, { context, input });
+    await expect(attempt).rejects.toThrow(/Dictionary discovery failed: Request contains an invalid argument/);
+    await expect(attempt).rejects.toMatchObject({ followUps: [expect.objectContaining({ entityId: PROJECT_UUID, type: "rankProjectTasks" })] });
+    expect(app.noteContent("User terms dictionary 2026")).toBe(seededDictionary);
+    expect(promptRunner).toHaveBeenCalled();
   });
 
   // ----------------------------------------------------------------------------------------------

@@ -105,8 +105,32 @@ describe("raceWizardPrompt", () => {
     expect(llmPromptMock.mock.calls[0][3]).toBe("gpt-5.4-mini");
   });
 
-  // Both legs take a reasoning budget: callLLM translates it to each provider's closest equivalent.
-  it("forwards a reasoning budget to both sources", async () => {
+  // A shared model takes one budget. A licensed model that differs from the direct model does not inherit the direct
+  // budget: OpenAI's "none" would be rewritten to "low" and Gemini flash-lite rejects that as an invalid argument.
+  it("keeps the direct provider's reasoning budget off a different licensed model", async () => {
+    amplenoteLlmMock.mockResolvedValue({ terms: [] });
+    llmPromptMock.mockRejectedValue(new Error("Request failed with status 400"));
+    const lightOptions = { aiModel: "gpt-5.4-mini", amplenoteAiModel: "gemini-3.5-flash-lite", amplenoteReasoningEffort: null,
+      apiKey: "openai-key", jsonResponse: true, reasoningEffort: "none", timeoutSeconds: 60 };
+    await expect(raceWizardPrompt({}, "prompt", lightOptions)).resolves.toEqual({ terms: [], wizardPromptSource: "amplenote-llm" });
+    expect(amplenoteLlmMock).toHaveBeenCalledWith({}, "prompt", { aiModel: "gemini-3.5-flash-lite", jsonResponse: true,
+      preferLicense: true, reasoningEffort: null, rejectWithReason: true, source: "plan-wizard", timeoutSeconds: 60 });
+    expect(llmPromptMock).toHaveBeenCalledWith({}, null, "prompt", "gpt-5.4-mini", "openai-key", true, 60, "none", undefined);
+  });
+
+  // The same split holds when the caller named only the two models: the licensed leg still prefers the license and
+  // still omits the direct budget, so a failed saved key does not take the license down with it.
+  it("answers from the license when the direct key fails and the licensed model differs", async () => {
+    amplenoteLlmMock.mockResolvedValue({ terms: [] });
+    llmPromptMock.mockRejectedValue(new Error("Request failed with status 429"));
+    await raceWizardPrompt({}, "prompt", { aiModel: "gpt-5.4-mini", amplenoteAiModel: "gemini-3.5-flash-lite", apiKey: "openai-key",
+      jsonResponse: true, reasoningEffort: "none", timeoutSeconds: 60 });
+    expect(amplenoteLlmMock.mock.calls[0][2]).toMatchObject({ aiModel: "gemini-3.5-flash-lite", preferLicense: true, reasoningEffort: null });
+    expect(llmPromptMock.mock.calls[0][7]).toBe("none");
+  });
+
+  // Both legs take a reasoning budget when they ask for the same model: callLLM translates it to each provider's closest equivalent.
+  it("forwards a reasoning budget to both sources when they share a model", async () => {
     amplenoteLlmMock.mockResolvedValue(null);
     llmPromptMock.mockResolvedValue({ source: "direct" });
     await raceWizardPrompt({}, "prompt", { ...KEYED_OPTIONS, reasoningEffort: "low" });

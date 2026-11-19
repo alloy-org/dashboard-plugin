@@ -5,6 +5,35 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-11-19 — Retire a persistently failing saved API key in favor of the plugin LLM license
+
+**Model:** Claude Opus 5.5
+**Files created:**
+- `lib/providers/api-key-health.js` — Keeps the last five failure and success times for each provider's saved key in `SETTING_KEYS.API_KEY_HEALTH`, counting only 401/402/403/429. `shouldRetireKey` applies two rules to failures since the last success: five or more, or three or more whose first and last are at least 24 hours apart. When a rule is met and `isAmplenoteLlmAvailable` is true, `recordApiKeyFailure` clears the key, sets the LLM Provider to "none" if it names that provider, and drops the key's history. A success is written only when it excuses a recorded failure. History is reset when a different key is saved.
+- `test/api-key-health.test.js` — Retirement rules, license gating, success excusal, key replacement, and both request paths.
+**Files modified:**
+- `lib/providers/fetch-ai-provider.js` — `makeRequest` records each keyed response through `_recordKeyOutcome`, without awaiting it.
+- `lib/providers/amplenote-llm.js` — `_callLlmOnce` returns `failureStatus`. `_recordKeyAttempt` records the outcome of an attempt on the saved key.
+- `lib/constants/settings.js` — `SETTING_KEYS.API_KEY_HEALTH`.
+
+**Task:** An Agent Pro subscriber with a saved OpenAI key that returned 429 had idea generation and dictionary refinement fail on the direct provider leg. A key that keeps failing should stop being used when the license can answer instead.
+
+---
+
+## 2026-11-18 — Dictionary discovery stops sending OpenAI's reasoning budget to Gemini
+
+**Model:** Grok 4.7
+**Files modified:**
+- `lib/plan-wizard/wizard-prompt-runner.js` — `raceWizardPrompt` asks the licensed leg with `amplenoteReasoningEffort` when that budget is set, and otherwise omits the direct provider's budget when the licensed model is a different model. `licensedReasoningEffort` chooses that budget. `preferLicense` is unchanged.
+- `lib/plan-wizard/wizard-prompt-diagnostics.js` — `lightLlmOptions` sets `amplenoteReasoningEffort` to null, so Gemini flash-lite is not asked with the OpenAI incidental budget `"none"`.
+- `lib/dashboard/idea-generation/idea-generation-run.js` — A failed `discoverDictionaryTerms` outcome sets `dictionarySkipped` and does not record an empty term list. `ideaGenerationRunSummary` reports `dictionarySkipped`.
+- `lib/dashboard/idea-generation/idea-run-progress-view.js` — Progress says the dictionary update was skipped. The summary says "Ideas ready; dictionary update skipped." when ideas finished, and does not also print the discovery failure as if the run could not finish.
+- `test/fast-model-selection.test.js`, `test/wizard-prompt-race.test.js`, `test/idea-run-progress.test.js`, `test/idea-generation-run.test.js`, `test/project-maintenance-jobs.test.js` — Coverage for separate reasoning budgets, a failed direct key with the license still preferred, a partial-success summary, and an unchanged dictionary that still releases held rankings.
+
+**Task:** Dictionary discovery failed after ideas and rankings succeeded. The licensed Gemini call was sent the direct OpenAI leg's `reasoningEffort: "none"`, which `amplenoteLlmPrompt` rewrites to `"low"`. Idea generation uses one model for both legs and was unaffected. A failed discovery should leave the dictionary unchanged and say so, while the ideas that finished stay usable.
+
+---
+
 ## 2026-11-17 — callLLM falls back to the plugin LLM license when a saved key fails
 
 **Model:** Claude Opus 5.5

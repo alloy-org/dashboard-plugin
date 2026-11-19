@@ -188,5 +188,30 @@ describe("IdeaGenerationRun", () => {
       failures: [{ detail: "Provider down", entityId: "launch", jobType: GENERATE_PROJECT_IDEAS_JOB_TYPE }], outcomes: [], targets: [] });
     expect(summary.failures[0]).toMatchObject({ detail: "Provider down", subject: "Launch" });
     expect(summary.projects[0]).toMatchObject({ recommendableAfter: null, suggestableTasksAfter: null, targeted: false });
+    expect(summary.dictionarySkipped).toBe(false);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A failed dictionary discovery leaves the terms unreported, so the window does not say none were found, and
+  //   the summary names the skip while keeping the ideas that did finish.
+  it("keeps finished ideas when dictionary discovery fails", async () => {
+    const { durable, publish, submitted } = fakeDurable();
+    const { run } = runOver(durable);
+    await run.start();
+    publish({ jobKey: "discoverDictionaryTerms:2026-Q4", jobType: "discoverDictionaryTerms",
+      outcomeDetail: "Dictionary discovery failed: plugin LLM license: Request contains an invalid argument.", status: "retryWaiting" });
+    expect(run.snapshot().progress).toMatchObject({ dictionarySkipped: true, foundTerms: null });
+    publish({ jobKey: "collectTermEvidence:2026:roadmap", jobType: "collectTermEvidence" });
+    await settle();
+    expect(run.snapshot().steps[1].state).toBe("active");
+    expect(submitted.map(request => request.key)).toContain("generateProjectIdeas:launch");
+    publish({ entityId: "launch", jobKey: "generateProjectIdeas:launch", jobType: GENERATE_PROJECT_IDEAS_JOB_TYPE,
+      outcomeDetail: "Generated 20 ideas, kept 11" });
+    await settle();
+    await settle();
+    expect(run.snapshot().finished).toBe(true);
+    expect(run.snapshot().summary.dictionarySkipped).toBe(true);
+    expect(run.snapshot().summary.projects[0]).toMatchObject({ ideasDetail: "Generated 20 ideas, kept 11" });
+    expect(run.snapshot().summary.failures[0].jobType).toBe("discoverDictionaryTerms");
   });
 });
