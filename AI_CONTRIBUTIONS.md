@@ -5,6 +5,23 @@ repository, FROM NEWEST TO OLDEST, per the standards defined in `CLAUDE.md`.
 
 ---
 
+## 2026-11-19 — "Generate ideas" challenges saturated projects to beat their strongest ideas
+
+**Model:** Claude Opus 5.5
+**Files modified:**
+- `lib/dashboard/idea-generation/idea-generation-run-plan.js` — `ideaGenerationTargets` targets every active project not rated too abstract, saturated ones included. Run ideas requests carry `exceedBestIdeas: true`.
+- `lib/dashboard/work-queue/jobs/project-job-requests.js` — `projectIdeasRequest` accepts `exceedBestIdeas`.
+- `lib/dashboard/work-queue/jobs/generate-project-ideas.js` — A saturated project with `exceedBestIdeas` prunes its kept ideas, then asks for `IDEAS_TO_EXCEED_BEST_COUNT` (3) ideas against `strongestRatedIdeas`, with no task pool. Every ideas attempt passes the dictionary terms used by the project summary, next action, or intents (`_projectDictionaryTerms`, injectable `dictionaryReader`). Outcome detail reads "Generated 3 ideas to beat the 12 best, kept 3".
+- `lib/dashboard/project-tasks/project-task-ideas.js` — `_improvementPrompt` lists the ideas to beat with their actionability and relevance scores and the project's clarity, then asks for ideas that improve on their actionability, clarity, impact, or relevance given the intents. `_projectContext` is shared by both prompts and adds the user's term definitions.
+- `lib/dashboard/project-tasks/project-collection-steps.js` — `generatedIdeas` passes `dictionaryTerms` and `ideasToBeat` to the generator.
+- `lib/dashboard/project-tasks/project-task-idea-ratings.js` — New `strongestRatedIdeas` and `latestProjectClarity`. `keptIdeaRecords` keeps only the `IDEA_SATURATION_COUNT` strongest rated open ideas, so a better-rated newcomer displaces the weakest. Ties go to the idea held longer.
+- `lib/dashboard/idea-generation/idea-run-progress-view.js`, `idea-generation-run.js` — A project with no ideas job is now one rated too abstract, and its summary line says so.
+- Tests: `test/project-task-idea-ratings.test.js`, `test/idea-generation-run-plan.test.js`, `test/idea-run-progress.test.js`.
+
+**Task:** A run on 9 active projects generated ideas for only the 1 project that wasn't saturated. A user-initiated run should try every project and let new ideas compete with the current best set. The prompt should show the existing ideas' scores and include dictionary terms the project or its intents use.
+
+---
+
 ## 2026-11-19 — Retire a persistently failing saved API key in favor of the plugin LLM license
 
 **Model:** Claude Opus 5.5

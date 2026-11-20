@@ -43,14 +43,16 @@ describe("idea generation run plan", () => {
   });
 
   // ----------------------------------------------------------------------------------------------
-  // @desc A project the store holds a dozen well-rated ideas for is saturated; one with poorly rated ideas, or none
-  //   stored at all, is a target.
-  it("skips projects already saturated with well-rated ideas", () => {
-    const activeProjects = [project("full"), project("weak"), project("new")];
+  // @desc A project saturated with well-rated ideas is still a target, so new ideas may beat its strongest; one with
+  //   poorly rated ideas, or none stored at all, is a target; one rated too abstract is not.
+  it("targets every active project not too abstract, saturated or not", () => {
+    const activeProjects = [project("full"), project("weak"), project("new"), project("vague")];
+    const vagueIdeas = ideas("vague", 1, { actionability: 8, projectClarity: 2, projectSummaryKey: "project vague", relevance: 8 });
     const storedProjects = [project("full", { suggestedTasks: ideas("full", 12, { actionability: 8, relevance: 8 }) }),
-      project("weak", { suggestedTasks: ideas("weak", 12, { actionability: 4, relevance: 5 }) })];
+      project("weak", { suggestedTasks: ideas("weak", 12, { actionability: 4, relevance: 5 }) }),
+      project("vague", { suggestedTasks: vagueIdeas })];
     const targetUuids = ideaGenerationTargets(activeProjects, storedProjects).map(target => target.uuid);
-    expect(targetUuids).toEqual(["weak", "new"]);
+    expect(targetUuids).toEqual(["full", "weak", "new"]);
   });
 
   // ----------------------------------------------------------------------------------------------
@@ -72,7 +74,7 @@ describe("idea generation run plan", () => {
     expect(refineRest).toEqual(termRequests);
     expect(requests.ideas.map(request => [request.type, request.entityId, request.category, request.desiredRevision]))
       .toEqual([[GENERATE_PROJECT_IDEAS_JOB_TYPE, "weak", RUN_CATEGORY, "run:run-1"]]);
-    expect(requests.ideas[0].input.ideaCount).toBe(RUN_IDEA_COUNT);
+    expect(requests.ideas[0].input).toMatchObject({ exceedBestIdeas: true, ideaCount: RUN_IDEA_COUNT });
     expect(requests.rate.map(request => [request.type, request.entityId, request.category]))
       .toEqual([[RATE_PROJECT_IDEAS_JOB_TYPE, "full", RUN_CATEGORY]]);
   });

@@ -101,7 +101,7 @@ describe("idea run progress", () => {
     const skippedOnly = ideaRunSummaryLines({ dictionarySkipped: true, failures: [{ detail: "Provider down", jobType: "discoverDictionaryTerms" }],
       projects: [{ ideasDetail: null, name: "Launch", recommendableAfter: null, recommendableBefore: 0, suggestableTasksAfter: null,
         suggestableTasksBefore: 0, targeted: false }] });
-    expect(skippedOnly.map(line => lineText(line))).toEqual(["Launch: Already had enough well-rated ideas.", "Dictionary update skipped."]);
+    expect(skippedOnly.map(line => lineText(line))).toEqual(["Launch: Too abstract to suggest ideas for.", "Dictionary update skipped."]);
   });
 
   // ----------------------------------------------------------------------------------------------

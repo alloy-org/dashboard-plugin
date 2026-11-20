@@ -1,7 +1,8 @@
 // Verify rated ideas end to end: the rating questions and their 1–10 reading, which ideas await a rating and when a
 // text change invalidates one, the queued rating job writing ratings without restamping generation, ideas competing as
 // `idea:` candidates beside existing tasks in ranking and slotting, a project saturated with well-rated ideas that stops
-// generating and drops the ideas it no longer keeps, and the user's decisions on a shown idea, including
+// generating and drops the ideas it no longer keeps, a user's run asking such a project for ideas that beat its
+// strongest, which then displace the weakest once rated, and the user's decisions on a shown idea, including
 // an acceptance retried from another surface that reuses the task the idea already became.
 import { jest } from "@jest/globals";
 import { SETTING_KEYS } from "constants/settings";
@@ -10,14 +11,16 @@ import { decidedIdeaRecords, IDEA_STATUSES, ideaIdFor, normalizedIdeaRecords } f
 import { minutesSinceIdeaRecommended } from "dashboard/project-tasks/project-suggestion-log";
 import { readCollectedProjectTasks } from "dashboard/project-tasks/project-task-store";
 import { ideaAverageRating, ideaRatingPrompt, ideaRecommendable, ideasAwaitingRating, ideasSaturated, keptIdeaRecords,
-  MAXIMUM_IDEAS_PER_RATING, projectTooAbstract, rateProjectIdeas, ratedIdeaRecords } from "dashboard/project-tasks/project-task-idea-ratings";
+  MAXIMUM_IDEAS_PER_RATING, projectTooAbstract, rateProjectIdeas, ratedIdeaRecords,
+  strongestRatedIdeas } from "dashboard/project-tasks/project-task-idea-ratings";
+import { generateProjectTaskIdeas } from "dashboard/project-tasks/project-task-ideas";
 import { scheduleProposedActivity } from "dashboard/proposed-agenda/proposed-agenda-service";
 import QuarterProject from "dashboard/quarter-project";
 import QuarterProjectRepository from "dashboard/quarter-project-repository";
 import { existingTaskForAcceptedIdea, recordSuggestedIdeaDecisions } from "dashboard/suggestions/ranked-task-suggestions";
 import { rankedTasksFromResponse, suggestionQuestions } from "dashboard/suggestions/suggestion-task-rank";
 import { EVENING_DAY_END_MINUTES, slotRankedTasks } from "dashboard/suggestions/suggestion-task-slots";
-import { createGenerateProjectIdeasHandler } from "dashboard/work-queue/jobs/generate-project-ideas";
+import { createGenerateProjectIdeasHandler, IDEAS_TO_EXCEED_BEST_COUNT } from "dashboard/work-queue/jobs/generate-project-ideas";
 import { createRateProjectIdeasHandler } from "dashboard/work-queue/jobs/rate-project-ideas";
 import { ideasRefreshDue, ideasRequestIfDue } from "dashboard/work-queue/quarter-project-work-planner";
 import { generativeScoreRequester } from "plan-wizard/stack-rank/generative-task-scores";
@@ -285,6 +288,68 @@ describe("idea saturation", () => {
     expect(storedTexts).toHaveLength(13);
     expect(storedTexts).not.toContain("Low rated");
     expect(storedTexts).toContain(unratedText);
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc A saturated project keeps only its strongest rated ideas, so a newly rated idea outscoring them displaces the
+  //   weakest; among ideas rated alike, the one held longest stays.
+  it("keeps the strongest ideas, letting a better-rated newcomer displace the weakest", () => {
+    const incumbents = wellRatedIdeas();
+    const weakest = ratedIdea("Weakest incumbent", { actionability: 7, relevance: 6 });
+    const newcomer = ratedIdea("Stronger newcomer", { actionability: 10, relevance: 9 });
+    const strongestTexts = strongestRatedIdeas([...incumbents, weakest, newcomer]).map(idea => idea.taskText);
+    expect(strongestTexts[0]).toBe("Stronger newcomer");
+    expect(strongestTexts).toHaveLength(12);
+    const keptTexts = keptIdeaRecords([...incumbents, weakest, newcomer], { completedTasks: [] }).map(idea => idea.taskText);
+    expect(keptTexts).toHaveLength(12);
+    expect(keptTexts).toContain("Stronger newcomer");
+    expect(keptTexts).not.toContain("Weakest incumbent");
+    expect(keptTexts).not.toContain("Well rated idea 12");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc An ideas job the user asked for still asks a saturated project's provider, for IDEAS_TO_EXCEED_BEST_COUNT ideas
+  //   to beat its strongest, passing those ideas and the dictionary terms its summary uses; it drops the low-rated idea
+  //   first and asks for the new idea to be rated.
+  it("asks a saturated project for ideas that beat its strongest when the user asks", async () => {
+    const app = maintenanceApp({ tasks: [] });
+    await storeIdeas(app, [...wellRatedIdeas(), ratedIdea("Low rated", { actionability: 4, relevance: 5 })]);
+    const ideaGenerator = jest.fn().mockResolvedValue({ failureReason: null, foundTasks: [],
+      suggestedTasks: [{ beforeTask: null, generatedAt: NOW.toISOString(), noteUuid: null, taskText: "Record the launch demo" }] });
+    const dictionaryReader = jest.fn().mockResolvedValue({ dashboard: "The plugin's home screen", unrelated: "Not used" });
+    const handler = createGenerateProjectIdeasHandler({ dictionaryReader, ideaGenerator, taskScorer: async () => "jev" });
+    const job = { attempt: 1, category: "foregroundData", desiredRevision: "run:1",
+      input: { ...SCOPE_INPUT, exceedBestIdeas: true, ideaCount: 10, projectUuid: PROJECT_UUID } };
+    const result = await handler.run({ context: jobContext(app), job, signal: null });
+    const generatorOptions = ideaGenerator.mock.calls[0][1];
+    expect(generatorOptions.ideaCount).toBe(IDEAS_TO_EXCEED_BEST_COUNT);
+    expect(generatorOptions.ideasToBeat).toHaveLength(12);
+    expect(generatorOptions.dictionaryTerms).toEqual({ dashboard: "The plugin's home screen" });
+    expect(generatorOptions.project.candidateTaskRecords).toEqual([]);
+    expect(result.outcomeDetail).toBe("Generated 1 idea to beat the 12 best, kept 1");
+    expect(result.followUps).toEqual([expect.objectContaining({ type: "rateProjectIdeas" })]);
+    const storedTexts = (await storedProject(app)).suggestedTasks.map(idea => idea.taskText);
+    expect(storedTexts).toContain("Record the launch demo");
+    expect(storedTexts).not.toContain("Low rated");
+  });
+
+  // ----------------------------------------------------------------------------------------------
+  // @desc The prompt to beat a project's strongest ideas lists each with its ratings, the project's clarity, the intents,
+  //   and the user's definitions of the terms it uses, and asks for ideas improving on them.
+  it("writes a prompt listing the ideas to beat with their ratings", async () => {
+    const promptRunner = jest.fn().mockResolvedValue({ ideas: [{ taskText: "Record the launch demo" }] });
+    const strongest = ratedIdea("Benchmark the picker", { actionability: 8, projectClarity: 7, relevance: 6 });
+    const project = new QuarterProject({ summary: "Launch dashboard", uuid: PROJECT_UUID });
+    project.setSuggestedTasks([strongest]);
+    const result = await generateProjectTaskIdeas({}, { dictionaryTerms: { dashboard: "The plugin's home screen" }, ideaCount: 3,
+      ideasToBeat: [strongest], intentTexts: ["Grow plugin revenue"], project, promptRunner, quarterlyContext: null });
+    const prompt = promptRunner.mock.calls[0][1];
+    expect(prompt).toContain(`- "Benchmark the picker" (actionability 8, relevance 6)`);
+    expect(prompt).toContain("We rated the project itself 7 for clarity");
+    expect(prompt).toContain("- dashboard: The plugin's home screen");
+    expect(prompt).toContain(`Propose 3 ideas that improve upon the actionability, clarity, impact, or relevance of the ideas `
+      + `above, for the project "Launch dashboard", given the user's high-level intents "Grow plugin revenue".`);
+    expect(result.suggestedTasks.map(idea => idea.taskText)).toEqual(["Record the launch demo"]);
   });
 });
 
